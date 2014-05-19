@@ -154,7 +154,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
     private void rst(Stream stream)
     {
         RstInfo rstInfo = new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM);
-        stream.getSession().rst(rstInfo, new Callback.Adapter());
+        stream.getSession().rst(rstInfo, Callback.Adapter.INSTANCE);
     }
 
     public static class ProxyServerInfo

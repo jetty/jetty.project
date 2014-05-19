@@ -272,7 +272,7 @@ public class StandardStream extends IdleTimeout implements IStream
         if (!canReceive())
         {
             LOG.debug("Protocol error receiving {}, resetting", dataInfo);
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), Callback.Adapter.INSTANCE);
             return;
         }
 
@@ -547,7 +547,7 @@ public class StandardStream extends IdleTimeout implements IStream
 
         private StreamCallback()
         {
-            this(new Adapter());
+            this(Callback.Adapter.INSTANCE);
         }
 
         private StreamCallback(Callback callback)

@@ -63,7 +63,7 @@ public class HttpConnectionOverSPDY extends HttpConnection
         // First close then abort, to be sure that the connection cannot be reused
         // from an onFailure() handler or by blocking code waiting for completion.
         getHttpDestination().close(this);
-        session.goAway(new GoAwayInfo(), new Callback.Adapter());
+        session.goAway(new GoAwayInfo(), Callback.Adapter.INSTANCE);
         abort(new AsynchronousCloseException());
     }
 

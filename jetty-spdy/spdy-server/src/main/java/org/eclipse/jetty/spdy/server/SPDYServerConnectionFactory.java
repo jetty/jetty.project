@@ -182,7 +182,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
     void closeSessions()
     {
         for (Session session : sessions)
-            session.goAway(new GoAwayInfo(), new Callback.Adapter());
+            session.goAway(new GoAwayInfo(), Callback.Adapter.INSTANCE);
         sessions.clear();
     }
 

@@ -58,7 +58,7 @@ public class HttpTransportOverFCGI implements HttpTransport
             if (lastContent)
             {
                 Generator.Result headersResult = generator.generateResponseHeaders(request, info.getStatus(), info.getReason(),
-                        info.getHttpFields(), new Callback.Adapter());
+                        info.getHttpFields(), Callback.Adapter.INSTANCE);
                 Generator.Result contentResult = generator.generateResponseContent(request, BufferUtil.EMPTY_BUFFER, lastContent, aborted, callback);
                 flusher.flush(headersResult, contentResult);
             }
@@ -72,7 +72,7 @@ public class HttpTransportOverFCGI implements HttpTransport
         else
         {
             Generator.Result headersResult = generator.generateResponseHeaders(request, info.getStatus(), info.getReason(),
-                    info.getHttpFields(), new Callback.Adapter());
+                    info.getHttpFields(), Callback.Adapter.INSTANCE);
             Generator.Result contentResult = generator.generateResponseContent(request, content, lastContent, aborted, callback);
             flusher.flush(headersResult, contentResult);
         }

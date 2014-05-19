@@ -189,7 +189,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 Session existing = serverSessions.putIfAbsent(host, session);
                 if (existing != null)
                 {
-                    session.goAway(new GoAwayInfo(), new Callback.Adapter());
+                    session.goAway(new GoAwayInfo(), Callback.Adapter.INSTANCE);
                     session = existing;
                 }
             }
@@ -222,7 +222,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
     private void rst(Stream stream)
     {
         RstInfo rstInfo = new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM);
-        stream.getSession().rst(rstInfo, new Callback.Adapter());
+        stream.getSession().rst(rstInfo, Callback.Adapter.INSTANCE);
     }
 
     private class ProxyPushStreamFrameListener implements StreamFrameListener
@@ -581,7 +581,7 @@ public class SPDYProxyEngine extends ProxyEngine implements StreamFrameListener
                 {
                     Session clientSession = clientStream.getSession();
                     RstInfo clientRstInfo = new RstInfo(clientStream.getId(), serverRstInfo.getStreamStatus());
-                    clientSession.rst(clientRstInfo, new Callback.Adapter());
+                    clientSession.rst(clientRstInfo, Callback.Adapter.INSTANCE);
                 }
             }
         }
