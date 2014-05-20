@@ -176,10 +176,9 @@ public class ResponseContentParser extends StreamContentParser
                 }
                 else
                 {
+                    fields.add(httpField);
                     if (seenResponseCode)
                         notifyHeader(httpField);
-                    else
-                        fields.add(httpField);
                 }
             }
             catch (Throwable x)
