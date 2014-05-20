@@ -98,7 +98,7 @@ public class ResponseContentParser extends StreamContentParser
                 {
                     case HEADERS:
                     {
-                        if (httpParser.parseHeaders(buffer))
+                        if (httpParser.parseNext(buffer))
                             state = State.CONTENT_MODE;
                         remaining = buffer.remaining();
                         break;
@@ -124,7 +124,8 @@ public class ResponseContentParser extends StreamContentParser
                     }
                     case HTTP_CONTENT:
                     {
-                        httpParser.parseContent(buffer);
+                        if (httpParser.parseNext(buffer))
+                            return true;
                         remaining = buffer.remaining();
                         break;
                     }
@@ -250,8 +251,7 @@ public class ResponseContentParser extends StreamContentParser
         @Override
         public boolean content(ByteBuffer buffer)
         {
-            notifyContent(buffer);
-            return false;
+            return notifyContent(buffer);
         }
 
         private boolean notifyContent(ByteBuffer buffer)
@@ -303,18 +303,6 @@ public class ResponseContentParser extends StreamContentParser
             super.reset();
             setResponseStatus(200);
             setState(State.HEADER);
-        }
-
-        @Override
-        protected boolean parseHeaders(ByteBuffer buffer)
-        {
-            return super.parseHeaders(buffer);
-        }
-
-        @Override
-        protected boolean parseContent(ByteBuffer buffer)
-        {
-            return super.parseContent(buffer);
         }
 
         @Override
