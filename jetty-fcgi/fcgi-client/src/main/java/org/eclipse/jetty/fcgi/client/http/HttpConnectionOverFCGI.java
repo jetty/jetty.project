@@ -361,7 +361,9 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
                         return callback.tryComplete();
                     }
                     else
+                    {
                         noChannel(request);
+                    }
                     break;
                 }
                 case STD_ERR:
@@ -409,7 +411,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
         private void noChannel(int request)
         {
-            // TODO: what here ?
+            LOG.debug("Channel not found for request {}", request);
         }
     }
 }
