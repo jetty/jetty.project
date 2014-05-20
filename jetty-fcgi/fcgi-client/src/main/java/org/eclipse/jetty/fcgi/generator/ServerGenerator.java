@@ -50,14 +50,17 @@ public class ServerGenerator extends Generator
         List<byte[]> bytes = new ArrayList<>(fields.size() * 2);
         int length = 0;
 
-        // Special 'Status' header
-        bytes.add(STATUS);
-        length += STATUS.length + COLON.length;
-        if (reason == null)
-            reason = HttpStatus.getMessage(code);
-        byte[] responseBytes = (code + " " + reason).getBytes(utf8);
-        bytes.add(responseBytes);
-        length += responseBytes.length + EOL.length;
+        if (code > 0)
+        {
+            // Special 'Status' header
+            bytes.add(STATUS);
+            length += STATUS.length + COLON.length;
+            if (reason == null)
+                reason = HttpStatus.getMessage(code);
+            byte[] responseBytes = (code + " " + reason).getBytes(utf8);
+            bytes.add(responseBytes);
+            length += responseBytes.length + EOL.length;
+        }
 
         // Other headers
         for (HttpField field : fields)
