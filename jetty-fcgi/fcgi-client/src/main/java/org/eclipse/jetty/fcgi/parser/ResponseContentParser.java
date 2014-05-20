@@ -301,6 +301,7 @@ public class ResponseContentParser extends StreamContentParser
         public void reset()
         {
             super.reset();
+            setResponseStatus(200);
             setState(State.HEADER);
         }
 
