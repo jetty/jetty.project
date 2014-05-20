@@ -21,6 +21,8 @@ package org.eclipse.jetty.fcgi.server.proxy;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -43,13 +45,28 @@ import org.eclipse.jetty.util.Callback;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class FastCGIProxyServletTest
 {
+    @Parameterized.Parameters
+    public static Collection<Object[]> parameters()
+    {
+        return Arrays.asList(new Object[]{true}, new Object[]{false});
+    }
+
+    private final boolean sendStatus200;
     private Server server;
     private ServerConnector httpConnector;
     private ServerConnector fcgiConnector;
     private HttpClient client;
+
+    public FastCGIProxyServletTest(boolean sendStatus200)
+    {
+        this.sendStatus200 = sendStatus200;
+    }
 
     public void prepare(HttpServlet servlet) throws Exception
     {
@@ -57,7 +74,7 @@ public class FastCGIProxyServletTest
         httpConnector = new ServerConnector(server);
         server.addConnector(httpConnector);
 
-        fcgiConnector = new ServerConnector(server, new ServerFCGIConnectionFactory(new HttpConfiguration()));
+        fcgiConnector = new ServerConnector(server, new ServerFCGIConnectionFactory(new HttpConfiguration(), sendStatus200));
         server.addConnector(fcgiConnector);
 
         final String contextPath = "/";
@@ -122,6 +139,7 @@ public class FastCGIProxyServletTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 Assert.assertTrue(req.getRequestURI().endsWith(path));
+                resp.setContentLength(data.length);
                 resp.getOutputStream().write(data);
             }
         });

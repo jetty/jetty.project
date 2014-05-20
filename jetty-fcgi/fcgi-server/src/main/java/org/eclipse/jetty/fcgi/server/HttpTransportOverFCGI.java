@@ -40,9 +40,9 @@ public class HttpTransportOverFCGI implements HttpTransport
     private volatile boolean shutdown;
     private volatile boolean aborted;
 
-    public HttpTransportOverFCGI(ByteBufferPool byteBufferPool, Flusher flusher, int request)
+    public HttpTransportOverFCGI(ByteBufferPool byteBufferPool, Flusher flusher, int request, boolean sendStatus200)
     {
-        this.generator = new ServerGenerator(byteBufferPool);
+        this.generator = new ServerGenerator(byteBufferPool, sendStatus200);
         this.flusher = flusher;
         this.request = request;
     }

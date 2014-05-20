@@ -37,9 +37,17 @@ public class ServerGenerator extends Generator
     private static final byte[] COLON = new byte[]{':', ' '};
     private static final byte[] EOL = new byte[]{'\r', '\n'};
 
+    private final boolean sendStatus200;
+
     public ServerGenerator(ByteBufferPool byteBufferPool)
     {
+        this(byteBufferPool, true);
+    }
+
+    public ServerGenerator(ByteBufferPool byteBufferPool, boolean sendStatus200)
+    {
         super(byteBufferPool);
+        this.sendStatus200 = sendStatus200;
     }
 
     public Result generateResponseHeaders(int request, int code, String reason, HttpFields fields, Callback callback)
@@ -50,7 +58,7 @@ public class ServerGenerator extends Generator
         List<byte[]> bytes = new ArrayList<>(fields.size() * 2);
         int length = 0;
 
-        if (code > 0)
+        if (code != 200 || sendStatus200)
         {
             // Special 'Status' header
             bytes.add(STATUS);
