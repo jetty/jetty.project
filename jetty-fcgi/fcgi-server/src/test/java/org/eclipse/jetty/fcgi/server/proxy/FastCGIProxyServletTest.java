@@ -20,7 +20,9 @@ package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -28,12 +30,16 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.Callback;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -89,7 +95,24 @@ public class FastCGIProxyServletTest
     @Test
     public void testGETWithSmallResponseContent() throws Exception
     {
-        final byte[] data = new byte[1024];
+        testGETWithResponseContent(1024, 0);
+    }
+
+    @Test
+    public void testGETWithLargeResponseContent() throws Exception
+    {
+        testGETWithResponseContent(16 * 1024 * 1024, 0);
+    }
+
+    @Test
+    public void testGETWithLargeResponseContentWithSlowClient() throws Exception
+    {
+        testGETWithResponseContent(16 * 1024 * 1024, 1);
+    }
+
+    private void testGETWithResponseContent(int length, final long delay) throws Exception
+    {
+        final byte[] data = new byte[length];
         new Random().nextBytes(data);
 
         final String path = "/foo/index.php";
@@ -103,9 +126,30 @@ public class FastCGIProxyServletTest
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", httpConnector.getLocalPort())
-                .path(path)
-                .send();
+        Request request = client.newRequest("localhost", httpConnector.getLocalPort())
+                .onResponseContentAsync(new Response.AsyncContentListener()
+                {
+                    @Override
+                    public void onContent(Response response, ByteBuffer content, Callback callback)
+                    {
+                        try
+                        {
+                            if (delay > 0)
+                                TimeUnit.MILLISECONDS.sleep(delay);
+                            callback.succeeded();
+                        }
+                        catch (InterruptedException x)
+                        {
+                            callback.failed(x);
+                        }
+                    }
+                })
+                .path(path);
+        FutureResponseListener listener = new FutureResponseListener(request, length);
+        request.send(listener);
+
+        ContentResponse response = listener.get(30, TimeUnit.SECONDS);
+
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(data, response.getContent());
     }
