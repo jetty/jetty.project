@@ -40,6 +40,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import javax.servlet.ServletException;
@@ -133,6 +134,90 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     }
 
 
+    /*
+    * Feed a full header method
+    */
+    @Test
+    public void testFullWhite() throws Exception
+    {
+        configureServer(new HelloWorldHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            client.setSoTimeout(10000);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog) Log.getLogger(HttpConnection.class)).info("expect request is too large...");
+            OutputStream os = client.getOutputStream();
+
+            byte[] buffer = new byte[64 * 1024];
+            Arrays.fill(buffer, (byte)' ');
+
+            os.write(buffer);
+            os.flush();
+
+            // Read the close.
+            readClose(client);
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+        }
+    }
+    
+
+    /*
+     * Feed a full header method
+     */
+    @Test
+    public void testFullWhiteAfter() throws Exception
+    {
+
+        configureServer(new HelloWorldHandler());
+
+        try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
+        {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).info("expect Bad Message close ...");
+            OutputStream os = client.getOutputStream();
+
+            byte[] buffer = new byte[64 * 1024];
+            buffer[0]='G';
+            buffer[1]='E';
+            buffer[2]='T';
+            buffer[3]=' ';
+            buffer[4]='/';
+            buffer[5]=' ';
+            buffer[6]='H';
+            buffer[7]='T';
+            buffer[8]='T';
+            buffer[9]='P';
+            buffer[10]='/';
+            buffer[11]='1';
+            buffer[12]='.';
+            buffer[13]='0';
+            buffer[14]='\n';
+            buffer[15]='\n';
+            Arrays.fill(buffer,16,buffer.length-1,(byte)' ');
+
+            os.write(buffer);
+            os.flush();
+
+            // Read the response.
+            long start = System.nanoTime();
+            String response = readResponse(client);
+            long end = System.nanoTime();
+
+            Assert.assertThat(response, Matchers.containsString("HTTP/1.1 200 OK"));
+            
+            Assert.assertThat(TimeUnit.NANOSECONDS.toSeconds(end-start),Matchers.lessThan(1L));
+            
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpConnection.class)).setHideStacks(true);
+        }
+    }
+    
     /*
     * Feed a full header method
     */
@@ -1372,6 +1457,29 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             System.err.println(e + " while reading '" + sb + "'");
             throw e;
+        }
+    }
+    
+    /**
+     * Read Close.
+     *
+     * @param client Open client socket.
+     * @throws IOException in case of I/O problems
+     */
+    protected static void readClose(Socket client) throws IOException
+    {
+        try (BufferedReader br = new BufferedReader(new InputStreamReader(client.getInputStream())))
+        {
+            String line;
+
+            if ((line = br.readLine()) != null)
+                throw new IllegalStateException("unexpected data: "+line);
+
+            return;
+        }
+        catch (IOException e)
+        {
+            // expected
         }
     }
 
