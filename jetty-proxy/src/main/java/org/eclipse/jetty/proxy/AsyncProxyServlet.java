@@ -46,8 +46,13 @@ public class AsyncProxyServlet extends ProxyServlet
     {
         ServletInputStream input = request.getInputStream();
         DeferredContentProvider provider = new DeferredContentProvider();
-        input.setReadListener(new StreamReader(proxyRequest, request, provider));
+        input.setReadListener(newReadListener(proxyRequest, request, provider));
         return provider;
+    }
+
+    protected ReadListener newReadListener(Request proxyRequest, HttpServletRequest request, DeferredContentProvider provider)
+    {
+        return new StreamReader(proxyRequest, request, provider);
     }
 
     @Override
@@ -59,7 +64,7 @@ public class AsyncProxyServlet extends ProxyServlet
             StreamWriter writeListener = (StreamWriter)request.getAttribute(WRITE_LISTENER_ATTRIBUTE);
             if (writeListener == null)
             {
-                writeListener = new StreamWriter(request, proxyResponse);
+                writeListener = newWriteListener(request, proxyResponse);
                 request.setAttribute(WRITE_LISTENER_ATTRIBUTE, writeListener);
 
                 // Set the data to write before calling setWriteListener(), because
@@ -82,7 +87,12 @@ public class AsyncProxyServlet extends ProxyServlet
             onResponseFailure(request, response, proxyResponse, x);
         }
     }
-    
+
+    protected StreamWriter newWriteListener(HttpServletRequest request, Response proxyResponse)
+    {
+        return new StreamWriter(request, proxyResponse);
+    }
+
     public static class Transparent extends AsyncProxyServlet
     {
         private final TransparentDelegate delegate = new TransparentDelegate(this);
@@ -101,14 +111,14 @@ public class AsyncProxyServlet extends ProxyServlet
         }
     }
 
-    private class StreamReader implements ReadListener, Callback
+    protected class StreamReader implements ReadListener, Callback
     {
         private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
         private final Request proxyRequest;
         private final HttpServletRequest request;
         private final DeferredContentProvider provider;
 
-        public StreamReader(Request proxyRequest, HttpServletRequest request, DeferredContentProvider provider)
+        protected StreamReader(Request proxyRequest, HttpServletRequest request, DeferredContentProvider provider)
         {
             this.proxyRequest = proxyRequest;
             this.request = request;
@@ -131,13 +141,18 @@ public class AsyncProxyServlet extends ProxyServlet
                 if (read > 0)
                 {
                     _log.debug("{} proxying content to upstream: {} bytes", requestId, read);
-                    provider.offer(ByteBuffer.wrap(buffer, 0, read), this);
+                    onRequestContent(proxyRequest, request, provider, buffer, 0, read, this);
                     // Do not call isReady() so that we can apply backpressure.
                     break;
                 }
             }
             if (!input.isFinished())
                 _log.debug("{} asynchronous read pending on {}", requestId, input);
+        }
+
+        protected void onRequestContent(Request proxyRequest, HttpServletRequest request, DeferredContentProvider provider, byte[] buffer, int offset, int length, Callback callback)
+        {
+            provider.offer(ByteBuffer.wrap(buffer, offset, length), callback);
         }
 
         @Override
@@ -174,7 +189,7 @@ public class AsyncProxyServlet extends ProxyServlet
         }
     }
 
-    private class StreamWriter implements WriteListener
+    protected class StreamWriter implements WriteListener
     {
         private final HttpServletRequest request;
         private final Response proxyResponse;
@@ -184,14 +199,14 @@ public class AsyncProxyServlet extends ProxyServlet
         private int length;
         private Callback callback;
 
-        private StreamWriter(HttpServletRequest request, Response proxyResponse)
+        protected StreamWriter(HttpServletRequest request, Response proxyResponse)
         {
             this.request = request;
             this.proxyResponse = proxyResponse;
             this.state = WriteState.IDLE;
         }
 
-        private void data(byte[] bytes, int offset, int length, Callback callback)
+        protected void data(byte[] bytes, int offset, int length, Callback callback)
         {
             if (state != WriteState.IDLE)
                 throw new WritePendingException();
@@ -235,7 +250,7 @@ public class AsyncProxyServlet extends ProxyServlet
             }
         }
 
-        private void complete()
+        protected void complete()
         {
             buffer = null;
             offset = 0;
