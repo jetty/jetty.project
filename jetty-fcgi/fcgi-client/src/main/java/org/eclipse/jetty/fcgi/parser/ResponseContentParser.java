@@ -166,12 +166,14 @@ public class ResponseContentParser extends StreamContentParser
 
                         // Need to set the response status so the
                         // HttpParser can handle the content properly.
-                        String[] parts = httpField.getValue().split(" ");
-                        int code = Integer.parseInt(parts[0]);
+                        String value = httpField.getValue();
+                        String[] parts = value.split(" ");
+                        String status = parts[0];
+                        int code = Integer.parseInt(status);
                         httpParser.setResponseStatus(code);
-                        String reason = parts.length > 1 ? parts[1] : HttpStatus.getMessage(code);
+                        String reason = parts.length > 1 ? value.substring(status.length()) : HttpStatus.getMessage(code);
 
-                        notifyBegin(code, reason);
+                        notifyBegin(code, reason.trim());
                         notifyHeaders(fields);
                     }
                 }
