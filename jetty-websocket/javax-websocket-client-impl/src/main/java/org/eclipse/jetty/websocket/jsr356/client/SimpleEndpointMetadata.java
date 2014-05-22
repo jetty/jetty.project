@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.client;
 
 import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadataSet;
@@ -35,9 +36,20 @@ public class SimpleEndpointMetadata implements EndpointMetadata
 
     public SimpleEndpointMetadata(Class<? extends Endpoint> endpointClass)
     {
+        this(endpointClass, null);
+    }
+    
+    public SimpleEndpointMetadata(Class<? extends Endpoint> endpointClass, EndpointConfig config)
+    {
         this.endpointClass = endpointClass;
         this.decoders = new DecoderMetadataSet();
         this.encoders = new EncoderMetadataSet();
+
+        if (config != null)
+        {
+            this.decoders.addAll(config.getDecoders());
+            this.encoders.addAll(config.getEncoders());
+        }
     }
 
     @Override

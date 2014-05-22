@@ -233,7 +233,7 @@ public class BlockheadServer
             {
                 try
                 {
-                    write(WebSocketFrame.copy(frame));
+                    write(WebSocketFrame.copy(frame).setMasked(false));
                 }
                 catch (IOException e)
                 {

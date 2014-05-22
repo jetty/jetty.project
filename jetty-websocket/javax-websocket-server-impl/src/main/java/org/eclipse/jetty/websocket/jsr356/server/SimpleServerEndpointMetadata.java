@@ -29,13 +29,8 @@ public class SimpleServerEndpointMetadata extends SimpleEndpointMetadata impleme
 
     public SimpleServerEndpointMetadata(Class<? extends Endpoint> endpointClass, ServerEndpointConfig config)
     {
-        super(endpointClass);
+        super(endpointClass,config);
         this.config = config;
-        if (this.config != null)
-        {
-            getDecoders().addAll(config.getDecoders());
-            getEncoders().addAll(config.getEncoders());
-        }
     }
 
     @Override

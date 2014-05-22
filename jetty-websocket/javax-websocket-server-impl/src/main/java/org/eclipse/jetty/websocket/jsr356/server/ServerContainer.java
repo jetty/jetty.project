@@ -57,7 +57,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     
     public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
     {
-        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass());
+        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass(),config);
         ServerEndpointConfig cec = config;
         if (config == null)
         {
