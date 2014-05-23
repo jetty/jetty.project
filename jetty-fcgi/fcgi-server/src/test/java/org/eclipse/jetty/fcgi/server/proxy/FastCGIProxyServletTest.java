@@ -20,7 +20,11 @@ package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.io.IOException;
 import java.net.URI;
+import java.nio.ByteBuffer;
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -28,22 +32,41 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.fcgi.server.ServerFCGIConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.Callback;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
+@RunWith(Parameterized.class)
 public class FastCGIProxyServletTest
 {
+    @Parameterized.Parameters
+    public static Collection<Object[]> parameters()
+    {
+        return Arrays.asList(new Object[]{true}, new Object[]{false});
+    }
+
+    private final boolean sendStatus200;
     private Server server;
     private ServerConnector httpConnector;
     private ServerConnector fcgiConnector;
     private HttpClient client;
+
+    public FastCGIProxyServletTest(boolean sendStatus200)
+    {
+        this.sendStatus200 = sendStatus200;
+    }
 
     public void prepare(HttpServlet servlet) throws Exception
     {
@@ -51,7 +74,7 @@ public class FastCGIProxyServletTest
         httpConnector = new ServerConnector(server);
         server.addConnector(httpConnector);
 
-        fcgiConnector = new ServerConnector(server, new ServerFCGIConnectionFactory(new HttpConfiguration()));
+        fcgiConnector = new ServerConnector(server, new ServerFCGIConnectionFactory(new HttpConfiguration(), sendStatus200));
         server.addConnector(fcgiConnector);
 
         final String contextPath = "/";
@@ -89,7 +112,24 @@ public class FastCGIProxyServletTest
     @Test
     public void testGETWithSmallResponseContent() throws Exception
     {
-        final byte[] data = new byte[1024];
+        testGETWithResponseContent(1024, 0);
+    }
+
+    @Test
+    public void testGETWithLargeResponseContent() throws Exception
+    {
+        testGETWithResponseContent(16 * 1024 * 1024, 0);
+    }
+
+    @Test
+    public void testGETWithLargeResponseContentWithSlowClient() throws Exception
+    {
+        testGETWithResponseContent(16 * 1024 * 1024, 1);
+    }
+
+    private void testGETWithResponseContent(int length, final long delay) throws Exception
+    {
+        final byte[] data = new byte[length];
         new Random().nextBytes(data);
 
         final String path = "/foo/index.php";
@@ -99,13 +139,35 @@ public class FastCGIProxyServletTest
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
                 Assert.assertTrue(req.getRequestURI().endsWith(path));
+                resp.setContentLength(data.length);
                 resp.getOutputStream().write(data);
             }
         });
 
-        ContentResponse response = client.newRequest("localhost", httpConnector.getLocalPort())
-                .path(path)
-                .send();
+        Request request = client.newRequest("localhost", httpConnector.getLocalPort())
+                .onResponseContentAsync(new Response.AsyncContentListener()
+                {
+                    @Override
+                    public void onContent(Response response, ByteBuffer content, Callback callback)
+                    {
+                        try
+                        {
+                            if (delay > 0)
+                                TimeUnit.MILLISECONDS.sleep(delay);
+                            callback.succeeded();
+                        }
+                        catch (InterruptedException x)
+                        {
+                            callback.failed(x);
+                        }
+                    }
+                })
+                .path(path);
+        FutureResponseListener listener = new FutureResponseListener(request, length);
+        request.send(listener);
+
+        ContentResponse response = listener.get(30, TimeUnit.SECONDS);
+
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(data, response.getContent());
     }

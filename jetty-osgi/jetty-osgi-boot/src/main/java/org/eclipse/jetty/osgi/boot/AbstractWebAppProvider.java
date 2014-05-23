@@ -330,8 +330,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             // the webapp first
             applyMetaInfContextXml(rootResource);
 
-            // pass the value of the require tld bundle so that the TagLibOSGiConfiguration
-            // can pick it up.
             _webApp.setAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, requireTldBundles);
 
             //Set up some attributes

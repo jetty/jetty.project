@@ -85,8 +85,7 @@ import org.eclipse.jetty.util.Callback;
  */
 public class DeferredContentProvider implements AsyncContentProvider, Closeable
 {
-    private static final Callback EMPTY_CALLBACK = new Callback.Adapter();
-    private static final AsyncChunk CLOSE = new AsyncChunk(BufferUtil.EMPTY_BUFFER, EMPTY_CALLBACK);
+    private static final AsyncChunk CLOSE = new AsyncChunk(BufferUtil.EMPTY_BUFFER, Callback.Adapter.INSTANCE);
 
     private final Object lock = this;
     private final Queue<AsyncChunk> chunks = new ArrayQueue<>(4, 64, lock);
@@ -130,7 +129,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
      */
     public boolean offer(ByteBuffer buffer)
     {
-        return offer(buffer, EMPTY_CALLBACK);
+        return offer(buffer, Callback.Adapter.INSTANCE);
     }
 
     public boolean offer(ByteBuffer buffer, Callback callback)

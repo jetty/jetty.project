@@ -29,6 +29,10 @@ public abstract class Parser
     private State state = State.HEADER;
     private int padding;
 
+    /**
+     * @param buffer the bytes to parse
+     * @return true if the caller should stop parsing, false if the caller should continue parsing
+     */
     public boolean parse(ByteBuffer buffer)
     {
         while (true)
@@ -53,9 +57,16 @@ public abstract class Parser
                     {
                         ContentParser.Result result = contentParser.parse(buffer);
                         if (result == ContentParser.Result.PENDING)
+                        {
+                            // Not enough data, signal to read/parse more.
                             return false;
-                        else if (result == ContentParser.Result.ASYNC)
+                        }
+                        if (result == ContentParser.Result.ASYNC)
+                        {
+                            // The content will be processed asynchronously, signal to stop
+                            // parsing; the async operation will eventually resume parsing.
                             return true;
+                        }
                     }
                     padding = headerParser.getPaddingLength();
                     state = State.PADDING;
@@ -99,6 +110,13 @@ public abstract class Parser
 
         public void onHeaders(int request);
 
+        /**
+         * @param request the request id
+         * @param stream the stream type
+         * @param buffer the content bytes
+         * @return true to signal to the parser to stop parsing, false to continue parsing
+         * @see Parser#parse(java.nio.ByteBuffer)
+         */
         public boolean onContent(int request, FCGI.StreamType stream, ByteBuffer buffer);
 
         public void onEnd(int request);

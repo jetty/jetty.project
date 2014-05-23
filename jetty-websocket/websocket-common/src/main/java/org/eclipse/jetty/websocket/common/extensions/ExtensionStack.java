@@ -176,6 +176,11 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
 
         for (Extension ext : extensions)
         {
+            if (ext.getName().charAt(0) == '@')
+            {
+                // special, internal-only extensions, not present on negotiation level
+                continue;
+            }
             ret.add(ext.getConfig());
         }
         return ret;
@@ -276,8 +281,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
-        FrameEntry entry = new FrameEntry(frame, callback, batchMode);
-        LOG.debug("Queuing {}", entry);
+        FrameEntry entry = new FrameEntry(frame,callback,batchMode);
+        LOG.debug("Queuing {}",entry);
         entries.offer(entry);
         flusher.iterate();
     }
@@ -403,7 +408,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             // this flusher into a final state that cannot be exited,
             // and the failure of a frame may not mean that the whole
             // connection is now invalid.
-            notifyCallbackFailure(current.callback, x);
+            notifyCallbackFailure(current.callback,x);
             succeeded();
         }
 
@@ -416,7 +421,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying success of callback " + callback, x);
+                LOG.debug("Exception while notifying success of callback " + callback,x);
             }
         }
 
@@ -429,7 +434,7 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying failure of callback " + callback, x);
+                LOG.debug("Exception while notifying failure of callback " + callback,x);
             }
         }
     }

@@ -380,7 +380,7 @@ public class SPDYClient
         private void closeConnections()
         {
             for (Session session : sessions)
-                session.goAway(new GoAwayInfo(), new Callback.Adapter());
+                session.goAway(new GoAwayInfo(), Callback.Adapter.INSTANCE);
             sessions.clear();
         }
 

@@ -167,7 +167,7 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
     protected void goAway(ISession session)
     {
         if (session != null)
-            session.goAway(new GoAwayInfo(), new Callback.Adapter());
+            session.goAway(new GoAwayInfo(), Callback.Adapter.INSTANCE);
     }
 
     private void shutdown(ISession session)

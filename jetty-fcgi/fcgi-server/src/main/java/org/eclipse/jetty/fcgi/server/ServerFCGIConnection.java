@@ -41,16 +41,18 @@ public class ServerFCGIConnection extends AbstractConnection
 
     private final ConcurrentMap<Integer, HttpChannelOverFCGI> channels = new ConcurrentHashMap<>();
     private final Connector connector;
+    private final boolean sendStatus200;
     private final Flusher flusher;
     private final HttpConfiguration configuration;
     private final ServerParser parser;
 
-    public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration)
+    public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
         super(endPoint, connector.getExecutor());
         this.connector = connector;
         this.flusher = new Flusher(endPoint);
         this.configuration = configuration;
+        this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
     }
 
@@ -119,7 +121,8 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             // TODO: handle flags
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
-                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request), new ByteBufferQueuedHttpInput());
+                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200),
+                    new ByteBufferQueuedHttpInput());
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
             if (existing != null)
                 throw new IllegalStateException();

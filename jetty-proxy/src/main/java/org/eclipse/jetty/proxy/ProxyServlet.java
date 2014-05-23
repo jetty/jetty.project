@@ -19,6 +19,7 @@
 package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -477,32 +478,17 @@ public class ProxyServlet extends HttpServlet
                     proxyRequest.getHeaders().toString().trim());
         }
 
-        proxyRequest.send(new ProxyResponseListener(request, response));
+        proxyRequest.send(newProxyResponseListener(request, response));
     }
 
     protected ContentProvider proxyRequestContent(final Request proxyRequest, final HttpServletRequest request) throws IOException
     {
-        return new InputStreamContentProvider(request.getInputStream())
-        {
-            @Override
-            public long getLength()
-            {
-                return request.getContentLength();
-            }
+        return new ProxyInputStreamContentProvider(proxyRequest, request, request.getInputStream());
+    }
 
-            @Override
-            protected ByteBuffer onRead(byte[] buffer, int offset, int length)
-            {
-                _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
-                return super.onRead(buffer, offset, length);
-            }
-
-            @Override
-            protected void onReadFailure(Throwable failure)
-            {
-                onClientRequestFailure(proxyRequest, request, failure);
-            }
-        };
+    protected Response.Listener newProxyResponseListener(HttpServletRequest request, HttpServletResponse response)
+    {
+        return new ProxyResponseListener(request, response);
     }
 
     protected void onClientRequestFailure(Request proxyRequest, HttpServletRequest request, Throwable failure)
@@ -716,12 +702,12 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
-    private class ProxyResponseListener extends Response.Listener.Adapter
+    protected class ProxyResponseListener extends Response.Listener.Adapter
     {
         private final HttpServletRequest request;
         private final HttpServletResponse response;
 
-        public ProxyResponseListener(HttpServletRequest request, HttpServletResponse response)
+        protected ProxyResponseListener(HttpServletRequest request, HttpServletResponse response)
         {
             this.request = request;
             this.response = response;
@@ -809,6 +795,43 @@ public class ProxyServlet extends HttpServlet
             else
                 onResponseFailure(request, response, result.getResponse(), result.getFailure());
             _log.debug("{} proxying complete", getRequestId(request));
+        }
+    }
+
+    protected class ProxyInputStreamContentProvider extends InputStreamContentProvider
+    {
+        private final Request proxyRequest;
+        private final HttpServletRequest request;
+
+        protected ProxyInputStreamContentProvider(Request proxyRequest, HttpServletRequest request, InputStream input)
+        {
+            super(input);
+            this.proxyRequest = proxyRequest;
+            this.request = request;
+        }
+
+        @Override
+        public long getLength()
+        {
+            return request.getContentLength();
+        }
+
+        @Override
+        protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+        {
+            _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
+            return onRequestContent(proxyRequest, request, buffer, offset, length);
+        }
+
+        protected ByteBuffer onRequestContent(Request proxyRequest, final HttpServletRequest request, byte[] buffer, int offset, int length)
+        {
+            return super.onRead(buffer, offset, length);
+        }
+
+        @Override
+        protected void onReadFailure(Throwable failure)
+        {
+            onClientRequestFailure(proxyRequest, request, failure);
         }
     }
 }

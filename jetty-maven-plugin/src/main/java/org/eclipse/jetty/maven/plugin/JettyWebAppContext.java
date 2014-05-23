@@ -236,8 +236,7 @@ public class JettyWebAppContext extends WebAppContext
 
     public void doStart () throws Exception
     {
-        //Set up the pattern that tells us where the jars are that need scanning for
-        //stuff like taglibs so we can tell jasper about it (see TagLibConfiguration)
+        //Set up the pattern that tells us where the jars are that need scanning
 
         //Allow user to set up pattern for names of jars from the container classpath
         //that will be scanned - note that by default NO jars are scanned

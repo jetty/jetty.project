@@ -98,7 +98,7 @@ public class ResponseContentParser extends StreamContentParser
                 {
                     case HEADERS:
                     {
-                        if (httpParser.parseHeaders(buffer))
+                        if (httpParser.parseNext(buffer))
                             state = State.CONTENT_MODE;
                         remaining = buffer.remaining();
                         break;
@@ -124,7 +124,8 @@ public class ResponseContentParser extends StreamContentParser
                     }
                     case HTTP_CONTENT:
                     {
-                        httpParser.parseContent(buffer);
+                        if (httpParser.parseNext(buffer))
+                            return true;
                         remaining = buffer.remaining();
                         break;
                     }
@@ -165,21 +166,22 @@ public class ResponseContentParser extends StreamContentParser
 
                         // Need to set the response status so the
                         // HttpParser can handle the content properly.
-                        String[] parts = httpField.getValue().split(" ");
-                        int code = Integer.parseInt(parts[0]);
+                        String value = httpField.getValue();
+                        String[] parts = value.split(" ");
+                        String status = parts[0];
+                        int code = Integer.parseInt(status);
                         httpParser.setResponseStatus(code);
-                        String reason = parts.length > 1 ? parts[1] : HttpStatus.getMessage(code);
+                        String reason = parts.length > 1 ? value.substring(status.length()) : HttpStatus.getMessage(code);
 
-                        notifyBegin(code, reason);
+                        notifyBegin(code, reason.trim());
                         notifyHeaders(fields);
                     }
                 }
                 else
                 {
+                    fields.add(httpField);
                     if (seenResponseCode)
                         notifyHeader(httpField);
-                    else
-                        fields.add(httpField);
                 }
             }
             catch (Throwable x)
@@ -251,8 +253,7 @@ public class ResponseContentParser extends StreamContentParser
         @Override
         public boolean content(ByteBuffer buffer)
         {
-            notifyContent(buffer);
-            return false;
+            return notifyContent(buffer);
         }
 
         private boolean notifyContent(ByteBuffer buffer)
@@ -302,19 +303,8 @@ public class ResponseContentParser extends StreamContentParser
         public void reset()
         {
             super.reset();
+            setResponseStatus(200);
             setState(State.HEADER);
-        }
-
-        @Override
-        protected boolean parseHeaders(ByteBuffer buffer)
-        {
-            return super.parseHeaders(buffer);
-        }
-
-        @Override
-        protected boolean parseContent(ByteBuffer buffer)
-        {
-            return super.parseContent(buffer);
         }
 
         @Override

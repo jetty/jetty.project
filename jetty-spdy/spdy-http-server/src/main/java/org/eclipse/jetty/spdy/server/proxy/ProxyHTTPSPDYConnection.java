@@ -201,7 +201,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         {
             HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(HttpVersion.fromString(headers.get
                     ("version").getValue()), null, 0, 502, "SPDY reset received from upstream server", false);
-            send(info, null, true, new Callback.Adapter());
+            send(info, null, true, Callback.Adapter.INSTANCE);
         }
 
         @Override

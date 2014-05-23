@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
+import static org.hamcrest.Matchers.*;
+
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
@@ -52,9 +54,9 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.api.extensions.Frame.Type;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.CloseInfo;
 import org.eclipse.jetty.websocket.common.Generator;
@@ -65,9 +67,6 @@ import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * A overly simplistic websocket server used during testing.
@@ -234,7 +233,7 @@ public class BlockheadServer
             {
                 try
                 {
-                    write(WebSocketFrame.copy(frame));
+                    write(WebSocketFrame.copy(frame).setMasked(false));
                 }
                 catch (IOException e)
                 {
@@ -280,20 +279,14 @@ public class BlockheadServer
         public List<ExtensionConfig> parseExtensions(List<String> requestLines)
         {
             List<ExtensionConfig> extensionConfigs = new ArrayList<>();
+            
+            List<String> hits = regexFind(requestLines, "^Sec-WebSocket-Extensions: (.*)$");
 
-            Pattern patExts = Pattern.compile("^Sec-WebSocket-Extensions: (.*)$",Pattern.CASE_INSENSITIVE);
-
-            Matcher mat;
-            for (String line : requestLines)
+            for (String econf : hits)
             {
-                mat = patExts.matcher(line);
-                if (mat.matches())
-                {
-                    // found extensions
-                    String econf = mat.group(1);
-                    ExtensionConfig config = ExtensionConfig.parse(econf);
-                    extensionConfigs.add(config);
-                }
+                // found extensions
+                ExtensionConfig config = ExtensionConfig.parse(econf);
+                extensionConfigs.add(config);
             }
 
             return extensionConfigs;
@@ -301,20 +294,15 @@ public class BlockheadServer
 
         public String parseWebSocketKey(List<String> requestLines)
         {
-            String key = null;
-
-            Pattern patKey = Pattern.compile("^Sec-WebSocket-Key: (.*)$",Pattern.CASE_INSENSITIVE);
-
-            Matcher mat;
-            for (String line : requestLines)
+            List<String> hits = regexFind(requestLines,"^Sec-WebSocket-Key: (.*)$");
+            if (hits.size() <= 0)
             {
-                mat = patKey.matcher(line);
-                if (mat.matches())
-                {
-                    key = mat.group(1);
-                }
+                return null;
             }
-
+            
+            Assert.assertThat("Number of Sec-WebSocket-Key headers", hits.size(), is(1));
+            
+            String key = hits.get(0);
             return key;
         }
 
@@ -415,6 +403,32 @@ public class BlockheadServer
             return lines;
         }
 
+        public List<String> regexFind(List<String> lines, String pattern)
+        {
+            List<String> hits = new ArrayList<>();
+
+            Pattern patKey = Pattern.compile(pattern,Pattern.CASE_INSENSITIVE);
+
+            Matcher mat;
+            for (String line : lines)
+            {
+                mat = patKey.matcher(line);
+                if (mat.matches())
+                {
+                    if (mat.groupCount() >= 1)
+                    {
+                        hits.add(mat.group(1));
+                    }
+                    else
+                    {
+                        hits.add(mat.group(0));
+                    }
+                }
+            }
+
+            return hits;
+        }
+
         public void respond(String rawstr) throws IOException
         {
             LOG.debug("respond(){}{}","\n",rawstr);
@@ -486,7 +500,7 @@ public class BlockheadServer
             echoing.set(false);
         }
 
-        public void upgrade() throws IOException
+        public List<String> upgrade() throws IOException
         {
             List<String> requestLines = readRequestLines();
             List<ExtensionConfig> extensionConfigs = parseExtensions(requestLines);
@@ -559,6 +573,7 @@ public class BlockheadServer
             // Write Response
             LOG.debug("Response: {}",resp.toString());
             write(resp.toString().getBytes());
+            return requestLines;
         }
 
         private void write(byte[] bytes) throws IOException

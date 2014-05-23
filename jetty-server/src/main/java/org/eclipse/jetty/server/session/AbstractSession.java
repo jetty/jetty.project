@@ -109,6 +109,18 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         if (_invalid)
             throw new IllegalStateException();
     }
+    
+    /* ------------------------------------------------------------- */
+    /** Check to see if session has expired as at the time given.
+     * @param time
+     * @return
+     */
+    protected boolean checkExpiry(long time)
+    {
+        if (_maxIdleMs>0 && _lastAccessed>0 && _lastAccessed + _maxIdleMs < time)
+            return true;
+        return false;
+    }
 
     /* ------------------------------------------------------------- */
     @Override
@@ -317,7 +329,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             _lastAccessed=_accessed;
             _accessed=time;
 
-            if (_maxIdleMs>0 && _lastAccessed>0 && _lastAccessed + _maxIdleMs < time)
+            if (checkExpiry(time))
             {
                 invalidate();
                 return false;

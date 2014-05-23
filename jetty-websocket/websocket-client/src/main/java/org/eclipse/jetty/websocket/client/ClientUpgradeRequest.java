@@ -31,6 +31,7 @@ import java.util.TreeSet;
 import java.util.concurrent.ThreadLocalRandom;
 
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.UrlEncoded;
@@ -210,7 +211,19 @@ public class ClientUpgradeRequest extends UpgradeRequest
             return;
         }
 
-        setCookies(cookieStore.get(getRequestURI()));
+        List<HttpCookie> existing = getCookies();
+        List<HttpCookie> extra = cookieStore.get(getRequestURI());
+
+        List<HttpCookie> cookies = new ArrayList<>();
+        if (LazyList.hasEntry(existing))
+        {
+            cookies.addAll(existing);
+        }
+        if (LazyList.hasEntry(extra))
+        {
+            cookies.addAll(extra);
+        }
+        setCookies(cookies);
     }
 
     @Override

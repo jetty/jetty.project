@@ -85,6 +85,7 @@ var wstool = {
         $('hello').disabled = !enabled;
         $('there').disabled = !enabled;
         $('json').disabled = !enabled;
+        $('twain').disabled = !enabled;
         $('send10k').disabled = !enabled;
         $('send100k').disabled = !enabled;
         $('send1000k').disabled = !enabled;

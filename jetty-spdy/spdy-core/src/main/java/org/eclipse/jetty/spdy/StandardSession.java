@@ -431,7 +431,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             {
                 RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
                 LOG.debug("Unknown stream {}", rstInfo);
-                rst(rstInfo, new Callback.Adapter());
+                rst(rstInfo, Callback.Adapter.INSTANCE);
             }
             else
             {
@@ -471,7 +471,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     public void onStreamException(StreamException x)
     {
         notifyOnFailure(listener, x); // TODO: notify StreamFrameListener if exists?
-        rst(new RstInfo(x.getStreamId(), x.getStreamStatus()), new Callback.Adapter());
+        rst(new RstInfo(x.getStreamId(), x.getStreamStatus()), Callback.Adapter.INSTANCE);
     }
 
     @Override
@@ -479,7 +479,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     {
         Throwable cause = x.getCause();
         notifyOnFailure(listener, cause == null ? x : cause);
-        goAway(x.getSessionStatus(), 0, TimeUnit.SECONDS, new Callback.Adapter());
+        goAway(x.getSessionStatus(), 0, TimeUnit.SECONDS, Callback.Adapter.INSTANCE);
     }
 
     private void onSyn(final SynStreamFrame frame)
@@ -570,7 +570,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             }
             RstInfo rstInfo = new RstInfo(streamId, StreamStatus.PROTOCOL_ERROR);
             LOG.debug("Duplicate stream, {}", rstInfo);
-            rst(rstInfo, new Callback.Adapter()); // We don't care (too much) if the reset fails.
+            rst(rstInfo, Callback.Adapter.INSTANCE); // We don't care (too much) if the reset fails.
             return null;
         }
         else
@@ -653,7 +653,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
             LOG.debug("Unknown stream {}", rstInfo);
-            rst(rstInfo, new Callback.Adapter());
+            rst(rstInfo, Callback.Adapter.INSTANCE);
         }
         else
         {
@@ -712,7 +712,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
         else
         {
-            control(null, frame, 0, TimeUnit.MILLISECONDS, new Callback.Adapter());
+            control(null, frame, 0, TimeUnit.MILLISECONDS, Callback.Adapter.INSTANCE);
         }
     }
 
@@ -736,7 +736,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
             LOG.debug("Unknown stream, {}", rstInfo);
-            rst(rstInfo, new Callback.Adapter());
+            rst(rstInfo, Callback.Adapter.INSTANCE);
         }
         else
         {
@@ -1238,7 +1238,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     {
         private CloseFrameBytes()
         {
-            super(null, new Callback.Adapter());
+            super(null, Callback.Adapter.INSTANCE);
         }
 
         @Override
