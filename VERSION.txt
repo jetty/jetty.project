@@ -1,3 +1,5 @@
+jetty-9.2.1-SNAPSHOT
+
 jetty-9.2.0.v20140523 - 23 May 2014
  + 429390 Decoders and Encoders are not registered for non-annotated
    ClientEndpoint
