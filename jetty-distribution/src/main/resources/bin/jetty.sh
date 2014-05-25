@@ -310,7 +310,7 @@ if [ -z "$JETTY_STATE" ]
 then
   JETTY_STATE=$JETTY_BASE/${NAME}.state
 fi
-JAVA_OPTIONS+=("-Djetty.state=$JETTY_STATE")
+JAVA_ARGS+=("jetty.state=$JETTY_STATE")
 rm -f $JETTY_STATE
 
 ##################################################

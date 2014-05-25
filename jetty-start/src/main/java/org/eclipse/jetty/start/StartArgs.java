@@ -486,6 +486,7 @@ public class StartArgs
                 cmd.addRawArg(x);
             }
 
+            cmd.addRawArg("-Djava.io.tmpdir=" + System.getProperty("java.io.tmpdir"));
             cmd.addRawArg("-Djetty.home=" + baseHome.getHome());
             cmd.addRawArg("-Djetty.base=" + baseHome.getBase());
 
@@ -506,14 +507,16 @@ public class StartArgs
         ensureSystemPropertySet("STOP.KEY");
         ensureSystemPropertySet("STOP.WAIT");
 
-        // Check if we need to pass properties as a file
-        if (properties.size() > 0)
+        // pass properties as args or as a file
+        if (dryRun)
+        {
+            for (Prop p : properties)
+                cmd.addRawArg(CommandLineBuilder.quote(p.key)+"="+CommandLineBuilder.quote(p.value));
+        }
+        else if (properties.size() > 0)
         {
             File prop_file = File.createTempFile("start",".properties");
-            if (!dryRun)
-            {
-                prop_file.deleteOnExit();
-            }
+            prop_file.deleteOnExit();
             try (FileOutputStream out = new FileOutputStream(prop_file))
             {
                 properties.store(out,"start.jar properties");

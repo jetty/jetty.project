@@ -43,7 +43,7 @@ public class StartLog
     {
         if (INSTANCE.debug)
         {
-            System.out.printf(format + "%n",args);
+            INSTANCE.out.printf(format + "%n",args);
         }
     }
 
@@ -51,7 +51,7 @@ public class StartLog
     {
         if (INSTANCE.debug)
         {
-            t.printStackTrace(System.out);
+            t.printStackTrace(INSTANCE.out);
         }
     }
 
@@ -62,17 +62,17 @@ public class StartLog
 
     public static void info(String format, Object... args)
     {
-        System.err.printf("INFO: " + format + "%n",args);
+        INSTANCE.err.printf("INFO: " + format + "%n",args);
     }
 
     public static void warn(String format, Object... args)
     {
-        System.err.printf("WARNING: " + format + "%n",args);
+        INSTANCE.err.printf("WARNING: " + format + "%n",args);
     }
 
     public static void warn(Throwable t)
     {
-        t.printStackTrace(System.err);
+        t.printStackTrace(INSTANCE.err);
     }
 
     public static boolean isDebugEnabled()
@@ -81,6 +81,8 @@ public class StartLog
     }
 
     private boolean debug = false;
+    private PrintStream out = System.out;
+    private PrintStream err = System.err;
 
     public void initialize(BaseHome baseHome, CommandLineConfigSource cmdLineSource) throws IOException
     {
@@ -137,13 +139,12 @@ public class StartLog
                     throw new UsageException(UsageException.ERR_LOGGING,new IOException("Unable to write to: " + startLog.toAbsolutePath()));
                 }
 
-                System.out.println("Logging to " + logfile);
-
+                err.println("StartLog to " + logfile);
                 OutputStream out = Files.newOutputStream(startLog,StandardOpenOption.CREATE,StandardOpenOption.APPEND);
                 PrintStream logger = new PrintStream(out);
-                System.setOut(logger);
-                System.setErr(logger);
-                System.out.println("Establishing " + logfile + " on " + new Date());
+                err=logger;
+                out=logger;
+                err.println("StartLog Establishing " + logfile + " on " + new Date());
             }
             catch (IOException e)
             {
@@ -155,5 +156,10 @@ public class StartLog
     public static void enableDebug()
     {
         getInstance().debug = true;
+    }
+    
+    public static void endStartLog()
+    {
+        
     }
 }

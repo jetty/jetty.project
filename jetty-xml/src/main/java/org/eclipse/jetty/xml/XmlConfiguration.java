@@ -1214,6 +1214,11 @@ public class XmlConfiguration
                     {
                         if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                             properties.load(Resource.newResource(arg).getInputStream());
+                        else if (arg.indexOf('=')>=0)
+                        {
+                            int i=arg.indexOf('=');
+                            properties.put(arg.substring(0,i),arg.substring(i+1));
+                        }
                     }
 
                     // For all arguments, parse XMLs
@@ -1221,7 +1226,7 @@ public class XmlConfiguration
                     Object[] obj = new Object[args.length];
                     for (int i = 0; i < args.length; i++)
                     {
-                        if (!args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties"))
+                        if (!args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties") && (args[i].indexOf('=')<0))
                         {
                             XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(args[i]).getURL());
                             if (last != null)
