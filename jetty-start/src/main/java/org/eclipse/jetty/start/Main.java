@@ -227,6 +227,7 @@ public class Main
 
     private void dumpClasspathWithVersions(Classpath classpath)
     {
+        StartLog.endStartLog();
         System.out.println();
         System.out.println("Jetty Server Classpath:");
         System.out.println("-----------------------");
@@ -301,11 +302,14 @@ public class Main
         Method main = invoked_class.getDeclaredMethod("main",method_param_types);
         Object[] method_params = new Object[]
         { argArray };
+        StartLog.endStartLog();
         main.invoke(null,method_params);
     }
 
     public void listConfig(StartArgs args)
     {
+        StartLog.endStartLog();
+        
         // Dump Jetty Home / Base
         args.dumpEnvironment(baseHome);
 
@@ -327,6 +331,7 @@ public class Main
 
     private void listModules(StartArgs args)
     {
+        StartLog.endStartLog();
         System.out.println();
         System.out.println("Jetty All Available Modules:");
         System.out.println("----------------------------");
@@ -714,6 +719,7 @@ public class Main
             CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
             cmd.debug();
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
+            StartLog.endStartLog();
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread()
             {
@@ -825,6 +831,7 @@ public class Main
 
     public void usage(boolean exit)
     {
+        StartLog.endStartLog();
         String usageResource = "org/eclipse/jetty/start/usage.txt";
         boolean usagePresented = false;
         try (InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource))
