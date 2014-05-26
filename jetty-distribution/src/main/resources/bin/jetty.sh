@@ -258,6 +258,21 @@ then
   fi
 fi
 
+#####################################################
+# Find a pid and state file
+#####################################################
+if [ -z "$JETTY_PID" ] 
+then
+  JETTY_PID="$JETTY_RUN/${NAME}.pid"
+fi
+
+if [ -z "$JETTY_STATE" ] 
+then
+  JETTY_STATE=$JETTY_BASE/${NAME}.state
+fi
+JETTY_ARGS+=("jetty.state=$JETTY_STATE")
+rm -f $JETTY_STATE
+
 ##################################################
 # Get the list of config.xml files from jetty.conf
 ##################################################
@@ -297,21 +312,6 @@ if [ -z "$JETTY_RUN" ]
 then
   JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_BASE /tmp)
 fi
-
-#####################################################
-# Find a pid and state file
-#####################################################
-if [ -z "$JETTY_PID" ] 
-then
-  JETTY_PID="$JETTY_RUN/${NAME}.pid"
-fi
-
-if [ -z "$JETTY_STATE" ] 
-then
-  JETTY_STATE=$JETTY_BASE/${NAME}.state
-fi
-JAVA_ARGS+=("jetty.state=$JETTY_STATE")
-rm -f $JETTY_STATE
 
 ##################################################
 # Setup JAVA if unset
