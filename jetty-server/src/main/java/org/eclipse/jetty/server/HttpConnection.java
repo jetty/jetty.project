@@ -474,18 +474,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public void badMessage(int status, String reason)
         {
-            if (status<0)
-            {
-                getEndPoint().close();
-                _parser.atEOF();
-                LOG.info("Bad message close of "+getEndPoint());
-                completed();
-            }
-            else
-            {
-                _generator.setPersistent(false);
-                super.badMessage(status,reason);
-            }
+            _generator.setPersistent(false);
+            super.badMessage(status,reason);
         }
 
         @Override
