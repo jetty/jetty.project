@@ -508,7 +508,7 @@ public class StartArgs
         ensureSystemPropertySet("STOP.WAIT");
 
         // pass properties as args or as a file
-        if (dryRun)
+        if (dryRun || isExec())
         {
             for (Prop p : properties)
                 cmd.addRawArg(CommandLineBuilder.quote(p.key)+"="+CommandLineBuilder.quote(p.value));
