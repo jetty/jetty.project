@@ -66,7 +66,6 @@ public class HttpChannelState
         WRITE_CALLBACK,   // handle an IO write callback
         READ_CALLBACK,    // handle an IO read callback
         WAIT,             // Wait for further events 
-        IO_WAIT,          // Wait for further IO 
         COMPLETE          // Complete the channel
     }
     
@@ -183,7 +182,7 @@ public class HttpChannelState
                     return Action.COMPLETE;
 
                 case COMPLETED:
-                    return Action.IO_WAIT;
+                    return Action.WAIT;
 
                 case ASYNC_WOKEN:
                     if (_asyncRead)

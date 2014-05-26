@@ -443,13 +443,13 @@ public class HttpParser
             else if (ch==0)
                 break;
             else if (ch<0)
-                throw new BadMessage(-1);
+                throw new BadMessage();
             
             // count this white space as a header byte to avoid DOS
             if (_maxHeaderBytes>0 && ++_headerBytes>_maxHeaderBytes)
             {
                 LOG.warn("padding is too large >"+_maxHeaderBytes);
-                throw new BadMessage(-1);
+                throw new BadMessage(HttpStatus.BAD_REQUEST_400);
             }
         }
         return false;
@@ -1283,7 +1283,7 @@ public class HttpParser
                     if (_headerBytes>_maxHeaderBytes)
                     {
                         // Don't want to waste time reading data of a closed request
-                        throw new BadMessage(-1,"too much data after closed");
+                        throw new IllegalStateException("too much data after closed");
                     }
                 }
             }
@@ -1333,16 +1333,12 @@ public class HttpParser
         {
             BufferUtil.clear(buffer);
 
-            if (e._code>0)
-                LOG.warn("badMessage: "+e._code+(e._message!=null?" "+e._message:"")+" for "+_handler);
-            else
-                LOG.warn("badMessage: "+(e._message!=null?e._message+" ":"")+"for "+_handler);
-                
+            LOG.warn("badMessage: "+e._code+(e._message!=null?" "+e._message:"")+" for "+_handler);
             if (DEBUG)
                 LOG.debug(e);
             setState(State.CLOSED);
             _handler.badMessage(e._code, e._message);
-            return true;
+            return false;
         }
         catch(Exception e)
         {
@@ -1363,7 +1359,7 @@ public class HttpParser
                 setState(State.CLOSED);
             }
 
-            return true;
+            return false;
         }
     }
 
@@ -1625,9 +1621,7 @@ public class HttpParser
 
         /* ------------------------------------------------------------ */
         /** Called to signal that a bad HTTP message has been received.
-         * @param status The bad status to send. If the status is <0, this indicates
-         * that the message was so bad that a response should not be sent and the 
-         * connection should be immediately closed.
+         * @param status The bad status to send
          * @param reason The textual reason for badness
          */
         public void badMessage(int status, String reason);

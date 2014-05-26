@@ -226,7 +226,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                         filled = getEndPoint().fill(_requestBuffer);
                         if (filled==0) // Do a retry on fill 0 (optimization for SSL connections)
                             filled = getEndPoint().fill(_requestBuffer);
-                                                
+                        
                         // tell parser
                         if (filled < 0)
                             _parser.atEOF();
@@ -474,21 +474,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public void badMessage(int status, String reason)
         {
-            if (status<0)
-            {
-                EndPoint ep = getEndPoint();
-                while (ep.getTransport() instanceof EndPoint)
-                    ep=(EndPoint)ep.getTransport();
-                ep.close();
-                _parser.atEOF();
-                LOG.debug("badMessage -1 close of {}",getEndPoint());
-                completed();
-            }
-            else
-            {
-                _generator.setPersistent(false);
-                super.badMessage(status,reason);
-            }
+            _generator.setPersistent(false);
+            super.badMessage(status,reason);
         }
 
         @Override
