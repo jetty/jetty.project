@@ -37,13 +37,17 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
  */
 public class StartLog
 {
+    private final static PrintStream stdout = System.out;
+    private final static PrintStream stderr = System.err;
+    private static volatile PrintStream out = System.out;
+    private static volatile PrintStream err = System.err;
     private final static StartLog INSTANCE = new StartLog();
 
     public static void debug(String format, Object... args)
     {
         if (INSTANCE.debug)
         {
-            System.out.printf(format + "%n",args);
+            out.printf(format + "%n",args);
         }
     }
 
@@ -51,7 +55,7 @@ public class StartLog
     {
         if (INSTANCE.debug)
         {
-            t.printStackTrace(System.out);
+            t.printStackTrace(out);
         }
     }
 
@@ -62,17 +66,17 @@ public class StartLog
 
     public static void info(String format, Object... args)
     {
-        System.err.printf("INFO: " + format + "%n",args);
+        err.printf("INFO: " + format + "%n",args);
     }
 
     public static void warn(String format, Object... args)
     {
-        System.err.printf("WARNING: " + format + "%n",args);
+        err.printf("WARNING: " + format + "%n",args);
     }
 
     public static void warn(Throwable t)
     {
-        t.printStackTrace(System.err);
+        t.printStackTrace(err);
     }
 
     public static boolean isDebugEnabled()
@@ -137,13 +141,14 @@ public class StartLog
                     throw new UsageException(UsageException.ERR_LOGGING,new IOException("Unable to write to: " + startLog.toAbsolutePath()));
                 }
 
-                System.out.println("Logging to " + logfile);
-
-                OutputStream out = Files.newOutputStream(startLog,StandardOpenOption.CREATE,StandardOpenOption.APPEND);
-                PrintStream logger = new PrintStream(out);
-                System.setOut(logger);
+                err.println("StartLog to " + logfile);
+                OutputStream fileout = Files.newOutputStream(startLog,StandardOpenOption.CREATE,StandardOpenOption.APPEND);
+                PrintStream logger = new PrintStream(fileout);
+                out=logger;
+                err=logger;
                 System.setErr(logger);
-                System.out.println("Establishing " + logfile + " on " + new Date());
+                System.setOut(logger);
+                err.println("StartLog Establishing " + logfile + " on " + new Date());
             }
             catch (IOException e)
             {
@@ -155,5 +160,16 @@ public class StartLog
     public static void enableDebug()
     {
         getInstance().debug = true;
+    }
+    
+    public static void endStartLog()
+    {
+        if (stderr!=err && getInstance().debug)
+        {
+            err.println("StartLog ended");
+            stderr.println("StartLog ended");
+        }
+        System.setErr(stderr);
+        System.setOut(stdout);
     }
 }

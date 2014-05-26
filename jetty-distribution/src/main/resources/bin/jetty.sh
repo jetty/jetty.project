@@ -258,6 +258,29 @@ then
   fi
 fi
 
+#####################################################
+# Find a location for the pid file
+#####################################################
+if [ -z "$JETTY_RUN" ] 
+then
+  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_BASE /tmp)
+fi
+
+#####################################################
+# Find a pid and state file
+#####################################################
+if [ -z "$JETTY_PID" ] 
+then
+  JETTY_PID="$JETTY_RUN/${NAME}.pid"
+fi
+
+if [ -z "$JETTY_STATE" ] 
+then
+  JETTY_STATE=$JETTY_BASE/${NAME}.state
+fi
+JETTY_ARGS+=("jetty.state=$JETTY_STATE")
+rm -f $JETTY_STATE
+
 ##################################################
 # Get the list of config.xml files from jetty.conf
 ##################################################
@@ -289,29 +312,6 @@ then
     fi
   done < "$JETTY_CONF"
 fi
-
-#####################################################
-# Find a location for the pid file
-#####################################################
-if [ -z "$JETTY_RUN" ] 
-then
-  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_BASE /tmp)
-fi
-
-#####################################################
-# Find a pid and state file
-#####################################################
-if [ -z "$JETTY_PID" ] 
-then
-  JETTY_PID="$JETTY_RUN/${NAME}.pid"
-fi
-
-if [ -z "$JETTY_STATE" ] 
-then
-  JETTY_STATE=$JETTY_BASE/${NAME}.state
-fi
-JAVA_OPTIONS+=("-Djetty.state=$JETTY_STATE")
-rm -f $JETTY_STATE
 
 ##################################################
 # Setup JAVA if unset
@@ -410,7 +410,7 @@ case "$ACTION" in
         CH_USER="-c$JETTY_USER"
       fi
 
-      start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_HOME" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" start-log-file="$JETTY_LOGS/start.log"
+      start-stop-daemon -S -p"$JETTY_PID" $CH_USER -d"$JETTY_BASE" -b -m -a "$JAVA" -- "${RUN_ARGS[@]}" start-log-file="$JETTY_LOGS/start.log"
 
     else
 
