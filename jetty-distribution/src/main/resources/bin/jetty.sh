@@ -259,6 +259,14 @@ then
 fi
 
 #####################################################
+# Find a location for the pid file
+#####################################################
+if [ -z "$JETTY_RUN" ] 
+then
+  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_BASE /tmp)
+fi
+
+#####################################################
 # Find a pid and state file
 #####################################################
 if [ -z "$JETTY_PID" ] 
@@ -303,14 +311,6 @@ then
       JETTY_ARGS+=("$CONF")
     fi
   done < "$JETTY_CONF"
-fi
-
-#####################################################
-# Find a location for the pid file
-#####################################################
-if [ -z "$JETTY_RUN" ] 
-then
-  JETTY_RUN=$(findDirectory -w /var/run /usr/var/run $JETTY_BASE /tmp)
 fi
 
 ##################################################
