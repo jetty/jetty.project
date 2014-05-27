@@ -51,7 +51,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
     {
         try
         {
-            registerVisitor("context-param", this.getClass().getDeclaredMethod("visitContextParam", __signature));
+            registerVisitor("context-param", this.getClass().getMethod("visitContextParam", __signature));
         }    
         catch (Exception e)
         {

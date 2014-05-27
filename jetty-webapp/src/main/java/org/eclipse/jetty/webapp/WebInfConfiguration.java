@@ -360,7 +360,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         context.setTempDirectory(tmpDir);
     }
 
-    private void configureTempDirectory (File dir, WebAppContext context)
+    public void configureTempDirectory (File dir, WebAppContext context)
     {
         if (dir == null)
             throw new IllegalArgumentException("Null temp dir");
