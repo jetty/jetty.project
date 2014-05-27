@@ -19,15 +19,21 @@
 package org.eclipse.jetty.webapp;
 
 import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
 
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.IllegalClassFormatException;
 import java.net.URL;
+import java.security.ProtectionDomain;
 import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.Iterator;
 import java.util.List;
 
 import org.eclipse.jetty.util.resource.Resource;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -85,6 +91,54 @@ public class WebAppClassLoaderTest
         {
             assertTrue(true);
         }
+    }
+    
+    @Test
+    public void testClassFileTranslations() throws Exception
+    {
+        final List<Object> results=new ArrayList<Object>();
+        
+        _loader.addClassFileTransformer(new ClassFileTransformer()
+        {
+            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
+                    throws IllegalClassFormatException
+            {
+                results.add(loader);
+                byte[] b = new byte[classfileBuffer.length];
+                for (int i=0;i<classfileBuffer.length;i++)
+                    b[i]=(byte)(classfileBuffer[i]^0xff);
+                return b;
+            }
+        });
+        _loader.addClassFileTransformer(new ClassFileTransformer()
+        {
+            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
+                    throws IllegalClassFormatException
+            {
+                results.add(className);
+                byte[] b = new byte[classfileBuffer.length];
+                for (int i=0;i<classfileBuffer.length;i++)
+                    b[i]=(byte)(classfileBuffer[i]^0xff);
+                return b;
+            }
+        });
+        
+        _context.setParentLoaderPriority(false);
+        assertTrue(canLoadClass("org.acme.webapp.ClassInJarA"));
+        assertTrue(canLoadClass("org.acme.webapp.ClassInJarB"));
+        assertTrue(canLoadClass("org.acme.other.ClassInClassesC"));
+        assertTrue(canLoadClass("java.lang.String"));
+        assertTrue(cantLoadClass("org.eclipse.jetty.webapp.Configuration"));
+        
+        Iterator<Object> iter = results.iterator();
+        assertEquals(_loader,iter.next());
+        assertEquals("org.acme.webapp.ClassInJarA",iter.next());
+        assertEquals(_loader,iter.next());
+        assertEquals("org.acme.webapp.ClassInJarB",iter.next());
+        assertEquals(_loader,iter.next());
+        assertEquals("org.acme.other.ClassInClassesC",iter.next());
+        assertFalse(iter.hasNext());
+       
     }
 
     @Test
