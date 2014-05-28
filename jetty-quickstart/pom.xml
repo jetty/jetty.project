@@ -41,11 +41,13 @@
       <groupId>org.eclipse.jetty.tests</groupId>
       <artifactId>test-mock-resources</artifactId>
       <version>${project.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.mail.glassfish</artifactId>
       <version>1.4.1.v201005082020</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
