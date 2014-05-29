@@ -27,11 +27,10 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -104,7 +103,6 @@ public class BadNetworkTest
         wsocket.assertCloseCode(StatusCode.NO_CLOSE);
     }
 
-    @Ignore("Idle timeout not working yet")
     @Test
     public void testAbruptServerClose() throws Exception
     {
