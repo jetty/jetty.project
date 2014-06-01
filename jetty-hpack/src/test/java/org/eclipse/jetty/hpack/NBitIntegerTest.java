@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.hpack;
 
-import static org.junit.Assert.*;
-
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;

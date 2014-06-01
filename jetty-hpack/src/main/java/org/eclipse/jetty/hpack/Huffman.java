@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.hpack;
 
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.nio.ByteBuffer;
 
 public class Huffman
 {
@@ -284,14 +284,14 @@ public class Huffman
         /*    (253)  |11111111|11111111|11101100|1  */ {0x1ffffd9,25},
         /*    (254)  |11111111|11111111|11101101|0  */ {0x1ffffda,25},
         /*    (255)  |11111111|11111111|11101101|1  */ {0x1ffffdb,25},
-        /*    (256)  |11111111|11111111|11101110|0  */ {0x1ffffdc,25},
+        /*EOS (256)  |11111111|11111111|11101110|0  */ {0x1ffffdc,25},
 
     };
 
     // Huffman decode tree stored in a flattened char array for good 
     // locality of reference.
     static final char[] tree;
-    static final byte[] rowsym;
+    static final char[] rowsym;
     static final byte[] rowbits;
 
     static 
@@ -300,7 +300,7 @@ public class Huffman
         for (int i=0;i<CODES.length;i++)
             r+=(CODES[i][1]+7)/8;
         tree=new char[r*256];
-        rowsym=new byte[r];
+        rowsym=new char[r];
         rowbits=new byte[r];
 
         r=0;
@@ -328,7 +328,7 @@ public class Huffman
             }
 
             int terminal = ++r;
-            rowsym[r]=(byte)sym;
+            rowsym[r]=(char)sym;
             int b = len & 0x07;
             int terminalBits = b == 0?8:b;
 
@@ -342,15 +342,17 @@ public class Huffman
     }
 
 
-    static public byte[] decode(byte[] buf) throws IOException 
+    static public String decode(ByteBuffer buf) throws IOException 
     {
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
+        StringBuilder out = new StringBuilder(buf.remaining()*2);
         int node = 0;
         int current = 0;
         int bits = 0;
-        for (int i = 0; i < buf.length; i++) 
+        
+        // TODO use buf array
+        while (buf.hasRemaining()) 
         {
-            int b = buf[i] & 0xFF;
+            int b = buf.get() & 0xFF;
             current = (current << 8) | b;
             bits += 8;
             while (bits >= 8) 
@@ -360,7 +362,7 @@ public class Huffman
                 if (rowbits[node]!=0) 
                 {
                     // terminal node
-                    baos.write(rowsym[node]);
+                    out.append(rowsym[node]);
                     bits -= rowbits[node];
                     node = 0;
                 } 
@@ -382,11 +384,11 @@ public class Huffman
             if (rowbits[node]==0)
                 throw new IllegalStateException();
             
-            baos.write(rowsym[node]);
+            out.append(rowsym[node]);
             bits -= rowbits[node];
             node = 0;
         }
 
-        return baos.toByteArray();
+        return out.toString();
     }
 }

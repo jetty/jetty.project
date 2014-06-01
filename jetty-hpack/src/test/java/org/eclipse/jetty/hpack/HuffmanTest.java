@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.hpack;
 
-import org.junit.Assert;
+import java.nio.ByteBuffer;
 
+import org.junit.Assert;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Test;
 
@@ -45,10 +46,8 @@ public class HuffmanTest
         for (String[] test:tests)
         {
             byte[] encoded=TypeUtil.fromHexString(test[1]);
-            byte[] decoded=Huffman.decode(encoded);
-
-            String d=new String(decoded);
-            Assert.assertEquals(test[0],test[2],d);
+            String decoded=Huffman.decode(ByteBuffer.wrap(encoded));
+            Assert.assertEquals(test[0],test[2],decoded);
         }
         
     }
