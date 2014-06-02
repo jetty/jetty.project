@@ -18,13 +18,7 @@
 
 package org.eclipse.jetty.server.session;
 
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
 import java.util.Iterator;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -54,7 +48,6 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     private  String _clusterId; // ID without any node (ie "worker") id appended
     private  String _nodeId;    // ID of session with node(ie "worker") id appended
     private final AbstractSessionManager _manager;
-    private final Map<String,Object> _attributes=new HashMap<String, Object>();
     private boolean _idChanged;
     private final long _created;
     private long _cookieSet;
@@ -139,53 +132,21 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
-    public Map<String,Object> getAttributeMap()
-    {
-        return _attributes;
-    }
+    public abstract Map<String,Object> getAttributeMap();
+
+
+ 
+    
 
     /* ------------------------------------------------------------ */
-    @Override
-    public Object getAttribute(String name)
-    {
-        synchronized (this)
-        {
-            checkValid();
-            return _attributes.get(name);
-        }
-    }
+    public abstract int getAttributes();
+  
+
+ 
 
     /* ------------------------------------------------------------ */
-    public int getAttributes()
-    {
-        synchronized (this)
-        {
-            checkValid();
-            return _attributes.size();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    @SuppressWarnings({ "unchecked" })
-    @Override
-    public Enumeration<String> getAttributeNames()
-    {
-        synchronized (this)
-        {
-            checkValid();
-            List<String> names=_attributes==null?Collections.EMPTY_LIST:new ArrayList<String>(_attributes.keySet());
-            return Collections.enumeration(names);
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    public Set<String> getNames()
-    {
-        synchronized (this)
-        {
-            return new HashSet<String>(_attributes.keySet());
-        }
-    }
+    public abstract Set<String> getNames();
+  
 
     /* ------------------------------------------------------------- */
     public long getCookieSetTime()
@@ -272,25 +233,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         return getAttribute(name);
     }
 
-    /* ------------------------------------------------------------- */
-    /**
-     * @deprecated As of Version 2.2, this method is replaced by
-     *             {@link #getAttributeNames}
-     */
-    @Deprecated
-    @Override
-    public String[] getValueNames() throws IllegalStateException
-    {
-        synchronized(this)
-        {
-            checkValid();
-            if (_attributes==null)
-                return new String[0];
-            String[] a=new String[_attributes.size()];
-            return (String[])_attributes.keySet().toArray(a);
-        }
-    }
-
+ 
 
     /* ------------------------------------------------------------ */
     public void renewId(HttpServletRequest request)
@@ -403,34 +346,8 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
-    public void clearAttributes()
-    {
-        while (_attributes!=null && _attributes.size()>0)
-        {
-            ArrayList<String> keys;
-            synchronized(this)
-            {
-                keys=new ArrayList<String>(_attributes.keySet());
-            }
-
-            Iterator<String> iter=keys.iterator();
-            while (iter.hasNext())
-            {
-                String key=(String)iter.next();
-
-                Object value;
-                synchronized(this)
-                {
-                    value=doPutOrRemove(key,null);
-                }
-                unbindValue(key,value);
-
-                _manager.doSessionAttributeListeners(this,key,value,null);
-            }
-        }
-        if (_attributes!=null)
-            _attributes.clear();
-    }
+    public abstract void clearAttributes();
+   
 
     /* ------------------------------------------------------------- */
     public boolean isIdChanged()
@@ -478,16 +395,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------ */
-    protected Object doPutOrRemove(String name, Object value)
-    {
-        return value==null?_attributes.remove(name):_attributes.put(name,value);
-    }
+    public abstract Object doPutOrRemove(String name, Object value);
+ 
 
     /* ------------------------------------------------------------ */
-    protected Object doGet(String name)
-    {
-        return _attributes.get(name);
-    }
+    public abstract Object doGet(String name);
+   
 
     /* ------------------------------------------------------------ */
     @Override
@@ -571,12 +484,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
             _manager.doSessionAttributeListeners(this,name,oldValue,newValue);
         }
     }
-
-    /* ------------------------------------------------------------ */
-    protected void addAttributes(Map<String,Object> map)
-    {
-        _attributes.putAll(map);
-    }
+  
 
     /* ------------------------------------------------------------- */
     public void setIdChanged(boolean changed)
@@ -653,7 +561,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         synchronized(this)
         {
             HttpSessionEvent event = new HttpSessionEvent(this);
-            for (Iterator<Object> iter = _attributes.values().iterator(); iter.hasNext();)
+            for (Iterator<Object> iter = getAttributeMap().values().iterator(); iter.hasNext();)
             {
                 Object value = iter.next();
                 if (value instanceof HttpSessionActivationListener)
@@ -671,7 +579,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         synchronized(this)
         {
             HttpSessionEvent event = new HttpSessionEvent(this);
-            for (Iterator<Object> iter = _attributes.values().iterator(); iter.hasNext();)
+            for (Iterator<Object> iter = getAttributeMap().values().iterator(); iter.hasNext();)
             {
                 Object value = iter.next();
                 if (value instanceof HttpSessionActivationListener)

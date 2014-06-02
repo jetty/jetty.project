@@ -88,7 +88,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      *
      * Session instance.
      */
-    public class Session extends AbstractSession
+    public class Session extends MemSession
     {
         private static final long serialVersionUID = 5208464051134226143L;
         

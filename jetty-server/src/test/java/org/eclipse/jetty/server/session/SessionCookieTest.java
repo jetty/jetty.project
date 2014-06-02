@@ -21,6 +21,10 @@ package org.eclipse.jetty.server.session;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.util.Enumeration;
+import java.util.Map;
+import java.util.Set;
+
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -48,6 +52,87 @@ public class SessionCookieTest
         protected MockSession(AbstractSessionManager abstractSessionManager, long created, long accessed, String clusterId)
         {
             super(abstractSessionManager, created, accessed, clusterId);
+        }
+
+        /** 
+         * @see javax.servlet.http.HttpSession#getAttribute(java.lang.String)
+         */
+        @Override
+        public Object getAttribute(String name)
+        {
+            return null;
+        }
+
+        /** 
+         * @see javax.servlet.http.HttpSession#getAttributeNames()
+         */
+        @Override
+        public Enumeration<String> getAttributeNames()
+        {
+            return null;
+        }
+
+        /** 
+         * @see javax.servlet.http.HttpSession#getValueNames()
+         */
+        @Override
+        public String[] getValueNames()
+        {
+            return null;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSession#getAttributeMap()
+         */
+        @Override
+        public Map<String, Object> getAttributeMap()
+        {
+            return null;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSession#getAttributes()
+         */
+        @Override
+        public int getAttributes()
+        {
+            return 0;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSession#getNames()
+         */
+        @Override
+        public Set<String> getNames()
+        {
+            return null;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSession#clearAttributes()
+         */
+        @Override
+        public void clearAttributes()
+        {
+            
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSession#doPutOrRemove(java.lang.String, java.lang.Object)
+         */
+        @Override
+        public Object doPutOrRemove(String name, Object value)
+        {
+            return null;
+        }
+
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSession#doGet(java.lang.String)
+         */
+        @Override
+        public Object doGet(String name)
+        {
+            return null;
         }
 
     }
