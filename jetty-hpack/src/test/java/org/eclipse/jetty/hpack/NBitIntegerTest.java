@@ -35,7 +35,7 @@ public class NBitIntegerTest
         int p=BufferUtil.flipToFill(buf);
         buf.put((byte)0x77);
         buf.put((byte)0xFF);
-        NBitInteger.encode5(buf,10);
+        NBitInteger.encode(buf,5,10);
         BufferUtil.flipToFlush(buf,p);
         
         String r=TypeUtil.toHexString(BufferUtil.toArray(buf));
@@ -50,7 +50,7 @@ public class NBitIntegerTest
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("77EaFF"));
         buf.position(2);
         
-        Assert.assertEquals(10,NBitInteger.decode5(buf));
+        Assert.assertEquals(10,NBitInteger.decode(buf,5));
     }
     
 
@@ -61,7 +61,7 @@ public class NBitIntegerTest
         int p=BufferUtil.flipToFill(buf);
         buf.put((byte)0x88);
         buf.put((byte)0x00);
-        NBitInteger.encode5(buf,1337);
+        NBitInteger.encode(buf,5,1337);
         BufferUtil.flipToFlush(buf,p);
         
         String r=TypeUtil.toHexString(BufferUtil.toArray(buf));
@@ -76,7 +76,7 @@ public class NBitIntegerTest
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("881f9a0aff"));
         buf.position(2);
         
-        Assert.assertEquals(1337,NBitInteger.decode5(buf));
+        Assert.assertEquals(1337,NBitInteger.decode(buf,5));
     }
     
     
@@ -87,7 +87,7 @@ public class NBitIntegerTest
         int p=BufferUtil.flipToFill(buf);
         buf.put((byte)0x88);
         buf.put((byte)0xFF);
-        NBitInteger.encode8(buf,42);
+        NBitInteger.encode(buf,8,42);
         BufferUtil.flipToFlush(buf,p);
         
         String r=TypeUtil.toHexString(BufferUtil.toArray(buf));
@@ -103,7 +103,7 @@ public class NBitIntegerTest
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("882aFf"));
         buf.position(1);
         
-        Assert.assertEquals(42,NBitInteger.decode8(buf));
+        Assert.assertEquals(42,NBitInteger.decode(buf,8));
     }
     
 

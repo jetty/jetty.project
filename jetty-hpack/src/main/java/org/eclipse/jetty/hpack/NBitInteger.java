@@ -22,103 +22,71 @@ import java.nio.ByteBuffer;
 
 public class NBitInteger
 {
-    public static void encode3(ByteBuffer buf, int n, int i)
-    {
-        int p=buf.position()-1;
-        
-        int nbits = 0xFF >>> (8 - 3);
 
-        if (i < nbits)
+    public static void encode(ByteBuffer buf, int n, int i)
+    {
+        if (n==8)
         {
-            buf.put(p,(byte)((buf.get(p)&~nbits)|i));
-        }
-        else
-        {
-            buf.put(p,(byte)(buf.get(p)|nbits));
-            
-            int length = i - nbits;
-            while (true)
+            if (i < 0xFF)
             {
-                if ((length & ~0x7F) == 0)
+                buf.put((byte)i);
+            }
+            else
+            {
+                buf.put((byte)0xFF);
+
+                int length = i - 0xFF;
+                while (true)
                 {
-                    buf.put((byte)length);
-                    return;
-                }
-                else
-                {
-                    buf.put((byte)((length & 0x7F) | 0x80));
-                    length >>>= 7;
+                    if ((length & ~0x7F) == 0)
+                    {
+                        buf.put((byte)length);
+                        return;
+                    }
+                    else
+                    {
+                        buf.put((byte)((length & 0x7F) | 0x80));
+                        length >>>= 7;
+                    }
                 }
             }
         }
-    }
-    
-
-    public static void encode5(ByteBuffer buf, int i)
-    {
-        int p=buf.position()-1;
-        int nbits = 0xFF >>> (8 - 5);
-
-        if (i < nbits)
-        {
-            buf.put(p,(byte)((buf.get(p)&~nbits)|i));
-        }
         else
         {
-            buf.put(p,(byte)(buf.get(p)|nbits));
-            
-            int length = i - nbits;
-            while (true)
+            int p=buf.position()-1;
+            int bits = 0xFF >>> (8 - n);
+
+            if (i < bits)
             {
-                if ((length & ~0x7F) == 0)
-                {
-                    buf.put((byte)length);
-                    return;
-                }
-                else
-                {
-                    buf.put((byte)((length & 0x7F) | 0x80));
-                    length >>>= 7;
-                }
+                buf.put(p,(byte)((buf.get(p)&~bits)|i));
             }
-        }
-    }
-    
-
-    public static void encode8(ByteBuffer buf, int i)
-    {   
-        int nbits = 0xFF;
-
-        if (i < nbits)
-        {
-            buf.put((byte)i);
-        }
-        else
-        {
-            buf.put((byte)nbits);
-            
-            int length = i - nbits;
-            while (true)
+            else
             {
-                if ((length & ~0x7F) == 0)
+                buf.put(p,(byte)(buf.get(p)|bits));
+
+                int length = i - bits;
+                while (true)
                 {
-                    buf.put((byte)length);
-                    return;
-                }
-                else
-                {
-                    buf.put((byte)((length & 0x7F) | 0x80));
-                    length >>>= 7;
+                    if ((length & ~0x7F) == 0)
+                    {
+                        buf.put((byte)length);
+                        return;
+                    }
+                    else
+                    {
+                        buf.put((byte)((length & 0x7F) | 0x80));
+                        length >>>= 7;
+                    }
                 }
             }
         }
     }
 
-    public static int decode5(ByteBuffer buf)
+    public static int decode(ByteBuffer buf, int n)
     {
-        int nbits = 0xFF >>> (8 - 5);
+        int nbits = 0xFF >>> (8 - n);
 
-        int i=buf.get(buf.position()-1)&nbits;
+        int i=buf.get(buf.position()-n==8?0:1)&nbits;
         
         if (i == nbits)
         {       
@@ -134,26 +102,4 @@ public class NBitInteger
         }
         return i;
     }
-
-    public static int decode8(ByteBuffer buf)
-    {
-        int nbits = 0xFF >>> (8 - 8);
-
-        int i=buf.get()&nbits;
-        
-        if (i == nbits)
-        {       
-            int m=1;
-            int b;
-            do
-            {
-                b = 0xff&buf.get();
-                i = i + (b&127) * m;
-                m = m*128;
-            }
-            while ((b&128) == 128);
-        }
-        return i;
-    }
-    
 }
