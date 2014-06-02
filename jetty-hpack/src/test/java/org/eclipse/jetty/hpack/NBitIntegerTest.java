@@ -50,7 +50,7 @@ public class NBitIntegerTest
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("77EaFF"));
         buf.position(2);
         
-        Assert.assertEquals(10,NBitInteger.dencode5(buf));
+        Assert.assertEquals(10,NBitInteger.decode5(buf));
     }
     
 
@@ -76,7 +76,7 @@ public class NBitIntegerTest
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("881f9a0aff"));
         buf.position(2);
         
-        Assert.assertEquals(1337,NBitInteger.dencode5(buf));
+        Assert.assertEquals(1337,NBitInteger.decode5(buf));
     }
     
     
@@ -103,7 +103,7 @@ public class NBitIntegerTest
         ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString("882aFf"));
         buf.position(1);
         
-        Assert.assertEquals(42,NBitInteger.dencode8(buf));
+        Assert.assertEquals(42,NBitInteger.decode8(buf));
     }
     
 

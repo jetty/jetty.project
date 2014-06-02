@@ -344,6 +344,8 @@ public class Huffman
 
     static public String decode(ByteBuffer buf) throws IOException 
     {
+        // TODO offer a version that does a direct lookup of compressed strings to known values
+        
         StringBuilder out = new StringBuilder(buf.remaining()*2);
         int node = 0;
         int current = 0;
@@ -390,5 +392,39 @@ public class Huffman
         }
 
         return out.toString();
+    }
+    
+
+    static public void encode(ByteBuffer buf,String s) throws IOException 
+    {
+        long current = 0;
+        int n = 0;
+
+        int len = s.length();
+        for (int i=0;i<len;i++)
+        {
+            char c=s.charAt(i);
+            if (c>=128)
+                throw new IllegalArgumentException();
+            int code = CODES[c][0];
+            int bits = CODES[c][1];
+
+            current <<= bits;
+            current |= code;
+            n += bits;
+
+            while (n >= 8) 
+            {
+                n -= 8;
+                buf.put((byte)(current >> n));
+            }
+        }
+
+        if (n > 0) 
+        {
+          current <<= (8 - n);
+          current |= (0xFF >>> n); 
+          buf.put((byte)current);
+        }
     }
 }

@@ -21,12 +21,12 @@ package org.eclipse.jetty.hpack;
 import java.nio.ByteBuffer;
 
 import org.junit.Assert;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Test;
 
 public class HuffmanTest
 {
-
     String[][] tests =
         {
             {"D.4.1","e7cf9bebe89b6fb16fa9b6ff","www.example.com"},
@@ -49,6 +49,21 @@ public class HuffmanTest
             String decoded=Huffman.decode(ByteBuffer.wrap(encoded));
             Assert.assertEquals(test[0],test[2],decoded);
         }
+    }
+    
+    @Test
+    public void testEncode() throws Exception
+    {
+        for (String[] test:tests)
+        {
+            ByteBuffer buf = BufferUtil.allocate(1024);
+            int pos=BufferUtil.flipToFill(buf);
+            Huffman.encode(buf,test[2]);
+            BufferUtil.flipToFlush(buf,pos);
+            String encoded=TypeUtil.toHexString(BufferUtil.toArray(buf)).toLowerCase();
+            Assert.assertEquals(test[0],test[1],encoded);
+        }
         
     }
+    
 }

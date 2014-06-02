@@ -114,7 +114,7 @@ public class NBitInteger
         }
     }
 
-    public static int dencode5(ByteBuffer buf)
+    public static int decode5(ByteBuffer buf)
     {
         int nbits = 0xFF >>> (8 - 5);
 
@@ -135,7 +135,7 @@ public class NBitInteger
         return i;
     }
 
-    public static int dencode8(ByteBuffer buf)
+    public static int decode8(ByteBuffer buf)
     {
         int nbits = 0xFF >>> (8 - 8);
 
