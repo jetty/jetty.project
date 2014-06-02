@@ -18,7 +18,11 @@
 
 package org.eclipse.jetty.server.session;
 
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
@@ -393,6 +397,41 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     {
         removeAttribute(name);
     }
+    
+    /* ------------------------------------------------------------ */
+    @SuppressWarnings({ "unchecked" })
+    @Override
+    public Enumeration<String> getAttributeNames()
+    {
+        synchronized (this)
+        {
+            checkValid();
+            return doGetAttributeNames();
+        }
+    }
+    
+    /* ------------------------------------------------------------- */
+    /**
+     * @deprecated As of Version 2.2, this method is replaced by
+     *             {@link #getAttributeNames}
+     */
+    @Deprecated
+    @Override
+    public String[] getValueNames() throws IllegalStateException
+    {
+        synchronized(this)
+        {
+            checkValid();
+            Enumeration<String> anames = doGetAttributeNames();
+            if (anames == null)
+                return new String[0];
+            ArrayList<String> names = new ArrayList<String>();
+            while (anames.hasMoreElements())
+                names.add(anames.nextElement());
+            return names.toArray(new String[names.size()]);
+        }
+    }
+    
 
     /* ------------------------------------------------------------ */
     public abstract Object doPutOrRemove(String name, Object value);
@@ -400,6 +439,22 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
 
     /* ------------------------------------------------------------ */
     public abstract Object doGet(String name);
+    
+    
+    /* ------------------------------------------------------------ */
+    public abstract Enumeration<String> doGetAttributeNames();
+    
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public Object getAttribute(String name)
+    {
+        synchronized (this)
+        {
+            checkValid();
+            return doGet(name);
+        }
+    }
    
 
     /* ------------------------------------------------------------ */

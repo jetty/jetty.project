@@ -135,6 +135,15 @@ public class SessionCookieTest
             return null;
         }
 
+        /** 
+         * @see org.eclipse.jetty.server.session.AbstractSession#doGetAttributeNames()
+         */
+        @Override
+        public Enumeration<String> doGetAttributeNames()
+        {
+            return null;
+        }
+
     }
 
     public class MockSessionIdManager extends AbstractSessionIdManager

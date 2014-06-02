@@ -53,23 +53,15 @@ public class MemSession extends AbstractSession
     
     
     /* ------------------------------------------------------------- */
+    @Override
     public Map<String,Object> getAttributeMap()
     {
         return _attributes;
     }
-    
+   
+
     /* ------------------------------------------------------------ */
     @Override
-    public Object getAttribute(String name)
-    {
-        synchronized (this)
-        {
-            checkValid();
-            return _attributes.get(name);
-        }
-    }
-    
-    /* ------------------------------------------------------------ */
     public int getAttributes()
     {
         synchronized (this)
@@ -78,22 +70,19 @@ public class MemSession extends AbstractSession
             return _attributes.size();
         }
     }
-    
 
     /* ------------------------------------------------------------ */
     @SuppressWarnings({ "unchecked" })
     @Override
-    public Enumeration<String> getAttributeNames()
+    public Enumeration<String> doGetAttributeNames()
     {
-        synchronized (this)
-        {
-            checkValid();
-            List<String> names=_attributes==null?Collections.EMPTY_LIST:new ArrayList<String>(_attributes.keySet());
-            return Collections.enumeration(names);
-        }
+        List<String> names=_attributes==null?Collections.EMPTY_LIST:new ArrayList<String>(_attributes.keySet());
+        return Collections.enumeration(names);
     }
+
     
     /* ------------------------------------------------------------ */
+    @Override
     public Set<String> getNames()
     {
         synchronized (this)
@@ -101,26 +90,10 @@ public class MemSession extends AbstractSession
             return new HashSet<String>(_attributes.keySet());
         }
     }
-    /* ------------------------------------------------------------- */
-    /**
-     * @deprecated As of Version 2.2, this method is replaced by
-     *             {@link #getAttributeNames}
-     */
-    @Deprecated
-    @Override
-    public String[] getValueNames() throws IllegalStateException
-    {
-        synchronized(this)
-        {
-            checkValid();
-            if (_attributes==null)
-                return new String[0];
-            String[] a=new String[_attributes.size()];
-            return (String[])_attributes.keySet().toArray(a);
-        }
-    }
+   
     
     /* ------------------------------------------------------------- */
+    @Override
     public void clearAttributes()
     {
         while (_attributes!=null && _attributes.size()>0)
@@ -157,15 +130,17 @@ public class MemSession extends AbstractSession
     }
     
     /* ------------------------------------------------------------ */
+    @Override
     public Object doPutOrRemove(String name, Object value)
     {
         return value==null?_attributes.remove(name):_attributes.put(name,value);
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Object doGet(String name)
     {
         return _attributes.get(name);
     }
-
+    
 }
