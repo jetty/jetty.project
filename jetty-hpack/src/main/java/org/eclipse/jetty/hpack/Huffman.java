@@ -294,6 +294,7 @@ public class Huffman
     static final char[] rowsym;
     static final byte[] rowbits;
 
+    // Build the Huffman lookup tree
     static 
     {
         int r=0;
@@ -342,19 +343,21 @@ public class Huffman
     }
 
 
-    static public String decode(ByteBuffer buf) throws IOException 
-    {
-        // TODO offer a version that does a direct lookup of compressed strings to known values
-        
-        StringBuilder out = new StringBuilder(buf.remaining()*2);
+    static public String decode(ByteBuffer buffer) throws IOException 
+    {        
+        StringBuilder out = new StringBuilder(buffer.remaining()*2);
         int node = 0;
         int current = 0;
         int bits = 0;
         
-        // TODO use buf array
-        while (buf.hasRemaining()) 
+        byte[] array = buffer.array();
+        int start=buffer.arrayOffset()+buffer.position();
+        int end=start+buffer.remaining();
+        buffer.position(buffer.limit());
+        
+        for (int i=start; i<end; i++)
         {
-            int b = buf.get() & 0xFF;
+            int b = array[i]&0xFF;
             current = (current << 8) | b;
             bits += 8;
             while (bits >= 8) 
@@ -395,10 +398,13 @@ public class Huffman
     }
     
 
-    static public void encode(ByteBuffer buf,String s) throws IOException 
+    static public void encode(ByteBuffer buffer,String s) throws IOException 
     {
         long current = 0;
         int n = 0;
+
+        byte[] array = buffer.array();
+        int p=buffer.arrayOffset()+buffer.position();
 
         int len = s.length();
         for (int i=0;i<len;i++)
@@ -416,7 +422,7 @@ public class Huffman
             while (n >= 8) 
             {
                 n -= 8;
-                buf.put((byte)(current >> n));
+                array[p++]=(byte)(current >> n);
             }
         }
 
@@ -424,7 +430,9 @@ public class Huffman
         {
           current <<= (8 - n);
           current |= (0xFF >>> n); 
-          buf.put((byte)current);
+          array[p++]=(byte)current;
         }
+        
+        buffer.position(p-buffer.arrayOffset());
     }
 }
