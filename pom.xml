@@ -261,12 +261,18 @@
           <configuration>
             <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
-            <!--systemProperties>
+            <systemProperties>
+              <!--
               <property>
                 <name>org.eclipse.jetty.io.AbstractBuffer.boundsChecking</name>
                 <value>true</value>
               </property>
-            </systemProperties-->
+              -->
+              <property>
+                <name>java.io.tmpdir</name>
+                <value>${project.build.directory}</value>
+              </property>
+            </systemProperties>
           </configuration>
         </plugin>
         <plugin>
