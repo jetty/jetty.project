@@ -114,7 +114,7 @@ public final class Props implements Iterable<Prop>
      * @param arg the argument to parse for a potential property
      * @param source the source for this argument (to track origin of property from)
      */
-    public void addPossibleProperty(String arg, String source)
+    public boolean addPossibleProperty(String arg, String source)
     {
         // Start property (syntax similar to System property)
         if (arg.startsWith("-D"))
@@ -125,15 +125,14 @@ public final class Props implements Iterable<Prop>
                 case 2:
                     setSystemProperty(assign[0],assign[1]);
                     setProperty(assign[0],assign[1],source);
-                    break;
+                    return true;
                 case 1:
                     setSystemProperty(assign[0],"");
                     setProperty(assign[0],"",source);
-                    break;
+                    return true;
                 default:
-                    break;
+                    return false;
             }
-            return;
         }
 
         // Is this a raw property declaration?
@@ -144,10 +143,11 @@ public final class Props implements Iterable<Prop>
             String value = arg.substring(idx + 1);
 
             setProperty(key,value,source);
-            return;
+            return true;
         }
 
         // All other strings are ignored
+        return false;
     }
 
     public String cleanReference(String property)

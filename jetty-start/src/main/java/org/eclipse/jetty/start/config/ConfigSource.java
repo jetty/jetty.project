@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.start.config;
 
-import java.util.List;
-
 import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.RawArgs;
 
 /**
  * A Configuration Source
@@ -57,7 +56,7 @@ public interface ConfigSource
      * 
      * @return the list of Arguments for this ConfigSource
      */
-    public List<String> getArgs();
+    public RawArgs getArgs();
 
     /**
      * The properties for this ConfigSource

@@ -475,6 +475,7 @@ public class Main
         // Also list other places this module is enabled
         for (String source : module.getSources())
         {
+            StartLog.debug("also enabled in: %s",source);
             if (!short_start_ini.equals(source))
             {
                 StartLog.info("%-15s enabled in     %s",name,baseHome.toShortForm(source));
