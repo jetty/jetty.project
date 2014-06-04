@@ -14,7 +14,7 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support-version>1.1</build-support-version>
-    <slf4j-version>1.6.1</slf4j-version>
+    <slf4j-version>1.6.6</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
     <npn.api.version>1.1.0.v20120525</npn.api.version>
     <alpn.api.version>1.0.0</alpn.api.version>
@@ -261,12 +261,18 @@
           <configuration>
             <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
-            <!--systemProperties>
+            <systemProperties>
+              <!--
               <property>
                 <name>org.eclipse.jetty.io.AbstractBuffer.boundsChecking</name>
                 <value>true</value>
               </property>
-            </systemProperties-->
+              -->
+              <property>
+                <name>java.io.tmpdir</name>
+                <value>${project.build.directory}</value>
+              </property>
+            </systemProperties>
           </configuration>
         </plugin>
         <plugin>

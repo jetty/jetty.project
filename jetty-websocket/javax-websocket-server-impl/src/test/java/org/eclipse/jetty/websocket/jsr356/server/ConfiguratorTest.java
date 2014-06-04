@@ -144,7 +144,6 @@ public class ConfiguratorTest
         @Override
         public String getNegotiatedSubprotocol(List<String> supported, List<String> requested)
         {
-            LOG.warn(new Throwable());
             String seen = QuoteUtil.join(requested,",");
             seenProtocols.compareAndSet(null,seen);
             return super.getNegotiatedSubprotocol(supported,requested);

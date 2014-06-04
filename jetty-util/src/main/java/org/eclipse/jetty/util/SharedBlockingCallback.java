@@ -66,6 +66,15 @@ public class SharedBlockingCallback
             return "SUCCEEDED";
         }
     };
+    
+    private static Throwable FAILED = new Throwable()
+    {
+        @Override
+        public String toString()
+        {
+            return "FAILED";
+        }
+    };
 
     final Blocker _blocker;
     
@@ -148,7 +157,10 @@ public class SharedBlockingCallback
             {
                 if (_state == null)
                 {
-                    _state = cause;
+                    // TODO remove before release
+                    if (cause==null)
+                        LOG.warn("null failed cause ",new Throwable());
+                    _state = cause==null?FAILED:cause;
                     _complete.signalAll();
                 }
                 else if (_state == IDLE)
