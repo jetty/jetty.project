@@ -6,7 +6,7 @@
     <version>22</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.2.0-SNAPSHOT</version>
+  <version>10.0.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -412,6 +412,8 @@
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
+    <module>jetty-hpack</module>
+    <module>jetty-http2</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
     <module>jetty-xml</module>
