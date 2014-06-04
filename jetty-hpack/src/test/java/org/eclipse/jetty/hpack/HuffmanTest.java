@@ -38,6 +38,7 @@ public class HuffmanTest
             {"D.6.2te","abdd97ff","gzip"},
             {"D.4.2cookie","e0d6cf9f6e8f9fd3e5f6fa76fefd3c7edf9eff1f2f0f3cfe9f6fcf7f8f879f61ad4f4cc9a973a2200ec3725e18b1b74e3f","foo=ASDJKHQKBZXOQWEOPIUAXQWEOIU; max-age=3600; version=1"},
             {"D.6.2date","d6dbb29884de2a718805062098513111b56ba3","Mon, 21 Oct 2013 20:13:22 GMT"},
+            {"404","abdd97ff","404"},
         };
     
     @Test

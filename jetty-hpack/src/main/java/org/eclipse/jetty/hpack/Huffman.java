@@ -396,9 +396,23 @@ public class Huffman
 
         return out.toString();
     }
-    
 
-    static public void encode(ByteBuffer buffer,String s) throws IOException 
+    static public int octetsNeeded(String s)
+    {   
+        int needed=0;
+        int len = s.length();
+        for (int i=0;i<len;i++)
+        {
+            char c=s.charAt(i);
+            if (c>=128)
+                throw new IllegalArgumentException();
+            needed += CODES[c][1];
+        }
+
+        return (needed+7) / 8;
+    }
+
+    static public void encode(ByteBuffer buffer,String s)
     {
         long current = 0;
         int n = 0;

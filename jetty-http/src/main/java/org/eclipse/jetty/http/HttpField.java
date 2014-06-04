@@ -85,5 +85,40 @@ public class HttpField
         return false;
     }
     
+    @Override 
+    public boolean equals(Object o)
+    {
+        if (o==this)
+            return true;
+        if (!(o instanceof HttpField))
+            return false;
+        HttpField field=(HttpField)o;
+        if (_header!=field.getHeader())
+            return false;
+        if (!_name.equalsIgnoreCase(field.getName()))
+            return false;
+        if (_value==null && field.getValue()!=null)
+            return false;
+        if (!_value.equals(field.getValue()))
+            return false;
+        return true;
+    }
     
+    @Override
+    public int hashCode()
+    {
+        if (_header==null)
+        {
+            int hash=13;
+            int len = _name.length();  
+            for (int i = 0; i < len; i++)  
+            {  
+                char c = Character.toUpperCase(_name.charAt(i));  
+                hash = 31 * hash + c;  
+            }  
+            return _value.hashCode() ^ hash;
+        }
+        
+        return _value.hashCode() ^ _header.hashCode();
+    }
 }
