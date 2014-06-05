@@ -18,19 +18,24 @@
 
 package org.eclipse.jetty.http2.frames;
 
-public enum FrameType
+public class ResetFrame
 {
-    DATA(0), HEADERS(1), PRIORITY(2), RST_STREAM(3);
+    private final int streamId;
+    private final int error;
 
-    private final int type;
-
-    private FrameType(int type)
+    public ResetFrame(int streamId, int error)
     {
-        this.type = type;
+        this.streamId = streamId;
+        this.error = error;
     }
 
-    public int getType()
+    public int getStreamId()
     {
-        return type;
+        return streamId;
+    }
+
+    public int getError()
+    {
+        return error;
     }
 }

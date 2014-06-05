@@ -21,19 +21,22 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 
 public class Parser
 {
     private final HeaderParser headerParser = new HeaderParser();
-    private final BodyParser[] bodyParsers = new BodyParser[3];
+    private final BodyParser[] bodyParsers = new BodyParser[4];
     private State state = State.HEADER;
     private BodyParser bodyParser;
 
     public Parser(Listener listener)
     {
-        bodyParsers[0] = new DataBodyParser(headerParser, listener);
-        bodyParsers[2] = new PriorityBodyParser(headerParser, listener);
+        bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
+        bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
+        bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
     }
 
     private void reset()
@@ -87,6 +90,8 @@ public class Parser
 
         public boolean onPriorityFrame(PriorityFrame frame);
 
+        public boolean onResetFrame(ResetFrame frame);
+
         public static class Adapter implements Listener
         {
             @Override
@@ -97,6 +102,12 @@ public class Parser
 
             @Override
             public boolean onPriorityFrame(PriorityFrame frame)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean onResetFrame(ResetFrame frame)
             {
                 return false;
             }

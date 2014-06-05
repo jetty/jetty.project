@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -88,6 +89,19 @@ public abstract class BodyParser
         try
         {
             return listener.onPriorityFrame(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return false;
+        }
+    }
+
+    protected boolean notifyResetFrame(ResetFrame frame)
+    {
+        try
+        {
+            return listener.onResetFrame(frame);
         }
         catch (Throwable x)
         {

@@ -43,17 +43,9 @@ public class Generator
         if (dependentStreamId < 0)
             throw new IllegalArgumentException("Invalid dependent stream id: " + dependentStreamId);
 
-        ByteBuffer header = byteBufferPool.acquire(8 + 5, true);
-        BufferUtil.clearToFill(header);
-
         Result result = new Result(byteBufferPool);
-        header.putShort((short)5);
 
-        header.put((byte)FrameType.PRIORITY.getType());
-        // No flags.
-        header.put((byte)0);
-
-        header.putInt(dependentStreamId);
+        ByteBuffer header = generateHeader(FrameType.PRIORITY, 5, 0, dependentStreamId);
 
         if (exclusive)
             streamId |= 0x80_00_00_00;
@@ -61,6 +53,23 @@ public class Generator
         header.putInt(streamId);
 
         header.put((byte)weight);
+
+        BufferUtil.flipToFlush(header, 0);
+        result.add(header, true);
+
+        return result;
+    }
+
+    public Result generateReset(int streamId, int error)
+    {
+        if (streamId < 0)
+            throw new IllegalArgumentException("Invalid stream id: " + streamId);
+
+        Result result = new Result(byteBufferPool);
+
+        ByteBuffer header = generateHeader(FrameType.RST_STREAM, 4, 0, streamId);
+
+        header.putInt(error);
 
         BufferUtil.flipToFlush(header, 0);
         result.add(header, true);
@@ -111,13 +120,7 @@ public class Generator
 
     private void generateFrame(Result result, int streamId, int paddingBytes, int paddingLength, ByteBuffer data, boolean last, boolean compress)
     {
-        ByteBuffer header = byteBufferPool.acquire(8 + paddingBytes, true);
-        BufferUtil.clearToFill(header);
-
         int length = paddingBytes + data.remaining() + paddingLength;
-        header.putShort((short)length);
-
-        header.put((byte)FrameType.DATA.getType());
 
         int flags = 0;
         if (last)
@@ -128,9 +131,8 @@ public class Generator
             flags |= 0x10;
         if (compress)
             flags |= 0x20;
-        header.put((byte)flags);
 
-        header.putInt(streamId);
+        ByteBuffer header = generateHeader(FrameType.DATA, 8 + paddingBytes, length, flags, streamId);
 
         if (paddingBytes == 2)
             header.putShort((short)paddingLength);
@@ -150,6 +152,24 @@ public class Generator
             BufferUtil.flipToFlush(padding, 0);
             result.add(padding, true);
         }
+    }
+
+    private ByteBuffer generateHeader(FrameType frameType, int length, int flags, int streamId)
+    {
+        return generateHeader(frameType, 8 + length, length, flags, streamId);
+    }
+
+    private ByteBuffer generateHeader(FrameType frameType, int capacity, int length, int flags, int streamId)
+    {
+        ByteBuffer header = byteBufferPool.acquire(capacity, true);
+        BufferUtil.clearToFill(header);
+
+        header.putShort((short)length);
+        header.put((byte)frameType.getType());
+        header.put((byte)flags);
+        header.putInt(streamId);
+
+        return header;
     }
 
     public static class Result
