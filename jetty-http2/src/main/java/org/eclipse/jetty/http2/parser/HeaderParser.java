@@ -1,0 +1,148 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.http2.parser;
+
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.http2.frames.DataFrame;
+
+public class HeaderParser
+{
+    private State state = State.LENGTH;
+    private int cursor;
+
+    private int length;
+    private int type;
+    private int flags;
+    private int streamId;
+
+    protected void reset()
+    {
+        state = State.LENGTH;
+        cursor = 0;
+
+        length = 0;
+        type = 0;
+        flags = 0;
+        streamId = 0;
+    }
+
+    public boolean parse(ByteBuffer buffer)
+    {
+        while (buffer.hasRemaining())
+        {
+            switch (state)
+            {
+                case LENGTH:
+                {
+                    int halfShort = buffer.get() & 0xFF;
+                    length = (length << 8) + halfShort;
+                    if (++cursor == 2)
+                    {
+                        // First 2 most significant bits MUST be ignored as per specification.
+                        length &= DataFrame.MAX_LENGTH;
+                        state = State.TYPE;
+                    }
+                    break;
+                }
+                case TYPE:
+                {
+                    type = buffer.get() & 0xFF;
+                    state = State.FLAGS;
+                    break;
+                }
+                case FLAGS:
+                {
+                    flags = buffer.get() & 0xFF;
+                    state = State.STREAM_ID;
+                    break;
+                }
+                case STREAM_ID:
+                {
+                    if (buffer.remaining() >= 4)
+                    {
+                        streamId = buffer.getInt();
+                        // Most significant bit MUST be ignored as per specification.
+                        streamId &= 0x7F_FF_FF_FF;
+                        return true;
+                    }
+                    else
+                    {
+                        state = State.STREAM_ID_BYTES;
+                        cursor = 4;
+                    }
+                    break;
+                }
+                case STREAM_ID_BYTES:
+                {
+                    int currByte = buffer.get() & 0xFF;
+                    --cursor;
+                    streamId += currByte << (8 * cursor);
+                    if (cursor == 0)
+                    {
+                        // Most significant bit MUST be ignored as per specification.
+                        streamId &= 0x7F_FF_FF_FF;
+                        return true;
+                    }
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
+        return false;
+    }
+
+    public int getLength()
+    {
+        return length;
+    }
+
+    public int getFrameType()
+    {
+        return type;
+    }
+
+    public boolean isPaddingHigh()
+    {
+        return (flags & 0x10) == 0x10;
+    }
+
+    public boolean isPaddingLow()
+    {
+        return (flags & 0x08) == 0x08;
+    }
+
+    public boolean isEndStream()
+    {
+        return (flags & 0x01) == 0x01;
+    }
+
+    public int getStreamId()
+    {
+        return streamId;
+    }
+
+    private enum State
+    {
+        LENGTH, TYPE, FLAGS, STREAM_ID, STREAM_ID_BYTES
+    }
+}
