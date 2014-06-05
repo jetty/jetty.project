@@ -36,8 +36,35 @@ public class Generator
         this.byteBufferPool = byteBufferPool;
     }
 
+    public Result generateGoAway(int lastStreamId, int error, byte[] payload)
+    {
+        if (lastStreamId < 0)
+            throw new IllegalArgumentException("Invalid last stream id: " + lastStreamId);
+
+        Result result = new Result(byteBufferPool);
+
+        int length = 4 + 4 + (payload != null ? payload.length : 0);
+        ByteBuffer header = generateHeader(FrameType.GO_AWAY, length, 0, 0);
+
+        header.putInt(lastStreamId);
+        header.putInt(error);
+
+        if (payload != null)
+        {
+            header.put(payload);
+        }
+
+        BufferUtil.flipToFlush(header, 0);
+        result.add(header, true);
+
+        return result;
+    }
+
     public Result generatePing(byte[] payload, boolean reply)
     {
+        if (payload.length != 8)
+            throw new IllegalArgumentException("Invalid payload length: " + payload.length);
+
         Result result = new Result(byteBufferPool);
 
         ByteBuffer header = generateHeader(FrameType.PING, 8, reply ? 0x01 : 0x00, 0);
@@ -91,7 +118,7 @@ public class Generator
         return result;
     }
 
-    public Result generateContent(int streamId, int paddingLength, ByteBuffer data, boolean last, boolean compress)
+    public Result generateData(int streamId, int paddingLength, ByteBuffer data, boolean last, boolean compress)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
@@ -110,7 +137,7 @@ public class Generator
         // Can we fit just one frame ?
         if (dataLength + paddingBytes + paddingLength <= DataFrame.MAX_LENGTH)
         {
-            generateFrame(result, streamId, paddingBytes, paddingLength, data, last, compress);
+            generateData(result, streamId, paddingBytes, paddingLength, data, last, compress);
         }
         else
         {
@@ -126,13 +153,13 @@ public class Generator
                 data.limit(Math.min(dataBytesPerFrame * i, limit));
                 ByteBuffer slice = data.slice();
                 data.position(data.limit());
-                generateFrame(result, streamId, paddingBytes, paddingLength, slice, i == frames && last, compress);
+                generateData(result, streamId, paddingBytes, paddingLength, slice, i == frames && last, compress);
             }
         }
         return result;
     }
 
-    private void generateFrame(Result result, int streamId, int paddingBytes, int paddingLength, ByteBuffer data, boolean last, boolean compress)
+    private void generateData(Result result, int streamId, int paddingBytes, int paddingLength, ByteBuffer data, boolean last, boolean compress)
     {
         int length = paddingBytes + data.remaining() + paddingLength;
 

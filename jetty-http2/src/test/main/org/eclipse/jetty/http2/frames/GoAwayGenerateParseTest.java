@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.frames;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Random;
 
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -29,7 +30,7 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class ResetGenerateParseTest
+public class GoAwayGenerateParseTest
 {
     private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
 
@@ -38,18 +39,18 @@ public class ResetGenerateParseTest
     {
         Generator generator = new Generator(byteBufferPool);
 
-        int streamId = 13;
+        int lastStreamId = 13;
         int error = 17;
 
         // Iterate a few times to be sure generator and parser are properly reset.
-        final List<ResetFrame> frames = new ArrayList<>();
+        final List<GoAwayFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            Generator.Result result = generator.generateReset(streamId, error);
+            Generator.Result result = generator.generateGoAway(lastStreamId, error, null);
             Parser parser = new Parser(new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onReset(ResetFrame frame)
+                public boolean onGoAway(GoAwayFrame frame)
                 {
                     frames.add(frame);
                     return false;
@@ -67,9 +68,10 @@ public class ResetGenerateParseTest
         }
 
         Assert.assertEquals(1, frames.size());
-        ResetFrame frame = frames.get(0);
-        Assert.assertEquals(streamId, frame.getStreamId());
+        GoAwayFrame frame = frames.get(0);
+        Assert.assertEquals(lastStreamId, frame.getLastStreamId());
         Assert.assertEquals(error, frame.getError());
+        Assert.assertNull(frame.getPayload());
     }
 
     @Test
@@ -77,15 +79,17 @@ public class ResetGenerateParseTest
     {
         Generator generator = new Generator(byteBufferPool);
 
-        int streamId = 13;
+        int lastStreamId = 13;
         int error = 17;
+        byte[] payload = new byte[16];
+        new Random().nextBytes(payload);
 
-        final List<ResetFrame> frames = new ArrayList<>();
-        Generator.Result result = generator.generateReset(streamId, error);
+        final List<GoAwayFrame> frames = new ArrayList<>();
+        Generator.Result result = generator.generateGoAway(lastStreamId, error, payload);
         Parser parser = new Parser(new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onReset(ResetFrame frame)
+            public boolean onGoAway(GoAwayFrame frame)
             {
                 frames.add(frame);
                 return false;
@@ -101,8 +105,9 @@ public class ResetGenerateParseTest
         }
 
         Assert.assertEquals(1, frames.size());
-        ResetFrame frame = frames.get(0);
-        Assert.assertEquals(streamId, frame.getStreamId());
+        GoAwayFrame frame = frames.get(0);
+        Assert.assertEquals(lastStreamId, frame.getLastStreamId());
         Assert.assertEquals(error, frame.getError());
+        Assert.assertArrayEquals(payload, frame.getPayload());
     }
 }

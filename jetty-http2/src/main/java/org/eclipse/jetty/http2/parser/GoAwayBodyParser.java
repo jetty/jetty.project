@@ -1,0 +1,166 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.http2.parser;
+
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
+
+public class GoAwayBodyParser extends BodyParser
+{
+    private State state = State.LAST_STREAM_ID;
+    private int cursor;
+
+    private int lastStreamId;
+    private int error;
+    private byte[] payload;
+
+    public GoAwayBodyParser(HeaderParser headerParser, Parser.Listener listener)
+    {
+        super(headerParser, listener);
+    }
+
+    @Override
+    protected void reset()
+    {
+        super.reset();
+        state = State.LAST_STREAM_ID;
+        cursor = 0;
+
+        lastStreamId = 0;
+        error = 0;
+        payload = null;
+    }
+
+    @Override
+    public Result parse(ByteBuffer buffer)
+    {
+        while (buffer.hasRemaining())
+        {
+            switch (state)
+            {
+                case LAST_STREAM_ID:
+                {
+                    if (buffer.remaining() >= 4)
+                    {
+                        lastStreamId = buffer.getInt();
+                        lastStreamId &= 0x7F_FF_FF_FF;
+                        state = State.ERROR;
+                    }
+                    else
+                    {
+                        state = State.LAST_STREAM_ID_BYTES;
+                        cursor = 4;
+                    }
+                    break;
+                }
+                case LAST_STREAM_ID_BYTES:
+                {
+                    int currByte = buffer.get() & 0xFF;
+                    --cursor;
+                    lastStreamId += currByte << (8 * cursor);
+                    if (cursor == 0)
+                    {
+                        lastStreamId &= 0x7F_FF_FF_FF;
+                        state = State.ERROR;
+                    }
+                    break;
+                }
+                case ERROR:
+                {
+                    if (buffer.remaining() >= 4)
+                    {
+                        error = buffer.getInt();
+                        state = State.PAYLOAD;
+                        int payloadLength = getBodyLength() - 4 - 4;
+                        if (payloadLength == 0)
+                        {
+                            return onGoAway(lastStreamId, error, null);
+                        }
+                    }
+                    else
+                    {
+                        state = State.ERROR_BYTES;
+                        cursor = 4;
+                    }
+                    break;
+                }
+                case ERROR_BYTES:
+                {
+                    int currByte = buffer.get() & 0xFF;
+                    --cursor;
+                    error += currByte << (8 * cursor);
+                    if (cursor == 0)
+                    {
+                        state = State.PAYLOAD;
+                        int payloadLength = getBodyLength() - 4 - 4;
+                        if (payloadLength == 0)
+                        {
+                            return onGoAway(lastStreamId, error, null);
+                        }
+                    }
+                    break;
+                }
+                case PAYLOAD:
+                {
+                    int payloadLength = getBodyLength() - 4 - 4;
+                    payload = new byte[payloadLength];
+                    if (buffer.remaining() >= payloadLength)
+                    {
+                        buffer.get(payload);
+                        return onGoAway(lastStreamId, error, payload);
+                    }
+                    else
+                    {
+                        state = State.PAYLOAD_BYTES;
+                        cursor = payloadLength;
+                    }
+                    break;
+                }
+                case PAYLOAD_BYTES:
+                {
+                    payload[payload.length - cursor] = buffer.get();
+                    --cursor;
+                    if (cursor == 0)
+                    {
+                        return onGoAway(lastStreamId, error, payload);
+                    }
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
+        return Result.PENDING;
+    }
+
+    private Result onGoAway(int lastStreamId, int error, byte[] payload)
+    {
+        GoAwayFrame frame = new GoAwayFrame(lastStreamId, error, payload);
+        reset();
+        return notifyGoAway(frame) ? Result.ASYNC : Result.COMPLETE;
+    }
+
+    private enum State
+    {
+        LAST_STREAM_ID, LAST_STREAM_ID_BYTES, ERROR, ERROR_BYTES, PAYLOAD, PAYLOAD_BYTES
+    }
+}

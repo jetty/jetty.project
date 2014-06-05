@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -39,6 +40,7 @@ public class Parser
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
         bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
         bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener);
+        bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
     }
 
     private void reset()
@@ -96,6 +98,8 @@ public class Parser
 
         public boolean onPing(PingFrame frame);
 
+        public boolean onGoAway(GoAwayFrame frame);
+
         public static class Adapter implements Listener
         {
             @Override
@@ -118,6 +122,12 @@ public class Parser
 
             @Override
             public boolean onPing(PingFrame frame)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean onGoAway(GoAwayFrame frame)
             {
                 return false;
             }

@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -77,7 +78,7 @@ public abstract class BodyParser
         headerParser.reset();
     }
 
-    protected boolean notifyDataFrame(DataFrame frame)
+    protected boolean notifyData(DataFrame frame)
     {
         try
         {
@@ -90,7 +91,7 @@ public abstract class BodyParser
         }
     }
 
-    protected boolean notifyPriorityFrame(PriorityFrame frame)
+    protected boolean notifyPriority(PriorityFrame frame)
     {
         try
         {
@@ -103,7 +104,7 @@ public abstract class BodyParser
         }
     }
 
-    protected boolean notifyResetFrame(ResetFrame frame)
+    protected boolean notifyReset(ResetFrame frame)
     {
         try
         {
@@ -116,11 +117,24 @@ public abstract class BodyParser
         }
     }
 
-    protected boolean notifyPingFrame(PingFrame frame)
+    protected boolean notifyPing(PingFrame frame)
     {
         try
         {
             return listener.onPing(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return false;
+        }
+    }
+
+    protected boolean notifyGoAway(GoAwayFrame frame)
+    {
+        try
+        {
+            return listener.onGoAway(frame);
         }
         catch (Throwable x)
         {

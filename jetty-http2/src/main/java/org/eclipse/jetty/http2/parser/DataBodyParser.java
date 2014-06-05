@@ -135,7 +135,7 @@ public class DataBodyParser extends BodyParser
     {
         boolean end = isEndStream();
         DataFrame frame = new DataFrame(getStreamId(), buffer, fragment ? false : end);
-        return notifyDataFrame(frame);
+        return notifyData(frame);
     }
 
     private enum State

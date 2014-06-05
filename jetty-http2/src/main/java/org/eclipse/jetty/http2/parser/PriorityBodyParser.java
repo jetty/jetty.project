@@ -92,7 +92,7 @@ public class PriorityBodyParser extends BodyParser
                 case WEIGHT:
                 {
                     int weight = buffer.get() & 0xFF;
-                    return onPriority(weight);
+                    return onPriority(streamId, weight, exclusive);
                 }
                 default:
                 {
@@ -103,11 +103,11 @@ public class PriorityBodyParser extends BodyParser
         return Result.PENDING;
     }
 
-    private Result onPriority(int weight)
+    private Result onPriority(int streamId, int weight, boolean exclusive)
     {
         PriorityFrame frame = new PriorityFrame(streamId, getStreamId(), weight, exclusive);
         reset();
-        return notifyPriorityFrame(frame) ? Result.ASYNC : Result.COMPLETE;
+        return notifyPriority(frame) ? Result.ASYNC : Result.COMPLETE;
     }
 
     private enum State

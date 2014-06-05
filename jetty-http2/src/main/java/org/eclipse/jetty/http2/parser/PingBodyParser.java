@@ -87,7 +87,7 @@ public class PingBodyParser extends BodyParser
     {
         PingFrame frame = new PingFrame(payload, hasFlag(0x1));
         reset();
-        return notifyPingFrame(frame) ? Result.ASYNC : Result.COMPLETE;
+        return notifyPing(frame) ? Result.ASYNC : Result.COMPLETE;
     }
 
     private enum State
