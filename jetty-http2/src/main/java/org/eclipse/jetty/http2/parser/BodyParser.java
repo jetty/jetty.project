@@ -20,6 +20,8 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -27,7 +29,72 @@ public abstract class BodyParser
 {
     protected static final Logger LOG = Log.getLogger(BodyParser.class);
 
+    private final HeaderParser headerParser;
+    private final Parser.Listener listener;
+
+    protected BodyParser(HeaderParser headerParser, Parser.Listener listener)
+    {
+        this.headerParser = headerParser;
+        this.listener = listener;
+    }
+
     public abstract Result parse(ByteBuffer buffer);
+
+    protected boolean isPaddingHigh()
+    {
+        return headerParser.isPaddingHigh();
+    }
+
+    protected boolean isPaddingLow()
+    {
+        return headerParser.isPaddingLow();
+    }
+
+    protected boolean isEndStream()
+    {
+        return headerParser.isEndStream();
+    }
+
+    protected int getStreamId()
+    {
+        return headerParser.getStreamId();
+    }
+
+    protected int getBodyLength()
+    {
+        return headerParser.getLength();
+    }
+
+    protected void reset()
+    {
+        headerParser.reset();
+    }
+
+    protected boolean notifyDataFrame(DataFrame frame)
+    {
+        try
+        {
+            return listener.onDataFrame(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return false;
+        }
+    }
+
+    protected boolean notifyPriorityFrame(PriorityFrame frame)
+    {
+        try
+        {
+            return listener.onPriorityFrame(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return false;
+        }
+    }
 
     public enum Result
     {

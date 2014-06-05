@@ -21,17 +21,19 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.PriorityFrame;
 
 public class Parser
 {
     private final HeaderParser headerParser = new HeaderParser();
-    private final BodyParser[] bodyParsers = new BodyParser[1];
+    private final BodyParser[] bodyParsers = new BodyParser[3];
     private State state = State.HEADER;
     private BodyParser bodyParser;
 
     public Parser(Listener listener)
     {
         bodyParsers[0] = new DataBodyParser(headerParser, listener);
+        bodyParsers[2] = new PriorityBodyParser(headerParser, listener);
     }
 
     private void reset()
@@ -70,6 +72,10 @@ public class Parser
                     }
                     break;
                 }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
             }
         }
         return false;
@@ -79,10 +85,18 @@ public class Parser
     {
         public boolean onDataFrame(DataFrame frame);
 
+        public boolean onPriorityFrame(PriorityFrame frame);
+
         public static class Adapter implements Listener
         {
             @Override
             public boolean onDataFrame(DataFrame frame)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean onPriorityFrame(PriorityFrame frame)
             {
                 return false;
             }

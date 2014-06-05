@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -33,6 +34,38 @@ public class Generator
     public Generator(ByteBufferPool byteBufferPool)
     {
         this.byteBufferPool = byteBufferPool;
+    }
+
+    public Result generatePriority(int streamId, int dependentStreamId, int weight, boolean exclusive)
+    {
+        if (streamId < 0)
+            throw new IllegalArgumentException("Invalid stream id: " + streamId);
+        if (dependentStreamId < 0)
+            throw new IllegalArgumentException("Invalid dependent stream id: " + dependentStreamId);
+
+        ByteBuffer header = byteBufferPool.acquire(8 + 5, true);
+        BufferUtil.clearToFill(header);
+
+        Result result = new Result(byteBufferPool);
+        header.putShort((short)5);
+
+        header.put((byte)FrameType.PRIORITY.getType());
+        // No flags.
+        header.put((byte)0);
+
+        header.putInt(dependentStreamId);
+
+        if (exclusive)
+            streamId |= 0x80_00_00_00;
+
+        header.putInt(streamId);
+
+        header.put((byte)weight);
+
+        BufferUtil.flipToFlush(header, 0);
+        result.add(header, true);
+
+        return result;
     }
 
     public Result generateContent(int streamId, int paddingLength, ByteBuffer data, boolean last, boolean compress)
@@ -84,8 +117,7 @@ public class Generator
         int length = paddingBytes + data.remaining() + paddingLength;
         header.putShort((short)length);
 
-        // Frame type for DATA frames is 0.
-        header.put((byte)0);
+        header.put((byte)FrameType.DATA.getType());
 
         int flags = 0;
         if (last)

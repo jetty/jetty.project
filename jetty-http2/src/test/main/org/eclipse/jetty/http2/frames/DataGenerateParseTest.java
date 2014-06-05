@@ -111,8 +111,7 @@ public class DataGenerateParseTest
     {
         Generator generator = new Generator(byteBufferPool);
 
-        // Iterate a few times to be sure generator
-        // and parser are properly reset.
+        // Iterate a few times to be sure generator and parser are properly reset.
         final List<DataFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
@@ -147,8 +146,7 @@ public class DataGenerateParseTest
     {
         Generator generator = new Generator(byteBufferPool);
 
-        Generator.Result result = new Generator.Result(byteBufferPool);
-        result = result.merge(generator.generateContent(13, 1024, ByteBuffer.wrap(largeContent).slice(), true, false));
+        Generator.Result result = generator.generateContent(13, 1024, ByteBuffer.wrap(largeContent).slice(), true, false);
 
         final List<DataFrame> frames = new ArrayList<>();
         Parser parser = new Parser(new Parser.Listener.Adapter()

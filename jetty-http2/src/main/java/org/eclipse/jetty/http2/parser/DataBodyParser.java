@@ -24,21 +24,19 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 
 public class DataBodyParser extends BodyParser
 {
-    private final HeaderParser headerParser;
-    private final Parser.Listener listener;
     private State state = State.PREPARE;
     private int paddingLength;
     private int length;
 
     public DataBodyParser(HeaderParser headerParser, Parser.Listener listener)
     {
-        this.headerParser = headerParser;
-        this.listener = listener;
+        super(headerParser, listener);
     }
 
-    private void reset()
+    @Override
+    protected void reset()
     {
-        headerParser.reset();
+        super.reset();
         state = State.PREPARE;
         paddingLength = 0;
         length = 0;
@@ -53,12 +51,12 @@ public class DataBodyParser extends BodyParser
             {
                 case PREPARE:
                 {
-                    length = headerParser.getLength();
-                    if (headerParser.isPaddingHigh())
+                    length = getBodyLength();
+                    if (isPaddingHigh())
                     {
                         state = State.PADDING_HIGH;
                     }
-                    else if (headerParser.isPaddingLow())
+                    else if (isPaddingLow())
                     {
                         state = State.PADDING_LOW;
                     }
@@ -124,6 +122,10 @@ public class DataBodyParser extends BodyParser
                     }
                     break;
                 }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
             }
         }
         return Result.PENDING;
@@ -131,22 +133,9 @@ public class DataBodyParser extends BodyParser
 
     private boolean onData(ByteBuffer buffer, boolean fragment)
     {
-        boolean end = headerParser.isEndStream();
-        DataFrame frame = new DataFrame(headerParser.getStreamId(), buffer, fragment ? false : end);
+        boolean end = isEndStream();
+        DataFrame frame = new DataFrame(getStreamId(), buffer, fragment ? false : end);
         return notifyDataFrame(frame);
-    }
-
-    protected boolean notifyDataFrame(DataFrame frame)
-    {
-        try
-        {
-            return listener.onDataFrame(frame);
-        }
-        catch (Throwable x)
-        {
-            LOG.info("Failure while notifying listener " + listener, x);
-            return false;
-        }
     }
 
     private enum State
