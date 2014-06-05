@@ -124,7 +124,7 @@ public class DataGenerateParseTest
             Parser parser = new Parser(new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onDataFrame(DataFrame frame)
+                public boolean onData(DataFrame frame)
                 {
                     frames.add(frame);
                     return false;
@@ -152,7 +152,7 @@ public class DataGenerateParseTest
         Parser parser = new Parser(new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onDataFrame(DataFrame frame)
+            public boolean onData(DataFrame frame)
             {
                 frames.add(frame);
                 return false;

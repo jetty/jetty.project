@@ -36,6 +36,20 @@ public class Generator
         this.byteBufferPool = byteBufferPool;
     }
 
+    public Result generatePing(byte[] payload, boolean reply)
+    {
+        Result result = new Result(byteBufferPool);
+
+        ByteBuffer header = generateHeader(FrameType.PING, 8, reply ? 0x01 : 0x00, 0);
+
+        header.put(payload);
+
+        BufferUtil.flipToFlush(header, 0);
+        result.add(header, true);
+
+        return result;
+    }
+
     public Result generatePriority(int streamId, int dependentStreamId, int weight, boolean exclusive)
     {
         if (streamId < 0)

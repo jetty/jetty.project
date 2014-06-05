@@ -18,30 +18,24 @@
 
 package org.eclipse.jetty.http2.frames;
 
-public enum FrameType
+public class PingFrame
 {
-    DATA(0),
-    HEADERS(1),
-    PRIORITY(2),
-    RST_STREAM(3),
-    SETTINGS(4),
-    PUSH_PROMISE(5),
-    PING(6),
-    GO_AWAY(7),
-    WINDOW_UPDATE(8),
-    CONTINUATION(9),
-    ALTSVC(10),
-    BLOCKED(11);
+    private final byte[] payload;
+    private final boolean reply;
 
-    private final int type;
-
-    private FrameType(int type)
+    public PingFrame(byte[] payload, boolean reply)
     {
-        this.type = type;
+        this.payload = payload;
+        this.reply = reply;
     }
 
-    public int getType()
+    public byte[] getPayload()
     {
-        return type;
+        return payload;
+    }
+
+    public boolean isReply()
+    {
+        return reply;
     }
 }

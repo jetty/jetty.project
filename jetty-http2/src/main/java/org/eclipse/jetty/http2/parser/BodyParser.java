@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.log.Log;
@@ -41,19 +42,24 @@ public abstract class BodyParser
 
     public abstract Result parse(ByteBuffer buffer);
 
+    protected boolean hasFlag(int bit)
+    {
+        return headerParser.hasFlag(bit);
+    }
+
     protected boolean isPaddingHigh()
     {
-        return headerParser.isPaddingHigh();
+        return headerParser.hasFlag(0x10);
     }
 
     protected boolean isPaddingLow()
     {
-        return headerParser.isPaddingLow();
+        return headerParser.hasFlag(0x8);
     }
 
     protected boolean isEndStream()
     {
-        return headerParser.isEndStream();
+        return headerParser.hasFlag(0x1);
     }
 
     protected int getStreamId()
@@ -75,7 +81,7 @@ public abstract class BodyParser
     {
         try
         {
-            return listener.onDataFrame(frame);
+            return listener.onData(frame);
         }
         catch (Throwable x)
         {
@@ -88,7 +94,7 @@ public abstract class BodyParser
     {
         try
         {
-            return listener.onPriorityFrame(frame);
+            return listener.onPriority(frame);
         }
         catch (Throwable x)
         {
@@ -101,7 +107,20 @@ public abstract class BodyParser
     {
         try
         {
-            return listener.onResetFrame(frame);
+            return listener.onReset(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return false;
+        }
+    }
+
+    protected boolean notifyPingFrame(PingFrame frame)
+    {
+        try
+        {
+            return listener.onPing(frame);
         }
         catch (Throwable x)
         {

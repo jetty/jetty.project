@@ -121,19 +121,9 @@ public class HeaderParser
         return type;
     }
 
-    public boolean isPaddingHigh()
+    public boolean hasFlag(int bit)
     {
-        return (flags & 0x10) == 0x10;
-    }
-
-    public boolean isPaddingLow()
-    {
-        return (flags & 0x08) == 0x08;
-    }
-
-    public boolean isEndStream()
-    {
-        return (flags & 0x01) == 0x01;
+        return (flags & bit) == bit;
     }
 
     public int getStreamId()

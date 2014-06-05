@@ -31,7 +31,7 @@ public class ResetGenerateParseTest
             Parser parser = new Parser(new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onResetFrame(ResetFrame frame)
+                public boolean onReset(ResetFrame frame)
                 {
                     frames.add(frame);
                     return false;
@@ -67,7 +67,7 @@ public class ResetGenerateParseTest
         Parser parser = new Parser(new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onResetFrame(ResetFrame frame)
+            public boolean onReset(ResetFrame frame)
             {
                 frames.add(frame);
                 return false;

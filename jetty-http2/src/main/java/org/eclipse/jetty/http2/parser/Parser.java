@@ -22,13 +22,14 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 
 public class Parser
 {
     private final HeaderParser headerParser = new HeaderParser();
-    private final BodyParser[] bodyParsers = new BodyParser[4];
+    private final BodyParser[] bodyParsers = new BodyParser[FrameType.values().length];
     private State state = State.HEADER;
     private BodyParser bodyParser;
 
@@ -37,6 +38,7 @@ public class Parser
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
         bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
+        bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener);
     }
 
     private void reset()
@@ -86,28 +88,36 @@ public class Parser
 
     public interface Listener
     {
-        public boolean onDataFrame(DataFrame frame);
+        public boolean onData(DataFrame frame);
 
-        public boolean onPriorityFrame(PriorityFrame frame);
+        public boolean onPriority(PriorityFrame frame);
 
-        public boolean onResetFrame(ResetFrame frame);
+        public boolean onReset(ResetFrame frame);
+
+        public boolean onPing(PingFrame frame);
 
         public static class Adapter implements Listener
         {
             @Override
-            public boolean onDataFrame(DataFrame frame)
+            public boolean onData(DataFrame frame)
             {
                 return false;
             }
 
             @Override
-            public boolean onPriorityFrame(PriorityFrame frame)
+            public boolean onPriority(PriorityFrame frame)
             {
                 return false;
             }
 
             @Override
-            public boolean onResetFrame(ResetFrame frame)
+            public boolean onReset(ResetFrame frame)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean onPing(PingFrame frame)
             {
                 return false;
             }
