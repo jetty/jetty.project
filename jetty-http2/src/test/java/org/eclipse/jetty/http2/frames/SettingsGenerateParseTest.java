@@ -75,7 +75,7 @@ public class SettingsGenerateParseTest
         final List<SettingsFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            Generator.Result result = generator.generateSettings(settings, true);
+            ByteBufferPool.Lease lease = generator.generateSettings(settings, true);
             Parser parser = new Parser(new Parser.Listener.Adapter()
             {
                 @Override
@@ -87,7 +87,7 @@ public class SettingsGenerateParseTest
             });
 
             frames.clear();
-            for (ByteBuffer buffer : result.getByteBuffers())
+            for (ByteBuffer buffer : lease.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -105,9 +105,9 @@ public class SettingsGenerateParseTest
         Generator generator = new Generator(byteBufferPool);
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
-        Generator.Result result = generator.generateSettings(settings1, true);
+        ByteBufferPool.Lease lease = generator.generateSettings(settings1, true);
         // Modify the length of the frame to make it invalid
-        ByteBuffer bytes = result.getByteBuffers().get(0);
+        ByteBuffer bytes = lease.getByteBuffers().get(0);
         bytes.putShort(0, (short)(bytes.getShort(0) - 1));
 
         final AtomicInteger errorRef = new AtomicInteger();
@@ -120,7 +120,7 @@ public class SettingsGenerateParseTest
             }
         });
 
-        for (ByteBuffer buffer : result.getByteBuffers())
+        for (ByteBuffer buffer : lease.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {
@@ -142,7 +142,7 @@ public class SettingsGenerateParseTest
         settings1.put(key, value);
 
         final List<SettingsFrame> frames = new ArrayList<>();
-        Generator.Result result = generator.generateSettings(settings1, true);
+        ByteBufferPool.Lease lease = generator.generateSettings(settings1, true);
         Parser parser = new Parser(new Parser.Listener.Adapter()
         {
             @Override
@@ -153,7 +153,7 @@ public class SettingsGenerateParseTest
             }
         });
 
-        for (ByteBuffer buffer : result.getByteBuffers())
+        for (ByteBuffer buffer : lease.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {

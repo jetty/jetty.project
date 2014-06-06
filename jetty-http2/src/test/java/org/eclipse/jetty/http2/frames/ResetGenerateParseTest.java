@@ -45,7 +45,7 @@ public class ResetGenerateParseTest
         final List<ResetFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            Generator.Result result = generator.generateReset(streamId, error);
+            ByteBufferPool.Lease lease = generator.generateReset(streamId, error);
             Parser parser = new Parser(new Parser.Listener.Adapter()
             {
                 @Override
@@ -57,7 +57,7 @@ public class ResetGenerateParseTest
             });
 
             frames.clear();
-            for (ByteBuffer buffer : result.getByteBuffers())
+            for (ByteBuffer buffer : lease.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -81,7 +81,7 @@ public class ResetGenerateParseTest
         int error = 17;
 
         final List<ResetFrame> frames = new ArrayList<>();
-        Generator.Result result = generator.generateReset(streamId, error);
+        ByteBufferPool.Lease lease = generator.generateReset(streamId, error);
         Parser parser = new Parser(new Parser.Listener.Adapter()
         {
             @Override
@@ -92,7 +92,7 @@ public class ResetGenerateParseTest
             }
         });
 
-        for (ByteBuffer buffer : result.getByteBuffers())
+        for (ByteBuffer buffer : lease.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {

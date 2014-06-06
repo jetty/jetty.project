@@ -45,7 +45,7 @@ public class WindowUpdateGenerateParseTest
         final List<WindowUpdateFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            Generator.Result result = generator.generateWindowUpdate(streamId, windowUpdate);
+            ByteBufferPool.Lease lease = generator.generateWindowUpdate(streamId, windowUpdate);
             Parser parser = new Parser(new Parser.Listener.Adapter()
             {
                 @Override
@@ -57,7 +57,7 @@ public class WindowUpdateGenerateParseTest
             });
 
             frames.clear();
-            for (ByteBuffer buffer : result.getByteBuffers())
+            for (ByteBuffer buffer : lease.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -81,7 +81,7 @@ public class WindowUpdateGenerateParseTest
         int windowUpdate = 17;
 
         final List<WindowUpdateFrame> frames = new ArrayList<>();
-        Generator.Result result = generator.generateWindowUpdate(streamId, windowUpdate);
+        ByteBufferPool.Lease lease = generator.generateWindowUpdate(streamId, windowUpdate);
         Parser parser = new Parser(new Parser.Listener.Adapter()
         {
             @Override
@@ -92,7 +92,7 @@ public class WindowUpdateGenerateParseTest
             }
         });
 
-        for (ByteBuffer buffer : result.getByteBuffers())
+        for (ByteBuffer buffer : lease.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {

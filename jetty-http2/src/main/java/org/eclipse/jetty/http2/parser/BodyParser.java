@@ -21,7 +21,9 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -58,17 +60,17 @@ public abstract class BodyParser
 
     protected boolean isPaddingHigh()
     {
-        return headerParser.hasFlag(0x10);
+        return headerParser.hasFlag(Flag.PADDING_HIGH);
     }
 
     protected boolean isPaddingLow()
     {
-        return headerParser.hasFlag(0x8);
+        return headerParser.hasFlag(Flag.PADDING_LOW);
     }
 
     protected boolean isEndStream()
     {
-        return headerParser.hasFlag(0x1);
+        return headerParser.hasFlag(Flag.END_STREAM);
     }
 
     protected int getStreamId()
@@ -86,6 +88,19 @@ public abstract class BodyParser
         try
         {
             return listener.onData(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return false;
+        }
+    }
+
+    protected boolean notifyHeaders(HeadersFrame frame)
+    {
+        try
+        {
+            return listener.onHeaders(frame);
         }
         catch (Throwable x)
         {

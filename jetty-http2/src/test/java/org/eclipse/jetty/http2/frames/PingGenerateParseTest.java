@@ -46,7 +46,7 @@ public class PingGenerateParseTest
         final List<PingFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            Generator.Result result = generator.generatePing(payload, true);
+            ByteBufferPool.Lease lease = generator.generatePing(payload, true);
             Parser parser = new Parser(new Parser.Listener.Adapter()
             {
                 @Override
@@ -58,7 +58,7 @@ public class PingGenerateParseTest
             });
 
             frames.clear();
-            for (ByteBuffer buffer : result.getByteBuffers())
+            for (ByteBuffer buffer : lease.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -82,7 +82,7 @@ public class PingGenerateParseTest
         new Random().nextBytes(payload);
 
         final List<PingFrame> frames = new ArrayList<>();
-        Generator.Result result = generator.generatePing(payload, true);
+        ByteBufferPool.Lease lease = generator.generatePing(payload, true);
         Parser parser = new Parser(new Parser.Listener.Adapter()
         {
             @Override
@@ -93,7 +93,7 @@ public class PingGenerateParseTest
             }
         });
 
-        for (ByteBuffer buffer : result.getByteBuffers())
+        for (ByteBuffer buffer : lease.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {

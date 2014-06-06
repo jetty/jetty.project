@@ -47,7 +47,7 @@ public class PriorityGenerateParseTest
         final List<PriorityFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            Generator.Result result = generator.generatePriority(streamId, dependentStreamId, weight, exclusive);
+            ByteBufferPool.Lease lease = generator.generatePriority(streamId, dependentStreamId, weight, exclusive);
             Parser parser = new Parser(new Parser.Listener.Adapter()
             {
                 @Override
@@ -59,7 +59,7 @@ public class PriorityGenerateParseTest
             });
 
             frames.clear();
-            for (ByteBuffer buffer : result.getByteBuffers())
+            for (ByteBuffer buffer : lease.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -87,7 +87,7 @@ public class PriorityGenerateParseTest
         boolean exclusive = true;
 
         final List<PriorityFrame> frames = new ArrayList<>();
-        Generator.Result result = generator.generatePriority(streamId, dependentStreamId, weight, exclusive);
+        ByteBufferPool.Lease lease = generator.generatePriority(streamId, dependentStreamId, weight, exclusive);
         Parser parser = new Parser(new Parser.Listener.Adapter()
         {
             @Override
@@ -98,7 +98,7 @@ public class PriorityGenerateParseTest
             }
         });
 
-        for (ByteBuffer buffer : result.getByteBuffers())
+        for (ByteBuffer buffer : lease.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {

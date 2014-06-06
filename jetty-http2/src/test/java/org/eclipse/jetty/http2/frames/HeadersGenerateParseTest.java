@@ -18,33 +18,17 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.junit.Test;
 
-public class DataFrame extends Frame
+public class HeadersGenerateParseTest
 {
-    private final int streamId;
-    private final ByteBuffer data;
-    private boolean endStream;
+    private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
 
-    public DataFrame(int streamId, ByteBuffer data, boolean endStream)
+    @Test
+    public void testGenerateParse() throws Exception
     {
-        this.streamId = streamId;
-        this.data = data;
-        this.endStream = endStream;
-    }
-
-    public int getStreamId()
-    {
-        return streamId;
-    }
-
-    public ByteBuffer getData()
-    {
-        return data;
-    }
-
-    public boolean isEndStream()
-    {
-        return endStream;
+        // TODO
     }
 }

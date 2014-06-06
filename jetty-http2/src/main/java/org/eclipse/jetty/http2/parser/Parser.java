@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
@@ -44,12 +45,17 @@ public class Parser
     {
         this.listener = listener;
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
+        bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
         bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
         bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener);
+        bodyParsers[FrameType.PUSH_PROMISE.getType()] = null; // TODO
         bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener);
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
         bodyParsers[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateBodyParser(headerParser, listener);
+        bodyParsers[FrameType.CONTINUATION.getType()] = null; // TODO
+        bodyParsers[FrameType.ALTSVC.getType()] = null; // TODO
+        bodyParsers[FrameType.BLOCKED.getType()] = null; // TODO
     }
 
     private void reset()
@@ -142,6 +148,8 @@ public class Parser
     {
         public boolean onData(DataFrame frame);
 
+        public boolean onHeaders(HeadersFrame frame);
+
         public boolean onPriority(PriorityFrame frame);
 
         public boolean onReset(ResetFrame frame);
@@ -160,6 +168,12 @@ public class Parser
         {
             @Override
             public boolean onData(DataFrame frame)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean onHeaders(HeadersFrame frame)
             {
                 return false;
             }

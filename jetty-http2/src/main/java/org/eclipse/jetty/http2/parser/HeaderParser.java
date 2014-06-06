@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.Frame;
 
 public class HeaderParser
 {
@@ -64,7 +64,7 @@ public class HeaderParser
                     if (++cursor == 2)
                     {
                         // First 2 most significant bits MUST be ignored as per specification.
-                        length &= DataFrame.MAX_LENGTH;
+                        length &= Frame.MAX_LENGTH;
                         state = State.TYPE;
                     }
                     break;

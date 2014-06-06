@@ -18,33 +18,8 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
-
-public class DataFrame extends Frame
+public abstract class Frame
 {
-    private final int streamId;
-    private final ByteBuffer data;
-    private boolean endStream;
-
-    public DataFrame(int streamId, ByteBuffer data, boolean endStream)
-    {
-        this.streamId = streamId;
-        this.data = data;
-        this.endStream = endStream;
-    }
-
-    public int getStreamId()
-    {
-        return streamId;
-    }
-
-    public ByteBuffer getData()
-    {
-        return data;
-    }
-
-    public boolean isEndStream()
-    {
-        return endStream;
-    }
+    public static final int HEADER_LENGTH = 8;
+    public static final int MAX_LENGTH = 0x3F_FF;
 }

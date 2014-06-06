@@ -18,33 +18,14 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
-
-public class DataFrame extends Frame
+public interface Flag
 {
-    private final int streamId;
-    private final ByteBuffer data;
-    private boolean endStream;
-
-    public DataFrame(int streamId, ByteBuffer data, boolean endStream)
-    {
-        this.streamId = streamId;
-        this.data = data;
-        this.endStream = endStream;
-    }
-
-    public int getStreamId()
-    {
-        return streamId;
-    }
-
-    public ByteBuffer getData()
-    {
-        return data;
-    }
-
-    public boolean isEndStream()
-    {
-        return endStream;
-    }
+    public static final int END_STREAM = 0x01;
+    public static final int ACK = END_STREAM;
+    public static final int END_SEGMENT = 0x02;
+    public static final int END_HEADERS = 0x04;
+    public static final int PADDING_LOW = 0x08;
+    public static final int PADDING_HIGH = 0x10;
+    public static final int COMPRESS = 0x20;
+    public static final int PRIORITY = COMPRESS;
 }

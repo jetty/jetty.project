@@ -91,7 +91,7 @@ public class DataGenerateParseTest
         Assert.assertEquals(1, frames.size());
         DataFrame frame = frames.get(0);
         Assert.assertTrue(frame.getStreamId() != 0);
-        Assert.assertTrue(frame.isEnd());
+        Assert.assertTrue(frame.isEndStream());
         Assert.assertEquals(content, frame.getData());
     }
 
@@ -123,7 +123,7 @@ public class DataGenerateParseTest
         {
             DataFrame frame = frames.get(i - 1);
             Assert.assertTrue(frame.getStreamId() != 0);
-            Assert.assertEquals(i == frames.size(), frame.isEnd());
+            Assert.assertEquals(i == frames.size(), frame.isEndStream());
             aggregate.put(frame.getData());
         }
         aggregate.flip();
@@ -138,10 +138,10 @@ public class DataGenerateParseTest
         final List<DataFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            Generator.Result result = new Generator.Result(byteBufferPool);
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             for (int j = 1; j <= data.length; ++j)
             {
-                result = result.merge(generator.generateData(13, data[j - 1].slice(), j == data.length, false, new byte[paddingLength]));
+                lease = lease.merge(generator.generateData(13, data[j - 1].slice(), j == data.length, false, new byte[paddingLength]));
             }
 
             Parser parser = new Parser(new Parser.Listener.Adapter()
@@ -155,7 +155,7 @@ public class DataGenerateParseTest
             });
 
             frames.clear();
-            for (ByteBuffer buffer : result.getByteBuffers())
+            for (ByteBuffer buffer : lease.getByteBuffers())
             {
                 parser.parse(buffer);
             }
@@ -169,7 +169,7 @@ public class DataGenerateParseTest
     {
         Generator generator = new Generator(byteBufferPool);
 
-        Generator.Result result = generator.generateData(13, ByteBuffer.wrap(largeContent).slice(), true, false, new byte[1024]);
+        ByteBufferPool.Lease lease = generator.generateData(13, ByteBuffer.wrap(largeContent).slice(), true, false, new byte[1024]);
 
         final List<DataFrame> frames = new ArrayList<>();
         Parser parser = new Parser(new Parser.Listener.Adapter()
@@ -182,7 +182,7 @@ public class DataGenerateParseTest
             }
         });
 
-        for (ByteBuffer buffer : result.getByteBuffers())
+        for (ByteBuffer buffer : lease.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {

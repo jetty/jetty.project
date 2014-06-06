@@ -18,33 +18,20 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import java.nio.ByteBuffer;
+import org.eclipse.jetty.http.HttpFields;
 
-public class DataFrame extends Frame
+public class HeadersFrame
 {
     private final int streamId;
-    private final ByteBuffer data;
-    private boolean endStream;
+    private final HttpFields fields;
+    private final PriorityFrame priority;
+    private final boolean endStream;
 
-    public DataFrame(int streamId, ByteBuffer data, boolean endStream)
+    public HeadersFrame(int streamId, HttpFields fields, PriorityFrame priority, boolean endStream)
     {
         this.streamId = streamId;
-        this.data = data;
+        this.fields = fields;
+        this.priority = priority;
         this.endStream = endStream;
-    }
-
-    public int getStreamId()
-    {
-        return streamId;
-    }
-
-    public ByteBuffer getData()
-    {
-        return data;
-    }
-
-    public boolean isEndStream()
-    {
-        return endStream;
     }
 }

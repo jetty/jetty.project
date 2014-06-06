@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.PingFrame;
 
 public class PingBodyParser extends BodyParser
@@ -93,7 +94,7 @@ public class PingBodyParser extends BodyParser
 
     private Result onPing(byte[] payload)
     {
-        PingFrame frame = new PingFrame(payload, hasFlag(0x1));
+        PingFrame frame = new PingFrame(payload, hasFlag(Flag.ACK));
         reset();
         return notifyPing(frame) ? Result.ASYNC : Result.COMPLETE;
     }

@@ -19,11 +19,12 @@
 package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Map;
 
-import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.hpack.HpackEncoder;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http2.frames.Flag;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -31,19 +32,21 @@ import org.eclipse.jetty.util.BufferUtil;
 public class Generator
 {
     private final ByteBufferPool byteBufferPool;
+    private final HpackEncoder encoder;
 
     public Generator(ByteBufferPool byteBufferPool)
     {
         this.byteBufferPool = byteBufferPool;
+        this.encoder = new HpackEncoder(byteBufferPool);
     }
 
-    public Result generateData(int streamId, ByteBuffer data, boolean last, boolean compress, byte[] paddingBytes)
+    public ByteBufferPool.Lease generateData(int streamId, ByteBuffer data, boolean last, boolean compress, byte[] paddingBytes)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
         int paddingLength = paddingBytes == null ? 0 : paddingBytes.length;
         // Leave space for at least one byte of content.
-        if (paddingLength > DataFrame.MAX_LENGTH - 3)
+        if (paddingLength > Frame.MAX_LENGTH - 3)
             throw new IllegalArgumentException("Invalid padding length: " + paddingLength);
 
         int extraPaddingBytes = paddingLength > 0xFF ? 2 : paddingLength > 0 ? 1 : 0;
@@ -52,16 +55,16 @@ public class Generator
 
         int dataLength = data.remaining();
 
-        Result result = new Result(byteBufferPool);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
 
         // Can we fit just one frame ?
-        if (dataLength + extraPaddingBytes + paddingLength <= DataFrame.MAX_LENGTH)
+        if (dataLength + extraPaddingBytes + paddingLength <= Frame.MAX_LENGTH)
         {
-            generateData(result, streamId, data, last, compress, extraPaddingBytes, paddingBytes);
+            generateData(lease, streamId, data, last, compress, extraPaddingBytes, paddingBytes);
         }
         else
         {
-            int dataBytesPerFrame = DataFrame.MAX_LENGTH - extraPaddingBytes - paddingLength;
+            int dataBytesPerFrame = Frame.MAX_LENGTH - extraPaddingBytes - paddingLength;
             int frames = dataLength / dataBytesPerFrame;
             if (frames * dataBytesPerFrame != dataLength)
             {
@@ -73,20 +76,69 @@ public class Generator
                 data.limit(Math.min(dataBytesPerFrame * i, limit));
                 ByteBuffer slice = data.slice();
                 data.position(data.limit());
-                generateData(result, streamId, slice, i == frames && last, compress, extraPaddingBytes, paddingBytes);
+                generateData(lease, streamId, slice, i == frames && last, compress, extraPaddingBytes, paddingBytes);
             }
         }
-        return result;
+        return lease;
     }
 
-    public Result generatePriority(int streamId, int dependentStreamId, int weight, boolean exclusive)
+    public ByteBufferPool.Lease generateHeaders(int streamId, HttpFields headers, boolean contentFollows, byte[] paddingBytes)
+    {
+        if (streamId < 0)
+            throw new IllegalArgumentException("Invalid stream id: " + streamId);
+        int paddingLength = paddingBytes == null ? 0 : paddingBytes.length;
+        // Leave space for at least one byte of content.
+        if (paddingLength > Frame.MAX_LENGTH - 3)
+            throw new IllegalArgumentException("Invalid padding length: " + paddingLength);
+
+        int extraPaddingBytes = paddingLength > 0xFF ? 2 : paddingLength > 0 ? 1 : 0;
+
+        ByteBufferPool.Lease hpackBuffers = encoder.encode(headers);
+
+        long hpackLength = hpackBuffers.getTotalLength();
+
+        long length = extraPaddingBytes + hpackLength + paddingLength;
+        if (length > Frame.MAX_LENGTH)
+            throw new IllegalArgumentException("Invalid headers, too big");
+
+        int flags = Flag.END_HEADERS;
+        if (!contentFollows)
+            flags |= Flag.END_STREAM;
+        if (extraPaddingBytes > 0)
+            flags |= Flag.PADDING_LOW;
+        if (extraPaddingBytes > 1)
+            flags |= Flag.PADDING_HIGH;
+
+        ByteBuffer header = generateHeader(FrameType.HEADERS, Frame.HEADER_LENGTH + extraPaddingBytes, (int)length, flags, streamId);
+
+        if (extraPaddingBytes == 2)
+            header.putShort((short)paddingLength);
+        else if (extraPaddingBytes == 1)
+            header.put((byte)paddingLength);
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+
+        BufferUtil.flipToFlush(header, 0);
+        lease.add(header, true);
+
+        lease.merge(hpackBuffers);
+
+        if (paddingBytes != null)
+        {
+            lease.add(ByteBuffer.wrap(paddingBytes), false);
+        }
+
+        return lease;
+    }
+
+    public ByteBufferPool.Lease generatePriority(int streamId, int dependentStreamId, int weight, boolean exclusive)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
         if (dependentStreamId < 0)
             throw new IllegalArgumentException("Invalid dependent stream id: " + dependentStreamId);
 
-        Result result = new Result(byteBufferPool);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
 
         ByteBuffer header = generateHeader(FrameType.PRIORITY, 5, 0, dependentStreamId);
 
@@ -98,31 +150,31 @@ public class Generator
         header.put((byte)weight);
 
         BufferUtil.flipToFlush(header, 0);
-        result.add(header, true);
+        lease.add(header, true);
 
-        return result;
+        return lease;
     }
 
-    public Result generateReset(int streamId, int error)
+    public ByteBufferPool.Lease generateReset(int streamId, int error)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
-        Result result = new Result(byteBufferPool);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
 
         ByteBuffer header = generateHeader(FrameType.RST_STREAM, 4, 0, streamId);
 
         header.putInt(error);
 
         BufferUtil.flipToFlush(header, 0);
-        result.add(header, true);
+        lease.add(header, true);
 
-        return result;
+        return lease;
     }
 
-    public Result generateSettings(Map<Integer, Integer> settings, boolean reply)
+    public ByteBufferPool.Lease generateSettings(Map<Integer, Integer> settings, boolean reply)
     {
-        Result result = new Result(byteBufferPool);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
 
         ByteBuffer header = generateHeader(FrameType.SETTINGS, 5 * settings.size(), reply ? 0x01 : 0x00, 0);
 
@@ -133,34 +185,34 @@ public class Generator
         }
 
         BufferUtil.flipToFlush(header, 0);
-        result.add(header, true);
+        lease.add(header, true);
 
-        return result;
+        return lease;
     }
 
-    public Result generatePing(byte[] payload, boolean reply)
+    public ByteBufferPool.Lease generatePing(byte[] payload, boolean reply)
     {
         if (payload.length != 8)
             throw new IllegalArgumentException("Invalid payload length: " + payload.length);
 
-        Result result = new Result(byteBufferPool);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
 
         ByteBuffer header = generateHeader(FrameType.PING, 8, reply ? 0x01 : 0x00, 0);
 
         header.put(payload);
 
         BufferUtil.flipToFlush(header, 0);
-        result.add(header, true);
+        lease.add(header, true);
 
-        return result;
+        return lease;
     }
 
-    public Result generateGoAway(int lastStreamId, int error, byte[] payload)
+    public ByteBufferPool.Lease generateGoAway(int lastStreamId, int error, byte[] payload)
     {
         if (lastStreamId < 0)
             throw new IllegalArgumentException("Invalid last stream id: " + lastStreamId);
 
-        Result result = new Result(byteBufferPool);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
 
         int length = 4 + 4 + (payload != null ? payload.length : 0);
         ByteBuffer header = generateHeader(FrameType.GO_AWAY, length, 0, 0);
@@ -174,46 +226,46 @@ public class Generator
         }
 
         BufferUtil.flipToFlush(header, 0);
-        result.add(header, true);
+        lease.add(header, true);
 
-        return result;
+        return lease;
     }
 
-    public Result generateWindowUpdate(int streamId, int windowUpdate)
+    public ByteBufferPool.Lease generateWindowUpdate(int streamId, int windowUpdate)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
         if (windowUpdate < 0)
             throw new IllegalArgumentException("Invalid window update: " + windowUpdate);
 
-        Result result = new Result(byteBufferPool);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
 
         ByteBuffer header = generateHeader(FrameType.WINDOW_UPDATE, 4, 0, streamId);
 
         header.putInt(windowUpdate);
 
         BufferUtil.flipToFlush(header, 0);
-        result.add(header, true);
+        lease.add(header, true);
 
-        return result;
+        return lease;
     }
 
-    private void generateData(Result result, int streamId, ByteBuffer data, boolean last, boolean compress, int extraPaddingBytes, byte[] paddingBytes)
+    private void generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, boolean compress, int extraPaddingBytes, byte[] paddingBytes)
     {
         int paddingLength = paddingBytes == null ? 0 : paddingBytes.length;
         int length = extraPaddingBytes + data.remaining() + paddingLength;
 
         int flags = 0;
         if (last)
-            flags |= 0x01;
+            flags |= Flag.END_STREAM;
         if (extraPaddingBytes > 0)
-            flags |= 0x08;
+            flags |= Flag.PADDING_LOW;
         if (extraPaddingBytes > 1)
-            flags |= 0x10;
+            flags |= Flag.PADDING_HIGH;
         if (compress)
-            flags |= 0x20;
+            flags |= Flag.COMPRESS;
 
-        ByteBuffer header = generateHeader(FrameType.DATA, 8 + extraPaddingBytes, length, flags, streamId);
+        ByteBuffer header = generateHeader(FrameType.DATA, Frame.HEADER_LENGTH + extraPaddingBytes, length, flags, streamId);
 
         if (extraPaddingBytes == 2)
             header.putShort((short)paddingLength);
@@ -221,19 +273,19 @@ public class Generator
             header.put((byte)paddingLength);
 
         BufferUtil.flipToFlush(header, 0);
-        result.add(header, true);
+        lease.add(header, true);
 
-        result.add(data, false);
+        lease.add(data, false);
 
         if (paddingBytes != null)
         {
-            result.add(ByteBuffer.wrap(paddingBytes), false);
+            lease.add(ByteBuffer.wrap(paddingBytes), false);
         }
     }
 
     private ByteBuffer generateHeader(FrameType frameType, int length, int flags, int streamId)
     {
-        return generateHeader(frameType, 8 + length, length, flags, streamId);
+        return generateHeader(frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
     }
 
     private ByteBuffer generateHeader(FrameType frameType, int capacity, int length, int flags, int streamId)
@@ -247,38 +299,5 @@ public class Generator
         header.putInt(streamId);
 
         return header;
-    }
-
-    public static class Result
-    {
-        private final ByteBufferPool byteBufferPool;
-        private final List<ByteBuffer> buffers;
-        private final List<Boolean> recycles;
-
-        public Result(ByteBufferPool byteBufferPool)
-        {
-            this.byteBufferPool = byteBufferPool;
-            this.buffers = new ArrayList<>();
-            this.recycles = new ArrayList<>();
-        }
-
-        public void add(ByteBuffer buffer, boolean recycle)
-        {
-            buffers.add(buffer);
-            recycles.add(recycle);
-        }
-
-        public List<ByteBuffer> getByteBuffers()
-        {
-            return buffers;
-        }
-
-        public Result merge(Result that)
-        {
-            assert byteBufferPool == that.byteBufferPool;
-            buffers.addAll(that.buffers);
-            recycles.addAll(that.recycles);
-            return this;
-        }
     }
 }

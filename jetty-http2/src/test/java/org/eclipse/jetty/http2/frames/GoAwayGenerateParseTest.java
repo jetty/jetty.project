@@ -46,7 +46,7 @@ public class GoAwayGenerateParseTest
         final List<GoAwayFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            Generator.Result result = generator.generateGoAway(lastStreamId, error, null);
+            ByteBufferPool.Lease lease = generator.generateGoAway(lastStreamId, error, null);
             Parser parser = new Parser(new Parser.Listener.Adapter()
             {
                 @Override
@@ -58,7 +58,7 @@ public class GoAwayGenerateParseTest
             });
 
             frames.clear();
-            for (ByteBuffer buffer : result.getByteBuffers())
+            for (ByteBuffer buffer : lease.getByteBuffers())
             {
                 while (buffer.hasRemaining())
                 {
@@ -85,7 +85,7 @@ public class GoAwayGenerateParseTest
         new Random().nextBytes(payload);
 
         final List<GoAwayFrame> frames = new ArrayList<>();
-        Generator.Result result = generator.generateGoAway(lastStreamId, error, payload);
+        ByteBufferPool.Lease lease = generator.generateGoAway(lastStreamId, error, payload);
         Parser parser = new Parser(new Parser.Listener.Adapter()
         {
             @Override
@@ -96,7 +96,7 @@ public class GoAwayGenerateParseTest
             }
         });
 
-        for (ByteBuffer buffer : result.getByteBuffers())
+        for (ByteBuffer buffer : lease.getByteBuffers())
         {
             while (buffer.hasRemaining())
             {
