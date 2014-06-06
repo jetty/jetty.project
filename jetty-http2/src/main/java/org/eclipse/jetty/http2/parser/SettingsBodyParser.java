@@ -66,10 +66,6 @@ public class SettingsBodyParser extends BodyParser
                     length = getBodyLength();
                     settings = new HashMap<>();
                     state = State.SETTING_ID;
-                    if (length == 0)
-                    {
-                        return onSettings(settings);
-                    }
                     break;
                 }
                 case SETTING_ID:
@@ -77,9 +73,9 @@ public class SettingsBodyParser extends BodyParser
                     settingId = buffer.get() & 0xFF;
                     state = State.SETTING_VALUE;
                     --length;
-                    if (length == 0)
+                    if (length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings");
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_frame");
                     }
                     break;
                 }
@@ -110,9 +106,9 @@ public class SettingsBodyParser extends BodyParser
                     --cursor;
                     settingValue += currByte << (8 * cursor);
                     --length;
-                    if (cursor > 0 && length == 0)
+                    if (cursor > 0 && length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings");
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_frame");
                     }
                     if (cursor == 0)
                     {

@@ -24,7 +24,7 @@ import org.eclipse.jetty.http2.frames.PriorityFrame;
 
 public class PriorityBodyParser extends BodyParser
 {
-    private State state = State.EXCLUSIVE;
+    private State state = State.PREPARE;
     private int cursor;
     private boolean exclusive;
     private int streamId;
@@ -36,7 +36,7 @@ public class PriorityBodyParser extends BodyParser
 
     private void reset()
     {
-        state = State.EXCLUSIVE;
+        state = State.PREPARE;
         cursor = 0;
         exclusive = false;
         streamId = 0;
@@ -49,6 +49,16 @@ public class PriorityBodyParser extends BodyParser
         {
             switch (state)
             {
+                case PREPARE:
+                {
+                    int length = getBodyLength();
+                    if (length != 5)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_priority_frame");
+                    }
+                    state = State.EXCLUSIVE;
+                    break;
+                }
                 case EXCLUSIVE:
                 {
                     // We must only peek the first byte and not advance the buffer
@@ -108,6 +118,6 @@ public class PriorityBodyParser extends BodyParser
 
     private enum State
     {
-        EXCLUSIVE, STREAM_ID, STREAM_ID_BYTES, WEIGHT
+        PREPARE, EXCLUSIVE, STREAM_ID, STREAM_ID_BYTES, WEIGHT
     }
 }

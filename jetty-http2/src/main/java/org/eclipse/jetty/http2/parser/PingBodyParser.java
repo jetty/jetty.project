@@ -24,7 +24,7 @@ import org.eclipse.jetty.http2.frames.PingFrame;
 
 public class PingBodyParser extends BodyParser
 {
-    private State state = State.PAYLOAD;
+    private State state = State.PREPARE;
     private int cursor;
     private byte[] payload;
 
@@ -35,7 +35,7 @@ public class PingBodyParser extends BodyParser
 
     private void reset()
     {
-        state = State.PAYLOAD;
+        state = State.PREPARE;
         cursor = 0;
         payload = null;
     }
@@ -47,6 +47,16 @@ public class PingBodyParser extends BodyParser
         {
             switch (state)
             {
+                case PREPARE:
+                {
+                    int length = getBodyLength();
+                    if (length != 8)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_ping_frame");
+                    }
+                    state = State.PAYLOAD;
+                    break;
+                }
                 case PAYLOAD:
                 {
                     payload = new byte[8];
@@ -90,6 +100,6 @@ public class PingBodyParser extends BodyParser
 
     private enum State
     {
-        PAYLOAD, PAYLOAD_BYTES
+        PREPARE, PAYLOAD, PAYLOAD_BYTES
     }
 }

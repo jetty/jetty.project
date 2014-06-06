@@ -24,7 +24,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 
 public class ResetBodyParser extends BodyParser
 {
-    private State state = State.ERROR;
+    private State state = State.PREPARE;
     private int cursor;
     private int error;
 
@@ -35,7 +35,7 @@ public class ResetBodyParser extends BodyParser
 
     private void reset()
     {
-        state = State.ERROR;
+        state = State.PREPARE;
         cursor = 0;
         error = 0;
     }
@@ -47,6 +47,16 @@ public class ResetBodyParser extends BodyParser
         {
             switch (state)
             {
+                case PREPARE:
+                {
+                    int length = getBodyLength();
+                    if (length != 4)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_rst_stream_frame");
+                    }
+                    state = State.ERROR;
+                    break;
+                }
                 case ERROR:
                 {
                     if (buffer.remaining() >= 4)
@@ -89,6 +99,6 @@ public class ResetBodyParser extends BodyParser
 
     private enum State
     {
-        ERROR, ERROR_BYTES
+        PREPARE, ERROR, ERROR_BYTES
     }
 }

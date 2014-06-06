@@ -44,6 +44,11 @@ public class DataBodyParser extends BodyParser
     @Override
     protected boolean emptyBody()
     {
+        if (isPaddingHigh() || isPaddingLow())
+        {
+            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_data_frame");
+            return false;
+        }
         return onData(BufferUtil.EMPTY_BUFFER, false);
     }
 
@@ -75,6 +80,10 @@ public class DataBodyParser extends BodyParser
                 {
                     paddingLength = (buffer.get() & 0xFF) << 8;
                     length -= 1;
+                    if (length < 1 + 256)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_data_frame_padding");
+                    }
                     state = State.PADDING_LOW;
                     break;
                 }
@@ -82,6 +91,10 @@ public class DataBodyParser extends BodyParser
                 {
                     paddingLength += buffer.get() & 0xFF;
                     length -= 1;
+                    if (length < paddingLength)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_data_frame_padding");
+                    }
                     length -= paddingLength;
                     state = State.DATA;
                     break;

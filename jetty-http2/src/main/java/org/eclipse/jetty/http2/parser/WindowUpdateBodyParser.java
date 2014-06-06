@@ -24,7 +24,7 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 
 public class WindowUpdateBodyParser extends BodyParser
 {
-    private State state = State.WINDOW_DELTA;
+    private State state = State.PREPARE;
     private int cursor;
     private int windowDelta;
 
@@ -35,7 +35,7 @@ public class WindowUpdateBodyParser extends BodyParser
 
     private void reset()
     {
-        state = State.WINDOW_DELTA;
+        state = State.PREPARE;
         cursor = 0;
         windowDelta = 0;
     }
@@ -47,6 +47,16 @@ public class WindowUpdateBodyParser extends BodyParser
         {
             switch (state)
             {
+                case PREPARE:
+                {
+                    int length = getBodyLength();
+                    if (length != 4)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_window_update_frame");
+                    }
+                    state = State.WINDOW_DELTA;
+                    break;
+                }
                 case WINDOW_DELTA:
                 {
                     if (buffer.remaining() >= 4)
@@ -91,6 +101,6 @@ public class WindowUpdateBodyParser extends BodyParser
 
     private enum State
     {
-        WINDOW_DELTA, WINDOW_DELTA_BYTES
+        PREPARE, WINDOW_DELTA, WINDOW_DELTA_BYTES
     }
 }

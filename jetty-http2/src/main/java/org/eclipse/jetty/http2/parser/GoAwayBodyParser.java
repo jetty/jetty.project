@@ -24,8 +24,9 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 
 public class GoAwayBodyParser extends BodyParser
 {
-    private State state = State.LAST_STREAM_ID;
+    private State state = State.PREPARE;
     private int cursor;
+    private int length;
     private int lastStreamId;
     private int error;
     private byte[] payload;
@@ -37,8 +38,9 @@ public class GoAwayBodyParser extends BodyParser
 
     private void reset()
     {
-        state = State.LAST_STREAM_ID;
+        state = State.PREPARE;
         cursor = 0;
+        length = 0;
         lastStreamId = 0;
         error = 0;
         payload = null;
@@ -51,6 +53,12 @@ public class GoAwayBodyParser extends BodyParser
         {
             switch (state)
             {
+                case PREPARE:
+                {
+                    state = State.LAST_STREAM_ID;
+                    length = getBodyLength();
+                    break;
+                }
                 case LAST_STREAM_ID:
                 {
                     if (buffer.remaining() >= 4)
@@ -58,6 +66,11 @@ public class GoAwayBodyParser extends BodyParser
                         lastStreamId = buffer.getInt();
                         lastStreamId &= 0x7F_FF_FF_FF;
                         state = State.ERROR;
+                        length -= 4;
+                        if (length <= 0)
+                        {
+                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_go_away_frame");
+                        }
                     }
                     else
                     {
@@ -71,10 +84,19 @@ public class GoAwayBodyParser extends BodyParser
                     int currByte = buffer.get() & 0xFF;
                     --cursor;
                     lastStreamId += currByte << (8 * cursor);
+                    --length;
+                    if (cursor > 0 && length <= 0)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_go_away_frame");
+                    }
                     if (cursor == 0)
                     {
                         lastStreamId &= 0x7F_FF_FF_FF;
                         state = State.ERROR;
+                        if (length == 0)
+                        {
+                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_go_away_frame");
+                        }
                     }
                     break;
                 }
@@ -84,8 +106,12 @@ public class GoAwayBodyParser extends BodyParser
                     {
                         error = buffer.getInt();
                         state = State.PAYLOAD;
-                        int payloadLength = getBodyLength() - 4 - 4;
-                        if (payloadLength == 0)
+                        length -= 4;
+                        if (length < 0)
+                        {
+                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_go_away_frame");
+                        }
+                        if (length == 0)
                         {
                             return onGoAway(lastStreamId, error, null);
                         }
@@ -102,11 +128,15 @@ public class GoAwayBodyParser extends BodyParser
                     int currByte = buffer.get() & 0xFF;
                     --cursor;
                     error += currByte << (8 * cursor);
+                    --length;
+                    if (cursor > 0 && length <= 0)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_go_away_frame");
+                    }
                     if (cursor == 0)
                     {
                         state = State.PAYLOAD;
-                        int payloadLength = getBodyLength() - 4 - 4;
-                        if (payloadLength == 0)
+                        if (length == 0)
                         {
                             return onGoAway(lastStreamId, error, null);
                         }
@@ -115,9 +145,8 @@ public class GoAwayBodyParser extends BodyParser
                 }
                 case PAYLOAD:
                 {
-                    int payloadLength = getBodyLength() - 4 - 4;
-                    payload = new byte[payloadLength];
-                    if (buffer.remaining() >= payloadLength)
+                    payload = new byte[length];
+                    if (buffer.remaining() >= length)
                     {
                         buffer.get(payload);
                         return onGoAway(lastStreamId, error, payload);
@@ -125,7 +154,7 @@ public class GoAwayBodyParser extends BodyParser
                     else
                     {
                         state = State.PAYLOAD_BYTES;
-                        cursor = payloadLength;
+                        cursor = length;
                     }
                     break;
                 }
@@ -157,6 +186,6 @@ public class GoAwayBodyParser extends BodyParser
 
     private enum State
     {
-        LAST_STREAM_ID, LAST_STREAM_ID_BYTES, ERROR, ERROR_BYTES, PAYLOAD, PAYLOAD_BYTES
+        PREPARE, LAST_STREAM_ID, LAST_STREAM_ID_BYTES, ERROR, ERROR_BYTES, PAYLOAD, PAYLOAD_BYTES
     }
 }

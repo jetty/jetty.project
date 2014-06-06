@@ -47,13 +47,19 @@ public class DataGenerateParseTest
     @Test
     public void testGenerateParseNoContentNoPadding()
     {
-        ByteBuffer content = BufferUtil.EMPTY_BUFFER;
-        List<DataFrame> frames = testGenerateParse(0, content);
-        Assert.assertEquals(1, frames.size());
-        DataFrame frame = frames.get(0);
-        Assert.assertTrue(frame.getStreamId() != 0);
-        Assert.assertTrue(frame.isEnd());
-        Assert.assertEquals(content, frame.getData());
+        testGenerateParseContent(0, BufferUtil.EMPTY_BUFFER);
+    }
+
+    @Test
+    public void testGenerateParseNoContentSmallPadding()
+    {
+        testGenerateParseContent(128, BufferUtil.EMPTY_BUFFER);
+    }
+
+    @Test
+    public void testGenerateParseNoContentLargePadding()
+    {
+        testGenerateParseContent(1024, BufferUtil.EMPTY_BUFFER);
     }
 
     @Test
@@ -76,7 +82,11 @@ public class DataGenerateParseTest
 
     private void testGenerateParseSmallContent(int paddingLength)
     {
-        ByteBuffer content = ByteBuffer.wrap(smallContent);
+        testGenerateParseContent(paddingLength, ByteBuffer.wrap(smallContent));
+    }
+
+    private void testGenerateParseContent(int paddingLength, ByteBuffer content)
+    {
         List<DataFrame> frames = testGenerateParse(paddingLength, content);
         Assert.assertEquals(1, frames.size());
         DataFrame frame = frames.get(0);
