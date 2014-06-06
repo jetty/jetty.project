@@ -25,6 +25,7 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -135,6 +136,19 @@ public abstract class BodyParser
         try
         {
             return listener.onGoAway(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return false;
+        }
+    }
+
+    protected boolean notifyWindowUpdate(WindowUpdateFrame frame)
+    {
+        try
+        {
+            return listener.onWindowUpdate(frame);
         }
         catch (Throwable x)
         {

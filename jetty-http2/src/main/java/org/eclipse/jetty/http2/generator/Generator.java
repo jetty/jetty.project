@@ -36,44 +36,44 @@ public class Generator
         this.byteBufferPool = byteBufferPool;
     }
 
-    public Result generateGoAway(int lastStreamId, int error, byte[] payload)
+    public Result generateData(int streamId, int paddingLength, ByteBuffer data, boolean last, boolean compress)
     {
-        if (lastStreamId < 0)
-            throw new IllegalArgumentException("Invalid last stream id: " + lastStreamId);
+        if (streamId < 0)
+            throw new IllegalArgumentException("Invalid stream id: " + streamId);
+        // Leave space for at least one byte of content.
+        if (paddingLength > DataFrame.MAX_LENGTH - 3)
+            throw new IllegalArgumentException("Invalid padding length: " + paddingLength);
+
+        int paddingBytes = paddingLength > 0xFF ? 2 : paddingLength > 0 ? 1 : 0;
+
+        // TODO: here we should compress the data, and then reason on the data length !
+
+        int dataLength = data.remaining();
 
         Result result = new Result(byteBufferPool);
 
-        int length = 4 + 4 + (payload != null ? payload.length : 0);
-        ByteBuffer header = generateHeader(FrameType.GO_AWAY, length, 0, 0);
-
-        header.putInt(lastStreamId);
-        header.putInt(error);
-
-        if (payload != null)
+        // Can we fit just one frame ?
+        if (dataLength + paddingBytes + paddingLength <= DataFrame.MAX_LENGTH)
         {
-            header.put(payload);
+            generateData(result, streamId, paddingBytes, paddingLength, data, last, compress);
         }
-
-        BufferUtil.flipToFlush(header, 0);
-        result.add(header, true);
-
-        return result;
-    }
-
-    public Result generatePing(byte[] payload, boolean reply)
-    {
-        if (payload.length != 8)
-            throw new IllegalArgumentException("Invalid payload length: " + payload.length);
-
-        Result result = new Result(byteBufferPool);
-
-        ByteBuffer header = generateHeader(FrameType.PING, 8, reply ? 0x01 : 0x00, 0);
-
-        header.put(payload);
-
-        BufferUtil.flipToFlush(header, 0);
-        result.add(header, true);
-
+        else
+        {
+            int dataBytesPerFrame = DataFrame.MAX_LENGTH - paddingBytes - paddingLength;
+            int frames = dataLength / dataBytesPerFrame;
+            if (frames * dataBytesPerFrame != dataLength)
+            {
+                ++frames;
+            }
+            int limit = data.limit();
+            for (int i = 1; i <= frames; ++i)
+            {
+                data.limit(Math.min(dataBytesPerFrame * i, limit));
+                ByteBuffer slice = data.slice();
+                data.position(data.limit());
+                generateData(result, streamId, paddingBytes, paddingLength, slice, i == frames && last, compress);
+            }
+        }
         return result;
     }
 
@@ -118,44 +118,63 @@ public class Generator
         return result;
     }
 
-    public Result generateData(int streamId, int paddingLength, ByteBuffer data, boolean last, boolean compress)
+    public Result generatePing(byte[] payload, boolean reply)
     {
-        if (streamId < 0)
-            throw new IllegalArgumentException("Invalid stream id: " + streamId);
-        // Leave space for at least one byte of content.
-        if (paddingLength > DataFrame.MAX_LENGTH - 3)
-            throw new IllegalArgumentException("Invalid padding length: " + paddingLength);
-
-        int paddingBytes = paddingLength > 0xFF ? 2 : paddingLength > 0 ? 1 : 0;
-
-        // TODO: here we should compress the data, and then reason on the data length !
-
-        int dataLength = data.remaining();
+        if (payload.length != 8)
+            throw new IllegalArgumentException("Invalid payload length: " + payload.length);
 
         Result result = new Result(byteBufferPool);
 
-        // Can we fit just one frame ?
-        if (dataLength + paddingBytes + paddingLength <= DataFrame.MAX_LENGTH)
+        ByteBuffer header = generateHeader(FrameType.PING, 8, reply ? 0x01 : 0x00, 0);
+
+        header.put(payload);
+
+        BufferUtil.flipToFlush(header, 0);
+        result.add(header, true);
+
+        return result;
+    }
+
+    public Result generateGoAway(int lastStreamId, int error, byte[] payload)
+    {
+        if (lastStreamId < 0)
+            throw new IllegalArgumentException("Invalid last stream id: " + lastStreamId);
+
+        Result result = new Result(byteBufferPool);
+
+        int length = 4 + 4 + (payload != null ? payload.length : 0);
+        ByteBuffer header = generateHeader(FrameType.GO_AWAY, length, 0, 0);
+
+        header.putInt(lastStreamId);
+        header.putInt(error);
+
+        if (payload != null)
         {
-            generateData(result, streamId, paddingBytes, paddingLength, data, last, compress);
+            header.put(payload);
         }
-        else
-        {
-            int dataBytesPerFrame = DataFrame.MAX_LENGTH - paddingBytes - paddingLength;
-            int frames = dataLength / dataBytesPerFrame;
-            if (frames * dataBytesPerFrame != dataLength)
-            {
-                ++frames;
-            }
-            int limit = data.limit();
-            for (int i = 1; i <= frames; ++i)
-            {
-                data.limit(Math.min(dataBytesPerFrame * i, limit));
-                ByteBuffer slice = data.slice();
-                data.position(data.limit());
-                generateData(result, streamId, paddingBytes, paddingLength, slice, i == frames && last, compress);
-            }
-        }
+
+        BufferUtil.flipToFlush(header, 0);
+        result.add(header, true);
+
+        return result;
+    }
+
+    public Result generateWindowUpdate(int streamId, int windowUpdate)
+    {
+        if (streamId < 0)
+            throw new IllegalArgumentException("Invalid stream id: " + streamId);
+        if (windowUpdate < 0)
+            throw new IllegalArgumentException("Invalid window update: " + windowUpdate);
+
+        Result result = new Result(byteBufferPool);
+
+        ByteBuffer header = generateHeader(FrameType.WINDOW_UPDATE, 4, 0, streamId);
+
+        header.putInt(windowUpdate);
+
+        BufferUtil.flipToFlush(header, 0);
+        result.add(header, true);
+
         return result;
     }
 
