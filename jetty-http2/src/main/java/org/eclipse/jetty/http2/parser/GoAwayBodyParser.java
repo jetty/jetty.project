@@ -26,7 +26,6 @@ public class GoAwayBodyParser extends BodyParser
 {
     private State state = State.LAST_STREAM_ID;
     private int cursor;
-
     private int lastStreamId;
     private int error;
     private byte[] payload;
@@ -36,13 +35,10 @@ public class GoAwayBodyParser extends BodyParser
         super(headerParser, listener);
     }
 
-    @Override
-    protected void reset()
+    private void reset()
     {
-        super.reset();
         state = State.LAST_STREAM_ID;
         cursor = 0;
-
         lastStreamId = 0;
         error = 0;
         payload = null;

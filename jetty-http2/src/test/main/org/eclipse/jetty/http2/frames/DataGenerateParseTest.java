@@ -27,6 +27,7 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -41,6 +42,18 @@ public class DataGenerateParseTest
         Random random = new Random();
         random.nextBytes(smallContent);
         random.nextBytes(largeContent);
+    }
+
+    @Test
+    public void testGenerateParseNoContentNoPadding()
+    {
+        ByteBuffer content = BufferUtil.EMPTY_BUFFER;
+        List<DataFrame> frames = testGenerateParse(0, content);
+        Assert.assertEquals(1, frames.size());
+        DataFrame frame = frames.get(0);
+        Assert.assertTrue(frame.getStreamId() != 0);
+        Assert.assertTrue(frame.isEnd());
+        Assert.assertEquals(content, frame.getData());
     }
 
     @Test

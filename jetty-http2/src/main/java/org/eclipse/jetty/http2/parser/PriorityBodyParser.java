@@ -26,7 +26,6 @@ public class PriorityBodyParser extends BodyParser
 {
     private State state = State.EXCLUSIVE;
     private int cursor;
-
     private boolean exclusive;
     private int streamId;
 
@@ -35,13 +34,10 @@ public class PriorityBodyParser extends BodyParser
         super(headerParser, listener);
     }
 
-    @Override
-    protected void reset()
+    private void reset()
     {
-        super.reset();
         state = State.EXCLUSIVE;
         cursor = 0;
-
         exclusive = false;
         streamId = 0;
     }

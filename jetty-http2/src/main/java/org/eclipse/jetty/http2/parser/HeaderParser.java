@@ -43,6 +43,14 @@ public class HeaderParser
         streamId = 0;
     }
 
+    /**
+     * Parses the header bytes in the given {@code buffer}; only the header
+     * bytes are consumed, therefore the buffer may contain unconsumed bytes.
+     *
+     * @param buffer the buffer to parse
+     * @return true if a whole header was parsed, false if not enough header
+     *         bytes were present in the buffer
+     */
     public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())

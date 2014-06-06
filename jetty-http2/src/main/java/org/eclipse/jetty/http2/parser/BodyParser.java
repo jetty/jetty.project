@@ -25,6 +25,7 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -43,6 +44,12 @@ public abstract class BodyParser
     }
 
     public abstract Result parse(ByteBuffer buffer);
+
+    protected boolean emptyBody()
+    {
+        notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_frame");
+        return false;
+    }
 
     protected boolean hasFlag(int bit)
     {
@@ -72,11 +79,6 @@ public abstract class BodyParser
     protected int getBodyLength()
     {
         return headerParser.getLength();
-    }
-
-    protected void reset()
-    {
-        headerParser.reset();
     }
 
     protected boolean notifyData(DataFrame frame)
@@ -110,6 +112,19 @@ public abstract class BodyParser
         try
         {
             return listener.onReset(frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return false;
+        }
+    }
+
+    protected boolean notifySettings(SettingsFrame frame)
+    {
+        try
+        {
+            return listener.onSettings(frame);
         }
         catch (Throwable x)
         {
@@ -154,6 +169,20 @@ public abstract class BodyParser
         {
             LOG.info("Failure while notifying listener " + listener, x);
             return false;
+        }
+    }
+
+    protected Result notifyConnectionFailure(int error, String reason)
+    {
+        try
+        {
+            listener.onConnectionFailure(error, reason);
+            return Result.ASYNC;
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return Result.ASYNC;
         }
     }
 

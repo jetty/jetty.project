@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.generator;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FrameType;
@@ -111,6 +112,24 @@ public class Generator
         ByteBuffer header = generateHeader(FrameType.RST_STREAM, 4, 0, streamId);
 
         header.putInt(error);
+
+        BufferUtil.flipToFlush(header, 0);
+        result.add(header, true);
+
+        return result;
+    }
+
+    public Result generateSettings(Map<Integer, Integer> settings, boolean reply)
+    {
+        Result result = new Result(byteBufferPool);
+
+        ByteBuffer header = generateHeader(FrameType.SETTINGS, 5 * settings.size(), reply ? 0x01 : 0x00, 0);
+
+        for (Map.Entry<Integer, Integer> entry : settings.entrySet())
+        {
+            header.put(entry.getKey().byteValue());
+            header.putInt(entry.getValue());
+        }
 
         BufferUtil.flipToFlush(header, 0);
         result.add(header, true);

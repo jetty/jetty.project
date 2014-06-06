@@ -33,10 +33,8 @@ public class WindowUpdateBodyParser extends BodyParser
         super(headerParser, listener);
     }
 
-    @Override
-    protected void reset()
+    private void reset()
     {
-        super.reset();
         state = State.WINDOW_DELTA;
         cursor = 0;
         windowDelta = 0;

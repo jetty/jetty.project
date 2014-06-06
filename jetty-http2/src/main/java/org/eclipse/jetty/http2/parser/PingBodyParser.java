@@ -33,10 +33,8 @@ public class PingBodyParser extends BodyParser
         super(headerParser, listener);
     }
 
-    @Override
-    protected void reset()
+    private void reset()
     {
-        super.reset();
         state = State.PAYLOAD;
         cursor = 0;
         payload = null;

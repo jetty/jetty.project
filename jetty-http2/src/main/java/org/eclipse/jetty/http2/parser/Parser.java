@@ -26,20 +26,27 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class Parser
 {
+    private static final Logger LOG = Log.getLogger(Parser.class);
+
     private final HeaderParser headerParser = new HeaderParser();
     private final BodyParser[] bodyParsers = new BodyParser[FrameType.values().length];
+    private final Listener listener;
     private State state = State.HEADER;
-    private BodyParser bodyParser;
 
     public Parser(Listener listener)
     {
+        this.listener = listener;
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
         bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
+        bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener);
         bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener);
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
         bodyParsers[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateBodyParser(headerParser, listener);
@@ -47,37 +54,67 @@ public class Parser
 
     private void reset()
     {
+        headerParser.reset();
         state = State.HEADER;
     }
 
     public boolean parse(ByteBuffer buffer)
     {
-        while (buffer.hasRemaining())
+        while (true)
         {
             switch (state)
             {
                 case HEADER:
                 {
-                    if (headerParser.parse(buffer))
-                    {
-                        int type = headerParser.getFrameType();
-                        bodyParser = bodyParsers[type];
-                        state = State.BODY;
-                    }
+                    if (!headerParser.parse(buffer))
+                        return false;
+                    state = State.BODY;
                     break;
                 }
                 case BODY:
                 {
-                    BodyParser.Result result = bodyParser.parse(buffer);
-                    if (result == BodyParser.Result.ASYNC)
+                    int type = headerParser.getFrameType();
+                    if (type < 0 || type >= bodyParsers.length)
                     {
-                        // The content will be processed asynchronously, stop parsing;
-                        // the asynchronous operation will eventually resume parsing.
-                        return true;
+                        notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "unknown_frame_type_" + type);
+                        return false;
                     }
-                    else if (result == BodyParser.Result.COMPLETE)
+                    BodyParser bodyParser = bodyParsers[type];
+                    if (headerParser.getLength() == 0)
                     {
+                        boolean async = bodyParser.emptyBody();
                         reset();
+                        if (async)
+                            return true;
+                        if (!buffer.hasRemaining())
+                            return false;
+                    }
+                    else
+                    {
+                        BodyParser.Result result = bodyParser.parse(buffer);
+                        switch (result)
+                        {
+                            case PENDING:
+                            {
+                                // Not enough bytes.
+                                return false;
+                            }
+                            case ASYNC:
+                            {
+                                // The content will be processed asynchronously, stop parsing;
+                                // the asynchronous operation will eventually resume parsing.
+                                return true;
+                            }
+                            case COMPLETE:
+                            {
+                                reset();
+                                break;
+                            }
+                            default:
+                            {
+                                throw new IllegalStateException();
+                            }
+                        }
                     }
                     break;
                 }
@@ -87,7 +124,18 @@ public class Parser
                 }
             }
         }
-        return false;
+    }
+
+    protected void notifyConnectionFailure(int error, String reason)
+    {
+        try
+        {
+            listener.onConnectionFailure(error, reason);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
     }
 
     public interface Listener
@@ -98,11 +146,15 @@ public class Parser
 
         public boolean onReset(ResetFrame frame);
 
+        public boolean onSettings(SettingsFrame frame);
+
         public boolean onPing(PingFrame frame);
 
         public boolean onGoAway(GoAwayFrame frame);
 
         public boolean onWindowUpdate(WindowUpdateFrame frame);
+
+        public void onConnectionFailure(int error, String reason);
 
         public static class Adapter implements Listener
         {
@@ -125,6 +177,12 @@ public class Parser
             }
 
             @Override
+            public boolean onSettings(SettingsFrame frame)
+            {
+                return false;
+            }
+
+            @Override
             public boolean onPing(PingFrame frame)
             {
                 return false;
@@ -140,6 +198,11 @@ public class Parser
             public boolean onWindowUpdate(WindowUpdateFrame frame)
             {
                 return false;
+            }
+
+            @Override
+            public void onConnectionFailure(int error, String reason)
+            {
             }
         }
     }

@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class DataBodyParser extends BodyParser
 {
@@ -33,13 +34,17 @@ public class DataBodyParser extends BodyParser
         super(headerParser, listener);
     }
 
-    @Override
-    protected void reset()
+    private void reset()
     {
-        super.reset();
         state = State.PREPARE;
         paddingLength = 0;
         length = 0;
+    }
+
+    @Override
+    protected boolean emptyBody()
+    {
+        return onData(BufferUtil.EMPTY_BUFFER, false);
     }
 
     @Override
@@ -133,8 +138,7 @@ public class DataBodyParser extends BodyParser
 
     private boolean onData(ByteBuffer buffer, boolean fragment)
     {
-        boolean end = isEndStream();
-        DataFrame frame = new DataFrame(getStreamId(), buffer, fragment ? false : end);
+        DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream());
         return notifyData(frame);
     }
 
