@@ -23,12 +23,12 @@ import static org.eclipse.jetty.start.UsageException.*;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Stack;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -98,7 +98,7 @@ public final class Props implements Iterable<Prop>
         return l;
     }
 
-    private Map<String, Prop> props = new HashMap<>();
+    private Map<String, Prop> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private List<String> sysPropTracking = new ArrayList<>();
 
     public void addAll(Props other)
