@@ -120,6 +120,7 @@ Properties:
       Jetty server has stopped. If not specified, the stopper will wait
       indefinitely. Use in conjunction with the --stop option.
 
+
 Advanced Commands:
 ------------------
 
@@ -130,34 +131,13 @@ Advanced Commands:
 
   --lib=<classpath>
                    Add arbitrary classpath entries to the the server classpath.
-
-System Properties:
-------------------
-
-  These are set with a command line like "java -Dname=value ..." and are
-  accessible via the java.lang.System#getProperty(String) API.
-  Some key system properties are:
-
-    org.eclipse.jetty.util.log.class=[class]
-      A Low Level Jetty Logger Implementation to use
-      (default: org.eclipse.jetty.util.log.Slf4jLog)
-
-    [name|hierarchy].LEVEL=[loglevel]
-      Change loglevel for the stderr and javautil Loggers. Slf4j
-      and other loggers must be separately configured for debug.
-      For example: Dorg.eclipse.jetty.LEVEL=DEBUG
-      (default: INFO)
-
-    org.eclipse.jetty.util.log.IGNORED=[boolean]
-      Ignored exceptions are logged, independent of DEBUG settings
-      (default: false)
-
-    org.eclipse.jetty.util.log.SOURCE=[boolean]
-      The source location of logs is logged in the stderr Logger.
-      (default: false)
-
-    com.sun.management.jmxremote
-      Enable remote JMX management in Sun JVMS.
+                   
+  --include-jetty-dir=<path>
+                   Include an extra jetty directory to use as a source
+                   for configuration details.  This directory behaves similarly
+                   to ${jetty.base} but sits at a layer between ${jetty.base}
+                   and ${jetty.home}.  This allows for some complex hierarchies
+                   of configuration details.
 
 
 Properties:
@@ -180,6 +160,18 @@ Properties:
 Defaults:
 ---------
 
-  A ${jetty.base}/start.ini file and/or ${jetty.base|/start.d/*.ini files may be
-  used to specify default arguments to start.jar.  In case of a conflict between
-  the command line, and ini files, the command line will win.
+  Command line arguments can come from any jetty configuration directory
+  (except ${jetty.home}), such as ${jetty.base} and any added jetty directories
+  (see --include-jetty-dir=<path>).  
+  The contents of <path>/start.ini and <path>/start.d/*.ini are all used
+  to build up your command line arguments.
+  In case of a conflict, the resolution of who wins, will look like this.
+    
+    1) <command-line itself>
+    2) ${jetty.base}/start.ini
+    3) ${jetty.base}/start.d/*.ini
+    4) <jetty-dir>/start.ini
+    5) <jetty-dir>/start.d/*.ini
+
+For more information on startup, see the online documentation at
+    http://www.eclipse.org/jetty/documentation/
