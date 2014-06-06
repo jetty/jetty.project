@@ -113,7 +113,7 @@ public class StartLog
 
         if (logFileName != null)
         {
-            Path logfile = baseHome.getBasePath(logFileName);
+            Path logfile = baseHome.getPath(logFileName);
             initLogFile(logfile);
         }
     }
