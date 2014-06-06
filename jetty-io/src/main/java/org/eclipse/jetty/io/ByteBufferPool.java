@@ -19,6 +19,8 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
+import java.util.List;
 
 /**
  * <p>A {@link ByteBuffer} pool.</p>
@@ -48,4 +50,55 @@ public interface ByteBufferPool
      * @see #acquire(int, boolean)
      */
     public void release(ByteBuffer buffer);
+
+    public static class Lease
+    {
+        private final ByteBufferPool byteBufferPool;
+        private final List<ByteBuffer> buffers;
+        private final List<Boolean> recycles;
+
+        public Lease(ByteBufferPool byteBufferPool)
+        {
+            this.byteBufferPool = byteBufferPool;
+            this.buffers = new ArrayList<>();
+            this.recycles = new ArrayList<>();
+        }
+
+        public void add(ByteBuffer buffer, boolean recycle)
+        {
+            buffers.add(buffer);
+            recycles.add(recycle);
+        }
+
+        public List<ByteBuffer> getByteBuffers()
+        {
+            return buffers;
+        }
+
+        public Lease merge(Lease that)
+        {
+            assert byteBufferPool == that.byteBufferPool;
+            buffers.addAll(that.buffers);
+            recycles.addAll(that.recycles);
+            return this;
+        }
+
+        public long getTotalLength()
+        {
+            long length = 0;
+            for (int i = 0; i < buffers.size(); ++i)
+                length += buffers.get(i).remaining();
+            return length;
+        }
+
+        public void recycle()
+        {
+            for (int i = 0; i < buffers.size(); ++i)
+            {
+                ByteBuffer buffer = buffers.get(i);
+                if (recycles.get(i))
+                    byteBufferPool.release(buffer);
+            }
+        }
+    }
 }

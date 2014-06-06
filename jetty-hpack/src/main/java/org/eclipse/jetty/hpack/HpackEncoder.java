@@ -19,26 +19,20 @@
 
 package org.eclipse.jetty.hpack;
 
-import java.nio.ByteBuffer;
-import java.util.Collections;
-import java.util.List;
-
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.ByteBufferPool;
 
-
-/* ------------------------------------------------------------ */
-/**
- */
 public class HpackEncoder
 {
-    public HpackEncoder(ByteBufferPool pool)
+    private final ByteBufferPool byteBufferPool;
+
+    public HpackEncoder(ByteBufferPool byteBufferPool)
     {
-        
+        this.byteBufferPool = byteBufferPool;
     }
     
-    public List<ByteBuffer> encode(HttpFields fields)
+    public ByteBufferPool.Lease encode(HttpFields fields)
     {
-        return Collections.emptyList();
+        return new ByteBufferPool.Lease(byteBufferPool);
     }
 }
