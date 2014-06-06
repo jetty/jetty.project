@@ -37,15 +37,16 @@ public class Generator
         this.byteBufferPool = byteBufferPool;
     }
 
-    public Result generateData(int streamId, int paddingLength, ByteBuffer data, boolean last, boolean compress)
+    public Result generateData(int streamId, ByteBuffer data, boolean last, boolean compress, byte[] paddingBytes)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
+        int paddingLength = paddingBytes == null ? 0 : paddingBytes.length;
         // Leave space for at least one byte of content.
         if (paddingLength > DataFrame.MAX_LENGTH - 3)
             throw new IllegalArgumentException("Invalid padding length: " + paddingLength);
 
-        int paddingBytes = paddingLength > 0xFF ? 2 : paddingLength > 0 ? 1 : 0;
+        int extraPaddingBytes = paddingLength > 0xFF ? 2 : paddingLength > 0 ? 1 : 0;
 
         // TODO: here we should compress the data, and then reason on the data length !
 
@@ -54,13 +55,13 @@ public class Generator
         Result result = new Result(byteBufferPool);
 
         // Can we fit just one frame ?
-        if (dataLength + paddingBytes + paddingLength <= DataFrame.MAX_LENGTH)
+        if (dataLength + extraPaddingBytes + paddingLength <= DataFrame.MAX_LENGTH)
         {
-            generateData(result, streamId, paddingBytes, paddingLength, data, last, compress);
+            generateData(result, streamId, data, last, compress, extraPaddingBytes, paddingBytes);
         }
         else
         {
-            int dataBytesPerFrame = DataFrame.MAX_LENGTH - paddingBytes - paddingLength;
+            int dataBytesPerFrame = DataFrame.MAX_LENGTH - extraPaddingBytes - paddingLength;
             int frames = dataLength / dataBytesPerFrame;
             if (frames * dataBytesPerFrame != dataLength)
             {
@@ -72,7 +73,7 @@ public class Generator
                 data.limit(Math.min(dataBytesPerFrame * i, limit));
                 ByteBuffer slice = data.slice();
                 data.position(data.limit());
-                generateData(result, streamId, paddingBytes, paddingLength, slice, i == frames && last, compress);
+                generateData(result, streamId, slice, i == frames && last, compress, extraPaddingBytes, paddingBytes);
             }
         }
         return result;
@@ -197,25 +198,26 @@ public class Generator
         return result;
     }
 
-    private void generateData(Result result, int streamId, int paddingBytes, int paddingLength, ByteBuffer data, boolean last, boolean compress)
+    private void generateData(Result result, int streamId, ByteBuffer data, boolean last, boolean compress, int extraPaddingBytes, byte[] paddingBytes)
     {
-        int length = paddingBytes + data.remaining() + paddingLength;
+        int paddingLength = paddingBytes == null ? 0 : paddingBytes.length;
+        int length = extraPaddingBytes + data.remaining() + paddingLength;
 
         int flags = 0;
         if (last)
             flags |= 0x01;
-        if (paddingBytes > 0)
+        if (extraPaddingBytes > 0)
             flags |= 0x08;
-        if (paddingBytes > 1)
+        if (extraPaddingBytes > 1)
             flags |= 0x10;
         if (compress)
             flags |= 0x20;
 
-        ByteBuffer header = generateHeader(FrameType.DATA, 8 + paddingBytes, length, flags, streamId);
+        ByteBuffer header = generateHeader(FrameType.DATA, 8 + extraPaddingBytes, length, flags, streamId);
 
-        if (paddingBytes == 2)
+        if (extraPaddingBytes == 2)
             header.putShort((short)paddingLength);
-        else if (paddingBytes == 1)
+        else if (extraPaddingBytes == 1)
             header.put((byte)paddingLength);
 
         BufferUtil.flipToFlush(header, 0);
@@ -223,13 +225,9 @@ public class Generator
 
         result.add(data, false);
 
-        if (paddingBytes > 0)
+        if (paddingBytes != null)
         {
-            ByteBuffer padding = byteBufferPool.acquire(paddingLength, true);
-            BufferUtil.clearToFill(padding);
-            padding.position(paddingLength);
-            BufferUtil.flipToFlush(padding, 0);
-            result.add(padding, true);
+            result.add(ByteBuffer.wrap(paddingBytes), false);
         }
     }
 

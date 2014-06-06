@@ -141,7 +141,7 @@ public class DataGenerateParseTest
             Generator.Result result = new Generator.Result(byteBufferPool);
             for (int j = 1; j <= data.length; ++j)
             {
-                result = result.merge(generator.generateData(13, paddingLength, data[j - 1].slice(), j == data.length, false));
+                result = result.merge(generator.generateData(13, data[j - 1].slice(), j == data.length, false, new byte[paddingLength]));
             }
 
             Parser parser = new Parser(new Parser.Listener.Adapter()
@@ -169,7 +169,7 @@ public class DataGenerateParseTest
     {
         Generator generator = new Generator(byteBufferPool);
 
-        Generator.Result result = generator.generateData(13, 1024, ByteBuffer.wrap(largeContent).slice(), true, false);
+        Generator.Result result = generator.generateData(13, ByteBuffer.wrap(largeContent).slice(), true, false, new byte[1024]);
 
         final List<DataFrame> frames = new ArrayList<>();
         Parser parser = new Parser(new Parser.Listener.Adapter()
