@@ -52,6 +52,17 @@ public class HuffmanTest
     }
     
     @Test
+    public void testDecodeTrailingFF() throws Exception
+    {
+        for (String[] test:tests)
+        {
+            byte[] encoded=TypeUtil.fromHexString(test[1]+"FF");
+            String decoded=Huffman.decode(ByteBuffer.wrap(encoded));
+            Assert.assertEquals(test[0],test[2],decoded);
+        }
+    }
+    
+    @Test
     public void testEncode() throws Exception
     {
         for (String[] test:tests)
@@ -62,8 +73,37 @@ public class HuffmanTest
             BufferUtil.flipToFlush(buf,pos);
             String encoded=TypeUtil.toHexString(BufferUtil.toArray(buf)).toLowerCase();
             Assert.assertEquals(test[0],test[1],encoded);
+            Assert.assertEquals(test[1].length()/2,Huffman.octetsNeeded(test[2]));
         }
-        
     }
+
+    @Test
+    public void testEncode8859Only() throws Exception
+    {
+        char bad[] = {(char)128,(char)0,(char)-1,' '-1};
+        for (int i=0;i<bad.length;i++)
+        {
+            String s="bad '"+bad[i]+"'";
+            
+            try
+            {
+                Huffman.octetsNeeded(s);
+                Assert.fail("i="+i);
+            }
+            catch(IllegalArgumentException e)
+            {
+            }
+            
+            try
+            {
+                Huffman.encode(BufferUtil.allocate(32),s);
+                Assert.fail("i="+i);
+            }
+            catch(IllegalArgumentException e)
+            {
+            }
+        }
+    }
+    
     
 }

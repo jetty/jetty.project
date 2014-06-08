@@ -24,12 +24,25 @@ public class NBitInteger
 {
     public static int octectsNeeded(int n,int i)
     {
+        if (n==8)
+        {
+            int nbits = 0xFF;
+            i=i-nbits;
+            if (i<0)
+                return 1;
+            if (i==0)
+                return 2;
+            int lz=Integer.numberOfLeadingZeros(i);
+            int log=32-lz;
+            return 1+(log+6)/7;
+        }
+        
         int nbits = 0xFF >>> (8 - n);
         i=i-nbits;
         if (i<0)
-            return n==8?1:0;
+            return 0;
         if (i==0)
-            return n==8?2:1;
+            return 1;
         int lz=Integer.numberOfLeadingZeros(i);
         int log=32-lz;
         return (log+6)/7;
@@ -96,9 +109,30 @@ public class NBitInteger
 
     public static int decode(ByteBuffer buf, int n)
     {
+        if (n==8)
+        {
+            int nbits = 0xFF;
+
+            int i=buf.get()&0xff;
+            
+            if (i == nbits)
+            {       
+                int m=1;
+                int b;
+                do
+                {
+                    b = 0xff&buf.get();
+                    i = i + (b&127) * m;
+                    m = m*128;
+                }
+                while ((b&128) == 128);
+            }
+            return i;
+        }
+        
         int nbits = 0xFF >>> (8 - n);
 
-        int i=buf.get(buf.position()-(n==8?0:1))&nbits;
+        int i=buf.get(buf.position()-1)&nbits;
         
         if (i == nbits)
         {       

@@ -36,6 +36,7 @@ public class NBitIntegerTest
         assertEquals(0,NBitInteger.octectsNeeded(5,10));
         assertEquals(2,NBitInteger.octectsNeeded(5,1337));
         assertEquals(1,NBitInteger.octectsNeeded(8,42));
+        assertEquals(3,NBitInteger.octectsNeeded(8,1337));
 
         assertEquals(0,NBitInteger.octectsNeeded(6,62));
         assertEquals(1,NBitInteger.octectsNeeded(6,63));
@@ -64,19 +65,31 @@ public class NBitIntegerTest
         testEncode(6,63+0x00+0x80*0x80,     "3f808001");
         testEncode(6,63+0x7f+0x80*0x80*0x7f,"3fFf807f");
         testEncode(6,63+0x00+0x80*0x80*0x80,"3f80808001");
+
+        testEncode(8,0,"00");
+        testEncode(8,1,"01");
+        testEncode(8,128,"80");
+        testEncode(8,254,"Fe");
+        testEncode(8,255,"Ff00");
+        testEncode(8,255+1,"Ff01");
+        testEncode(8,255+0x7e,"Ff7e");
+        testEncode(8,255+0x7f,"Ff7f");
+        testEncode(8,255+0x80,"Ff8001");
+        testEncode(8,255+0x00+0x80*0x80,"Ff808001");
     }
 
     public void testEncode(int n,int i,String expected)
     {
         ByteBuffer buf = BufferUtil.allocate(16);
         int p=BufferUtil.flipToFill(buf);
-        buf.put((byte)0x00);
+        if (n<8)
+            buf.put((byte)0x00);
         NBitInteger.encode(buf,n,i);
         BufferUtil.flipToFlush(buf,p);
         String r=TypeUtil.toHexString(BufferUtil.toArray(buf));
         assertEquals(expected,r);
         
-        assertEquals(expected.length()/2,1+NBitInteger.octectsNeeded(n,i));
+        assertEquals(expected.length()/2,(n<8?1:0)+NBitInteger.octectsNeeded(n,i));
     }
     
     @Test
@@ -98,6 +111,17 @@ public class NBitIntegerTest
         testDecode(6,63+0x00+0x80*0x80,     "3f808001");
         testDecode(6,63+0x7f+0x80*0x80*0x7f,"3fFf807f");
         testDecode(6,63+0x00+0x80*0x80*0x80,"3f80808001");
+        
+        testDecode(8,0,"00");
+        testDecode(8,1,"01");
+        testDecode(8,128,"80");
+        testDecode(8,254,"Fe");
+        testDecode(8,255,"Ff00");
+        testDecode(8,255+1,"Ff01");
+        testDecode(8,255+0x7e,"Ff7e");
+        testDecode(8,255+0x7f,"Ff7f");
+        testDecode(8,255+0x80,"Ff8001");
+        testDecode(8,255+0x00+0x80*0x80,"Ff808001");
     }
     
     

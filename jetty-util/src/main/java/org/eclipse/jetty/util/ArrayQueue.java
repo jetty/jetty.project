@@ -393,16 +393,22 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
-    protected void growUnsafe(int newCapacity)
+    protected void resizeUnsafe(int newCapacity)
     {
+        newCapacity = Math.max(newCapacity,_size);
         Object[] elements = new Object[newCapacity];
 
-        int split = _elements.length - _nextE;
-        if (split > 0)
-            System.arraycopy(_elements, _nextE, elements, 0, split);
-        if (_nextE != 0)
-            System.arraycopy(_elements, 0, elements, split, _nextSlot);
-
+        if (_size>0)
+        {
+            if (_nextSlot>_nextE)
+                System.arraycopy(_elements, _nextE, elements, 0, _size);
+            else
+            {
+                int split = _elements.length - _nextE;
+                System.arraycopy(_elements, _nextE, elements, 0, split);
+                System.arraycopy(_elements, 0, elements, split, _nextSlot);
+            }
+        }
         _elements = elements;
         _nextE = 0;
         _nextSlot = _size;
@@ -413,8 +419,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     {
         if (_growCapacity <= 0)
             return false;
-        growUnsafe(_elements.length+_growCapacity);
+        resizeUnsafe(_elements.length+_growCapacity);
         return true;
     }
-
 }

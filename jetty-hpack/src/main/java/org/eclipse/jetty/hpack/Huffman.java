@@ -316,8 +316,6 @@ public class Huffman
             {
                 len -= 8;
                 int i = ((code >>> len) & 0xFF);
-                if (rowbits[current]!=0)
-                    throw new IllegalStateException("invalid dictionary: prefix not unique");
 
                 int t=current*256+i;
                 current = tree[t];
@@ -404,7 +402,7 @@ public class Huffman
         for (int i=0;i<len;i++)
         {
             char c=s.charAt(i);
-            if (c>=128)
+            if (c>=128 || c<' ')
                 throw new IllegalArgumentException();
             needed += CODES[c][1];
         }
@@ -424,7 +422,7 @@ public class Huffman
         for (int i=0;i<len;i++)
         {
             char c=s.charAt(i);
-            if (c>=128)
+            if (c>=128 || c<' ')
                 throw new IllegalArgumentException();
             int code = CODES[c][0];
             int bits = CODES[c][1];

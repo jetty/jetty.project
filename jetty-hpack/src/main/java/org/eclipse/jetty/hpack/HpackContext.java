@@ -20,10 +20,11 @@ package org.eclipse.jetty.hpack;
 
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Map;
+import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.eclipse.jetty.hpack.Field.NameKey;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ArrayTrie;
@@ -108,8 +109,7 @@ public class HpackContext
         Set<String> added = new HashSet<>();
         for (int i=1;i<STATIC_TABLE.length;i++)
         {
-            Entry entry=new Entry(i,STATIC_TABLE[i][0],STATIC_TABLE[i][1],true);
-            __staticTable[i]=entry;
+            Entry entry=__staticTable[i]=new Entry(i,STATIC_TABLE[i][0],STATIC_TABLE[i][1],true);
             if (entry._field.getValue()!=null)
                 __staticFieldMap.put(entry._field,entry);
             if (!added.contains(entry._field.getName()))
@@ -120,33 +120,46 @@ public class HpackContext
         }
     }
     
-    private int _maxHeaderTableSize;
-    private int _headerTableSize;
+    private int _maxHeaderTableSizeInBytes;
+    private int _headerTableSizeInBytes;
     private final Entry _refSet=new Entry(true);
-    private final ArrayQueue<Entry> _headerTable;
+    private final HeaderTable _headerTable;
     private final Map<HttpField,Entry> _fieldMap = new HashMap<>();
     private final Map<String,Entry> _nameMap = new HashMap<>();
+    private Iterable<Entry> referenceSet = new Iterable<Entry>()
+    {
+        @Override
+        public Iterator<Entry> iterator()
+        {
+            return iterateReferenceSet();
+        }
+    };
     
     
     HpackContext(int maxHeaderTableSize)
     {
-        _maxHeaderTableSize=maxHeaderTableSize;
+        _maxHeaderTableSizeInBytes=maxHeaderTableSize;
         int guesstimateEntries = 10+maxHeaderTableSize/(32+10+10);
         _headerTable=new HeaderTable(guesstimateEntries,guesstimateEntries+10);
     }
     
+    public void resize(int maxHeaderTableSize)
+    {
+        _maxHeaderTableSizeInBytes=maxHeaderTableSize;
+        int guesstimateEntries = 10+maxHeaderTableSize/(32+10+10);
+        evict();
+        _headerTable.resizeUnsafe(guesstimateEntries);
+    }
+    
     public Entry get(HttpField field)
     {
-        System.err.println(field);
-        System.err.println(_fieldMap);
-        System.err.println(__staticFieldMap);
         Entry entry = _fieldMap.get(field);
         if (entry==null)
             entry=__staticFieldMap.get(field);
         return entry;
     }
     
-    public Entry getNameEntry(String name)
+    public Entry get(String name)
     {
         Entry entry = __staticNameMap.get(name);
         if (entry!=null)
@@ -154,14 +167,27 @@ public class HpackContext
         return _nameMap.get(StringUtil.asciiToLowerCase(name));
     }
     
+    public Entry get(int index)
+    {
+        index=index-_headerTable.size();
+        if (index>0)
+        {
+            if (index>=__staticTable.length)
+                return null;
+            return __staticTable[index];
+        }
+        
+        return _headerTable.getUnsafe(-index);
+    }
+    
     public Entry add(HttpField field)
     {
         int i=_headerTable.getNextIndexUnsafe();
         Entry entry=new Entry(i,field,false);
         int size = entry.getSize();
-        if (size>_maxHeaderTableSize)
+        if (size>_maxHeaderTableSizeInBytes)
             return null;
-        _headerTableSize+=size;
+        _headerTableSizeInBytes+=size;
         _headerTable.addUnsafe(entry);
         _fieldMap.put(field,entry);
         _nameMap.put(StringUtil.asciiToLowerCase(field.getName()),entry);
@@ -169,14 +195,72 @@ public class HpackContext
         evict();
         return entry;
     }
-    
-    public void evict()
+
+    public Object size()
     {
-        while (_headerTableSize>_maxHeaderTableSize)
+        return _headerTable.size();
+    }
+    
+    public int index(Entry entry)
+    {
+        if (entry._index<0)
+            return 0;
+        if (entry.isStatic())
+            return _headerTable.size() + entry._index;
+        return _headerTable.index(entry);
+    }
+    
+    public void addToRefSet(Entry entry)
+    {
+        entry.addToRefSet(this);
+    }
+    
+    public Iterable<Entry> getReferenceSet()
+    {
+        return referenceSet;
+    }
+    
+    public Iterator<Entry> iterateReferenceSet()
+    {
+        return new Iterator<Entry>()
+        {
+            Entry _next = _refSet._refSetNext;
+
+            @Override
+            public boolean hasNext()
+            {
+                return _next!=_refSet;
+            }
+
+            @Override
+            public Entry next()
+            {
+                if (_next==_refSet)
+                    throw new NoSuchElementException();
+                Entry next=_next;
+                _next=_next._refSetNext;
+                return next;
+            }
+
+            @Override
+            public void remove()
+            {
+                if (_next._refSetPrev==_refSet)
+                    throw new NoSuchElementException();
+                    
+                _next._refSetPrev.removeFromRefSet();
+            }
+        };
+    }
+    
+    private void evict()
+    {
+        while (_headerTableSizeInBytes>_maxHeaderTableSizeInBytes)
         {
             Entry entry = _headerTable.pollUnsafe();
-            _headerTableSize-=entry.getSize();
+            _headerTableSizeInBytes-=entry.getSize();
             entry.removeFromRefSet();
+            entry._index=-1;
             _fieldMap.remove(entry.getHttpField());
             String lc=StringUtil.asciiToLowerCase(entry.getHttpField().getName());
             if (entry==_nameMap.get(lc))
@@ -207,10 +291,10 @@ public class HpackContext
          * @see org.eclipse.jetty.util.ArrayQueue#growUnsafe()
          */
         @Override
-        protected void growUnsafe(int newCapacity)
+        protected void resizeUnsafe(int newCapacity)
         {
             // Relay on super.growUnsafe to pack all entries 0 to _nextSlot
-            super.growUnsafe(newCapacity);
+            super.resizeUnsafe(newCapacity);
             for (int i=0;i<_nextSlot;i++)
                 ((Entry)_elements[i])._index=i;
         }
@@ -234,6 +318,17 @@ public class HpackContext
         {
             return super.dequeue();
         }
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @param entry
+         * @return
+         */
+        private int index(Entry entry)
+        {
+            return entry._index>=_nextE?_size-entry._index+_nextE:_nextSlot-entry._index;
+        }
+
     }
 
 
@@ -271,8 +366,15 @@ public class HpackContext
             _field=field;
         }
         
-        public void addToRefSet(HpackContext ctx)
+        private void addToRefSet(HpackContext ctx)
         {
+            if (_static)
+                throw new IllegalStateException("static");
+            if (_index<0)
+                throw new IllegalStateException("evicted");
+            if (_refSetNext!=this)
+                return;
+            
             _refSetNext=ctx._refSet;
             _refSetPrev=ctx._refSet._refSetPrev;
             ctx._refSet._refSetPrev._refSetNext=this;
@@ -316,9 +418,7 @@ public class HpackContext
             return String.format("{%s,%d,%s,%x}",_static?"S":"D",_index,_field,hashCode());
         }
     }
-    
-    
-    
-    
+
+
 
 }
