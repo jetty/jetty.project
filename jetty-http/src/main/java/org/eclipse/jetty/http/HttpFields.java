@@ -333,7 +333,7 @@ public class HttpFields implements Iterable<HttpField>
         for (int i=_fields.size();i-->0;)
         {
             HttpField f=_fields.get(i);
-            if (f.isSame(field))
+            if (f.isSameName(field))
             {
                 if (put)
                     _fields.remove(i);

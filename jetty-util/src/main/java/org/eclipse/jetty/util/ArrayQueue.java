@@ -91,6 +91,15 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return the next index to be used
+     */
+    public int getNextIndexUnsafe()
+    {
+        return _nextSlot;
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public boolean add(E e)
     {
@@ -109,9 +118,9 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
-    private boolean enqueue(E e)
+    protected boolean enqueue(E e)
     {
-        if (_size == _elements.length && !grow())
+        if (_size == _elements.length && !growUnsafe())
             return false;
 
         _size++;
@@ -192,7 +201,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
-    private E dequeue()
+    protected E dequeue()
     {
         E e = at(_nextE);
         _elements[_nextE] = null;
@@ -339,7 +348,7 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
             if (index < 0 || index > _size)
                 throw new IndexOutOfBoundsException("!(" + 0 + "<" + index + "<=" + _size + ")");
 
-            if (_size == _elements.length && !grow())
+            if (_size == _elements.length && !growUnsafe())
                 throw new IllegalStateException("Full");
 
             if (index == _size)
@@ -384,25 +393,28 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
-    protected boolean grow()
+    protected void growUnsafe(int newCapacity)
     {
-        synchronized (_lock)
-        {
-            if (_growCapacity <= 0)
-                return false;
+        Object[] elements = new Object[newCapacity];
 
-            Object[] elements = new Object[_elements.length + _growCapacity];
+        int split = _elements.length - _nextE;
+        if (split > 0)
+            System.arraycopy(_elements, _nextE, elements, 0, split);
+        if (_nextE != 0)
+            System.arraycopy(_elements, 0, elements, split, _nextSlot);
 
-            int split = _elements.length - _nextE;
-            if (split > 0)
-                System.arraycopy(_elements, _nextE, elements, 0, split);
-            if (_nextE != 0)
-                System.arraycopy(_elements, 0, elements, split, _nextSlot);
-
-            _elements = elements;
-            _nextE = 0;
-            _nextSlot = _size;
-            return true;
-        }
+        _elements = elements;
+        _nextE = 0;
+        _nextSlot = _size;
     }
+    
+    /* ------------------------------------------------------------ */
+    protected boolean growUnsafe()
+    {
+        if (_growCapacity <= 0)
+            return false;
+        growUnsafe(_elements.length+_growCapacity);
+        return true;
+    }
+
 }

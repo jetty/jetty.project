@@ -72,7 +72,7 @@ public class HttpField
         return getName() + ": " + (v==null?"":v);
     }
 
-    public boolean isSame(HttpField field)
+    public boolean isSameName(HttpField field)
     {
         if (field==null)
             return false;
@@ -103,22 +103,28 @@ public class HttpField
             return false;
         return true;
     }
+
+    public int nameHashCode()
+    {
+        int hash=13;
+        int len = _name.length();  
+        for (int i = 0; i < len; i++)  
+        {  
+            char c = Character.toUpperCase(_name.charAt(i));  
+            hash = 31 * hash + c;  
+        }  
+        return hash;
+    }
     
     @Override
     public int hashCode()
     {
         if (_header==null)
-        {
-            int hash=13;
-            int len = _name.length();  
-            for (int i = 0; i < len; i++)  
-            {  
-                char c = Character.toUpperCase(_name.charAt(i));  
-                hash = 31 * hash + c;  
-            }  
-            return _value.hashCode() ^ hash;
-        }
+            return _value.hashCode() ^ nameHashCode();
         
         return _value.hashCode() ^ _header.hashCode();
     }
+    
+    
+    
 }

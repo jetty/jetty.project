@@ -29,6 +29,7 @@ public class Field extends HttpField
 {
     // final ByteBuffer _nameLiteral;
     // final ByteBuffer _nameHuffman;
+    private final NameKey _nameKey=new NameKey();
     
     public Field(String name,String value)
     {
@@ -66,8 +67,27 @@ public class Field extends HttpField
         _nameHuffman.position(_nameHuffman.limit());
         BufferUtil.flipToFlush(_nameHuffman,0);
         */
-        
     }
+    
+    public NameKey getNameKey()
+    {
+        return _nameKey;
+    }
+    
+    public class NameKey
+    {
+        
+        public Field getField()
+        {
+            return Field.this;
+        }
+        
+        @Override 
+        public String toString()
+        {
+            return getName();
+        }
+    };
 }
     
     
