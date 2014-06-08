@@ -26,6 +26,7 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
+import org.eclipse.jetty.hpack.HpackDecoder.Listener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ArrayTrie;
@@ -232,16 +233,6 @@ public class HpackContext
         }
     }
     
-    public void unuseReferenceSet()
-    {
-        Entry entry = _refSet._refSetNext;
-        while(entry!=_refSet)
-        {
-            entry._used=false;
-            entry=entry._refSetNext;
-        }
-    }
-    
 
     public void removedUnusedReferences(ByteBuffer buffer)
     {
@@ -250,7 +241,9 @@ public class HpackContext
         {
             Entry next = entry._refSetNext;
             
-            if (!entry.isUsed())
+            if (entry.isUsed())
+                entry._used=false;
+            else
             {
                 // encode the reference to remove it
                 buffer.put((byte)0x80);
@@ -259,7 +252,20 @@ public class HpackContext
             }
             entry=next;
         }
-        
+    }
+
+    public void emitUnusedReferences(Listener listener)
+    {
+        Entry entry = _refSet._refSetNext;
+        while(entry!=_refSet)
+        {
+            if (entry.isUsed())
+                entry._used=false;
+            else
+                listener.emit(entry.getHttpField());
+            
+            entry=entry._refSetNext;
+        }
     }
 
     
@@ -514,6 +520,7 @@ public class HpackContext
             return _huffmanValue;
         }
     }
+
 
 
 

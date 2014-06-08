@@ -340,18 +340,22 @@ public class Huffman
         }
     }
 
-
     static public String decode(ByteBuffer buffer)
+    {  
+        return decode(buffer,buffer.remaining());
+    }
+
+    static public String decode(ByteBuffer buffer,int length)
     {        
-        StringBuilder out = new StringBuilder(buffer.remaining()*2);
+        StringBuilder out = new StringBuilder(length*2);
         int node = 0;
         int current = 0;
         int bits = 0;
         
         byte[] array = buffer.array();
         int start=buffer.arrayOffset()+buffer.position();
-        int end=start+buffer.remaining();
-        buffer.position(buffer.limit());
+        int end=start+length;
+        buffer.position(end);
         
         for (int i=start; i<end; i++)
         {

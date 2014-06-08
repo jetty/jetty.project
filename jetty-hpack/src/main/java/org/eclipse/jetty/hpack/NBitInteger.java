@@ -107,13 +107,13 @@ public class NBitInteger
         }
     }
 
-    public static int decode(ByteBuffer buf, int n)
+    public static int decode(ByteBuffer buffer, int n)
     {
         if (n==8)
         {
             int nbits = 0xFF;
 
-            int i=buf.get()&0xff;
+            int i=buffer.get()&0xff;
             
             if (i == nbits)
             {       
@@ -121,7 +121,7 @@ public class NBitInteger
                 int b;
                 do
                 {
-                    b = 0xff&buf.get();
+                    b = 0xff&buffer.get();
                     i = i + (b&127) * m;
                     m = m*128;
                 }
@@ -132,7 +132,7 @@ public class NBitInteger
         
         int nbits = 0xFF >>> (8 - n);
 
-        int i=buf.get(buf.position()-1)&nbits;
+        int i=buffer.get(buffer.position()-1)&nbits;
         
         if (i == nbits)
         {       
@@ -140,7 +140,7 @@ public class NBitInteger
             int b;
             do
             {
-                b = 0xff&buf.get();
+                b = 0xff&buffer.get();
                 i = i + (b&127) * m;
                 m = m*128;
             }

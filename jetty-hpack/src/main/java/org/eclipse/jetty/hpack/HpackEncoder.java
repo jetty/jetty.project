@@ -89,9 +89,6 @@ public class HpackEncoder
 
     public void encode(ByteBuffer buffer, HttpFields fields)
     {
-        // Clear the used bits
-        _context.unuseReferenceSet();
-        
         // Add all the known fields
         for (HttpField field : fields)
         {
