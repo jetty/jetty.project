@@ -232,6 +232,37 @@ public class HpackContext
         }
     }
     
+    public void unuseReferenceSet()
+    {
+        Entry entry = _refSet._refSetNext;
+        while(entry!=_refSet)
+        {
+            entry._used=false;
+            entry=entry._refSetNext;
+        }
+    }
+    
+
+    public void removedUnusedReferences(ByteBuffer buffer)
+    {
+        Entry entry = _refSet._refSetNext;
+        while(entry!=_refSet)
+        {
+            Entry next = entry._refSetNext;
+            
+            if (!entry.isUsed())
+            {
+                // encode the reference to remove it
+                buffer.put((byte)0x80);
+                NBitInteger.encode(buffer,7,index(entry));
+                entry.removeFromRefSet();
+            }
+            entry=next;
+        }
+        
+    }
+
+    
     public Iterator<Entry> iterateReferenceSet()
     {
         return new Iterator<Entry>()
@@ -350,11 +381,11 @@ public class HpackContext
     /* ------------------------------------------------------------ */
     public static class Entry
     {
-        int _index;
         final HttpField _field;
+        int _index;
         Entry _refSetNext=this;
         Entry _refSetPrev=this;
-        boolean _refSetUsed;
+        boolean _used;
         
         Entry()
         {    
@@ -382,7 +413,8 @@ public class HpackContext
                 throw new IllegalStateException("evicted");
             if (_refSetNext!=this)
                 return;
-            
+
+            _used=true;
             _refSetNext=ctx._refSet;
             _refSetPrev=ctx._refSet._refSetPrev;
             ctx._refSet._refSetPrev._refSetNext=this;
@@ -402,6 +434,7 @@ public class HpackContext
                 _refSetPrev._refSetNext=_refSetNext;
                 _refSetNext=this;
                 _refSetPrev=this;
+                _used=false;
             }
         }
 
@@ -429,6 +462,18 @@ public class HpackContext
         {
             return String.format("{%s,%d,%s,%x}",isStatic()?"S":"D",_index,_field,hashCode());
         }
+
+        public void used()
+        {
+            _used=true;
+        }
+
+        public boolean isUsed()
+        {
+            return _used;
+        }
+        
+        
     }
     
     public static class StaticEntry extends Entry
