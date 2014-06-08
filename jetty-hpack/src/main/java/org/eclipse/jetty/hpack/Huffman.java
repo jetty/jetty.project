@@ -341,7 +341,7 @@ public class Huffman
     }
 
 
-    static public String decode(ByteBuffer buffer) throws IOException 
+    static public String decode(ByteBuffer buffer)
     {        
         StringBuilder out = new StringBuilder(buffer.remaining()*2);
         int node = 0;

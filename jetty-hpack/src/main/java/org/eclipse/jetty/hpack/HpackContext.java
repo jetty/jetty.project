@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.hpack;
 
+import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -109,7 +110,7 @@ public class HpackContext
         Set<String> added = new HashSet<>();
         for (int i=1;i<STATIC_TABLE.length;i++)
         {
-            Entry entry=__staticTable[i]=new Entry(i,STATIC_TABLE[i][0],STATIC_TABLE[i][1],true);
+            Entry entry=__staticTable[i]=new StaticEntry(i,STATIC_TABLE[i][0],STATIC_TABLE[i][1]);
             if (entry._field.getValue()!=null)
                 __staticFieldMap.put(entry._field,entry);
             if (!added.contains(entry._field.getName()))
@@ -122,7 +123,7 @@ public class HpackContext
     
     private int _maxHeaderTableSizeInBytes;
     private int _headerTableSizeInBytes;
-    private final Entry _refSet=new Entry(true);
+    private final Entry _refSet=new Entry();
     private final HeaderTable _headerTable;
     private final Map<HttpField,Entry> _fieldMap = new HashMap<>();
     private final Map<String,Entry> _nameMap = new HashMap<>();
@@ -183,7 +184,7 @@ public class HpackContext
     public Entry add(HttpField field)
     {
         int i=_headerTable.getNextIndexUnsafe();
-        Entry entry=new Entry(i,field,false);
+        Entry entry=new Entry(i,field);
         int size = entry.getSize();
         if (size>_maxHeaderTableSizeInBytes)
             return null;
@@ -218,6 +219,17 @@ public class HpackContext
     public Iterable<Entry> getReferenceSet()
     {
         return referenceSet;
+    }
+    
+    public void clearReferenceSet()
+    {
+        Entry entry = _refSet._refSetNext;
+        while(entry!=_refSet)
+        {
+            Entry next = entry._refSetNext;
+            entry.removeFromRefSet();
+            entry=next;
+        }
     }
     
     public Iterator<Entry> iterateReferenceSet()
@@ -339,36 +351,32 @@ public class HpackContext
     public static class Entry
     {
         int _index;
-        final boolean _static;
         final HttpField _field;
         Entry _refSetNext=this;
         Entry _refSetPrev=this;
         boolean _refSetUsed;
         
-        Entry(boolean isStatic)
+        Entry()
         {    
-            _static=isStatic;
             _index=0;
             _field=null;
         }
         
-        Entry(int index,String name, String value, boolean isStatic)
+        Entry(int index,String name, String value)
         {    
-            _static=isStatic;
             _index=index;
             _field=new HttpField(name,value);
         }
         
-        Entry(int index, HttpField field, boolean isStatic)
+        Entry(int index, HttpField field)
         {    
-            _static=isStatic;
             _index=index;
             _field=field;
         }
         
         private void addToRefSet(HpackContext ctx)
         {
-            if (_static)
+            if (isStatic())
                 throw new IllegalStateException("static");
             if (_index<0)
                 throw new IllegalStateException("evicted");
@@ -379,6 +387,11 @@ public class HpackContext
             _refSetPrev=ctx._refSet._refSetPrev;
             ctx._refSet._refSetPrev._refSetNext=this;
             ctx._refSet._refSetPrev=this;
+        }
+
+        public boolean isInReferenceSet()
+        {
+            return _refSetNext!=this;
         }
         
         public void removeFromRefSet()
@@ -397,25 +410,63 @@ public class HpackContext
             return 32+_field.getName().length()+_field.getValue().length();
         }
         
-        /**
-         * @return
-         */
         public HttpField getHttpField()
         {
             return _field;
         }
         
-        /**
-         * @return
-         */
         public boolean isStatic()
         {
-            return _static;
+            return false;
+        }
+        
+        public byte[] getStaticHuffmanValue()
+        {
+            return null;
         }
         
         public String toString()
         {
-            return String.format("{%s,%d,%s,%x}",_static?"S":"D",_index,_field,hashCode());
+            return String.format("{%s,%d,%s,%x}",isStatic()?"S":"D",_index,_field,hashCode());
+        }
+    }
+    
+    public static class StaticEntry extends Entry
+    {
+        final byte[] _huffmanValue;
+        
+        StaticEntry(int index,String name, String value)
+        {    
+            super(index,name,value);
+            if (value!=null && value.length()>0)
+            {
+                int huffmanLen = Huffman.octetsNeeded(value);
+                int lenLen = NBitInteger.octectsNeeded(7,huffmanLen);
+                _huffmanValue = new byte[1+lenLen+huffmanLen];
+                ByteBuffer buffer = ByteBuffer.wrap(_huffmanValue); 
+                        
+                // Indicate Huffman
+                buffer.put((byte)0x80);
+                // Add huffman length
+                NBitInteger.encode(buffer,7,huffmanLen);
+                // Encode value
+                Huffman.encode(buffer,value);
+                
+            }
+            else
+                _huffmanValue=null;
+        }
+
+        @Override
+        public boolean isStatic()
+        {
+            return true;
+        }
+
+        @Override
+        public byte[] getStaticHuffmanValue()
+        {
+            return _huffmanValue;
         }
     }
 

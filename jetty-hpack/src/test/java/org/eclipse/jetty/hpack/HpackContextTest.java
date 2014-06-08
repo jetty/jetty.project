@@ -26,6 +26,7 @@ import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
+import java.nio.ByteBuffer;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
@@ -397,6 +398,13 @@ public class HpackContextTest
         ctx.addToRefSet(ctx.get(3));
         ctx.addToRefSet(ctx.get(1));
         ctx.addToRefSet(ctx.get(5));
+        
+        // check isInReferenceSet
+        assertTrue(ctx.get(1).isInReferenceSet());
+        assertFalse(ctx.get(2).isInReferenceSet());
+        assertTrue(ctx.get(3).isInReferenceSet());
+        assertFalse(ctx.get(4).isInReferenceSet());
+        assertTrue(ctx.get(5).isInReferenceSet());
 
         // iterate ref set
         HashSet<HttpField> fields = new HashSet<>();
@@ -426,6 +434,13 @@ public class HpackContextTest
         assertTrue(fields.contains(field[0]));
         assertTrue(fields.contains(field[4]));
 
+        // check isInReferenceSet
+        assertTrue(ctx.get(1).isInReferenceSet());
+        assertFalse(ctx.get(2).isInReferenceSet());
+        assertFalse(ctx.get(3).isInReferenceSet());
+        assertFalse(ctx.get(4).isInReferenceSet());
+        assertTrue(ctx.get(5).isInReferenceSet());
+
         // iterator remove
         Iterator<Entry> iter=ctx.iterateReferenceSet();
         iter.next();
@@ -443,6 +458,55 @@ public class HpackContextTest
             fields.add(e.getHttpField());
         assertEquals(0,fields.size());
         
+    }
+
+    @Test
+    public void testRefSetClear()
+    {
+        // Only enough space for 5 entries
+        HpackContext ctx = new HpackContext(38*5);
+        
+        HttpField[] field = 
+        {
+           new HttpField("fo0","b0r"),
+           new HttpField("fo1","b1r"),
+           new HttpField("fo2","b2r"),
+           new HttpField("fo3","b3r"),
+           new HttpField("fo4","b4r"),
+           new HttpField("fo5","b5r"),
+           new HttpField("fo6","b6r"),
+           new HttpField("fo7","b7r"),
+           new HttpField("fo8","b8r"),
+           new HttpField("fo9","b9r"),
+           new HttpField("foA","bAr"),
+        };
+        Entry[] entry = new Entry[field.length];
+        
+        // Add 5 entries
+        for (int i=0;i<=4;i++)  
+            entry[i]=ctx.add(field[i]);
+        
+        // Add 3 entries to reference set
+        ctx.clearReferenceSet();
+        ctx.addToRefSet(ctx.get(3));
+        ctx.addToRefSet(ctx.get(1));
+        ctx.addToRefSet(ctx.get(5));
+        
+        // iterate ref set
+        HashSet<HttpField> fields = new HashSet<>();
+        for (Entry e: ctx.getReferenceSet() )
+            fields.add(e.getHttpField());
+        assertEquals(3,fields.size());
+        assertTrue(fields.contains(field[0]));
+        assertTrue(fields.contains(field[2]));
+        assertTrue(fields.contains(field[4]));
+        
+        // Clear set 
+        ctx.clearReferenceSet();
+        fields.clear();
+        for (Entry e: ctx.getReferenceSet() )
+            fields.add(e.getHttpField());
+        assertEquals(0,fields.size());
     }
 
     @Test
@@ -598,8 +662,28 @@ public class HpackContextTest
         assertFalse(fields.contains(field[0]));
         assertFalse(fields.contains(field[2]));
         assertTrue(fields.contains(field[4]));
-        
-
-        
+    }
+    
+    @Test
+    public void testStaticHuffmanValues()
+    {
+        HpackContext ctx = new HpackContext(4096);
+        for (int i=2;i<=14;i++)
+        {
+            Entry entry=ctx.get(i);
+            assertTrue(entry.isStatic());
+            
+            ByteBuffer buffer = ByteBuffer.wrap(entry.getStaticHuffmanValue());
+            int huff = 0xff&buffer.get();
+            assertTrue((0x80&huff)==0x80);
+            
+            int len = NBitInteger.decode(buffer,7);
+            
+            assertEquals(len,buffer.remaining());
+            String value = Huffman.decode(buffer);
+            
+            assertEquals(entry.getHttpField().getValue(),value);
+            
+        }
     }
 }
