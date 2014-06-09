@@ -32,10 +32,11 @@ import org.eclipse.jetty.http.HttpScheme;
 public class MetaDataBuilder
 { 
     private int _status;
-    private HttpMethod _method;
-    private String _methodString;
+    private String _method;
     private HttpScheme _scheme;
     private String _authority;
+    private String _host;
+    private int _port;
     private String _path;        
 
     List<HttpField> _fields = new ArrayList<>();
@@ -52,25 +53,15 @@ public class MetaDataBuilder
                     break;
                     
                 case ":method":
-                    _method=(HttpMethod)value.getStaticValue();
-                    _methodString=_method.asString();
+                    _method=field.getValue();
                     break;
 
                 case ":scheme":
                     _scheme = (HttpScheme)value.getStaticValue();
                     break;
                     
-                case ":authority":
-                    _authority=field.getValue();
-                    break;
-                    
-                case ":path":
-                    _path=field.getValue();
-                    break;
-                    
                 default:
-                    if (field.getName().charAt(0)!=':')
-                        _fields.add(field);
+                    throw new IllegalArgumentException();
             }
         }
         else
@@ -83,8 +74,7 @@ public class MetaDataBuilder
                     break;
 
                 case ":method":
-                    _methodString=field.getValue();
-                    _method=HttpMethod.CACHE.get(_methodString);
+                    _method=field.getValue();
                     break;
 
                 case ":scheme":
@@ -93,6 +83,9 @@ public class MetaDataBuilder
 
                 case ":authority":
                     _authority=field.getValue();
+                    AuthorityHttpField afield=(field instanceof AuthorityHttpField)?((AuthorityHttpField)field):new AuthorityHttpField(field.getValue());
+                    _host=afield.getHost();
+                    _port=afield.getPort();
                     break;
 
                 case ":path":
@@ -111,7 +104,7 @@ public class MetaDataBuilder
         try
         {
             if (_method!=null)
-                return new MetaData.Request(_scheme,_method,_methodString,_authority,_path,new ArrayList<>(_fields));
+                return new MetaData.Request(_scheme,_method,_authority,_host,_port,_path,new ArrayList<>(_fields));
             if (_status!=0)
                 return new MetaData.Response(_status,new ArrayList<>(_fields));
             return new MetaData(new ArrayList<>(_fields));
@@ -123,6 +116,8 @@ public class MetaDataBuilder
             _scheme=null;
             _authority=null;
             _path=null;
+            _host=null;
+            _port=0;
             _fields.clear();
         }
     }

@@ -842,7 +842,7 @@ public class HttpParser
                             try
                             {
                                 len=i;
-                                port = StringUtil.toInt(host.substring(i+1));
+                                port = StringUtil.toInt(host,i+1);
                             }
                             catch (NumberFormatException e)
                             {

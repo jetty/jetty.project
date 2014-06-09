@@ -50,8 +50,7 @@ public class HpackDecoderTest
         
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
         
-        assertEquals(HttpMethod.GET,request.getMethod());
-        assertEquals("GET", request.getMethodString());
+        assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP,request.getScheme());
         assertEquals("/",request.getPath());
         assertEquals("www.example.com",request.getAuthority());
@@ -64,8 +63,7 @@ public class HpackDecoderTest
         
         request = (MetaData.Request)decoder.decode(buffer);
 
-        assertEquals(HttpMethod.GET,request.getMethod());
-        assertEquals("GET", request.getMethodString());
+        assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP,request.getScheme());
         assertEquals("/",request.getPath());
         assertEquals("www.example.com",request.getAuthority());
@@ -81,8 +79,7 @@ public class HpackDecoderTest
         
         request = (MetaData.Request)decoder.decode(buffer);
         
-        assertEquals(HttpMethod.GET,request.getMethod());
-        assertEquals("GET",request.getMethodString());
+        assertEquals("GET",request.getMethod());
         assertEquals(HttpScheme.HTTPS,request.getScheme());
         assertEquals("/index.html",request.getPath());
         assertEquals("www.example.com",request.getAuthority());
@@ -95,9 +92,7 @@ public class HpackDecoderTest
     @Test
     public void testDecodeD_4()
     {
-        
         HpackDecoder decoder = new HpackDecoder();
-        
         
         // First request
         String encoded="828786448ce7cf9bebe89b6fb16fa9b6ff";
@@ -105,8 +100,7 @@ public class HpackDecoderTest
         
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
         
-        assertEquals(HttpMethod.GET,request.getMethod());
-        assertEquals("GET", request.getMethodString());
+        assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP,request.getScheme());
         assertEquals("/",request.getPath());
         assertEquals("www.example.com",request.getAuthority());
@@ -119,8 +113,7 @@ public class HpackDecoderTest
         
         request = (MetaData.Request)decoder.decode(buffer);
 
-        assertEquals(HttpMethod.GET,request.getMethod());
-        assertEquals("GET", request.getMethodString());
+        assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP,request.getScheme());
         assertEquals("/",request.getPath());
         assertEquals("www.example.com",request.getAuthority());
@@ -135,8 +128,7 @@ public class HpackDecoderTest
         
         request = (MetaData.Request)decoder.decode(buffer);
         
-        assertEquals(HttpMethod.GET,request.getMethod());
-        assertEquals("GET",request.getMethodString());
+        assertEquals("GET",request.getMethod());
         assertEquals(HttpScheme.HTTPS,request.getScheme());
         assertEquals("/index.html",request.getPath());
         assertEquals("www.example.com",request.getAuthority());

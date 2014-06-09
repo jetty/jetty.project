@@ -104,7 +104,7 @@ public class HpackEncoder
             
             // TODO optimise these to avoid HttpField creation
             encode(buffer,new HttpField(":scheme",request.getScheme().asString()));
-            encode(buffer,new HttpField(":method",request.getMethodString()));
+            encode(buffer,new HttpField(":method",request.getMethod()));
             encode(buffer,new HttpField(":authority",request.getAuthority())); // TODO look for host header?
             encode(buffer,new HttpField(":path",request.getPath()));
             

@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.Trie;
 
 public class HpackContext
 {
-    private static final String[][] STATIC_TABLE = 
+    public static final String[][] STATIC_TABLE = 
     {
         {null,null},
         /* 1  */ {":authority"                  ,null},

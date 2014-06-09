@@ -19,7 +19,9 @@
 
 package org.eclipse.jetty.http2.hpack;
 
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -55,23 +57,36 @@ public class MetaData implements Iterable<HttpField>
         return _fields.iterator();
     }
 
+    public List<HttpField> getFields()
+    {
+        if (_fields instanceof List)
+            return (List<HttpField>)_fields;
+        ArrayList<HttpField> list = new ArrayList<>();
+        for (HttpField field:_fields)
+            list.add(field);
+        return list;
+    }
+    
+    
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
     public static class Request extends MetaData
     {
-        private final HttpMethod _method;
-        private final String _methodString;
+        private final String _method;
         private final HttpScheme _scheme;
         private final String _authority;
+        private final String _host;
+        private final int _port;
         private final String _path;
 
-        public Request(HttpScheme scheme, HttpMethod method, String methodString, String authority, String path, Iterable<HttpField> fields)
+        public Request(HttpScheme scheme, String method, String authority, String host, int port, String path, Iterable<HttpField> fields)
         {
             super(fields);
             _authority=authority;
+            _host=host;
+            _port=port;
             _method=method;
-            _methodString=methodString;
             _path=path;
             _scheme=scheme;
         }
@@ -88,14 +103,9 @@ public class MetaData implements Iterable<HttpField>
             return false;
         }
         
-        public HttpMethod getMethod()
+        public String getMethod()
         {
             return _method;
-        }
-        
-        public String getMethodString()
-        {
-            return _methodString;
         }
 
         public HttpScheme getScheme()
@@ -108,6 +118,16 @@ public class MetaData implements Iterable<HttpField>
             return _authority;
         }
 
+        public String getHost()
+        {
+            return _host;
+        }
+
+        public int getPort()
+        {
+            return _port;
+        }
+        
         public String getPath()
         {
             return _path;

@@ -1225,7 +1225,7 @@ public class Request implements HttpServletRequest
                         try
                         {
                             len=i;
-                            _port = StringUtil.toInt(hostPort.substring(i+1));
+                            _port = StringUtil.toInt(hostPort,i+1);
                         }
                         catch (NumberFormatException e)
                         {

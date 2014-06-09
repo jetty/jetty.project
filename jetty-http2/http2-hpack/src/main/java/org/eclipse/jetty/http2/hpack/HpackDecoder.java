@@ -32,7 +32,6 @@ import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
  */
 public class HpackDecoder
 {
-    
     private final HpackContext _context;
     private final MetaDataBuilder _builder = new MetaDataBuilder();
 
@@ -45,7 +44,6 @@ public class HpackDecoder
     {
         _context=new HpackContext(maxHeaderTableSize);
     }
-
     
     public MetaData decode(ByteBuffer buffer)
     {
@@ -120,7 +118,12 @@ public class HpackDecoder
                         value=toASCIIString(buffer,length);
                     
                     // Make the new field
-                    HttpField field = new HttpField(header,name,value);
+                    HttpField field;
+                    if (":authority".equals(header))
+                        field = new AuthorityHttpField(value);
+                    else
+                        // Normal Field
+                        field = new HttpField(header,name,value);
                     
                     // emit the field
                     _builder.emit(field);
