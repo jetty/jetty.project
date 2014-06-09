@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
-/** A Parser for HTTP 0.9, 1.0 and 1.1
+/** A Parser for 1.0 and 1.1
  * <p>
  * The is parser parses HTTP client and server messages from buffers
  * passed in the {@link #parseNext(ByteBuffer)} method.  The parsed
@@ -142,6 +142,7 @@ public class HttpParser
     private String _methodString;
     private HttpVersion _version;
     private ByteBuffer _uri=ByteBuffer.allocate(INITIAL_URI_LENGTH); // Tune?
+    private HttpURI _httpURI=new HttpURI(StandardCharsets.UTF_8);
     private EndOfContent _endOfContent;
     private long _contentLength;
     private long _contentPosition;
@@ -618,11 +619,7 @@ public class HttpParser
                     {
                         // HTTP/0.9
                         _uri.flip();
-                        handle=_requestHandler.startRequest(_method,_methodString,_uri,null)||handle;
-                        setState(State.END);
-                        BufferUtil.clear(buffer);
-                        handle=_handler.headerComplete()||handle;
-                        handle=_handler.messageComplete()||handle;
+                        throw new BadMessage("HTTP/0.9 not supported");
                     }
                     else
                     {
@@ -713,11 +710,7 @@ public class HttpParser
                         {
                             // HTTP/0.9
                             _uri.flip();
-                            handle=_requestHandler.startRequest(_method,_methodString,_uri, null)||handle;
-                            setState(State.END);
-                            BufferUtil.clear(buffer);
-                            handle=_handler.headerComplete()||handle;
-                            handle=_handler.messageComplete()||handle;
+                            throw new BadMessage("HTTP/0.9 not supported");
                         }
                     }
                     else if (ch<0)
@@ -744,7 +737,13 @@ public class HttpParser
 
                         setState(State.HEADER);
                         _uri.flip();
-                        handle=_requestHandler.startRequest(_method,_methodString,_uri, _version)||handle;
+                        
+                        if (_method == HttpMethod.CONNECT)
+                            _httpURI.parseConnect(_uri.array(),_uri.arrayOffset()+_uri.position(),_uri.remaining());
+                        else
+                            _httpURI.parse(_uri.array(),_uri.arrayOffset()+_uri.position(),_uri.remaining());
+                        
+                        handle=_requestHandler.startRequest(_methodString,_httpURI, _version)||handle;
                         continue;
                     }
                     else if (ch>=HttpTokens.SPACE)
@@ -1567,6 +1566,7 @@ public class HttpParser
         _contentChunk=null;
         _headerBytes=0;
         _host=false;
+        _httpURI.clear();
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -1637,17 +1637,18 @@ public class HttpParser
         void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort);
     }
     
+
+    
     public interface RequestHandler<T> extends HttpHandler<T>
     {
         /**
          * This is the method called by parser when the HTTP request line is parsed
-         * @param method The method as enum if of a known type
-         * @param methodString The method as a string
+         * @param method The method 
          * @param uri The raw bytes of the URI.  These are copied into a ByteBuffer that will not be changed until this parser is reset and reused.
          * @param version
          * @return true if handling parsing should return.
          */
-        public abstract boolean startRequest(HttpMethod method, String methodString, ByteBuffer uri, HttpVersion version);
+        public abstract boolean startRequest(String method, HttpURI uri, HttpVersion version);
 
         /**
          * This is the method called by the parser after it has parsed the host header (and checked it's format). This is

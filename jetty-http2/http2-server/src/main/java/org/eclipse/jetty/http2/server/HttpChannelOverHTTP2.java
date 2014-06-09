@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.server;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.io.EndPoint;
@@ -41,12 +42,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel<ByteBuffer>
     public void requestStart(HeadersFrame frame)
     {
         // TODO: extract method, etc.
-        HttpMethod httpMethod = null;
         String method = null;
-        ByteBuffer uri = BufferUtil.toBuffer(0);
+        HttpURI uri = new HttpURI("/foo/bar");
         HttpVersion version = null;
 
-        startRequest(httpMethod, method, uri, version);
+        startRequest(method, uri, version);
 
         // TODO: See SPDY's
     }

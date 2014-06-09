@@ -45,7 +45,7 @@
 
     <dependencies>
         <dependency>
-            <groupId>org.eclipse.jetty</groupId>
+            <groupId>org.eclipse.jetty.http2</groupId>
             <artifactId>http2-common</artifactId>
             <version>${project.version}</version>
         </dependency>

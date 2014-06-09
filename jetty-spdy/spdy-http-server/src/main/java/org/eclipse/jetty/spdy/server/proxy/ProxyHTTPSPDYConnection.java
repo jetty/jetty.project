@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -81,13 +82,13 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
-    public boolean startRequest(HttpMethod method, String methodString, ByteBuffer uri, HttpVersion httpVersion)
+    public boolean startRequest(String methodString, HttpURI uri, HttpVersion httpVersion)
     {
         Connector connector = getConnector();
         String scheme = connector.getConnectionFactory(SslConnectionFactory.class) != null ? "https" : "http";
         headers.put(HTTPSPDYHeader.SCHEME.name(version), scheme);
         headers.put(HTTPSPDYHeader.METHOD.name(version), methodString);
-        headers.put(HTTPSPDYHeader.URI.name(version), BufferUtil.toUTF8String(uri)); // TODO handle bad encodings
+        headers.put(HTTPSPDYHeader.URI.name(version), uri.toString()); 
         headers.put(HTTPSPDYHeader.VERSION.name(version), httpVersion.asString());
         return false;
     }

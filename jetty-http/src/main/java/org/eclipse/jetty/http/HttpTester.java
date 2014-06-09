@@ -256,10 +256,10 @@ public class HttpTester
         private String _uri;
 
         @Override
-        public boolean startRequest(HttpMethod method, String methodString, ByteBuffer uri, HttpVersion version)
+        public boolean startRequest(String method, HttpURI uri, HttpVersion version)
         {
-            _method=methodString;
-            _uri=BufferUtil.toUTF8String(uri);
+            _method=method;
+            _uri=uri.toString();
             _version=version;
             return false;
         }

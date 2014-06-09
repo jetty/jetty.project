@@ -86,10 +86,8 @@ public class HttpParserTest
         HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
-        assertEquals("GET", _methodOrVersion);
-        assertEquals("/999", _uriOrStatus);
-        assertEquals(null, _versionOrReason);
-        assertEquals(-1, _headers);
+        
+        assertEquals("HTTP/0.9 not supported", _bad);
     }
 
     @Test
@@ -101,10 +99,7 @@ public class HttpParserTest
         HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
-        assertEquals("POST", _methodOrVersion);
-        assertEquals("/222", _uriOrStatus);
-        assertEquals(null, _versionOrReason);
-        assertEquals(-1, _headers);
+        assertEquals("HTTP/0.9 not supported", _bad);
     }
 
     @Test
@@ -1504,14 +1499,14 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
+        public boolean startRequest(String method, HttpURI uri, HttpVersion version)
         {
             _fields.clear();
             _headers= -1;
             _hdr= new String[10];
             _val= new String[10];
             _methodOrVersion= method;
-            _uriOrStatus= BufferUtil.toUTF8String(uri);
+            _uriOrStatus= uri.toString();
             _versionOrReason= version==null?null:version.asString();
 
             fields=new HttpFields();

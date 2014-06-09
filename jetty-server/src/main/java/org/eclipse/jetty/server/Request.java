@@ -182,8 +182,7 @@ public class Request implements HttpServletRequest
     private CookieCutter _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = __NONE;
-    private HttpMethod _httpMethod;
-    private String _httpMethodString;
+    private String _httpMethod;
     private MultiMap<String> _queryParameters;
     private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
@@ -813,7 +812,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getMethod()
     {
-        return _httpMethodString;
+        return _httpMethod;
     }
 
     /* ------------------------------------------------------------ */
@@ -1631,8 +1630,7 @@ public class Request implements HttpServletRequest
         _context = null;
         _newContext=false;
         _serverName = null;
-        _httpMethod=null;
-        _httpMethodString = null;
+        _httpMethod = null;
         _pathInfo = null;
         _port = 0;
         _httpVersion = HttpVersion.HTTP_1_1;
@@ -1875,16 +1873,15 @@ public class Request implements HttpServletRequest
      * @param method
      *            The method to set.
      */
-    public void setMethod(HttpMethod httpMethod, String method)
+    public void setMethod(String method)
     {
-        _httpMethod=httpMethod;
-        _httpMethodString = method;
+        _httpMethod = method;
     }
 
     /* ------------------------------------------------------------ */
     public boolean isHead()
     {
-        return HttpMethod.HEAD==_httpMethod;
+        return HttpMethod.HEAD.asString().equals(_httpMethod);
     }
 
     /* ------------------------------------------------------------ */

@@ -36,7 +36,6 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
@@ -99,7 +98,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     private final HttpConfiguration _configuration;
     private final EndPoint _endPoint;
     private final HttpTransport _transport;
-    private final HttpURI _uri;
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
@@ -115,7 +113,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         _endPoint = endPoint;
         _transport = transport;
 
-        _uri = new HttpURI(URIUtil.__CHARSET);
         _state = new HttpChannelState(this);
         input.init(_state);
         _request = new Request(this, input);
@@ -232,7 +229,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         _expect102Processing = false;
         _request.recycle();
         _response.recycle();
-        _uri.clear();
     }
 
     @Override
@@ -255,7 +251,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         if (LOG.isDebugEnabled())
         {
             threadName = Thread.currentThread().getName();
-            Thread.currentThread().setName(threadName + " - " + _uri);
+            Thread.currentThread().setName(threadName + " - " + _request.getUri());
         }
 
         HttpChannelState.Action action = _state.handling();
@@ -363,7 +359,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                     if (e instanceof EofException)
                         LOG.debug(e);
                     else
-                        LOG.warn(String.valueOf(_uri), e);
+                        LOG.warn(String.valueOf(_request.getUri()), e);
                     _state.error(e);
                     _request.setHandled(true);
                     handleException(e);
@@ -492,38 +488,34 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     }
     
     @Override
-    public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
+    public boolean startRequest(String method, HttpURI uri, HttpVersion version)
     {
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;
 
         _request.setTimeStamp(System.currentTimeMillis());
-        _request.setMethod(httpMethod, method);
+        _request.setMethod(method);
 
-        if (httpMethod == HttpMethod.CONNECT)
-            _uri.parseConnect(uri.array(),uri.arrayOffset()+uri.position(),uri.remaining());
-        else
-            _uri.parse(uri.array(),uri.arrayOffset()+uri.position(),uri.remaining());
-        _request.setUri(_uri);
+        _request.setUri(uri);
 
         String path;
         try
         {
-            path = _uri.getDecodedPath();
+            path = uri.getDecodedPath();
         }
         catch (Exception e)
         {
             LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
             LOG.ignore(e);
-            path = _uri.getDecodedPath(StandardCharsets.ISO_8859_1);
+            path = uri.getDecodedPath(StandardCharsets.ISO_8859_1);
         }
         
         String info = URIUtil.canonicalPath(path);
 
         if (info == null)
         {
-            if( path==null && _uri.getScheme()!=null &&_uri.getHost()!=null)
+            if( path==null && uri.getScheme()!=null &&uri.getHost()!=null)
             {
                 info = "/";
                 _request.setRequestURI("");
@@ -610,7 +602,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     @Override
     public boolean parsedHostHeader(String host, int port)
     {
-        if (_uri.getHost()==null)
+        if (_request.getUri().getHost()==null)
         {
             _request.setServerName(host);
             _request.setServerPort(port);
