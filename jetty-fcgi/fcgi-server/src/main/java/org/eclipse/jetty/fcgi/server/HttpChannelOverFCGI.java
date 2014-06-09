@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
@@ -76,8 +77,7 @@ public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
         String uri = path;
         if (query != null && query.length() > 0)
             uri += "?" + query;
-        startRequest(HttpMethod.fromString(method), method, ByteBuffer.wrap(uri.getBytes(StandardCharsets.UTF_8)),
-                HttpVersion.fromString(version));
+        startRequest(method, new HttpURI(uri),HttpVersion.fromString(version));
 
         for (HttpField fcgiField : fields)
         {
