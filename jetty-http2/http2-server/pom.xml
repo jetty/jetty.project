@@ -1,22 +1,16 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0"
+         xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+         xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/xsd/maven-4.0.0.xsd">
   <parent>
-    <artifactId>jetty-project</artifactId>
-    <groupId>org.eclipse.jetty</groupId>
+    <groupId>org.eclipse.jetty.http2</groupId>
+    <artifactId>http2-parent</artifactId>
     <version>10.0.0-SNAPSHOT</version>
   </parent>
 
   <modelVersion>4.0.0</modelVersion>
-  <groupId>org.eclipse.jetty.http2</groupId>
-  <artifactId>http2-parent</artifactId>
-  <packaging>pom</packaging>
-  <name>Jetty :: HTTP2</name>
-
-  <modules>
-    <module>http2-hpack</module>
-    <module>http2-common</module>
-    <module>http2-server</module>
-  </modules>
+  <artifactId>http2-server</artifactId>
+  <name>Jetty :: HTTP2 :: Server</name>
 
   <build>
     <plugins>
@@ -31,12 +25,10 @@
             </goals>
             <configuration>
               <instructions>
-                  <Export-Package>org.eclipse.jetty.http2.*;version="9.1"</Export-Package>
-                  <Import-Package>org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
-                  <_nouses>true</_nouses>
+                <Import-Package>javax.servlet.*;version="[2.6.0,3.2)",javax.net.*,*</Import-Package>
               </instructions>
             </configuration>
-           </execution>
+          </execution>
         </executions>
       </plugin>
       <plugin>
@@ -50,5 +42,18 @@
       </plugin>
     </plugins>
   </build>
+
+    <dependencies>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>http2-common</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+    </dependencies>
 
 </project>

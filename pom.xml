@@ -418,7 +418,6 @@
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
-    <module>jetty-hpack</module>
     <module>jetty-http2</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
