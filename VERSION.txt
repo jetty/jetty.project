@@ -1,3 +1,20 @@
+jetty-9.2.1.v20140609 - 09 June 2014
+ + 347110 Supprt ClassFileTransormers in WebAppClassLoader
+ + 432192 jetty-start / Allow JETTY_LOGS use for start-log-file
+ + 432321 jetty-start / Allow defining extra start directories for common
+   configurations
+ + 435322 Improved debug
+ + 436029 GzipFilter errors on asynchronous methods with message to
+   AsyncGzipFilter
+ + 436345 Refactor AbstractSession to minimize burden on subclasses to
+   implement behaviour
+ + 436388 Allow case-insensitive STOP.KEY and STOP.PORT use
+ + 436405 ${jetty.base}/resources not on classpath with default configuration
+ + 436520 Start / Allow https and file urls in jetty-start's module download
+   mechanism
+ + 436524 Start / Downloadable [files] references in modules cannot use ":"
+   themselves
+
 jetty-9.2.0.v20140526 - 26 May 2014
  + 429390 Decoders and Encoders are not registered for non-annotated
    ClientEndpoint
