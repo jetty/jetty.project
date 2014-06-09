@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ByteBufferPool.Lease;
 
 public class HpackEncoder
 {   
@@ -80,12 +81,15 @@ public class HpackEncoder
         return _context;
     }
     
-    /*
     public ByteBufferPool.Lease encode(HttpFields fields)
     {
-        return new ByteBufferPool.Lease(_byteBufferPool);
+        Lease lease=new ByteBufferPool.Lease(_byteBufferPool);
+        ByteBuffer buffer = _byteBufferPool.acquire(8*1024,false); // TODO make configurable
+        lease.add(buffer,true);
+        // TODO handle multiple buffers if large size configured.
+        encode(buffer,fields);
+        return lease;
     }
-    */
 
     public void encode(ByteBuffer buffer, HttpFields fields)
     {
