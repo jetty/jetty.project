@@ -22,6 +22,8 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -157,9 +159,9 @@ public class SharedBlockingCallback
             {
                 if (_state == null)
                 {
-                    // TODO remove before release
+                    // TODO remove when feedback received on 435322
                     if (cause==null)
-                        LOG.warn("null failed cause ",new Throwable());
+                        LOG.warn("null failed cause (please report stack trace) ",new Throwable());
                     _state = cause==null?FAILED:cause;
                     _complete.signalAll();
                 }
@@ -188,7 +190,16 @@ public class SharedBlockingCallback
             try
             {
                 while (_state == null)
-                    _complete.await();
+                {
+                    // TODO remove this debug timout!
+                    // This is here to help debug 435322,
+                    if (!_complete.await(10,TimeUnit.MINUTES))
+                    {
+                        IOException x = new IOException("DEBUG timeout");
+                        LOG.warn("Blocked too long (please report!!!) "+this, x);
+                        _state=x;
+                    }
+                }
 
                 if (_state == SUCCEEDED)
                     return;
