@@ -26,8 +26,9 @@ import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
 
-import org.eclipse.jetty.hpack.HpackDecoder.Listener;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.StringUtil;
@@ -111,7 +112,37 @@ public class HpackContext
         Set<String> added = new HashSet<>();
         for (int i=1;i<STATIC_TABLE.length;i++)
         {
-            Entry entry=__staticTable[i]=new StaticEntry(i,STATIC_TABLE[i][0],STATIC_TABLE[i][1]);
+            Entry entry;
+            switch(i)
+            {
+                case 2:
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.GET));
+                    break;
+                case 3:
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.POST));
+                    break;
+                case 6:
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTP));
+                    break;
+                case 7:
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTPS));
+                    break;
+                case 8:
+                case 9:
+                case 10:
+                case 11:
+                case 12:
+                case 13:
+                case 14:
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],Integer.valueOf(STATIC_TABLE[i][1])));
+                    break;
+                    
+                default:
+                    entry=new StaticEntry(i,new HttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1]));
+            }
+            
+            __staticTable[i]=entry;
+            
             if (entry._field.getValue()!=null)
                 __staticFieldMap.put(entry._field,entry);
             if (!added.contains(entry._field.getName()))
@@ -254,7 +285,7 @@ public class HpackContext
         }
     }
 
-    public void emitUnusedReferences(Listener listener)
+    public void emitUnusedReferences(MetaDataBuilder builder)
     {
         Entry entry = _refSet._refSetNext;
         while(entry!=_refSet)
@@ -262,7 +293,7 @@ public class HpackContext
             if (entry.isUsed())
                 entry._used=false;
             else
-                listener.emit(entry.getHttpField());
+                builder.emit(entry.getHttpField());
             
             entry=entry._refSetNext;
         }
@@ -478,17 +509,16 @@ public class HpackContext
         {
             return _used;
         }
-        
-        
-    }
+    } 
     
     public static class StaticEntry extends Entry
     {
         final byte[] _huffmanValue;
         
-        StaticEntry(int index,String name, String value)
+        StaticEntry(int index,HttpField field)
         {    
-            super(index,name,value);
+            super(index,field);
+            String value = field.getValue();
             if (value!=null && value.length()>0)
             {
                 int huffmanLen = Huffman.octetsNeeded(value);
@@ -501,8 +531,7 @@ public class HpackContext
                 // Add huffman length
                 NBitInteger.encode(buffer,7,huffmanLen);
                 // Encode value
-                Huffman.encode(buffer,value);
-                
+                Huffman.encode(buffer,value);       
             }
             else
                 _huffmanValue=null;
@@ -521,7 +550,23 @@ public class HpackContext
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    public static class StaticValueHttpField extends HttpField
+    {
+        private final Object _value;
 
+        public StaticValueHttpField(String name, String valueString, Object value)
+        {
+            super(name,valueString);
+            _value=value;
+        }
 
+        public Object getStaticValue()
+        {
+            return _value;
+        }
+    }
 
 }

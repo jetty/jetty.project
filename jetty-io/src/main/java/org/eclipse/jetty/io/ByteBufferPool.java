@@ -64,6 +64,14 @@ public interface ByteBufferPool
             this.recycles = new ArrayList<>();
         }
 
+        public ByteBuffer acquire(int capacity,boolean direct)
+        {
+            ByteBuffer buffer = byteBufferPool.acquire(capacity,direct);
+            buffers.add(buffer);
+            recycles.add(true);
+            return buffer;
+        }
+        
         public void add(ByteBuffer buffer, boolean recycle)
         {
             buffers.add(buffer);

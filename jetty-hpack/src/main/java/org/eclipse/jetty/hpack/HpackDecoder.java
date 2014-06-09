@@ -32,30 +32,24 @@ import org.eclipse.jetty.http.HttpHeader;
  */
 public class HpackDecoder
 {
-    public interface Listener
-    {
-        void emit(HttpField field);
-        void endHeaders();
-    }
     
     private final HpackContext _context;
-    private final Listener _listener;
+    private final MetaDataBuilder _builder = new MetaDataBuilder();
 
-    public HpackDecoder(Listener listener)
+    public HpackDecoder()
     {
-        this(listener,4096);
+        this(4096);
     }
     
-    public HpackDecoder(Listener listener,int maxHeaderTableSize)
+    public HpackDecoder(int maxHeaderTableSize)
     {
-        _listener=listener;
         _context=new HpackContext(maxHeaderTableSize);
     }
 
     
-    
-    public void decode(ByteBuffer buffer)
+    public MetaData decode(ByteBuffer buffer)
     {
+                
         while(buffer.hasRemaining())
         {
             byte b = buffer.get();
@@ -69,7 +63,7 @@ public class HpackDecoder
                 else if (entry.isStatic())
                 {
                     // emit field
-                    _listener.emit(entry.getHttpField());
+                    _builder.emit(entry.getHttpField());
                     
                     // copy and add to reference set if there is room
                     Entry new_entry = _context.add(entry.getHttpField());
@@ -79,7 +73,7 @@ public class HpackDecoder
                 else
                 {
                     // emit
-                    _listener.emit(entry.getHttpField());
+                    _builder.emit(entry.getHttpField());
                     // add to reference set
                     _context.addToRefSet(entry);
                 }
@@ -129,7 +123,7 @@ public class HpackDecoder
                     HttpField field = new HttpField(header,name,value);
                     
                     // emit the field
-                    _listener.emit(field);
+                    _builder.emit(field);
                     
                     // if indexed
                     if (indexed)
@@ -155,8 +149,8 @@ public class HpackDecoder
             }
         }
         
-        _context.emitUnusedReferences(_listener);
-        _listener.endHeaders();
+        _context.emitUnusedReferences(_builder);
+        return _builder.build();
     }
 
     public static String toASCIIString(ByteBuffer buffer,int length)

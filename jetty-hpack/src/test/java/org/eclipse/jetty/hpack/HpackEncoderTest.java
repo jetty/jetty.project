@@ -42,7 +42,7 @@ public class HpackEncoderTest
     @Test
     public void testUnknownFieldsContextManagement()
     {
-        HpackEncoder encoder = new HpackEncoder(null,38*5);
+        HpackEncoder encoder = new HpackEncoder(38*5);
         HttpFields fields = new HttpFields();
         
 
@@ -68,7 +68,7 @@ public class HpackEncoderTest
         // encode them
         ByteBuffer buffer = BufferUtil.allocate(4096);
         int pos = BufferUtil.flipToFill(buffer);
-        encoder.encode(buffer,fields);
+        encoder.encode(buffer,new MetaData(fields));
         BufferUtil.flipToFlush(buffer,pos);
         
         // something was encoded!
@@ -87,7 +87,7 @@ public class HpackEncoderTest
         
         // encode exact same fields again!
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,fields);
+        encoder.encode(buffer,new MetaData(fields));
         BufferUtil.flipToFlush(buffer,0);
 
         // nothing should be encoded!
@@ -110,7 +110,7 @@ public class HpackEncoderTest
         
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,fields);
+        encoder.encode(buffer,new MetaData(fields));
         BufferUtil.flipToFlush(buffer,0);
 
         // something was encoded!
@@ -134,7 +134,7 @@ public class HpackEncoderTest
 
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,fields);
+        encoder.encode(buffer,new MetaData(fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!
@@ -161,7 +161,7 @@ public class HpackEncoderTest
 
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,fields);
+        encoder.encode(buffer,new MetaData(fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!
@@ -189,7 +189,7 @@ public class HpackEncoderTest
 
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,fields);
+        encoder.encode(buffer,new MetaData(fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!
@@ -215,7 +215,7 @@ public class HpackEncoderTest
     @Test
     public void testDoNotReferenceStatics()
     {
-        HpackEncoder encoder = new HpackEncoder(null,38*5);
+        HpackEncoder encoder = new HpackEncoder(38*5);
         ByteBuffer buffer = BufferUtil.allocate(4096);
         
         HttpFields fields = new HttpFields();
@@ -223,7 +223,7 @@ public class HpackEncoderTest
 
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,fields);
+        encoder.encode(buffer,new MetaData(fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!
@@ -236,7 +236,7 @@ public class HpackEncoderTest
     @Test
     public void testNeverIndexSetCookie()
     {
-        HpackEncoder encoder = new HpackEncoder(null,38*5);
+        HpackEncoder encoder = new HpackEncoder(38*5);
         ByteBuffer buffer = BufferUtil.allocate(4096);
         
         HttpFields fields = new HttpFields();
@@ -244,7 +244,7 @@ public class HpackEncoderTest
 
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,fields);
+        encoder.encode(buffer,new MetaData(fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!
@@ -256,7 +256,7 @@ public class HpackEncoderTest
 
         // encode again
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,fields);
+        encoder.encode(buffer,new MetaData(fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!

@@ -26,11 +26,14 @@ import org.eclipse.jetty.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool.Lease;
 
 public class HpackEncoder
 {   
+    private final static HttpField[] __status= new HttpField[599];
+    
     private final static EnumSet<HttpHeader> __NEVER_INDEX = 
             EnumSet.of(HttpHeader.SET_COOKIE,
                     HttpHeader.SET_COOKIE2);
@@ -61,18 +64,22 @@ public class HpackEncoder
                     HttpHeader.SERVLET_ENGINE,
                     HttpHeader.USER_AGENT);
     
-    private final ByteBufferPool _byteBufferPool;
+    static
+    {
+        for (HttpStatus.Code code : HttpStatus.Code.values())
+            __status[code.getCode()]=new HttpField(":status",Integer.toString(code.getCode()));
+    }
+    
     private final HpackContext _context;
     
 
-    public HpackEncoder(ByteBufferPool byteBufferPool)
+    public HpackEncoder()
     {
-        this(byteBufferPool,4096);
+        this(4096);
     }
     
-    public HpackEncoder(ByteBufferPool byteBufferPool,int maxHeaderTableSize)
+    public HpackEncoder(int maxHeaderTableSize)
     {
-        this._byteBufferPool = byteBufferPool;
         _context=new HpackContext(maxHeaderTableSize);
     }
 
@@ -81,20 +88,41 @@ public class HpackEncoder
         return _context;
     }
     
-    public ByteBufferPool.Lease encode(HttpFields fields)
+    public void encode(MetaData metadata,Lease lease)
     {
-        Lease lease=new ByteBufferPool.Lease(_byteBufferPool);
-        ByteBuffer buffer = _byteBufferPool.acquire(8*1024,false); // TODO make configurable
-        lease.add(buffer,true);
+        ByteBuffer buffer = lease.acquire(8*1024,false); // TODO make size configurable
+
         // TODO handle multiple buffers if large size configured.
-        encode(buffer,fields);
-        return lease;
+        encode(buffer,metadata);
     }
 
-    public void encode(ByteBuffer buffer, HttpFields fields)
+    public void encode(ByteBuffer buffer, MetaData metadata)
     {
-        // Add all the known fields
-        for (HttpField field : fields)
+        // Add Request/response meta fields
+        
+        if (metadata.isRequest())
+        {
+            MetaData.Request request = (MetaData.Request)metadata;
+            
+            // TODO optimise these to avoid HttpField creation
+            encode(buffer,new HttpField(":scheme",request.getScheme().asString()));
+            encode(buffer,new HttpField(":method",request.getMethodString()));
+            encode(buffer,new HttpField(":authority",request.getAuthority())); // TODO look for host header?
+            encode(buffer,new HttpField(":path",request.getPath()));
+            
+        }
+        else if (metadata.isResponse())
+        {
+            MetaData.Response response = (MetaData.Response)metadata;
+            int code=response.getStatus();
+            HttpField status = code<__status.length?__status[code]:null;
+            if (status==null)
+                status=new HttpField(":status",Integer.toString(code));
+            encode(buffer,status);
+        }
+        
+        // Add all the other fields
+        for (HttpField field : metadata)
         {
             encode(buffer,field);
         }

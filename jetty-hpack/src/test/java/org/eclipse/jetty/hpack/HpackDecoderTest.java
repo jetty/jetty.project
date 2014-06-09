@@ -22,12 +22,12 @@ package org.eclipse.jetty.hpack;
 import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
+import java.util.Iterator;
 
-import org.eclipse.jetty.hpack.HpackDecoder.Listener;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.TypeUtil;
-import org.junit.Assert;
 import org.junit.Test;
 
 
@@ -39,134 +39,109 @@ public class HpackDecoderTest
 
     @Test
     public void testDecodeD_3()
-    {
-        final HttpFields fields = new HttpFields();
-        Listener listener = new Listener()
-        {
-            
-            @Override
-            public void endHeaders()
-            {
-                System.err.println("===");
-            }
-            
-            @Override
-            public void emit(HttpField field)
-            {
-                System.err.println(field);
-                fields.add(field);
-            }
-        };
-        
-        HpackDecoder decoder = new HpackDecoder(listener);
-        
-        
+    {        
+        HpackDecoder decoder = new HpackDecoder();
+           
         // First request
         String encoded="828786440f7777772e6578616d706c652e636f6d";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
-        decoder.decode(buffer);
+        MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
         
-        assertEquals(4,fields.size());
-        assertEquals("GET",fields.get(":method"));
-        assertEquals("http",fields.get(":scheme"));
-        assertEquals("/",fields.get(":path"));
-        assertEquals("www.example.com",fields.get(":authority"));
+        assertEquals(HttpMethod.GET,request.getMethod());
+        assertEquals("GET",request.getMethodString());
+        assertEquals(HttpScheme.HTTP,request.getScheme());
+        assertEquals("/",request.getPath());
+        assertEquals("www.example.com",request.getAuthority());
+        assertFalse(request.iterator().hasNext());
         
         
         // Second request
-        fields.clear();
         encoded="5c086e6f2d6361636865";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
-        decoder.decode(buffer);
+        request = (MetaData.Request)decoder.decode(buffer);
+
+        assertEquals(HttpMethod.GET,request.getMethod());
+        assertEquals("GET",request.getMethodString());
+        assertEquals(HttpScheme.HTTP,request.getScheme());
+        assertEquals("/",request.getPath());
+        assertEquals("www.example.com",request.getAuthority());
+        Iterator<HttpField> iterator=request.iterator();
+        assertTrue(iterator.hasNext());
+        assertEquals(new HttpField("cache-control","no-cache"),iterator.next());
+        assertFalse(iterator.hasNext());
         
-        assertEquals(5,fields.size());
-        assertEquals("GET",fields.get(":method"));
-        assertEquals("http",fields.get(":scheme"));
-        assertEquals("/",fields.get(":path"));
-        assertEquals("www.example.com",fields.get(":authority"));
-        assertEquals("no-cache",fields.get("cache-control"));
 
         // Third request
-        fields.clear();
         encoded="30858c8b84400a637573746f6d2d6b65790c637573746f6d2d76616c7565";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
-        decoder.decode(buffer);
+        request = (MetaData.Request)decoder.decode(buffer);
         
-        assertEquals(5,fields.size());
-        assertEquals("GET",fields.get(":method"));
-        assertEquals("https",fields.get(":scheme"));
-        assertEquals("/index.html",fields.get(":path"));
-        assertEquals("www.example.com",fields.get(":authority"));
-        assertEquals("custom-value",fields.get("custom-key"));
+        assertEquals(HttpMethod.GET,request.getMethod());
+        assertEquals("GET",request.getMethodString());
+        assertEquals(HttpScheme.HTTPS,request.getScheme());
+        assertEquals("/index.html",request.getPath());
+        assertEquals("www.example.com",request.getAuthority());
+        iterator=request.iterator();
+        assertTrue(iterator.hasNext());
+        assertEquals(new HttpField("custom-key","custom-value"),iterator.next());
+        assertFalse(iterator.hasNext());
     }
 
     @Test
     public void testDecodeD_4()
     {
-        final HttpFields fields = new HttpFields();
-        Listener listener = new Listener()
-        {
-            
-            @Override
-            public void endHeaders()
-            {
-                System.err.println("===");
-            }
-            
-            @Override
-            public void emit(HttpField field)
-            {
-                System.err.println(field);
-                fields.add(field);
-            }
-        };
         
-        HpackDecoder decoder = new HpackDecoder(listener);
+        HpackDecoder decoder = new HpackDecoder();
         
         
         // First request
         String encoded="828786448ce7cf9bebe89b6fb16fa9b6ff";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
-        decoder.decode(buffer);
+        MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
         
-        assertEquals(4,fields.size());
-        assertEquals("GET",fields.get(":method"));
-        assertEquals("http",fields.get(":scheme"));
-        assertEquals("/",fields.get(":path"));
-        assertEquals("www.example.com",fields.get(":authority"));
+        assertEquals(HttpMethod.GET,request.getMethod());
+        assertEquals("GET",request.getMethodString());
+        assertEquals(HttpScheme.HTTP,request.getScheme());
+        assertEquals("/",request.getPath());
+        assertEquals("www.example.com",request.getAuthority());
+        assertFalse(request.iterator().hasNext());
         
         
         // Second request
-        fields.clear();
         encoded="5c86b9b9949556bf";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
-        decoder.decode(buffer);
-        
-        assertEquals(5,fields.size());
-        assertEquals("GET",fields.get(":method"));
-        assertEquals("http",fields.get(":scheme"));
-        assertEquals("/",fields.get(":path"));
-        assertEquals("www.example.com",fields.get(":authority"));
-        assertEquals("no-cache",fields.get("cache-control"));
+        request = (MetaData.Request)decoder.decode(buffer);
+
+        assertEquals(HttpMethod.GET,request.getMethod());
+        assertEquals("GET",request.getMethodString());
+        assertEquals(HttpScheme.HTTP,request.getScheme());
+        assertEquals("/",request.getPath());
+        assertEquals("www.example.com",request.getAuthority());
+        Iterator<HttpField> iterator=request.iterator();
+        assertTrue(iterator.hasNext());
+        assertEquals(new HttpField("cache-control","no-cache"),iterator.next());
+        assertFalse(iterator.hasNext());
 
         // Third request
-        fields.clear();
         encoded="30858c8b844088571c5cdb737b2faf89571c5cdb73724d9c57";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
-        decoder.decode(buffer);
+        request = (MetaData.Request)decoder.decode(buffer);
         
-        assertEquals(5,fields.size());
-        assertEquals("GET",fields.get(":method"));
-        assertEquals("https",fields.get(":scheme"));
-        assertEquals("/index.html",fields.get(":path"));
-        assertEquals("www.example.com",fields.get(":authority"));
-        assertEquals("custom-value",fields.get("custom-key"));
+        assertEquals(HttpMethod.GET,request.getMethod());
+        assertEquals("GET",request.getMethodString());
+        assertEquals(HttpScheme.HTTPS,request.getScheme());
+        assertEquals("/index.html",request.getPath());
+        assertEquals("www.example.com",request.getAuthority());
+        iterator=request.iterator();
+        assertTrue(iterator.hasNext());
+        assertEquals(new HttpField("custom-key","custom-value"),iterator.next());
+        assertFalse(iterator.hasNext());
     }
 
 }
