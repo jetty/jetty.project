@@ -25,8 +25,12 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Enumeration;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
+import java.util.StringTokenizer;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
@@ -125,6 +129,9 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
+ *                    
+ * otherGzipFileExtensions
+ *                    Other file extensions that signify that a file is gzip compressed. Eg ".svgz"
  *
  *
  * </PRE>
@@ -164,6 +171,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private String _relativeResourceBase;
     private ServletHandler _servletHandler;
     private ServletHolder _defaultHolder;
+    private List<String> _gzipEquivalentFileExtensions;
 
     /* ------------------------------------------------------------ */
     @Override
@@ -272,6 +280,24 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         {
             LOG.warn(Log.EXCEPTION,e);
             throw new UnavailableException(e.toString());
+        }
+        
+       _gzipEquivalentFileExtensions = new ArrayList<String>();
+       String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
+       if (otherGzipExtensions != null)
+       {
+           //comma separated list
+           StringTokenizer tok = new StringTokenizer(otherGzipExtensions,",",false);
+           while (tok.hasMoreTokens())
+           {
+               String s = tok.nextToken().trim();
+               _gzipEquivalentFileExtensions.add((s.charAt(0)=='.'?s:"."+s));
+           }
+       }
+       else
+        {
+            //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
+            _gzipEquivalentFileExtensions.add(".svgz");   
         }
 
         _servletHandler= _contextHandler.getChildHandlerByClass(ServletHandler.class);
@@ -496,7 +522,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                     {
-                        if (gzip)
+                        if (gzip || isGzippedContent(pathInContext))
                         {
                             response.setHeader(HttpHeader.CONTENT_ENCODING.asString(),"gzip");
                             String mt=_servletContext.getMimeType(pathInContext);
@@ -583,6 +609,20 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 resource.close();
         }
 
+    }
+
+    /**
+     * @param resource
+     * @return
+     */
+    protected boolean isGzippedContent(String path)
+    {
+        if (path == null) return false;
+      
+        for (String suffix:_gzipEquivalentFileExtensions)
+            if (path.endsWith(suffix))
+                return true;
+        return false;
     }
 
     /* ------------------------------------------------------------ */
