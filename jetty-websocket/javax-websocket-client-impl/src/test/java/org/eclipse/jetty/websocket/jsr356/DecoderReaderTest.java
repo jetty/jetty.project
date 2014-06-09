@@ -20,8 +20,6 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import static org.hamcrest.Matchers.*;
 
-import org.junit.Ignore;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -59,7 +57,6 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-@Ignore
 public class DecoderReaderTest
 {
     public static class Quotes
@@ -262,8 +259,8 @@ public class DecoderReaderTest
         client.connectToServer(quoter,server.getWsUri());
         qserver.awaitConnect();
         qserver.writeQuotes("quotes-ben.txt");
-        qserver.close();
         quoter.messageQueue.awaitEventCount(1,1000,TimeUnit.MILLISECONDS);
+        qserver.close();
         quoter.awaitClose();
         Quotes quotes = quoter.messageQueue.poll();
         Assert.assertThat("Quotes Author",quotes.author,is("Benjamin Franklin"));
@@ -280,8 +277,8 @@ public class DecoderReaderTest
         qserver.awaitConnect();
         qserver.writeQuotes("quotes-ben.txt");
         qserver.writeQuotes("quotes-twain.txt");
-        qserver.close();
         quoter.messageQueue.awaitEventCount(2,1000,TimeUnit.MILLISECONDS);
+        qserver.close();
         quoter.awaitClose();
         Quotes quotes = quoter.messageQueue.poll();
         Assert.assertThat("Quotes Author",quotes.author,is("Benjamin Franklin"));

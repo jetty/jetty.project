@@ -96,9 +96,9 @@ public class StartLog
 
         String logFileName = cmdLineSource.getProperty("start-log-file");
 
-        for (String arg : cmdLineSource.getArgs())
+        for (RawArgs.Entry arg : cmdLineSource.getArgs())
         {
-            if ("--debug".equals(arg))
+            if ("--debug".equals(arg.getLine()))
             {
                 debug = true;
                 continue;
@@ -106,14 +106,14 @@ public class StartLog
 
             if (arg.startsWith("--start-log-file"))
             {
-                logFileName = Props.getValue(arg);
+                logFileName = Props.getValue(arg.getLine());
                 continue;
             }
         }
 
         if (logFileName != null)
         {
-            Path logfile = baseHome.getBasePath(logFileName);
+            Path logfile = baseHome.getPath(logFileName);
             initLogFile(logfile);
         }
     }

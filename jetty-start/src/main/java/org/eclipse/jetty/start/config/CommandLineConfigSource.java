@@ -23,8 +23,6 @@ import java.net.URI;
 import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.file.Path;
-import java.util.Arrays;
-import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -32,6 +30,7 @@ import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
 
 /**
@@ -42,17 +41,18 @@ public class CommandLineConfigSource implements ConfigSource
     public static final String ORIGIN_INTERNAL_FALLBACK = "<internal-fallback>";
     public static final String ORIGIN_CMD_LINE = "<command-line>";
 
-    private final List<String> args;
+    private final RawArgs args;
     private final Props props;
     private final Path homePath;
     private final Path basePath;
 
     public CommandLineConfigSource(String rawargs[])
     {
-        this.args = Arrays.asList(rawargs);
+        this.args = new RawArgs();
         this.props = new Props();
-        for (String arg : args)
+        for (String arg : rawargs)
         {
+            this.args.addArg(arg,ORIGIN_CMD_LINE);
             this.props.addPossibleProperty(arg,ORIGIN_CMD_LINE);
         }
 
@@ -179,7 +179,7 @@ public class CommandLineConfigSource implements ConfigSource
     }
 
     @Override
-    public List<String> getArgs()
+    public RawArgs getArgs()
     {
         return args;
     }

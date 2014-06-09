@@ -20,6 +20,9 @@ package org.eclipse.jetty.webapp;
 
 import java.io.File;
 import java.io.IOException;
+import java.io.InputStream;
+import java.lang.instrument.ClassFileTransformer;
+import java.lang.instrument.IllegalClassFormatException;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
@@ -32,7 +35,9 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -66,6 +71,7 @@ public class WebAppClassLoader extends URLClassLoader
     private final ClassLoader _parent;
     private final Set<String> _extensions=new HashSet<String>();
     private String _name=String.valueOf(hashCode());
+    private final List<ClassFileTransformer> _transformers = new CopyOnWriteArrayList<>();
     
     /* ------------------------------------------------------------ */
     /** The Context in which the classloader operates.
@@ -295,6 +301,7 @@ public class WebAppClassLoader extends URLClassLoader
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public PermissionCollection getPermissions(CodeSource cs)
     {
         PermissionCollection permissions=_context.getPermissions();
@@ -303,6 +310,7 @@ public class WebAppClassLoader extends URLClassLoader
     }
 
     /* ------------------------------------------------------------ */
+    @Override
     public Enumeration<URL> getResources(String name) throws IOException
     {
         boolean system_class=_context.isSystemClass(name);
@@ -336,6 +344,7 @@ public class WebAppClassLoader extends URLClassLoader
      * should one be present. This is non-standard and it is recommended 
      * to not rely on this behavior
      */
+    @Override
     public URL getResource(String name)
     {
         URL url= null;
@@ -439,19 +448,85 @@ public class WebAppClassLoader extends URLClassLoader
         if (c == null && _parent!=null && !tried_parent && !server_class )
             c= _parent.loadClass(name);
 
-        if (c == null)
+        if (c == null && ex!=null)
             throw ex;
 
         if (resolve)
             resolveClass(c);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("loaded " + c+ " from "+c.getClassLoader());
+            LOG.debug("loaded {} from {}",c,c==null?null:c.getClassLoader());
         
         return c;
     }
 
     /* ------------------------------------------------------------ */
+    public void addClassFileTransformer(ClassFileTransformer transformer)
+    {
+        _transformers.add(transformer);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean removeClassFileTransformer(ClassFileTransformer transformer)
+    {
+        return _transformers.remove(transformer);
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected Class<?> findClass(final String name) throws ClassNotFoundException
+    {
+        Class<?> clazz=null;
+
+        if (_transformers.isEmpty())
+            clazz = super.findClass(name);
+        else
+        {
+            String path = name.replace('.', '/').concat(".class");
+            URL url = getResource(path);
+            if (url==null)
+                throw new ClassNotFoundException(name);
+
+            InputStream content=null;
+            try
+            {
+                content = url.openStream();
+                byte[] bytes =IO.readBytes(content);
+                    
+                for (ClassFileTransformer transformer : _transformers)
+                    bytes=transformer.transform(this,name,null,null,bytes);
+                
+                clazz=defineClass(name,bytes,0,bytes.length);
+            }
+            catch (IOException e)
+            {
+                throw new ClassNotFoundException(name,e);
+            }
+            catch (IllegalClassFormatException e)
+            {
+                throw new ClassNotFoundException(name,e);
+            }
+            finally
+            {
+                if (content!=null)
+                {
+                    try
+                    {
+                        content.close(); 
+                    }
+                    catch (IOException e)
+                    {
+                        throw new ClassNotFoundException(name,e);
+                    }
+                }
+            }
+        }
+
+        return clazz;
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
     public String toString()
     {
         return "WebAppClassLoader=" + _name+"@"+Long.toHexString(hashCode());

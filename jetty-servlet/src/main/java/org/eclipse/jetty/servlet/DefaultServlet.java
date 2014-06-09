@@ -38,7 +38,9 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpGenerator.CachedHttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
@@ -136,6 +138,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private static final Logger LOG = Log.getLogger(DefaultServlet.class);
 
     private static final long serialVersionUID = 4930458713846881193L;
+    
+    private static final CachedHttpField ACCEPT_RANGES = new CachedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
+    
     private ServletContext _servletContext;
     private ContextHandler _contextHandler;
 
@@ -155,7 +160,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private String[] _welcomes;
     private Resource _stylesheet;
     private boolean _useFileMappedBuffer=false;
-    private String _cacheControl;
+    private HttpField _cacheControl;
     private String _relativeResourceBase;
     private ServletHandler _servletHandler;
     private ServletHolder _defaultHolder;
@@ -228,8 +233,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             LOG.debug(e);
         }
 
-        _cacheControl=getInitParameter("cacheControl");
-
+        String cc=getInitParameter("cacheControl");
+        if (cc!=null)
+            _cacheControl=new CachedHttpField(HttpHeader.CACHE_CONTROL, cc);
+        
         String resourceCache = getInitParameter("resourceCache");
         int max_cache_size=getInitInt("maxCacheSize", -2);
         int max_cached_file_size=getInitInt("maxCachedFileSize", -2);
@@ -1062,10 +1069,10 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     protected void writeOptionHeaders(HttpFields fields)
     {
         if (_acceptRanges)
-            fields.put(HttpHeader.ACCEPT_RANGES,"bytes");
+            fields.put(ACCEPT_RANGES);
 
         if (_cacheControl!=null)
-            fields.put(HttpHeader.CACHE_CONTROL,_cacheControl);
+            fields.put(_cacheControl);
     }
 
     /* ------------------------------------------------------------ */
@@ -1075,7 +1082,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             response.setHeader(HttpHeader.ACCEPT_RANGES.asString(),"bytes");
 
         if (_cacheControl!=null)
-            response.setHeader(HttpHeader.CACHE_CONTROL.asString(),_cacheControl);
+            response.setHeader(HttpHeader.CACHE_CONTROL.asString(),_cacheControl.getValue());
     }
 
     /* ------------------------------------------------------------ */

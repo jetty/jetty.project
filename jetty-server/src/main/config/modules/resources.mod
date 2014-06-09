@@ -3,7 +3,7 @@
 #
 
 [lib]
-resources
+resources/
 
 [files]
 resources/
