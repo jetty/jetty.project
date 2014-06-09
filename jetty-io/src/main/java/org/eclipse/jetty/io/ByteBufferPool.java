@@ -64,15 +64,20 @@ public interface ByteBufferPool
             this.recycles = new ArrayList<>();
         }
 
-        public ByteBuffer acquire(int capacity,boolean direct)
+        public ByteBuffer acquire(int capacity, boolean direct)
         {
-            ByteBuffer buffer = byteBufferPool.acquire(capacity,direct);
-            buffers.add(buffer);
-            recycles.add(true);
+            ByteBuffer buffer = byteBufferPool.acquire(capacity, direct);
+            append(buffer, true);
             return buffer;
         }
-        
-        public void add(ByteBuffer buffer, boolean recycle)
+
+        public void prepend(ByteBuffer buffer, boolean recycle)
+        {
+            buffers.add(0, buffer);
+            recycles.add(0, recycle);
+        }
+
+        public void append(ByteBuffer buffer, boolean recycle)
         {
             buffers.add(buffer);
             recycles.add(recycle);
