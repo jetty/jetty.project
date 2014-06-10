@@ -22,7 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.generator.ResetGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -36,7 +37,7 @@ public class ResetGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        ResetGenerator generator = new ResetGenerator(new HeaderGenerator());
 
         int streamId = 13;
         int error = 17;
@@ -45,7 +46,8 @@ public class ResetGenerateParseTest
         final List<ResetFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = generator.generateReset(streamId, error);
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generateReset(lease, streamId, error);
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
@@ -75,13 +77,14 @@ public class ResetGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        ResetGenerator generator = new ResetGenerator(new HeaderGenerator());
 
         int streamId = 13;
         int error = 17;
 
         final List<ResetFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = generator.generateReset(streamId, error);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateReset(lease, streamId, error);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override

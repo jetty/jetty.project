@@ -23,7 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.generator.GoAwayGenerator;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -37,7 +38,7 @@ public class GoAwayGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator());
 
         int lastStreamId = 13;
         int error = 17;
@@ -46,7 +47,8 @@ public class GoAwayGenerateParseTest
         final List<GoAwayFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = generator.generateGoAway(lastStreamId, error, null);
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generateGoAway(lease, lastStreamId, error, null);
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
@@ -77,7 +79,7 @@ public class GoAwayGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator());
 
         int lastStreamId = 13;
         int error = 17;
@@ -85,7 +87,8 @@ public class GoAwayGenerateParseTest
         new Random().nextBytes(payload);
 
         final List<GoAwayFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = generator.generateGoAway(lastStreamId, error, payload);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateGoAway(lease, lastStreamId, error, payload);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override

@@ -26,7 +26,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.generator.SettingsGenerator;
 import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -69,13 +70,14 @@ public class SettingsGenerateParseTest
 
     private List<SettingsFrame> testGenerateParse(Map<Integer, Integer> settings)
     {
-        Generator generator = new Generator(byteBufferPool);
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         // Iterate a few times to be sure generator and parser are properly reset.
         final List<SettingsFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = generator.generateSettings(settings, true);
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generateSettings(lease, settings, true);
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
@@ -102,10 +104,11 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseInvalidSettings() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
-        ByteBufferPool.Lease lease = generator.generateSettings(settings1, true);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateSettings(lease, settings1, true);
         // Modify the length of the frame to make it invalid
         ByteBuffer bytes = lease.getByteBuffers().get(0);
         bytes.putShort(0, (short)(bytes.getShort(0) - 1));
@@ -134,7 +137,7 @@ public class SettingsGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         int key = 13;
@@ -142,7 +145,8 @@ public class SettingsGenerateParseTest
         settings1.put(key, value);
 
         final List<SettingsFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = generator.generateSettings(settings1, true);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateSettings(lease, settings1, true);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override

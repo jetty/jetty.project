@@ -18,22 +18,19 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.util.concurrent.ConcurrentHashMap;
-import java.util.concurrent.ConcurrentMap;
-
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.io.EndPoint;
 
 public class HTTP2ServerSession extends HTTP2Session
 {
-    private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
-
-    public HTTP2ServerSession(Listener listener)
+    public HTTP2ServerSession(EndPoint endPoint, Generator generator, Listener listener)
     {
-        super(listener);
+        super(endPoint, generator, listener);
     }
 
     @Override
@@ -41,9 +38,10 @@ public class HTTP2ServerSession extends HTTP2Session
     {
         // TODO: handle max concurrent streams
         // TODO: handle duplicate streams
+        // TODO: handle empty headers
 
-        IStream stream = new HTTP2Stream();
-        IStream existing = streams.putIfAbsent(stream.getId(), stream);
+        IStream stream = new HTTP2Stream(this);
+        IStream existing = putIfAbsent(stream);
         if (existing == null)
         {
             Stream.Listener listener = notifyNewStream(stream, frame);

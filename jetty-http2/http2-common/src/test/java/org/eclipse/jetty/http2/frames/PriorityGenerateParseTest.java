@@ -22,7 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.generator.PriorityGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -36,7 +37,7 @@ public class PriorityGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        PriorityGenerator generator = new PriorityGenerator(new HeaderGenerator());
 
         int streamId = 13;
         int dependentStreamId = 17;
@@ -47,7 +48,8 @@ public class PriorityGenerateParseTest
         final List<PriorityFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = generator.generatePriority(streamId, dependentStreamId, weight, exclusive);
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generatePriority(lease, streamId, dependentStreamId, weight, exclusive);
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
@@ -79,7 +81,7 @@ public class PriorityGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        PriorityGenerator generator = new PriorityGenerator(new HeaderGenerator());
 
         int streamId = 13;
         int dependentStreamId = 17;
@@ -87,7 +89,8 @@ public class PriorityGenerateParseTest
         boolean exclusive = true;
 
         final List<PriorityFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = generator.generatePriority(streamId, dependentStreamId, weight, exclusive);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generatePriority(lease, streamId, dependentStreamId, weight, exclusive);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override

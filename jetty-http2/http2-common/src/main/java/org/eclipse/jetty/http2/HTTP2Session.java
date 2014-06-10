@@ -18,9 +18,14 @@
 
 package org.eclipse.jetty.http2;
 
-import org.eclipse.jetty.http2.api.Session;
+import java.nio.ByteBuffer;
+import java.util.List;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
+
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
@@ -28,27 +33,38 @@ import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public abstract class HTTP2Session implements Session, Parser.Listener
+public abstract class HTTP2Session implements ISession, Parser.Listener
 {
     private static final Logger LOG = Log.getLogger(HTTP2Session.class);
 
+    private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
+    private final Flusher flusher = new Flusher();
+    private final EndPoint endPoint;
+    private final Generator generator;
     private final Listener listener;
 
-    public HTTP2Session(Session.Listener listener)
+    public HTTP2Session(EndPoint endPoint, Generator generator, Listener listener)
     {
+        this.endPoint = endPoint;
+        this.generator = generator;
         this.listener = listener;
     }
 
     @Override
     public boolean onData(DataFrame frame)
     {
-        return false;
+        IStream stream = streams.get(frame.getStreamId());
+        return stream.process(frame);
     }
 
     @Override
@@ -126,6 +142,18 @@ public abstract class HTTP2Session implements Session, Parser.Listener
 
     }
 
+    @Override
+    public void frame(Frame frame, Callback callback)
+    {
+        Generator.LeaseCallback lease = generator.generate(frame, callback);
+        flusher.flush(lease);
+    }
+
+    protected IStream putIfAbsent(IStream stream)
+    {
+        return streams.putIfAbsent(stream.getId(), stream);
+    }
+
     protected Stream.Listener notifyNewStream(Stream stream, HeadersFrame frame)
     {
         try
@@ -136,6 +164,57 @@ public abstract class HTTP2Session implements Session, Parser.Listener
         {
             LOG.info("Failure while notifying listener " + listener, x);
             return null;
+        }
+    }
+
+    private class Flusher extends IteratingCallback
+    {
+        private final ArrayQueue<Generator.LeaseCallback> queue = new ArrayQueue<>(ArrayQueue.DEFAULT_CAPACITY, ArrayQueue.DEFAULT_GROWTH);
+        private Generator.LeaseCallback active;
+
+        private void flush(Generator.LeaseCallback lease)
+        {
+            synchronized (queue)
+            {
+                queue.offer(lease);
+            }
+            iterate();
+        }
+
+        @Override
+        protected Action process() throws Exception
+        {
+            synchronized (queue)
+            {
+                active = queue.poll();
+            }
+            if (active == null)
+            {
+                return Action.IDLE;
+            }
+
+            List<ByteBuffer> byteBuffers = active.getByteBuffers();
+            endPoint.write(this, byteBuffers.toArray(new ByteBuffer[byteBuffers.size()]));
+            return Action.SCHEDULED;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            active.succeeded();
+            super.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            active.failed(x);
+            super.failed(x);
+        }
+
+        @Override
+        protected void completed()
+        {
         }
     }
 }

@@ -19,8 +19,11 @@
 package org.eclipse.jetty.http2;
 
 import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.frames.DataFrame;
 
 public interface IStream extends Stream
 {
     public void setListener(Listener listener);
+
+    public boolean process(DataFrame frame);
 }

@@ -23,7 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.generator.PingGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -37,7 +38,7 @@ public class PingGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        PingGenerator generator = new PingGenerator(new HeaderGenerator());
 
         byte[] payload = new byte[8];
         new Random().nextBytes(payload);
@@ -46,7 +47,8 @@ public class PingGenerateParseTest
         final List<PingFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = generator.generatePing(payload, true);
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generatePing(lease, payload, true);
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
@@ -76,13 +78,14 @@ public class PingGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        PingGenerator generator = new PingGenerator(new HeaderGenerator());
 
         byte[] payload = new byte[8];
         new Random().nextBytes(payload);
 
         final List<PingFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = generator.generatePing(payload, true);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generatePing(lease, payload, true);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override

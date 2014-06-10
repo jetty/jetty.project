@@ -16,17 +16,22 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.frames;
+package org.eclipse.jetty.http2.generator;
 
-public interface Flag
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.http2.frames.FrameType;
+import org.eclipse.jetty.io.ByteBufferPool;
+
+public class HeaderGenerator
 {
-    public static final int NONE = 0x00;
-    public static final int END_STREAM = 0x01;
-    public static final int ACK = END_STREAM;
-    public static final int END_SEGMENT = 0x02;
-    public static final int END_HEADERS = 0x04;
-    public static final int PADDING_LOW = 0x08;
-    public static final int PADDING_HIGH = 0x10;
-    public static final int COMPRESS = 0x20;
-    public static final int PRIORITY = COMPRESS;
+    public ByteBuffer generate(ByteBufferPool.Lease lease, FrameType frameType, int capacity, int length, int flags, int streamId)
+    {
+        ByteBuffer header = lease.acquire(capacity, true);
+        header.putShort((short)length);
+        header.put((byte)frameType.getType());
+        header.put((byte)flags);
+        header.putInt(streamId);
+        return header;
+    }
 }

@@ -25,18 +25,22 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
     private static final Logger LOG = Log.getLogger(HTTP2ServerConnectionFactory.class);
+    private static final String CHANNEL_ATTRIBUTE = HttpChannelOverHTTP2.class.getName();
+
     private final HttpConfiguration httpConfiguration;
 
     public HTTP2ServerConnectionFactory(HttpConfiguration httpConfiguration)
@@ -50,7 +54,8 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
     {
         Session.Listener listener = new HTTPServerSessionListener(connector, httpConfiguration, endPoint);
 
-        HTTP2Session session = new HTTP2ServerSession(listener);
+        Generator generator = new Generator(connector.getByteBufferPool());
+        HTTP2Session session = new HTTP2ServerSession(endPoint, generator, listener);
 
         Parser parser = new Parser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2Connection(connector.getByteBufferPool(), connector.getExecutor(),
@@ -67,7 +72,6 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
 
         public HTTPServerSessionListener(Connector connector, HttpConfiguration httpConfiguration, EndPoint endPoint)
         {
-
             this.connector = connector;
             this.httpConfiguration = httpConfiguration;
             this.endPoint = endPoint;
@@ -81,29 +85,24 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
             HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2();
             HttpInputOverHTTP2 input = new HttpInputOverHTTP2();
             HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport, input);
-            // TODO: link channel to stream.
+            stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
 
-//            if (frame.getMetaData().isEmpty())
-//            {
-                // TODO: abort.
-//                return null;
-//            }
-
-            channel.requestStart(frame);
+            channel.requestHeaders(frame);
 
             return frame.isEndStream() ? null : this;
         }
 
         @Override
-        public void onData(Stream stream, DataFrame frame)
+        public void onData(Stream stream, DataFrame frame, Callback callback)
         {
-
+            HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(CHANNEL_ATTRIBUTE);
+            channel.requestContent(frame, callback);
         }
 
         @Override
         public void onFailure(Stream stream, Throwable x)
         {
-
+            // TODO
         }
     }
 }

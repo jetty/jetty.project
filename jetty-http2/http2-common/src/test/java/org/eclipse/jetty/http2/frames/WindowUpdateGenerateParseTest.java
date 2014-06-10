@@ -22,7 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
+import org.eclipse.jetty.http2.generator.WindowUpdateGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -36,7 +37,7 @@ public class WindowUpdateGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        WindowUpdateGenerator generator = new WindowUpdateGenerator(new HeaderGenerator());
 
         int streamId = 13;
         int windowUpdate = 17;
@@ -45,7 +46,8 @@ public class WindowUpdateGenerateParseTest
         final List<WindowUpdateFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
-            ByteBufferPool.Lease lease = generator.generateWindowUpdate(streamId, windowUpdate);
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.generateWindowUpdate(lease, streamId, windowUpdate);
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
@@ -75,13 +77,14 @@ public class WindowUpdateGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        Generator generator = new Generator(byteBufferPool);
+        WindowUpdateGenerator generator = new WindowUpdateGenerator(new HeaderGenerator());
 
         int streamId = 13;
         int windowUpdate = 17;
 
         final List<WindowUpdateFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = generator.generateWindowUpdate(streamId, windowUpdate);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateWindowUpdate(lease, streamId, windowUpdate);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override

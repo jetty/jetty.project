@@ -20,37 +20,43 @@ package org.eclipse.jetty.http2.server;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.server.QueuedHttpInput;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.Callback;
 
-public class HttpInputOverHTTP2 extends QueuedHttpInput<ByteBufferCallback>
+public class ByteBufferCallback implements Callback
 {
-    @Override
-    protected int remaining(ByteBufferCallback item)
+    private final ByteBufferPool byteBufferPool;
+    private final ByteBuffer buffer;
+    private final Callback callback;
+
+    public ByteBufferCallback(ByteBufferPool byteBufferPool, ByteBuffer buffer, Callback callback)
     {
-        return item.getByteBuffer().remaining();
+        this.byteBufferPool = byteBufferPool;
+        this.buffer = buffer;
+        this.callback = callback;
+    }
+
+    public ByteBuffer getByteBuffer()
+    {
+        return buffer;
     }
 
     @Override
-    protected int get(ByteBufferCallback item, byte[] buffer, int offset, int length)
+    public void succeeded()
     {
-        ByteBuffer byteBuffer = item.getByteBuffer();
-        length = Math.min(byteBuffer.remaining(), length);
-        byteBuffer.get(buffer, offset, length);
-        return length;
+        recycle();
+        callback.succeeded();
     }
 
     @Override
-    protected void consume(ByteBufferCallback item, int length)
+    public void failed(Throwable x)
     {
-        ByteBuffer byteBuffer = item.getByteBuffer();
-        byteBuffer.position(byteBuffer.position() + length);
-        if (!byteBuffer.hasRemaining())
-            onContentConsumed(item);
+        recycle();
+        callback.failed(x);
     }
 
-    @Override
-    protected void onContentConsumed(ByteBufferCallback item)
+    private void recycle()
     {
-        item.succeeded();
+        byteBufferPool.release(buffer);
     }
 }

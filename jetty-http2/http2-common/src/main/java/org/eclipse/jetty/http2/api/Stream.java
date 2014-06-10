@@ -32,11 +32,17 @@ public interface Stream
 
     public void data(DataFrame frame, Callback callback);
 
+    public Object getAttribute(String key);
+
+    public void setAttribute(String key, Object value);
+
+    public Object removeAttribute(String key);
+
     // TODO: see SPDY's Stream
 
     public interface Listener
     {
-        public void onData(Stream stream, DataFrame frame);
+        public void onData(Stream stream, DataFrame frame, Callback callback);
 
         public void onFailure(Stream stream, Throwable x);
 
@@ -45,7 +51,7 @@ public interface Stream
         public static class Adapter implements Listener
         {
             @Override
-            public void onData(Stream stream, DataFrame frame)
+            public void onData(Stream stream, DataFrame frame, Callback callback)
             {
 
             }

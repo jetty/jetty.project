@@ -23,7 +23,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Random;
 
-import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.generator.DataGenerator;
+import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -132,7 +133,7 @@ public class DataGenerateParseTest
 
     private List<DataFrame> testGenerateParse(int paddingLength, ByteBuffer... data)
     {
-        Generator generator = new Generator(byteBufferPool);
+        DataGenerator generator = new DataGenerator(new HeaderGenerator());
 
         // Iterate a few times to be sure generator and parser are properly reset.
         final List<DataFrame> frames = new ArrayList<>();
@@ -141,7 +142,7 @@ public class DataGenerateParseTest
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             for (int j = 1; j <= data.length; ++j)
             {
-                lease = lease.merge(generator.generateData(13, data[j - 1].slice(), j == data.length, false, new byte[paddingLength]));
+                generator.generateData(lease, 13, data[j - 1].slice(), j == data.length, false, new byte[paddingLength]);
             }
 
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
@@ -167,9 +168,10 @@ public class DataGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime()
     {
-        Generator generator = new Generator(byteBufferPool);
+        DataGenerator generator = new DataGenerator(new HeaderGenerator());
 
-        ByteBufferPool.Lease lease = generator.generateData(13, ByteBuffer.wrap(largeContent).slice(), true, false, new byte[1024]);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateData(lease, 13, ByteBuffer.wrap(largeContent).slice(), true, false, new byte[1024]);
 
         final List<DataFrame> frames = new ArrayList<>();
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
