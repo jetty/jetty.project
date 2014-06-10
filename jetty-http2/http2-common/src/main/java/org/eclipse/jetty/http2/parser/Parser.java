@@ -130,7 +130,7 @@ public class Parser
                             case COMPLETE:
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("Parsed {} frame, synchronous processing", FrameType.from(type));
+                                    LOG.debug("Parsed {} frame, synchronous processing: {}", FrameType.from(type),bodyParser);
                                 reset();
                                 break;
                             }
