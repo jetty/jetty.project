@@ -24,12 +24,9 @@ import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -56,7 +53,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpConfiguration _config;
     private final Connector _connector;
     private final ByteBufferPool _bufferPool;
-    private final HttpGenerator _generator;
+    final HttpGenerator _generator;
     private final HttpChannelOverHttp _channel;
     private final HttpParser _parser;
     private volatile ByteBuffer _requestBuffer = null;
@@ -118,7 +115,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     
     protected HttpChannelOverHttp newHttpChannel(HttpInput<ByteBuffer> httpInput)
     {
-        return new HttpChannelOverHttp(_connector, _config, getEndPoint(), this, httpInput);
+        return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this, httpInput);
     }
     
     protected HttpParser newHttpParser()
@@ -447,102 +444,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     
-    protected class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
-    {
-        public HttpChannelOverHttp(Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
-        {
-            super(connector,config,endPoint,transport,input);
-        }
-        
-        @Override
-        public void earlyEOF()
-        {
-            // If we have no request yet, just close
-            if (getRequest().getMethod()==null)
-                close();
-            else
-                super.earlyEOF();
-        }
-
-        @Override
-        public boolean content(ByteBuffer item)
-        {
-            super.content(item);
-            return true;
-        }
-
-        @Override
-        public void badMessage(int status, String reason)
-        {
-            _generator.setPersistent(false);
-            super.badMessage(status,reason);
-        }
-
-        @Override
-        public boolean headerComplete()
-        {
-            boolean persistent;
-            HttpVersion version = getHttpVersion();
-
-            switch (version)
-            {
-                case HTTP_0_9:
-                {
-                    persistent = false;
-                    break;
-                }
-                case HTTP_1_0:
-                {
-                    persistent = getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
-                    if (!persistent)
-                        persistent = HttpMethod.CONNECT.is(getRequest().getMethod());
-                    if (persistent)
-                        getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
-                    break;
-                }
-                case HTTP_1_1:
-                {
-                    persistent = !getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-                    if (!persistent)
-                        persistent = HttpMethod.CONNECT.is(getRequest().getMethod());
-                    if (!persistent)
-                        getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                    break;
-                }
-                default:
-                {
-                    throw new IllegalStateException();
-                }
-            }
-
-            if (!persistent)
-                _generator.setPersistent(false);
-
-            return super.headerComplete();
-        }
-
-        @Override
-        protected void handleException(Throwable x)
-        {
-            _generator.setPersistent(false);
-            super.handleException(x);
-        }
-
-        @Override
-        public void failed()
-        {
-            getEndPoint().shutdownOutput();
-        }
-        
-
-        @Override
-        public boolean messageComplete()
-        {
-            super.messageComplete();
-            return false;
-        }
-    }
-
     private class CommitCallback extends IteratingCallback
     {
         final ByteBuffer _content;

@@ -236,8 +236,7 @@ public class FormAuthenticator extends LoginAuthenticator
         //restore the original request's method on this request
         if (LOG.isDebugEnabled()) LOG.debug("Restoring original method {} for {} with method {}", method, juri,httpRequest.getMethod());
         Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
-        HttpMethod m = HttpMethod.fromString(method);
-        base_request.setMethod(m,m.asString());
+        base_request.setMethod(method);
     }
 
     /* ------------------------------------------------------------ */

@@ -102,7 +102,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         @Override
         protected HttpChannelOverHttp newHttpChannel(HttpInput<ByteBuffer> httpInput)
         {
-            return new HttpChannelOverHttp(getConnector(), getHttpConfiguration(), getEndPoint(), this, httpInput)
+            return new HttpChannelOverHttp(this, getConnector(), getHttpConfiguration(), getEndPoint(), this, httpInput)
             {
                 @Override
                 public boolean startRequest(String method, HttpURI uri, HttpVersion version)

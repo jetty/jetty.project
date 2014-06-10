@@ -67,7 +67,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * HttpTransport.completed().
  *
  */
-public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, HttpParser.ProxyHandler
+public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private static final ThreadLocal<HttpChannel<?>> __currentChannel = new ThreadLocal<>();
@@ -102,9 +102,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     private final Request _request;
     private final Response _response;
     private HttpVersion _version = HttpVersion.HTTP_1_1;
-    private boolean _expect = false;
-    private boolean _expect100Continue = false;
-    private boolean _expect102Processing = false;
 
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<T> input)
     {
@@ -201,32 +198,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
      */
     public void continue100(int available) throws IOException
     {
-        // If the client is expecting 100 CONTINUE, then send it now.
-        // TODO: consider using an AtomicBoolean ?
-        if (isExpecting100Continue())
-        {
-            _expect100Continue = false;
-
-            // is content missing?
-            if (available == 0)
-            {
-                if (_response.isCommitted())
-                    throw new IOException("Committed before 100 Continues");
-
-                // TODO: break this dependency with HttpGenerator
-                boolean committed = sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
-                if (!committed)
-                    throw new IOException("Concurrent commit while trying to send 100-Continue");
-            }
-        }
+        throw new UnsupportedOperationException();
     }
 
     public void reset()
     {
         _committed.set(false);
-        _expect = false;
-        _expect100Continue = false;
-        _expect102Processing = false;
         _request.recycle();
         _response.recycle();
     }
@@ -458,12 +435,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
 
     public boolean isExpecting100Continue()
     {
-        return _expect100Continue;
+        return false;
     }
 
     public boolean isExpecting102Processing()
     {
-        return _expect102Processing;
+        return false;
     }
 
     @Override
@@ -479,21 +456,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     }
 
     @Override
-    public void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort)
-    {
-        _request.setAttribute("PROXY", protocol);
-        _request.setServerName(sAddr);
-        _request.setServerPort(dPort);
-        _request.setRemoteAddr(InetSocketAddress.createUnresolved(sAddr,sPort));
-    }
-    
-    @Override
     public boolean startRequest(String method, HttpURI uri, HttpVersion version)
     {
-        _expect = false;
-        _expect100Continue = false;
-        _expect102Processing = false;
-
         _request.setTimeStamp(System.currentTimeMillis());
         _request.setMethod(method);
 
@@ -515,7 +479,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
 
         if (info == null)
         {
-            if( path==null && uri.getScheme()!=null &&uri.getHost()!=null)
+            if( path==null && uri.getScheme()!=null && uri.getHost()!=null)
             {
                 info = "/";
                 _request.setRequestURI("");
@@ -526,8 +490,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                 return true;
             }
         }
+        
         _request.setPathInfo(info);
-        _version = version == null ? HttpVersion.HTTP_0_9 : version;
+        _version = version;
         _request.setHttpVersion(_version);
 
         return false;
@@ -544,46 +509,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         {
             switch (header)
             {
-                case EXPECT:
-                    if (_version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
-                    {
-                        HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
-                        switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
-                        {
-                            case CONTINUE:
-                                _expect100Continue = true;
-                                break;
-
-                            case PROCESSING:
-                                _expect102Processing = true;
-                                break;
-
-                            default:
-                                String[] values = value.split(",");
-                                for (int i = 0; values != null && i < values.length; i++)
-                                {
-                                    expect = HttpHeaderValue.CACHE.get(values[i].trim());
-                                    if (expect == null)
-                                        _expect = true;
-                                    else
-                                    {
-                                        switch (expect)
-                                        {
-                                            case CONTINUE:
-                                                _expect100Continue = true;
-                                                break;
-                                            case PROCESSING:
-                                                _expect102Processing = true;
-                                                break;
-                                            default:
-                                                _expect = true;
-                                        }
-                                    }
-                                }
-                        }
-                    }
-                    break;
-
                 case CONTENT_TYPE:
                     MimeTypes.Type mime = MimeTypes.CACHE.get(value);
                     String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(value) : mime.getCharset().toString();
@@ -614,31 +539,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     public boolean headerComplete()
     {
         _requests.incrementAndGet();
-        switch (_version)
-        {
-            case HTTP_0_9:
-                break;
-
-            case HTTP_1_0:
-                if (_configuration.getSendDateHeader())
-                    _response.getHttpFields().put(_connector.getServer().getDateField());
-                break;
-
-            case HTTP_1_1:
-                if (_configuration.getSendDateHeader())
-                    _response.getHttpFields().put(_connector.getServer().getDateField());
-
-                if (_expect)
-                {
-                    badMessage(HttpStatus.EXPECTATION_FAILED_417,null);
-                    return true;
-                }
-
-                break;
-
-            default:
-                throw new IllegalStateException();
-        }
+        // TODO make this a better field for h2 hpack generation
+        if (_configuration.getSendDateHeader())
+            _response.getHttpFields().put(_connector.getServer().getDateField());
 
         return true;
     }
