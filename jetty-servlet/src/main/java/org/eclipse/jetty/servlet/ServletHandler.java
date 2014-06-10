@@ -1632,25 +1632,20 @@ public class ServletHandler extends ScopedHandler
             {
                 LOG.debug("call filter {}", _filterHolder);
                 Filter filter= _filterHolder.getFilter();
-                if (_filterHolder.isAsyncSupported())
-                    filter.doFilter(request, response, _next);
-                else
+                
+                //if the request already does not support async, then the setting for the filter
+                //is irrelevant. However if the request supports async but this filter does not
+                //temporarily turn it off for the execution of the filter
+                boolean requestAsyncSupported = baseRequest.isAsyncSupported();
+                try
                 {
-                    final boolean suspendable=baseRequest.isAsyncSupported();
-                    if (suspendable)
-                    {
-                        try
-                        {
-                            baseRequest.setAsyncSupported(false);
-                            filter.doFilter(request, response, _next);
-                        }
-                        finally
-                        {
-                            baseRequest.setAsyncSupported(true);
-                        }
-                    }
-                    else
-                        filter.doFilter(request, response, _next);
+                    if (!_filterHolder.isAsyncSupported() && requestAsyncSupported)
+                        baseRequest.setAsyncSupported(false);
+                    filter.doFilter(request, response, _next);
+                }
+                finally
+                {
+                    baseRequest.setAsyncSupported(requestAsyncSupported);
                 }
                 return;
             }
@@ -1711,23 +1706,20 @@ public class ServletHandler extends ScopedHandler
                     LOG.debug("call filter " + holder);
                 Filter filter= holder.getFilter();
 
-                if (holder.isAsyncSupported() || !_baseRequest.isAsyncSupported())
+                //if the request already does not support async, then the setting for the filter
+                //is irrelevant. However if the request supports async but this filter does not
+                //temporarily turn it off for the execution of the filter
+                boolean requestAsyncSupported = _baseRequest.isAsyncSupported();
+                try
                 {
+                    if (!holder.isAsyncSupported() && requestAsyncSupported)
+                        _baseRequest.setAsyncSupported(false);
                     filter.doFilter(request, response, this);
                 }
-                else
+                finally
                 {
-                    try
-                    {
-                        _baseRequest.setAsyncSupported(false);
-                        filter.doFilter(request, response, this);
-                    }
-                    finally
-                    {
-                        _baseRequest.setAsyncSupported(true);
-                    }
+                    _baseRequest.setAsyncSupported(requestAsyncSupported);
                 }
-
                 return;
             }
 
