@@ -71,6 +71,8 @@ public class Parser
 
     public boolean parse(ByteBuffer buffer)
     {
+        LOG.debug("Parsing {}", buffer);
+
         while (true)
         {
             switch (state)
@@ -114,10 +116,14 @@ public class Parser
                             {
                                 // The content will be processed asynchronously, stop parsing;
                                 // the asynchronous operation will eventually resume parsing.
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Parsed {} frame, asynchronous processing", FrameType.from(type));
                                 return true;
                             }
                             case COMPLETE:
                             {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Parsed {} frame, synchronous processing", FrameType.from(type));
                                 reset();
                                 break;
                             }

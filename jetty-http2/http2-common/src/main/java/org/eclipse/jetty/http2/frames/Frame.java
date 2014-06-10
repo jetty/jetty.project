@@ -34,4 +34,10 @@ public abstract class Frame
     {
         return type;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+    }
 }

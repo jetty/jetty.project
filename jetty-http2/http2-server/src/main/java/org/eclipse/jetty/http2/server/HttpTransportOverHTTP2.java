@@ -23,6 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -30,9 +31,13 @@ import org.eclipse.jetty.http2.hpack.MetaData;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HttpTransportOverHTTP2 implements HttpTransport
 {
+    private static final Logger LOG = Log.getLogger(HttpTransportOverHTTP2.class);
+
     private final AtomicBoolean commit = new AtomicBoolean();
     private final IStream stream;
     private final HeadersFrame request;
@@ -89,6 +94,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
     private void commit(HttpGenerator.ResponseInfo info, boolean endStream, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP2 Response #{}:{}{} {}{}{}",
+                    stream.getId(), System.lineSeparator(), HttpVersion.HTTP_2_0, info.getStatus(), System.lineSeparator(), info.getHttpFields());
+        }
+
         MetaData metaData = new MetaData.Response(info.getStatus(), info.getHttpFields());
         HeadersFrame frame = new HeadersFrame(stream.getId(), metaData, null, endStream);
         stream.headers(frame, callback);
@@ -97,6 +108,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     @Override
     public void send(ByteBuffer content, boolean lastContent, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP2 Response #{}: {} {}content bytes",
+                    stream.getId(), lastContent ? "last " : "", content.remaining());
+        }
+
         DataFrame frame = new DataFrame(stream.getId(), content, lastContent);
         stream.data(frame, callback);
     }

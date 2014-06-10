@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.hpack.MetaData;
@@ -37,12 +38,18 @@ import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HttpChannelOverHTTP2 extends HttpChannel<ByteBufferCallback>
 {
-    public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBufferCallback> input)
+    private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
+    private final Stream stream;
+
+    public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBufferCallback> input, Stream stream)
     {
         super(connector, configuration, endPoint, transport, input);
+        this.stream = stream;
     }
 
     public void requestHeaders(HeadersFrame frame)
@@ -82,6 +89,17 @@ public class HttpChannelOverHTTP2 extends HttpChannel<ByteBufferCallback>
         if (frame.isEndStream())
         {
             messageComplete();
+        }
+
+        if (LOG.isDebugEnabled())
+        {
+            StringBuilder headers = new StringBuilder();
+            for (HttpField field : fields)
+            {
+                headers.append(field).append(System.lineSeparator());
+            }
+            LOG.debug("HTTP2 Request #{}:{}{} {} {}{}{}",
+                    stream.getId(), System.lineSeparator(), method, uri, version, System.lineSeparator(), headers);
         }
 
         // TODO: pending refactoring of HttpChannel API.
