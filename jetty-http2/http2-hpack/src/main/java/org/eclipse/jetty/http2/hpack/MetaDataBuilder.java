@@ -78,7 +78,7 @@ public class MetaDataBuilder
                     break;
 
                 case ":scheme":
-                    _scheme = HttpScheme.valueOf(field.getValue());
+                    _scheme = HttpScheme.CACHE.get(field.getValue());
                     break;
 
                 case ":authority":
