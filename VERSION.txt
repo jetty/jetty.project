@@ -1,3 +1,5 @@
+jetty-9.2.2-SNAPSHOT
+
 jetty-9.2.1.v20140609 - 09 June 2014
  + 347110 Supprt ClassFileTransormers in WebAppClassLoader
  + 432192 jetty-start / Allow JETTY_LOGS use for start-log-file
