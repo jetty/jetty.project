@@ -46,7 +46,7 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
 
     public HTTP2ServerConnectionFactory(HttpConfiguration httpConfiguration)
     {
-        super("h2");
+        super("h2-12");
         this.httpConfiguration = httpConfiguration;
     }
 
