@@ -70,7 +70,6 @@ public interface ByteBufferPool
         {
             ByteBuffer buffer = byteBufferPool.acquire(capacity, direct);
             BufferUtil.clearToFill(buffer);
-            append(buffer, true);
             return buffer;
         }
 
