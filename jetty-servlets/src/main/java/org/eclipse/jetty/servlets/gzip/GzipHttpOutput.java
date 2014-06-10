@@ -151,7 +151,7 @@ public class GzipHttpOutput extends HttpOutput
             }
         }
         
-        // Has the Content-Encoding header already been site?
+        // Has the Content-Encoding header already been set?
         String ce=getHttpChannel().getResponse().getHeader("Content-Encoding");
         if (ce != null)
         {
