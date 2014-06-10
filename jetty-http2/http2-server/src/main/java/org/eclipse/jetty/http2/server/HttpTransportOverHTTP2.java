@@ -34,8 +34,14 @@ import org.eclipse.jetty.util.Callback;
 public class HttpTransportOverHTTP2 implements HttpTransport
 {
     private final AtomicBoolean commit = new AtomicBoolean();
-    private final IStream stream = null;
-    private final HeadersFrame request = null;
+    private final IStream stream;
+    private final HeadersFrame request;
+
+    public HttpTransportOverHTTP2(IStream stream, HeadersFrame request)
+    {
+        this.stream = stream;
+        this.request = request;
+    }
 
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)

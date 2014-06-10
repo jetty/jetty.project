@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -80,11 +82,13 @@ public class HTTP2ServerTest
     @Test
     public void testRequestResponseNoContent() throws Exception
     {
+        final CountDownLatch latch = new CountDownLatch(1);
         startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
+                latch.countDown();
             }
         });
 
@@ -120,9 +124,12 @@ public class HTTP2ServerTest
 
             parser.parse(buffer);
 
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
             HeadersFrame response = frameRef.get();
             Assert.assertNotNull(response);
+            MetaData.Response responseMetaData = (MetaData.Response)response.getMetaData();
+            Assert.assertEquals(200, responseMetaData.getStatus());
         }
-
     }
 }

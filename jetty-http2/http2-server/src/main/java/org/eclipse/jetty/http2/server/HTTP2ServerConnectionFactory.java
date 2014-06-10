@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.server;
 
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -82,7 +83,7 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
         {
             LOG.debug("Received {} on {}", frame, stream);
 
-            HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2();
+            HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2((IStream)stream, frame);
             HttpInputOverHTTP2 input = new HttpInputOverHTTP2();
             HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport, input);
             stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
