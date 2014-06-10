@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.ArrayQueue;
+import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
@@ -104,7 +105,7 @@ public class HpackContext
     };
     
     private static final Map<HttpField,Entry> __staticFieldMap = new HashMap<>();
-    private static final Trie<Entry> __staticNameMap = new ArrayTrie<>(24);
+    private static final Trie<Entry> __staticNameMap = new ArrayTernaryTrie<>(true,512);
 
     private static final Entry[] __staticTable=new Entry[STATIC_TABLE.length];
     static
@@ -140,15 +141,18 @@ public class HpackContext
                 default:
                     entry=new StaticEntry(i,new HttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1]));
             }
-            
+                        
             __staticTable[i]=entry;
             
             if (entry._field.getValue()!=null)
                 __staticFieldMap.put(entry._field,entry);
+            
             if (!added.contains(entry._field.getName()))
             {
                 added.add(entry._field.getName());
                 __staticNameMap.put(entry._field.getName(),entry);
+                if (__staticNameMap.get(entry._field.getName())==null)
+                    throw new IllegalStateException("name trie too small");
             }
         }
     }

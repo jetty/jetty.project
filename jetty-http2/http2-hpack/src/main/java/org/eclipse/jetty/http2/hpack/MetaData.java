@@ -20,6 +20,7 @@
 package org.eclipse.jetty.http2.hpack;
 
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 
@@ -65,6 +66,37 @@ public class MetaData implements Iterable<HttpField>
         for (HttpField field:_fields)
             list.add(field);
         return list;
+    }
+    
+    @Override
+    public boolean equals(Object o)
+    {
+        if (!(o instanceof MetaData))
+            return false;
+        MetaData m = (MetaData)o;
+
+        List<HttpField> lm=m.getFields();
+        int s=0;
+        for (HttpField field: this)
+        {
+            s++;
+            if (!lm.contains(field))
+                return false;
+        }
+            
+        if (s!=lm.size())
+            return false;
+            
+        return true;
+    }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder out = new StringBuilder();
+        for (HttpField field: this)
+            out.append(field).append('\n');
+        return out.toString();
     }
     
     
@@ -132,6 +164,27 @@ public class MetaData implements Iterable<HttpField>
         {
             return _path;
         }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (!(o instanceof Request))
+                return false;
+            Request r = (Request)o;
+            if (!_method.equals(r._method) || 
+                !_scheme.equals(r._scheme) ||
+                !_authority.equals(r._authority) ||
+                !_path.equals(r._path))
+                return false;
+            return super.equals(o);
+        }
+        
+        @Override
+        public String toString()
+        {
+            return _method+" "+_scheme+"://"+_authority+_path+" HTTP/2\n"+super.toString();
+        }
+        
     }
 
     /* -------------------------------------------------------- */
@@ -168,6 +221,22 @@ public class MetaData implements Iterable<HttpField>
         public int getStatus()
         {
             return _status;
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (!(o instanceof Response))
+                return false;
+            Response r = (Response)o;
+            if (_status!=r._status)
+                return false;
+            return super.equals(o);
+        }
+        @Override
+        public String toString()
+        {
+            return "HTTP/2 "+_status+"\n"+super.toString();
         }
     }
 }

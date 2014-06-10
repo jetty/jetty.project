@@ -19,16 +19,67 @@
 
 package org.eclipse.jetty.http2.hpack;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.junit.Assert;
 import org.junit.Test;
+import org.eclipse.jetty.http2.hpack.MetaData.Response;
+import org.eclipse.jetty.http2.hpack.MetaData.Request;
+import org.eclipse.jetty.util.BufferUtil;
 
 
 public class HpackTest
 {
     @Test
-    public void encodeDecodeTest()
+    public void encodeDecodeResponseTest()
     {
-        HttpFields fields = new HttpFields();
+        HpackEncoder encoder = new HpackEncoder();
+        HpackDecoder decoder = new HpackDecoder();
+        ByteBuffer buffer = BufferUtil.allocate(16*1024);
+        
+        HttpFields fields0 = new HttpFields();
+        fields0.add(HttpHeader.CONTENT_TYPE,"text/html");
+        fields0.add(HttpHeader.CONTENT_LENGTH,"1024");
+        fields0.add(HttpHeader.SERVER,"jetty");
+        fields0.add(HttpHeader.SET_COOKIE,"abcdefghijklmnopqrstuvwxyz");
+        fields0.add("custom-key","custom-value");
+        Response original0 = new Response(200,fields0);
+        
+        BufferUtil.clearToFill(buffer);
+        encoder.encode(buffer,original0);
+        BufferUtil.flipToFlush(buffer,0);
+        Response decoded0 = (Response)decoder.decode(buffer);
+
+        System.err.println(decoded0);
+        Assert.assertEquals(original0,decoded0);
+        
+        // Same again?
+        BufferUtil.clearToFill(buffer);
+        encoder.encode(buffer,original0);
+        BufferUtil.flipToFlush(buffer,0);
+        Response decoded0b = (Response)decoder.decode(buffer);
+
+        System.err.println(decoded0b);
+        Assert.assertEquals(original0,decoded0b);
+        
+
+        HttpFields fields1 = new HttpFields();
+        fields1.add(HttpHeader.CONTENT_TYPE,"text/plain");
+        fields1.add(HttpHeader.CONTENT_LENGTH,"1234");
+        fields1.add(HttpHeader.SERVER,"jetty");
+        fields1.add("custom-key","other-value");
+        Response original1 = new Response(200,fields1);
+
+        // Same again?
+        BufferUtil.clearToFill(buffer);
+        encoder.encode(buffer,original1);
+        BufferUtil.flipToFlush(buffer,0);
+        Response decoded1 = (Response)decoder.decode(buffer);
+
+        System.err.println(decoded1);
+        Assert.assertEquals(original1,decoded1);
         
         
     }

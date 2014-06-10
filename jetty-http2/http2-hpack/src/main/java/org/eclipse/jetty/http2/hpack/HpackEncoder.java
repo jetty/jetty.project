@@ -27,6 +27,8 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.io.ByteBufferPool.Lease;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 
 public class HpackEncoder
 {   
@@ -130,6 +132,13 @@ public class HpackEncoder
     
     private void encode(ByteBuffer buffer, HttpField field)
     {
+        
+        /*   
+        System.err.println("encode "+field);
+        int p=buffer.position();
+        try{
+        */
+        
         // TODO currently we do not check if there is enough space, so we will always
         // return true or fail nastily.
         
@@ -142,6 +151,7 @@ public class HpackEncoder
             if (entry.isInReferenceSet())
             {
                 entry.used();
+                // System.err.println("In Reference Set");
                 return;
             }
             
@@ -163,8 +173,11 @@ public class HpackEncoder
                 // Add the value
                 buffer.put(entry.getStaticHuffmanValue());
                 
+                // System.err.println("Literal without Indexing, indexed name");
                 return;
             }
+
+            // System.err.println("Indexed from Header Set");
             
             // So we can add the entry to the reference Set and emit the index;
             _context.addToRefSet(entry);
@@ -200,7 +213,7 @@ public class HpackEncoder
         {
             reference=true;
             never_index=false;
-            huffman=__DO_NOT_HUFFMAN.contains(header);
+            huffman=!__DO_NOT_HUFFMAN.contains(header);
             name_bits = 6;
             mask=(byte)0x40;
         }
@@ -208,17 +221,19 @@ public class HpackEncoder
         {
             reference=false;
             never_index=__NEVER_INDEX.contains(header);
-            huffman=__DO_NOT_HUFFMAN.contains(header);
+            huffman=!__DO_NOT_HUFFMAN.contains(header);
             name_bits = 4;
             mask=never_index?(byte)0x01:(byte)0x00;
         }
-        
         
         // Add the mask bits
         buffer.put(mask);
         
         // Look for a name Index
         Entry name_entry = _context.get(field.getName());
+
+        // System.err.printf("Literal huff=%b refed=%b neverIdx=%b nameIdx=%b b=%d m=0x%02x%n",huffman,reference,never_index,name_entry!=null,name_bits,mask);
+        
         if (name_entry!=null)
             NBitInteger.encode(buffer,name_bits,_context.index(name_entry));
         else
@@ -241,7 +256,7 @@ public class HpackEncoder
         else
         {
             // add literal assuming iso_8859_1
-            buffer.put((byte)0x80);
+            buffer.put((byte)0x00);
             NBitInteger.encode(buffer,7,value.length());
             for (int i=0;i<value.length();i++)
             {
@@ -262,6 +277,15 @@ public class HpackEncoder
         }
         
         return;
+        
+        /*
+        }
+        finally
+        {
+            int e=buffer.position();
+            System.err.println("'"+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p)+"'");
+        }
+        */
     }
 
     
