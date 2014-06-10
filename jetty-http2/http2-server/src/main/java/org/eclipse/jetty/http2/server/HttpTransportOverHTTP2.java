@@ -110,8 +110,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Response #{}: {} {}content bytes",
-                    stream.getId(), lastContent ? "last " : "", content.remaining());
+            LOG.debug("HTTP2 Response #{}: {} content bytes{}",
+                    stream.getId(), content.remaining(), lastContent ? " (last chunk)" : "");
         }
 
         DataFrame frame = new DataFrame(stream.getId(), content, lastContent);
