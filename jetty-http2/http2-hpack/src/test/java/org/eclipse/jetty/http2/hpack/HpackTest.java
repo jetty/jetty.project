@@ -52,7 +52,6 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer,0);
         Response decoded0 = (Response)decoder.decode(buffer);
 
-        System.err.println(decoded0);
         Assert.assertEquals(original0,decoded0);
         
         // Same again?
@@ -61,7 +60,6 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer,0);
         Response decoded0b = (Response)decoder.decode(buffer);
 
-        System.err.println(decoded0b);
         Assert.assertEquals(original0,decoded0b);
         
 
@@ -78,7 +76,6 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer,0);
         Response decoded1 = (Response)decoder.decode(buffer);
 
-        System.err.println(decoded1);
         Assert.assertEquals(original1,decoded1);
         
         

@@ -93,9 +93,23 @@ public class HpackEncoder
         ByteBuffer buffer = lease.acquire(8*1024,false); // TODO make size configurable
 
         // TODO handle multiple buffers if large size configured.
+        BufferUtil.clearToFill(buffer);
         encode(buffer,metadata);
+        BufferUtil.flipToFlush(buffer,0);
     }
 
+    public void encodeMaxHeaderTableSize(ByteBuffer buffer, int maxHeaderTableSize)
+    {
+        // TODO
+        _context.resize(maxHeaderTableSize);
+    }
+
+    public void encodeClearReferenceSet(ByteBuffer buffer)
+    {
+        // TODO
+        _context.clearReferenceSet();
+    }
+    
     public void encode(ByteBuffer buffer, MetaData metadata)
     {
         // Add Request/response meta fields
