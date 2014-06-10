@@ -95,7 +95,7 @@ public class HpackEncoder
     public void encode(MetaData metadata,Lease lease)
     {
         ByteBuffer buffer = lease.acquire(8*1024,false); // TODO make size configurable
-
+        lease.append(buffer,true);
         // TODO handle multiple buffers if large size configured.
         BufferUtil.clearToFill(buffer);
         encode(buffer,metadata);

@@ -149,6 +149,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         flusher.flush(lease);
     }
 
+    protected void disconnect()
+    {
+        endPoint.close();
+    }
+
     protected IStream putIfAbsent(IStream stream)
     {
         return streams.putIfAbsent(stream.getId(), stream);

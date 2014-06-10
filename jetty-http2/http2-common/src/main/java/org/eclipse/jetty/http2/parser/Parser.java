@@ -38,14 +38,16 @@ public class Parser
 {
     private static final Logger LOG = Log.getLogger(Parser.class);
 
-    private final HeaderParser headerParser = new HeaderParser();
-    private final BodyParser[] bodyParsers = new BodyParser[FrameType.values().length];
     private final Listener listener;
+    private final HeaderParser headerParser;
+    private final BodyParser[] bodyParsers;
     private State state = State.HEADER;
 
     public Parser(ByteBufferPool byteBufferPool, Listener listener)
     {
         this.listener = listener;
+        this.headerParser = new HeaderParser();
+        this.bodyParsers = new BodyParser[FrameType.values().length];
 
         HeaderBlockParser headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder());
 

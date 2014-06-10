@@ -18,19 +18,39 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.util.HashMap;
+
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Callback;
 
-public class HTTP2ServerSession extends HTTP2Session
+public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Listener
 {
     public HTTP2ServerSession(EndPoint endPoint, Generator generator, Listener listener)
     {
         super(endPoint, generator, listener);
+    }
+
+    @Override
+    public boolean onPreface()
+    {
+        frame(new SettingsFrame(new HashMap<Integer, Integer>(), false), new Callback.Adapter()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                // If cannot write the SETTINGS frame, hard disconnect.
+                disconnect();
+            }
+        });
+        return false;
     }
 
     @Override

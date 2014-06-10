@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.server;
 
 import org.eclipse.jetty.http2.HTTP2Connection;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -28,6 +27,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
@@ -56,9 +56,9 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
         Session.Listener listener = new HTTPServerSessionListener(connector, httpConfiguration, endPoint);
 
         Generator generator = new Generator(connector.getByteBufferPool());
-        HTTP2Session session = new HTTP2ServerSession(endPoint, generator, listener);
+        HTTP2ServerSession session = new HTTP2ServerSession(endPoint, generator, listener);
 
-        Parser parser = new Parser(connector.getByteBufferPool(), session);
+        Parser parser = new ServerParser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2Connection(connector.getByteBufferPool(), connector.getExecutor(),
                 endPoint, parser, getInputBufferSize());
 

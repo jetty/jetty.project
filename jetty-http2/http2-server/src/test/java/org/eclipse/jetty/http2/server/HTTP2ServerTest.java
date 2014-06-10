@@ -18,14 +18,16 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.EOFException;
 import java.io.IOException;
-import java.net.InetSocketAddress;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.Socket;
+import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
-import java.nio.channels.SocketChannel;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -35,12 +37,14 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.MetaData;
 import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.parser.PrefaceParser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -48,6 +52,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.After;
 import org.junit.Assert;
@@ -89,7 +94,7 @@ public class HTTP2ServerTest
     @Test
     public void testRequestResponseNoContent() throws Exception
     {
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch latch = new CountDownLatch(3);
         startServer(new HttpServlet()
         {
             @Override
@@ -106,30 +111,52 @@ public class HTTP2ServerTest
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         Generator.LeaseCallback lease = generator.generate(request, Callback.Adapter.INSTANCE);
+        lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
 
-        try (SocketChannel client = SocketChannel.open(new InetSocketAddress(host, port)))
+        try (Socket client = new Socket(host, port))
         {
+            OutputStream output = client.getOutputStream();
             for (ByteBuffer buffer : lease.getByteBuffers())
             {
-                client.write(buffer);
+                output.write(BufferUtil.toArray(buffer));
             }
-
-            ByteBuffer buffer = ByteBuffer.allocate(2048);
-            client.read(buffer);
-            buffer.flip();
 
             final AtomicReference<HeadersFrame> frameRef = new AtomicReference<>();
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
+                public boolean onSettings(SettingsFrame frame)
+                {
+                    latch.countDown();
+                    return false;
+                }
+
+                @Override
                 public boolean onHeaders(HeadersFrame frame)
                 {
                     frameRef.set(frame);
+                    latch.countDown();
                     return false;
                 }
             });
 
-            parser.parse(buffer);
+            byte[] buffer = new byte[2048];
+            InputStream input = client.getInputStream();
+            client.setSoTimeout(1000);
+            while (true)
+            {
+                try
+                {
+                    int read = input.read(buffer);
+                    if (read <= 0)
+                        throw new EOFException();
+                    parser.parse(ByteBuffer.wrap(buffer, 0, read));
+                }
+                catch (SocketTimeoutException x)
+                {
+                    break;
+                }
+            }
 
             Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
