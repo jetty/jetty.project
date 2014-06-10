@@ -639,9 +639,9 @@ public class StartArgs
         while (iter.hasPrevious())
         {
             ConfigSource source = iter.previous();
-            for (String arg : source.getArgs())
+            for (RawArgs.Entry arg : source.getArgs())
             {
-                parse(arg,source.getId());
+                parse(arg.getLine(),arg.getOrigin());
             }
         }
     }

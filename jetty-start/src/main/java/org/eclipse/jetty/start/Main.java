@@ -375,15 +375,15 @@ public class Main
         // Find any named ini file and check it follows the convention
         Path start_ini = baseHome.getBasePath("start.ini");
         String short_start_ini = baseHome.toShortForm(start_ini);
-        Path ini = start_d.resolve(name + ".ini");
-        String short_ini = baseHome.toShortForm(ini);
+        Path startd_ini = start_d.resolve(name + ".ini");
+        String short_startd_ini = baseHome.toShortForm(startd_ini);
         StartIni module_ini = null;
-        if (FS.exists(ini))
+        if (FS.exists(startd_ini))
         {
-            module_ini = new StartIni(ini);
+            module_ini = new StartIni(startd_ini);
             if (module_ini.getLineMatches(Pattern.compile("--module=(.*, *)*" + name)).size() == 0)
             {
-                StartLog.warn("ERROR: %s is not enabled in %s!",name,short_ini);
+                StartLog.warn("ERROR: %s is not enabled in %s!",name,short_startd_ini);
                 return;
             }
         }
@@ -392,7 +392,7 @@ public class Main
         boolean has_ini_lines = module.getInitialise().size() > 0;
 
         // If it is not enabled or is transitive with ini template lines or toplevel and doesn't exist
-        if (!module.isEnabled() || (transitive && has_ini_lines) || (topLevel && !FS.exists(ini) && !appendStartIni))
+        if (!module.isEnabled() || (transitive && has_ini_lines) || (topLevel && !FS.exists(startd_ini) && !appendStartIni))
         {
             // File BufferedWriter
             BufferedWriter writer = null;
@@ -412,9 +412,9 @@ public class Main
                     // Create the directory if needed
                     FS.ensureDirectoryExists(start_d);
                     FS.ensureDirectoryWritable(start_d);
-                    source = short_ini;
+                    source = short_startd_ini;
                     StartLog.info("%-15s initialised in %s (created)",name,source);
-                    writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE);
+                    writer = Files.newBufferedWriter(startd_ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE);
                     out = new PrintWriter(writer);
                 }
 
@@ -463,9 +463,9 @@ public class Main
                 }
             }
         }
-        else if (FS.exists(ini))
+        else if (FS.exists(startd_ini))
         {
-            StartLog.info("%-15s initialised in %s",name,short_ini);
+            StartLog.info("%-15s initialised in %s",name,short_startd_ini);
         }
         else
         {
@@ -475,7 +475,8 @@ public class Main
         // Also list other places this module is enabled
         for (String source : module.getSources())
         {
-            if (!short_ini.equals(source))
+            StartLog.debug("also enabled in: %s",source);
+            if (!short_start_ini.equals(source))
             {
                 StartLog.info("%-15s enabled in     %s",name,baseHome.toShortForm(source));
             }

@@ -124,7 +124,7 @@ public class ConfigurationAssert
         {
             if (darg.uri != null)
             {
-                actualDownloads.add(String.format("%s:%s",darg.uri,darg.location));
+                actualDownloads.add(String.format("%s|%s",darg.uri,darg.location));
             }
         }
         assertContainsUnordered("Downloads",expectedDownloads,actualDownloads);
