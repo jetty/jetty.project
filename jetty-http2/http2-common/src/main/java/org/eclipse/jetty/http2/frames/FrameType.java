@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import java.util.HashMap;
+import java.util.Map;
+
 public enum FrameType
 {
     DATA(0),
@@ -33,15 +36,26 @@ public enum FrameType
     ALTSVC(10),
     BLOCKED(11);
 
+    public static FrameType from(int type)
+    {
+        return Types.types.get(type);
+    }
+
     private final int type;
 
     private FrameType(int type)
     {
         this.type = type;
+        Types.types.put(type, this);
     }
 
     public int getType()
     {
         return type;
+    }
+
+    private static class Types
+    {
+        private static final Map<Integer, FrameType> types = new HashMap<>();
     }
 }

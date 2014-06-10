@@ -125,4 +125,10 @@ public class HTTP2Stream implements IStream
         });
         return true;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+    }
 }
