@@ -554,23 +554,4 @@ public class HpackContext
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    public static class StaticValueHttpField extends HttpField
-    {
-        private final Object _value;
-
-        public StaticValueHttpField(String name, String valueString, Object value)
-        {
-            super(name,valueString);
-            _value=value;
-        }
-
-        public Object getStaticValue()
-        {
-            return _value;
-        }
-    }
-
 }

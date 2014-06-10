@@ -23,6 +23,8 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 
 
@@ -119,11 +121,37 @@ public class HpackDecoder
                     
                     // Make the new field
                     HttpField field;
-                    if (":authority".equals(header))
-                        field = new AuthorityHttpField(value);
-                    else
-                        // Normal Field
-                        field = new HttpField(header,name,value);
+                    switch(name)
+                    {
+                        case ":method":
+                            HttpMethod method=HttpMethod.CACHE.get(value);
+                            if (method!=null)
+                                field = new StaticValueHttpField(header,name,method.asString(),method);
+                            else
+                                field = new AuthorityHttpField(value);    
+                            break;
+                            
+                        case ":status":
+                            Integer code = Integer.getInteger(value);
+                            field = new StaticValueHttpField(header,name,value,code);
+                            break;
+                            
+                        case ":scheme":
+                            HttpScheme scheme=HttpScheme.CACHE.get(value);
+                            if (scheme!=null)
+                                field = new StaticValueHttpField(header,name,scheme.asString(),scheme);
+                            else
+                                field = new AuthorityHttpField(value);
+                            break;
+                            
+                        case ":authority":
+                            field = new AuthorityHttpField(value);
+                            break;
+                            
+                        default:
+                            field = new HttpField(header,name,value);
+                            break;
+                    }
                     
                     // emit the field
                     _builder.emit(field);

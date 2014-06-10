@@ -43,9 +43,9 @@ public class MetaDataBuilder
     
     public void emit(HttpField field)
     {
-        if (field instanceof HpackContext.StaticValueHttpField)
+        if (field instanceof StaticValueHttpField)
         {
-            HpackContext.StaticValueHttpField value = (HpackContext.StaticValueHttpField)field;
+            StaticValueHttpField value = (StaticValueHttpField)field;
             switch(field.getName())
             {
                 case ":status":
