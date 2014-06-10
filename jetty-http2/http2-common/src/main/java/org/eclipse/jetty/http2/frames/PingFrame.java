@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.http2.frames;
 
-public class PingFrame
+public class PingFrame extends Frame
 {
     private final byte[] payload;
     private final boolean reply;
 
     public PingFrame(byte[] payload, boolean reply)
     {
+        super(FrameType.PING);
         this.payload = payload;
         this.reply = reply;
     }

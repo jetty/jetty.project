@@ -22,4 +22,16 @@ public abstract class Frame
 {
     public static final int HEADER_LENGTH = 8;
     public static final int MAX_LENGTH = 0x3F_FF;
+
+    private FrameType type;
+
+    protected Frame(FrameType type)
+    {
+        this.type = type;
+    }
+
+    public FrameType getType()
+    {
+        return type;
+    }
 }

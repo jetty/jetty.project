@@ -28,6 +28,7 @@ public class DataFrame extends Frame
 
     public DataFrame(int streamId, ByteBuffer data, boolean endStream)
     {
+        super(FrameType.DATA);
         this.streamId = streamId;
         this.data = data;
         this.endStream = endStream;

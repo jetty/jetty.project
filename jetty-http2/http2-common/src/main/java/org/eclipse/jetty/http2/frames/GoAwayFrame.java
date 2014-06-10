@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.http2.frames;
 
-public class GoAwayFrame
+public class GoAwayFrame extends Frame
 {
     private final int lastStreamId;
     private final int error;
@@ -26,6 +26,7 @@ public class GoAwayFrame
 
     public GoAwayFrame(int lastStreamId, int error, byte[] payload)
     {
+        super(FrameType.GO_AWAY);
         this.lastStreamId = lastStreamId;
         this.error = error;
         this.payload = payload;

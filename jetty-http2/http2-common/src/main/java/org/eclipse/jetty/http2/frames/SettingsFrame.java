@@ -20,13 +20,14 @@ package org.eclipse.jetty.http2.frames;
 
 import java.util.Map;
 
-public class SettingsFrame
+public class SettingsFrame extends Frame
 {
     private final Map<Integer, Integer> settings;
     private final boolean reply;
 
     public SettingsFrame(Map<Integer, Integer> settings, boolean reply)
     {
+        super(FrameType.SETTINGS);
         this.settings = settings;
         this.reply = reply;
     }

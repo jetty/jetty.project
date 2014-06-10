@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.http2.frames;
 
-public class WindowUpdateFrame
+public class WindowUpdateFrame extends Frame
 {
     private final int streamId;
     private final int windowDelta;
 
     public WindowUpdateFrame(int streamId, int windowDelta)
     {
+        super(FrameType.WINDOW_UPDATE);
         this.streamId = streamId;
         this.windowDelta = windowDelta;
     }

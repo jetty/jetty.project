@@ -18,13 +18,14 @@
 
 package org.eclipse.jetty.http2.frames;
 
-public class ResetFrame
+public class ResetFrame extends Frame
 {
     private final int streamId;
     private final int error;
 
     public ResetFrame(int streamId, int error)
     {
+        super(FrameType.RST_STREAM);
         this.streamId = streamId;
         this.error = error;
     }

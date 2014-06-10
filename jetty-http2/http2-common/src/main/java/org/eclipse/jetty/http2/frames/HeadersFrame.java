@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.frames;
 
 import org.eclipse.jetty.http2.hpack.MetaData;
 
-public class HeadersFrame
+public class HeadersFrame extends Frame
 {
     private final int streamId;
     private final MetaData metaData;
@@ -29,6 +29,7 @@ public class HeadersFrame
 
     public HeadersFrame(int streamId, MetaData metaData, PriorityFrame priority, boolean endStream)
     {
+        super(FrameType.HEADERS);
         this.streamId = streamId;
         this.metaData = metaData;
         this.priority = priority;
