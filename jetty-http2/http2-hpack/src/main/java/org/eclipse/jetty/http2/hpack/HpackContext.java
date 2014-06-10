@@ -31,12 +31,15 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
-import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.Trie;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HpackContext
 {
+    public static final Logger LOG = Log.getLogger(HpackContext.class);
+    
     public static final String[][] STATIC_TABLE = 
     {
         {null,null},
@@ -182,6 +185,7 @@ public class HpackContext
     
     public void resize(int maxHeaderTableSize)
     {
+        LOG.debug("HdrTbl resized {}",maxHeaderTableSize);
         _maxHeaderTableSizeInBytes=maxHeaderTableSize;
         int guesstimateEntries = 10+maxHeaderTableSize/(32+10+10);
         evict();
@@ -223,12 +227,16 @@ public class HpackContext
         Entry entry=new Entry(i,field);
         int size = entry.getSize();
         if (size>_maxHeaderTableSizeInBytes)
+        {
+            LOG.debug("!added {} too big",field);
             return null;
+        }
         _headerTableSizeInBytes+=size;
         _headerTable.addUnsafe(entry);
         _fieldMap.put(field,entry);
         _nameMap.put(StringUtil.asciiToLowerCase(field.getName()),entry);
 
+        LOG.debug("HdrTbl added {}",entry);
         evict();
         return entry;
     }
@@ -249,6 +257,7 @@ public class HpackContext
     
     public void addToRefSet(Entry entry)
     {
+        LOG.debug("RefSet added {}",entry);
         entry.addToRefSet(this);
     }
     
@@ -259,6 +268,7 @@ public class HpackContext
     
     public void clearReferenceSet()
     {
+        LOG.debug("RefSet cleared");
         Entry entry = _refSet._refSetNext;
         while(entry!=_refSet)
         {
@@ -280,6 +290,7 @@ public class HpackContext
                 entry._used=false;
             else
             {
+                LOG.debug("RefSet remove unused {}",entry);
                 // encode the reference to remove it
                 buffer.put((byte)0x80);
                 NBitInteger.encode(buffer,7,index(entry));
@@ -297,7 +308,10 @@ public class HpackContext
             if (entry.isUsed())
                 entry._used=false;
             else
+            {
+                LOG.debug("RefSet emit unused {}",entry);
                 builder.emit(entry.getHttpField());
+            }
             
             entry=entry._refSetNext;
         }
@@ -342,6 +356,7 @@ public class HpackContext
         while (_headerTableSizeInBytes>_maxHeaderTableSizeInBytes)
         {
             Entry entry = _headerTable.pollUnsafe();
+            LOG.debug("HdrTbl evict {}",entry);
             _headerTableSizeInBytes-=entry.getSize();
             entry.removeFromRefSet();
             entry._index=-1;
@@ -460,6 +475,7 @@ public class HpackContext
             _refSetPrev=ctx._refSet._refSetPrev;
             ctx._refSet._refSetPrev._refSetNext=this;
             ctx._refSet._refSetPrev=this;
+            LOG.debug("RefSet add {}",this);
         }
 
         public boolean isInReferenceSet()
@@ -469,6 +485,7 @@ public class HpackContext
         
         public void removeFromRefSet()
         {
+            LOG.debug("RefSet remove {}",this);
             if (_refSetNext!=this)
             {
                 _refSetNext._refSetPrev=_refSetPrev;

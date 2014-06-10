@@ -29,9 +29,13 @@ import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.io.ByteBufferPool.Lease;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HpackEncoder
 {   
+    public static final Logger LOG = Log.getLogger(HpackEncoder.class);
+    
     private final static HttpField[] __status= new HttpField[599];
     
     private final static EnumSet<HttpHeader> __NEVER_INDEX = 
@@ -100,7 +104,6 @@ public class HpackEncoder
 
     public void encodeMaxHeaderTableSize(ByteBuffer buffer, int maxHeaderTableSize)
     {
-        // TODO
         _context.resize(maxHeaderTableSize);
     }
 
@@ -143,34 +146,29 @@ public class HpackEncoder
 
         _context.removedUnusedReferences(buffer);
     }
-    
+
     private void encode(ByteBuffer buffer, HttpField field)
     {
-        
-        /*   
-        System.err.println("encode "+field);
-        int p=buffer.position();
-        try{
-        */
-        
+        final int p=LOG.isDebugEnabled()?buffer.position():-1;
+        String encoding=null;
+
         // TODO currently we do not check if there is enough space, so we will always
         // return true or fail nastily.
-        
+
         // Is there an entry for the field?
         Entry entry = _context.get(field);
-        
+
         if (entry!=null)
         {
             // if entry is already in the reference set, then nothing more to do.
             if (entry.isInReferenceSet())
             {
                 entry.used();
-                // System.err.println("In Reference Set");
-                return;
+                encoding="InRefSet";
             }
-            
+
             // Is this as static field
-            if (entry.isStatic())
+            else if (entry.isStatic())
             {
                 // TODO Strategy decision to make!
                 // Should we add to reference set or just always send as indexed?
@@ -179,130 +177,130 @@ public class HpackEncoder
                 // lets send as literal header, indexed name.
                 // We don't need never indexed because the cookie fields are name only and we can
                 // huffman encode the value for the same reason. 
-                               
+
                 // Add the token
                 buffer.put((byte)0x00);
                 // Add the name index
                 NBitInteger.encode(buffer,4,_context.index(entry));
                 // Add the value
                 buffer.put(entry.getStaticHuffmanValue());
-                
-                // System.err.println("Literal without Indexing, indexed name");
-                return;
+
+                encoding="LiteralStaticIdxNameHuffmanValue";
             }
-
-            // System.err.println("Indexed from Header Set");
-            
-            // So we can add the entry to the reference Set and emit the index;
-            _context.addToRefSet(entry);
-            int index=_context.index(entry);
-            
-            // TODO pregenerate indexes?
-            buffer.put((byte)0x80);
-            NBitInteger.encode(buffer,7,index);
-            return;
-        }
-        
-
-        // Must be a new entry, so we will have to send literally.
-        // TODO Strategy decision to make!
-        // What fields will we put in the reference set and what fields will we huffman encode?
-                
-        // Let's make these decisions by lookup of known fields
-        HttpHeader header = field.getHeader();
-        final boolean never_index;
-        final boolean huffman;
-        final boolean reference;
-        final int name_bits;
-        final byte mask;
-        if (header==null)
-        {
-            never_index=false;
-            huffman=true;
-            reference=true;
-            name_bits = 6;
-            mask=(byte)0x40;
-        }
-        else if (__USE_REFERENCE_SET.contains(header))
-        {
-            reference=true;
-            never_index=false;
-            huffman=!__DO_NOT_HUFFMAN.contains(header);
-            name_bits = 6;
-            mask=(byte)0x40;
-        }
-        else
-        {
-            reference=false;
-            never_index=__NEVER_INDEX.contains(header);
-            huffman=!__DO_NOT_HUFFMAN.contains(header);
-            name_bits = 4;
-            mask=never_index?(byte)0x01:(byte)0x00;
-        }
-        
-        // Add the mask bits
-        buffer.put(mask);
-        
-        // Look for a name Index
-        Entry name_entry = _context.get(field.getName());
-
-        // System.err.printf("Literal huff=%b refed=%b neverIdx=%b nameIdx=%b b=%d m=0x%02x%n",huffman,reference,never_index,name_entry!=null,name_bits,mask);
-        
-        if (name_entry!=null)
-            NBitInteger.encode(buffer,name_bits,_context.index(name_entry));
-        else
-        {
-            // Encode the name always with huffman
-            buffer.put((byte)0x80);
-            NBitInteger.encode(buffer,7,Huffman.octetsNeeded(field.getName()));
-            Huffman.encode(buffer,field.getName());
-        }
-        
-        // Add the literal value
-        String value=field.getValue();
-        if (huffman)
-        {
-            // huffman literal value
-            buffer.put((byte)0x80);
-            NBitInteger.encode(buffer,7,Huffman.octetsNeeded(value));
-            Huffman.encode(buffer,field.getValue());
-        }
-        else
-        {
-            // add literal assuming iso_8859_1
-            buffer.put((byte)0x00);
-            NBitInteger.encode(buffer,7,value.length());
-            for (int i=0;i<value.length();i++)
+            else
             {
-                char c=value.charAt(i);
-                if (c<' '|| c>127)
-                   throw new IllegalArgumentException();
-                buffer.put((byte)c);
+                encoding="IdxField";
+
+                // So we can add the entry to the reference Set and emit the index;
+                _context.addToRefSet(entry);
+                int index=_context.index(entry);
+
+                // TODO pregenerate indexes?
+                buffer.put((byte)0x80);
+                NBitInteger.encode(buffer,7,index);
             }
         }
-        
-        // If we want the field referenced, then we add it to our
-        // table and reference set.
-        if (reference)
+        else
         {
-            Entry new_entry=_context.add(field);
-            if (new_entry!=null)
-                _context.addToRefSet(new_entry);
+            // Must be a new entry, so we will have to send literally.
+            // TODO Strategy decision to make!
+            // What fields will we put in the reference set and what fields will we huffman encode?
+
+            // Let's make these decisions by lookup of known fields
+            HttpHeader header = field.getHeader();
+            final boolean never_index;
+            final boolean huffman;
+            final boolean reference;
+            final int name_bits;
+            final byte mask;
+            if (header==null)
+            {
+                never_index=false;
+                huffman=true;
+                reference=true;
+                name_bits = 6;
+                mask=(byte)0x40;
+            }
+            else if (__USE_REFERENCE_SET.contains(header))
+            {
+                reference=true;
+                never_index=false;
+                huffman=!__DO_NOT_HUFFMAN.contains(header);
+                name_bits = 6;
+                mask=(byte)0x40;
+            }
+            else
+            {
+                reference=false;
+                never_index=__NEVER_INDEX.contains(header);
+                huffman=!__DO_NOT_HUFFMAN.contains(header);
+                name_bits = 4;
+                mask=never_index?(byte)0x01:(byte)0x00;
+            }
+
+            // Add the mask bits
+            buffer.put(mask);
+
+            // Look for a name Index
+            Entry name_entry = _context.get(field.getName());
+
+            if (p>=0)
+            {
+                encoding="Literal"+
+                        ((name_entry==null)?"IdxName":"HuffName")+
+                        (huffman?"HuffName":"LitName")+
+                        (reference?"Idx":(never_index?"NeverIdx":""));
+            }
+            
+            if (name_entry!=null)
+                NBitInteger.encode(buffer,name_bits,_context.index(name_entry));
+            else
+            {
+                // Encode the name always with huffman
+                buffer.put((byte)0x80);
+                NBitInteger.encode(buffer,7,Huffman.octetsNeeded(field.getName()));
+                Huffman.encode(buffer,field.getName());
+            }
+
+            // Add the literal value
+            String value=field.getValue();
+            if (huffman)
+            {
+                // huffman literal value
+                buffer.put((byte)0x80);
+                NBitInteger.encode(buffer,7,Huffman.octetsNeeded(value));
+                Huffman.encode(buffer,field.getValue());
+            }
+            else
+            {
+                // add literal assuming iso_8859_1
+                buffer.put((byte)0x00);
+                NBitInteger.encode(buffer,7,value.length());
+                for (int i=0;i<value.length();i++)
+                {
+                    char c=value.charAt(i);
+                    if (c<' '|| c>127)
+                        throw new IllegalArgumentException();
+                    buffer.put((byte)c);
+                }
+            }
+
+            // If we want the field referenced, then we add it to our
+            // table and reference set.
+            if (reference)
+            {
+                Entry new_entry=_context.add(field);
+                if (new_entry!=null)
+                    _context.addToRefSet(new_entry);
+            }
+
+
         }
-        
-        return;
-        
-        /*
-        }
-        finally
+
+        if (p>=0)
         {
             int e=buffer.position();
-            System.err.println("'"+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p)+"'");
+            LOG.debug("encoded '{}' by {} to '{}'",field,encoding,TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p));
         }
-        */
     }
-
-    
-    
-    
 }

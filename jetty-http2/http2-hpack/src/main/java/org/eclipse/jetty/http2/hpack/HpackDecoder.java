@@ -26,6 +26,9 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -34,6 +37,8 @@ import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
  */
 public class HpackDecoder
 {
+    public static final Logger LOG = Log.getLogger(HpackDecoder.class);
+    
     private final HpackContext _context;
     private final MetaDataBuilder _builder = new MetaDataBuilder();
 
@@ -48,10 +53,15 @@ public class HpackDecoder
     }
     
     public MetaData decode(ByteBuffer buffer)
-    {
-                
+    {           
         while(buffer.hasRemaining())
         {
+            if (LOG.isDebugEnabled())
+            {
+                int l=Math.min(buffer.remaining(),16);
+                LOG.debug("decode  "+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l)+(l<buffer.remaining()?"...":""));
+            }
+            
             byte b = buffer.get();
             if (b<0)
             {
@@ -62,6 +72,7 @@ public class HpackDecoder
                     _context.get(index).removeFromRefSet();
                 else if (entry.isStatic())
                 {
+                    LOG.debug("decode IdxStatic {}",entry);
                     // emit field
                     _builder.emit(entry.getHttpField());
                     
@@ -72,6 +83,7 @@ public class HpackDecoder
                 }
                 else
                 {
+                    LOG.debug("decode Idx {}",entry);
                     // emit
                     _builder.emit(entry.getHttpField());
                     // add to reference set
@@ -91,6 +103,7 @@ public class HpackDecoder
                     // literal 
                     boolean indexed=f>=4;
                     int bits=indexed?6:4;
+                    boolean huffmanName=false;
                     
                     // decode the name
                     int name_index=NBitInteger.decode(buffer,bits);
@@ -102,9 +115,9 @@ public class HpackDecoder
                     }
                     else
                     {
-                        boolean huffman = (buffer.get()&0x80)==0x80;
+                        huffmanName = (buffer.get()&0x80)==0x80;
                         int length = NBitInteger.decode(buffer,7);
-                        if (huffman)
+                        if (huffmanName)
                             name=Huffman.decode(buffer,length);
                         else
                             name=toASCIIString(buffer,length);
@@ -112,9 +125,9 @@ public class HpackDecoder
                     }
                     
                     // decode the value
-                    boolean huffman = (buffer.get()&0x80)==0x80;
+                    boolean huffmanValue = (buffer.get()&0x80)==0x80;
                     int length = NBitInteger.decode(buffer,7);
-                    if (huffman)
+                    if (huffmanValue)
                         value=Huffman.decode(buffer,length);
                     else
                         value=toASCIIString(buffer,length);
@@ -132,7 +145,7 @@ public class HpackDecoder
                             break;
                             
                         case ":status":
-                            Integer code = Integer.getInteger(value);
+                            Integer code = Integer.valueOf(value);
                             field = new StaticValueHttpField(header,name,value,code);
                             break;
                             
@@ -153,6 +166,9 @@ public class HpackDecoder
                             break;
                     }
                     
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("decoded '"+field+"' by Lit"+(name_index>0?"IdxName":(huffmanName?"HuffName":"LitName"))+(huffmanValue?"HuffVal":"LitVal")+(indexed?"Idx":""));
+                    
                     // emit the field
                     _builder.emit(field);
                     
@@ -170,11 +186,14 @@ public class HpackDecoder
                 {
                     // change table size
                     int size = NBitInteger.decode(buffer,4);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("decode resize="+size);
                     _context.resize(size);
                 }
                 else if (f==3)
                 {
                     // clear reference set
+                    LOG.debug("decode clear");
                     _context.clearReferenceSet();
                 }   
             }
