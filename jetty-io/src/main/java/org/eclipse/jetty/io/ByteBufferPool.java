@@ -22,6 +22,8 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.BufferUtil;
+
 /**
  * <p>A {@link ByteBuffer} pool.</p>
  * <p>Acquired buffers may be {@link #release(ByteBuffer) released} but they do not need to;
@@ -67,6 +69,7 @@ public interface ByteBufferPool
         public ByteBuffer acquire(int capacity, boolean direct)
         {
             ByteBuffer buffer = byteBufferPool.acquire(capacity, direct);
+            BufferUtil.clearToFill(buffer);
             append(buffer, true);
             return buffer;
         }
