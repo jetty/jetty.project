@@ -55,7 +55,8 @@ public class DataBodyParser extends BodyParser
     @Override
     public Result parse(ByteBuffer buffer)
     {
-        while (buffer.hasRemaining())
+        boolean loop = false;
+        while (buffer.hasRemaining() || loop)
         {
             switch (state)
             {
@@ -79,7 +80,7 @@ public class DataBodyParser extends BodyParser
                 case PADDING_HIGH:
                 {
                     paddingLength = (buffer.get() & 0xFF) << 8;
-                    length -= 1;
+                    --length;
                     if (length < 1 + 256)
                     {
                         return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_data_frame_padding");
@@ -90,13 +91,14 @@ public class DataBodyParser extends BodyParser
                 case PADDING_LOW:
                 {
                     paddingLength += buffer.get() & 0xFF;
-                    length -= 1;
-                    if (length < paddingLength)
+                    --length;
+                    length -= paddingLength;
+                    state = State.DATA;
+                    loop = length == 0;
+                    if (length < 0)
                     {
                         return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_data_frame_padding");
                     }
-                    length -= paddingLength;
-                    state = State.DATA;
                     break;
                 }
                 case DATA:
@@ -110,6 +112,7 @@ public class DataBodyParser extends BodyParser
                     buffer.position(position + size);
 
                     length -= size;
+                    loop = paddingLength == 0;
                     if (length == 0)
                     {
                         state = State.PADDING;
@@ -120,7 +123,8 @@ public class DataBodyParser extends BodyParser
                     }
                     else
                     {
-                        // We got partial data, fake the frame.
+                        // TODO: check the semantic of Flag.END_SEGMENT.
+                        // We got partial data, simulate a smaller frame, and stay in DATA state.
                         if (onData(slice, true))
                         {
                             return Result.ASYNC;

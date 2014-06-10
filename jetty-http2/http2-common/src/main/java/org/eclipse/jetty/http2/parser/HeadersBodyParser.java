@@ -56,7 +56,8 @@ public class HeadersBodyParser extends BodyParser
     @Override
     public Result parse(ByteBuffer buffer)
     {
-        while (buffer.hasRemaining())
+        boolean loop = false;
+        while (buffer.hasRemaining() || loop)
         {
             switch (state)
             {
@@ -84,24 +85,25 @@ public class HeadersBodyParser extends BodyParser
                 case PADDING_HIGH:
                 {
                     paddingLength = (buffer.get() & 0xFF) << 8;
-                    length -= 1;
+                    --length;
+                    state = State.PADDING_LOW;
                     if (length < 1 + 256)
                     {
                         return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame_padding");
                     }
-                    state = State.PADDING_LOW;
                     break;
                 }
                 case PADDING_LOW:
                 {
                     paddingLength += buffer.get() & 0xFF;
-                    length -= 1;
-                    if (length < paddingLength)
+                    --length;
+                    length -= paddingLength;
+                    state = hasFlag(Flag.PRIORITY) ? State.EXCLUSIVE : State.HEADERS;
+                    loop = length == 0;
+                    if (length < 0)
                     {
                         return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame_padding");
                     }
-                    length -= paddingLength;
-                    state = hasFlag(Flag.PRIORITY) ? State.EXCLUSIVE : State.HEADERS;
                     break;
                 }
                 case EXCLUSIVE:
@@ -167,16 +169,11 @@ public class HeadersBodyParser extends BodyParser
                 }
                 case HEADERS:
                 {
-                    int blockLength = length - paddingLength;
-                    if (blockLength < 0)
-                    {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame");
-                    }
-                    MetaData metaData = headerBlockParser.parse(buffer, blockLength);
+                    MetaData metaData = headerBlockParser.parse(buffer, length);
                     if (metaData != null)
                     {
-                        length -= blockLength;
                         state = State.PADDING;
+                        loop = paddingLength == 0;
                         if (onHeaders(streamId, weight, exclusive, metaData))
                         {
                             return Result.ASYNC;

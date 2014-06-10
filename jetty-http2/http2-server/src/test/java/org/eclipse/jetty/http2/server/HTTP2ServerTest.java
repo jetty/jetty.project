@@ -25,6 +25,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -36,6 +37,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
@@ -140,23 +142,7 @@ public class HTTP2ServerTest
                 }
             });
 
-            byte[] buffer = new byte[2048];
-            InputStream input = client.getInputStream();
-            client.setSoTimeout(1000);
-            while (true)
-            {
-                try
-                {
-                    int read = input.read(buffer);
-                    if (read <= 0)
-                        throw new EOFException();
-                    parser.parse(ByteBuffer.wrap(buffer, 0, read));
-                }
-                catch (SocketTimeoutException x)
-                {
-                    break;
-                }
-            }
+            parseResponse(client, parser);
 
             Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -164,6 +150,102 @@ public class HTTP2ServerTest
             Assert.assertNotNull(response);
             MetaData.Response responseMetaData = (MetaData.Response)response.getMetaData();
             Assert.assertEquals(200, responseMetaData.getStatus());
+        }
+    }
+
+    @Test
+    public void testRequestResponseContent() throws Exception
+    {
+        final byte[] content = "Hello, world!".getBytes(StandardCharsets.UTF_8);
+        final CountDownLatch latch = new CountDownLatch(4);
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                latch.countDown();
+                resp.getOutputStream().write(content);
+            }
+        });
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        HttpFields fields = new HttpFields();
+        MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, HttpMethod.GET.asString(),
+                host + ":" + port, host, port, path, fields);
+        HeadersFrame request = new HeadersFrame(1, metaData, null, true);
+        Generator.LeaseCallback lease = generator.generate(request, Callback.Adapter.INSTANCE);
+        lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
+
+        try (Socket client = new Socket(host, port))
+        {
+            OutputStream output = client.getOutputStream();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                output.write(BufferUtil.toArray(buffer));
+            }
+
+            final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
+            final AtomicReference<DataFrame> dataRef = new AtomicReference<>();
+            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            {
+                @Override
+                public boolean onSettings(SettingsFrame frame)
+                {
+                    latch.countDown();
+                    return false;
+                }
+
+                @Override
+                public boolean onHeaders(HeadersFrame frame)
+                {
+                    headersRef.set(frame);
+                    latch.countDown();
+                    return false;
+                }
+
+                @Override
+                public boolean onData(DataFrame frame)
+                {
+                    dataRef.set(frame);
+                    latch.countDown();
+                    return false;
+                }
+            });
+
+            parseResponse(client, parser);
+
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+            HeadersFrame response = headersRef.get();
+            Assert.assertNotNull(response);
+            MetaData.Response responseMetaData = (MetaData.Response)response.getMetaData();
+            Assert.assertEquals(200, responseMetaData.getStatus());
+
+            DataFrame responseData = dataRef.get();
+            Assert.assertNotNull(responseData);
+            Assert.assertArrayEquals(content, BufferUtil.toArray(responseData.getData()));
+        }
+    }
+
+    private void parseResponse(Socket client, Parser parser) throws IOException
+    {
+        byte[] buffer = new byte[2048];
+        InputStream input = client.getInputStream();
+        client.setSoTimeout(1000);
+        while (true)
+        {
+            try
+            {
+                int read = input.read(buffer);
+                if (read <= 0)
+                    throw new EOFException();
+                parser.parse(ByteBuffer.wrap(buffer, 0, read));
+            }
+            catch (SocketTimeoutException x)
+            {
+                break;
+            }
         }
     }
 }
