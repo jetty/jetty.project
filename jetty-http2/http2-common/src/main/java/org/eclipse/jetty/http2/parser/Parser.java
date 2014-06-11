@@ -94,6 +94,8 @@ public class Parser
                 case BODY:
                 {
                     int type = headerParser.getFrameType();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Parsing {} frame", FrameType.from(type));
                     if (type < 0 || type >= bodyParsers.length)
                     {
                         notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "unknown_frame_type_" + type);
