@@ -280,7 +280,6 @@ public class HpackContext
     
     public void addToRefSet(Entry entry)
     {
-        LOG.debug("RefSet added {}",entry);
         entry.addToRefSet(this);
     }
     
@@ -498,7 +497,7 @@ public class HpackContext
             _refSetPrev=ctx._refSet._refSetPrev;
             ctx._refSet._refSetPrev._refSetNext=this;
             ctx._refSet._refSetPrev=this;
-            LOG.debug("RefSet add {}",this);
+            LOG.debug("RefSet added {}",this);
         }
 
         public boolean isInReferenceSet()

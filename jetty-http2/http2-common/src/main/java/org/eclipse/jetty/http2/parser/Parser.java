@@ -76,7 +76,7 @@ public class Parser
     {
         if (LOG.isDebugEnabled())
         {
-            int l=Math.min(buffer.remaining(),16);
+            int l=Math.min(buffer.remaining(),32);
             LOG.debug("Parsing  "+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l)+(l<buffer.remaining()?"...":""));
         }
 

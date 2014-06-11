@@ -20,6 +20,7 @@
 package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
+import java.util.Date;
 
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
@@ -120,6 +121,8 @@ public class Http2Server
             response.setHeader("custom","value");
             response.setContentType("text/plain");
             String content = "Hello from Jetty HTTP2\n";
+            content+="uri="+request.getRequestURI()+"\n";
+            content+="date="+new Date()+"\n";
             response.setContentLength(content.length());
             response.getOutputStream().print(content);
         }
