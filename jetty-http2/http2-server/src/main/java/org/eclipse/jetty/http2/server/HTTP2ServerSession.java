@@ -60,7 +60,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         // TODO: handle duplicate streams
         // TODO: handle empty headers
 
-        IStream stream = new HTTP2Stream(this);
+        IStream stream = new HTTP2Stream(this, frame);
         IStream existing = putIfAbsent(stream);
         if (existing == null)
         {

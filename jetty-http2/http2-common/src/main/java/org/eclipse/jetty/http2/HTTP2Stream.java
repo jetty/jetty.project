@@ -22,7 +22,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
@@ -31,23 +30,25 @@ public class HTTP2Stream implements IStream
 {
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final ISession session;
+    private final HeadersFrame frame;
     private Listener listener;
 
-    public HTTP2Stream(ISession session)
+    public HTTP2Stream(ISession session, HeadersFrame frame)
     {
         this.session = session;
+        this.frame = frame;
     }
 
     @Override
     public int getId()
     {
-        return 0;
+        return frame.getStreamId();
     }
 
     @Override
-    public Session getSession()
+    public ISession getSession()
     {
-        return null;
+        return session;
     }
 
     @Override
