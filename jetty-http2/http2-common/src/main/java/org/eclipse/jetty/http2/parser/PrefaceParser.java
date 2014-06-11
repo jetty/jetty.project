@@ -25,15 +25,15 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class PrefaceParser
 {
-    private static final Logger LOG = Log.getLogger(PrefaceParser.class);
     public static final byte[] PREFACE_BYTES = new byte[]
             {
                     0x50, 0x52, 0x49, 0x20, 0x2a, 0x20, 0x48, 0x54,
                     0x54, 0x50, 0x2f, 0x32, 0x2e, 0x30, 0x0d, 0x0a,
                     0x0d, 0x0a, 0x53, 0x4d, 0x0d, 0x0a, 0x0d, 0x0a
             };
-    private final Parser.Listener listener;
+    private static final Logger LOG = Log.getLogger(PrefaceParser.class);
 
+    private final Parser.Listener listener;
     private int cursor;
 
     public PrefaceParser(Parser.Listener listener)

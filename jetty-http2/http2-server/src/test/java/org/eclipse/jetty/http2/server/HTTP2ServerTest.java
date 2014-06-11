@@ -38,6 +38,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
@@ -91,6 +92,46 @@ public class HTTP2ServerTest
     public void dispose() throws Exception
     {
         server.stop();
+    }
+
+    @Test
+    public void testNoPrefaceBytes() throws Exception
+    {
+        startServer(new HttpServlet(){});
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        HttpFields fields = new HttpFields();
+        MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, HttpMethod.GET.asString(),
+                host + ":" + port, host, port, path, fields);
+        HeadersFrame request = new HeadersFrame(1, metaData, null, true);
+        Generator.LeaseCallback lease = generator.generate(request, Callback.Adapter.INSTANCE);
+
+        // No preface bytes
+
+        try (Socket client = new Socket(host, port))
+        {
+            OutputStream output = client.getOutputStream();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                output.write(BufferUtil.toArray(buffer));
+            }
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            {
+                @Override
+                public boolean onGoAway(GoAwayFrame frame)
+                {
+                    latch.countDown();
+                    return false;
+                }
+            });
+
+            parseResponse(client, parser);
+
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
     }
 
     @Test

@@ -19,11 +19,14 @@
 package org.eclipse.jetty.http2;
 
 import java.nio.ByteBuffer;
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,6 +48,7 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.Atomics;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.Promise;
@@ -169,7 +173,30 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public boolean onGoAway(GoAwayFrame frame)
     {
+        if (LOG.isDebugEnabled())
+        {
+            String reason = tryConvertPayload(frame.getPayload());
+            LOG.debug("Received {}: {}/{}", frame.getType(), frame.getError(), reason);
+        }
+
+        flusher.close();
+        disconnect();
         return false;
+    }
+
+    private String tryConvertPayload(byte[] payload)
+    {
+        if (payload == null)
+            return "";
+        ByteBuffer buffer = BufferUtil.toBuffer(payload);
+        try
+        {
+            return BufferUtil.toUTF8String(buffer);
+        }
+        catch (Throwable x)
+        {
+            return BufferUtil.toDetailString(buffer);
+        }
     }
 
     @Override
@@ -181,7 +208,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void onConnectionFailure(int error, String reason)
     {
-        // TODO
+        close(error, reason, disconnectCallback);
     }
 
     @Override
@@ -233,6 +260,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         byte[] payload = reason == null ? null : reason.getBytes(StandardCharsets.UTF_8);
         GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
+        LOG.debug("Sending {}: {}", frame.getType(), reason);
         frame(frame, callback);
     }
 
@@ -245,6 +273,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
     protected void disconnect()
     {
+        LOG.debug("Disconnecting");
         endPoint.close();
     }
 
@@ -367,15 +396,22 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
     private class Flusher extends IteratingCallback
     {
-        private final ArrayQueue<Generator.LeaseCallback> queue = new ArrayQueue<>(ArrayQueue.DEFAULT_CAPACITY, ArrayQueue.DEFAULT_GROWTH);
+        private final Queue<Generator.LeaseCallback> queue = new ArrayQueue<>(ArrayQueue.DEFAULT_CAPACITY, ArrayQueue.DEFAULT_GROWTH);
         private Generator.LeaseCallback active;
+        private boolean closed;
 
         private void offer(Generator.LeaseCallback lease)
         {
+            boolean fail = false;
             synchronized (queue)
             {
-                queue.offer(lease);
+                if (closed)
+                    fail = true;
+                else
+                    queue.offer(lease);
             }
+            if (fail)
+                fail(lease);
         }
 
         private void flush(Generator.LeaseCallback lease)
@@ -387,16 +423,16 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         @Override
         protected Action process() throws Exception
         {
+            Generator.LeaseCallback current = null;
             synchronized (queue)
             {
-                active = queue.poll();
+                if (!closed)
+                    current = active = queue.poll();
             }
-            if (active == null)
-            {
+            if (current == null)
                 return Action.IDLE;
-            }
 
-            List<ByteBuffer> byteBuffers = active.getByteBuffers();
+            List<ByteBuffer> byteBuffers = current.getByteBuffers();
             endPoint.write(this, byteBuffers.toArray(new ByteBuffer[byteBuffers.size()]));
             return Action.SCHEDULED;
         }
@@ -418,6 +454,29 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         @Override
         protected void completed()
         {
+        }
+
+        public void close()
+        {
+            Queue<Generator.LeaseCallback> queued;
+            synchronized (queue)
+            {
+                closed = true;
+                queued = new ArrayDeque<>(queue);
+            }
+
+            while (true)
+            {
+                Generator.LeaseCallback item = queued.poll();
+                if (item == null)
+                    break;
+                fail(item);
+            }
+        }
+
+        protected void fail(Generator.LeaseCallback item)
+        {
+            item.failed(new ClosedChannelException());
         }
     }
 

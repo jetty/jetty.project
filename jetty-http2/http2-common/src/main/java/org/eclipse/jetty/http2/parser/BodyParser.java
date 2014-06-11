@@ -165,7 +165,6 @@ public abstract class BodyParser
     {
         try
         {
-            LOG.debug("goaway: error="+frame.getError());
             return listener.onGoAway(frame);
         }
         catch (Throwable x)
