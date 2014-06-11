@@ -172,32 +172,46 @@ public class HpackEncoder
             {
                 // TODO Strategy decision to make!
                 // Should we add to reference set or just always send as indexed?
-                // Let's always send as indexed to reduce churn in header table!
-                // BUGGER! Can't do that.  Oh well all the static fields have small values, so
-                // lets send as literal header, indexed name.
-                // We don't need never indexed because the cookie fields are name only and we can
-                // huffman encode the value for the same reason. 
 
-                // Add the token
-                buffer.put((byte)0x00);
-                // Add the name index
-                NBitInteger.encode(buffer,4,_context.index(entry));
-                // Add the value
-                buffer.put(entry.getStaticHuffmanValue());
+                if (entry==HpackContext.METHOD_GET || entry==HpackContext.STATUS_200)
+                {
+                    // :status: 200 and :method: GET are worthwhile putting into ref set.
+                    // as they are likely to be repeated.
+                    int index=_context.index(entry);
+                    buffer.put((byte)0x80);
+                    NBitInteger.encode(buffer,7,index);
+                    entry=_context.add(entry.getHttpField());
+                    if (entry!=null)
+                        _context.addToRefSet(entry);
+                }
+                else
+                {        
+                    // Let's send other statics as indexed to reduce churn in header table!
+                    // BUGGER! Can't do that as we have to copy them into header table.
+                    // Oh well all the static fields have small values, so
+                    // lets send as literal header, indexed name.
+                    // We don't need never indexed because the cookie fields are name only and we can
+                    // huffman encode the value for the same reason. 
+                    
+                    // Add the token
+                    buffer.put((byte)0x00);
+                    // Add the name index
+                    NBitInteger.encode(buffer,4,_context.index(entry));
+                    // Add the value
+                    buffer.put(entry.getStaticHuffmanValue());
 
-                encoding="LiteralStaticIdxNameHuffmanValue";
+                    encoding="LiteralStaticIdxNameHuffmanValue";
+                }
             }
             else
             {
                 encoding="IdxField";
 
-                // So we can add the entry to the reference Set and emit the index;
-                _context.addToRefSet(entry);
+                // So we can emit the index and add the entry to the reference Set
                 int index=_context.index(entry);
-
-                // TODO pregenerate indexes?
                 buffer.put((byte)0x80);
                 NBitInteger.encode(buffer,7,index);
+                _context.addToRefSet(entry);
             }
         }
         else

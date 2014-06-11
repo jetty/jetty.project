@@ -109,14 +109,14 @@ public class HpackContext
     
     private static final Map<HttpField,Entry> __staticFieldMap = new HashMap<>();
     private static final Trie<Entry> __staticNameMap = new ArrayTernaryTrie<>(true,512);
-
-    private static final Entry[] __staticTable=new Entry[STATIC_TABLE.length];
+    
+    private static final StaticEntry[] __staticTable=new StaticEntry[STATIC_TABLE.length];
     static
     {
         Set<String> added = new HashSet<>();
         for (int i=1;i<STATIC_TABLE.length;i++)
         {
-            Entry entry;
+            StaticEntry entry;
             switch(i)
             {
                 case 2:
@@ -159,6 +159,10 @@ public class HpackContext
             }
         }
     }
+
+    public static final StaticEntry METHOD_GET=__staticTable[2];
+    public static final StaticEntry STATUS_200=__staticTable[8];
+    
     
     private int _maxHeaderTableSizeInBytes;
     private int _headerTableSizeInBytes;

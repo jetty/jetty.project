@@ -118,7 +118,6 @@ public class Http2Server
         protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             response.setHeader("custom","value");
-            response.sendRedirect("http://www.google.com");
             response.setContentType("text/plain");
             String content = "Hello from Jetty HTTP2\n";
             response.setContentLength(content.length());
