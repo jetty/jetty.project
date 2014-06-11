@@ -43,6 +43,7 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
     private static final String CHANNEL_ATTRIBUTE = HttpChannelOverHTTP2.class.getName();
 
     private final HttpConfiguration httpConfiguration;
+    private int headerTableSize = 4096;
 
     public HTTP2ServerConnectionFactory(HttpConfiguration httpConfiguration)
     {
@@ -50,12 +51,22 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
         this.httpConfiguration = httpConfiguration;
     }
 
+    public int getHeaderTableSize()
+    {
+        return headerTableSize;
+    }
+
+    public void setHeaderTableSize(int headerTableSize)
+    {
+        this.headerTableSize = headerTableSize;
+    }
+
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         Session.Listener listener = new HTTPServerSessionListener(connector, httpConfiguration, endPoint);
 
-        Generator generator = new Generator(connector.getByteBufferPool());
+        Generator generator = new Generator(connector.getByteBufferPool(), getHeaderTableSize());
         HTTP2ServerSession session = new HTTP2ServerSession(endPoint, generator, listener);
 
         Parser parser = new ServerParser(connector.getByteBufferPool(), session);

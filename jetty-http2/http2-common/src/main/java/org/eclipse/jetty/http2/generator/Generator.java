@@ -29,12 +29,12 @@ public class Generator
     private final ByteBufferPool byteBufferPool;
     private final FrameGenerator[] generators;
 
-    public Generator(ByteBufferPool byteBufferPool)
+    public Generator(ByteBufferPool byteBufferPool, int headerTableSize)
     {
         this.byteBufferPool = byteBufferPool;
 
         HeaderGenerator headerGenerator = new HeaderGenerator();
-        HpackEncoder encoder = new HpackEncoder();
+        HpackEncoder encoder = new HpackEncoder(headerTableSize);
 
         this.generators = new FrameGenerator[FrameType.values().length];
         this.generators[FrameType.DATA.getType()] = new DataGenerator(headerGenerator);
