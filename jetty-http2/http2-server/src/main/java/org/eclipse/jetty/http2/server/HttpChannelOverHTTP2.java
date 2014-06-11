@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -77,10 +78,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel<ByteBufferCallback>
 
         parsedHostHeader(requestMetaData.getHost(), requestMetaData.getPort());
 
-        List<HttpField> fields = requestMetaData.getFields();
+        HttpFields fields = requestMetaData.getFields();
         for (int i = 0; i < fields.size(); ++i)
         {
-            HttpField field = fields.get(i);
+            HttpField field = fields.getField(i);
             parsedHeader(field);
         }
 

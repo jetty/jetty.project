@@ -67,7 +67,7 @@ public class MetaData implements Iterable<HttpField>
             return false;
         MetaData m = (MetaData)o;
 
-        List<HttpField> lm=m.getFields();
+        HttpFields lm=m.getFields();
         int s=0;
         for (HttpField field: this)
         {
