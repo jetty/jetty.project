@@ -22,6 +22,7 @@ package org.eclipse.jetty.http2.hpack;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -83,7 +84,7 @@ public class MetaDataBuilder
 
                 case ":authority":
                     _authority=field.getValue();
-                    AuthorityHttpField afield=(field instanceof AuthorityHttpField)?((AuthorityHttpField)field):new AuthorityHttpField(field.getValue());
+                    HostPortHttpField afield=(field instanceof HostPortHttpField)?((HostPortHttpField)field):new AuthorityHttpField(field.getValue());
                     _host=afield.getHost();
                     _port=afield.getPort();
                     break;

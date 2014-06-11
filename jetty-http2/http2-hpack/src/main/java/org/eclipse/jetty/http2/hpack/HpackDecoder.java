@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -41,15 +42,22 @@ public class HpackDecoder
     
     private final HpackContext _context;
     private final MetaDataBuilder _builder = new MetaDataBuilder();
+    private int _localMaxHeaderTableSize;
 
     public HpackDecoder()
     {
         this(4096);
     }
     
-    public HpackDecoder(int maxHeaderTableSize)
+    public HpackDecoder(int localMaxHeaderTableSize)
     {
-        _context=new HpackContext(maxHeaderTableSize);
+        _context=new HpackContext(localMaxHeaderTableSize);
+        _localMaxHeaderTableSize=localMaxHeaderTableSize;
+    }
+    
+    public void setLocalMaxHeaderTableSize(int localMaxHeaderTableSize)
+    {
+        _localMaxHeaderTableSize=localMaxHeaderTableSize; 
     }
     
     public MetaData decode(ByteBuffer buffer)
@@ -188,6 +196,8 @@ public class HpackDecoder
                     int size = NBitInteger.decode(buffer,4);
                     if (LOG.isDebugEnabled())
                         LOG.debug("decode resize="+size);
+                    if (size>_localMaxHeaderTableSize)
+                        throw new IllegalArgumentException();
                     _context.resize(size);
                 }
                 else if (f==3)

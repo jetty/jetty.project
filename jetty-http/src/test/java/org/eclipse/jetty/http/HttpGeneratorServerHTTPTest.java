@@ -247,9 +247,8 @@ public class HttpGeneratorServerHTTPTest
         }
 
         @Override
-        public boolean parsedHeader(HttpField field)
+        public void parsedHeader(HttpField field)
         {
-            return false;
         }
 
         @Override

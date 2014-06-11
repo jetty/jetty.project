@@ -132,10 +132,9 @@ public class HttpTester
             }
         }
         @Override
-        public boolean parsedHeader(HttpField field)
+        public void parsedHeader(HttpField field)
         {
             put(field.getName(),field.getValue());
-            return false;
         }
 
         @Override
@@ -302,9 +301,8 @@ public class HttpTester
         }
 
         @Override
-        public boolean parsedHostHeader(String host,int port)
+        public void parsedHostHeader(String host,int port)
         {
-            return false;
         }
     }
 

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http;
 
+import org.eclipse.jetty.util.QuotedStringTokenizer;
+
 
 /* ------------------------------------------------------------ */
 /** A HTTP Field
@@ -63,6 +65,17 @@ public class HttpField
     public String getValue()
     {
         return _value;
+    }
+    
+    public String[] getValues()
+    {
+        QuotedStringTokenizer tok = new QuotedStringTokenizer(_value, ",", false, false);
+        tok.setSingle(false);
+        String[] v = new String[tok.countTokens()];
+        int t=0;
+        while(tok.hasMoreTokens())
+            v[t++]=tok.nextToken();
+        return v;
     }
     
     @Override

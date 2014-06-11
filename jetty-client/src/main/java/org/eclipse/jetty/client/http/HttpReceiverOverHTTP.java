@@ -197,14 +197,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     @Override
-    public boolean parsedHeader(HttpField field)
+    public void parsedHeader(HttpField field)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return false;
-
-        responseHeader(exchange, field);
-        return false;
+        if (exchange != null)
+            responseHeader(exchange, field);
     }
 
     @Override

@@ -187,11 +187,11 @@ public class HpackContext
         _headerTable=new HeaderTable(guesstimateEntries,guesstimateEntries+10);
     }
     
-    public void resize(int maxHeaderTableSize)
+    public void resize(int newMaxHeaderTableSize)
     {
-        LOG.debug("HdrTbl resized {}",maxHeaderTableSize);
-        _maxHeaderTableSizeInBytes=maxHeaderTableSize;
-        int guesstimateEntries = 10+maxHeaderTableSize/(32+10+10);
+        LOG.debug("HdrTbl resized {}",newMaxHeaderTableSize);
+        _maxHeaderTableSizeInBytes=newMaxHeaderTableSize;
+        int guesstimateEntries = 10+newMaxHeaderTableSize/(32+10+10);
         evict();
         _headerTable.resizeUnsafe(guesstimateEntries);
     }
@@ -245,11 +245,30 @@ public class HpackContext
         return entry;
     }
 
-    public Object size()
+    /**
+     * @return Current Header table size in entries
+     */
+    public int size()
     {
         return _headerTable.size();
     }
     
+    /**
+     * @return Current Header table size in Octets
+     */
+    public int getHeaderTableSize()
+    {
+        return _headerTableSizeInBytes;
+    }
+
+    /**
+     * @return Max Header table size in Octets
+     */
+    public int getMaxHeaderTableSize()
+    {
+        return _maxHeaderTableSizeInBytes;
+    }
+
     public int index(Entry entry)
     {
         if (entry._index<0)
@@ -574,5 +593,6 @@ public class HpackContext
             return _huffmanValue;
         }
     }
+
 
 }

@@ -499,7 +499,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     }
 
     @Override
-    public boolean parsedHeader(HttpField field)
+    public void parsedHeader(HttpField field)
     {
         HttpHeader header=field.getHeader();
         String value=field.getValue();
@@ -521,18 +521,16 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
 
         if (field.getName()!=null)
             _request.getHttpFields().add(field);
-        return false;
     }
 
     @Override
-    public boolean parsedHostHeader(String host, int port)
+    public void parsedHostHeader(String host, int port)
     {
         if (_request.getUri().getHost()==null)
         {
             _request.setServerName(host);
             _request.setServerPort(port);
         }
-        return false;
     }
 
     @Override

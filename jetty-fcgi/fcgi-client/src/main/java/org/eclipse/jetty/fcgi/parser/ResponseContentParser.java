@@ -153,7 +153,7 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
-        public boolean parsedHeader(HttpField httpField)
+        public void parsedHeader(HttpField httpField)
         {
             try
             {
@@ -188,7 +188,6 @@ public class ResponseContentParser extends StreamContentParser
             {
                 logger.debug("Exception while invoking listener " + listener, x);
             }
-            return false;
         }
 
         private void notifyBegin(int code, String reason)

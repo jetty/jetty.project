@@ -95,7 +95,7 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
     
 
     @Override
-    public boolean parsedHeader(HttpField field)
+    public void parsedHeader(HttpField field)
     {
         HttpHeader header=field.getHeader();
         String value=field.getValue();
@@ -113,7 +113,7 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
                     break;
 
                 default:
-                    String[] values = value.split(",");
+                    String[] values = field.getValues();
                     for (int i = 0; values != null && i < values.length; i++)
                     {
                         expect = HttpHeaderValue.CACHE.get(values[i].trim());
@@ -136,7 +136,7 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
                     }
             }
         }
-        return super.parsedHeader(field);
+        super.parsedHeader(field);
     }
     
     /**

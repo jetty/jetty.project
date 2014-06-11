@@ -17,22 +17,51 @@
 //
 
 
-package org.eclipse.jetty.http2.hpack;
+package org.eclipse.jetty.http;
 
-import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http2.hpack.HpackContext;
-import org.eclipse.jetty.util.StringUtil;
-
-
-/* ------------------------------------------------------------ */
-/**
- */
-public class AuthorityHttpField extends HostPortHttpField
+/* ------------------------------------------------------------------------------- */
+class BadMessage extends Error
 {
-    public final static String AUTHORITY = HpackContext.STATIC_TABLE[1][0];
-    
-    public AuthorityHttpField(String authority)
+    final int _code;
+    final String _reason;
+
+    BadMessage()
     {
-        super(null,AUTHORITY,authority);
+        this(400,null);
     }
+    
+    BadMessage(int code)
+    {
+        this(code,null);
+    }
+    
+    BadMessage(String reason)
+    {
+        this(400,reason);
+    }
+    
+    BadMessage(int code,String reason)
+    {
+        _code=code;
+        _reason=reason;
+    }
+    
+    BadMessage(int code,String reason,Throwable cause)
+    {
+        super(cause);
+        _code=code;
+        _reason=reason;
+    }
+    
+    public int getCode()
+    {
+        return _code;
+    }
+    
+    public String getReason()
+    {
+        return _reason;
+    }
+    
+    
 }

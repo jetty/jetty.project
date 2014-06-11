@@ -75,21 +75,39 @@ public class HpackEncoder
     }
     
     private final HpackContext _context;
+    private int _remoteMaxHeaderTableSize;
+    private int _localMaxHeaderTableSize;
     
-
     public HpackEncoder()
     {
-        this(4096);
+        this(4096,4096);
     }
     
-    public HpackEncoder(int maxHeaderTableSize)
+    public HpackEncoder(int localMaxHeaderTableSize)
     {
-        _context=new HpackContext(maxHeaderTableSize);
+        this(localMaxHeaderTableSize,4096);
+    }
+    
+    public HpackEncoder(int localMaxHeaderTableSize,int remoteMaxHeaderTableSize)
+    {
+        _context=new HpackContext(remoteMaxHeaderTableSize);
+        _remoteMaxHeaderTableSize=remoteMaxHeaderTableSize;
+        _localMaxHeaderTableSize=localMaxHeaderTableSize;
     }
 
     public HpackContext getContext()
     {
         return _context;
+    }
+    
+    public void setRemoteMaxHeaderTableSize(int remoteMaxHeaderTableSize)
+    {
+        _remoteMaxHeaderTableSize=remoteMaxHeaderTableSize;
+    }
+    
+    public void setLocalMaxHeaderTableSize(int localMaxHeaderTableSize)
+    {
+        _localMaxHeaderTableSize=localMaxHeaderTableSize;
     }
     
     public void encode(MetaData metadata,Lease lease)
@@ -102,21 +120,15 @@ public class HpackEncoder
         BufferUtil.flipToFlush(buffer,0);
     }
 
-    public void encodeMaxHeaderTableSize(ByteBuffer buffer, int maxHeaderTableSize)
-    {
-        _context.resize(maxHeaderTableSize);
-    }
-
-    public void encodeClearReferenceSet(ByteBuffer buffer)
-    {
-        // TODO
-        _context.clearReferenceSet();
-    }
     
     public void encode(ByteBuffer buffer, MetaData metadata)
     {
-        // Add Request/response meta fields
+        // Check the header table sizes!
+        int maxHeaderTableSize=Math.min(_remoteMaxHeaderTableSize,_localMaxHeaderTableSize);
+        if (maxHeaderTableSize!=_context.getMaxHeaderTableSize())
+            encodeMaxHeaderTableSize(buffer,maxHeaderTableSize);
         
+        // Add Request/response meta fields
         if (metadata.isRequest())
         {
             MetaData.Request request = (MetaData.Request)metadata;
@@ -145,6 +157,21 @@ public class HpackEncoder
         }
 
         _context.removedUnusedReferences(buffer);
+    }
+
+    public void encodeMaxHeaderTableSize(ByteBuffer buffer, int maxHeaderTableSize)
+    {
+        if (maxHeaderTableSize>_remoteMaxHeaderTableSize)
+            throw new IllegalArgumentException();
+        buffer.put((byte)0x20);
+        NBitInteger.encode(buffer,4,maxHeaderTableSize);
+        _context.resize(maxHeaderTableSize);
+    }
+
+    public void encodeClearReferenceSet(ByteBuffer buffer)
+    {
+        buffer.put((byte)0x30);
+        _context.clearReferenceSet();
     }
 
     private void encode(ByteBuffer buffer, HttpField field)

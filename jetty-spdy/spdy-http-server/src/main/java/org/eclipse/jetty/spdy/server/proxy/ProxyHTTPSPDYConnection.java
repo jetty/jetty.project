@@ -94,19 +94,17 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
-    public boolean parsedHeader(HttpField field)
+    public void parsedHeader(HttpField field)
     {
         if (field.getHeader() == HttpHeader.HOST)
             headers.put(HTTPSPDYHeader.HOST.name(version), field.getValue());
         else
             headers.put(field.getName(), field.getValue());
-        return false;
     }
 
     @Override
-    public boolean parsedHostHeader(String host, int port)
+    public void parsedHostHeader(String host, int port)
     {
-        return false;
     }
 
     @Override

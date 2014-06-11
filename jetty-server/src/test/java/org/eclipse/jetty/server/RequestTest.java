@@ -129,41 +129,6 @@ public class RequestTest
     }
 
     @Test
-    public void testEmptyHeaders() throws Exception
-    {
-        _handler._checker = new RequestTester()
-        {
-            @Override
-            public boolean check(HttpServletRequest request,HttpServletResponse response)
-            {
-                assertNotNull(request.getLocale());
-                assertTrue(request.getLocales().hasMoreElements());
-                assertNull(request.getContentType());
-                assertNull(request.getCharacterEncoding());
-                assertEquals(0,request.getQueryString().length());
-                assertEquals(-1,request.getContentLength());
-                assertNull(request.getCookies());
-                assertNull(request.getHeader("Name"));
-                assertFalse(request.getHeaders("Name").hasMoreElements());
-                assertEquals(-1,request.getDateHeader("Name"));
-                return true;
-            }
-        };
-
-        String request="GET /? HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Connection: close\n"+
-        "Content-Type: \n"+
-        "Accept-Language: \n"+
-        "Cookie: \n"+
-        "Name: \n"+
-        "\n";
-
-        String responses=_connector.getResponses(request);
-        assertTrue(responses.startsWith("HTTP/1.1 200"));
-    }
-
-    @Test
     public void testMultiPartNoConfig() throws Exception
     {
         _handler._checker = new RequestTester()
@@ -1056,78 +1021,6 @@ public class RequestTest
         assertEquals("__utmz", cookies.get(0).getName());
         assertEquals("14316.133020.1.1.utr=gna.de|ucn=(real)|utd=reral|utct=/games/hen-one,gnt-50-ba-keys:key,2072262.html", cookies.get(0).getValue());
 
-    }
-
-    @Test
-    public void testCookieLeak() throws Exception
-    {
-        final String[] cookie=new String[10];
-
-        _handler._checker = new RequestTester()
-        {
-            @Override
-            public boolean check(HttpServletRequest request,HttpServletResponse response)
-            {
-                for (int i=0;i<cookie.length; i++)
-                    cookie[i]=null;
-
-                Cookie[] cookies = request.getCookies();
-                for (int i=0;cookies!=null && i<cookies.length; i++)
-                {
-                    cookie[i]=cookies[i].getValue();
-                }
-                return true;
-            }
-        };
-
-        String request="POST / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Cookie: other=cookie\r\n"+
-        "\r\n"
-        +
-        "POST / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Cookie: name=value\r\n"+
-        "Connection: close\r\n"+
-        "\r\n";
-
-        _connector.getResponses(request);
-
-        assertEquals("value",cookie[0]);
-        assertEquals(null,cookie[1]);
-
-        request="POST / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Cookie: name=value\r\n"+
-        "\r\n"
-        +
-        "POST / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Cookie:\r\n"+
-        "Connection: close\r\n"+
-        "\r\n";
-
-        _connector.getResponses(request);
-        assertEquals(null,cookie[0]);
-        assertEquals(null,cookie[1]);
-
-        request="POST / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Cookie: name=value\r\n"+
-        "Cookie: other=cookie\r\n"+
-        "\r\n"
-        +
-        "POST / HTTP/1.1\r\n"+
-        "Host: whatever\r\n"+
-        "Cookie: name=value\r\n"+
-        "Cookie:\r\n"+
-        "Connection: close\r\n"+
-        "\r\n";
-
-        _connector.getResponses(request);
-
-        assertEquals("value",cookie[0]);
-        assertEquals(null,cookie[1]);
     }
 
 

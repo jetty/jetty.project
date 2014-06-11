@@ -181,6 +181,73 @@ public class HttpParserTest
         assertEquals("close", _val[1]);
         assertEquals(1, _headers);
     }
+    
+    @Test
+    public void test7230NoContinuations() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012" +
+                "Host: localhost\015\012" +
+                "Name: value\015\012" +
+                " extra\015\012" +
+                "\015\012");
+        
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        Assert.assertThat(_bad,Matchers.notNullValue());
+        Assert.assertThat(_bad,Matchers.containsString("Bad Continuation"));
+    }
+
+    
+    @Test
+    public void test7230NoWhiteSpaceInName() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012" +
+                "Host: localhost\015\012" +
+                " Name: value\015\012" +
+                "\015\012");
+        
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        Assert.assertThat(_bad,Matchers.notNullValue());
+        Assert.assertThat(_bad,Matchers.containsString("Bad"));
+        
+        init();
+        buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012" +
+                "Host: localhost\015\012" +
+                "N ame: value\015\012" +
+                "\015\012");
+        
+        handler  = new Handler();
+        parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        Assert.assertThat(_bad,Matchers.containsString("Illegal character"));
+        
+
+        init();
+        buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012" +
+                "Host: localhost\015\012" +
+                "Name : value\015\012" +
+                "\015\012");
+        
+        handler  = new Handler();
+        parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        Assert.assertThat(_bad,Matchers.containsString("Illegal character"));
+        
+    }
+    
+    
+    
 
     @Test
     public void testHeaderParseDirect() throws Exception
@@ -189,13 +256,11 @@ public class HttpParserTest
                 "GET / HTTP/1.0\015\012" +
                         "Host: localhost\015\012" +
                         "Header1: value1\015\012" +
-                        "Header 2  :   value 2a  \015\012" +
-                        "    value 2b  \015\012" +
-                        "Header3: \015\012" +
-                        "Header4 \015\012" +
-                        "  value4\015\012" +
-                        "Server5 : notServer\015\012" +
-                        "Host Header: notHost\015\012" +
+                        "Header2:   value 2a  \015\012" +
+                        "Header3: 3\015\012" +
+                        "Header4:value4\015\012" +
+                        "Server5: notServer\015\012" +
+                        "HostHeader: notHost\015\012" +
                         "Connection: close\015\012" +
                         "Accept-Encoding: gzip, deflated\015\012" +
                         "Accept: unknown\015\012" +
@@ -216,15 +281,15 @@ public class HttpParserTest
         assertEquals("localhost", _val[0]);
         assertEquals("Header1", _hdr[1]);
         assertEquals("value1", _val[1]);
-        assertEquals("Header 2", _hdr[2]);
-        assertEquals("value 2a value 2b", _val[2]);
+        assertEquals("Header2", _hdr[2]);
+        assertEquals("value 2a", _val[2]);
         assertEquals("Header3", _hdr[3]);
-        assertEquals(null, _val[3]);
+        assertEquals("3", _val[3]);
         assertEquals("Header4", _hdr[4]);
         assertEquals("value4", _val[4]);
         assertEquals("Server5", _hdr[5]);
         assertEquals("notServer", _val[5]);
-        assertEquals("Host Header", _hdr[6]);
+        assertEquals("HostHeader", _hdr[6]);
         assertEquals("notHost", _val[6]);
         assertEquals("Connection", _hdr[7]);
         assertEquals("close", _val[7]);
@@ -242,13 +307,11 @@ public class HttpParserTest
                 "GET / HTTP/1.0\015\012" +
                         "Host: localhost\015\012" +
                         "Header1: value1\015\012" +
-                        "Header 2  :   value 2a  \015\012" +
-                        "    value 2b  \015\012" +
-                        "Header3: \015\012" +
-                        "Header4 \015\012" +
-                        "  value4\015\012" +
-                        "Server5 : notServer\015\012" +
-                        "Host Header: notHost\015\012" +
+                        "Header2:   value 2a  \015\012" +
+                        "Header3: 3\015\012" +
+                        "Header4:value4\015\012" +
+                        "Server5: notServer\015\012" +
+                        "HostHeader: notHost\015\012" +
                         "Connection: close\015\012" +
                         "Accept-Encoding: gzip, deflated\015\012" +
                         "Accept: unknown\015\012" +
@@ -264,15 +327,15 @@ public class HttpParserTest
         assertEquals("localhost", _val[0]);
         assertEquals("Header1", _hdr[1]);
         assertEquals("value1", _val[1]);
-        assertEquals("Header 2", _hdr[2]);
-        assertEquals("value 2a value 2b", _val[2]);
+        assertEquals("Header2", _hdr[2]);
+        assertEquals("value 2a", _val[2]);
         assertEquals("Header3", _hdr[3]);
-        assertEquals(null, _val[3]);
+        assertEquals("3", _val[3]);
         assertEquals("Header4", _hdr[4]);
         assertEquals("value4", _val[4]);
         assertEquals("Server5", _hdr[5]);
         assertEquals("notServer", _val[5]);
-        assertEquals("Host Header", _hdr[6]);
+        assertEquals("HostHeader", _hdr[6]);
         assertEquals("notHost", _val[6]);
         assertEquals("Connection", _hdr[7]);
         assertEquals("close", _val[7]);
@@ -292,13 +355,11 @@ public class HttpParserTest
                 "GET / HTTP/1.0\n" +
                         "Host: localhost\n" +
                         "Header1: value1\n" +
-                        "Header 2  :   value 2a  \n" +
-                        "    value 2b  \n" +
-                        "Header3: \n" +
-                        "Header4 \n" +
-                        "  value4\n" +
-                        "Server5 : notServer\n" +
-                        "Host Header: notHost\n" +
+                        "Header2:   value 2a value 2b  \n" +
+                        "Header3: 3\n" +
+                        "Header4:value4\n" +
+                        "Server5: notServer\n" +
+                        "HostHeader: notHost\n" +
                         "Connection: close\n" +
                         "Accept-Encoding: gzip, deflated\n" +
                         "Accept: unknown\n" +
@@ -314,15 +375,15 @@ public class HttpParserTest
         assertEquals("localhost", _val[0]);
         assertEquals("Header1", _hdr[1]);
         assertEquals("value1", _val[1]);
-        assertEquals("Header 2", _hdr[2]);
+        assertEquals("Header2", _hdr[2]);
         assertEquals("value 2a value 2b", _val[2]);
         assertEquals("Header3", _hdr[3]);
-        assertEquals(null, _val[3]);
+        assertEquals("3", _val[3]);
         assertEquals("Header4", _hdr[4]);
         assertEquals("value4", _val[4]);
         assertEquals("Server5", _hdr[5]);
         assertEquals("notServer", _val[5]);
-        assertEquals("Host Header", _hdr[6]);
+        assertEquals("HostHeader", _hdr[6]);
         assertEquals("notHost", _val[6]);
         assertEquals("Connection", _hdr[7]);
         assertEquals("close", _val[7]);
@@ -496,11 +557,9 @@ public class HttpParserTest
                 "XXXXSPLIT / HTTP/1.0\015\012" +
                     "Host: localhost\015\012" +
                     "Header1: value1\015\012" +
-                    "Header2  :   value 2a  \015\012" +
-                    "                    value 2b  \015\012" +
-                    "Header3: \015\012" +
-                    "Header4 \015\012" +
-                    "  value4\015\012" +
+                    "Header2:   value 2a  \015\012" +
+                    "Header3: 3\015\012" +
+                    "Header4:value4\015\012" +
                     "Server5: notServer\015\012" +
                     "\015\012ZZZZ");
         buffer.position(2);
@@ -534,9 +593,9 @@ public class HttpParserTest
             assertEquals("Header1", _hdr[1]);
             assertEquals("value1", _val[1]);
             assertEquals("Header2", _hdr[2]);
-            assertEquals("value 2a value 2b", _val[2]);
+            assertEquals("value 2a", _val[2]);
             assertEquals("Header3", _hdr[3]);
-            assertEquals(null, _val[3]);
+            assertEquals("3", _val[3]);
             assertEquals("Header4", _hdr[4]);
             assertEquals("value4", _val[4]);
             assertEquals("Server5", _hdr[5]);
@@ -1305,7 +1364,7 @@ public class HttpParserTest
         HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parser.parseNext(buffer);
-        assertEquals("Bad IPv6 Host header",_bad);
+        Assert.assertThat(_bad,Matchers.containsString("Bad"));
     }
     
     @Test
@@ -1336,7 +1395,7 @@ public class HttpParserTest
         HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parser.parseNext(buffer);
-        assertEquals("Bad Host header",_bad);
+        Assert.assertThat(_bad,Matchers.containsString("Bad Host"));
     }
 
     @Test
@@ -1517,21 +1576,19 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean parsedHeader(HttpField field)
+        public void parsedHeader(HttpField field)
         {
             _fields.add(field);
             //System.err.println("header "+name+": "+value);
             _hdr[++_headers]= field.getName();
             _val[_headers]= field.getValue();
-            return false;
         }
 
         @Override
-        public boolean parsedHostHeader(String host,int port)
+        public void parsedHostHeader(String host,int port)
         {
             _host=host;
             _port=port;
-            return false;
         }
 
         @Override
