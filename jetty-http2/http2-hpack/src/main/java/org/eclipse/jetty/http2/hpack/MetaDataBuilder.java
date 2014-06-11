@@ -19,12 +19,10 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import java.util.ArrayList;
-import java.util.List;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 
 /* -------------------------------------------------------- */
@@ -40,7 +38,7 @@ public class MetaDataBuilder
     private int _port;
     private String _path;        
 
-    List<HttpField> _fields = new ArrayList<>();
+    HttpFields _fields = new HttpFields(10);
     
     public void emit(HttpField field)
     {
@@ -104,11 +102,13 @@ public class MetaDataBuilder
     {
         try
         {
+            HttpFields fields = _fields;
+            _fields = new HttpFields(Math.max(10,fields.size()+5));
             if (_method!=null)
-                return new MetaData.Request(_scheme,_method,_authority,_host,_port,_path,new ArrayList<>(_fields));
+                return new MetaData.Request(_scheme,_method,_authority,_host,_port,_path,fields);
             if (_status!=0)
-                return new MetaData.Response(_status,new ArrayList<>(_fields));
-            return new MetaData(new ArrayList<>(_fields));
+                return new MetaData.Response(_status,fields);
+            return new MetaData(fields);
         }
         finally
         {
@@ -119,7 +119,6 @@ public class MetaDataBuilder
             _path=null;
             _host=null;
             _port=0;
-            _fields.clear();
         }
     }
 }
