@@ -16,34 +16,23 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.frames;
+package org.eclipse.jetty.http2;
 
-import java.util.Map;
-
-public class SettingsFrame extends Frame
+public class HTTP2FlowControl implements FlowControl
 {
-    public static final int HEADER_TABLE_SIZE = 1;
-    public static final int ENABLE_PUSH = 2;
-    public static final int MAX_CONCURRENT_STREAMS = 3;
-    public static final int INITIAL_WINDOW_SIZE = 4;
-
-    private final Map<Integer, Integer> settings;
-    private final boolean reply;
-
-    public SettingsFrame(Map<Integer, Integer> settings, boolean reply)
+    @Override
+    public void onNewStream(IStream stream)
     {
-        super(FrameType.SETTINGS);
-        this.settings = settings;
-        this.reply = reply;
     }
 
-    public Map<Integer, Integer> getSettings()
+    @Override
+    public int getWindowSize(ISession session)
     {
-        return settings;
+        return 0;
     }
 
-    public boolean isReply()
+    @Override
+    public void setWindowSize(ISession session, int windowSize)
     {
-        return reply;
     }
 }

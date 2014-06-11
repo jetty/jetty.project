@@ -27,11 +27,18 @@ import org.eclipse.jetty.util.Callback;
 public class Generator
 {
     private final ByteBufferPool byteBufferPool;
+    private final int headerTableSize;
     private final FrameGenerator[] generators;
+
+    public Generator(ByteBufferPool byteBufferPool)
+    {
+        this(byteBufferPool, 4096);
+    }
 
     public Generator(ByteBufferPool byteBufferPool, int headerTableSize)
     {
         this.byteBufferPool = byteBufferPool;
+        this.headerTableSize = headerTableSize;
 
         HeaderGenerator headerGenerator = new HeaderGenerator();
         HpackEncoder encoder = new HpackEncoder(headerTableSize);
@@ -50,6 +57,11 @@ public class Generator
         this.generators[FrameType.ALTSVC.getType()] = null; // TODO
         this.generators[FrameType.BLOCKED.getType()] = null; // TODO
 
+    }
+
+    public int getHeaderTableSize()
+    {
+        return headerTableSize;
     }
 
     public LeaseCallback generate(Frame frame, Callback callback)

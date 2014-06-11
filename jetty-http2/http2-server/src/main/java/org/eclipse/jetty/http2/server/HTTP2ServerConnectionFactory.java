@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.server;
 
 import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -44,6 +45,7 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
 
     private final HttpConfiguration httpConfiguration;
     private int headerTableSize = 4096;
+    private int initialWindowSize = 65535;
 
     public HTTP2ServerConnectionFactory(HttpConfiguration httpConfiguration)
     {
@@ -61,13 +63,24 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
         this.headerTableSize = headerTableSize;
     }
 
+    public int getInitialWindowSize()
+    {
+        return initialWindowSize;
+    }
+
+    public void setInitialWindowSize(int initialWindowSize)
+    {
+        this.initialWindowSize = initialWindowSize;
+    }
+
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         Session.Listener listener = new HTTPServerSessionListener(connector, httpConfiguration, endPoint);
 
         Generator generator = new Generator(connector.getByteBufferPool(), getHeaderTableSize());
-        HTTP2ServerSession session = new HTTP2ServerSession(endPoint, generator, listener);
+        HTTP2ServerSession session = new HTTP2ServerSession(endPoint, generator, listener, new HTTP2FlowControl(),
+                getInitialWindowSize());
 
         Parser parser = new ServerParser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2Connection(connector.getByteBufferPool(), connector.getExecutor(),
@@ -102,6 +115,12 @@ public class HTTP2ServerConnectionFactory extends AbstractConnectionFactory
             channel.requestHeaders(frame);
 
             return frame.isEndStream() ? null : this;
+        }
+
+        @Override
+        public void onHeaders(Stream stream, HeadersFrame frame)
+        {
+            // Servers do not receive responses.
         }
 
         @Override

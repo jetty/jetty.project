@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.api;
 
+import java.util.Collection;
+
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
@@ -28,7 +30,7 @@ import org.eclipse.jetty.util.Promise;
 
 public interface Session
 {
-    public void newStream(HeadersFrame frame, Stream.Listener listener, Promise<Stream> promise);
+    public void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener);
 
     public void settings(SettingsFrame frame, Callback callback);
 
@@ -36,7 +38,11 @@ public interface Session
 
     public void reset(ResetFrame frame, Callback callback);
 
-    public void close(GoAwayFrame frame, Callback callback);
+    public void close(int error, String payload, Callback callback);
+
+    public Collection<Stream> getStreams();
+
+    public Stream getStream(int streamId);
 
     // TODO: getStreams(), remote and local address, etc. see SPDY's Session
 

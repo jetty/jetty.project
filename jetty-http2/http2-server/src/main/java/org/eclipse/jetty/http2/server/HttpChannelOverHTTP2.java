@@ -19,10 +19,10 @@
 package org.eclipse.jetty.http2.server;
 
 import java.nio.ByteBuffer;
-import java.util.List;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -78,12 +78,20 @@ public class HttpChannelOverHTTP2 extends HttpChannel<ByteBufferCallback>
 
         parsedHostHeader(requestMetaData.getHost(), requestMetaData.getPort());
 
+        // The specification says user agents MUST support gzip encoding.
+        // Based on that, some browser does not send the header, but it's
+        // important that applications can find it (e.g. GzipFilter).
+        boolean hasAcceptEncodingGzip = false;
         HttpFields fields = requestMetaData.getFields();
         for (int i = 0; i < fields.size(); ++i)
         {
             HttpField field = fields.getField(i);
+            if (HttpHeader.ACCEPT_ENCODING.is(field.getName()))
+                hasAcceptEncodingGzip = field.getValue().contains("gzip");
             parsedHeader(field);
         }
+        if (!hasAcceptEncodingGzip)
+            parsedHeader(new HttpField(HttpHeader.ACCEPT_ENCODING, "gzip"));
 
         headerComplete();
 

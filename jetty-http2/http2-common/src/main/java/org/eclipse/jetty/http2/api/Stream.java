@@ -38,12 +38,17 @@ public interface Stream
 
     public Object removeAttribute(String key);
 
+    public boolean isClosed();
+
     // TODO: see SPDY's Stream
 
     public interface Listener
     {
+        public void onHeaders(Stream stream, HeadersFrame frame);
+
         public void onData(Stream stream, DataFrame frame, Callback callback);
 
+        // TODO: is this method needed ?
         public void onFailure(Stream stream, Throwable x);
 
         // TODO: See SPDY's StreamFrameListener
@@ -51,15 +56,18 @@ public interface Stream
         public static class Adapter implements Listener
         {
             @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+            }
+
+            @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
-
             }
 
             @Override
             public void onFailure(Stream stream, Throwable x)
             {
-
             }
         }
     }

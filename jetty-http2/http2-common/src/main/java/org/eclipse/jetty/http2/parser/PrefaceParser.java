@@ -55,6 +55,7 @@ public class PrefaceParser
             if (cursor == PREFACE_BYTES.length)
             {
                 cursor = 0;
+                LOG.debug("Parsed preface bytes");
                 return true;
             }
         }

@@ -16,56 +16,62 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.server;
-
-import java.util.HashMap;
+package org.eclipse.jetty.http2.client;
 
 import org.eclipse.jetty.http2.FlowControl;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
-public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Listener
+public class HTTP2ClientSession extends HTTP2Session
 {
-    public HTTP2ServerSession(EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int initialWindowSize)
-    {
-        super(endPoint, generator, listener, flowControl, initialWindowSize, 2);
-    }
+    private static final Logger LOG = Log.getLogger(HTTP2ClientSession.class);
 
-    @Override
-    public boolean onPreface()
+    public HTTP2ClientSession(EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int initialWindowSize)
     {
-        // SPEC: send a SETTINGS frame upon receiving the preface.
-        HashMap<Integer, Integer> settings = new HashMap<>();
-        settings.put(SettingsFrame.HEADER_TABLE_SIZE, getGenerator().getHeaderTableSize());
-        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialWindowSize());
-        int maxConcurrentStreams = getMaxStreamCount();
-        if (maxConcurrentStreams >= 0)
-            settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
-        SettingsFrame frame = new SettingsFrame(settings, false);
-        settings(frame, disconnectCallback);
-        return false;
+        super(endPoint, generator, listener, flowControl, initialWindowSize, 1);
     }
 
     @Override
     public boolean onHeaders(HeadersFrame frame)
     {
-        IStream stream = createRemoteStream(frame);
-        if (stream != null)
+        int streamId = frame.getStreamId();
+        IStream stream = getStream(streamId);
+        if (stream == null)
+        {
+            ResetFrame reset = new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR);
+            reset(reset, disconnectCallback);
+        }
+        else
         {
             stream.updateClose(frame.isEndStream(), false);
             stream.process(frame);
-            Stream.Listener listener = notifyNewStream(stream, frame);
-            stream.setListener(listener);
-            // The listener may have sent a frame that closed the stream.
+            notifyHeaders(stream, frame);
             if (stream.isClosed())
                 removeStream(stream, false);
         }
         return false;
+    }
+
+    private void notifyHeaders(IStream stream, HeadersFrame frame)
+    {
+        Stream.Listener listener = stream.getListener();
+        if (listener == null)
+            return;
+        try
+        {
+            listener.onHeaders(stream, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
     }
 }

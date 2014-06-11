@@ -31,7 +31,6 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -74,11 +73,7 @@ public class Parser
 
     public boolean parse(ByteBuffer buffer)
     {
-        if (LOG.isDebugEnabled())
-        {
-            int l=Math.min(buffer.remaining(),32);
-            LOG.debug("Parsing  "+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l)+(l<buffer.remaining()?"...":""));
-        }
+        LOG.debug("Parsing {}", buffer);
 
         while (true)
         {
@@ -132,7 +127,7 @@ public class Parser
                             case COMPLETE:
                             {
                                 if (LOG.isDebugEnabled())
-                                    LOG.debug("Parsed {} frame, synchronous processing: {}", FrameType.from(type),bodyParser);
+                                    LOG.debug("Parsed {} frame, synchronous processing", FrameType.from(type));
                                 reset();
                                 break;
                             }

@@ -24,5 +24,8 @@ import org.eclipse.jetty.util.Callback;
 
 public interface ISession extends Session
 {
+    @Override
+    IStream getStream(int streamId);
+
     public void frame(Frame frame, Callback callback);
 }
