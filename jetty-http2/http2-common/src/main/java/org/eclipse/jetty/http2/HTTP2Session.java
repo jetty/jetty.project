@@ -181,7 +181,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void onConnectionFailure(int error, String reason)
     {
-
+        // TODO
     }
 
     @Override
@@ -213,19 +213,19 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void settings(SettingsFrame frame, Callback callback)
     {
-
+        frame(frame, callback);
     }
 
     @Override
     public void ping(PingFrame frame, Callback callback)
     {
-
+        frame(frame, callback);
     }
 
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
-
+        frame(frame, callback);
     }
 
     @Override

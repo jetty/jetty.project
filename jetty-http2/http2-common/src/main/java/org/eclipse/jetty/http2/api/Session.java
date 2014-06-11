@@ -44,7 +44,7 @@ public interface Session
 
     public Stream getStream(int streamId);
 
-    // TODO: getStreams(), remote and local address, etc. see SPDY's Session
+    // TODO: remote and local address, etc. see SPDY's Session
 
     public interface Listener
     {
