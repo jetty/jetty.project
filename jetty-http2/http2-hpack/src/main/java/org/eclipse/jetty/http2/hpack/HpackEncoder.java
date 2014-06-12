@@ -287,10 +287,10 @@ public class HpackEncoder
 
             if (p>=0)
             {
-                encoding="Literal"+
-                        ((name_entry==null)?"IdxName":"HuffName")+
-                        (huffman?"HuffName":"LitName")+
-                        (reference?"Idx":(never_index?"NeverIdx":""));
+                encoding="Lit"+
+                        ((name_entry==null)?"HuffName":"IdxName")+
+                        (huffman?"HuffVal":"LitVal")+
+                        (reference?"Idxd":(never_index?"NeverIdx":""));
             }
             
             if (name_entry!=null)

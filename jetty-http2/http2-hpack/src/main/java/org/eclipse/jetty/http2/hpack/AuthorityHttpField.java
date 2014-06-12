@@ -35,4 +35,10 @@ public class AuthorityHttpField extends HostPortHttpField
     {
         super(null,AUTHORITY,authority);
     }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("%s(preparsed h=%s p=%d)",super.toString(),getHost(),getPort());
+    }
 }

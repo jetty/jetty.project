@@ -47,4 +47,10 @@ public class StaticValueHttpField extends HttpField
     {
         return _value;
     }
+    
+    @Override
+    public String toString()
+    {
+        return super.toString()+"(evaluated)";
+    }
 }

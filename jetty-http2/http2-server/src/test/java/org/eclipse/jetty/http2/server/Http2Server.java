@@ -27,6 +27,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackContext;
@@ -57,7 +58,7 @@ public class Http2Server
     {
         Server server = new Server();
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
+        ServletContextHandler context = new ServletContextHandler(server, "/",ServletContextHandler.SESSIONS);
         context.setResourceBase("/tmp");
         context.addServlet(new ServletHolder(servlet), "/test/*");
         context.addServlet(DefaultServlet.class, "/");
@@ -68,6 +69,8 @@ public class Http2Server
         HttpConfiguration http_config = new HttpConfiguration();
         http_config.setSecureScheme("https");
         http_config.setSecurePort(8443);
+        http_config.setSendXPoweredBy(true);
+        http_config.setSendServerVersion(true);
 
         // HTTP connector
         ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config));        
@@ -118,10 +121,12 @@ public class Http2Server
         @Override
         protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
+            HttpSession session = request.getSession(true);
             response.setHeader("custom","value");
             response.setContentType("text/plain");
             String content = "Hello from Jetty HTTP2\n";
             content+="uri="+request.getRequestURI()+"\n";
+            content+="session="+session.getId()+(session.isNew()?"(New)\n":"\n");
             content+="date="+new Date()+"\n";
             response.setContentLength(content.length());
             response.getOutputStream().print(content);
