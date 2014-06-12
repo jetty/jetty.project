@@ -90,14 +90,6 @@ public interface ByteBufferPool
             return buffers;
         }
 
-        public Lease merge(Lease that)
-        {
-            assert byteBufferPool == that.byteBufferPool;
-            buffers.addAll(that.buffers);
-            recycles.addAll(that.recycles);
-            return this;
-        }
-
         public long getTotalLength()
         {
             long length = 0;
@@ -114,6 +106,8 @@ public interface ByteBufferPool
                 if (recycles.get(i))
                     byteBufferPool.release(buffer);
             }
+            buffers.clear();
+            recycles.clear();
         }
     }
 }
