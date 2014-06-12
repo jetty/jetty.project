@@ -26,7 +26,6 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 
 public class WindowUpdateGenerator extends FrameGenerator
 {
@@ -36,7 +35,7 @@ public class WindowUpdateGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame, Callback callback)
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         WindowUpdateFrame windowUpdateFrame = (WindowUpdateFrame)frame;
         generateWindowUpdate(lease, windowUpdateFrame.getStreamId(), windowUpdateFrame.getWindowDelta());
@@ -44,15 +43,28 @@ public class WindowUpdateGenerator extends FrameGenerator
 
     public void generateWindowUpdate(ByteBufferPool.Lease lease, int streamId, int windowUpdate)
     {
-        if (streamId < 0)
-            throw new IllegalArgumentException("Invalid stream id: " + streamId);
         if (windowUpdate < 0)
             throw new IllegalArgumentException("Invalid window update: " + windowUpdate);
 
+        // A negative streamId means that we have to generate
+        // bytes for both the stream and session frames.
+        boolean both = false;
+        if (streamId < 0)
+        {
+            both = true;
+            streamId = -streamId;
+        }
+
+        if (both)
+        {
+            ByteBuffer header = generateHeader(lease, FrameType.WINDOW_UPDATE, 4, Flag.NONE, 0);
+            header.putInt(windowUpdate);
+            BufferUtil.flipToFlush(header, 0);
+            lease.append(header, true);
+        }
+
         ByteBuffer header = generateHeader(lease, FrameType.WINDOW_UPDATE, 4, Flag.NONE, streamId);
-
         header.putInt(windowUpdate);
-
         BufferUtil.flipToFlush(header, 0);
         lease.append(header, true);
     }

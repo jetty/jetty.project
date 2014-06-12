@@ -56,7 +56,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -105,7 +104,8 @@ public class HTTP2ServerTest
         MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, HttpMethod.GET.asString(),
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
-        Generator.LeaseCallback lease = generator.generate(request, Callback.Adapter.INSTANCE);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generate(lease, request);
 
         // No preface bytes
 
@@ -153,7 +153,8 @@ public class HTTP2ServerTest
         MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, HttpMethod.GET.asString(),
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
-        Generator.LeaseCallback lease = generator.generate(request, Callback.Adapter.INSTANCE);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generate(lease, request);
         lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
 
         try (Socket client = new Socket(host, port))
@@ -215,7 +216,8 @@ public class HTTP2ServerTest
         MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, HttpMethod.GET.asString(),
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
-        Generator.LeaseCallback lease = generator.generate(request, Callback.Adapter.INSTANCE);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generate(lease, request);
         lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
 
         try (Socket client = new Socket(host, port))

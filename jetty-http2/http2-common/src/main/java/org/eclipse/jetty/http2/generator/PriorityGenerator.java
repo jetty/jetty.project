@@ -26,7 +26,6 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 
 public class PriorityGenerator extends FrameGenerator
 {
@@ -36,7 +35,7 @@ public class PriorityGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame, Callback callback)
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         PriorityFrame priorityFrame = (PriorityFrame)frame;
         generatePriority(lease, priorityFrame.getStreamId(), priorityFrame.getDependentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());

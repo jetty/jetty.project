@@ -24,14 +24,21 @@ public class DataFrame extends Frame
 {
     private final int streamId;
     private final ByteBuffer data;
-    private boolean endStream;
+    private final boolean endStream;
+    private final int length;
 
     public DataFrame(int streamId, ByteBuffer data, boolean endStream)
+    {
+        this(streamId, data, endStream, 0);
+    }
+
+    public DataFrame(int streamId, ByteBuffer data, boolean endStream, int padding)
     {
         super(FrameType.DATA);
         this.streamId = streamId;
         this.data = data;
         this.endStream = endStream;
+        this.length = data.remaining() + padding;
     }
 
     public int getStreamId()
@@ -47,5 +54,17 @@ public class DataFrame extends Frame
     public boolean isEndStream()
     {
         return endStream;
+    }
+
+    @Override
+    public int getFlowControlledLength()
+    {
+        return length;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s{length:%d/%d}", super.toString(), data.remaining(), length);
     }
 }

@@ -26,7 +26,6 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 
 public class GoAwayGenerator extends FrameGenerator
 {
@@ -36,7 +35,7 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame, Callback callback)
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
         generateGoAway(lease, goAwayFrame.getLastStreamId(), goAwayFrame.getError(), goAwayFrame.getPayload());

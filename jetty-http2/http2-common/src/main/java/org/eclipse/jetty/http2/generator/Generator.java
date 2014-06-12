@@ -22,7 +22,6 @@ import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.Callback;
 
 public class Generator
 {
@@ -59,40 +58,18 @@ public class Generator
 
     }
 
+    public ByteBufferPool getByteBufferPool()
+    {
+        return byteBufferPool;
+    }
+
     public int getHeaderTableSize()
     {
         return headerTableSize;
     }
 
-    public LeaseCallback generate(Frame frame, Callback callback)
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
-        LeaseCallback lease = new LeaseCallback(byteBufferPool, callback);
-        generators[frame.getType().getType()].generate(lease, frame, callback);
-        return lease;
-    }
-
-    public static class LeaseCallback extends ByteBufferPool.Lease implements Callback
-    {
-        private final Callback callback;
-
-        public LeaseCallback(ByteBufferPool byteBufferPool, Callback callback)
-        {
-            super(byteBufferPool);
-            this.callback = callback;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            recycle();
-            callback.succeeded();
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            recycle();
-            callback.failed(x);
-        }
+        generators[frame.getType().getType()].generate(lease, frame);
     }
 }

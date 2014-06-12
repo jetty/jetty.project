@@ -29,12 +29,13 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Callback;
 
 public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Listener
 {
-    public HTTP2ServerSession(EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int initialWindowSize)
+    public HTTP2ServerSession(EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl)
     {
-        super(endPoint, generator, listener, flowControl, initialWindowSize, 2);
+        super(endPoint, generator, listener, flowControl, 2);
     }
 
     @Override
@@ -43,7 +44,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         // SPEC: send a SETTINGS frame upon receiving the preface.
         HashMap<Integer, Integer> settings = new HashMap<>();
         settings.put(SettingsFrame.HEADER_TABLE_SIZE, getGenerator().getHeaderTableSize());
-        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialWindowSize());
+        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getFlowControl().getInitialWindowSize());
         int maxConcurrentStreams = getMaxStreamCount();
         if (maxConcurrentStreams >= 0)
             settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
@@ -59,7 +60,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         if (stream != null)
         {
             stream.updateClose(frame.isEndStream(), false);
-            stream.process(frame);
+            stream.process(frame, Callback.Adapter.INSTANCE);
             Stream.Listener listener = notifyNewStream(stream, frame);
             stream.setListener(listener);
             // The listener may have sent a frame that closed the stream.

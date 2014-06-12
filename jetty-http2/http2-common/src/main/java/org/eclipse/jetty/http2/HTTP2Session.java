@@ -24,9 +24,11 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Queue;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -45,6 +47,7 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.Atomics;
@@ -72,33 +75,29 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final AtomicInteger streamIds = new AtomicInteger();
     private final AtomicInteger lastStreamId = new AtomicInteger();
     private final AtomicInteger streamCount = new AtomicInteger();
-    private final Flusher flusher = new Flusher();
+    private final AtomicInteger windowSize = new AtomicInteger();
     private final EndPoint endPoint;
     private final Generator generator;
     private final Listener listener;
     private final FlowControl flowControl;
-    private final int initialWindowSize;
+    private final Flusher flusher;
     private volatile int maxStreamCount;
 
-    public HTTP2Session(EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int initialWindowSize, int initialStreamId)
+    public HTTP2Session(EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int initialStreamId)
     {
         this.endPoint = endPoint;
         this.generator = generator;
         this.listener = listener;
         this.flowControl = flowControl;
-        this.initialWindowSize = initialWindowSize;
+        this.flusher = new Flusher(4);
         this.maxStreamCount = -1;
         this.streamIds.set(initialStreamId);
+        this.windowSize.set(flowControl.getInitialWindowSize());
     }
 
     public Generator getGenerator()
     {
         return generator;
-    }
-
-    public int getInitialWindowSize()
-    {
-        return initialWindowSize;
     }
 
     public int getMaxStreamCount()
@@ -112,14 +111,24 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     }
 
     @Override
-    public boolean onData(DataFrame frame)
+    public boolean onData(final DataFrame frame)
     {
         int streamId = frame.getStreamId();
-        IStream stream = getStream(streamId);
+        final IStream stream = getStream(streamId);
         if (stream != null)
         {
             stream.updateClose(frame.isEndStream(), false);
-            return stream.process(frame);
+            flowControl.onDataReceived(this, stream, frame.getFlowControlledLength());
+            return stream.process(frame, new Callback.Adapter()
+            {
+                @Override
+                public void succeeded()
+                {
+                    int consumed = frame.getFlowControlledLength();
+                    LOG.debug("Flow control: {} consumed on {}", consumed, stream);
+                    flowControl.onDataConsumed(HTTP2Session.this, stream, consumed);
+                }
+            });
         }
         else
         {
@@ -156,8 +165,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (settings.containsKey(SettingsFrame.INITIAL_WINDOW_SIZE))
         {
             int windowSize = settings.get(SettingsFrame.INITIAL_WINDOW_SIZE);
-            setWindowSize(windowSize);
-            LOG.debug("Updated window size to {}", windowSize);
+            flowControl.updateInitialWindowSize(this, windowSize);
+            LOG.debug("Updated initial window size to {}", windowSize);
         }
         // TODO: handle other settings
         notifySettings(this, frame);
@@ -202,6 +211,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public boolean onWindowUpdate(WindowUpdateFrame frame)
     {
+        int streamId = frame.getStreamId();
+        IStream stream = null;
+        if (streamId > 0)
+            stream = getStream(streamId);
+        flowControl.onWindowUpdate(this, stream, frame);
+
+        // Flush stalled data.
+        flusher.iterate();
         return false;
     }
 
@@ -231,7 +248,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             }
             stream.updateClose(frame.isEndStream(), true);
             stream.setListener(listener);
-            flusher.offer(generator.generate(frame, new PromiseCallback<>(promise, stream)));
+
+            FlusherEntry entry = new FlusherEntry(stream, frame, new PromiseCallback<>(promise, stream));
+            flusher.offer(entry);
         }
         // Iterate outside the synchronized block.
         flusher.iterate();
@@ -240,19 +259,19 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void settings(SettingsFrame frame, Callback callback)
     {
-        frame(frame, callback);
+        frame(null, frame, callback);
     }
 
     @Override
     public void ping(PingFrame frame, Callback callback)
     {
-        frame(frame, callback);
+        frame(null, frame, callback);
     }
 
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
-        frame(frame, callback);
+        frame(null, frame, callback);
     }
 
     @Override
@@ -261,14 +280,19 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         byte[] payload = reason == null ? null : reason.getBytes(StandardCharsets.UTF_8);
         GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
         LOG.debug("Sending {}: {}", frame.getType(), reason);
-        frame(frame, callback);
+        frame(null, frame, callback);
     }
 
     @Override
-    public void frame(Frame frame, Callback callback)
+    public void frame(IStream stream, Frame frame, Callback callback)
     {
-        Generator.LeaseCallback lease = generator.generate(frame, callback);
-        flusher.flush(lease);
+        int flowControlledLength = frame.getFlowControlledLength();
+        if (flowControlledLength > 0)
+            callback = new FlowControlCallback(stream, flowControlledLength, callback);
+        // We want to generate as late as possible to allow re-prioritization.
+        FlusherEntry entry = new FlusherEntry(stream, frame, callback);
+        LOG.debug("Sending {}", frame);
+        flusher.flush(entry);
     }
 
     protected void disconnect()
@@ -281,9 +305,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         IStream stream = newStream(frame);
         int streamId = stream.getId();
-        updateLastStreamId(streamId);
         if (streams.putIfAbsent(streamId, stream) == null)
         {
+            flowControl.onNewStream(stream);
             LOG.debug("Created local {}", stream);
             return stream;
         }
@@ -317,6 +341,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             updateLastStreamId(streamId);
+            flowControl.onNewStream(stream);
             LOG.debug("Created remote {}", stream);
             return stream;
         }
@@ -359,14 +384,22 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         return streams.get(streamId);
     }
 
+    protected int getWindowSize()
+    {
+        return windowSize.get();
+    }
+
+    @Override
+    public int updateWindowSize(int delta)
+    {
+        int oldSize = windowSize.getAndAdd(delta);
+        LOG.debug("Flow control: updated window {} -> {} for {}", oldSize, oldSize + delta, this);
+        return oldSize;
+    }
+
     private void updateLastStreamId(int streamId)
     {
         Atomics.updateMax(lastStreamId, streamId);
-    }
-
-    public void setWindowSize(int initialWindowSize)
-    {
-        flowControl.setWindowSize(this, initialWindowSize);
     }
 
     protected Stream.Listener notifyNewStream(Stream stream, HeadersFrame frame)
@@ -394,13 +427,30 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{queueSize=%d,windowSize=%s,streams=%d}", getClass().getSimpleName(),
+                hashCode(), flusher.getQueueSize(), windowSize, streams.size());
+    }
+
     private class Flusher extends IteratingCallback
     {
-        private final Queue<Generator.LeaseCallback> queue = new ArrayQueue<>(ArrayQueue.DEFAULT_CAPACITY, ArrayQueue.DEFAULT_GROWTH);
-        private Generator.LeaseCallback active;
+        private final ArrayQueue<FlusherEntry> queue = new ArrayQueue<>(ArrayQueue.DEFAULT_CAPACITY, ArrayQueue.DEFAULT_GROWTH);
+        private final Set<IStream> stalled = new HashSet<>();
+        private final List<FlusherEntry> reset = new ArrayList<>();
+        private final ByteBufferPool.Lease lease = new ByteBufferPool.Lease(generator.getByteBufferPool());
+        private final int maxGather;
+        private final List<FlusherEntry> active;
         private boolean closed;
 
-        private void offer(Generator.LeaseCallback lease)
+        public Flusher(int maxGather)
+        {
+            this.maxGather = maxGather;
+            this.active = new ArrayList<>(maxGather);
+        }
+
+        private void offer(FlusherEntry entry)
         {
             boolean fail = false;
             synchronized (queue)
@@ -408,31 +458,108 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 if (closed)
                     fail = true;
                 else
-                    queue.offer(lease);
+                    queue.offer(entry);
             }
             if (fail)
-                fail(lease);
+                closed(entry);
         }
 
-        private void flush(Generator.LeaseCallback lease)
+        public int getQueueSize()
         {
-            offer(lease);
+            synchronized (queue)
+            {
+                return queue.size();
+            }
+        }
+
+        private void flush(FlusherEntry entry)
+        {
+            offer(entry);
             iterate();
         }
 
         @Override
         protected Action process() throws Exception
         {
-            Generator.LeaseCallback current = null;
             synchronized (queue)
             {
-                if (!closed)
-                    current = active = queue.poll();
+                if (closed)
+                    return Action.IDLE;
+
+                int nonStalledIndex = 0;
+                int size = queue.size();
+                while (nonStalledIndex < size)
+                {
+                    FlusherEntry entry = queue.get(nonStalledIndex);
+                    IStream stream = entry.getStream();
+                    boolean flowControlled = entry.getFrame().getFlowControlledLength() > 0;
+                    if (flowControlled)
+                    {
+                        // Is the session stalled ?
+                        if (getWindowSize() <= 0)
+                        {
+                            LOG.debug("Flow control: session stalled {}", HTTP2Session.this);
+                            ++nonStalledIndex;
+                            // There may be *non* flow controlled frames to send.
+                            continue;
+                        }
+
+                        if (stream != null)
+                        {
+                            // Is it a frame belonging to an already stalled stream ?
+                            if (stalled.contains(stream))
+                            {
+                                ++nonStalledIndex;
+                                continue;
+                            }
+
+                            // Is the stream stalled ?
+                            if (stream.getWindowSize() <= 0)
+                            {
+                                LOG.debug("Flow control: stream stalled {}", stream);
+                                stalled.add(stream);
+                                ++nonStalledIndex;
+                                continue;
+                            }
+                        }
+                    }
+
+                    // We will be possibly writing this frame.
+                    queue.remove(nonStalledIndex);
+                    --size;
+
+                    // Has the stream been reset ?
+                    if (stream != null && stream.isReset() && flowControlled)
+                    {
+                        reset.add(entry);
+                        continue;
+                    }
+
+                    active.add(entry);
+                    if (active.size() == maxGather)
+                        break;
+                }
+                stalled.clear();
             }
-            if (current == null)
+
+            for (int i = 0; i < reset.size(); ++i)
+            {
+                FlusherEntry entry = reset.get(i);
+                // TODO: introduce a StreamResetException ?
+                entry.failed(new IllegalStateException());
+            }
+            reset.clear();
+
+            if (active.isEmpty())
                 return Action.IDLE;
 
-            List<ByteBuffer> byteBuffers = current.getByteBuffers();
+            for (int i = 0; i < active.size(); ++i)
+            {
+                FlusherEntry entry = active.get(i);
+                generator.generate(lease, entry.getFrame());
+            }
+
+            List<ByteBuffer> byteBuffers = lease.getByteBuffers();
             endPoint.write(this, byteBuffers.toArray(new ByteBuffer[byteBuffers.size()]));
             return Action.SCHEDULED;
         }
@@ -440,25 +567,38 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         @Override
         public void succeeded()
         {
-            active.succeeded();
+            lease.recycle();
+            for (int i = 0; i < active.size(); ++i)
+            {
+                FlusherEntry entry = active.get(i);
+                entry.succeeded();
+            }
+            active.clear();
             super.succeeded();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            active.failed(x);
+            lease.recycle();
+            for (int i = 0; i < active.size(); ++i)
+            {
+                FlusherEntry entry = active.get(i);
+                entry.failed(x);
+            }
+            active.clear();
             super.failed(x);
         }
 
         @Override
         protected void completed()
         {
+            throw new IllegalStateException();
         }
 
         public void close()
         {
-            Queue<Generator.LeaseCallback> queued;
+            Queue<FlusherEntry> queued;
             synchronized (queue)
             {
                 closed = true;
@@ -467,16 +607,52 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
             while (true)
             {
-                Generator.LeaseCallback item = queued.poll();
+                FlusherEntry item = queued.poll();
                 if (item == null)
                     break;
-                fail(item);
+                closed(item);
             }
         }
 
-        protected void fail(Generator.LeaseCallback item)
+        protected void closed(FlusherEntry item)
         {
             item.failed(new ClosedChannelException());
+        }
+    }
+
+    private class FlusherEntry implements Callback
+    {
+        private final IStream stream;
+        private final Frame frame;
+        private final Callback callback;
+
+        private FlusherEntry(IStream stream, Frame frame, Callback callback)
+        {
+            this.stream = stream;
+            this.frame = frame;
+            this.callback = callback;
+        }
+
+        public IStream getStream()
+        {
+            return stream;
+        }
+
+        public Frame getFrame()
+        {
+            return frame;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            callback.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            callback.failed(x);
         }
     }
 
@@ -501,6 +677,33 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         public void failed(Throwable x)
         {
             promise.failed(x);
+        }
+    }
+
+    private class FlowControlCallback implements Callback
+    {
+        private final IStream stream;
+        private final int length;
+        private final Callback callback;
+
+        private FlowControlCallback(IStream stream, int length, Callback callback)
+        {
+            this.stream = stream;
+            this.length = length;
+            this.callback = callback;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            flowControl.onDataSent(HTTP2Session.this, stream, -length);
+            callback.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            callback.failed(x);
         }
     }
 }

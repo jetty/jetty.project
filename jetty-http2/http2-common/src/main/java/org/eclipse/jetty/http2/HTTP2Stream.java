@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -35,9 +36,11 @@ public class HTTP2Stream implements IStream
 
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
+    private final AtomicInteger windowSize = new AtomicInteger();
     private final ISession session;
     private final HeadersFrame frame;
     private Listener listener;
+    private volatile boolean reset = false;
 
     public HTTP2Stream(ISession session, HeadersFrame frame)
     {
@@ -60,13 +63,13 @@ public class HTTP2Stream implements IStream
     @Override
     public void headers(HeadersFrame frame, Callback callback)
     {
-        session.frame(frame, callback);
+        session.frame(this, frame, callback);
     }
 
     @Override
     public void data(DataFrame frame, Callback callback)
     {
-        session.frame(frame, callback);
+        session.frame(this, frame, callback);
     }
 
     @Override
@@ -85,6 +88,12 @@ public class HTTP2Stream implements IStream
     public Object removeAttribute(String key)
     {
         return attributes().remove(key);
+    }
+
+    @Override
+    public boolean isReset()
+    {
+        return reset;
     }
 
     @Override
@@ -120,20 +129,27 @@ public class HTTP2Stream implements IStream
     }
 
     @Override
-    public boolean process(Frame frame)
+    public boolean process(Frame frame, Callback callback)
     {
         switch (frame.getType())
         {
             case DATA:
             {
-                return notifyData((DataFrame)frame);
+                return notifyData((DataFrame)frame, callback);
             }
             case HEADERS:
             {
                 return false;
             }
+            case RST_STREAM:
+            {
+                reset = true;
+                return false;
+            }
             default:
+            {
                 throw new UnsupportedOperationException();
+            }
         }
     }
 
@@ -182,27 +198,28 @@ public class HTTP2Stream implements IStream
         }
     }
 
-    protected boolean notifyData(DataFrame frame)
+    @Override
+    public int getWindowSize()
+    {
+        return windowSize.get();
+    }
+
+    @Override
+    public int updateWindowSize(int delta)
+    {
+        int oldSize = windowSize.getAndAdd(delta);
+        LOG.debug("Flow control: updated window {} -> {} for {}", oldSize, oldSize + delta, this);
+        return oldSize;
+    }
+
+    protected boolean notifyData(DataFrame frame, Callback callback)
     {
         final Listener listener = this.listener;
         if (listener == null)
             return false;
         try
         {
-            listener.onData(this, frame, new Callback()
-            {
-                @Override
-                public void succeeded()
-                {
-                    // TODO: notify flow control
-                }
-
-                @Override
-                public void failed(Throwable x)
-                {
-                    // TODO: bail out
-                }
-            });
+            listener.onData(this, frame, callback);
             return false;
         }
         catch (Throwable x)
@@ -215,7 +232,8 @@ public class HTTP2Stream implements IStream
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x{id=%d,windowSize=%s,%s}", getClass().getSimpleName(),
+                hashCode(), getId(), windowSize, closeState);
     }
 
     private enum CloseState

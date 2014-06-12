@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
@@ -30,83 +29,30 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.hpack.MetaData;
-import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class HTTP2Test
+public class HTTP2Test extends AbstractTest
 {
-    private Server server;
-    private ServerConnector connector;
-    private String path;
-    private HTTP2Client client;
-
-    private void startServer(HttpServlet servlet) throws Exception
-    {
-        QueuedThreadPool serverExecutor = new QueuedThreadPool();
-        serverExecutor.setName("server");
-        server = new Server(serverExecutor);
-        connector = new ServerConnector(server, new HTTP2ServerConnectionFactory(new HttpConfiguration()));
-        server.addConnector(connector);
-
-        ServletContextHandler context = new ServletContextHandler(server, "/");
-        path = "/test";
-        context.addServlet(new ServletHolder(servlet), path);
-
-        QueuedThreadPool clientExecutor = new QueuedThreadPool();
-        clientExecutor.setName("client");
-        client = new HTTP2Client(clientExecutor);
-        server.addBean(client);
-
-        server.start();
-    }
-
-    @After
-    public void dispose() throws Exception
-    {
-        server.stop();
-    }
-
     @Test
     public void testRequestNoContentResponseNoContent() throws Exception
     {
-        startServer(new HttpServlet()
-        {
-            @Override
-            protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
-            {
-            }
-        });
+        startServer(new EmptyHttpServlet());
 
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        String authority = host + ":" + port;
-        InetSocketAddress address = new InetSocketAddress(host, port);
-        FuturePromise<Session> promise = new FuturePromise<>();
-        client.connect(address, new Session.Listener.Adapter(), promise);
-        Session session = promise.get();
+        Session client = newClient(new Session.Listener.Adapter());
 
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, "GET", authority, host, port, path, fields);
+        MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
-        session.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        client.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -140,19 +86,13 @@ public class HTTP2Test
             }
         });
 
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        String authority = host + ":" + port;
-        InetSocketAddress address = new InetSocketAddress(host, port);
-        FuturePromise<Session> promise = new FuturePromise<>();
-        client.connect(address, new Session.Listener.Adapter(), promise);
-        Session session = promise.get();
+        Session client = newClient(new Session.Listener.Adapter());
 
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, "GET", authority, host, port, path, fields);
+        MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(2);
-        session.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        client.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -177,6 +117,7 @@ public class HTTP2Test
                 Assert.assertTrue(frame.isEndStream());
                 Assert.assertEquals(ByteBuffer.wrap(content), frame.getData());
 
+                callback.succeeded();
                 latch.countDown();
             }
         });

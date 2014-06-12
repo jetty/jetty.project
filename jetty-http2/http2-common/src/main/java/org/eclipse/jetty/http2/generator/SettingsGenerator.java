@@ -27,7 +27,6 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 
 public class SettingsGenerator extends FrameGenerator
 {
@@ -37,7 +36,7 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame, Callback callback)
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         generateSettings(lease, settingsFrame.getSettings(), settingsFrame.isReply());

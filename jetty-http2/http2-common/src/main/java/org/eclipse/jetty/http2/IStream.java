@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2;
 
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.util.Callback;
 
 public interface IStream extends Stream
 {
@@ -30,7 +31,7 @@ public interface IStream extends Stream
 
     public void setListener(Listener listener);
 
-    public boolean process(Frame frame);
+    public boolean process(Frame frame, Callback callback);
 
     /**
      * Updates the close state of this stream.
@@ -42,4 +43,8 @@ public interface IStream extends Stream
      *              that ends the stream).
      */
     public void updateClose(boolean update, boolean local);
+
+    public int getWindowSize();
+
+    public int updateWindowSize(int delta);
 }

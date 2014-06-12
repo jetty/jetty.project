@@ -18,21 +18,84 @@
 
 package org.eclipse.jetty.http2;
 
+import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.util.Callback;
+
 public class HTTP2FlowControl implements FlowControl
 {
+    private volatile int initialWindowSize;
+
+    public HTTP2FlowControl(int initialWindowSize)
+    {
+        this.initialWindowSize = initialWindowSize;
+    }
+
     @Override
     public void onNewStream(IStream stream)
     {
+        stream.updateWindowSize(initialWindowSize);
     }
 
     @Override
-    public int getWindowSize(ISession session)
+    public int getInitialWindowSize()
     {
-        return 0;
+        return initialWindowSize;
     }
 
     @Override
-    public void setWindowSize(ISession session, int windowSize)
+    public void updateInitialWindowSize(ISession session, int initialWindowSize)
     {
+        int windowSize = this.initialWindowSize;
+        this.initialWindowSize = initialWindowSize;
+
+        int delta = initialWindowSize - windowSize;
+
+        // Update the sessions's window size.
+        session.updateWindowSize(delta);
+
+        // Update the streams' window size.
+        for (Stream stream : session.getStreams())
+            ((IStream)stream).updateWindowSize(delta);
+    }
+
+    @Override
+    public void onWindowUpdate(ISession session, IStream stream, WindowUpdateFrame frame)
+    {
+        if (frame.getStreamId() > 0)
+        {
+            if (stream != null)
+                stream.updateWindowSize(frame.getWindowDelta());
+        }
+        else
+        {
+            session.updateWindowSize(frame.getWindowDelta());
+        }
+    }
+
+    @Override
+    public void onDataReceived(ISession session, IStream stream, int length)
+    {
+    }
+
+    @Override
+    public void onDataConsumed(ISession session, IStream stream, int length)
+    {
+        // This is the algorithm for flow control.
+        // This method is called when a whole flow controlled frame has been consumed.
+        // We currently send a WindowUpdate every time, even if the frame was very small.
+        // Other policies may send the WindowUpdate only upon reaching a threshold.
+
+        // Negative streamId allow for generation of bytes for both stream and session
+        int streamId = stream != null ? -stream.getId() : 0;
+        WindowUpdateFrame frame = new WindowUpdateFrame(streamId, length);
+        session.frame(stream, frame, Callback.Adapter.INSTANCE);
+    }
+
+    @Override
+    public void onDataSent(ISession session, IStream stream, int length)
+    {
+        stream.getSession().updateWindowSize(length);
+        stream.updateWindowSize(length);
     }
 }

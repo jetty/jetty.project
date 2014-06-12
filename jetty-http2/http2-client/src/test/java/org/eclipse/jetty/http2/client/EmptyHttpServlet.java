@@ -16,33 +16,18 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.frames;
+package org.eclipse.jetty.http2.client;
 
-public abstract class Frame
+import java.io.IOException;
+import javax.servlet.ServletException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
+public class EmptyHttpServlet extends HttpServlet
 {
-    public static final int HEADER_LENGTH = 8;
-    public static final int MAX_LENGTH = 0x3F_FF;
-
-    private final FrameType type;
-
-    protected Frame(FrameType type)
-    {
-        this.type = type;
-    }
-
-    public FrameType getType()
-    {
-        return type;
-    }
-
-    public int getFlowControlledLength()
-    {
-        return 0;
-    }
-
     @Override
-    public String toString()
+    protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 }

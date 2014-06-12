@@ -18,11 +18,21 @@
 
 package org.eclipse.jetty.http2;
 
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+
 public interface FlowControl
 {
     public void onNewStream(IStream stream);
 
-    public int getWindowSize(ISession session);
+    public int getInitialWindowSize();
 
-    public void setWindowSize(ISession session, int windowSize);
+    public void updateInitialWindowSize(ISession session, int initialWindowSize);
+
+    public void onWindowUpdate(ISession session, IStream stream, WindowUpdateFrame frame);
+
+    public void onDataReceived(ISession session, IStream stream, int length);
+
+    public void onDataConsumed(ISession session, IStream stream, int length);
+
+    public void onDataSent(ISession session, IStream stream, int length);
 }

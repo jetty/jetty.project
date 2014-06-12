@@ -38,6 +38,8 @@ public interface Stream
 
     public Object removeAttribute(String key);
 
+    public boolean isReset();
+
     public boolean isClosed();
 
     // TODO: see SPDY's Stream
@@ -63,6 +65,7 @@ public interface Stream
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
+                callback.succeeded();
             }
 
             @Override

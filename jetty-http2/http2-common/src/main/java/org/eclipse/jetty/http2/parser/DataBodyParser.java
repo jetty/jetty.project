@@ -49,7 +49,7 @@ public class DataBodyParser extends BodyParser
             notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_data_frame");
             return false;
         }
-        return onData(BufferUtil.EMPTY_BUFFER, false);
+        return onData(BufferUtil.EMPTY_BUFFER, false, 0);
     }
 
     @Override
@@ -116,7 +116,7 @@ public class DataBodyParser extends BodyParser
                     if (length == 0)
                     {
                         state = State.PADDING;
-                        if (onData(slice, false))
+                        if (onData(slice, false, paddingLength))
                         {
                             return Result.ASYNC;
                         }
@@ -125,7 +125,7 @@ public class DataBodyParser extends BodyParser
                     {
                         // TODO: check the semantic of Flag.END_SEGMENT.
                         // We got partial data, simulate a smaller frame, and stay in DATA state.
-                        if (onData(slice, true))
+                        if (onData(slice, true, 0))
                         {
                             return Result.ASYNC;
                         }
@@ -153,9 +153,9 @@ public class DataBodyParser extends BodyParser
         return Result.PENDING;
     }
 
-    private boolean onData(ByteBuffer buffer, boolean fragment)
+    private boolean onData(ByteBuffer buffer, boolean fragment, int padding)
     {
-        DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream());
+        DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream(), padding);
         return notifyData(frame);
     }
 

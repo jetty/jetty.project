@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.Callback;
 
 public abstract class FrameGenerator
 {
@@ -34,7 +33,7 @@ public abstract class FrameGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public abstract void generate(ByteBufferPool.Lease lease, Frame frame, Callback callback);
+    public abstract void generate(ByteBufferPool.Lease lease, Frame frame);
 
     protected ByteBuffer generateHeader(ByteBufferPool.Lease lease, FrameType frameType, int length, int flags, int streamId)
     {

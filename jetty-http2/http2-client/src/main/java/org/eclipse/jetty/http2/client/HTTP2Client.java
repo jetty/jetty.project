@@ -51,8 +51,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class HTTP2Client extends ContainerLifeCycle
 {
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
-    private final Executor executor;
-    private final Scheduler scheduler;
     private final SelectorManager selector;
     private final ByteBufferPool byteBufferPool;
 
@@ -63,9 +61,8 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public HTTP2Client(Executor executor)
     {
-        this.executor = executor;
         addBean(executor);
-        this.scheduler = new ScheduledExecutorScheduler();
+        Scheduler scheduler = new ScheduledExecutorScheduler();
         addBean(scheduler, true);
         this.selector = new ClientSelectorManager(executor, scheduler);
         addBean(selector, true);
@@ -121,7 +118,7 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             Context context = (Context)attachment;
             Generator generator = new Generator(byteBufferPool, 4096);
-            HTTP2Session session = new HTTP2ClientSession(endpoint, generator, context.listener, new HTTP2FlowControl(), 65535);
+            HTTP2Session session = new HTTP2ClientSession(endpoint, generator, context.listener, new HTTP2FlowControl(65535));
             Parser parser = new Parser(byteBufferPool, session);
             Connection connection = new HTTP2ClientConnection(byteBufferPool, getExecutor(), endpoint, parser, 8192, session);
             context.promise.succeeded(session);

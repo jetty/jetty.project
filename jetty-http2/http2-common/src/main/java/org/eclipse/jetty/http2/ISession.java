@@ -27,5 +27,7 @@ public interface ISession extends Session
     @Override
     IStream getStream(int streamId);
 
-    public void frame(Frame frame, Callback callback);
+    public void frame(IStream stream, Frame frame, Callback callback);
+
+    public int updateWindowSize(int delta);
 }

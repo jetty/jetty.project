@@ -26,7 +26,6 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 
 public class PingGenerator extends FrameGenerator
 {
@@ -36,7 +35,7 @@ public class PingGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame, Callback callback)
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         PingFrame pingFrame = (PingFrame)frame;
         generatePing(lease, pingFrame.getPayload(), pingFrame.isReply());

@@ -16,33 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.frames;
+package org.eclipse.jetty.http2.server;
 
-public abstract class Frame
+import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Connector;
+
+public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory
 {
-    public static final int HEADER_LENGTH = 8;
-    public static final int MAX_LENGTH = 0x3F_FF;
+    private final Session.Listener listener;
 
-    private final FrameType type;
-
-    protected Frame(FrameType type)
+    public RawHTTP2ServerConnectionFactory(Session.Listener listener)
     {
-        this.type = type;
-    }
-
-    public FrameType getType()
-    {
-        return type;
-    }
-
-    public int getFlowControlledLength()
-    {
-        return 0;
+        this.listener = listener;
     }
 
     @Override
-    public String toString()
+    protected Session.Listener newSessionListener(Connector connector, EndPoint endPoint)
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return listener;
     }
 }
