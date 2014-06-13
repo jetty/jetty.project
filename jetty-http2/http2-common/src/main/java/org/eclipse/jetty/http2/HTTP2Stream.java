@@ -205,13 +205,9 @@ public class HTTP2Stream implements IStream
     }
 
     @Override
-    public void updateWindowSize(int delta)
+    public int updateWindowSize(int delta)
     {
-        if (delta != 0)
-        {
-            int oldSize = windowSize.getAndAdd(delta);
-            HTTP2FlowControl.LOG.debug("Updated stream window {} -> {} for {}", oldSize, oldSize + delta, this);
-        }
+        return windowSize.getAndAdd(delta);
     }
 
     protected boolean notifyData(DataFrame frame, Callback callback)

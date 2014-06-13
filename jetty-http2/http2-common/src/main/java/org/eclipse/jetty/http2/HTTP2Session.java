@@ -386,13 +386,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     }
 
     @Override
-    public void updateWindowSize(int delta)
+    public int updateWindowSize(int delta)
     {
-        if (delta != 0)
-        {
-            int oldSize = windowSize.getAndAdd(delta);
-            HTTP2FlowControl.LOG.debug("Updated session window {} -> {} for {}", oldSize, oldSize + delta, this);
-        }
+        return windowSize.getAndAdd(delta);
     }
 
     private void updateLastStreamId(int streamId)
@@ -505,7 +501,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                         // Is the session stalled ?
                         if (sessionWindow <= 0)
                         {
-                            HTTP2FlowControl.LOG.debug("Session stalled {}", HTTP2Session.this);
+                            flowControl.onSessionStalled(HTTP2Session.this);
                             ++nonStalledIndex;
                             // There may be *non* flow controlled frames to send.
                             continue;
@@ -523,7 +519,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                             // Is it a frame belonging to an already stalled stream ?
                             if (streamWindow <= 0)
                             {
-                                HTTP2FlowControl.LOG.debug("Stream stalled {}", stream);
+                                flowControl.onStreamStalled(stream);
                                 ++nonStalledIndex;
                                 continue;
                             }
@@ -668,7 +664,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         @Override
         public void succeeded()
         {
-            flowControl.onDataSent(HTTP2Session.this, stream, -length);
+            flowControl.onDataSent(HTTP2Session.this, stream, length);
             // Do we have more to send ?
             if (frame.getFlowControlledLength() > 0)
             {

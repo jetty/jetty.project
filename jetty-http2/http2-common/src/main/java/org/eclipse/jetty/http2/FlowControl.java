@@ -35,4 +35,8 @@ public interface FlowControl
     public void onDataConsumed(ISession session, IStream stream, int length);
 
     public void onDataSent(ISession session, IStream stream, int length);
+
+    public void onSessionStalled(ISession session);
+
+    public void onStreamStalled(IStream stream);
 }
