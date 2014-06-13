@@ -35,7 +35,7 @@ public class ResetGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
     {
         ResetFrame resetFrame = (ResetFrame)frame;
         generateReset(lease, resetFrame.getStreamId(), resetFrame.getError());

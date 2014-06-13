@@ -105,7 +105,7 @@ public class HTTP2ServerTest
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generate(lease, request);
+        generator.generate(lease, request, 0);
 
         // No preface bytes
 
@@ -154,7 +154,7 @@ public class HTTP2ServerTest
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generate(lease, request);
+        generator.generate(lease, request, 0);
         lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
 
         try (Socket client = new Socket(host, port))
@@ -217,7 +217,7 @@ public class HTTP2ServerTest
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generate(lease, request);
+        generator.generate(lease, request, 0);
         lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
 
         try (Socket client = new Socket(host, port))

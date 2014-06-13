@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class HTTP2Connection extends AbstractConnection
 {
-    private static final Logger LOG = Log.getLogger(HTTP2Connection.class);
+    protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
 
     private final ByteBufferPool byteBufferPool;
     private final Parser parser;

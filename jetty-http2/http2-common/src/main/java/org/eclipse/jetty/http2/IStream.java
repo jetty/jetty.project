@@ -46,5 +46,5 @@ public interface IStream extends Stream
 
     public int getWindowSize();
 
-    public int updateWindowSize(int delta);
+    public void updateWindowSize(int delta);
 }

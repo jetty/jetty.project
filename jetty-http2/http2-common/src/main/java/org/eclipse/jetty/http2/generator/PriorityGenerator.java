@@ -35,7 +35,7 @@ public class PriorityGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
     {
         PriorityFrame priorityFrame = (PriorityFrame)frame;
         generatePriority(lease, priorityFrame.getStreamId(), priorityFrame.getDependentStreamId(), priorityFrame.getWeight(), priorityFrame.isExclusive());

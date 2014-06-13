@@ -40,52 +40,30 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
-        generate(lease, headersFrame.getStreamId(), headersFrame.getMetaData(), !headersFrame.isEndStream(), null);
+        generate(lease, headersFrame.getStreamId(), headersFrame.getMetaData(), !headersFrame.isEndStream());
     }
 
-    private void generate(ByteBufferPool.Lease lease, int streamId, MetaData metaData, boolean contentFollows, byte[] paddingBytes)
+    private void generate(ByteBufferPool.Lease lease, int streamId, MetaData metaData, boolean contentFollows)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
-        int paddingLength = paddingBytes == null ? 0 : paddingBytes.length;
-        // Leave space for at least one byte of content.
-        if (paddingLength > Frame.MAX_LENGTH - 3)
-            throw new IllegalArgumentException("Invalid padding length: " + paddingLength);
-
-        int extraPaddingBytes = paddingLength > 0xFF ? 2 : paddingLength > 0 ? 1 : 0;
 
         encoder.encode(metaData, lease);
 
-        long hpackLength = lease.getTotalLength();
-
-        long length = extraPaddingBytes + hpackLength + paddingLength;
+        long length = lease.getTotalLength();
         if (length > Frame.MAX_LENGTH)
             throw new IllegalArgumentException("Invalid headers, too big");
 
         int flags = Flag.END_HEADERS;
         if (!contentFollows)
             flags |= Flag.END_STREAM;
-        if (extraPaddingBytes > 0)
-            flags |= Flag.PADDING_LOW;
-        if (extraPaddingBytes > 1)
-            flags |= Flag.PADDING_HIGH;
 
-        ByteBuffer header = generateHeader(lease, FrameType.HEADERS, Frame.HEADER_LENGTH + extraPaddingBytes, (int)length, flags, streamId);
-
-        if (extraPaddingBytes == 2)
-            header.putShort((short)paddingLength);
-        else if (extraPaddingBytes == 1)
-            header.put((byte)paddingLength);
+        ByteBuffer header = generateHeader(lease, FrameType.HEADERS, (int)length, flags, streamId);
 
         BufferUtil.flipToFlush(header, 0);
         lease.prepend(header, true);
-
-        if (paddingBytes != null)
-        {
-            lease.append(ByteBuffer.wrap(paddingBytes), false);
-        }
     }
 }

@@ -21,9 +21,13 @@ package org.eclipse.jetty.http2;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HTTP2FlowControl implements FlowControl
 {
+    protected static final Logger LOG = Log.getLogger(HTTP2FlowControl.class);
+
     private volatile int initialWindowSize;
 
     public HTTP2FlowControl(int initialWindowSize)
@@ -86,6 +90,7 @@ public class HTTP2FlowControl implements FlowControl
         // We currently send a WindowUpdate every time, even if the frame was very small.
         // Other policies may send the WindowUpdate only upon reaching a threshold.
 
+        LOG.debug("Consumed {} on {}", length, stream);
         // Negative streamId allow for generation of bytes for both stream and session
         int streamId = stream != null ? -stream.getId() : 0;
         WindowUpdateFrame frame = new WindowUpdateFrame(streamId, length);
@@ -95,7 +100,8 @@ public class HTTP2FlowControl implements FlowControl
     @Override
     public void onDataSent(ISession session, IStream stream, int length)
     {
-        stream.getSession().updateWindowSize(length);
-        stream.updateWindowSize(length);
+        session.updateWindowSize(length);
+        if (stream != null)
+            stream.updateWindowSize(length);
     }
 }

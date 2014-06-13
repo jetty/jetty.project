@@ -29,5 +29,5 @@ public interface ISession extends Session
 
     public void frame(IStream stream, Frame frame, Callback callback);
 
-    public int updateWindowSize(int delta);
+    public void updateWindowSize(int delta);
 }

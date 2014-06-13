@@ -33,15 +33,10 @@ public abstract class FrameGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public abstract void generate(ByteBufferPool.Lease lease, Frame frame);
+    public abstract void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength);
 
     protected ByteBuffer generateHeader(ByteBufferPool.Lease lease, FrameType frameType, int length, int flags, int streamId)
     {
-        return generateHeader(lease, frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
-    }
-
-    protected ByteBuffer generateHeader(ByteBufferPool.Lease lease, FrameType frameType, int capacity, int length, int flags, int streamId)
-    {
-        return headerGenerator.generate(lease, frameType, capacity, length, flags, streamId);
+        return headerGenerator.generate(lease, frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
     }
 }

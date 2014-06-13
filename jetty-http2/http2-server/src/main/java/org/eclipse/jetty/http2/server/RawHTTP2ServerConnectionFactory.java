@@ -18,21 +18,21 @@
 
 package org.eclipse.jetty.http2.server;
 
-import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 
 public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory
 {
-    private final Session.Listener listener;
+    private final ServerSessionListener listener;
 
-    public RawHTTP2ServerConnectionFactory(Session.Listener listener)
+    public RawHTTP2ServerConnectionFactory(ServerSessionListener listener)
     {
         this.listener = listener;
     }
 
     @Override
-    protected Session.Listener newSessionListener(Connector connector, EndPoint endPoint)
+    protected ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint)
     {
         return listener;
     }

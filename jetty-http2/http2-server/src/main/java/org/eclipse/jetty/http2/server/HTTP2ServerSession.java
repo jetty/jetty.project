@@ -18,36 +18,43 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.util.HashMap;
+import java.util.Collections;
+import java.util.Map;
 
 import org.eclipse.jetty.http2.FlowControl;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
+import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Listener
 {
-    public HTTP2ServerSession(EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl)
+    private static final Logger LOG = Log.getLogger(HTTP2ServerSession.class);
+
+    private final ServerSessionListener listener;
+
+    public HTTP2ServerSession(EndPoint endPoint, Generator generator, ServerSessionListener listener, FlowControl flowControl, int maxStreams)
     {
-        super(endPoint, generator, listener, flowControl, 2);
+        super(endPoint, generator, listener, flowControl, maxStreams, 2);
+        this.listener = listener;
     }
 
     @Override
     public boolean onPreface()
     {
         // SPEC: send a SETTINGS frame upon receiving the preface.
-        HashMap<Integer, Integer> settings = new HashMap<>();
-        settings.put(SettingsFrame.HEADER_TABLE_SIZE, getGenerator().getHeaderTableSize());
-        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getFlowControl().getInitialWindowSize());
-        int maxConcurrentStreams = getMaxStreamCount();
-        if (maxConcurrentStreams >= 0)
-            settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
+        Map<Integer, Integer> settings = notifyPreface(this);
+        if (settings == null)
+            settings = Collections.emptyMap();
         SettingsFrame frame = new SettingsFrame(settings, false);
         settings(frame, disconnectCallback);
         return false;
@@ -68,5 +75,18 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                 removeStream(stream, false);
         }
         return false;
+    }
+
+    private Map<Integer, Integer> notifyPreface(Session session)
+    {
+        try
+        {
+            return listener.onPreface(session);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return null;
+        }
     }
 }

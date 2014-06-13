@@ -22,19 +22,23 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.hpack.MetaData;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
+import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Test;
 
@@ -48,9 +52,11 @@ public class FlowControlTest extends AbstractTest
         // must stop sending data (although the initial window allows it).
 
         final int size = 512;
-        final CountDownLatch dataLatch = new CountDownLatch(1);
+        // We get 3 data frames: the first of 1024 and 2 of 512 each
+        // after the flow control window has been reduced.
+        final CountDownLatch dataLatch = new CountDownLatch(3);
         final AtomicReference<Callback> callbackRef = new AtomicReference<>();
-        startServer(new Session.Listener.Adapter()
+        startServer(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
@@ -67,6 +73,7 @@ public class FlowControlTest extends AbstractTest
                     @Override
                     public void onData(Stream stream, DataFrame frame, Callback callback)
                     {
+                        dataLatch.countDown();
                         int dataFrameCount = dataFrames.incrementAndGet();
                         if (dataFrameCount == 1)
                         {
@@ -80,7 +87,6 @@ public class FlowControlTest extends AbstractTest
                         {
                             // Consume the data.
                             callback.succeeded();
-                            dataLatch.countDown();
                         }
                     }
                 };
@@ -108,7 +114,7 @@ public class FlowControlTest extends AbstractTest
         settingsLatch.await(5, TimeUnit.SECONDS);
 
         // Send the second chunk of data, must not arrive since we're flow control stalled on the client.
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), false), Callback.Adapter.INSTANCE);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), true), Callback.Adapter.INSTANCE);
         Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
 
         // Consume the data arrived to server, this will resume flow control on the client.
@@ -117,70 +123,67 @@ public class FlowControlTest extends AbstractTest
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
-/*
     @Test
     public void testServerFlowControlOneBigWrite() throws Exception
     {
         final int windowSize = 1536;
         final int length = 5 * windowSize;
         final CountDownLatch settingsLatch = new CountDownLatch(1);
-        Session session = startClient(SPDY.V3, startServer(SPDY.V3, new ServerSessionFrameListener.Adapter()
+        startServer(new ServerSessionListener.Adapter()
         {
             @Override
-            public void onSettings(Session session, SettingsInfo settingsInfo)
+            public void onSettings(Session session, SettingsFrame frame)
             {
                 settingsLatch.countDown();
             }
 
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                stream.reply(new ReplyInfo(false), new Callback.Adapter());
-                stream.data(new BytesDataInfo(new byte[length], true), new Callback.Adapter());
+                MetaData.Response metaData = new MetaData.Response(200, new HttpFields());
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+
+                DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(length), true);
+                stream.data(dataFrame, Callback.Adapter.INSTANCE);
                 return null;
             }
-        }), null);
+        });
 
-        Settings settings = new Settings();
-        settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, windowSize));
-        session.settings(new SettingsInfo(settings));
+        Session session = newClient(new Session.Listener.Adapter());
+
+        Map<Integer, Integer> settings = new HashMap<>();
+        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, windowSize);
+        session.settings(new SettingsFrame(settings, false), Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        final Exchanger<DataInfo> exchanger = new Exchanger<>();
-        session.syn(new SynInfo(new Fields(), true), new StreamFrameListener.Adapter()
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        final Exchanger<Callback> exchanger = new Exchanger<>();
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
+        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             private AtomicInteger dataFrames = new AtomicInteger();
 
             @Override
-            public void onData(Stream stream, DataInfo dataInfo)
+            public void onData(Stream stream, DataFrame frame, Callback callback)
             {
                 try
                 {
                     int dataFrames = this.dataFrames.incrementAndGet();
-                    if (dataFrames == 1)
+                    if (dataFrames == 1 || dataFrames == 2)
                     {
-                        // Do not consume nor read from the data frame.
-                        // We should then be flow-control stalled
-                        exchanger.exchange(dataInfo);
+                        // Do not consume the data frame.
+                        // We should then be flow-control stalled.
+                        exchanger.exchange(callback);
                     }
-                    else if (dataFrames == 2)
+                    else if (dataFrames == 3 || dataFrames == 4 || dataFrames == 5)
                     {
-                        // Read but not consume, we should be flow-control stalled
-                        dataInfo.asByteBuffer(false);
-                        exchanger.exchange(dataInfo);
-                    }
-                    else if (dataFrames == 3)
-                    {
-                        // Consume partially, we should be flow-control stalled
-                        dataInfo.consumeInto(ByteBuffer.allocate(dataInfo.length() / 2));
-                        exchanger.exchange(dataInfo);
-                    }
-                    else if (dataFrames == 4 || dataFrames == 5)
-                    {
-                        // Consume totally
-                        dataInfo.asByteBuffer(true);
-                        exchanger.exchange(dataInfo);
+                        // Consume totally.
+                        callback.succeeded();
+                        if (frame.isEndStream())
+                            dataLatch.countDown();
                     }
                     else
                     {
@@ -189,91 +192,83 @@ public class FlowControlTest extends AbstractTest
                 }
                 catch (InterruptedException x)
                 {
-                    throw new SPDYException(x);
+                    callback.failed(x);
                 }
             }
         });
 
-        DataInfo dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        Callback callback = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         checkThatWeAreFlowControlStalled(exchanger);
 
-        Assert.assertEquals(windowSize, dataInfo.available());
-        Assert.assertEquals(0, dataInfo.consumed());
-        dataInfo.asByteBuffer(true);
+        // Consume the first chunk.
+        callback.succeeded();
 
-        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        callback = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         checkThatWeAreFlowControlStalled(exchanger);
 
-        Assert.assertEquals(0, dataInfo.available());
-        Assert.assertEquals(0, dataInfo.consumed());
-        dataInfo.consume(dataInfo.length());
+        // Consume the second chunk.
+        callback.succeeded();
 
-        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        checkThatWeAreFlowControlStalled(exchanger);
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+    }
 
-        Assert.assertEquals(dataInfo.length() / 2, dataInfo.consumed());
-        dataInfo.asByteBuffer(true);
-
-        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
-        // Check that we are not flow control stalled
-        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
+    private void checkThatWeAreFlowControlStalled(Exchanger<Callback> exchanger) throws Exception
+    {
+        try
+        {
+            exchanger.exchange(null, 1, TimeUnit.SECONDS);
+        }
+        catch (TimeoutException x)
+        {
+            // Expected.
+        }
     }
 
     @Test
     public void testClientFlowControlOneBigWrite() throws Exception
     {
         final int windowSize = 1536;
-        final Exchanger<DataInfo> exchanger = new Exchanger<>();
+        final Exchanger<Callback> exchanger = new Exchanger<>();
         final CountDownLatch settingsLatch = new CountDownLatch(1);
-        Session session = startClient(SPDY.V3, startServer(SPDY.V3, new ServerSessionFrameListener.Adapter()
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        startServer(new ServerSessionListener.Adapter()
         {
             @Override
-            public void onConnect(Session session)
+            public Map<Integer, Integer> onPreface(Session session)
             {
-                Settings settings = new Settings();
-                settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, windowSize));
-                session.settings(new SettingsInfo(settings), new FutureCallback());
+                Map<Integer, Integer> settings = new HashMap<>();
+                settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, windowSize);
+                return settings;
             }
 
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                stream.reply(new ReplyInfo(false), new Callback.Adapter());
-                return new StreamFrameListener.Adapter()
+                MetaData.Response metaData = new MetaData.Response(200, new HttpFields());
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                return new Stream.Listener.Adapter()
                 {
                     private AtomicInteger dataFrames = new AtomicInteger();
 
                     @Override
-                    public void onData(Stream stream, DataInfo dataInfo)
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
                     {
                         try
                         {
                             int dataFrames = this.dataFrames.incrementAndGet();
-                            if (dataFrames == 1)
+                            if (dataFrames == 1 || dataFrames == 2)
                             {
-                                // Do not consume nor read from the data frame.
-                                // We should then be flow-control stalled
-                                exchanger.exchange(dataInfo);
+                                // Do not consume the data frame.
+                                // We should then be flow-control stalled.
+                                exchanger.exchange(callback);
                             }
-                            else if (dataFrames == 2)
+                            else if (dataFrames == 3 || dataFrames == 4 || dataFrames == 5)
                             {
-                                // Read but not consume, we should be flow-control stalled
-                                dataInfo.asByteBuffer(false);
-                                exchanger.exchange(dataInfo);
-                            }
-                            else if (dataFrames == 3)
-                            {
-                                // Consume partially, we should be flow-control stalled
-                                dataInfo.consumeInto(ByteBuffer.allocate(dataInfo.length() / 2));
-                                exchanger.exchange(dataInfo);
-                            }
-                            else if (dataFrames == 4 || dataFrames == 5)
-                            {
-                                // Consume totally
-                                dataInfo.asByteBuffer(true);
-                                exchanger.exchange(dataInfo);
+                                // Consume totally.
+                                callback.succeeded();
+                                if (frame.isEndStream())
+                                    dataLatch.countDown();
                             }
                             else
                             {
@@ -282,15 +277,17 @@ public class FlowControlTest extends AbstractTest
                         }
                         catch (InterruptedException x)
                         {
-                            throw new SPDYException(x);
+                            callback.failed(x);
                         }
                     }
                 };
             }
-        }), new SessionFrameListener.Adapter()
+        });
+
+        Session session = newClient(new Session.Listener.Adapter()
         {
             @Override
-            public void onSettings(Session session, SettingsInfo settingsInfo)
+            public void onSettings(Session session, SettingsFrame frame)
             {
                 settingsLatch.countDown();
             }
@@ -298,37 +295,34 @@ public class FlowControlTest extends AbstractTest
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), false, (byte)0), null);
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        session.newStream(requestFrame, streamPromise, null);
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+
         final int length = 5 * windowSize;
-        stream.data(new BytesDataInfo(new byte[length], true), new Callback.Adapter());
+        DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(length), true);
+        stream.data(dataFrame, Callback.Adapter.INSTANCE);
 
-        DataInfo dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        Callback callback = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         checkThatWeAreFlowControlStalled(exchanger);
 
-        Assert.assertEquals(windowSize, dataInfo.available());
-        Assert.assertEquals(0, dataInfo.consumed());
-        dataInfo.asByteBuffer(true);
+        // Consume the first chunk.
+        callback.succeeded();
 
-        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
+        callback = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         checkThatWeAreFlowControlStalled(exchanger);
 
-        Assert.assertEquals(0, dataInfo.available());
-        Assert.assertEquals(0, dataInfo.consumed());
-        dataInfo.consume(dataInfo.length());
+        // Consume the second chunk.
+        callback.succeeded();
 
-        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        checkThatWeAreFlowControlStalled(exchanger);
-
-        Assert.assertEquals(dataInfo.length() / 2, dataInfo.consumed());
-        dataInfo.asByteBuffer(true);
-
-        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
-        // Check that we are not flow control stalled
-        dataInfo = exchanger.exchange(null, 5, TimeUnit.SECONDS);
-        Assert.assertEquals(dataInfo.length(), dataInfo.consumed());
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
+    // TODO: add tests for session and stream flow control.
+
+/*
     @Test
     public void testStreamsStalledDoesNotStallOtherStreams() throws Exception
     {
@@ -465,31 +459,6 @@ public class FlowControlTest extends AbstractTest
         });
 
         assertThat("all data bytes have been received by the client", allDataReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
-    }
-
-    private void checkThatWeAreFlowControlStalled(final Exchanger<DataInfo> exchanger)
-    {
-        expectException(TimeoutException.class, new Callable<DataInfo>()
-        {
-            @Override
-            public DataInfo call() throws Exception
-            {
-                return exchanger.exchange(null, 1, TimeUnit.SECONDS);
-            }
-        });
-    }
-
-    private void expectException(Class<? extends Exception> exception, Callable<DataInfo> command)
-    {
-        try
-        {
-            command.call();
-            Assert.fail();
-        }
-        catch (Exception x)
-        {
-            Assert.assertSame(exception, x.getClass());
-        }
     }
 */
 }

@@ -68,8 +68,8 @@ public class Generator
         return headerTableSize;
     }
 
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
     {
-        generators[frame.getType().getType()].generate(lease, frame);
+        generators[frame.getType().getType()].generate(lease, frame, maxLength);
     }
 }

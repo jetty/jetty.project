@@ -25,6 +25,7 @@ import javax.servlet.http.HttpServlet;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.hpack.MetaData;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
@@ -53,14 +54,17 @@ public class AbstractTest
         context.addServlet(new ServletHolder(servlet), path);
 
         prepareClient();
+
         server.start();
+        client.start();
     }
 
-    protected void startServer(Session.Listener listener) throws Exception
+    protected void startServer(ServerSessionListener listener) throws Exception
     {
         prepareServer(new RawHTTP2ServerConnectionFactory(listener));
         prepareClient();
         server.start();
+        client.start();
     }
 
     private void prepareServer(ConnectionFactory connectionFactory)
@@ -77,7 +81,6 @@ public class AbstractTest
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
         client = new HTTP2Client(clientExecutor);
-        server.addBean(client);
     }
 
     protected Session newClient(Session.Listener listener) throws Exception
@@ -93,6 +96,7 @@ public class AbstractTest
     @After
     public void dispose() throws Exception
     {
+        client.stop();
         server.stop();
     }
 

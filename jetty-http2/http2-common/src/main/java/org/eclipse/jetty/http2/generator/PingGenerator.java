@@ -35,7 +35,7 @@ public class PingGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
     {
         PingFrame pingFrame = (PingFrame)frame;
         generatePing(lease, pingFrame.getPayload(), pingFrame.isReply());

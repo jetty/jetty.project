@@ -35,85 +35,58 @@ public class DataGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame)
+    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
     {
         DataFrame dataFrame = (DataFrame)frame;
-        generateData(lease, dataFrame.getStreamId(), dataFrame.getData(), dataFrame.isEndStream(), false, null);
+        generateData(lease, dataFrame.getStreamId(), dataFrame.getData(), dataFrame.isEndStream(), maxLength);
     }
 
-    public void generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, boolean compress, byte[] paddingBytes)
+    public void generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, int maxLength)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
-        int paddingLength = paddingBytes == null ? 0 : paddingBytes.length;
-        // Leave space for at least one byte of content.
-        if (paddingLength > Frame.MAX_LENGTH - 3)
-            throw new IllegalArgumentException("Invalid padding length: " + paddingLength);
-        if (compress)
-            throw new IllegalArgumentException("Data compression not supported");
-
-        int extraPaddingBytes = paddingLength > 0xFF ? 2 : paddingLength > 0 ? 1 : 0;
 
         int dataLength = data.remaining();
+        if (dataLength <= maxLength && dataLength <= Frame.MAX_LENGTH)
+        {
+            // Single frame.
+            generateFrame(lease, streamId, data, last);
+            return;
+        }
 
-        // Can we fit just one frame ?
-        if (dataLength + extraPaddingBytes + paddingLength <= Frame.MAX_LENGTH)
+        // Other cases, we need to slice the original buffer into multiple frames.
+
+        int length = Math.min(maxLength, dataLength);
+        int dataBytesPerFrame = Frame.MAX_LENGTH;
+        int frames = length / dataBytesPerFrame;
+        if (frames * dataBytesPerFrame != length)
+            ++frames;
+
+        int begin = data.position();
+        int end = data.limit();
+        for (int i = 1; i <= frames; ++i)
         {
-            generateData(lease, streamId, data, last, compress, extraPaddingBytes, paddingBytes);
+            data.limit(begin + Math.min(dataBytesPerFrame * i, length));
+            ByteBuffer slice = data.slice();
+            data.position(data.limit());
+            generateFrame(lease, streamId, slice, i == frames && last);
         }
-        else
-        {
-            int dataBytesPerFrame = Frame.MAX_LENGTH - extraPaddingBytes - paddingLength;
-            int frames = dataLength / dataBytesPerFrame;
-            if (frames * dataBytesPerFrame != dataLength)
-            {
-                ++frames;
-            }
-            int limit = data.limit();
-            for (int i = 1; i <= frames; ++i)
-            {
-                data.limit(Math.min(dataBytesPerFrame * i, limit));
-                ByteBuffer slice = data.slice();
-                data.position(data.limit());
-                generateData(lease, streamId, slice, i == frames && last, compress, extraPaddingBytes, paddingBytes);
-            }
-        }
+        data.limit(end);
     }
 
-    private void generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, boolean compress, int extraPaddingBytes, byte[] paddingBytes)
+    private void generateFrame(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last)
     {
-        int paddingLength = paddingBytes == null ? 0 : paddingBytes.length;
-        int length = extraPaddingBytes + data.remaining() + paddingLength;
+        int length = data.remaining();
 
         int flags = Flag.NONE;
         if (last)
             flags |= Flag.END_STREAM;
-        if (extraPaddingBytes > 0)
-            flags |= Flag.PADDING_LOW;
-        if (extraPaddingBytes > 1)
-            flags |= Flag.PADDING_HIGH;
-        if (compress)
-            flags |= Flag.COMPRESS;
 
-        ByteBuffer header = generateHeader(lease, FrameType.DATA, Frame.HEADER_LENGTH + extraPaddingBytes, length, flags, streamId);
-
-        if (extraPaddingBytes == 2)
-        {
-            header.putShort((short)paddingLength);
-        }
-        else if (extraPaddingBytes == 1)
-        {
-            header.put((byte)paddingLength);
-        }
+        ByteBuffer header = generateHeader(lease, FrameType.DATA, length, flags, streamId);
 
         BufferUtil.flipToFlush(header, 0);
         lease.append(header, true);
 
         lease.append(data, false);
-
-        if (paddingBytes != null)
-        {
-            lease.append(ByteBuffer.wrap(paddingBytes), false);
-        }
     }
 }
