@@ -24,6 +24,7 @@ import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.http2.hpack.MetaData;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class HeadersBodyParser extends BodyParser
 {
@@ -51,6 +52,15 @@ public class HeadersBodyParser extends BodyParser
         exclusive = false;
         streamId = 0;
         weight = 0;
+    }
+
+    @Override
+    protected boolean emptyBody()
+    {
+        MetaData metaData = headerBlockParser.parse(BufferUtil.EMPTY_BUFFER, 0);
+        boolean result = onHeaders(0, 0, false, metaData);
+        reset();
+        return result;
     }
 
     @Override
