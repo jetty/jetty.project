@@ -39,4 +39,10 @@ public class WindowUpdateFrame extends Frame
     {
         return windowDelta;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s{delta=%d}", super.toString(), windowDelta);
+    }
 }

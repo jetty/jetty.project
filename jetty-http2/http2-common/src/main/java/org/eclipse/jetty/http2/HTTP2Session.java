@@ -112,6 +112,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public boolean onData(final DataFrame frame)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {}", frame);
         int streamId = frame.getStreamId();
         final IStream stream = getStream(streamId);
         if (stream != null)
@@ -157,6 +159,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public boolean onSettings(SettingsFrame frame)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {}", frame);
         Map<Integer, Integer> settings = frame.getSettings();
         if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
         {
@@ -177,6 +181,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public boolean onPing(PingFrame frame)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {}", frame);
         if (frame.isReply())
         {
             notifyPing(this, frame);
@@ -221,6 +227,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public boolean onWindowUpdate(WindowUpdateFrame frame)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {}", frame);
         int streamId = frame.getStreamId();
         IStream stream = null;
         if (streamId > 0)
@@ -616,6 +624,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             }
 
             List<ByteBuffer> byteBuffers = lease.getByteBuffers();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Writing {} buffers ({} bytes) for {}", byteBuffers.size(), lease.getTotalLength(), active);
             endPoint.write(this, byteBuffers.toArray(new ByteBuffer[byteBuffers.size()]));
             return Action.SCHEDULED;
         }
@@ -715,6 +725,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         public void failed(Throwable x)
         {
             callback.failed(x);
+        }
+
+        @Override
+        public String toString()
+        {
+            return frame.toString();
         }
     }
 
