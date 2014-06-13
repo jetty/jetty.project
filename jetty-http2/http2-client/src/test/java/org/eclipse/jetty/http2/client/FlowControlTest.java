@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.client;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
@@ -220,18 +221,6 @@ public class FlowControlTest extends AbstractTest
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
-    private void checkThatWeAreFlowControlStalled(Exchanger<Callback> exchanger) throws Exception
-    {
-        try
-        {
-            exchanger.exchange(null, 1, TimeUnit.SECONDS);
-        }
-        catch (TimeoutException x)
-        {
-            // Expected.
-        }
-    }
-
     @Test
     public void testClientFlowControlOneBigWrite() throws Exception
     {
@@ -328,145 +317,148 @@ public class FlowControlTest extends AbstractTest
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 
-    // TODO: add tests for session and stream flow control.
+    private void checkThatWeAreFlowControlStalled(Exchanger<Callback> exchanger) throws Exception
+    {
+        try
+        {
+            exchanger.exchange(null, 1, TimeUnit.SECONDS);
+        }
+        catch (TimeoutException x)
+        {
+            // Expected.
+        }
+    }
 
-/*
     @Test
-    public void testStreamsStalledDoesNotStallOtherStreams() throws Exception
+    public void testSessionStalledStallsNewStreams() throws Exception
     {
         final int windowSize = 1024;
         final CountDownLatch settingsLatch = new CountDownLatch(1);
-        Session session = startClient(SPDY.V3, startServer(SPDY.V3, new ServerSessionFrameListener.Adapter()
+        startServer(new ServerSessionListener.Adapter()
         {
             @Override
-            public void onSettings(Session session, SettingsInfo settingsInfo)
+            public void onSettings(Session session, SettingsFrame frame)
             {
                 settingsLatch.countDown();
             }
 
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                stream.reply(new ReplyInfo(false), new Callback.Adapter());
-                stream.data(new BytesDataInfo(new byte[windowSize * 2], true), new Callback.Adapter());
+                // For every stream, send down half the window size of data.
+                MetaData.Response metaData = new MetaData.Response(200, new HttpFields());
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(windowSize / 2), true);
+                stream.data(dataFrame, Callback.Adapter.INSTANCE);
                 return null;
             }
-        }), null);
-        Settings settings = new Settings();
-        settings.put(new Settings.Setting(Settings.ID.INITIAL_WINDOW_SIZE, windowSize));
-        session.settings(new SettingsInfo(settings));
+        });
+
+        Session client = newClient(new Session.Listener.Adapter());
+
+        Map<Integer, Integer> settings = new HashMap<>();
+        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, windowSize);
+        client.settings(new SettingsFrame(settings, false), Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
-        final CountDownLatch latch = new CountDownLatch(3);
-        final AtomicReference<DataInfo> dataInfoRef1 = new AtomicReference<>();
-        final AtomicReference<DataInfo> dataInfoRef2 = new AtomicReference<>();
-        session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), new StreamFrameListener.Adapter()
-        {
-            private final AtomicInteger dataFrames = new AtomicInteger();
+        final AtomicReference<Callback> callbackRef1 = new AtomicReference<>();
+        final AtomicReference<Callback> callbackRef2 = new AtomicReference<>();
 
+        // First request will consume half the session window.
+        MetaData.Request request1 = newRequest("GET", new HttpFields());
+        client.newStream(new HeadersFrame(0, request1, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        {
             @Override
-            public void onData(Stream stream, DataInfo dataInfo)
+            public void onData(Stream stream, DataFrame frame, Callback callback)
             {
-                int frames = dataFrames.incrementAndGet();
-                if (frames == 1)
-                {
-                    // Do not consume it to stall flow control
-                    dataInfoRef1.set(dataInfo);
-                }
-                else
-                {
-                    dataInfo.consume(dataInfo.length());
-                    if (dataInfo.isClose())
-                        latch.countDown();
-                }
+                // Do not consume it to stall flow control.
+                callbackRef1.set(callback);
             }
         });
-        session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), new StreamFrameListener.Adapter()
-        {
-            private final AtomicInteger dataFrames = new AtomicInteger();
 
+        // Second request will consume the session window, which is now stalled.
+        // A third request will not be able to receive data.
+        MetaData.Request request2 = newRequest("GET", new HttpFields());
+        client.newStream(new HeadersFrame(0, request2, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        {
             @Override
-            public void onData(Stream stream, DataInfo dataInfo)
+            public void onData(Stream stream, DataFrame frame, Callback callback)
             {
-                int frames = dataFrames.incrementAndGet();
-                if (frames == 1)
-                {
-                    // Do not consume it to stall flow control
-                    dataInfoRef2.set(dataInfo);
-                }
-                else
-                {
-                    dataInfo.consume(dataInfo.length());
-                    if (dataInfo.isClose())
-                        latch.countDown();
-                }
+                // Do not consume it to stall flow control.
+                callbackRef2.set(callback);
             }
         });
-        session.syn(new SynInfo(5, TimeUnit.SECONDS, new Fields(), true, (byte)0), new StreamFrameListener.Adapter()
+
+        // Third request is now stalled.
+        final CountDownLatch latch = new CountDownLatch(1);
+        MetaData.Request request3 = newRequest("GET", new HttpFields());
+        client.newStream(new HeadersFrame(0, request3, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
-            public void onData(Stream stream, DataInfo dataInfo)
+            public void onData(Stream stream, DataFrame frame, Callback callback)
             {
-                DataInfo dataInfo1 = dataInfoRef1.getAndSet(null);
-                if (dataInfo1 != null)
-                    dataInfo1.consume(dataInfo1.length());
-                DataInfo dataInfo2 = dataInfoRef2.getAndSet(null);
-                if (dataInfo2 != null)
-                    dataInfo2.consume(dataInfo2.length());
-                dataInfo.consume(dataInfo.length());
-                if (dataInfo.isClose())
+                callback.succeeded();
+                if (frame.isEndStream())
                     latch.countDown();
             }
         });
+
+        // Verify that the data does not arrive because the server session is stalled.
+        Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
+
+        // Consume the data of the second response.
+        // This will open up the session window, allowing the third stream to send data.
+        Callback callback2 = callbackRef2.getAndSet(null);
+        if (callback2 != null)
+            callback2.succeeded();
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
-    public void testSendBigFileWithoutFlowControl() throws Exception
+    public void testServerSendsBigContent() throws Exception
     {
-        testSendBigFile(SPDY.V2);
-    }
+        final byte[] data = new byte[1024 * 1024];
+        new Random().nextBytes(data);
 
-    @Test
-    public void testSendBigFileWithFlowControl() throws Exception
-    {
-        testSendBigFile(SPDY.V3);
-    }
-
-    private void testSendBigFile(short version) throws Exception
-    {
-        final int dataSize = 1024 * 1024;
-        final ByteBufferDataInfo bigByteBufferDataInfo = new ByteBufferDataInfo(ByteBuffer.allocate(dataSize),false);
-        final CountDownLatch allDataReceivedLatch = new CountDownLatch(1);
-
-        Session session = startClient(version, startServer(version, new ServerSessionFrameListener.Adapter()
+        startServer(new ServerSessionListener.Adapter()
         {
             @Override
-            public StreamFrameListener onSyn(Stream stream, SynInfo synInfo)
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                stream.reply(new ReplyInfo(false), new Callback.Adapter());
-                stream.data(bigByteBufferDataInfo, new Callback.Adapter());
+                MetaData.Response metaData = new MetaData.Response(200, new HttpFields());
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.wrap(data), true);
+                stream.data(dataFrame, Callback.Adapter.INSTANCE);
                 return null;
-            }
-        }),new SessionFrameListener.Adapter());
-
-        session.syn(new SynInfo(new Fields(), false),new StreamFrameListener.Adapter()
-        {
-            private int dataBytesReceived;
-
-            @Override
-            public void onData(Stream stream, DataInfo dataInfo)
-            {
-                dataBytesReceived = dataBytesReceived + dataInfo.length();
-                dataInfo.consume(dataInfo.length());
-                if (dataBytesReceived == dataSize)
-                    allDataReceivedLatch.countDown();
             }
         });
 
-        assertThat("all data bytes have been received by the client", allDataReceivedLatch.await(5, TimeUnit.SECONDS), is(true));
+        Session client = newClient(new Session.Listener.Adapter());
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
+        final byte[] bytes = new byte[data.length];
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        {
+            private int received;
+
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                int remaining = frame.remaining();
+                frame.getData().get(bytes, received, remaining);
+                this.received += remaining;
+                callback.succeeded();
+                if (frame.isEndStream())
+                    latch.countDown();
+            }
+        });
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertArrayEquals(data, bytes);
     }
-*/
 }
