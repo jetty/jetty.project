@@ -67,10 +67,11 @@ public class DataGenerator
         int end = data.limit();
         for (int i = 1; i <= frames; ++i)
         {
-            data.limit(begin + Math.min(dataBytesPerFrame * i, length));
+            int limit = begin + Math.min(dataBytesPerFrame * i, length);
+            data.limit(limit);
             ByteBuffer slice = data.slice();
-            data.position(data.limit());
-            generateFrame(lease, streamId, slice, i == frames && last);
+            data.position(limit);
+            generateFrame(lease, streamId, slice, i == frames && last && limit == end);
         }
         data.limit(end);
     }
