@@ -190,7 +190,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         else
         {
             PingFrame reply = new PingFrame(frame.getPayload(), true);
-            ping(reply, disconnectCallback);
+            control(null, reply, disconnectCallback);
         }
         return false;
     }
