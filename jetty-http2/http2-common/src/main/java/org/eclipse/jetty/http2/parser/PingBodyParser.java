@@ -50,10 +50,15 @@ public class PingBodyParser extends BodyParser
             {
                 case PREPARE:
                 {
-                    int length = getBodyLength();
-                    if (length != 8)
+                    // SPEC: wrong streamId is treated as connection error.
+                    if (getStreamId() != 0)
                     {
                         return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_ping_frame");
+                    }
+                    // SPEC: wrong body length is treated as connection error.
+                    if (getBodyLength() != 8)
+                    {
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_ping_frame");
                     }
                     state = State.PAYLOAD;
                     break;

@@ -174,6 +174,15 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public boolean onPing(PingFrame frame)
     {
+        if (frame.isReply())
+        {
+            notifyPing(this, frame);
+        }
+        else
+        {
+            PingFrame reply = new PingFrame(frame.getPayload(), true);
+            ping(reply, disconnectCallback);
+        }
         return false;
     }
 
@@ -263,7 +272,10 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void ping(PingFrame frame, Callback callback)
     {
-        control(null, frame, callback);
+        if (frame.isReply())
+            callback.failed(new IllegalArgumentException());
+        else
+            control(null, frame, callback);
     }
 
     @Override
@@ -431,6 +443,18 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         try
         {
             listener.onSettings(session, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
+    }
+
+    protected void notifyPing(Session session, PingFrame frame)
+    {
+        try
+        {
+            listener.onPing(session, frame);
         }
         catch (Throwable x)
         {

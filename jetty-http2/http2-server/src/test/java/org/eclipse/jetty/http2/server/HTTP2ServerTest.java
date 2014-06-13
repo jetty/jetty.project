@@ -40,12 +40,14 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.MetaData;
+import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.PrefaceParser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -268,6 +270,86 @@ public class HTTP2ServerTest
             DataFrame responseData = dataRef.get();
             Assert.assertNotNull(responseData);
             Assert.assertArrayEquals(content, BufferUtil.toArray(responseData.getData()));
+        }
+    }
+
+    @Test
+    public void testBadPingWrongPayload() throws Exception
+    {
+        startServer(new HttpServlet(){});
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        PingFrame frame = new PingFrame(new byte[8], false);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.control(lease, frame);
+        // Modify the length of the frame to a wrong one.
+        lease.getByteBuffers().get(0).putShort(0, (short)7);
+        lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        try (Socket client = new Socket(host, port))
+        {
+            OutputStream output = client.getOutputStream();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                output.write(BufferUtil.toArray(buffer));
+            }
+
+            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            {
+                @Override
+                public boolean onGoAway(GoAwayFrame frame)
+                {
+                    Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR, frame.getError());
+                    latch.countDown();
+                    return false;
+                }
+            });
+
+            parseResponse(client, parser);
+
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        }
+    }
+
+    @Test
+    public void testBadPingWrongStreamId() throws Exception
+    {
+        startServer(new HttpServlet(){});
+
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        PingFrame frame = new PingFrame(new byte[8], false);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.control(lease, frame);
+        // Modify the streamId of the frame to non zero.
+        lease.getByteBuffers().get(0).putInt(4, 1);
+        lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        try (Socket client = new Socket(host, port))
+        {
+            OutputStream output = client.getOutputStream();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+            {
+                output.write(BufferUtil.toArray(buffer));
+            }
+
+            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            {
+                @Override
+                public boolean onGoAway(GoAwayFrame frame)
+                {
+                    Assert.assertEquals(ErrorCode.PROTOCOL_ERROR, frame.getError());
+                    latch.countDown();
+                    return false;
+                }
+            });
+
+            parseResponse(client, parser);
+
+            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         }
     }
 
