@@ -103,7 +103,7 @@ public class HTTP2FlowControl implements FlowControl
         // Negative streamId allow for generation of bytes for both stream and session
         int streamId = stream != null ? -stream.getId() : 0;
         WindowUpdateFrame frame = new WindowUpdateFrame(streamId, length);
-        session.frame(stream, frame, Callback.Adapter.INSTANCE);
+        session.control(stream, frame, Callback.Adapter.INSTANCE);
     }
 
     @Override

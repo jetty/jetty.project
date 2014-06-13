@@ -35,7 +35,7 @@ public class GoAwayGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         GoAwayFrame goAwayFrame = (GoAwayFrame)frame;
         generateGoAway(lease, goAwayFrame.getLastStreamId(), goAwayFrame.getError(), goAwayFrame.getPayload());

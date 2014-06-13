@@ -35,11 +35,6 @@ public abstract class Frame
         return type;
     }
 
-    public int getFlowControlledLength()
-    {
-        return 0;
-    }
-
     @Override
     public String toString()
     {

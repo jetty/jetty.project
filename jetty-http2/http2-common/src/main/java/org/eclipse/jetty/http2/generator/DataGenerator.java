@@ -27,14 +27,15 @@ import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
-public class DataGenerator extends FrameGenerator
+public class DataGenerator
 {
+    private final HeaderGenerator headerGenerator;
+
     public DataGenerator(HeaderGenerator headerGenerator)
     {
-        super(headerGenerator);
+        this.headerGenerator = headerGenerator;
     }
 
-    @Override
     public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
     {
         DataFrame dataFrame = (DataFrame)frame;
@@ -82,7 +83,7 @@ public class DataGenerator extends FrameGenerator
         if (last)
             flags |= Flag.END_STREAM;
 
-        ByteBuffer header = generateHeader(lease, FrameType.DATA, length, flags, streamId);
+        ByteBuffer header = headerGenerator.generate(lease, FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
 
         BufferUtil.flipToFlush(header, 0);
         lease.append(header, true);

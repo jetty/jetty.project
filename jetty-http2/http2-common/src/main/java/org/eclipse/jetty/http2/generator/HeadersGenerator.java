@@ -40,7 +40,7 @@ public class HeadersGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
         generate(lease, headersFrame.getStreamId(), headersFrame.getMetaData(), !headersFrame.isEndStream());

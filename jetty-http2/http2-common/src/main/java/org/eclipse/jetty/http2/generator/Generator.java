@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2.generator;
 
+import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
@@ -28,6 +29,7 @@ public class Generator
     private final ByteBufferPool byteBufferPool;
     private final int headerTableSize;
     private final FrameGenerator[] generators;
+    private final DataGenerator dataGenerator;
 
     public Generator(ByteBufferPool byteBufferPool)
     {
@@ -43,7 +45,6 @@ public class Generator
         HpackEncoder encoder = new HpackEncoder(headerTableSize);
 
         this.generators = new FrameGenerator[FrameType.values().length];
-        this.generators[FrameType.DATA.getType()] = new DataGenerator(headerGenerator);
         this.generators[FrameType.HEADERS.getType()] = new HeadersGenerator(headerGenerator, encoder);
         this.generators[FrameType.PRIORITY.getType()] = new PriorityGenerator(headerGenerator);
         this.generators[FrameType.RST_STREAM.getType()] = new ResetGenerator(headerGenerator);
@@ -56,6 +57,7 @@ public class Generator
         this.generators[FrameType.ALTSVC.getType()] = null; // TODO
         this.generators[FrameType.BLOCKED.getType()] = null; // TODO
 
+        this.dataGenerator = new DataGenerator(headerGenerator);
     }
 
     public ByteBufferPool getByteBufferPool()
@@ -68,8 +70,13 @@ public class Generator
         return headerTableSize;
     }
 
-    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
+    public void control(ByteBufferPool.Lease lease, Frame frame)
     {
-        generators[frame.getType().getType()].generate(lease, frame, maxLength);
+        generators[frame.getType().getType()].generate(lease, frame);
+    }
+
+    public void data(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
+    {
+        dataGenerator.generate(lease, frame, maxLength);
     }
 }

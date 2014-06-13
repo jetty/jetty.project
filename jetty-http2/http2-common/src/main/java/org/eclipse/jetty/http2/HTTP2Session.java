@@ -117,14 +117,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (stream != null)
         {
             stream.updateClose(frame.isEndStream(), false);
-            flowControl.onDataReceived(this, stream, frame.getFlowControlledLength());
+            final int length = frame.remaining();
+            flowControl.onDataReceived(this, stream, length);
             return stream.process(frame, new Callback.Adapter()
             {
                 @Override
                 public void succeeded()
                 {
-                    int consumed = frame.getFlowControlledLength();
-                    flowControl.onDataConsumed(HTTP2Session.this, stream, consumed);
+                    flowControl.onDataConsumed(HTTP2Session.this, stream, length);
                 }
             });
         }
@@ -257,19 +257,19 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void settings(SettingsFrame frame, Callback callback)
     {
-        frame(null, frame, callback);
+        control(null, frame, callback);
     }
 
     @Override
     public void ping(PingFrame frame, Callback callback)
     {
-        frame(null, frame, callback);
+        control(null, frame, callback);
     }
 
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
-        frame(null, frame, callback);
+        control(null, frame, callback);
     }
 
     @Override
@@ -278,15 +278,27 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         byte[] payload = reason == null ? null : reason.getBytes(StandardCharsets.UTF_8);
         GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
         LOG.debug("Sending {}: {}", frame.getType(), reason);
-        frame(null, frame, callback);
+        control(null, frame, callback);
     }
 
     @Override
-    public void frame(IStream stream, Frame frame, Callback callback)
+    public void control(IStream stream, Frame frame, Callback callback)
     {
         // We want to generate as late as possible to allow re-prioritization.
-        FlusherEntry entry = new FlusherEntry(stream, frame, callback);
-        LOG.debug("Sending {}", frame);
+        frame(new FlusherEntry(stream, frame, callback));
+    }
+
+    @Override
+    public void data(IStream stream, DataFrame frame, Callback callback)
+    {
+        // We want to generate as late as possible to allow re-prioritization.
+        frame(new DataFlusherEntry(stream, frame, callback));
+    }
+
+    private void frame(FlusherEntry entry)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Sending {}", entry.frame);
         flusher.append(entry);
         flusher.iterate();
     }
@@ -495,33 +507,38 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 {
                     FlusherEntry entry = queue.get(nonStalledIndex);
                     IStream stream = entry.stream;
-                    int frameWindow = entry.frame.getFlowControlledLength();
-                    if (frameWindow > 0)
+                    int remaining = 0;
+                    if (entry.frame instanceof DataFrame)
                     {
-                        // Is the session stalled ?
-                        if (sessionWindow <= 0)
+                        DataFrame dataFrame = (DataFrame)entry.frame;
+                        remaining = dataFrame.remaining();
+                        if (remaining > 0)
                         {
-                            flowControl.onSessionStalled(HTTP2Session.this);
-                            ++nonStalledIndex;
-                            // There may be *non* flow controlled frames to send.
-                            continue;
-                        }
-
-                        if (stream != null)
-                        {
-                            Integer streamWindow = streams.get(stream);
-                            if (streamWindow == null)
+                            // Is the session stalled ?
+                            if (sessionWindow <= 0)
                             {
-                                streamWindow = stream.getWindowSize();
-                                streams.put(stream, streamWindow);
+                                flowControl.onSessionStalled(HTTP2Session.this);
+                                ++nonStalledIndex;
+                                // There may be *non* flow controlled frames to send.
+                                continue;
                             }
 
-                            // Is it a frame belonging to an already stalled stream ?
-                            if (streamWindow <= 0)
+                            if (stream != null)
                             {
-                                flowControl.onStreamStalled(stream);
-                                ++nonStalledIndex;
-                                continue;
+                                Integer streamWindow = streams.get(stream);
+                                if (streamWindow == null)
+                                {
+                                    streamWindow = stream.getWindowSize();
+                                    streams.put(stream, streamWindow);
+                                }
+
+                                // Is it a frame belonging to an already stalled stream ?
+                                if (streamWindow <= 0)
+                                {
+                                    flowControl.onStreamStalled(stream);
+                                    ++nonStalledIndex;
+                                    continue;
+                                }
                             }
                         }
                     }
@@ -531,16 +548,16 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     --size;
 
                     // If the stream has been reset, don't send flow controlled frames.
-                    if (stream != null && stream.isReset() && frameWindow > 0)
+                    if (stream != null && stream.isReset() && remaining > 0)
                     {
                         reset.add(entry);
                         continue;
                     }
 
                     // Reduce the flow control windows.
-                    sessionWindow -= frameWindow;
-                    if (stream != null && frameWindow > 0)
-                        streams.put(stream, streams.get(stream) - frameWindow);
+                    sessionWindow -= remaining;
+                    if (stream != null && remaining > 0)
+                        streams.put(stream, streams.get(stream) - remaining);
 
                     active.add(entry);
                     if (active.size() == maxGather)
@@ -630,10 +647,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
     private class FlusherEntry implements Callback
     {
-        private final IStream stream;
-        private final Frame frame;
-        private final Callback callback;
-        private int length;
+        protected final IStream stream;
+        protected final Frame frame;
+        protected final Callback callback;
 
         private FlusherEntry(IStream stream, Frame frame, Callback callback)
         {
@@ -646,13 +662,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             try
             {
-                int windowSize = stream == null ? getWindowSize() : stream.getWindowSize();
-                int frameLength = frame.getFlowControlledLength();
-                if (frameLength > 0)
-                    this.length = Math.min(frameLength, windowSize);
-
-                generator.generate(lease, frame, windowSize);
-                LOG.debug("Generated {}, windowSize={}", frame, windowSize);
+                generator.control(lease, frame);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Generated {}", frame);
             }
             catch (Throwable x)
             {
@@ -664,9 +676,43 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         @Override
         public void succeeded()
         {
+            callback.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            callback.failed(x);
+        }
+    }
+
+    private class DataFlusherEntry extends FlusherEntry
+    {
+        private int length;
+
+        private DataFlusherEntry(IStream stream, DataFrame frame, Callback callback)
+        {
+            super(stream, frame, callback);
+        }
+
+        public void generate(ByteBufferPool.Lease lease)
+        {
+            DataFrame dataFrame = (DataFrame)frame;
+            int windowSize = stream.getWindowSize();
+            int frameLength = dataFrame.remaining();
+            this.length = Math.min(frameLength, windowSize);
+            generator.data(lease, dataFrame, length);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Generated {}, maxLength={}", dataFrame, length);
+        }
+
+        @Override
+        public void succeeded()
+        {
             flowControl.onDataSent(HTTP2Session.this, stream, length);
             // Do we have more to send ?
-            if (frame.getFlowControlledLength() > 0)
+            DataFrame dataFrame = (DataFrame)frame;
+            if (dataFrame.remaining() > 0)
             {
                 // We have written part of the frame, but there is more to write.
                 // We need to keep the correct ordering of frames, to avoid that other
@@ -675,18 +721,13 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             }
             else
             {
+                // Only now we can update the close state
+                // and eventually remove the stream.
+                stream.updateClose(dataFrame.isEndStream(), true);
+                if (stream.isClosed())
+                    removeStream(stream, true);
                 callback.succeeded();
-                // TODO: what below is needed ? YES IT IS.
-//                stream.updateCloseState(dataInfo.isClose(), true);
-//                if (stream.isClosed())
-//                    removeStream(stream);
             }
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            callback.failed(x);
         }
     }
 

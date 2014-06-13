@@ -63,13 +63,13 @@ public class HTTP2Stream implements IStream
     @Override
     public void headers(HeadersFrame frame, Callback callback)
     {
-        session.frame(this, frame, callback);
+        session.control(this, frame, callback);
     }
 
     @Override
     public void data(DataFrame frame, Callback callback)
     {
-        session.frame(this, frame, callback);
+        session.data(this, frame, callback);
     }
 
     @Override

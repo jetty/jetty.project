@@ -36,7 +36,7 @@ public class SettingsGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
         generateSettings(lease, settingsFrame.getSettings(), settingsFrame.isReply());

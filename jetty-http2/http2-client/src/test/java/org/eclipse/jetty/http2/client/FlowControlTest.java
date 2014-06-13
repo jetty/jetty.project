@@ -44,6 +44,14 @@ import org.junit.Test;
 
 public class FlowControlTest extends AbstractTest
 {
+    @Override
+    public void dispose() throws Exception
+    {
+        // Allow WINDOW_UPDATE frames to be sent/received to avoid exception stack traces.
+        Thread.sleep(1000);
+        super.dispose();
+    }
+
     @Test
     public void testFlowControlWithConcurrentSettings() throws Exception
     {

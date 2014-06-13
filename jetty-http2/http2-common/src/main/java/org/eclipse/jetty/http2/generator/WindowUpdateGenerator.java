@@ -35,7 +35,7 @@ public class WindowUpdateGenerator extends FrameGenerator
     }
 
     @Override
-    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         WindowUpdateFrame windowUpdateFrame = (WindowUpdateFrame)frame;
         generateWindowUpdate(lease, windowUpdateFrame.getStreamId(), windowUpdateFrame.getWindowDelta());

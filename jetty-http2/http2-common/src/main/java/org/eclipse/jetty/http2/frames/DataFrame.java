@@ -49,8 +49,7 @@ public class DataFrame extends Frame
         return endStream;
     }
 
-    @Override
-    public int getFlowControlledLength()
+    public int remaining()
     {
         return data.remaining();
     }
