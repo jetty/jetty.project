@@ -73,7 +73,8 @@ public class Parser
 
     public boolean parse(ByteBuffer buffer)
     {
-        LOG.debug("Parsing {}", buffer);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Parsing {}", buffer);
 
         while (true)
         {

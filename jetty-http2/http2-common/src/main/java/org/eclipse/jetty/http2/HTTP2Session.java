@@ -158,13 +158,13 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
         {
             maxStreamCount = settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS);
-            LOG.debug("Updated max concurrent streams to {}", maxStreamCount);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updated max concurrent streams to {}", maxStreamCount);
         }
         if (settings.containsKey(SettingsFrame.INITIAL_WINDOW_SIZE))
         {
             int windowSize = settings.get(SettingsFrame.INITIAL_WINDOW_SIZE);
             flowControl.updateInitialWindowSize(this, windowSize);
-            LOG.debug("Updated initial window size to {}", windowSize);
         }
         // TODO: handle other settings
         notifySettings(this, frame);
@@ -277,7 +277,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         byte[] payload = reason == null ? null : reason.getBytes(StandardCharsets.UTF_8);
         GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
-        LOG.debug("Sending {}: {}", frame.getType(), reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Sending {}: {}", frame.getType(), reason);
         control(null, frame, callback);
     }
 
@@ -305,7 +306,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
     protected void disconnect()
     {
-        LOG.debug("Disconnecting");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Disconnecting");
         endPoint.close();
     }
 
@@ -316,7 +318,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             flowControl.onNewStream(stream);
-            LOG.debug("Created local {}", stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Created local {}", stream);
             return stream;
         }
         else
@@ -350,7 +353,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             updateLastStreamId(streamId);
             flowControl.onNewStream(stream);
-            LOG.debug("Created remote {}", stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Created remote {}", stream);
             return stream;
         }
         else
@@ -375,7 +379,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             if (local)
                 streamCount.decrementAndGet();
 
-            LOG.debug("Removed {}", stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Removed {}", stream);
         }
     }
 

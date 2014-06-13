@@ -55,21 +55,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         boolean isHeadRequest = HttpMethod.HEAD.is(metaData.getMethod());
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
 
-        // TODO: the idea here is this:
-        // CallbackLease lease = new CallbackLease(callback);
-        // commit(lease, ...)
-        //   stream.header(lease, frame)
-        //     session.frame(lease, frame)
-        //       generator.generate(lease, frame)
-        //         generateHeader(lease, frame);
-        //         bodyGenerator[frame.getType()].generateBody(lease, frame);
-        //   stream.content(lease, frame)
-        //     ...
-        //   flush(lease)
-        //
-        // Problem is that in this way I need to aggregate multiple callbacks for the same lease.
-        // So it'd need another abstraction that is a Lease+Callback
-
         if (commit.compareAndSet(false, true))
         {
             commit(info, !hasContent, !hasContent ? callback : new Callback.Adapter()

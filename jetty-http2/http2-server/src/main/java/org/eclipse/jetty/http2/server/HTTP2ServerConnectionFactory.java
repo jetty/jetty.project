@@ -81,7 +81,8 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
-            LOG.debug("Processing {} on {}", frame, stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Processing {} on {}", frame, stream);
 
             HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2((IStream)stream, frame);
             HttpInputOverHTTP2 input = new HttpInputOverHTTP2();
@@ -102,7 +103,8 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onData(Stream stream, DataFrame frame, Callback callback)
         {
-            LOG.debug("Processing {} on {}", frame, stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Processing {} on {}", frame, stream);
 
             HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(CHANNEL_ATTRIBUTE);
             channel.requestContent(frame, callback);
