@@ -119,7 +119,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             stream.updateClose(frame.isEndStream(), false);
             final int length = frame.remaining();
             flowControl.onDataReceived(this, stream, length);
-            return stream.process(frame, new Callback.Adapter()
+            boolean result = stream.process(frame, new Callback.Adapter()
             {
                 @Override
                 public void succeeded()
@@ -127,6 +127,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     flowControl.onDataConsumed(HTTP2Session.this, stream, length);
                 }
             });
+            if (stream.isClosed())
+                removeStream(stream, false);
+            return result;
         }
         else
         {
