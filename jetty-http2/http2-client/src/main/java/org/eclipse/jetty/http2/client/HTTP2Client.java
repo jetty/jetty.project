@@ -120,19 +120,19 @@ public class HTTP2Client extends ContainerLifeCycle
             Generator generator = new Generator(byteBufferPool, 4096);
             HTTP2Session session = new HTTP2ClientSession(endpoint, generator, context.listener, new HTTP2FlowControl(65535));
             Parser parser = new Parser(byteBufferPool, session);
-            Connection connection = new HTTP2ClientConnection(byteBufferPool, getExecutor(), endpoint, parser, 8192, session);
-            context.promise.succeeded(session);
-            return connection;
+            return new HTTP2ClientConnection(byteBufferPool, getExecutor(), endpoint, parser, 8192, context.promise, session);
         }
     }
 
-    private class HTTP2ClientConnection extends HTTP2Connection
+    private class HTTP2ClientConnection extends HTTP2Connection implements Callback
     {
+        private final Promise<Session> promise;
         private final Session session;
 
-        public HTTP2ClientConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, int bufferSize, Session session)
+        public HTTP2ClientConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, int bufferSize, Promise<Session> promise, Session session)
         {
             super(byteBufferPool, executor, endpoint, parser, bufferSize);
+            this.promise = promise;
             this.session = session;
         }
 
@@ -140,8 +140,7 @@ public class HTTP2Client extends ContainerLifeCycle
         public void onOpen()
         {
             super.onOpen();
-            sessions.offer(session);
-            getEndPoint().write(Callback.Adapter.INSTANCE, ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES));
+            getEndPoint().write(this, ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES));
         }
 
         @Override
@@ -149,6 +148,20 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             super.onClose();
             sessions.remove(session);
+        }
+
+        @Override
+        public void succeeded()
+        {
+            sessions.offer(session);
+            promise.succeeded(session);
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
+            promise.failed(x);
         }
     }
 
