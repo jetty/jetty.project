@@ -19,6 +19,12 @@
 package org.eclipse.jetty.maven.plugin;
 
 
+import java.io.File;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.List;
+import java.util.Map;
+
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -27,6 +33,8 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
+import org.eclipse.jetty.xml.XmlConfiguration;
+
 
 /**
  * JettyServer
@@ -108,5 +116,44 @@ public class JettyServer extends org.eclipse.jetty.server.Server
                 handlers.addHandler(contexts);
             }
         }  
+    }
+
+    /**
+     * Apply xml files to server startup, passing in ourselves as the 
+     * "Server" instance.
+     * 
+     * @param files
+     * @throws Exception
+     */
+    public  void applyXmlConfigurations (List<File> files) 
+    throws Exception
+    {
+        if (files == null || files.isEmpty())
+            return;
+
+       Map<String,Object> lastMap = Collections.singletonMap("Server", (Object)this);
+
+        for ( File xmlFile : files )
+        {
+            if (PluginLog.getLog() != null)
+                PluginLog.getLog().info( "Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath() );   
+
+
+            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(xmlFile));
+
+            //chain ids from one config file to another
+            if (lastMap != null)
+                xmlConfiguration.getIdMap().putAll(lastMap); 
+
+            //Set the system properties each time in case the config file set a new one
+            Enumeration<?> ensysprop = System.getProperties().propertyNames();
+            while (ensysprop.hasMoreElements())
+            {
+                String name = (String)ensysprop.nextElement();
+                xmlConfiguration.getProperties().put(name,System.getProperty(name));
+            }
+            xmlConfiguration.configure(); 
+            lastMap = xmlConfiguration.getIdMap();
+        }
     }
 }
