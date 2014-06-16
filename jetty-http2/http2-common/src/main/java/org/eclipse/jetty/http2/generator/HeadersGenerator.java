@@ -43,10 +43,10 @@ public class HeadersGenerator extends FrameGenerator
     public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         HeadersFrame headersFrame = (HeadersFrame)frame;
-        generate(lease, headersFrame.getStreamId(), headersFrame.getMetaData(), !headersFrame.isEndStream());
+        generateHeaders(lease, headersFrame.getStreamId(), headersFrame.getMetaData(), !headersFrame.isEndStream());
     }
 
-    private void generate(ByteBufferPool.Lease lease, int streamId, MetaData metaData, boolean contentFollows)
+    public void generateHeaders(ByteBufferPool.Lease lease, int streamId, MetaData metaData, boolean contentFollows)
     {
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);

@@ -49,7 +49,7 @@ public class Generator
         this.generators[FrameType.PRIORITY.getType()] = new PriorityGenerator(headerGenerator);
         this.generators[FrameType.RST_STREAM.getType()] = new ResetGenerator(headerGenerator);
         this.generators[FrameType.SETTINGS.getType()] = new SettingsGenerator(headerGenerator);
-        this.generators[FrameType.PUSH_PROMISE.getType()] = null; // TODO
+        this.generators[FrameType.PUSH_PROMISE.getType()] = new PushPromiseGenerator(headerGenerator, encoder);
         this.generators[FrameType.PING.getType()] = new PingGenerator(headerGenerator);
         this.generators[FrameType.GO_AWAY.getType()] = new GoAwayGenerator(headerGenerator);
         this.generators[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateGenerator(headerGenerator);

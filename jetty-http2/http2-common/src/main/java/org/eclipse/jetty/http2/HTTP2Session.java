@@ -40,6 +40,7 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
@@ -175,6 +176,13 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         // TODO: handle other settings
         notifySettings(this, frame);
+        return false;
+    }
+
+    @Override
+    public boolean onPushPromise(PushPromiseFrame frame)
+    {
+        // TODO
         return false;
     }
 

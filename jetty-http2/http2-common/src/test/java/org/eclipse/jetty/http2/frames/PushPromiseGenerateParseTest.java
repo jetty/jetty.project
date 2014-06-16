@@ -26,7 +26,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
-import org.eclipse.jetty.http2.generator.HeadersGenerator;
+import org.eclipse.jetty.http2.generator.PushPromiseGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.hpack.MetaData;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -36,7 +36,7 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 
-public class HeadersGenerateParseTest
+public class PushPromiseGenerateParseTest
 {
     private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
 
@@ -44,24 +44,25 @@ public class HeadersGenerateParseTest
     @Test
     public void testGenerateParse() throws Exception
     {
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+        PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(), new HpackEncoder());
 
         int streamId = 13;
+        int promisedStreamId = 17;
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
         MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
 
         // Iterate a few times to be sure generator and parser are properly reset.
-        final List<HeadersFrame> frames = new ArrayList<>();
+        final List<PushPromiseFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generateHeaders(lease, streamId, metaData, false);
+            generator.generatePushPromise(lease, streamId, promisedStreamId, metaData);
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public boolean onPushPromise(PushPromiseFrame frame)
                 {
                     frames.add(frame);
                     return false;
@@ -78,9 +79,9 @@ public class HeadersGenerateParseTest
             }
 
             Assert.assertEquals(1, frames.size());
-            HeadersFrame frame = frames.get(0);
+            PushPromiseFrame frame = frames.get(0);
             Assert.assertEquals(streamId, frame.getStreamId());
-            Assert.assertTrue(frame.isEndStream());
+            Assert.assertEquals(promisedStreamId, frame.getPromisedStreamId());
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
             Assert.assertSame(metaData.getScheme(), request.getScheme());
             Assert.assertEquals(metaData.getMethod(), request.getMethod());
@@ -99,21 +100,22 @@ public class HeadersGenerateParseTest
     @Test
     public void testGenerateParseOneByteAtATime() throws Exception
     {
-        HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
+        PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(), new HpackEncoder());
 
         int streamId = 13;
+        int promisedStreamId = 17;
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
         MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
 
-        final List<HeadersFrame> frames = new ArrayList<>();
+        final List<PushPromiseFrame> frames = new ArrayList<>();
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateHeaders(lease, streamId, metaData, false);
+        generator.generatePushPromise(lease, streamId, promisedStreamId, metaData);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onHeaders(HeadersFrame frame)
+            public boolean onPushPromise(PushPromiseFrame frame)
             {
                 frames.add(frame);
                 return false;
@@ -129,9 +131,9 @@ public class HeadersGenerateParseTest
         }
 
         Assert.assertEquals(1, frames.size());
-        HeadersFrame frame = frames.get(0);
+        PushPromiseFrame frame = frames.get(0);
         Assert.assertEquals(streamId, frame.getStreamId());
-        Assert.assertTrue(frame.isEndStream());
+        Assert.assertEquals(promisedStreamId, frame.getPromisedStreamId());
         MetaData.Request request = (MetaData.Request)frame.getMetaData();
         Assert.assertSame(metaData.getScheme(), request.getScheme());
         Assert.assertEquals(metaData.getMethod(), request.getMethod());

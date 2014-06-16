@@ -26,6 +26,7 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
@@ -56,7 +57,7 @@ public class Parser
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
         bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
         bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener);
-        bodyParsers[FrameType.PUSH_PROMISE.getType()] = null; // TODO
+        bodyParsers[FrameType.PUSH_PROMISE.getType()] = new PushPromiseBodyParser(headerParser, listener, headerBlockParser);
         bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener);
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
         bodyParsers[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateBodyParser(headerParser, listener);
@@ -172,6 +173,8 @@ public class Parser
 
         public boolean onSettings(SettingsFrame frame);
 
+        public boolean onPushPromise(PushPromiseFrame frame);
+
         public boolean onPing(PingFrame frame);
 
         public boolean onGoAway(GoAwayFrame frame);
@@ -208,6 +211,12 @@ public class Parser
 
             @Override
             public boolean onSettings(SettingsFrame frame)
+            {
+                return false;
+            }
+
+            @Override
+            public boolean onPushPromise(PushPromiseFrame frame)
             {
                 return false;
             }
