@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -176,6 +177,10 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         // TODO: handle other settings
         notifySettings(this, frame);
+
+        // SPEC: SETTINGS frame MUST be replied.
+        SettingsFrame reply = new SettingsFrame(Collections.<Integer, Integer>emptyMap(), true);
+        settings(reply, disconnectCallback);
         return false;
     }
 
