@@ -159,8 +159,8 @@ public class ConfigurationAssert
         }
         return value;
     }
-
-    private static void assertContainsUnordered(String msg, Collection<String> expectedSet, Collection<String> actualSet)
+    
+    public static void assertContainsUnordered(String msg, Collection<String> expectedSet, Collection<String> actualSet)
     {
         // same size?
         boolean mismatch = expectedSet.size() != actualSet.size();
