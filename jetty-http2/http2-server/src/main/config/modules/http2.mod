@@ -10,7 +10,6 @@ protonego
 lib/http2/*.jar
 
 [xml]
-etc/jetty-ssl.xml
 etc/jetty-http2.xml
 
 [ini-template]
