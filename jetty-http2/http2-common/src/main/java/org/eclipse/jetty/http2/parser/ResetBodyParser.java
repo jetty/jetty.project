@@ -49,6 +49,11 @@ public class ResetBodyParser extends BodyParser
             {
                 case PREPARE:
                 {
+                    // SPEC: wrong streamId is treated as connection error.
+                    if (getStreamId() == 0)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_rst_stream_frame");
+                    }
                     int length = getBodyLength();
                     if (length != 4)
                     {

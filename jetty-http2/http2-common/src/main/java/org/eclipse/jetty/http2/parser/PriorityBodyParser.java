@@ -51,6 +51,11 @@ public class PriorityBodyParser extends BodyParser
             {
                 case PREPARE:
                 {
+                    // SPEC: wrong streamId is treated as connection error.
+                    if (getStreamId() == 0)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_priority_frame");
+                    }
                     int length = getBodyLength();
                     if (length != 5)
                     {

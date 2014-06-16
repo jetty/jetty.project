@@ -73,6 +73,11 @@ public class HeadersBodyParser extends BodyParser
             {
                 case PREPARE:
                 {
+                    // SPEC: wrong streamId is treated as connection error.
+                    if (getStreamId() == 0)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame");
+                    }
                     length = getBodyLength();
                     if (isPaddingHigh())
                     {

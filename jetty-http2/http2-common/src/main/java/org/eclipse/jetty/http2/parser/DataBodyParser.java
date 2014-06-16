@@ -62,6 +62,11 @@ public class DataBodyParser extends BodyParser
             {
                 case PREPARE:
                 {
+                    // SPEC: wrong streamId is treated as connection error.
+                    if (getStreamId() == 0)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_data_frame");
+                    }
                     length = getBodyLength();
                     if (isPaddingHigh())
                     {

@@ -64,6 +64,11 @@ public class SettingsBodyParser extends BodyParser
             {
                 case PREPARE:
                 {
+                    // SPEC: wrong streamId is treated as connection error.
+                    if (getStreamId() != 0)
+                    {
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_frame");
+                    }
                     length = getBodyLength();
                     settings = new HashMap<>();
                     state = State.SETTING_ID;
