@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
+import org.eclipse.jetty.websocket.common.frames.ControlFrame;
 import org.eclipse.jetty.websocket.common.message.MessageInputStream;
 import org.eclipse.jetty.websocket.common.message.MessageReader;
 import org.eclipse.jetty.websocket.jsr356.JsrPongMessage;
@@ -235,11 +236,20 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             LOG.debug("No PONG MessageHandler declared");
             return;
         }
-
-        ByteBuffer pongBuf = ByteBuffer.allocate(buffer.remaining());
-        BufferUtil.put(buffer,pongBuf);
-        BufferUtil.flipToFlush(pongBuf,0);
         
+        ByteBuffer pongBuf = null;
+        
+        if (BufferUtil.isEmpty(buffer))
+        {
+            pongBuf = BufferUtil.EMPTY_BUFFER;
+        }
+        else
+        {
+            pongBuf = ByteBuffer.allocate(buffer.remaining());
+            BufferUtil.put(buffer,pongBuf);
+            BufferUtil.flipToFlush(pongBuf,0);
+        }
+
         @SuppressWarnings("unchecked")
         Whole<PongMessage> pongHandler = (Whole<PongMessage>)wrapper.getHandler();
         pongHandler.onMessage(new JsrPongMessage(pongBuf));

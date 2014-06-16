@@ -24,6 +24,13 @@
                     </jvmArgs>
                     <jettyXml>${basedir}/src/main/config/example-jetty-spdy.xml</jettyXml>
                     <contextPath>/</contextPath>
+                    <excludedGoals>
+                       <excludedGoal>run</excludedGoal>
+                       <excludedGoal>run-war</excludedGoal>
+                       <excludedGoal>deploy</excludedGoal>
+                       <excludedGoal>start</excludedGoal>
+                       <excludedGoal>stop</excludedGoal>
+                    </excludedGoals>
                 </configuration>
                 <dependencies>
                     <dependency>
@@ -53,6 +60,13 @@
                             </jvmArgs>
                             <jettyXml>${basedir}/src/main/config/example-jetty-spdy-proxy.xml</jettyXml>
                             <contextPath>/</contextPath>
+                            <excludedGoals>
+                               <excludedGoal>run</excludedGoal>
+                               <excludedGoal>run-war</excludedGoal>
+                               <excludedGoal>deploy</excludedGoal>
+                               <excludedGoal>start</excludedGoal>
+                               <excludedGoal>stop</excludedGoal>
+                            </excludedGoals>
                         </configuration>
                         <dependencies>
                             <dependency>

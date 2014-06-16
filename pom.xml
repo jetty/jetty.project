@@ -458,9 +458,9 @@
     <module>jetty-alpn</module>
     <module>jetty-npn</module>
 
-      <!-- modules that need fixed and added back, or simply dropped and not maintained
-      <module>jetty-rhttp</module>
-      -->
+    <!-- modules that need fixed and added back, or simply dropped and not maintained
+    <module>jetty-rhttp</module>
+    -->
     <!--<module>jetty-overlay-deployer</module>-->
   </modules>
   <dependencyManagement>
