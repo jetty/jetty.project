@@ -126,10 +126,10 @@ public class Request implements HttpServletRequest
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
-    private final HttpChannel<?> _channel;
+    private final HttpChannel _channel;
     private final HttpFields _fields=new HttpFields();
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
-    private final HttpInput<?> _input;
+    private final HttpInput _input;
     
     public static class MultiPartCleanerListener implements ServletRequestListener
     {
@@ -209,7 +209,7 @@ public class Request implements HttpServletRequest
     private AsyncContextState _async;
     
     /* ------------------------------------------------------------ */
-    public Request(HttpChannel<?> channel, HttpInput<?> input)
+    public Request(HttpChannel channel, HttpInput input)
     {
         _channel = channel;
         _input = input;
@@ -222,7 +222,7 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    public HttpInput<?> getHttpInput()
+    public HttpInput getHttpInput()
     {
         return _input;
     }
@@ -502,7 +502,7 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the connection.
      */
-    public HttpChannel<?> getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }

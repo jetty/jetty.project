@@ -23,7 +23,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -32,22 +34,29 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
 
 /**
  * A HttpChannel customized to be transported over the HTTP/1 protocol
  */
-class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.ProxyHandler
+class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ProxyHandler
 {
     /**
      * 
      */
     private final HttpConnection _httpConnection;
+    private String _method; 
+    private HttpURI _uri;
+    private HttpVersion _version;
+    private final HttpFields _fields = new HttpFields();
+    private HostPortHttpField _hostPort;
+    private HttpField _connection;
     private boolean _expect = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     
-    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
+    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
         super(connector,config,endPoint,transport,input);
         _httpConnection = httpConnection;
@@ -60,6 +69,12 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;
+        _method=null;
+        _uri=null;
+        _version=null;
+        _hostPort=null;
+        _connection=null;
+        _fields.clear();
     }
 
     @Override
@@ -77,15 +92,19 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
     @Override
     public boolean startRequest(String method, HttpURI uri, HttpVersion version)
     {
+        _method=method;
+        _uri=uri;
+        _version=version;
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;
-        return super.startRequest(method,uri,version);
+        return false;
     }
     
     @Override
     public void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort)
     {
+        _method=HttpMethod.CONNECT.asString();
         Request request = getRequest();
         request.setAttribute("PROXY", protocol);
         request.setServerName(sAddr);
@@ -99,44 +118,64 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
     {
         HttpHeader header=field.getHeader();
         String value=field.getValue();
-        if (getRequest().getHttpVersion().getVersion()==HttpVersion.HTTP_1_1.getVersion() && header == HttpHeader.EXPECT)
+        if (header!=null)
         {
-            HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
-            switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
+            switch(header)
             {
-                case CONTINUE:
-                    _expect100Continue = true;
+                case CONNECTION:
+                    _connection=field;
                     break;
 
-                case PROCESSING:
-                    _expect102Processing = true;
+                case HOST:
+                    _hostPort=(HostPortHttpField)field;
                     break;
 
-                default:
-                    String[] values = field.getValues();
-                    for (int i = 0; values != null && i < values.length; i++)
+                case EXPECT:
+                {
+                    if (getRequest().getHttpVersion().getVersion()==HttpVersion.HTTP_1_1.getVersion())
                     {
-                        expect = HttpHeaderValue.CACHE.get(values[i].trim());
-                        if (expect == null)
-                            _expect = true;
-                        else
+                        HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
+                        switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
                         {
-                            switch (expect)
-                            {
-                                case CONTINUE:
-                                    _expect100Continue = true;
-                                    break;
-                                case PROCESSING:
-                                    _expect102Processing = true;
-                                    break;
-                                default:
-                                    _expect = true;
-                            }
+                            case CONTINUE:
+                                _expect100Continue = true;
+                                break;
+
+                            case PROCESSING:
+                                _expect102Processing = true;
+                                break;
+
+                            default:
+                                String[] values = field.getValues();
+                                for (int i = 0; values != null && i < values.length; i++)
+                                {
+                                    expect = HttpHeaderValue.CACHE.get(values[i].trim());
+                                    if (expect == null)
+                                        _expect = true;
+                                    else
+                                    {
+                                        switch (expect)
+                                        {
+                                            case CONTINUE:
+                                                _expect100Continue = true;
+                                                break;
+                                            case PROCESSING:
+                                                _expect102Processing = true;
+                                                break;
+                                            default:
+                                                _expect = true;
+                                        }
+                                    }
+                                }
                         }
                     }
+                    break;
+                }
+                default:
+                    break;
             }
         }
-        super.parsedHeader(field);
+        _fields.add(field);
     }
     
     /**
@@ -177,13 +216,14 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
         if (getRequest().getMethod()==null)
             _httpConnection.close();
         else
-            super.earlyEOF();
+            onEarlyEOF();
     }
 
     @Override
-    public boolean content(ByteBuffer item)
+    public boolean content(ByteBuffer content)
     {
-        super.content(item);
+        // TODO avoid creating the Content object with wrapper?
+        onContent(new HttpInput.Content(content));
         return true;
     }
 
@@ -191,24 +231,33 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
     public void badMessage(int status, String reason)
     {
         _httpConnection._generator.setPersistent(false);
-        super.badMessage(status,reason);
+        onBadMessage(status,reason);
     }
 
     @Override
     public boolean headerComplete()
     {
         boolean persistent;
-        HttpVersion version = getHttpVersion();
 
-        switch (version)
+        switch (_version)
         {
             case HTTP_1_0:
             {
-                persistent = getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                if (_connection!=null)
+                {
+                    if (_connection.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                        persistent=true;
+                    else
+                        persistent=_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                }
+                else
+                    persistent=false;
+                        
                 if (!persistent)
                     persistent = HttpMethod.CONNECT.is(getRequest().getMethod());
                 if (persistent)
                     getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
+                    
                 break;
             }
             
@@ -219,8 +268,17 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
                     badMessage(HttpStatus.EXPECTATION_FAILED_417,null);
                     return true;
                 }
-
-                persistent = !getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+                
+                if (_connection!=null)
+                {
+                    if (_connection.contains(HttpHeaderValue.CLOSE.asString()))
+                        persistent=false;
+                    else
+                        persistent=!_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()); // handle multiple connection fields
+                }
+                else
+                    persistent=true;
+                
                 if (!persistent)
                     persistent = HttpMethod.CONNECT.is(getRequest().getMethod());
                 if (!persistent)
@@ -237,7 +295,11 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
         if (!persistent)
             _httpConnection._generator.setPersistent(false);
 
-        return super.headerComplete();
+        if (_hostPort==null)
+            onRequest(new MetaData.Request(_version,_method,_uri,_fields,null,0));
+        else
+            onRequest(new MetaData.Request(_version,_method,_uri,_fields,_hostPort.getHost(),_hostPort.getPort()));
+        return true;
     }
 
     @Override
@@ -257,7 +319,17 @@ class HttpChannelOverHttp extends HttpChannel<ByteBuffer> implements HttpParser.
     @Override
     public boolean messageComplete()
     {
-        super.messageComplete();
+        onRequestComplete();
         return false;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.http.HttpParser.HttpHandler#getHeaderCacheSize()
+     */
+    @Override
+    public int getHeaderCacheSize()
+    {
+        return getHttpConfiguration().getHeaderCacheSize();
     }
 }

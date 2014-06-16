@@ -25,10 +25,11 @@ import java.util.List;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
-import org.eclipse.jetty.http2.hpack.MetaData;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -50,7 +51,7 @@ public class HeadersGenerateParseTest
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2_0, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
 
         // Iterate a few times to be sure generator and parser are properly reset.
         final List<HeadersFrame> frames = new ArrayList<>();
@@ -84,10 +85,9 @@ public class HeadersGenerateParseTest
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
             Assert.assertSame(metaData.getScheme(), request.getScheme());
             Assert.assertEquals(metaData.getMethod(), request.getMethod());
-            Assert.assertEquals(metaData.getAuthority(), request.getAuthority());
             Assert.assertEquals(metaData.getHost(), request.getHost());
             Assert.assertEquals(metaData.getPort(), request.getPort());
-            Assert.assertEquals(metaData.getPath(), request.getPath());
+            Assert.assertEquals(metaData.getURI(), request.getURI());
             for (int j = 0; j < fields.size(); ++j)
             {
                 HttpField field = fields.getField(j);
@@ -105,7 +105,7 @@ public class HeadersGenerateParseTest
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2_0, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
 
         final List<HeadersFrame> frames = new ArrayList<>();
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
@@ -135,10 +135,9 @@ public class HeadersGenerateParseTest
         MetaData.Request request = (MetaData.Request)frame.getMetaData();
         Assert.assertSame(metaData.getScheme(), request.getScheme());
         Assert.assertEquals(metaData.getMethod(), request.getMethod());
-        Assert.assertEquals(metaData.getAuthority(), request.getAuthority());
         Assert.assertEquals(metaData.getHost(), request.getHost());
         Assert.assertEquals(metaData.getPort(), request.getPort());
-        Assert.assertEquals(metaData.getPath(), request.getPath());
+        Assert.assertEquals(metaData.getURI(), request.getURI());
         for (int j = 0; j < fields.size(); ++j)
         {
             HttpField field = fields.getField(j);

@@ -19,12 +19,15 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Objects;
+
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -36,10 +39,35 @@ import org.eclipse.jetty.util.log.Logger;
  * state that tells whether an EOF has arrived.
  * Only once the content has been consumed the content state is moved to the EOF state.
  */
-public abstract class HttpInput<T> extends ServletInputStream implements Runnable
+public abstract class HttpInput extends ServletInputStream implements Runnable
 {
     private final static Logger LOG = Log.getLogger(HttpInput.class);
 
+    public static class Content extends Callback.Adapter
+    {
+        private final ByteBuffer _content;
+        public Content(ByteBuffer content)
+        {
+            _content=content;
+        }
+        
+        public ByteBuffer getContent()
+        {
+            return _content;
+        }
+        
+        public boolean hasContent()
+        {
+            return _content.hasRemaining();
+        }
+        
+        public int remaining()
+        {
+            return _content.remaining();
+        }
+        
+    }
+    
     private final byte[] _oneByteBuffer = new byte[1];
     private final Object _lock;
     private HttpChannelState _channelState;
@@ -93,7 +121,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         {
             synchronized (lock())
             {
-                T item = getNextContent();
+                Content item = getNextContent();
                 return item == null ? 0 : remaining(item);
             }
         }
@@ -115,7 +143,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     {
         synchronized (lock())
         {
-            T item = getNextContent();
+            Content item = getNextContent();
             if (item == null)
             {
                 _contentState.waitForContent(this);
@@ -137,9 +165,9 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
      * @throws IOException
      * @see #nextContent()
      */
-    protected T getNextContent() throws IOException
+    protected Content getNextContent() throws IOException
     {
-        T content = nextContent();
+        Content content = nextContent();
         if (content == null)
         {
             synchronized (lock())
@@ -164,32 +192,48 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
      * @return the content or null if none available.
      * @throws IOException if retrieving the content fails
      */
-    protected abstract T nextContent() throws IOException;
+    protected abstract Content nextContent() throws IOException;
 
     /**
      * @param item the content
      * @return how many bytes remain in the given content
      */
-    protected abstract int remaining(T item);
+    protected int remaining(Content item)
+    {
+        return item.remaining();
+    }
+
 
     /**
      * Copies the given content into the given byte buffer.
      *
-     * @param item   the content to copy from
+     * @param content   the content to copy from
      * @param buffer the buffer to copy into
      * @param offset the buffer offset to start copying from
      * @param length the space available in the buffer
      * @return the number of bytes actually copied
      */
-    protected abstract int get(T item, byte[] buffer, int offset, int length);
+    protected int get(Content content, byte[] buffer, int offset, int length)
+    {
+        int l = Math.min(content.remaining(), length);
+        content.getContent().get(buffer, offset, l);
+        return l;
+    }
 
     /**
      * Consumes the given content.
+     * Calls the content succeeded if all content consumed.
      *
-     * @param item   the content to consume
+     * @param content   the content to consume
      * @param length the number of bytes to consume
      */
-    protected abstract void consume(T item, int length);
+    protected void consume(Content content, int length)
+    {
+        ByteBuffer buffer = content.getContent();
+        buffer.position(buffer.position()+length);
+        if (length>0 && !buffer.hasRemaining())
+            content.succeeded();
+    }
 
     /**
      * Blocks until some content or some end-of-file event arrives.
@@ -203,7 +247,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
      *
      * @param item the content to add
      */
-    public abstract void content(T item);
+    public abstract void content(Content content);
 
     protected boolean onAsyncRead()
     {
@@ -273,7 +317,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             {
                 while (!isFinished())
                 {
-                    T item = getNextContent();
+                    Content item = getNextContent();
                     if (item == null)
                         _contentState.waitForContent(this);
                     else
@@ -387,7 +431,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
 
             try
             {
-                T item = getNextContent();
+                Content item = getNextContent();
                 available = item != null && remaining(item) > 0;
             }
             catch (Exception e)
@@ -420,7 +464,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
 
     protected static abstract class State
     {
-        public void waitForContent(HttpInput<?> in) throws IOException
+        public void waitForContent(HttpInput in) throws IOException
         {
         }
 
@@ -438,7 +482,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     protected static final State STREAM = new State()
     {
         @Override
-        public void waitForContent(HttpInput<?> input) throws IOException
+        public void waitForContent(HttpInput input) throws IOException
         {
             input.blockForContent();
         }

@@ -73,7 +73,7 @@ public class HttpTester
     }
 
 
-    public abstract static class Message extends HttpFields implements HttpParser.HttpHandler<ByteBuffer>
+    public abstract static class Message extends HttpFields implements HttpParser.HttpHandler
     {
         ByteArrayOutputStream _content;
         HttpVersion _version=HttpVersion.HTTP_1_0;
@@ -249,7 +249,7 @@ public class HttpTester
 
     }
 
-    public static class Request extends Message implements HttpParser.RequestHandler<ByteBuffer>
+    public static class Request extends Message implements HttpParser.RequestHandler
     {
         private String _method;
         private String _uri;
@@ -299,14 +299,9 @@ public class HttpTester
         {
             put(name,value);
         }
-
-        @Override
-        public void parsedHostHeader(String host,int port)
-        {
-        }
     }
 
-    public static class Response extends Message implements HttpParser.ResponseHandler<ByteBuffer>
+    public static class Response extends Message implements HttpParser.ResponseHandler
     {
         private int _status;
         private String _reason;

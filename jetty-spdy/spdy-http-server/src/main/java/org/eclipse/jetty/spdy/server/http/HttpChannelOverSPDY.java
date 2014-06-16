@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
+public class HttpChannelOverSPDY extends HttpChannel
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverSPDY.class);
 

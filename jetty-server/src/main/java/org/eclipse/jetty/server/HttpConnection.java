@@ -97,7 +97,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
         _generator = newHttpGenerator();
-        HttpInput<ByteBuffer> input = newHttpInput();
+        HttpInput input = newHttpInput();
         _channel = newHttpChannel(input);
         _parser = newHttpParser();
         LOG.debug("New HTTP Connection {}", this);
@@ -108,12 +108,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
     }
     
-    protected HttpInput<ByteBuffer> newHttpInput()
+    protected HttpInput newHttpInput()
     {
         return new HttpInputOverHTTP(this);
     }
     
-    protected HttpChannelOverHttp newHttpChannel(HttpInput<ByteBuffer> httpInput)
+    protected HttpChannelOverHttp newHttpChannel(HttpInput httpInput)
     {
         return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this, httpInput);
     }
@@ -123,7 +123,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize());
     }
 
-    protected HttpParser.RequestHandler<ByteBuffer> newRequestHandler()
+    protected HttpParser.RequestHandler newRequestHandler()
     {
         return _channel;
     }
@@ -138,7 +138,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return _connector;
     }
 
-    public HttpChannel<?> getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }

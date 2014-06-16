@@ -17,14 +17,10 @@
 //
 
 
-package org.eclipse.jetty.http2.hpack;
+package org.eclipse.jetty.http;
 
 import java.util.Iterator;
 import java.util.List;
-
-import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpScheme;
 
 
 /* ------------------------------------------------------------ */
@@ -32,11 +28,18 @@ import org.eclipse.jetty.http.HttpScheme;
  */
 public class MetaData implements Iterable<HttpField>
 {
+    private final HttpVersion _version;
     private final HttpFields _fields;
     
-    public MetaData(HttpFields fields)
+    public MetaData(HttpVersion version,HttpFields fields)
     {
         _fields=fields;
+        _version=version;
+    }
+    
+    public HttpVersion getHttpVersion()
+    {
+        return _version;
     }
     
     public boolean isRequest()
@@ -99,19 +102,34 @@ public class MetaData implements Iterable<HttpField>
     {
         private final String _method;
         private final HttpScheme _scheme;
-        private final String _authority;
         private final String _host;
         private final int _port;
-        private final String _path;
+        private final HttpURI _uri;
 
-        public Request(HttpScheme scheme, String method, String authority, String host, int port, String path, HttpFields fields)
+        public Request(HttpVersion version, String method, HttpURI uri, HttpFields fields,String host, int port)
         {
-            super(fields);
-            _authority=authority;
+            super(version,fields);
             _host=host;
             _port=port;
             _method=method;
-            _path=path;
+            _uri=uri;
+            String scheme=uri.getScheme();
+            if (scheme==null)
+                _scheme=HttpScheme.HTTP;
+            else
+            {
+                HttpScheme s = HttpScheme.CACHE.get(scheme);
+                _scheme=s==null?HttpScheme.HTTP:s;
+            }
+        }
+        
+        public Request(HttpVersion version, HttpScheme scheme, String method, String authority, String host, int port, String path, HttpFields fields)
+        {
+            super(version,fields);
+            _host=host;
+            _port=port;
+            _method=method;
+            _uri=new HttpURI(path); // TODO - this is not so efficient!
             _scheme=scheme;
         }
 
@@ -137,11 +155,6 @@ public class MetaData implements Iterable<HttpField>
             return _scheme;
         }
 
-        public String getAuthority()
-        {
-            return _authority;
-        }
-
         public String getHost()
         {
             return _host;
@@ -152,9 +165,9 @@ public class MetaData implements Iterable<HttpField>
             return _port;
         }
         
-        public String getPath()
+        public HttpURI getURI()
         {
-            return _path;
+            return _uri;
         }
 
         @Override
@@ -165,8 +178,7 @@ public class MetaData implements Iterable<HttpField>
             Request r = (Request)o;
             if (!_method.equals(r._method) || 
                 !_scheme.equals(r._scheme) ||
-                !_authority.equals(r._authority) ||
-                !_path.equals(r._path))
+                !_uri.equals(r._uri))
                 return false;
             return super.equals(o);
         }
@@ -174,7 +186,7 @@ public class MetaData implements Iterable<HttpField>
         @Override
         public String toString()
         {
-            return _method+" "+_scheme+"://"+_authority+_path+" HTTP/2\n"+super.toString();
+            return _method+" "+_scheme+"://"+_host+':'+_port+_uri+" HTTP/2\n"+super.toString();
         }
         
     }
@@ -186,9 +198,9 @@ public class MetaData implements Iterable<HttpField>
     {
         private final int _status;
 
-        public Response(int status, HttpFields fields)
+        public Response(HttpVersion version, int status, HttpFields fields)
         {
-            super(fields);
+            super(version,fields);
             _status=status;
         }
         

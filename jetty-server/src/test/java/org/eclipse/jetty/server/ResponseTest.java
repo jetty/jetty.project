@@ -66,7 +66,7 @@ import org.junit.Test;
 public class ResponseTest
 {
     private Server _server;
-    private HttpChannel<ByteBuffer> _channel;
+    private HttpChannel _channel;
 
     @Before
     public void init() throws Exception
@@ -80,8 +80,8 @@ public class ResponseTest
         _server.start();
 
         AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
-        ByteBufferQueuedHttpInput input = new ByteBufferQueuedHttpInput();
-        _channel = new HttpChannel<ByteBuffer>(connector, new HttpConfiguration(), endp, new HttpTransport()
+        QueuedHttpInput input = new QueuedHttpInput();
+        _channel = new HttpChannel(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             @Override
             public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)

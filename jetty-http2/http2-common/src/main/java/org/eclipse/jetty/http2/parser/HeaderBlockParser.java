@@ -20,8 +20,8 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
-import org.eclipse.jetty.http2.hpack.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 

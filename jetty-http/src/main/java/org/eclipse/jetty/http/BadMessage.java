@@ -20,33 +20,33 @@
 package org.eclipse.jetty.http;
 
 /* ------------------------------------------------------------------------------- */
-class BadMessage extends Error
+public class BadMessage extends Error
 {
     final int _code;
     final String _reason;
 
-    BadMessage()
+    public BadMessage()
     {
         this(400,null);
     }
     
-    BadMessage(int code)
+    public BadMessage(int code)
     {
         this(code,null);
     }
     
-    BadMessage(String reason)
+    public BadMessage(String reason)
     {
         this(400,reason);
     }
     
-    BadMessage(int code,String reason)
+    public BadMessage(int code,String reason)
     {
         _code=code;
         _reason=reason;
     }
     
-    BadMessage(int code,String reason,Throwable cause)
+    public BadMessage(int code,String reason,Throwable cause)
     {
         super(cause);
         _code=code;

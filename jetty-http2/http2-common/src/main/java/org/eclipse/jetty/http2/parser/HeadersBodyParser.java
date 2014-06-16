@@ -20,10 +20,10 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
-import org.eclipse.jetty.http2.hpack.MetaData;
 import org.eclipse.jetty.util.BufferUtil;
 
 public class HeadersBodyParser extends BodyParser

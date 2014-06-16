@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.http2.frames;
 
-import org.eclipse.jetty.http2.hpack.MetaData;
+import org.eclipse.jetty.http.MetaData;
 
 public class PushPromiseFrame extends Frame
 {

@@ -54,7 +54,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpOutput extends ServletOutputStream implements Runnable
 {
     private static Logger LOG = Log.getLogger(HttpOutput.class);
-    private final HttpChannel<?> _channel;
+    private final HttpChannel _channel;
     private final SharedBlockingCallback _writeblock=new SharedBlockingCallback();
     private long _written;
     private ByteBuffer _aggregate;
@@ -77,14 +77,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     enum OutputState { OPEN, ASYNC, READY, PENDING, UNREADY, ERROR, CLOSED }
     private final AtomicReference<OutputState> _state=new AtomicReference<>(OutputState.OPEN);
 
-    public HttpOutput(HttpChannel<?> channel)
+    public HttpOutput(HttpChannel channel)
     {
         _channel = channel;
         _bufferSize = _channel.getHttpConfiguration().getOutputBufferSize();
         _commitSize=_bufferSize/4;
     }
     
-    public HttpChannel<?> getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }

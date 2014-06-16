@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -779,9 +781,9 @@ public class RequestTest
                     "\n",
                     200, TimeUnit.MILLISECONDS
                     );
-        assertTrue(response.indexOf("200")>0);
-        assertFalse(response.indexOf("Connection: close")>0);
-        assertTrue(response.indexOf("Hello World")>0);
+        assertThat(response,containsString("200"));
+        assertThat(response,Matchers.not(containsString("Connection: close")));
+        assertThat(response,containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
@@ -789,9 +791,9 @@ public class RequestTest
                     "Connection: close\n"+
                     "\n"
                     );
-        assertTrue(response.indexOf("200")>0);
-        assertTrue(response.indexOf("Connection: close")>0);
-        assertTrue(response.indexOf("Hello World")>0);
+        assertThat(response,containsString("200"));
+        assertThat(response,containsString("Connection: close"));
+        assertThat(response,containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+
@@ -800,18 +802,18 @@ public class RequestTest
                     "\n"
                     );
 
-        assertTrue(response.indexOf("200")>0);
-        assertTrue(response.indexOf("Connection: close")>0);
-        assertTrue(response.indexOf("Hello World")>0);
+        assertThat(response,containsString("200"));
+        assertThat(response,containsString("Connection: close"));
+        assertThat(response,containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
                     "Host: whatever\n"+
                     "\n"
                     );
-        assertTrue(response.indexOf("200")>0);
-        assertFalse(response.indexOf("Connection: close")>0);
-        assertTrue(response.indexOf("Hello World")>0);
+        assertThat(response,containsString("200"));
+        assertThat(response,not(containsString("Connection: close")));
+        assertThat(response,containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
@@ -819,8 +821,8 @@ public class RequestTest
                     "Connection: Other, close\n"+
                     "\n"
                     );
-        assertTrue(response.indexOf("200")>0);
-        assertTrue(response.indexOf("Hello World")>0);
+        assertThat(response,containsString("200"));
+        assertThat(response,containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.0\n"+
@@ -829,9 +831,9 @@ public class RequestTest
                     "\n",
                     200, TimeUnit.MILLISECONDS
                     );
-        assertTrue(response.indexOf("200")>0);
-        assertTrue(response.indexOf("Connection: keep-alive")>0);
-        assertTrue(response.indexOf("Hello World")>0);
+        assertThat(response,containsString("200"));
+        assertThat(response,Matchers.containsString("Connection: keep-alive"));
+        assertThat(response,containsString("Hello World"));
 
         _handler._checker = new RequestTester()
         {
@@ -851,9 +853,9 @@ public class RequestTest
                     "\n",
                     200, TimeUnit.MILLISECONDS
                     );
-        assertTrue(response.indexOf("200")>0);
-        assertTrue(response.indexOf("Connection: TE,Other")>0);
-        assertTrue(response.indexOf("Hello World")>0);
+        assertThat(response,containsString("200"));
+        assertThat(response,containsString("Connection: TE,Other"));
+        assertThat(response,containsString("Hello World"));
 
         response=_connector.getResponses(
                     "GET / HTTP/1.1\n"+

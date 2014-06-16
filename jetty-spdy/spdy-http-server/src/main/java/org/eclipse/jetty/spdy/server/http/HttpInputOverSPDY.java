@@ -21,7 +21,7 @@ package org.eclipse.jetty.spdy.server.http;
 import org.eclipse.jetty.server.QueuedHttpInput;
 import org.eclipse.jetty.spdy.api.DataInfo;
 
-public class HttpInputOverSPDY extends QueuedHttpInput<DataInfo>
+public class HttpInputOverSPDY extends QueuedHttpInput
 {
     @Override
     protected int remaining(DataInfo item)

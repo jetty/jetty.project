@@ -323,7 +323,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 public void sessionCreated(HttpSessionEvent se)
                 {                    
                     //if current request is authenticated, then as we have just created the session, mark it as secure, as it has not yet been returned to a user
-                    HttpChannel<?> channel = HttpChannel.getCurrentHttpChannel();              
+                    HttpChannel channel = HttpChannel.getCurrentHttpChannel();              
                     
                     if (channel == null)
                         return;

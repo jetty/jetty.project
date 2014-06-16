@@ -776,6 +776,15 @@ public class HttpURI
         return _rawString;
     }
 
+    public boolean equals(Object o)
+    {
+        if (o==this)
+            return true;
+        if (!(o instanceof HttpURI))
+            return false;
+        return toString().equals(o.toString());
+    }
+    
     public void writeTo(Utf8StringBuilder buf)
     {
         buf.append(_raw,_scheme,_end-_scheme);

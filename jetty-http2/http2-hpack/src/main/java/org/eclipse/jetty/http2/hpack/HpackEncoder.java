@@ -25,6 +25,7 @@ import java.util.EnumSet;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.io.ByteBufferPool.Lease;
 import org.eclipse.jetty.util.BufferUtil;
@@ -136,8 +137,8 @@ public class HpackEncoder
             // TODO optimise these to avoid HttpField creation
             encode(buffer,new HttpField(":scheme",request.getScheme().asString()));
             encode(buffer,new HttpField(":method",request.getMethod()));
-            encode(buffer,new HttpField(":authority",request.getAuthority())); // TODO look for host header?
-            encode(buffer,new HttpField(":path",request.getPath()));
+            encode(buffer,new HttpField(":authority",request.getPort()>0?(request.getHost()+':'+request.getPort()):request.getHost())); 
+            encode(buffer,new HttpField(":path",request.getURI().getPath()));
             
         }
         else if (metadata.isResponse())

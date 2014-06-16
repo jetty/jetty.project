@@ -108,7 +108,7 @@ public class Response implements HttpServletResponse
      */
     public final static String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
 
-    private final HttpChannel<?> _channel;
+    private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
     private final AtomicInteger _include = new AtomicInteger();
     private HttpOutput _out;
@@ -124,13 +124,13 @@ public class Response implements HttpServletResponse
     private long _contentLength = -1;
     
 
-    public Response(HttpChannel<?> channel, HttpOutput out)
+    public Response(HttpChannel channel, HttpOutput out)
     {
         _channel = channel;
         _out = out;
     }
 
-    protected HttpChannel<?> getHttpChannel()
+    protected HttpChannel getHttpChannel()
     {
         return _channel;
     }

@@ -30,6 +30,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.http.BadMessage;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
@@ -67,24 +69,24 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * HttpTransport.completed().
  *
  */
-public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
+public class HttpChannel implements Runnable
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
-    private static final ThreadLocal<HttpChannel<?>> __currentChannel = new ThreadLocal<>();
+    private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
 
     /* ------------------------------------------------------------ */
     /** Get the current channel that this thread is dispatched to.
      * @see Request#getAttribute(String) for a more general way to access the HttpChannel
      * @return the current HttpChannel or null
      */
-    public static HttpChannel<?> getCurrentHttpChannel()
+    public static HttpChannel getCurrentHttpChannel()
     {
         return __currentChannel.get();
     }
 
-    protected static HttpChannel<?> setCurrentHttpChannel(HttpChannel<?> channel)
+    protected static HttpChannel setCurrentHttpChannel(HttpChannel channel)
     {
-        HttpChannel<?> last=__currentChannel.get();
+        HttpChannel last=__currentChannel.get();
         if (channel==null)
             __currentChannel.remove();
         else 
@@ -103,7 +105,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     private final Response _response;
     private HttpVersion _version = HttpVersion.HTTP_1_1;
 
-    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<T> input)
+    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
         _connector = connector;
         _configuration = configuration;
@@ -183,12 +185,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
         return _endPoint.getRemoteAddress();
     }
 
-    @Override
-    public int getHeaderCacheSize()
-    {
-        return _configuration.getHeaderCacheSize();
-    }
-
     /**
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
@@ -222,7 +218,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
     {
         LOG.debug("{} handle enter", this);
 
-        final HttpChannel<?>last = setCurrentHttpChannel(this);
+        final HttpChannel last = setCurrentHttpChannel(this);
 
         String threadName = null;
         if (LOG.isDebugEnabled())
@@ -455,13 +451,35 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             );
     }
 
-    @Override
-    public boolean startRequest(String method, HttpURI uri, HttpVersion version)
+    public void onRequest(MetaData.Request request)
     {
+        _requests.incrementAndGet();
+        // TODO directly inject MetaData.Request to Request
+        
         _request.setTimeStamp(System.currentTimeMillis());
-        _request.setMethod(method);
 
-        _request.setUri(uri);
+        _request.setHttpVersion(_version = request.getHttpVersion());
+        _request.setMethod(request.getMethod());
+        _request.setScheme(request.getScheme().asString());
+
+        HttpURI uri = request.getURI();
+        
+        String uriHost=uri.getHost();
+        if (uriHost!=null)
+        {
+            // Give precidence to authority in absolute URI
+            _request.setServerName(uriHost);
+            _request.setServerPort(uri.getPort());
+        }
+        else
+        {
+            _request.setServerName(request.getHost());
+            _request.setServerPort(request.getPort());
+        }
+        
+        _request.setUri(request.getURI());
+        
+        
 
         String path;
         try
@@ -475,7 +493,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
             path = uri.getDecodedPath(StandardCharsets.ISO_8859_1);
         }
         
-        String info = URIUtil.canonicalPath(path);
+        String info = URIUtil.canonicalPath(path); // TODO should this be done prior to decoding???
 
         if (info == null)
         {
@@ -485,93 +503,62 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable
                 _request.setRequestURI("");
             }
             else
-            {
-                badMessage(400,null);
-                return true;
-            }
+                throw new BadMessage(400,"Bad URI");
         }
-        
         _request.setPathInfo(info);
-        _version = version;
-        _request.setHttpVersion(_version);
-
-        return false;
-    }
-
-    @Override
-    public void parsedHeader(HttpField field)
-    {
-        HttpHeader header=field.getHeader();
-        String value=field.getValue();
-        if (value == null)
-            value = "";
-        if (header != null)
+        
+        
+        // TODO avoid playing in headers
+        for (HttpField field : request.getFields())
         {
-            switch (header)
+            HttpHeader header=field.getHeader();
+            String value=field.getValue();
+            if (value == null)
+                value = "";
+            if (header != null)
             {
-                case CONTENT_TYPE:
-                    MimeTypes.Type mime = MimeTypes.CACHE.get(value);
-                    String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(value) : mime.getCharset().toString();
-                    if (charset != null)
-                        _request.setCharacterEncodingUnchecked(charset);
-                    break;
-                default:
+                switch (header)
+                {
+                    case CONTENT_TYPE:
+                        MimeTypes.Type mime = MimeTypes.CACHE.get(value);
+                        String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(value) : mime.getCharset().toString();
+                        if (charset != null)
+                            _request.setCharacterEncodingUnchecked(charset);
+                        break;
+                    default:
+                }
             }
+
+            if (field.getName()!=null)
+                _request.getHttpFields().add(field);
         }
 
-        if (field.getName()!=null)
-            _request.getHttpFields().add(field);
-    }
-
-    @Override
-    public void parsedHostHeader(String host, int port)
-    {
-        if (_request.getUri().getHost()==null)
-        {
-            _request.setServerName(host);
-            _request.setServerPort(port);
-        }
-    }
-
-    @Override
-    public boolean headerComplete()
-    {
-        _requests.incrementAndGet();
         // TODO make this a better field for h2 hpack generation
         if (_configuration.getSendDateHeader())
             _response.getHttpFields().put(_connector.getServer().getDateField());
-
-        return true;
     }
 
-    @Override
-    public boolean content(T item)
+    public void onContent(HttpInput.Content content)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} content {}", this, item);
-        @SuppressWarnings("unchecked")
-        HttpInput<T> input = (HttpInput<T>)_request.getHttpInput();
-        input.content(item);
-
-        return false;
+            LOG.debug("{} content {}", this, content);
+        
+        HttpInput input = (HttpInput)_request.getHttpInput();
+        input.content(content);
     }
 
-    @Override
-    public boolean messageComplete()
+    public void onRequestComplete()
     {
-        LOG.debug("{} messageComplete", this);
+        LOG.debug("{} onRequestComplete", this);
         _request.getHttpInput().messageComplete();
-        return true;
     }
 
-    @Override
-    public void earlyEOF()
+    public void onEarlyEOF()
     {
         _request.getHttpInput().earlyEOF();
     }
 
-    @Override
-    public void badMessage(int status, String reason)
+    public void onBadMessage(int status, String reason)
     {
         if (status < 400 || status > 599)
             status = HttpStatus.BAD_REQUEST_400;

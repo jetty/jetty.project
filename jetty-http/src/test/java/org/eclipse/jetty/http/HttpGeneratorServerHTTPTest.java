@@ -216,7 +216,7 @@ public class HttpGeneratorServerHTTPTest
         }
     }
 
-    private class Handler implements HttpParser.ResponseHandler<ByteBuffer>
+    private class Handler implements HttpParser.ResponseHandler
     {
         @Override
         public boolean content(ByteBuffer ref)

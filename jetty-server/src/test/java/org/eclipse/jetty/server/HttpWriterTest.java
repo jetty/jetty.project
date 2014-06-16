@@ -24,6 +24,7 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
@@ -43,16 +44,17 @@ public class HttpWriterTest
     {
         _bytes = BufferUtil.allocate(2048);
 
-        final ByteBufferPool bufferPool = new MappedByteBufferPool();
-        HttpChannel<?> channel = new HttpChannel<ByteBuffer>(null,new HttpConfiguration(),null,null,new ByteBufferQueuedHttpInput())
+        final ByteBufferPool pool = new ArrayByteBufferPool();
+        
+        HttpChannel channel = new HttpChannel(null,new HttpConfiguration(),null,null,new QueuedHttpInput())
         {
             @Override
             public ByteBufferPool getByteBufferPool()
             {
-                return bufferPool;
+                return pool;
             }
         };
-
+        
         _httpOut = new HttpOutput(channel)
         {
             @Override

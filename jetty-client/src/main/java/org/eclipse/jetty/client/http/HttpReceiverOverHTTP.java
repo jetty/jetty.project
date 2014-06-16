@@ -35,7 +35,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CompletableCallback;
 
-public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
+public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler
 {
     private final HttpParser parser = new HttpParser(this);
     private ByteBuffer buffer;

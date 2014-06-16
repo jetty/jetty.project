@@ -29,6 +29,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -37,6 +38,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -46,7 +49,6 @@ import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.hpack.HpackContext;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
-import org.eclipse.jetty.http2.hpack.MetaData;
 import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.PrefaceParser;
@@ -103,7 +105,7 @@ public class HTTP2ServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, HttpMethod.GET.asString(),
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2_0, HttpScheme.HTTP, HttpMethod.GET.asString(),
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
@@ -152,7 +154,7 @@ public class HTTP2ServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, HttpMethod.GET.asString(),
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2_0, HttpScheme.HTTP, HttpMethod.GET.asString(),
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
@@ -215,7 +217,7 @@ public class HTTP2ServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpScheme.HTTP, HttpMethod.GET.asString(),
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2_0,HttpScheme.HTTP, HttpMethod.GET.asString(),
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);

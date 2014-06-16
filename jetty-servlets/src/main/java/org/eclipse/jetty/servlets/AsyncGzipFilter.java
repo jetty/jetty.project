@@ -364,7 +364,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
                 request.setAttribute(ETAG,etag.substring(0,dd)+(etag.endsWith("\"")?"\"":""));
         }
 
-        HttpChannel<?> channel = HttpChannel.getCurrentHttpChannel();
+        HttpChannel channel = HttpChannel.getCurrentHttpChannel();
         HttpOutput out = channel.getResponse().getHttpOutput();
         if (!(out instanceof GzipHttpOutput))
         {

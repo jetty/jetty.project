@@ -122,9 +122,9 @@ public class HttpParser
     }
 
     private final boolean DEBUG=LOG.isDebugEnabled(); // Cache debug to help branch prediction
-    private final HttpHandler<ByteBuffer> _handler;
-    private final RequestHandler<ByteBuffer> _requestHandler;
-    private final ResponseHandler<ByteBuffer> _responseHandler;
+    private final HttpHandler _handler;
+    private final RequestHandler _requestHandler;
+    private final ResponseHandler _responseHandler;
     private final int _maxHeaderBytes;
     private final boolean _strict;
     private HttpField _field;
@@ -207,31 +207,31 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(RequestHandler<ByteBuffer> handler)
+    public HttpParser(RequestHandler handler)
     {
         this(handler,-1,__STRICT);
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(ResponseHandler<ByteBuffer> handler)
+    public HttpParser(ResponseHandler handler)
     {
         this(handler,-1,__STRICT);
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(RequestHandler<ByteBuffer> handler,int maxHeaderBytes)
+    public HttpParser(RequestHandler handler,int maxHeaderBytes)
     {
         this(handler,maxHeaderBytes,__STRICT);
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(ResponseHandler<ByteBuffer> handler,int maxHeaderBytes)
+    public HttpParser(ResponseHandler handler,int maxHeaderBytes)
     {
         this(handler,maxHeaderBytes,__STRICT);
     }
     
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(RequestHandler<ByteBuffer> handler,int maxHeaderBytes,boolean strict)
+    public HttpParser(RequestHandler handler,int maxHeaderBytes,boolean strict)
     {
         _handler=handler;
         _requestHandler=handler;
@@ -241,7 +241,7 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    public HttpParser(ResponseHandler<ByteBuffer> handler,int maxHeaderBytes,boolean strict)
+    public HttpParser(ResponseHandler handler,int maxHeaderBytes,boolean strict)
     {
         _handler=handler;
         _requestHandler=null;
@@ -799,20 +799,11 @@ public class HttpParser
 
                     case HOST:
                         _host=true;
-                        HostPortHttpField hpfield;
-                        if (_field!=null)
+                        if (!(_field instanceof HostPortHttpField))
                         {
-                            hpfield = (HostPortHttpField)_field;
-                        }
-                        else
-                        {
-                            _field=hpfield=new HostPortHttpField(_header,_strict?_headerString:_header.asString(),_valueString);
+                            _field=new HostPortHttpField(_header,_strict?_headerString:_header.asString(),_valueString);
                             add_to_connection_trie=_connectionFields!=null;
                         }
-
-                        if (_requestHandler!=null)
-                            _requestHandler.parsedHostHeader(hpfield.getHost(),hpfield.getPort());
-                        
                       break;
                       
                     case CONNECTION:
@@ -1241,20 +1232,40 @@ public class HttpParser
         {
             BufferUtil.clear(buffer);
 
-            LOG.warn("badMessage: "+e._code+(e.getReason()!=null?" "+e.getReason():"")+" for "+_handler);
-            if (DEBUG)
-                LOG.debug(e);
+            Throwable cause = e.getCause();
+            boolean stack = (cause instanceof RuntimeException) || (cause instanceof Error) || LOG.isDebugEnabled();
+            if (stack)
+                LOG.warn("bad HTTP parsed: "+e._code+(e.getReason()!=null?" "+e.getReason():"")+" for "+_handler,e);
+            else
+                LOG.warn("bad HTTP parsed: "+e._code+(e.getReason()!=null?" "+e.getReason():"")+" for "+_handler);
             setState(State.CLOSED);
             _handler.badMessage(e.getCode(), e.getReason());
             return false;
         }
-        catch(Exception e)
+        catch(NumberFormatException|IllegalStateException e)
+        {
+            BufferUtil.clear(buffer);
+            LOG.warn("parse exception: "+e.toString()+" for "+_handler);
+            if (DEBUG)
+                LOG.debug(e);
+            if (_state.ordinal()<=State.END.ordinal())
+            {
+                setState(State.CLOSED);
+                _handler.badMessage(400,null);
+            }
+            else
+            {
+                _handler.earlyEOF();
+                setState(State.CLOSED);
+            }
+
+            return false;
+        }
+        catch(Exception|Error e)
         {
             BufferUtil.clear(buffer);
 
-            LOG.warn("badMessage: "+e.toString()+" for "+_handler);
-            if (DEBUG)
-                LOG.debug(e);
+            LOG.warn("parse exception: "+e.toString()+" for "+_handler,e);
             
             if (_state.ordinal()<=State.END.ordinal())
             {
@@ -1507,9 +1518,9 @@ public class HttpParser
      * headerComplete then messageComplete) from the same point in the parsing
      * then it is sufficient for the caller to process the events only once.
      */
-    public interface HttpHandler<T>
+    public interface HttpHandler
     {
-        public boolean content(T item);
+        public boolean content(ByteBuffer item);
 
         public boolean headerComplete();
 
@@ -1547,7 +1558,7 @@ public class HttpParser
     
 
     
-    public interface RequestHandler<T> extends HttpHandler<T>
+    public interface RequestHandler extends HttpHandler
     {
         /**
          * This is the method called by parser when the HTTP request line is parsed
@@ -1558,15 +1569,9 @@ public class HttpParser
          */
         public boolean startRequest(String method, HttpURI uri, HttpVersion version);
 
-        /**
-         * This is the method called by the parser after it has parsed the host header (and checked it's format). This is
-         * called after the {@link HttpHandler#parsedHeader(HttpField)} methods and before
-         * HttpHandler#headerComplete();
-         */
-        public void parsedHostHeader(String host,int port);
     }
 
-    public interface ResponseHandler<T> extends HttpHandler<T>
+    public interface ResponseHandler extends HttpHandler
     {
         /**
          * This is the method called by parser when the HTTP request line is parsed

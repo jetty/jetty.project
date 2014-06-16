@@ -23,10 +23,11 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpVersion;
 import org.junit.Assert;
 import org.junit.Test;
-import org.eclipse.jetty.http2.hpack.MetaData.Response;
-import org.eclipse.jetty.http2.hpack.MetaData.Request;
+import org.eclipse.jetty.http.MetaData.Request;
+import org.eclipse.jetty.http.MetaData.Response;
 import org.eclipse.jetty.util.BufferUtil;
 
 
@@ -45,7 +46,7 @@ public class HpackTest
         fields0.add(HttpHeader.SERVER,"jetty");
         fields0.add(HttpHeader.SET_COOKIE,"abcdefghijklmnopqrstuvwxyz");
         fields0.add("custom-key","custom-value");
-        Response original0 = new Response(200,fields0);
+        Response original0 = new Response(HttpVersion.HTTP_2_0,200,fields0);
         
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer,original0);
@@ -60,15 +61,14 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer,0);
         Response decoded0b = (Response)decoder.decode(buffer);
 
-        Assert.assertEquals(original0,decoded0b);
-        
+        Assert.assertEquals(original0,decoded0b);        
 
         HttpFields fields1 = new HttpFields();
         fields1.add(HttpHeader.CONTENT_TYPE,"text/plain");
         fields1.add(HttpHeader.CONTENT_LENGTH,"1234");
         fields1.add(HttpHeader.SERVER,"jetty");
         fields1.add("custom-key","other-value");
-        Response original1 = new Response(200,fields1);
+        Response original1 = new Response(HttpVersion.HTTP_2_0,200,fields1);
 
         // Same again?
         BufferUtil.clearToFill(buffer);
