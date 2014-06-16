@@ -94,7 +94,7 @@ public class Http2Server
         // SSL Factory
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,alpn.getProtocol());
         
-        // SPDY Connector
+        // HTTP2 Connector
         ServerConnector http2Connector = 
             new ServerConnector(server,ssl,alpn,h2,new HttpConnectionFactory(https_config));
         http2Connector.setPort(8443);
@@ -118,7 +118,7 @@ public class Http2Server
             HttpSession session = request.getSession(true);
             response.setHeader("custom","value");
             response.setContentType("text/plain");
-            String content = "Hello from Jetty HTTP2\n";
+            String content = "Hello from Jetty using "+request.getProtocol() +"\n";
             content+="uri="+request.getRequestURI()+"\n";
             content+="session="+session.getId()+(session.isNew()?"(New)\n":"\n");
             content+="date="+new Date()+"\n";

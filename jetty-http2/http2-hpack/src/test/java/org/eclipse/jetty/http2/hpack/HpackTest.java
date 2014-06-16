@@ -46,7 +46,7 @@ public class HpackTest
         fields0.add(HttpHeader.SERVER,"jetty");
         fields0.add(HttpHeader.SET_COOKIE,"abcdefghijklmnopqrstuvwxyz");
         fields0.add("custom-key","custom-value");
-        Response original0 = new Response(HttpVersion.HTTP_2_0,200,fields0);
+        Response original0 = new Response(HttpVersion.HTTP_2,200,fields0);
         
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer,original0);
@@ -68,7 +68,7 @@ public class HpackTest
         fields1.add(HttpHeader.CONTENT_LENGTH,"1234");
         fields1.add(HttpHeader.SERVER,"jetty");
         fields1.add("custom-key","other-value");
-        Response original1 = new Response(HttpVersion.HTTP_2_0,200,fields1);
+        Response original1 = new Response(HttpVersion.HTTP_2,200,fields1);
 
         // Same again?
         BufferUtil.clearToFill(buffer);

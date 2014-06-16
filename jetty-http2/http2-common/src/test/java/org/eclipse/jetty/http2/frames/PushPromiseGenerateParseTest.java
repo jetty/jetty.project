@@ -52,7 +52,7 @@ public class PushPromiseGenerateParseTest
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2_0, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
 
         // Iterate a few times to be sure generator and parser are properly reset.
         final List<PushPromiseFrame> frames = new ArrayList<>();
@@ -107,7 +107,7 @@ public class PushPromiseGenerateParseTest
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2_0, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
 
         final List<PushPromiseFrame> frames = new ArrayList<>();
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);

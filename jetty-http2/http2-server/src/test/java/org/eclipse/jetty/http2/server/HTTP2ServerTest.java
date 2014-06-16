@@ -105,7 +105,7 @@ public class HTTP2ServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2_0, HttpScheme.HTTP, HttpMethod.GET.asString(),
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, HttpMethod.GET.asString(),
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
@@ -154,7 +154,7 @@ public class HTTP2ServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2_0, HttpScheme.HTTP, HttpMethod.GET.asString(),
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, HttpMethod.GET.asString(),
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
@@ -217,7 +217,7 @@ public class HTTP2ServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2_0,HttpScheme.HTTP, HttpMethod.GET.asString(),
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2,HttpScheme.HTTP, HttpMethod.GET.asString(),
                 host + ":" + port, host, port, path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);

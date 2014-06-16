@@ -82,10 +82,10 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Response #{}:{}{} {}{}{}",
-                    stream.getId(), System.lineSeparator(), HttpVersion.HTTP_2_0, info.getStatus(), System.lineSeparator(), info.getHttpFields());
+                    stream.getId(), System.lineSeparator(), HttpVersion.HTTP_2, info.getStatus(), System.lineSeparator(), info.getHttpFields());
         }
 
-        MetaData metaData = new MetaData.Response(HttpVersion.HTTP_2_0, info.getStatus(), info.getHttpFields());
+        MetaData metaData = new MetaData.Response(HttpVersion.HTTP_2, info.getStatus(), info.getHttpFields());
         HeadersFrame frame = new HeadersFrame(stream.getId(), metaData, null, endStream);
         stream.headers(frame, callback);
     }
