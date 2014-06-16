@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -42,7 +43,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
 
     private final HttpConfiguration httpConfiguration;
 
-    public HTTP2ServerConnectionFactory(HttpConfiguration httpConfiguration)
+    public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
         this.httpConfiguration = httpConfiguration;
     }
