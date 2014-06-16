@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
-import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
+import org.eclipse.jetty.npn.server.NPNServerConnectionFactory;
 
 public class NPNProxySPDYToHTTPLoadTest extends ProxySPDYToHTTPLoadTest
 {

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.spdy.server;
+package org.eclipse.jetty.npn.server;
 
 import java.util.List;
 import javax.net.ssl.SSLEngine;

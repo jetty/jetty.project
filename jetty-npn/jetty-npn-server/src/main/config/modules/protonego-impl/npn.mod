@@ -23,6 +23,10 @@ protonego-impl
 [depend]
 protonego-impl/npn-${java.version}
 
+[lib]
+lib/jetty-npn-client-${jetty.version}.jar
+lib/jetty-npn-server-${jetty.version}.jar
+
 [xml]
 etc/protonego-npn.xml
 

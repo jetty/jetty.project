@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.spdy.client;
+package org.eclipse.jetty.npn.client;
 
 import java.io.IOException;
 import java.util.Map;

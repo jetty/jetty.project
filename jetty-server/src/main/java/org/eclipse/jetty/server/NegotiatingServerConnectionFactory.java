@@ -27,11 +27,31 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.server.AbstractConnectionFactory;
-import org.eclipse.jetty.server.Connector;
 
 public abstract class NegotiatingServerConnectionFactory extends AbstractConnectionFactory
 {
+    public static void checkProtocolNegotiationAvailable()
+    {
+        if (!isAvailableInBootClassPath("org.eclipse.jetty.alpn.ALPN") &&
+                !isAvailableInBootClassPath("org.eclipse.jetty.npn.NextProtoNego"))
+            throw new IllegalStateException("No ALPN nor NPN classes available");
+    }
+
+    private static boolean isAvailableInBootClassPath(String className)
+    {
+        try
+        {
+            Class<?> klass = ClassLoader.getSystemClassLoader().loadClass(className);
+            if (klass.getClassLoader() != null)
+                throw new IllegalStateException(className + " must be on JVM boot classpath");
+            return true;
+        }
+        catch (ClassNotFoundException x)
+        {
+            return false;
+        }
+    }
+
     private final List<String> protocols;
     private String defaultProtocol;
 

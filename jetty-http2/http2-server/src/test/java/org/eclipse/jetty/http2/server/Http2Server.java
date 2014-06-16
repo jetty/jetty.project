@@ -21,7 +21,6 @@ package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
 import java.util.Date;
-
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
@@ -29,14 +28,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.hpack.HpackContext;
-import org.eclipse.jetty.http2.hpack.HpackDecoder;
-import org.eclipse.jetty.http2.hpack.HpackEncoder;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.npn.NextProtoNego;
+import org.eclipse.jetty.alpn.ALPN;
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -44,8 +40,6 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
-import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 
@@ -92,21 +86,21 @@ public class Http2Server
         // HTTP2 factory
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
         
-        SPDYServerConnectionFactory.checkProtocolNegotiationAvailable();
-        NPNServerConnectionFactory npn = 
-            new NPNServerConnectionFactory(h2.getProtocol(),http.getDefaultProtocol());
-        npn.setDefaultProtocol(http.getDefaultProtocol());
+        NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
+        ALPNServerConnectionFactory alpn =
+            new ALPNServerConnectionFactory(h2.getProtocol(),http.getDefaultProtocol());
+        alpn.setDefaultProtocol(http.getDefaultProtocol());
         
         // SSL Factory
-        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol());
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,alpn.getProtocol());
         
         // SPDY Connector
         ServerConnector http2Connector = 
-            new ServerConnector(server,ssl,npn,h2,new HttpConnectionFactory(https_config));
+            new ServerConnector(server,ssl,alpn,h2,new HttpConnectionFactory(https_config));
         http2Connector.setPort(8443);
         server.addConnector(http2Connector);
         
-        NextProtoNego.debug=true;
+        ALPN.debug=true;
         
         server.start();
         server.dumpStdErr();
