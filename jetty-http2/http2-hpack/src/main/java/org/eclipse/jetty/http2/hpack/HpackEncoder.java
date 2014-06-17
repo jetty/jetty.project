@@ -124,6 +124,9 @@ public class HpackEncoder
     
     public void encode(ByteBuffer buffer, MetaData metadata)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("CtxTbl[%x] encoding",_context.hashCode()));
+        
         // Check the header table sizes!
         int maxHeaderTableSize=Math.min(_remoteMaxHeaderTableSize,_localMaxHeaderTableSize);
         if (maxHeaderTableSize!=_context.getMaxHeaderTableSize())

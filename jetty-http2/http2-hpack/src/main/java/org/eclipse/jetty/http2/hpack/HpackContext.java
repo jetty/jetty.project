@@ -179,17 +179,19 @@ public class HpackContext
         }
     };
     
-    
     HpackContext(int maxHeaderTableSize)
     {
         _maxHeaderTableSizeInBytes=maxHeaderTableSize;
         int guesstimateEntries = 10+maxHeaderTableSize/(32+10+10);
         _headerTable=new HeaderTable(guesstimateEntries,guesstimateEntries+10);
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("HdrTbl[%x] created max=%d",hashCode(),maxHeaderTableSize));
     }
     
     public void resize(int newMaxHeaderTableSize)
     {
-        LOG.debug("HdrTbl resized {}",newMaxHeaderTableSize);
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("HdrTbl[%x] resized max=%d->%d",hashCode(),_maxHeaderTableSizeInBytes,newMaxHeaderTableSize));
         _maxHeaderTableSizeInBytes=newMaxHeaderTableSize;
         int guesstimateEntries = 10+newMaxHeaderTableSize/(32+10+10);
         evict();
@@ -232,7 +234,8 @@ public class HpackContext
         int size = entry.getSize();
         if (size>_maxHeaderTableSizeInBytes)
         {
-            LOG.debug("!added {} too big",field);
+            if (LOG.isDebugEnabled())
+                LOG.debug(String.format("HdrTbl[%x] !added size %d>%d",hashCode(),size,_maxHeaderTableSizeInBytes));
             return null;
         }
         _headerTableSizeInBytes+=size;
@@ -240,7 +243,8 @@ public class HpackContext
         _fieldMap.put(field,entry);
         _nameMap.put(StringUtil.asciiToLowerCase(field.getName()),entry);
 
-        LOG.debug("HdrTbl added {}",entry);
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("HdrTbl[%x] added %s",hashCode(),entry));
         evict();
         return entry;
     }
@@ -290,7 +294,8 @@ public class HpackContext
     
     public void clearReferenceSet()
     {
-        LOG.debug("RefSet cleared");
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("RefSet[%x] cleared",hashCode()));
         Entry entry = _refSet._refSetNext;
         while(entry!=_refSet)
         {
@@ -312,7 +317,8 @@ public class HpackContext
                 entry._used=false;
             else
             {
-                LOG.debug("RefSet remove unused {}",entry);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(String.format("RefSet[%x] remove unused",hashCode(),entry));
                 // encode the reference to remove it
                 buffer.put((byte)0x80);
                 NBitInteger.encode(buffer,7,index(entry));
@@ -331,7 +337,8 @@ public class HpackContext
                 entry._used=false;
             else
             {
-                LOG.debug("RefSet emit unused {}",entry);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(String.format("RefSet[%x] emit unref",hashCode(),entry));
                 builder.emit(entry.getHttpField());
             }
             
@@ -378,7 +385,8 @@ public class HpackContext
         while (_headerTableSizeInBytes>_maxHeaderTableSizeInBytes)
         {
             Entry entry = _headerTable.pollUnsafe();
-            LOG.debug("HdrTbl evict {}",entry);
+            if (LOG.isDebugEnabled())
+                LOG.debug(String.format("HdrTbl[%x] evict %s",hashCode(),entry));
             _headerTableSizeInBytes-=entry.getSize();
             entry.removeFromRefSet();
             entry._index=-1;
@@ -497,7 +505,8 @@ public class HpackContext
             _refSetPrev=ctx._refSet._refSetPrev;
             ctx._refSet._refSetPrev._refSetNext=this;
             ctx._refSet._refSetPrev=this;
-            LOG.debug("RefSet added {}",this);
+            if (LOG.isDebugEnabled())
+                LOG.debug(String.format("RefSet[%x] added",ctx.hashCode(),this));
         }
 
         public boolean isInReferenceSet()
@@ -507,7 +516,8 @@ public class HpackContext
         
         public void removeFromRefSet()
         {
-            LOG.debug("RefSet remove {}",this);
+            if (LOG.isDebugEnabled())
+                LOG.debug(String.format("RefSet[?] remove %s",this));
             if (_refSetNext!=this)
             {
                 _refSetNext._refSetPrev=_refSetPrev;

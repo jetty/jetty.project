@@ -63,10 +63,12 @@ public class HpackDecoder
     
     public MetaData decode(ByteBuffer buffer)
     {           
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("CtxTbl[%x] decoding",_context.hashCode()));
         while(buffer.hasRemaining())
         {
             if (LOG.isDebugEnabled())
-            {
+            {                
                 int l=Math.min(buffer.remaining(),16);
                 LOG.debug("decode  "+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l)+(l<buffer.remaining()?"...":""));
             }
