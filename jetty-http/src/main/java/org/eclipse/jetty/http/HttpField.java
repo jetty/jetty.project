@@ -20,9 +20,6 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 
-import org.eclipse.jetty.util.QuotedStringTokenizer;
-
-
 /* ------------------------------------------------------------ */
 /** A HTTP Field
  */
@@ -222,7 +219,27 @@ public class HttpField
         return false;
     }
     
-    @Override 
+    private int nameHashCode()
+    {
+        int hash=13;
+        int len = _name.length();
+        for (int i = 0; i < len; i++)
+        {
+            char c = Character.toUpperCase(_name.charAt(i));
+            hash = 31 * hash + c;
+        }
+        return hash;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        if (_header==null)
+            return _value.hashCode() ^ nameHashCode();
+        return _value.hashCode() ^ _header.hashCode();
+    }
+
+    @Override
     public boolean equals(Object o)
     {
         if (o==this)
@@ -240,28 +257,4 @@ public class HttpField
             return false;
         return true;
     }
-
-    public int nameHashCode()
-    {
-        int hash=13;
-        int len = _name.length();  
-        for (int i = 0; i < len; i++)  
-        {  
-            char c = Character.toUpperCase(_name.charAt(i));  
-            hash = 31 * hash + c;  
-        }  
-        return hash;
-    }
-    
-    @Override
-    public int hashCode()
-    {
-        if (_header==null)
-            return _value.hashCode() ^ nameHashCode();
-        
-        return _value.hashCode() ^ _header.hashCode();
-    }
-    
-    
-    
 }

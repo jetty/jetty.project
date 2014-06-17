@@ -51,14 +51,12 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpFields implements Iterable<HttpField>
 {
-    private static final Logger LOG = Log.getLogger(HttpFields.class);     
-    public final static String __separators = ", \t";
+    public static final String __separators = ", \t";
 
-    final List<HttpField> _fields;
+    private static final Logger LOG = Log.getLogger(HttpFields.class);
+
+    private final List<HttpField> _fields;
     
-    /**
-     * Constructor.
-     */
     public HttpFields()
     {
         _fields=new ArrayList<>();
@@ -563,8 +561,35 @@ public class HttpFields implements Iterable<HttpField>
     }
 
     @Override
-    public String
-    toString()
+    public int hashCode()
+    {
+        return _fields.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (!(o instanceof HttpFields))
+            return false;
+
+        HttpFields that = (HttpFields)o;
+
+        // Order is not important, so we cannot rely on List.equals().
+        if (size() != that.size())
+            return false;
+
+        for (HttpField field : this)
+        {
+            if (!that.contains(field))
+                return false;
+        }
+        return true;
+    }
+
+    @Override
+    public String toString()
     {
         try
         {

@@ -56,7 +56,28 @@ public class MetaData implements Iterable<HttpField>
     {
         return _fields;
     }
-    
+
+    @Override
+    public int hashCode()
+    {
+        return 31 * _version.hashCode() + _fields.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (this == o)
+            return true;
+        if (!(o instanceof MetaData))
+            return false;
+        MetaData that = (MetaData)o;
+
+        if (_version != that._version)
+            return false;
+
+        return _fields.equals(that._fields);
+    }
+
     @Override
     public String toString()
     {
@@ -142,6 +163,30 @@ public class MetaData implements Iterable<HttpField>
         }
 
         @Override
+        public int hashCode()
+        {
+            int hash = _method.hashCode();
+            hash = 31 * hash + _scheme.hashCode();
+            hash = 31 * hash + _uri.hashCode();
+            return 31 * hash + super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o)
+                return true;
+            if (!(o instanceof Request))
+                return false;
+            Request that = (Request)o;
+            if (!_method.equals(that._method) ||
+                !_scheme.equals(that._scheme) ||
+                !_uri.equals(that._uri))
+                return false;
+            return super.equals(o);
+        }
+
+        @Override
         public String toString()
         {
             return String.format("%s %s://%s:%d%s HTTP/2%s%s",
@@ -177,6 +222,25 @@ public class MetaData implements Iterable<HttpField>
         public int getStatus()
         {
             return _status;
+        }
+
+        @Override
+        public int hashCode()
+        {
+            return 31 * _status + super.hashCode();
+        }
+
+        @Override
+        public boolean equals(Object o)
+        {
+            if (this == o)
+                return true;
+            if (!(o instanceof Response))
+                return false;
+            Response that = (Response)o;
+            if (_status != that._status)
+                return false;
+            return super.equals(o);
         }
 
         @Override
