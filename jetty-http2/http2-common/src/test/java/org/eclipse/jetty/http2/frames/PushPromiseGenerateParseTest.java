@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -61,7 +62,7 @@ public class PushPromiseGenerateParseTest
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", new HostPortHttpField("localhost:8080"), "/path", fields);
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
@@ -117,7 +118,7 @@ public class PushPromiseGenerateParseTest
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", new HostPortHttpField("localhost:8080"), "/path", fields);
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.generatePushPromise(lease, streamId, promisedStreamId, metaData);

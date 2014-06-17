@@ -60,7 +60,9 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -149,7 +151,7 @@ public class Request implements HttpServletRequest
     private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
     private String _pathInfo;
-    private int _port;
+    private int _serverPort;
     private HttpVersion _httpVersion = HttpVersion.HTTP_1_1;
     private String _queryEncoding;
     private String _queryString;
@@ -1174,57 +1176,19 @@ public class Request implements HttpServletRequest
         _serverName = _uri.getHost();
         if (_serverName != null)
         {
-            _port = _uri.getPort();
+            _serverPort = _uri.getPort();
             return _serverName;
         }
 
         // Return host from header field
-        String hostPort = _fields.getStringField(HttpHeader.HOST);
-        
-        _port=0;
-        if (hostPort != null)
+        HttpField host = _fields.getField(HttpHeader.HOST);
+        if (host!=null)
         {
-            int len=hostPort.length();
-            loop: for (int i = len; i-- > 0;)
-            {
-                char c2 = (char)(0xff & hostPort.charAt(i));
-                switch (c2)
-                {
-                    case ']':
-                        break loop;
-
-                    case ':':
-                        try
-                        {
-                            len=i;
-                            _port = StringUtil.toInt(hostPort,i+1);
-                        }
-                        catch (NumberFormatException e)
-                        {
-                            LOG.warn(e);
-                            _serverName=hostPort;
-                            _port=0;
-                            return _serverName;
-                        }
-                        break loop;
-                }
-            }
-            if (hostPort.charAt(0)=='[')
-            {
-                if (hostPort.charAt(len-1)!=']') 
-                {
-                    LOG.warn("Bad IPv6 "+hostPort);
-                    _serverName=hostPort;
-                    _port=0;
-                    return _serverName;
-                }
-                _serverName = hostPort.substring(1,len-1);
-            }
-            else if (len==hostPort.length())
-                _serverName=hostPort;
-            else
-                _serverName = hostPort.substring(0,len);
-
+            HostPortHttpField authority = (host instanceof HostPortHttpField)
+                ?((HostPortHttpField)host)
+                :new HostPortHttpField(host.getValue());
+            _serverName=authority.getHost();
+            _serverPort=authority.getPort();
             return _serverName;
         }
 
@@ -1232,7 +1196,7 @@ public class Request implements HttpServletRequest
         if (_channel != null)
         {
             _serverName = getLocalName();
-            _port = getLocalPort();
+            _serverPort = getLocalPort();
             if (_serverName != null && !StringUtil.ALL_INTERFACES.equals(_serverName))
                 return _serverName;
         }
@@ -1256,30 +1220,21 @@ public class Request implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        if (_port <= 0)
-        {
-            if (_serverName == null)
+        // If we have no port and have not decoded a server name
+        if (_serverPort <= 0 && _serverName == null)
+            // decode a server name, which will set the port if it can
                 getServerName();
 
-            if (_port <= 0)
-            {
-                if (_serverName != null && _uri != null)
-                    _port = _uri.getPort();
-                else
-                {
-                    InetSocketAddress local = _channel.getLocalAddress();
-                    _port = local == null?0:local.getPort();
-                }
-            }
-        }
-
-        if (_port <= 0)
+        // If no port specified, return the default port for the scheme
+        if (_serverPort <= 0)
         {
             if (getScheme().equalsIgnoreCase(URIUtil.HTTPS))
                 return 443;
             return 80;
         }
-        return _port;
+        
+        // return a specific port
+        return _serverPort;
     }
 
     /* ------------------------------------------------------------ */
@@ -1604,7 +1559,7 @@ public class Request implements HttpServletRequest
         _serverName = null;
         _httpMethod = null;
         _pathInfo = null;
-        _port = 0;
+        _serverPort = 0;
         _httpVersion = HttpVersion.HTTP_1_1;
         _queryEncoding = null;
         _queryString = null;
@@ -1969,7 +1924,7 @@ public class Request implements HttpServletRequest
      */
     public void setServerPort(int port)
     {
-        _port = port;
+        _serverPort = port;
     }
 
     /* ------------------------------------------------------------ */

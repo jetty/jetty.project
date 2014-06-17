@@ -115,13 +115,12 @@ public class MetaData implements Iterable<HttpField>
             }
         }
 
-        // TODO: review this constructor: host/port parameters are ignored, and code duplication should be avoided.
-        public Request(HttpVersion version, HttpScheme scheme, String method, String authority, String host, int port, String path, HttpFields fields)
+        public Request(HttpVersion version, HttpScheme scheme, String method, HostPortHttpField authority, String path, HttpFields fields)
         {
             super(version,fields);
             _method=method;
             _uri=new HttpURI(path); // TODO - this is not so efficient!
-            _hostPort = new HostPortHttpField(authority);
+            _hostPort = authority;
             _scheme=scheme;
         }
 
@@ -149,12 +148,12 @@ public class MetaData implements Iterable<HttpField>
 
         public String getHost()
         {
-            return _hostPort.getHost();
+            return _hostPort==null?null:_hostPort.getHost();
         }
 
         public int getPort()
         {
-            return _hostPort.getPort();
+            return _hostPort==null?0:_hostPort.getPort();
         }
         
         public HttpURI getURI()

@@ -35,6 +35,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
@@ -106,7 +107,7 @@ public class HTTP2ServerTest
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, HttpMethod.GET.asString(),
-                host + ":" + port, host, port, path, fields);
+                new HostPortHttpField(host + ":" + port), path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, request);
@@ -155,7 +156,7 @@ public class HTTP2ServerTest
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, HttpMethod.GET.asString(),
-                host + ":" + port, host, port, path, fields);
+                new HostPortHttpField(host + ":" + port), path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, request);
@@ -218,7 +219,7 @@ public class HTTP2ServerTest
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2,HttpScheme.HTTP, HttpMethod.GET.asString(),
-                host + ":" + port, host, port, path, fields);
+                new HostPortHttpField(host + ":" + port), path, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, request);

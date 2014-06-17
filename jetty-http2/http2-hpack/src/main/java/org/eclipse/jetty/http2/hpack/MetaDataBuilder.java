@@ -35,9 +35,7 @@ public class MetaDataBuilder
     private int _status;
     private String _method;
     private HttpScheme _scheme;
-    private String _authority;
-    private String _host;
-    private int _port;
+    private HostPortHttpField _authority;
     private String _path;        
 
     HttpFields _fields = new HttpFields(10);
@@ -83,10 +81,7 @@ public class MetaDataBuilder
                     break;
 
                 case ":authority":
-                    _authority=field.getValue();
-                    HostPortHttpField afield=(field instanceof HostPortHttpField)?((HostPortHttpField)field):new AuthorityHttpField(field.getValue());
-                    _host=afield.getHost();
-                    _port=afield.getPort();
+                    _authority=(field instanceof HostPortHttpField)?((HostPortHttpField)field):new AuthorityHttpField(field.getValue());
                     break;
 
                 case ":path":
@@ -107,7 +102,7 @@ public class MetaDataBuilder
             HttpFields fields = _fields;
             _fields = new HttpFields(Math.max(10,fields.size()+5));
             if (_method!=null)
-                return new MetaData.Request(HttpVersion.HTTP_2,_scheme,_method,_authority,_host,_port,_path,fields);
+                return new MetaData.Request(HttpVersion.HTTP_2,_scheme,_method,_authority,_path,fields);
             if (_status!=0)
                 return new MetaData.Response(HttpVersion.HTTP_2,_status,fields);
             return new MetaData(HttpVersion.HTTP_2,fields);
@@ -119,8 +114,6 @@ public class MetaDataBuilder
             _scheme=null;
             _authority=null;
             _path=null;
-            _host=null;
-            _port=0;
         }
     }
 }
