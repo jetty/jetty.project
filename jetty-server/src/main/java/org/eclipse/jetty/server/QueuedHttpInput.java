@@ -26,13 +26,14 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * {@link QueuedHttpInput} holds a queue of items passed to it by calls to {@link #content(Object)}.
+ * {@link QueuedHttpInput} holds a queue of items passed to it by calls to {@link #content(HttpInput.Content)}.
  * <p/>
  * {@link QueuedHttpInput} stores the items directly; if the items contain byte buffers, it does not copy them
  * but simply holds references to the item, thus the caller must organize for those buffers to valid while
  * held by this class.
  * <p/>
- * To assist the caller, subclasses may override methods {@link #onAsyncRead()}, {@link #onContentConsumed(Object)}
+ * To assist the caller, subclasses may override methods such as  {@link #onAsyncRead()},
+ * {@link #consume(HttpInput.Content, int)}, etc.
  * that can be implemented so that the caller will know when buffers are queued and consumed.
  */
 public class QueuedHttpInput extends HttpInput
