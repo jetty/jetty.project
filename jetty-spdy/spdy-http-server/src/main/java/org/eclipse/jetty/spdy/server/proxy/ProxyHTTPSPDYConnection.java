@@ -53,12 +53,11 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 
-public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParser.RequestHandler<ByteBuffer>
+public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParser.RequestHandler
 {
     private final short version;
     private final Fields headers = new Fields();
@@ -76,7 +75,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
-    protected HttpParser.RequestHandler<ByteBuffer> newRequestHandler()
+    protected HttpParser.RequestHandler newRequestHandler()
     {
         return this;
     }
@@ -100,11 +99,6 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
             headers.put(HTTPSPDYHeader.HOST.name(version), field.getValue());
         else
             headers.put(field.getName(), field.getValue());
-    }
-
-    @Override
-    public void parsedHostHeader(String host, int port)
-    {
     }
 
     @Override
