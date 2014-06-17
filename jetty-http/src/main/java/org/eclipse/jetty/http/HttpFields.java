@@ -140,7 +140,8 @@ public class HttpFields implements Iterable<HttpField>
     {
         for (int i=_fields.size();i-->0;)
         {
-            if (_fields.get(i).equals(field))
+            HttpField f=_fields.get(i);
+            if (f.isSameName(field) && f.contains(field.getValue()))
                 return true;
         }
         return false;

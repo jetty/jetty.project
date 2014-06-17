@@ -86,8 +86,7 @@ public class HttpField
                             state=2;
                             break;
 
-                        case ',': // leading empty field
-                            list.add("");
+                        case ',': // ignore leading empty field
                             break;
 
                         case ' ': // more white space
@@ -179,23 +178,27 @@ public class HttpField
 
     /* ------------------------------------------------------------ */
     /** Look for a value in a possible multi valued field
-     * @param value
+     * @param search Values to search for
      * @return True iff the value is contained in the field value entirely or
-     * as an element of a quoted comma separated list
+     * as an element of a quoted comma separated list. List element parameters (eg qualities) are ignored.
      */
-    public boolean contains(String value)
+    public boolean contains(String search)
     {
-        if (_value==null)
-            return value==null;
+        if (_value==null || search==null)
+            return _value==search;
 
-        if (_value.equalsIgnoreCase(value))
+        if (_value.equals(search))
             return true;
         
         String[] values = getValues();
         for (String v:values)
-            if (v.equalsIgnoreCase(value))
+        {
+            if (v.equals(search))
                 return true;
-
+            if (v.startsWith(search) && v.charAt(search.length())==';')
+                return true;
+        }
+        
         return false;
     }
     

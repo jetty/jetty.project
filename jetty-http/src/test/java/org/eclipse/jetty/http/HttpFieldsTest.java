@@ -420,48 +420,22 @@ public class HttpFieldsTest
     {
         HttpFields header = new HttpFields();
 
-        header.add("0", "");
-        header.add("1", ",");
-        header.add("2", ",,");
-        header.add("3", "abc");
-        header.add("4", "def");
-        header.add("5", "abc,def,hig");
-        header.add("6", "abc");
-        header.add("6", "def");
-        header.add("6", "hig");
+        header.add("n0", "");
+        header.add("n1", ",");
+        header.add("n2", ",,");
+        header.add("N3", "abc");
+        header.add("N4", "def");
+        header.add("n5", "abc,def,hig");
+        header.add("N6", "abc");
+        header.add("n6", "def");
+        header.add("N6", "hig");
+        header.add("n7", "abc ,  def;q=0.9  ,  hig");
 
-        for (int i=0;i<7;i++)
+        for (int i=0;i<8;i++)
         {
-            assertFalse(""+i,header.contains(""+i,"xyz"));
-            assertEquals(""+i,i>=4,header.contains(""+i,"def"));
+            assertFalse(""+i,header.contains("n"+i,"xyz"));
+            assertEquals(""+i,i>=4,header.contains("n"+i,"def"));
         }
     }
     
-    @Test
-    public void testValues()
-    {
-        String[] values = new HttpField("name","value").getValues();
-        assertEquals(1,values.length);
-        assertEquals("value",values[0]);
-        
-
-        values = new HttpField("name","a,b,c").getValues();
-        assertEquals(3,values.length);
-        assertEquals("a",values[0]);
-        assertEquals("b",values[1]);
-        assertEquals("c",values[2]);
-
-        values = new HttpField("name","a,\"x,y,z\",c").getValues();
-        assertEquals(3,values.length);
-        assertEquals("a",values[0]);
-        assertEquals("x,y,z",values[1]);
-        assertEquals("c",values[2]);
-        
-        values = new HttpField("name","a,\"x,\\\"p,q\\\",z\",c").getValues();
-        assertEquals(3,values.length);
-        assertEquals("a",values[0]);
-        assertEquals("x,\"p,q\",z",values[1]);
-        assertEquals("c",values[2]);
-        
-    }
 }
