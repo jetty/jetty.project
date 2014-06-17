@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -51,8 +52,6 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestAttributeEvent;
 import javax.servlet.ServletRequestAttributeListener;
-import javax.servlet.ServletRequestEvent;
-import javax.servlet.ServletRequestListener;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -75,7 +74,6 @@ import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
@@ -130,42 +128,6 @@ public class Request implements HttpServletRequest
     private final HttpFields _fields=new HttpFields();
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
     private final HttpInput _input;
-    
-    public static class MultiPartCleanerListener implements ServletRequestListener
-    {
-        @Override
-        public void requestDestroyed(ServletRequestEvent sre)
-        {
-            //Clean up any tmp files created by MultiPartInputStream
-            MultiPartInputStreamParser mpis = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(__MULTIPART_INPUT_STREAM);
-            if (mpis != null)
-            {
-                ContextHandler.Context context = (ContextHandler.Context)sre.getServletRequest().getAttribute(__MULTIPART_CONTEXT);
-
-                //Only do the cleanup if we are exiting from the context in which a servlet parsed the multipart files
-                if (context == sre.getServletContext())
-                {
-                    try
-                    {
-                        mpis.deleteParts();
-                    }
-                    catch (MultiException e)
-                    {
-                        sre.getServletContext().log("Errors deleting multipart tmp files", e);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void requestInitialized(ServletRequestEvent sre)
-        {
-            //nothing to do, multipart config set up by ServletHolder.handle()
-        }
-        
-    }
-    
-    
 
     private boolean _secure;
     private boolean _asyncSupported = true;
@@ -2259,4 +2221,5 @@ public class Request implements HttpServletRequest
             throw new ServletException(e);
         }
     }
+    
 }

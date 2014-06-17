@@ -45,6 +45,7 @@ import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.RunAsToken;
+import org.eclipse.jetty.server.MultiPartCleanerListener;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -665,7 +666,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             //servlet calling Request.getPart() or Request.getParts()
 
             ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
-            ch.addEventListener(new Request.MultiPartCleanerListener());
+            ch.addEventListener(new MultiPartCleanerListener());
         }
     }
 

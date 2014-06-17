@@ -30,6 +30,16 @@ public class HostPortHttpField extends HttpField
 {    
     public final String _host;
     public final int _port;
+
+    public HostPortHttpField(String authority)
+    {
+        this(HttpHeader.HOST,HttpHeader.HOST.asString(),authority);
+    }
+    
+    public HostPortHttpField(HttpHeader header, String authority)
+    {
+        this(header,header.asString(),authority);
+    }
     
     public HostPortHttpField(HttpHeader header, String name, String authority)
     {
