@@ -27,18 +27,13 @@ import org.eclipse.jetty.util.StringUtil;
 /**
  */
 public class HostPortHttpField extends HttpField
-{    
-    public final String _host;
-    public final int _port;
+{
+    private final String _host;
+    private final int _port;
 
     public HostPortHttpField(String authority)
     {
         this(HttpHeader.HOST,HttpHeader.HOST.asString(),authority);
-    }
-    
-    public HostPortHttpField(HttpHeader header, String authority)
-    {
-        this(header,header.asString(),authority);
     }
     
     public HostPortHttpField(HttpHeader header, String name, String authority)
@@ -52,13 +47,13 @@ public class HostPortHttpField extends HttpField
                 // ipv6reference
                 int close=authority.lastIndexOf(']');
                 if (close<0)
-                    throw new BadMessage(HttpStatus.BAD_REQUEST_400,"Bad ipv6");
+                    throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad ipv6");
                 _host=authority.substring(1,close);
 
                 if (authority.length()>close+1)
                 {
                     if (authority.charAt(close+1)!=':')
-                        throw new BadMessage(HttpStatus.BAD_REQUEST_400,"Bad ipv6 port");
+                        throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad ipv6 port");
                     _port=StringUtil.toInt(authority,close+2);
                 }
                 else
@@ -80,13 +75,13 @@ public class HostPortHttpField extends HttpField
                 }
             }
         }
-        catch (BadMessage bm)
+        catch (BadMessageException bm)
         {
             throw bm;
         }
         catch(Exception e)
         {
-            throw new BadMessage(HttpStatus.BAD_REQUEST_400,"Bad HostPort",e);
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad HostPort",e);
         }
     }
 

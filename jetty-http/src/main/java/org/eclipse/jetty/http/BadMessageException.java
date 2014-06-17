@@ -16,37 +16,36 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.http;
 
 /* ------------------------------------------------------------------------------- */
-public class BadMessage extends Error
+public class BadMessageException extends RuntimeException
 {
     final int _code;
     final String _reason;
 
-    public BadMessage()
+    public BadMessageException()
     {
         this(400,null);
     }
     
-    public BadMessage(int code)
+    public BadMessageException(int code)
     {
         this(code,null);
     }
     
-    public BadMessage(String reason)
+    public BadMessageException(String reason)
     {
         this(400,reason);
     }
     
-    public BadMessage(int code,String reason)
+    public BadMessageException(int code, String reason)
     {
         _code=code;
         _reason=reason;
     }
     
-    public BadMessage(int code,String reason,Throwable cause)
+    public BadMessageException(int code, String reason, Throwable cause)
     {
         super(cause);
         _code=code;
@@ -62,6 +61,4 @@ public class BadMessage extends Error
     {
         return _reason;
     }
-    
-    
 }

@@ -16,16 +16,10 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.http;
 
 import java.util.Iterator;
-import java.util.List;
 
-
-/* ------------------------------------------------------------ */
-/**
- */
 public class MetaData implements Iterable<HttpField>
 {
     private final HttpVersion _version;
@@ -64,36 +58,13 @@ public class MetaData implements Iterable<HttpField>
     }
     
     @Override
-    public boolean equals(Object o)
-    {
-        if (!(o instanceof MetaData))
-            return false;
-        MetaData m = (MetaData)o;
-
-        HttpFields lm=m.getFields();
-        int s=0;
-        for (HttpField field: this)
-        {
-            s++;
-            if (!lm.contains(field))
-                return false;
-        }
-            
-        if (s!=lm.size())
-            return false;
-            
-        return true;
-    }
-    
-    @Override
     public String toString()
     {
         StringBuilder out = new StringBuilder();
         for (HttpField field: this)
-            out.append(field).append('\n');
+            out.append(field).append(System.lineSeparator());
         return out.toString();
     }
-    
     
     /* -------------------------------------------------------- */
     /* -------------------------------------------------------- */
@@ -101,35 +72,35 @@ public class MetaData implements Iterable<HttpField>
     public static class Request extends MetaData
     {
         private final String _method;
-        private final HttpScheme _scheme;
-        private final String _host;
-        private final int _port;
         private final HttpURI _uri;
+        private final HostPortHttpField _hostPort;
+        private final HttpScheme _scheme;
 
-        public Request(HttpVersion version, String method, HttpURI uri, HttpFields fields,String host, int port)
+        public Request(HttpVersion version, String method, HttpURI uri, HttpFields fields, HostPortHttpField hostPort)
         {
             super(version,fields);
-            _host=host;
-            _port=port;
             _method=method;
             _uri=uri;
-            String scheme=uri.getScheme();
-            if (scheme==null)
-                _scheme=HttpScheme.HTTP;
+            _hostPort = hostPort;
+            String scheme = uri.getScheme();
+            if (scheme == null)
+            {
+                _scheme = HttpScheme.HTTP;
+            }
             else
             {
                 HttpScheme s = HttpScheme.CACHE.get(scheme);
-                _scheme=s==null?HttpScheme.HTTP:s;
+                _scheme = s == null ? HttpScheme.HTTP : s;
             }
         }
-        
+
+        // TODO: review this constructor: host/port parameters are ignored, and code duplication should be avoided.
         public Request(HttpVersion version, HttpScheme scheme, String method, String authority, String host, int port, String path, HttpFields fields)
         {
             super(version,fields);
-            _host=host;
-            _port=port;
             _method=method;
             _uri=new HttpURI(path); // TODO - this is not so efficient!
+            _hostPort = new HostPortHttpField(authority);
             _scheme=scheme;
         }
 
@@ -157,12 +128,12 @@ public class MetaData implements Iterable<HttpField>
 
         public String getHost()
         {
-            return _host;
+            return _hostPort.getHost();
         }
 
         public int getPort()
         {
-            return _port;
+            return _hostPort.getPort();
         }
         
         public HttpURI getURI()
@@ -171,24 +142,11 @@ public class MetaData implements Iterable<HttpField>
         }
 
         @Override
-        public boolean equals(Object o)
-        {
-            if (!(o instanceof Request))
-                return false;
-            Request r = (Request)o;
-            if (!_method.equals(r._method) || 
-                !_scheme.equals(r._scheme) ||
-                !_uri.equals(r._uri))
-                return false;
-            return super.equals(o);
-        }
-        
-        @Override
         public String toString()
         {
-            return _method+" "+_scheme+"://"+_host+':'+_port+_uri+" HTTP/2\n"+super.toString();
+            return String.format("%s %s://%s:%d%s HTTP/2%s%s",
+                    getMethod(), getScheme(), getHost(), getPort(), getURI(), System.lineSeparator(), super.toString());
         }
-        
     }
 
     /* -------------------------------------------------------- */
@@ -222,19 +180,9 @@ public class MetaData implements Iterable<HttpField>
         }
 
         @Override
-        public boolean equals(Object o)
-        {
-            if (!(o instanceof Response))
-                return false;
-            Response r = (Response)o;
-            if (_status!=r._status)
-                return false;
-            return super.equals(o);
-        }
-        @Override
         public String toString()
         {
-            return "HTTP/2 "+_status+"\n"+super.toString();
+            return String.format("HTTP/2 %d%s%s", getStatus(), System.lineSeparator(), super.toString());
         }
     }
 }

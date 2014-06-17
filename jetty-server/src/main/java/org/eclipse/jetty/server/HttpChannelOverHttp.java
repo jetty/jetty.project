@@ -295,10 +295,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         if (!persistent)
             _httpConnection._generator.setPersistent(false);
 
-        if (_hostPort==null)
-            onRequest(new MetaData.Request(_version,_method,_uri,_fields,null,0));
-        else
-            onRequest(new MetaData.Request(_version,_method,_uri,_fields,_hostPort.getHost(),_hostPort.getPort()));
+        onRequest(new MetaData.Request(_version,_method,_uri,_fields,_hostPort));
         return true;
     }
 

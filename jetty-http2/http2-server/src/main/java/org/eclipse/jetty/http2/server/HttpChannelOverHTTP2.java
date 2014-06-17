@@ -66,7 +66,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         // Based on that, some browser does not send the header, but it's
         // important that applications can find it (e.g. GzipFilter).
         HttpFields fields = request.getFields();
-        if (!fields.contains(ACCEPT_ENCODING_GZIP))
+        if (!fields.contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
             fields.add(ACCEPT_ENCODING_GZIP);
 
         onRequest(request);

@@ -29,7 +29,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.http.BadMessage;
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -500,7 +500,7 @@ public class HttpChannel implements Runnable
                 _request.setRequestURI("");
             }
             else
-                throw new BadMessage(400,"Bad URI");
+                throw new BadMessageException(400,"Bad URI");
         }
         _request.setPathInfo(info);
         

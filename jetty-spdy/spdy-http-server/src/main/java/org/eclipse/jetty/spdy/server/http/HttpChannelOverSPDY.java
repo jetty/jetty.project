@@ -20,10 +20,10 @@ package org.eclipse.jetty.spdy.server.http;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -106,15 +106,11 @@ public class HttpChannelOverSPDY extends HttpChannel
 
         LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.getValue(), httpVersion);
 
-        String scheme = "http";
         Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
         if (schemeHeader != null)
-        {
-            scheme = schemeHeader.getValue();
-            getRequest().setScheme(scheme);
-        }
+            getRequest().setScheme(schemeHeader.getValue());
 
-        String authority = null;
+        HostPortHttpField hostPort = null;
         HttpFields fields = new HttpFields();
         for (Fields.Field header : headers)
         {
@@ -128,7 +124,7 @@ public class HttpChannelOverSPDY extends HttpChannel
                     continue;
 
                 name = "host";
-                authority = header.getValue();
+                hostPort = new HostPortHttpField(header.getValue());
             }
 
             switch (name)
@@ -138,8 +134,13 @@ public class HttpChannelOverSPDY extends HttpChannel
                 case "proxy-connection":
                 case "transfer-encoding":
                 {
-                    // Spec says to ignore these headers
-                    continue;
+                    // Spec says to ignore these headers.
+                    break;
+                }
+                case "host":
+                {
+                    // Do not add it now.
+                    break;
                 }
                 default:
                 {
@@ -152,24 +153,16 @@ public class HttpChannelOverSPDY extends HttpChannel
             }
         }
 
-        String host = null;
-        int port = 0;
-        if (authority != null)
+        if (hostPort == null)
         {
-            int colon = authority.indexOf(':');
-            if (colon > 0)
-            {
-                host = authority.substring(0, colon);
-                port = Integer.valueOf(authority.substring(colon + 1));
-            }
-            else
-            {
-                host = authority;
-                port = HttpScheme.HTTPS.is(scheme) ? 443 : 80;
-            }
+            onBadMessage(400, "Missing Host header");
+            return false;
         }
 
-        MetaData.Request request = new MetaData.Request(httpVersion, httpMethod.asString(), uri, fields, host, port);
+        // At last, add the Host header.
+        fields.add(hostPort);
+
+        MetaData.Request request = new MetaData.Request(httpVersion, httpMethod.asString(), uri, fields, hostPort);
         onRequest(request);
         return true;
     }

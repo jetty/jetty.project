@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
@@ -31,7 +27,6 @@ import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -54,7 +49,7 @@ public class HttpChannelOverFCGI extends HttpChannel
     private String path;
     private String query;
     private String version;
-    private HostPortHttpField host;
+    private HostPortHttpField hostPort;
 
     public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
@@ -72,13 +67,19 @@ public class HttpChannelOverFCGI extends HttpChannel
             query = field.getValue();
         else if (FCGI.Headers.SERVER_PROTOCOL.equalsIgnoreCase(field.getName()))
             version = field.getValue();
-        else if (field.getHeader()==HttpHeader.HOST)
-        {
-            host=new HostPortHttpField(HttpHeader.HOST,HttpHeader.HOST.asString(),field.getValue());
-            fields.add(host);
-        }
         else
-            fields.add(field);
+            processField(field);
+    }
+
+    private void processField(HttpField field)
+    {
+        HttpField httpField = convertHeader(field);
+        if (httpField != null)
+        {
+            fields.add(httpField);
+            if (HttpHeader.HOST.is(httpField.getName()))
+                hostPort = (HostPortHttpField)httpField;
+        }
     }
 
     public void onRequest()
@@ -86,11 +87,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         String uri = path;
         if (query != null && query.length() > 0)
             uri += "?" + query;
-        
-        if (host==null)
-            onRequest(new MetaData.Request(HttpVersion.fromString(version),method,new HttpURI(uri),fields,null,0));
-        else
-            onRequest(new MetaData.Request(HttpVersion.fromString(version),method,new HttpURI(uri),fields,host.getHost(),host.getPort()));
+        onRequest(new MetaData.Request(HttpVersion.fromString(version), method, new HttpURI(uri), fields, hostPort));
     }
 
     private HttpField convertHeader(HttpField field)
@@ -109,7 +106,11 @@ public class HttpChannelOverFCGI extends HttpChannel
                 httpName.append(Character.toUpperCase(part.charAt(0)));
                 httpName.append(part.substring(1).toLowerCase(Locale.ENGLISH));
             }
-            return new HttpField(httpName.toString(), field.getValue());
+            String headerName = httpName.toString();
+            if (HttpHeader.HOST.is(headerName))
+                return new HostPortHttpField(field.getValue());
+            else
+                return new HttpField(httpName.toString(), field.getValue());
         }
         return null;
     }
