@@ -24,9 +24,10 @@ import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.http2.hpack.MetaData;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
@@ -105,6 +106,6 @@ public class AbstractTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(HttpScheme.HTTP, method, authority, host, port, path, fields);
+        return new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, method, authority, host, port, path, fields);
     }
 }
