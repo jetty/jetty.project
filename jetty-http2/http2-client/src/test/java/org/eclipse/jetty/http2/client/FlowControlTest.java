@@ -103,7 +103,7 @@ public class FlowControlTest extends AbstractTest
             }
         });
 
-        // Two SETTINGS frames, the initial one and the one we send.
+        // Two SETTINGS frames, the initial one and the one we send from the server.
         final CountDownLatch settingsLatch = new CountDownLatch(2);
         Session client = newClient(new Session.Listener.Adapter()
         {

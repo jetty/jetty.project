@@ -163,6 +163,10 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
+
+        if (frame.isReply())
+            return false;
+
         Map<Integer, Integer> settings = frame.getSettings();
         if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
         {
