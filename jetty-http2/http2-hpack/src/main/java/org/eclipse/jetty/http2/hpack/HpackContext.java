@@ -120,29 +120,32 @@ public class HpackContext
             switch(i)
             {
                 case 2:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.GET));
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.GET),true);
                     break;
                 case 3:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.POST));
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.POST),false);
                     break;
                 case 6:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTP));
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTP),true);
                     break;
                 case 7:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTPS));
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTPS),false);
                     break;
                 case 8:
+                case 11:
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],Integer.valueOf(STATIC_TABLE[i][1])),true);
+                    break;
+                    
                 case 9:
                 case 10:
-                case 11:
                 case 12:
                 case 13:
                 case 14:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],Integer.valueOf(STATIC_TABLE[i][1])));
+                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],Integer.valueOf(STATIC_TABLE[i][1])),false);
                     break;
                     
                 default:
-                    entry=new StaticEntry(i,new HttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1]));
+                    entry=new StaticEntry(i,new HttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1]),true);
             }
                         
             __staticTable[i]=entry;
@@ -160,8 +163,6 @@ public class HpackContext
         }
     }
 
-    public static final StaticEntry METHOD_GET=__staticTable[2];
-    public static final StaticEntry STATUS_200=__staticTable[8];
     
     
     private int _maxHeaderTableSizeInBytes;
@@ -566,9 +567,10 @@ public class HpackContext
     
     public static class StaticEntry extends Entry
     {
-        final byte[] _huffmanValue;
+        private final byte[] _huffmanValue;
+        private final boolean _useRefSet;
         
-        StaticEntry(int index,HttpField field)
+        StaticEntry(int index,HttpField field,boolean useRefSet)
         {    
             super(index,field);
             String value = field.getValue();
@@ -588,6 +590,7 @@ public class HpackContext
             }
             else
                 _huffmanValue=null;
+            _useRefSet=useRefSet;
         }
 
         @Override
@@ -596,6 +599,11 @@ public class HpackContext
             return true;
         }
 
+        public boolean useRefSet()
+        {
+            return _useRefSet;
+        }
+        
         @Override
         public byte[] getStaticHuffmanValue()
         {

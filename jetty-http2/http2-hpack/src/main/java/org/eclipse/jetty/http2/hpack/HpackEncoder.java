@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
+import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
 import org.eclipse.jetty.io.ByteBufferPool.Lease;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -204,9 +205,9 @@ public class HpackEncoder
                 // TODO Strategy decision to make!
                 // Should we add to reference set or just always send as indexed?
 
-                if (entry==HpackContext.METHOD_GET || entry==HpackContext.STATUS_200)
+                if (((StaticEntry)entry).useRefSet())
                 {
-                    // :status: 200 and :method: GET are worthwhile putting into ref set.
+                    // entries like :status: 200 and :method: GET are worthwhile putting into ref set.
                     // as they are likely to be repeated.
                     int index=_context.index(entry);
                     buffer.put((byte)0x80);
