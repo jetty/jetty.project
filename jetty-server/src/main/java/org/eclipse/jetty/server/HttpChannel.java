@@ -478,7 +478,6 @@ public class HttpChannel implements Runnable
         _request.setUri(request.getURI());
         
         
-
         String path;
         try
         {
@@ -505,31 +504,8 @@ public class HttpChannel implements Runnable
         }
         _request.setPathInfo(info);
         
-        
         // TODO avoid playing in headers
-        for (HttpField field : request.getFields())
-        {
-            HttpHeader header=field.getHeader();
-            String value=field.getValue();
-            if (value == null)
-                value = "";
-            if (header != null)
-            {
-                switch (header)
-                {
-                    case CONTENT_TYPE:
-                        MimeTypes.Type mime = MimeTypes.CACHE.get(value);
-                        String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(value) : mime.getCharset().toString();
-                        if (charset != null)
-                            _request.setCharacterEncodingUnchecked(charset);
-                        break;
-                    default:
-                }
-            }
-
-            if (field.getName()!=null)
-                _request.getHttpFields().add(field);
-        }
+        _request.getHttpFields().addAll(request.getFields());
 
         // TODO make this a better field for h2 hpack generation
         if (_configuration.getSendDateHeader())

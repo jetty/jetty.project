@@ -457,6 +457,8 @@ public class Request implements HttpServletRequest
     @Override
     public String getCharacterEncoding()
     {
+        if (_characterEncoding==null)
+            getContentType();
         return _characterEncoding;
     }
 
@@ -502,7 +504,15 @@ public class Request implements HttpServletRequest
     @Override
     public String getContentType()
     {
-        return _fields.getStringField(HttpHeader.CONTENT_TYPE);
+        String content_type = _fields.getStringField(HttpHeader.CONTENT_TYPE);
+        if (_characterEncoding==null && content_type!=null)
+        {
+            MimeTypes.Type mime = MimeTypes.CACHE.get(content_type);
+            String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(content_type) : mime.getCharset().toString();
+            if (charset != null)
+                _characterEncoding=charset;
+        }
+        return content_type;
     }
 
     /* ------------------------------------------------------------ */

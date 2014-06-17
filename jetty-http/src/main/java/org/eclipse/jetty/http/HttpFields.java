@@ -600,7 +600,12 @@ public class HttpFields implements Iterable<HttpField>
     {
         _fields.add(field);
     }
-    
+
+    public void addAll(HttpFields fields)
+    {
+        _fields.addAll(fields._fields);
+    }
+
     /**
      * Add fields from another HttpFields instance. Single valued fields are replaced, while all
      * others are added.

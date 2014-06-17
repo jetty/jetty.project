@@ -107,6 +107,4 @@ public class HostPortHttpField extends HttpField
     {
         return _port;
     }
-    
-    
 }
