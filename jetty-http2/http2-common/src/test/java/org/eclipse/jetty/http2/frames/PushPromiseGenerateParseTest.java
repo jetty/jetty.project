@@ -26,26 +26,35 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.PushPromiseGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class PushPromiseGenerateParseTest
 {
     private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
 
-    @Ignore
     @Test
     public void testGenerateParse() throws Exception
     {
         PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(), new HpackEncoder());
+
+        final List<PushPromiseFrame> frames = new ArrayList<>();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        {
+            @Override
+            public boolean onPushPromise(PushPromiseFrame frame)
+            {
+                frames.add(frame);
+                return false;
+            }
+        });
 
         int streamId = 13;
         int promisedStreamId = 17;
@@ -55,20 +64,10 @@ public class PushPromiseGenerateParseTest
         MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
 
         // Iterate a few times to be sure generator and parser are properly reset.
-        final List<PushPromiseFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.generatePushPromise(lease, streamId, promisedStreamId, metaData);
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
-            {
-                @Override
-                public boolean onPushPromise(PushPromiseFrame frame)
-                {
-                    frames.add(frame);
-                    return false;
-                }
-            });
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -102,16 +101,7 @@ public class PushPromiseGenerateParseTest
     {
         PushPromiseGenerator generator = new PushPromiseGenerator(new HeaderGenerator(), new HpackEncoder());
 
-        int streamId = 13;
-        int promisedStreamId = 17;
-        HttpFields fields = new HttpFields();
-        fields.put("Accept", "text/html");
-        fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
-
         final List<PushPromiseFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generatePushPromise(lease, streamId, promisedStreamId, metaData);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
@@ -121,6 +111,16 @@ public class PushPromiseGenerateParseTest
                 return false;
             }
         });
+
+        int streamId = 13;
+        int promisedStreamId = 17;
+        HttpFields fields = new HttpFields();
+        fields.put("Accept", "text/html");
+        fields.put("User-Agent", "Jetty");
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generatePushPromise(lease, streamId, promisedStreamId, metaData);
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {

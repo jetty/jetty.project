@@ -40,24 +40,25 @@ public class GoAwayGenerateParseTest
     {
         GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator());
 
+        final List<GoAwayFrame> frames = new ArrayList<>();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        {
+            @Override
+            public boolean onGoAway(GoAwayFrame frame)
+            {
+                frames.add(frame);
+                return false;
+            }
+        });
+
         int lastStreamId = 13;
         int error = 17;
 
         // Iterate a few times to be sure generator and parser are properly reset.
-        final List<GoAwayFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.generateGoAway(lease, lastStreamId, error, null);
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
-            {
-                @Override
-                public boolean onGoAway(GoAwayFrame frame)
-                {
-                    frames.add(frame);
-                    return false;
-                }
-            });
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -81,14 +82,7 @@ public class GoAwayGenerateParseTest
     {
         GoAwayGenerator generator = new GoAwayGenerator(new HeaderGenerator());
 
-        int lastStreamId = 13;
-        int error = 17;
-        byte[] payload = new byte[16];
-        new Random().nextBytes(payload);
-
         final List<GoAwayFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateGoAway(lease, lastStreamId, error, payload);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
@@ -98,6 +92,14 @@ public class GoAwayGenerateParseTest
                 return false;
             }
         });
+
+        int lastStreamId = 13;
+        int error = 17;
+        byte[] payload = new byte[16];
+        new Random().nextBytes(payload);
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateGoAway(lease, lastStreamId, error, payload);
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {

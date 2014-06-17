@@ -72,21 +72,22 @@ public class SettingsGenerateParseTest
     {
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
-        // Iterate a few times to be sure generator and parser are properly reset.
         final List<SettingsFrame> frames = new ArrayList<>();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        {
+            @Override
+            public boolean onSettings(SettingsFrame frame)
+            {
+                frames.add(frame);
+                return false;
+            }
+        });
+
+        // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.generateSettings(lease, settings, true);
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
-            {
-                @Override
-                public boolean onSettings(SettingsFrame frame)
-                {
-                    frames.add(frame);
-                    return false;
-                }
-            });
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -105,13 +106,6 @@ public class SettingsGenerateParseTest
     public void testGenerateParseInvalidSettings() throws Exception
     {
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
-        Map<Integer, Integer> settings1 = new HashMap<>();
-        settings1.put(13, 17);
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateSettings(lease, settings1, true);
-        // Modify the length of the frame to make it invalid
-        ByteBuffer bytes = lease.getByteBuffers().get(0);
-        bytes.putShort(0, (short)(bytes.getShort(0) - 1));
 
         final AtomicInteger errorRef = new AtomicInteger();
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
@@ -122,6 +116,14 @@ public class SettingsGenerateParseTest
                 errorRef.set(error);
             }
         });
+
+        Map<Integer, Integer> settings1 = new HashMap<>();
+        settings1.put(13, 17);
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateSettings(lease, settings1, true);
+        // Modify the length of the frame to make it invalid
+        ByteBuffer bytes = lease.getByteBuffers().get(0);
+        bytes.putShort(0, (short)(bytes.getShort(0) - 1));
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
@@ -139,14 +141,7 @@ public class SettingsGenerateParseTest
     {
         SettingsGenerator generator = new SettingsGenerator(new HeaderGenerator());
 
-        Map<Integer, Integer> settings1 = new HashMap<>();
-        int key = 13;
-        Integer value = 17;
-        settings1.put(key, value);
-
         final List<SettingsFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateSettings(lease, settings1, true);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
@@ -156,6 +151,14 @@ public class SettingsGenerateParseTest
                 return false;
             }
         });
+
+        Map<Integer, Integer> settings1 = new HashMap<>();
+        int key = 13;
+        Integer value = 17;
+        settings1.put(key, value);
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateSettings(lease, settings1, true);
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {

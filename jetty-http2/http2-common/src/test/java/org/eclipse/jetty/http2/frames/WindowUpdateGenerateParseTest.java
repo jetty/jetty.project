@@ -39,24 +39,25 @@ public class WindowUpdateGenerateParseTest
     {
         WindowUpdateGenerator generator = new WindowUpdateGenerator(new HeaderGenerator());
 
+        final List<WindowUpdateFrame> frames = new ArrayList<>();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        {
+            @Override
+            public boolean onWindowUpdate(WindowUpdateFrame frame)
+            {
+                frames.add(frame);
+                return false;
+            }
+        });
+
         int streamId = 13;
         int windowUpdate = 17;
 
         // Iterate a few times to be sure generator and parser are properly reset.
-        final List<WindowUpdateFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.generateWindowUpdate(lease, streamId, windowUpdate);
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
-            {
-                @Override
-                public boolean onWindowUpdate(WindowUpdateFrame frame)
-                {
-                    frames.add(frame);
-                    return false;
-                }
-            });
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -79,12 +80,7 @@ public class WindowUpdateGenerateParseTest
     {
         WindowUpdateGenerator generator = new WindowUpdateGenerator(new HeaderGenerator());
 
-        int streamId = 13;
-        int windowUpdate = 17;
-
         final List<WindowUpdateFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateWindowUpdate(lease, streamId, windowUpdate);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
@@ -94,6 +90,12 @@ public class WindowUpdateGenerateParseTest
                 return false;
             }
         });
+
+        int streamId = 13;
+        int windowUpdate = 17;
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateWindowUpdate(lease, streamId, windowUpdate);
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {

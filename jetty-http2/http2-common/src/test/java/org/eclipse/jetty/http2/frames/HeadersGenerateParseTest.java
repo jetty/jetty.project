@@ -26,22 +26,20 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.HeadersGenerator;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class HeadersGenerateParseTest
 {
     private final ByteBufferPool byteBufferPool = new MappedByteBufferPool();
 
-    @Ignore
     @Test
     public void testGenerateParse() throws Exception
     {
@@ -53,21 +51,22 @@ public class HeadersGenerateParseTest
         fields.put("User-Agent", "Jetty");
         MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
 
-        // Iterate a few times to be sure generator and parser are properly reset.
         final List<HeadersFrame> frames = new ArrayList<>();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        {
+            @Override
+            public boolean onHeaders(HeadersFrame frame)
+            {
+                frames.add(frame);
+                return false;
+            }
+        });
+
+        // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.generateHeaders(lease, streamId, metaData, false);
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
-            {
-                @Override
-                public boolean onHeaders(HeadersFrame frame)
-                {
-                    frames.add(frame);
-                    return false;
-                }
-            });
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -101,15 +100,7 @@ public class HeadersGenerateParseTest
     {
         HeadersGenerator generator = new HeadersGenerator(new HeaderGenerator(), new HpackEncoder());
 
-        int streamId = 13;
-        HttpFields fields = new HttpFields();
-        fields.put("Accept", "text/html");
-        fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
-
         final List<HeadersFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateHeaders(lease, streamId, metaData, false);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
@@ -119,6 +110,15 @@ public class HeadersGenerateParseTest
                 return false;
             }
         });
+
+        int streamId = 13;
+        HttpFields fields = new HttpFields();
+        fields.put("Accept", "text/html");
+        fields.put("User-Agent", "Jetty");
+        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", "localhost:8080", "localhost", 8080, "/path", fields);
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateHeaders(lease, streamId, metaData, false);
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {

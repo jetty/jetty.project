@@ -39,24 +39,25 @@ public class ResetGenerateParseTest
     {
         ResetGenerator generator = new ResetGenerator(new HeaderGenerator());
 
+        final List<ResetFrame> frames = new ArrayList<>();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        {
+            @Override
+            public boolean onReset(ResetFrame frame)
+            {
+                frames.add(frame);
+                return false;
+            }
+        });
+
         int streamId = 13;
         int error = 17;
 
         // Iterate a few times to be sure generator and parser are properly reset.
-        final List<ResetFrame> frames = new ArrayList<>();
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.generateReset(lease, streamId, error);
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
-            {
-                @Override
-                public boolean onReset(ResetFrame frame)
-                {
-                    frames.add(frame);
-                    return false;
-                }
-            });
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -79,12 +80,7 @@ public class ResetGenerateParseTest
     {
         ResetGenerator generator = new ResetGenerator(new HeaderGenerator());
 
-        int streamId = 13;
-        int error = 17;
-
         final List<ResetFrame> frames = new ArrayList<>();
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateReset(lease, streamId, error);
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
@@ -94,6 +90,12 @@ public class ResetGenerateParseTest
                 return false;
             }
         });
+
+        int streamId = 13;
+        int error = 17;
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.generateReset(lease, streamId, error);
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {

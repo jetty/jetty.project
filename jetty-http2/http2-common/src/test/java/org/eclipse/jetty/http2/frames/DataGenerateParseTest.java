@@ -89,22 +89,22 @@ public class DataGenerateParseTest
     {
         DataGenerator generator = new DataGenerator(new HeaderGenerator());
 
-        // Iterate a few times to be sure generator and parser are properly reset.
         final List<DataFrame> frames = new ArrayList<>();
+        Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+        {
+            @Override
+            public boolean onData(DataFrame frame)
+            {
+                frames.add(frame);
+                return false;
+            }
+        });
+
+        // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.generateData(lease, 13, data.slice(), true, data.remaining());
-
-            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
-            {
-                @Override
-                public boolean onData(DataFrame frame)
-                {
-                    frames.add(frame);
-                    return false;
-                }
-            });
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -121,10 +121,6 @@ public class DataGenerateParseTest
     {
         DataGenerator generator = new DataGenerator(new HeaderGenerator());
 
-        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        ByteBuffer data = ByteBuffer.wrap(largeContent);
-        generator.generateData(lease, 13, data.slice(), true, data.remaining());
-
         final List<DataFrame> frames = new ArrayList<>();
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
@@ -135,6 +131,10 @@ public class DataGenerateParseTest
                 return false;
             }
         });
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        ByteBuffer data = ByteBuffer.wrap(largeContent);
+        generator.generateData(lease, 13, data.slice(), true, data.remaining());
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {
