@@ -51,14 +51,23 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * The following init parameters are used to configure this servlet:
  * <dl>
- * <dt>cgibinResourceBase</dt><dd>Path to the cgi bin directory if set or it will default to the resource base of the context.</dd>
- * <dt>resourceBase</dt><dd>An alias for cgibinResourceBase.</dd>
- * <dt>cgibinResourceBaseIsRelative</dt><dd>If true then cgibinResourceBase is relative to the webapp (eg "WEB-INF/cgi")</dd>
- * <dt>commandPrefix</dt><dd>may be used to set a prefix to all commands passed to exec. This can be used on systems that need assistance to execute a
+ * <dt>cgibinResourceBase</dt>
+ * <dd>Path to the cgi bin directory if set or it will default to the resource base of the context.</dd>
+ * <dt>resourceBase</dt>
+ * <dd>An alias for cgibinResourceBase.</dd>
+ * <dt>cgibinResourceBaseIsRelative</dt>
+ * <dd>If true then cgibinResourceBase is relative to the webapp (eg "WEB-INF/cgi")</dd>
+ * <dt>commandPrefix</dt>
+ * <dd>may be used to set a prefix to all commands passed to exec. This can be used on systems that need assistance to execute a
  * particular file type. For example on windows this can be set to "perl" so that perl scripts are executed.</dd>
- * <dt>Path</dt><dd>passed to the exec environment as PATH.</dd>
- * <dt>ENV_*</dt><dd>used to set an arbitrary environment variable with the name stripped of the leading ENV_ and using the init parameter value</dd>
- * <dt>useFullPath</dt><dd>If true, the full URI path within the context is used for the exec command, otherwise a search is done for a partial URL that matches an exec Command</dd>
+ * <dt>Path</dt>
+ * <dd>passed to the exec environment as PATH.</dd>
+ * <dt>ENV_*</dt>
+ * <dd>used to set an arbitrary environment variable with the name stripped of the leading ENV_ and using the init parameter value</dd>
+ * <dt>useFullPath</dt>
+ * <dd>If true, the full URI path within the context is used for the exec command, otherwise a search is done for a partial URL that matches an exec Command</dd>
+ * <dt>ignoreExitState</dt>
+ * <dd>If true then do not act on a non-zero exec exit status")</dd>
  * </dl>
  * 
  */
@@ -196,13 +205,9 @@ public class CGI extends HttpServlet
             String info = "";
 
             // Search docroot for a matching execCmd
-            while (path.endsWith("/") && path.length() >= 0)
+            while ((path.endsWith("/") || !execCmd.exists()) && path.length() >= 0)
             {
-                if(!execCmd.exists())
-                    break;
-    
                 int index = path.lastIndexOf('/');
-    
                 path = path.substring(0,index);
                 info = pathInContext.substring(index,pathInContext.length());
                 execCmd = new File(_docRoot,path);
