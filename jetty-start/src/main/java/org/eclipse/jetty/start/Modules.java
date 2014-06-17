@@ -535,7 +535,7 @@ public class Modules implements Iterable<Module>
                     StartLog.warn("** Unable to continue, required dependency missing. [%s]",missing);
                     StartLog.warn("** As configured, Jetty is unable to start due to a missing enabled module dependency.");
                     StartLog.warn("** This may be due to a transitive dependency akin to spdy on npn, which resolves based on the JDK in use.");
-                    return Collections.emptyList();
+                    throw new UsageException(UsageException.ERR_BAD_ARG, "Missing referenced dependency: " + missing);
                 }
             }
         }

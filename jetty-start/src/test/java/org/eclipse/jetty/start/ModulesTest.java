@@ -19,7 +19,6 @@
 package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
 
 import java.io.File;
 import java.io.IOException;
