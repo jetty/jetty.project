@@ -31,6 +31,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.proxy.AsyncProxyServlet;
 import org.eclipse.jetty.proxy.ProxyServlet;
@@ -125,6 +126,16 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             if (originalQuery != null)
                 originalURI += "?" + originalQuery;
             proxyRequest.attribute(REQUEST_URI_ATTRIBUTE, originalURI);
+        }
+
+        // If the Host header is missing, add it.
+        if (!proxyRequest.getHeaders().containsKey(HttpHeader.HOST.asString()))
+        {
+            String host = request.getServerName();
+            int port = request.getServerPort();
+            if (!getHttpClient().isDefaultPort(request.getScheme(), port))
+                host += ":" + port;
+            proxyRequest.header(HttpHeader.HOST, host);
         }
 
         super.customizeProxyRequest(proxyRequest, request);
