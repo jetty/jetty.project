@@ -22,7 +22,6 @@ package org.eclipse.jetty.http2.hpack;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -47,13 +46,6 @@ public class HpackDecoder
     private final MetaDataBuilder _builder;
     private int _localMaxHeaderTableSize;
 
-    @Deprecated
-    public HpackDecoder()
-    {
-        this(4*1024,8*1024);
-        LOG.warn("USE HpackDecoder constructor with maxHeaderSize!!!");
-    }
-    
     public HpackDecoder(int localMaxHeaderTableSize, int maxHeaderSize)
     {
         _context=new HpackContext(localMaxHeaderTableSize);

@@ -36,7 +36,7 @@ import org.eclipse.jetty.server.Connector;
 
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
-    private int headerTableSize = 4096;
+    private int maxHeaderTableSize = 4096;
     private int initialWindowSize = 65535;
     private int maxConcurrentStreams = -1;
 
@@ -45,14 +45,14 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         super("h2-12");
     }
 
-    public int getHeaderTableSize()
+    public int getMaxHeaderTableSize()
     {
-        return headerTableSize;
+        return maxHeaderTableSize;
     }
 
-    public void setHeaderTableSize(int headerTableSize)
+    public void setMaxHeaderTableSize(int maxHeaderTableSize)
     {
-        this.headerTableSize = headerTableSize;
+        this.maxHeaderTableSize = maxHeaderTableSize;
     }
 
     public int getInitialWindowSize()
@@ -80,11 +80,11 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     {
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
-        Generator generator = new Generator(connector.getByteBufferPool(), getHeaderTableSize());
+        Generator generator = new Generator(connector.getByteBufferPool(), getMaxHeaderTableSize());
         HTTP2ServerSession session = new HTTP2ServerSession(endPoint, generator, listener,
                 new HTTP2FlowControl(getInitialWindowSize()), getMaxConcurrentStreams());
 
-        Parser parser = new ServerParser(connector.getByteBufferPool(), session);
+        Parser parser = newServerParser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
                         endPoint, parser, getInputBufferSize(), listener, session);
 
@@ -92,6 +92,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
+
+    protected abstract ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener);
 
     private class HTTP2ServerConnection extends HTTP2Connection
     {

@@ -55,7 +55,7 @@ public class PushPromiseGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         int streamId = 13;
         int promisedStreamId = 17;
@@ -111,7 +111,7 @@ public class PushPromiseGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         int streamId = 13;
         int promisedStreamId = 17;

@@ -29,7 +29,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -131,7 +130,7 @@ public class HTTP2ServerTest
                     latch.countDown();
                     return false;
                 }
-            });
+            }, 4096, 8192);
 
             parseResponse(client, parser);
 
@@ -187,7 +186,7 @@ public class HTTP2ServerTest
                     latch.countDown();
                     return false;
                 }
-            });
+            }, 4096, 8192);
 
             parseResponse(client, parser);
 
@@ -259,7 +258,7 @@ public class HTTP2ServerTest
                     latch.countDown();
                     return false;
                 }
-            });
+            }, 4096, 8192);
 
             parseResponse(client, parser);
 
@@ -308,7 +307,7 @@ public class HTTP2ServerTest
                     latch.countDown();
                     return false;
                 }
-            });
+            }, 4096, 8192);
 
             parseResponse(client, parser);
 
@@ -348,7 +347,7 @@ public class HTTP2ServerTest
                     latch.countDown();
                     return false;
                 }
-            });
+            }, 4096, 8192);
 
             parseResponse(client, parser);
 

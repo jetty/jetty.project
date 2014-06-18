@@ -49,7 +49,7 @@ public class GoAwayGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         int lastStreamId = 13;
         int error = 17;
@@ -91,7 +91,7 @@ public class GoAwayGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         int lastStreamId = 13;
         int error = 17;

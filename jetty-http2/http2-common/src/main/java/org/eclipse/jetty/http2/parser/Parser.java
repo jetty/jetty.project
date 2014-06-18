@@ -44,13 +44,13 @@ public class Parser
     private final BodyParser[] bodyParsers;
     private State state = State.HEADER;
 
-    public Parser(ByteBufferPool byteBufferPool, Listener listener)
+    public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxHeaderTableSize, int maxHeaderSize)
     {
         this.listener = listener;
         this.headerParser = new HeaderParser();
         this.bodyParsers = new BodyParser[FrameType.values().length];
 
-        HeaderBlockParser headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder());
+        HeaderBlockParser headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder(maxHeaderTableSize, maxHeaderSize));
 
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser);

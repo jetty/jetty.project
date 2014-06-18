@@ -98,7 +98,7 @@ public class DataGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
@@ -130,7 +130,7 @@ public class DataGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         ByteBuffer data = ByteBuffer.wrap(largeContent);

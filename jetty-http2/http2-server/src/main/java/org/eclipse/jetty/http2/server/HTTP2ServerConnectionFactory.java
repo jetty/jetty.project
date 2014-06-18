@@ -28,6 +28,8 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -54,6 +56,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         return new HTTPServerSessionListener(connector, httpConfiguration, endPoint);
     }
 
+    @Override
+    protected ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener)
+    {
+        return new ServerParser(byteBufferPool, listener, getMaxHeaderTableSize(), httpConfiguration.getRequestHeaderSize());
+    }
+
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
         private final Connector connector;
@@ -71,7 +79,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public Map<Integer, Integer> onPreface(Session session)
         {
             Map<Integer, Integer> settings = new HashMap<>();
-            settings.put(SettingsFrame.HEADER_TABLE_SIZE, getHeaderTableSize());
+            settings.put(SettingsFrame.HEADER_TABLE_SIZE, getMaxHeaderTableSize());
             settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialWindowSize());
             int maxConcurrentStreams = getMaxConcurrentStreams();
             if (maxConcurrentStreams >= 0)

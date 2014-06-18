@@ -48,7 +48,7 @@ public class WindowUpdateGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         int streamId = 13;
         int windowUpdate = 17;
@@ -89,7 +89,7 @@ public class WindowUpdateGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         int streamId = 13;
         int windowUpdate = 17;

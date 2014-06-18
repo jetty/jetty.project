@@ -19,6 +19,8 @@
 package org.eclipse.jetty.http2.server;
 
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 
@@ -35,5 +37,12 @@ public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnecti
     protected ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint)
     {
         return listener;
+    }
+
+    @Override
+    protected ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener)
+    {
+        // TODO: make maxHeaderSize configurable.
+        return new ServerParser(byteBufferPool, listener, getMaxHeaderTableSize(), 8192);
     }
 }

@@ -81,7 +81,7 @@ public class SettingsGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
@@ -115,7 +115,7 @@ public class SettingsGenerateParseTest
             {
                 errorRef.set(error);
             }
-        });
+        }, 4096, 8192);
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
@@ -150,7 +150,7 @@ public class SettingsGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         Map<Integer, Integer> settings1 = new HashMap<>();
         int key = 13;

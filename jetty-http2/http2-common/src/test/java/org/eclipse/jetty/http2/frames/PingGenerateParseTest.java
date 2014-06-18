@@ -49,7 +49,7 @@ public class PingGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         byte[] payload = new byte[8];
         new Random().nextBytes(payload);
@@ -90,7 +90,7 @@ public class PingGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         byte[] payload = new byte[8];
         new Random().nextBytes(payload);

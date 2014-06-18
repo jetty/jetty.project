@@ -61,7 +61,7 @@ public class HeadersGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
@@ -110,7 +110,7 @@ public class HeadersGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         int streamId = 13;
         HttpFields fields = new HttpFields();

@@ -48,7 +48,7 @@ public class PriorityGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         int streamId = 13;
         int dependentStreamId = 17;
@@ -93,7 +93,7 @@ public class PriorityGenerateParseTest
                 frames.add(frame);
                 return false;
             }
-        });
+        }, 4096, 8192);
 
         int streamId = 13;
         int dependentStreamId = 17;
