@@ -741,6 +741,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         @Override
         public void failed(Throwable x)
         {
+            close(ErrorCode.INTERNAL_ERROR, "generator_error", Adapter.INSTANCE);
             callback.failed(x);
         }
 
@@ -791,7 +792,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 stream.updateClose(dataFrame.isEndStream(), true);
                 if (stream.isClosed())
                     removeStream(stream, true);
-                callback.succeeded();
+                super.succeeded();
             }
         }
     }
