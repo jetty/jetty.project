@@ -81,7 +81,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
         Generator generator = new Generator(connector.getByteBufferPool(), getMaxHeaderTableSize());
-        HTTP2ServerSession session = new HTTP2ServerSession(endPoint, generator, listener,
+        HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener,
                 new HTTP2FlowControl(getInitialWindowSize()), getMaxConcurrentStreams());
 
         Parser parser = newServerParser(connector.getByteBufferPool(), session);

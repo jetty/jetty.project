@@ -33,4 +33,6 @@ public interface ISession extends Session
     public void data(IStream stream, DataFrame frame, Callback callback);
 
     public int updateWindowSize(int delta);
+
+    public void disconnect();
 }

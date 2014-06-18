@@ -129,7 +129,7 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             Context context = (Context)attachment;
             Generator generator = new Generator(byteBufferPool, 4096);
-            HTTP2Session session = new HTTP2ClientSession(endpoint, generator, context.listener, new HTTP2FlowControl(65535));
+            HTTP2Session session = new HTTP2ClientSession(getScheduler(), endpoint, generator, context.listener, new HTTP2FlowControl(65535));
             Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
             return new HTTP2ClientConnection(byteBufferPool, getExecutor(), endpoint, parser, 8192, context.promise, session);
         }

@@ -30,14 +30,15 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2ClientSession extends HTTP2Session
 {
     private static final Logger LOG = Log.getLogger(HTTP2ClientSession.class);
 
-    public HTTP2ClientSession(EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl)
+    public HTTP2ClientSession(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl)
     {
-        super(endPoint, generator, listener, flowControl, -1, 1);
+        super(scheduler, endPoint, generator, listener, flowControl, -1, 1);
     }
 
     @Override
@@ -48,7 +49,7 @@ public class HTTP2ClientSession extends HTTP2Session
         if (stream == null)
         {
             ResetFrame reset = new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR);
-            reset(reset, disconnectCallback);
+            reset(reset, disconnectOnFailure());
         }
         else
         {

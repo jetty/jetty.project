@@ -20,30 +20,45 @@ package org.eclipse.jetty.http2;
 
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.http2.parser.ErrorCode;
+import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
-public class HTTP2Stream implements IStream
+public class HTTP2Stream extends IdleTimeout implements IStream
 {
     private static final Logger LOG = Log.getLogger(HTTP2Stream.class);
 
+    private final Callback disconnectOnFailure = new Callback.Adapter()
+    {
+        @Override
+        public void failed(Throwable x)
+        {
+            session.disconnect();
+        }
+    };
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final AtomicInteger windowSize = new AtomicInteger();
     private final ISession session;
     private final HeadersFrame frame;
-    private Listener listener;
+    private volatile Listener listener;
     private volatile boolean reset = false;
 
-    public HTTP2Stream(ISession session, HeadersFrame frame)
+    public HTTP2Stream(Scheduler scheduler, ISession session, HeadersFrame frame)
     {
+        super(scheduler);
         this.session = session;
         this.frame = frame;
     }
@@ -102,6 +117,28 @@ public class HTTP2Stream implements IStream
         return closeState.get() == CloseState.CLOSED;
     }
 
+    @Override
+    public boolean isOpen()
+    {
+        return !isClosed();
+    }
+
+    @Override
+    protected void onIdleExpired(TimeoutException timeout)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Idle timeout {}ms expired on {}", getIdleTimeout(), this);
+
+        // The stream is now gone, we must close it to
+        // avoid that its idle timeout is rescheduled.
+        closeState.set(CloseState.CLOSED);
+        onClose();
+
+        session.reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR), disconnectOnFailure);
+
+        notifyFailure(this, timeout);
+    }
+
     private ConcurrentMap<String, Object> attributes()
     {
         ConcurrentMap<String, Object> map = attributes.get();
@@ -131,14 +168,21 @@ public class HTTP2Stream implements IStream
     @Override
     public boolean process(Frame frame, Callback callback)
     {
+        notIdle();
+
         switch (frame.getType())
         {
             case DATA:
             {
-                return notifyData((DataFrame)frame, callback);
+                // TODO: handle cases where:
+                // TODO: A) stream already remotely close.
+                // TODO: B) DATA before HEADERS.
+                notifyData(this, (DataFrame)frame, callback);
+                return false;
             }
             case HEADERS:
             {
+                // TODO: handle case where HEADERS after DATA.
                 return false;
             }
             case RST_STREAM:
@@ -210,28 +254,41 @@ public class HTTP2Stream implements IStream
         return windowSize.getAndAdd(delta);
     }
 
-    protected boolean notifyData(DataFrame frame, Callback callback)
+    protected void notifyData(Stream stream, DataFrame frame, Callback callback)
     {
         final Listener listener = this.listener;
         if (listener == null)
-            return false;
+            return;
         try
         {
-            listener.onData(this, frame, callback);
-            return false;
+            listener.onData(stream, frame, callback);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
+        }
+    }
+
+    private void notifyFailure(Stream stream, Throwable failure)
+    {
+        Listener listener = this.listener;
+        if (listener == null)
+            return;
+        try
+        {
+            listener.onFailure(stream, failure);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
         }
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{id=%d,windowSize=%s,%s}", getClass().getSimpleName(),
-                hashCode(), getId(), windowSize, closeState);
+        return String.format("%s@%x{id=%d,windowSize=%s,reset=%b,%s}", getClass().getSimpleName(),
+                hashCode(), getId(), windowSize, reset, closeState);
     }
 
     private enum CloseState

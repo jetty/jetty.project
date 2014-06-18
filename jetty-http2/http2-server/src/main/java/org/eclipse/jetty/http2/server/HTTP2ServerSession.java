@@ -35,6 +35,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Listener
 {
@@ -42,9 +43,9 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
 
     private final ServerSessionListener listener;
 
-    public HTTP2ServerSession(EndPoint endPoint, Generator generator, ServerSessionListener listener, FlowControl flowControl, int maxStreams)
+    public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, Generator generator, ServerSessionListener listener, FlowControl flowControl, int maxStreams)
     {
-        super(endPoint, generator, listener, flowControl, maxStreams, 2);
+        super(scheduler, endPoint, generator, listener, flowControl, maxStreams, 2);
         this.listener = listener;
     }
 
@@ -56,7 +57,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         if (settings == null)
             settings = Collections.emptyMap();
         SettingsFrame frame = new SettingsFrame(settings, false);
-        settings(frame, disconnectCallback);
+        settings(frame, disconnectOnFailure());
         return false;
     }
 

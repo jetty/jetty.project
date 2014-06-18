@@ -42,6 +42,10 @@ public interface Stream
 
     public boolean isClosed();
 
+    public long getIdleTimeout();
+
+    public void setIdleTimeout(long idleTimeout);
+
     // TODO: see SPDY's Stream
 
     public interface Listener
