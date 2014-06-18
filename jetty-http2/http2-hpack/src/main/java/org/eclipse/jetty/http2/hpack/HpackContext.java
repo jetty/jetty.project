@@ -319,7 +319,7 @@ public class HpackContext
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(String.format("RefSet[%x] remove unused",hashCode(),entry));
+                    LOG.debug(String.format("RefSet[%x] remove unused %s",hashCode(),entry));
                 // encode the reference to remove it
                 buffer.put((byte)0x80);
                 NBitInteger.encode(buffer,7,index(entry));
@@ -339,7 +339,7 @@ public class HpackContext
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug(String.format("RefSet[%x] emit unref",hashCode(),entry));
+                    LOG.debug(String.format("RefSet[%x] emit unref %s",hashCode(),entry));
                 builder.emit(entry.getHttpField());
             }
             

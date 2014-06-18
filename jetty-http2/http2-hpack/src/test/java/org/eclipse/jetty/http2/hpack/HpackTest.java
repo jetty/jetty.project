@@ -67,7 +67,7 @@ public class HpackTest
         fields1.add(HttpHeader.CONTENT_TYPE,"text/plain");
         fields1.add(HttpHeader.CONTENT_LENGTH,"1234");
         fields1.add(HttpHeader.SERVER,"jetty");
-        fields1.add("custom-key","other-value");
+        fields1.add("Custom-Key","Other-Value");
         Response original1 = new Response(HttpVersion.HTTP_2,200,fields1);
 
         // Same again?
@@ -77,7 +77,7 @@ public class HpackTest
         Response decoded1 = (Response)decoder.decode(buffer);
 
         Assert.assertEquals(original1,decoded1);
-        
+        Assert.assertEquals("custom-key",decoded1.getFields().getField("Custom-Key").getName());
         
     }
 }

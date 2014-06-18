@@ -43,6 +43,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
     private static final HttpField ACCEPT_ENCODING_GZIP = new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip");
+    private static final HttpField SERVER_VERSION=new HttpField(HttpHeader.SERVER,HttpConfiguration.SERVER_VERSION);
+    private static final HttpField POWERED_BY=new HttpField(HttpHeader.X_POWERED_BY,HttpConfiguration.SERVER_VERSION);
     private final Stream stream;
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input, Stream stream)
@@ -69,6 +71,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         if (!fields.contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
             fields.add(ACCEPT_ENCODING_GZIP);
 
+
+        // TODO make this a better field for h2 hpack generation
+        if (getHttpConfiguration().getSendServerVersion())
+            getResponse().getHttpFields().add(SERVER_VERSION);
+        if (getHttpConfiguration().getSendXPoweredBy())
+            getResponse().getHttpFields().add(POWERED_BY);
+        
         onRequest(request);
         
         if (frame.isEndStream())

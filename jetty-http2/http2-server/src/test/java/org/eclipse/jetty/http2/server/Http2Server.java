@@ -21,8 +21,10 @@ package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
 import java.util.Date;
+
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
+import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -116,7 +118,10 @@ public class Http2Server
         protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
             HttpSession session = request.getSession(true);
-            response.setHeader("custom","value");
+            if (session.isNew())
+                response.addCookie(new Cookie("bigcookie",
+                "This is a test cookies that was created on "+new Date()+" and is used by the jetty http/2 test servlet."));
+            response.setHeader("Custom","Value");
             response.setContentType("text/plain");
             String content = "Hello from Jetty using "+request.getProtocol() +"\n";
             content+="uri="+request.getRequestURI()+"\n";

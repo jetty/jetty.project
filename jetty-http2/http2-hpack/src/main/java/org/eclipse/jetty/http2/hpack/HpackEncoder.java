@@ -302,10 +302,10 @@ public class HpackEncoder
                 NBitInteger.encode(buffer,name_bits,_context.index(name_entry));
             else
             {
-                // Encode the name always with huffman
+                // Encode the name always with lowercase huffman
                 buffer.put((byte)0x80);
-                NBitInteger.encode(buffer,7,Huffman.octetsNeeded(field.getName()));
-                Huffman.encode(buffer,field.getName());
+                NBitInteger.encode(buffer,7,Huffman.octetsNeededLC(field.getName()));
+                Huffman.encodeLC(buffer,field.getName());
             }
 
             // Add the literal value
@@ -339,8 +339,6 @@ public class HpackEncoder
                 if (new_entry!=null)
                     _context.addToRefSet(new_entry);
             }
-
-
         }
 
         if (p>=0)

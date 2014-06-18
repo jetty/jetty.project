@@ -41,7 +41,7 @@ public class MetaDataBuilder
     HttpFields _fields = new HttpFields(10);
     
     public void emit(HttpField field)
-    {
+    {        
         if (field instanceof StaticValueHttpField)
         {
             StaticValueHttpField value = (StaticValueHttpField)field;

@@ -287,15 +287,21 @@ public class Huffman
 
     };
 
+    static final int[][] LCCODES = new int[CODES.length][];
+    
     // Huffman decode tree stored in a flattened char array for good 
     // locality of reference.
     static final char[] tree;
     static final char[] rowsym;
     static final byte[] rowbits;
 
-    // Build the Huffman lookup tree
+    // Build the Huffman lookup tree and LC TABLE
     static 
     {
+        System.arraycopy(CODES,0,LCCODES,0,CODES.length);
+        for (int i='A';i<='Z';i++)
+            LCCODES[i]=LCCODES['a'+i-'A'];
+        
         int r=0;
         for (int i=0;i<CODES.length;i++)
             r+=(CODES[i][1]+7)/8;
@@ -339,12 +345,12 @@ public class Huffman
         }
     }
 
-    static public String decode(ByteBuffer buffer)
+    public static String decode(ByteBuffer buffer)
     {  
         return decode(buffer,buffer.remaining());
     }
 
-    static public String decode(ByteBuffer buffer,int length)
+    public static String decode(ByteBuffer buffer,int length)
     {        
         StringBuilder out = new StringBuilder(length*2);
         int node = 0;
@@ -398,7 +404,27 @@ public class Huffman
         return out.toString();
     }
 
-    static public int octetsNeeded(String s)
+    public static int octetsNeeded(String s)
+    {   
+        return octetsNeeded(CODES,s);
+    }
+    
+    public static void encode(ByteBuffer buffer,String s)
+    {
+        encode(CODES,buffer,s);
+    }
+    
+    public static int octetsNeededLC(String s)
+    {
+        return octetsNeeded(LCCODES,s);
+    }
+
+    public static void encodeLC(ByteBuffer buffer, String s)
+    {
+        encode(LCCODES,buffer,s);
+    }
+    
+    private static int octetsNeeded(final int[][] table,String s)
     {   
         int needed=0;
         int len = s.length();
@@ -407,13 +433,13 @@ public class Huffman
             char c=s.charAt(i);
             if (c>=128 || c<' ')
                 throw new IllegalArgumentException();
-            needed += CODES[c][1];
+            needed += table[c][1];
         }
 
         return (needed+7) / 8;
     }
 
-    static public void encode(ByteBuffer buffer,String s)
+    private static void encode(final int[][] table,ByteBuffer buffer,String s)
     {
         long current = 0;
         int n = 0;
@@ -427,8 +453,8 @@ public class Huffman
             char c=s.charAt(i);
             if (c>=128 || c<' ')
                 throw new IllegalArgumentException();
-            int code = CODES[c][0];
-            int bits = CODES[c][1];
+            int code = table[c][0];
+            int bits = table[c][1];
 
             current <<= bits;
             current |= code;
@@ -450,4 +476,5 @@ public class Huffman
         
         buffer.position(p-buffer.arrayOffset());
     }
+
 }

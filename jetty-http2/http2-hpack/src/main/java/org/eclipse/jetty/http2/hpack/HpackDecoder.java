@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.hpack;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
@@ -132,6 +133,14 @@ public class HpackDecoder
                             name=Huffman.decode(buffer,length);
                         else
                             name=toASCIIString(buffer,length);
+                        for (int i=0;i<name.length();i++)
+                        {
+                            char c=name.charAt(i);
+                            if (c>='A'&&c<='Z')
+                            {
+                                throw new BadMessageException(400,"Uppercase header name");
+                            }
+                        }
                         header=HttpHeader.CACHE.get(name);
                     }
                     
