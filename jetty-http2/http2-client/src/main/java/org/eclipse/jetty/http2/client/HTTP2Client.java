@@ -53,6 +53,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final SelectorManager selector;
     private final ByteBufferPool byteBufferPool;
+    private long idleTimeout;
 
     public HTTP2Client()
     {
@@ -100,6 +101,16 @@ public class HTTP2Client extends ContainerLifeCycle
         sessions.clear();
     }
 
+    public long getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    public void setIdleTimeout(long idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+    }
+
     private class ClientSelectorManager extends SelectorManager
     {
         private ClientSelectorManager(Executor executor, Scheduler scheduler)
@@ -110,7 +121,7 @@ public class HTTP2Client extends ContainerLifeCycle
         @Override
         protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey selectionKey) throws IOException
         {
-            return new SelectChannelEndPoint(channel, selector, selectionKey, getScheduler(), 30000);
+            return new SelectChannelEndPoint(channel, selector, selectionKey, getScheduler(), getIdleTimeout());
         }
 
         @Override
@@ -148,6 +159,15 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             super.onClose();
             sessions.remove(session);
+        }
+
+        @Override
+        protected boolean onReadTimeout()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
+            session.close(ErrorCode.NO_ERROR, "idle_timeout", closeCallback);
+            return false;
         }
 
         @Override

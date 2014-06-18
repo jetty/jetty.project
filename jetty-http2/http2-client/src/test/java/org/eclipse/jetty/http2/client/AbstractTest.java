@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
@@ -42,9 +43,9 @@ import org.junit.After;
 
 public class AbstractTest
 {
-    private ServerConnector connector;
+    protected ServerConnector connector;
     private String path = "/test";
-    private HTTP2Client client;
+    protected HTTP2Client client;
     private Server server;
 
     protected void startServer(HttpServlet servlet) throws Exception
@@ -106,6 +107,6 @@ public class AbstractTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, method, authority, host, port, path, fields);
+        return new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, method, new HostPortHttpField(authority), path, fields);
     }
 }

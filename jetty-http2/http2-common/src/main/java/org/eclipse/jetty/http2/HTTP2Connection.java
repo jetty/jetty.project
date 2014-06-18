@@ -26,6 +26,7 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -33,6 +34,14 @@ public class HTTP2Connection extends AbstractConnection
 {
     protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
 
+    protected final Callback closeCallback = new Callback.Adapter()
+    {
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
+        }
+    };
     private final ByteBufferPool byteBufferPool;
     private final Parser parser;
     private final int bufferSize;

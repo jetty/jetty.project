@@ -105,7 +105,7 @@ public class FlowControlTest extends AbstractTest
 
         // Two SETTINGS frames, the initial one and the one we send from the server.
         final CountDownLatch settingsLatch = new CountDownLatch(2);
-        Session client = newClient(new Session.Listener.Adapter()
+        Session session = newClient(new Session.Listener.Adapter()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -116,7 +116,7 @@ public class FlowControlTest extends AbstractTest
 
         MetaData.Request request = newRequest("POST", new HttpFields());
         FuturePromise<Stream> promise = new FuturePromise<>();
-        client.newStream(new HeadersFrame(0, request, null, false), promise, new Stream.Listener.Adapter());
+        session.newStream(new HeadersFrame(0, request, null, false), promise, new Stream.Listener.Adapter());
         Stream stream = promise.get(5, TimeUnit.SECONDS);
 
         // Send first chunk that exceeds the window.
@@ -356,11 +356,11 @@ public class FlowControlTest extends AbstractTest
             }
         });
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session session = newClient(new Session.Listener.Adapter());
 
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, windowSize);
-        client.settings(new SettingsFrame(settings, false), Callback.Adapter.INSTANCE);
+        session.settings(new SettingsFrame(settings, false), Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
@@ -369,7 +369,7 @@ public class FlowControlTest extends AbstractTest
 
         // First request will consume half the session window.
         MetaData.Request request1 = newRequest("GET", new HttpFields());
-        client.newStream(new HeadersFrame(0, request1, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(0, request1, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -382,7 +382,7 @@ public class FlowControlTest extends AbstractTest
         // Second request will consume the session window, which is now stalled.
         // A third request will not be able to receive data.
         MetaData.Request request2 = newRequest("GET", new HttpFields());
-        client.newStream(new HeadersFrame(0, request2, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(0, request2, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -395,7 +395,7 @@ public class FlowControlTest extends AbstractTest
         // Third request is now stalled.
         final CountDownLatch latch = new CountDownLatch(1);
         MetaData.Request request3 = newRequest("GET", new HttpFields());
-        client.newStream(new HeadersFrame(0, request3, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(new HeadersFrame(0, request3, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
@@ -438,12 +438,12 @@ public class FlowControlTest extends AbstractTest
             }
         });
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
         final byte[] bytes = new byte[data.length];
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             private int received;
 

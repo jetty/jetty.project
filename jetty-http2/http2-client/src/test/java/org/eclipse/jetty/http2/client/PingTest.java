@@ -39,7 +39,7 @@ public class PingTest extends AbstractTest
         final byte[] payload = new byte[8];
         new Random().nextBytes(payload);
         final CountDownLatch latch = new CountDownLatch(1);
-        Session client = newClient(new Session.Listener.Adapter()
+        Session session = newClient(new Session.Listener.Adapter()
         {
             @Override
             public void onPing(Session session, PingFrame frame)
@@ -51,7 +51,7 @@ public class PingTest extends AbstractTest
         });
 
         PingFrame frame = new PingFrame(payload, false);
-        client.ping(frame, Callback.Adapter.INSTANCE);
+        session.ping(frame, Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

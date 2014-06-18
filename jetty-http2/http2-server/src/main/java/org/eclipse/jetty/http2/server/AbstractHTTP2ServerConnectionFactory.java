@@ -25,6 +25,7 @@ import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -109,6 +110,15 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         {
             super.onOpen();
             notifyConnect(session);
+        }
+
+        @Override
+        protected boolean onReadTimeout()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
+            session.close(ErrorCode.NO_ERROR, "idle_timeout", closeCallback);
+            return false;
         }
 
         private void notifyConnect(Session session)

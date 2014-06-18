@@ -31,6 +31,7 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http2.api.Session;
@@ -77,6 +78,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final AtomicInteger lastStreamId = new AtomicInteger();
     private final AtomicInteger streamCount = new AtomicInteger();
     private final AtomicInteger windowSize = new AtomicInteger();
+    private final AtomicBoolean closed = new AtomicBoolean();
     private final EndPoint endPoint;
     private final Generator generator;
     private final Listener listener;
@@ -223,6 +225,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
         flusher.close();
         disconnect();
+
+        notifyClose(this, frame);
+
         return false;
     }
 
@@ -315,11 +320,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void close(int error, String reason, Callback callback)
     {
-        byte[] payload = reason == null ? null : reason.getBytes(StandardCharsets.UTF_8);
-        GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Sending {}: {}", frame.getType(), reason);
-        control(null, frame, callback);
+        if (closed.compareAndSet(false, true))
+        {
+            byte[] payload = reason == null ? null : reason.getBytes(StandardCharsets.UTF_8);
+            GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Sending {}: {}", frame.getType(), reason);
+            control(null, frame, callback);
+        }
     }
 
     @Override
@@ -483,6 +491,18 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         try
         {
             listener.onPing(session, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
+    }
+
+    protected void notifyClose(Session session, GoAwayFrame frame)
+    {
+        try
+        {
+            listener.onClose(session, frame);
         }
         catch (Throwable x)
         {

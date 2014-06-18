@@ -46,13 +46,13 @@ public class HTTP2Test extends AbstractTest
     {
         startServer(new EmptyHttpServlet());
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session session = newClient(new Session.Listener.Adapter());
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
-        client.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -86,13 +86,13 @@ public class HTTP2Test extends AbstractTest
             }
         });
 
-        Session client = newClient(new Session.Listener.Adapter());
+        Session session = newClient(new Session.Listener.Adapter());
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
         HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(2);
-        client.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
