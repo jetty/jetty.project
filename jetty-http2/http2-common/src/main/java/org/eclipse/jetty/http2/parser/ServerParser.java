@@ -42,32 +42,41 @@ public class ServerParser extends Parser
     @Override
     public boolean parse(ByteBuffer buffer)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Parsing {}", buffer);
-
-        while (true)
+        try
         {
-            switch (state)
+            if (LOG.isDebugEnabled())
+                LOG.debug("Parsing {}", buffer);
+
+            while (true)
             {
-                case PREFACE:
+                switch (state)
                 {
-                    if (!prefaceParser.parse(buffer))
-                        return false;
-                    if (onPreface())
-                        return true;
-                    state = State.FRAMES;
-                    break;
-                }
-                case FRAMES:
-                {
-                    // Stay forever in the FRAMES state.
-                    return super.parse(buffer);
-                }
-                default:
-                {
-                    throw new IllegalStateException();
+                    case PREFACE:
+                    {
+                        if (!prefaceParser.parse(buffer))
+                            return false;
+                        if (onPreface())
+                            return true;
+                        state = State.FRAMES;
+                        break;
+                    }
+                    case FRAMES:
+                    {
+                        // Stay forever in the FRAMES state.
+                        return super.parse(buffer);
+                    }
+                    default:
+                    {
+                        throw new IllegalStateException();
+                    }
                 }
             }
+        }
+        catch (Throwable x)
+        {
+            LOG.debug(x);
+            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "parser_error");
+            return false;
         }
     }
 
