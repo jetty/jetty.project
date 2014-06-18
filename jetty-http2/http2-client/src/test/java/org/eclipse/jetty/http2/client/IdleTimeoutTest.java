@@ -59,6 +59,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
+                stream.setIdleTimeout(10 * idleTimeout);
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
@@ -79,7 +80,14 @@ public class IdleTimeoutTest extends AbstractTest
 
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter());
+        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        {
+            @Override
+            public void succeeded(Stream stream)
+            {
+                stream.setIdleTimeout(10 * idleTimeout);
+            }
+        }, new Stream.Listener.Adapter());
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -87,7 +95,15 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerEnforcingIdleTimeoutWithUnrespondedStream() throws Exception
     {
-        startServer(new ServerSessionListener.Adapter());
+        startServer(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                stream.setIdleTimeout(10 * idleTimeout);
+                return null;
+            }
+        });
         connector.setIdleTimeout(idleTimeout);
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -103,7 +119,14 @@ public class IdleTimeoutTest extends AbstractTest
         // The request is not replied, and the server should idle timeout.
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter());
+        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        {
+            @Override
+            public void succeeded(Stream stream)
+            {
+                stream.setIdleTimeout(10 * idleTimeout);
+            }
+        }, new Stream.Listener.Adapter());
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -118,6 +141,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 try
                 {
+                    stream.setIdleTimeout(10 * idleTimeout);
                     Thread.sleep(2 * idleTimeout);
                     MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                     HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
@@ -146,7 +170,14 @@ public class IdleTimeoutTest extends AbstractTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        {
+            @Override
+            public void succeeded(Stream stream)
+            {
+                stream.setIdleTimeout(10 * idleTimeout);
+            }
+        }, new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -170,6 +201,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
+                stream.setIdleTimeout(10 * idleTimeout);
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
@@ -187,7 +219,14 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter());
+        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        {
+            @Override
+            public void succeeded(Stream stream)
+            {
+                stream.setIdleTimeout(10 * idleTimeout);
+            }
+        }, new Stream.Listener.Adapter());
 
         Assert.assertTrue(closeLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -199,6 +238,13 @@ public class IdleTimeoutTest extends AbstractTest
         startServer(new ServerSessionListener.Adapter()
         {
             @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                stream.setIdleTimeout(10 * idleTimeout);
+                return null;
+            }
+
+            @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
                 closeLatch.countDown();
@@ -209,7 +255,14 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter());
+        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        {
+            @Override
+            public void succeeded(Stream stream)
+            {
+                stream.setIdleTimeout(10 * idleTimeout);
+            }
+        }, new Stream.Listener.Adapter());
 
         Assert.assertTrue(closeLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
     }
@@ -223,6 +276,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
+                stream.setIdleTimeout(10 * idleTimeout);
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
@@ -242,7 +296,14 @@ public class IdleTimeoutTest extends AbstractTest
         final CountDownLatch replyLatch = new CountDownLatch(1);
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        {
+            @Override
+            public void succeeded(Stream stream)
+            {
+                stream.setIdleTimeout(10 * idleTimeout);
+            }
+        }, new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
@@ -361,7 +422,7 @@ public class IdleTimeoutTest extends AbstractTest
     }
 
     @Test
-    public void testIdleTimeoutIsInterruptedWhenReceiving() throws Exception
+    public void testStreamIdleTimeoutIsNotEnforcedWhenReceiving() throws Exception
     {
         final CountDownLatch timeoutLatch = new CountDownLatch(1);
         startServer(new ServerSessionListener.Adapter()
