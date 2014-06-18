@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 
@@ -40,7 +41,7 @@ public class MetaDataBuilder
     private String _method;
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
-    private String _path;        
+    private HttpURI _path;        
 
     private HttpFields _fields = new HttpFields(10);
     
@@ -89,6 +90,10 @@ public class MetaDataBuilder
                     _scheme = (HttpScheme)value.getStaticValue();
                     break;
                     
+                case ":path":
+                    _path = (HttpURI)value.getStaticValue();
+                    break;
+                    
                 default:
                     throw new IllegalArgumentException();
             }
@@ -114,7 +119,7 @@ public class MetaDataBuilder
                     break;
 
                 case ":path":
-                    _path=field.getValue();
+                    _path=new HttpURI(field.getValue());
                     break;
 
                 default:

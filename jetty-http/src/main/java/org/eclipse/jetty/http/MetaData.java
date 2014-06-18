@@ -117,9 +117,14 @@ public class MetaData implements Iterable<HttpField>
 
         public Request(HttpVersion version, HttpScheme scheme, String method, HostPortHttpField authority, String path, HttpFields fields)
         {
+            this(version,scheme,method,authority,new HttpURI(path),fields);
+        }
+        
+        public Request(HttpVersion version, HttpScheme scheme, String method, HostPortHttpField authority, HttpURI path, HttpFields fields)
+        {
             super(version,fields);
             _method=method;
-            _uri=new HttpURI(path); // TODO - this is not so efficient!
+            _uri=path; 
             _hostPort = authority;
             _scheme=scheme;
         }
