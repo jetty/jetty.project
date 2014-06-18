@@ -19,11 +19,16 @@
 
 package org.eclipse.jetty.http2.hpack;
 
+import static org.junit.Assert.assertEquals;
+
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.junit.Assert;
 import org.junit.Test;
 import org.eclipse.jetty.http.MetaData.Request;
@@ -37,7 +42,7 @@ public class HpackTest
     public void encodeDecodeResponseTest()
     {
         HpackEncoder encoder = new HpackEncoder();
-        HpackDecoder decoder = new HpackDecoder();
+        HpackDecoder decoder = new HpackDecoder(4096,8192);
         ByteBuffer buffer = BufferUtil.allocate(16*1024);
         
         HttpFields fields0 = new HttpFields();
@@ -80,4 +85,47 @@ public class HpackTest
         Assert.assertEquals("custom-key",decoded1.getFields().getField("Custom-Key").getName());
         
     }
+    
+
+    @Test
+    public void encodeDecodeTooLargeTest()
+    {
+        HpackEncoder encoder = new HpackEncoder();
+        HpackDecoder decoder = new HpackDecoder(4096,101);
+        ByteBuffer buffer = BufferUtil.allocate(16*1024);
+        
+        HttpFields fields0 = new HttpFields();
+        fields0.add("1234567890","1234567890123456789012345678901234567890");
+        fields0.add("Cookie","abcdeffhijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
+        MetaData original0= new MetaData(HttpVersion.HTTP_2,fields0);
+        
+        BufferUtil.clearToFill(buffer);
+        encoder.encode(buffer,original0);
+        BufferUtil.flipToFlush(buffer,0);
+        MetaData decoded0 = (MetaData)decoder.decode(buffer);
+
+        Assert.assertEquals(original0,decoded0);
+               
+        HttpFields fields1 = new HttpFields();
+        fields1.add("1234567890","1234567890123456789012345678901234567890");
+        fields1.add("Cookie","abcdeffhijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
+        fields1.add("x","y");
+        MetaData original1 = new MetaData(HttpVersion.HTTP_2,fields1);
+
+        BufferUtil.clearToFill(buffer);
+        encoder.encode(buffer,original1);
+        BufferUtil.flipToFlush(buffer,0);
+        try
+        {
+            decoder.decode(buffer);
+            Assert.fail();
+        }
+        catch(BadMessageException e)
+        {
+            assertEquals(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,e.getCode());
+        }
+        
+    }
+    
+    
 }

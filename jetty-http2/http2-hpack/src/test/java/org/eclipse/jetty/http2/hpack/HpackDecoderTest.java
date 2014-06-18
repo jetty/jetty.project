@@ -43,7 +43,7 @@ public class HpackDecoderTest
     @Test
     public void testDecodeD_3()
     {        
-        HpackDecoder decoder = new HpackDecoder();
+        HpackDecoder decoder = new HpackDecoder(4096,8192);
            
         // First request
         String encoded="828786440f7777772e6578616d706c652e636f6d";
@@ -93,7 +93,7 @@ public class HpackDecoderTest
     @Test
     public void testDecodeD_4()
     {
-        HpackDecoder decoder = new HpackDecoder();
+        HpackDecoder decoder = new HpackDecoder(4096,8192);
         
         // First request
         String encoded="828786448ce7cf9bebe89b6fb16fa9b6ff";

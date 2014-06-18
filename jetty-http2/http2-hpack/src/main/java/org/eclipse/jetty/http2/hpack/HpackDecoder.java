@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.TypeUtil;
@@ -43,18 +44,21 @@ public class HpackDecoder
     public static final Logger LOG = Log.getLogger(HpackDecoder.class);
     
     private final HpackContext _context;
-    private final MetaDataBuilder _builder = new MetaDataBuilder();
+    private final MetaDataBuilder _builder;
     private int _localMaxHeaderTableSize;
 
+    @Deprecated
     public HpackDecoder()
     {
-        this(4096);
+        this(4*1024,8*1024);
+        LOG.warn("USE HpackDecoder constructor with maxHeaderSize!!!");
     }
     
-    public HpackDecoder(int localMaxHeaderTableSize)
+    public HpackDecoder(int localMaxHeaderTableSize, int maxHeaderSize)
     {
         _context=new HpackContext(localMaxHeaderTableSize);
         _localMaxHeaderTableSize=localMaxHeaderTableSize;
+        _builder = new MetaDataBuilder(maxHeaderSize);
     }
     
     public void setLocalMaxHeaderTableSize(int localMaxHeaderTableSize)
@@ -63,9 +67,15 @@ public class HpackDecoder
     }
     
     public MetaData decode(ByteBuffer buffer)
-    {           
+    {       
         if (LOG.isDebugEnabled())
-            LOG.debug(String.format("CtxTbl[%x] decoding",_context.hashCode()));
+            LOG.debug(String.format("CtxTbl[%x] decoding %d octets",_context.hashCode(),buffer.remaining()));
+        
+        // If the buffer is big, don't even think about decoding it
+        if (buffer.remaining()>_builder.getMaxSize())
+            throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,"Header frame size "+buffer.remaining()+">"+_builder.getMaxSize());
+            
+        
         while(buffer.hasRemaining())
         {
             if (LOG.isDebugEnabled())
@@ -129,6 +139,7 @@ public class HpackDecoder
                     {
                         huffmanName = (buffer.get()&0x80)==0x80;
                         int length = NBitInteger.decode(buffer,7);
+                        _builder.checkSize(length,huffmanName);
                         if (huffmanName)
                             name=Huffman.decode(buffer,length);
                         else
@@ -147,6 +158,7 @@ public class HpackDecoder
                     // decode the value
                     boolean huffmanValue = (buffer.get()&0x80)==0x80;
                     int length = NBitInteger.decode(buffer,7);
+                    _builder.checkSize(length,huffmanValue);
                     if (huffmanValue)
                         value=Huffman.decode(buffer,length);
                     else

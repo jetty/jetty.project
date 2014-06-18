@@ -20,10 +20,12 @@
 package org.eclipse.jetty.http2.hpack;
 
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 
@@ -32,16 +34,44 @@ import org.eclipse.jetty.http.MetaData;
 /* -------------------------------------------------------- */
 public class MetaDataBuilder
 { 
+    private final int _maxSize;
+    private int _size;
     private int _status;
     private String _method;
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
     private String _path;        
 
-    HttpFields _fields = new HttpFields(10);
+    private HttpFields _fields = new HttpFields(10);
     
+    MetaDataBuilder(int maxSize)
+    {
+        _maxSize=maxSize;
+    }
+    
+    /** Get the maxSize.
+     * @return the maxSize
+     */
+    public int getMaxSize()
+    {
+        return _maxSize;
+    }
+
+    /** Get the size.
+     * @return the current size in bytes
+     */
+    public int getSize()
+    {
+        return _size;
+    }
+
     public void emit(HttpField field)
     {        
+        int field_size = field.getName().length()+field.getValue().length();
+        _size+=field_size;
+        if (_size>_maxSize)
+            throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,"Header size "+_size+">"+_maxSize);
+        
         if (field instanceof StaticValueHttpField)
         {
             StaticValueHttpField value = (StaticValueHttpField)field;
@@ -65,7 +95,6 @@ public class MetaDataBuilder
         }
         else
         {
-
             switch(field.getName())
             {
                 case ":status":
@@ -114,6 +143,21 @@ public class MetaDataBuilder
             _scheme=null;
             _authority=null;
             _path=null;
+            _size=0;
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Check that the max size will not be exceeded.
+     * @param length
+     * @param huffmanName
+     */
+    public void checkSize(int length, boolean huffman)
+    {
+        // Apply a huffman fudge factor
+        if (huffman)
+            length=(length*4)/3;
+        if ((_size+length)>_maxSize)
+            throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,"Header size "+(_size+length)+">"+_maxSize);
     }
 }
