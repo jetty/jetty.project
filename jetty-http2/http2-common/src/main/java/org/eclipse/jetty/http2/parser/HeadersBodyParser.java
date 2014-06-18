@@ -164,7 +164,7 @@ public class HeadersBodyParser extends BodyParser
                     {
                         streamId &= 0x7F_FF_FF_FF;
                         state = State.WEIGHT;
-                        if (length <= 0)
+                        if (length < 1)
                         {
                             return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame");
                         }
@@ -176,10 +176,7 @@ public class HeadersBodyParser extends BodyParser
                     weight = buffer.get() & 0xFF;
                     --length;
                     state = State.HEADERS;
-                    if (length <= 0)
-                    {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame");
-                    }
+                    loop = length == 0;
                     break;
                 }
                 case HEADERS:
