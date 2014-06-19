@@ -271,13 +271,30 @@ public class Modules implements Iterable<Module>
         {
             // A regex!
             Pattern pat = Pattern.compile(name);
-            for (Map.Entry<String, Module> entry : modules.entrySet())
+            List<Module> matching = new ArrayList<>();
+            do
             {
-                if (pat.matcher(entry.getKey()).matches())
+                matching.clear();
+                
+                // find matching entries that are not enabled
+                for (Map.Entry<String, Module> entry : modules.entrySet())
                 {
-                    enableModule(entry.getValue(),sources);
+                    if (pat.matcher(entry.getKey()).matches())
+                    {
+                        if (!entry.getValue().isEnabled())
+                        {
+                            matching.add(entry.getValue());
+                        }
+                    }
+                }
+                
+                // enable them
+                for (Module module : matching)
+                {
+                    enableModule(module,sources);
                 }
             }
+            while (!matching.isEmpty());
         }
         else
         {
@@ -309,10 +326,12 @@ public class Modules implements Iterable<Module>
         }
         
         // enable any parents that haven't been enabled (yet)
-        for(String name: module.getParentNames())
+        Set<String> parentNames = new HashSet<>();
+        parentNames.addAll(module.getParentNames());
+        for(String name: parentNames)
         {
             Module parent = modules.get(name);
-            if (name == null)
+            if (parent == null)
             {
                 // parent module doesn't exist, yet
                 Path file = baseHome.getPath("modules/" + name + ".mod");

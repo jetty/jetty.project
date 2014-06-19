@@ -77,8 +77,8 @@ public class TestBadUseCases
     public void testWithSpdyBadNpnVersion() throws Exception
     {
         assertBadConfig("home","base.enable.spdy.bad.npn.version",
-                "Missing referenced dependency: npn/npn-1.7.0_01",
-                "java.version=1.7.0_01");
+                "Missing referenced dependency: protonego-impl/npn-1.7.0_01",
+                "java.version=1.7.0_01", "protonego=npn");
     }
 
 

@@ -87,7 +87,6 @@ public class ModulesTest
         expected.add("deploy");
         expected.add("debug");
         expected.add("security");
-        expected.add("npn");
         expected.add("ext");
         expected.add("websocket");
         expected.add("rewrite");
@@ -104,6 +103,8 @@ public class ModulesTest
         // (only present if enabled) expected.add("jsp-impl");
         expected.add("monitor");
         expected.add("xml");
+        expected.add("ssl");
+        expected.add("protonego");
         expected.add("servlet");
         expected.add("jaas");
         expected.add("http");
@@ -122,7 +123,7 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
         File baseDir = testdir.getEmptyDir();
-        String cmdLine[] = new String[] {"jetty.version=TEST", "java.version=1.7.0_21"};
+        String cmdLine[] = new String[] {"jetty.version=TEST", "java.version=1.7.0_60"};
         
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
@@ -155,8 +156,10 @@ public class ModulesTest
         expected.add("server");
         // transitive
         expected.add("base");
-        expected.add("npn");
-        expected.add("npn-boot");
+        expected.add("ssl");
+        expected.add("protonego");
+        expected.add("protonego-boot");
+        expected.add("protonego-impl");
         expected.add("xml");
         expected.add("jsp-impl");
         
