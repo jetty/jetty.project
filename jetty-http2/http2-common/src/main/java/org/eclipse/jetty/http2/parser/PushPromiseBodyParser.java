@@ -20,8 +20,8 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 
 public class PushPromiseBodyParser extends BodyParser
 {
@@ -94,8 +94,7 @@ public class PushPromiseBodyParser extends BodyParser
                     --length;
                     length -= paddingLength;
                     state = State.STREAM_ID;
-                    loop = length == 0;
-                    if (length < 0)
+                    if (length < 4)
                     {
                         return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_push_promise_frame_padding");
                     }
@@ -109,10 +108,7 @@ public class PushPromiseBodyParser extends BodyParser
                         streamId &= 0x7F_FF_FF_FF;
                         length -= 4;
                         state = State.HEADERS;
-                        if (length < 1)
-                        {
-                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_push_promise_frame");
-                        }
+                        loop = length == 0;
                     }
                     else
                     {
@@ -135,10 +131,7 @@ public class PushPromiseBodyParser extends BodyParser
                     {
                         streamId &= 0x7F_FF_FF_FF;
                         state = State.HEADERS;
-                        if (length <= 0)
-                        {
-                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_push_promise_frame");
-                        }
+                        loop = length == 0;
                     }
                     break;
                 }

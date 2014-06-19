@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -46,9 +45,6 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.hpack.HpackContext;
-import org.eclipse.jetty.http2.hpack.HpackDecoder;
-import org.eclipse.jetty.http2.hpack.HpackEncoder;
 import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.PrefaceParser;
@@ -86,9 +82,6 @@ public class HTTP2ServerTest
         generator = new Generator(byteBufferPool);
 
         server.start();
-        HpackContext.LOG.setDebugEnabled(true);
-        HpackEncoder.LOG.setDebugEnabled(true);
-        HpackDecoder.LOG.setDebugEnabled(true);
     }
 
     @After
@@ -355,7 +348,7 @@ public class HTTP2ServerTest
         }
     }
 
-    private void parseResponse(Socket client, Parser parser) throws IOException
+    private boolean parseResponse(Socket client, Parser parser) throws IOException
     {
         byte[] buffer = new byte[2048];
         InputStream input = client.getInputStream();
@@ -365,13 +358,13 @@ public class HTTP2ServerTest
             try
             {
                 int read = input.read(buffer);
-                if (read <= 0)
-                    throw new EOFException();
+                if (read < 0)
+                    return true;
                 parser.parse(ByteBuffer.wrap(buffer, 0, read));
             }
             catch (SocketTimeoutException x)
             {
-                break;
+                return false;
             }
         }
     }
