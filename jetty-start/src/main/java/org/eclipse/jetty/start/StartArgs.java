@@ -648,6 +648,18 @@ public class StartArgs
 
     public void parse(final String rawarg, String source)
     {
+        parse(rawarg,source,true);
+    }
+
+    /**
+     * Parse a single line of argument.
+     * 
+     * @param rawarg the raw argument to parse
+     * @param source the origin of this line of argument
+     * @param replaceProps true if properties in this parse replace previous ones, false to not replace.
+     */
+    private void parse(final String rawarg, String source, boolean replaceProps)
+    {
         if (rawarg == null)
         {
             return;
@@ -810,11 +822,11 @@ public class StartArgs
             {
                 case 2:
                     System.setProperty(assign[0],assign[1]);
-                    setProperty(assign[0],assign[1],source);
+                    setProperty(assign[0],assign[1],source,replaceProps);
                     break;
                 case 1:
                     System.setProperty(assign[0],"");
-                    setProperty(assign[0],"",source);
+                    setProperty(assign[0],"",source,replaceProps);
                     break;
                 default:
                     break;
@@ -840,11 +852,14 @@ public class StartArgs
             String key = arg.substring(0,idx);
             String value = arg.substring(idx + 1);
 
-            if (propertySource.containsKey(key))
+            if (replaceProps)
             {
-                StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
+                if (propertySource.containsKey(key))
+                {
+                    StartLog.warn("Property %s in %s already set in %s",key,source,propertySource.get(key));
+                }
+                propertySource.put(key,source);
             }
-            propertySource.put(key,source);
 
             if ("OPTION".equals(key) || "OPTIONS".equals(key))
             {
@@ -857,7 +872,7 @@ public class StartArgs
                 StartLog.warn(warn.toString());
             }
 
-            setProperty(key,value,source);
+            setProperty(key,value,source,replaceProps);
             return;
         }
 
@@ -884,6 +899,17 @@ public class StartArgs
 
         // Anything else is unrecognized
         throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
+    }
+
+    public void parseModule(Module module)
+    {
+        if(module.hasDefaultConfig()) 
+        {
+            for(String line: module.getDefaultConfig())
+            {
+                parse(line,module.getFilesystemRef(),false);
+            }
+        }
     }
 
     public void resolveExtraXmls(BaseHome baseHome) throws IOException
@@ -921,7 +947,7 @@ public class StartArgs
         this.allModules = allModules;
     }
 
-    private void setProperty(String key, String value, String source)
+    private void setProperty(String key, String value, String source, boolean replaceProp)
     {
         // Special / Prevent override from start.ini's
         if (key.equals("jetty.home"))
@@ -938,7 +964,19 @@ public class StartArgs
         }
 
         // Normal
-        properties.setProperty(key,value,source);
+        if (replaceProp)
+        {
+            // always override
+            properties.setProperty(key,value,source);
+        }
+        else
+        {
+            // only set if unset
+            if (!properties.containsKey(key))
+            {
+                properties.setProperty(key,value,source);
+            }
+        }
     }
 
     public void setRun(boolean run)
@@ -961,4 +999,5 @@ public class StartArgs
         builder.append("]");
         return builder.toString();
     }
+
 }

@@ -96,7 +96,7 @@ public class Module
     /** List of xml configurations for this Module */
     private List<String> xmls;
     /** List of ini template lines */
-    private List<String> initialise;
+    private List<String> defaultConfig;
     /** List of library options for this Module */
     private List<String> libs;
     /** List of files for this Module */
@@ -213,9 +213,14 @@ public class Module
         return fileRef;
     }
 
-    public List<String> getInitialise()
+    public List<String> getDefaultConfig()
     {
-        return initialise;
+        return defaultConfig;
+    }
+
+    public boolean hasDefaultConfig()
+    {
+        return (defaultConfig != null) && (defaultConfig.size() > 0);
     }
 
     public List<String> getLibs()
@@ -274,7 +279,7 @@ public class Module
         parentEdges = new HashSet<>();
         childEdges = new HashSet<>();
         xmls = new ArrayList<>();
-        initialise = new ArrayList<>();
+        defaultConfig = new ArrayList<>();
         libs = new ArrayList<>();
         files = new ArrayList<>();
         jvmArgs = new ArrayList<>();
@@ -328,7 +333,7 @@ public class Module
                     {
                         if ("INI-TEMPLATE".equals(sectionType))
                         {
-                            initialise.add(line);
+                            defaultConfig.add(line);
                         }
                     }
                     else
@@ -344,8 +349,9 @@ public class Module
                             case "FILES":
                                 files.add(line);
                                 break;
+                            case "DEFAULTS":
                             case "INI-TEMPLATE":
-                                initialise.add(line);
+                                defaultConfig.add(line);
                                 break;
                             case "LIB":
                                 libs.add(line);
@@ -404,4 +410,5 @@ public class Module
         str.append(']');
         return str.toString();
     }
+
 }

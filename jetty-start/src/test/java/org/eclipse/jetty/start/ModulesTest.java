@@ -19,7 +19,6 @@
 package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
 
 import java.io.File;
 import java.io.IOException;
@@ -66,8 +65,8 @@ public class ModulesTest
         args.parse(config);
 
         // Test Modules
-        Modules modules = new Modules();
-        modules.registerAll(basehome,args);
+        Modules modules = new Modules(basehome,args);
+        modules.registerAll();
 
         List<String> moduleNames = new ArrayList<>();
         for (Module mod : modules)
@@ -80,11 +79,41 @@ public class ModulesTest
             moduleNames.add(mod.getName());
         }
 
-        String expected[] = { "jmx", "client", "stats", "spdy", "deploy", "debug", "security", "npn", "ext", "websocket", "rewrite", "ipaccess", "xinetd",
-                "proxy", "webapp", "jndi", "lowresources", "https", "plus", "requestlog", "jsp", "monitor", "xml", "servlet", "jaas", "http", "base", "server",
-                "annotations", "resources", "loggging" };
-
-        Assert.assertThat("Module count: " + moduleNames,moduleNames.size(),is(expected.length));
+        List<String> expected = new ArrayList<>();
+        expected.add("jmx");
+        expected.add("client");
+        expected.add("stats");
+        expected.add("spdy");
+        expected.add("deploy");
+        expected.add("debug");
+        expected.add("security");
+        expected.add("npn");
+        expected.add("ext");
+        expected.add("websocket");
+        expected.add("rewrite");
+        expected.add("ipaccess");
+        expected.add("xinetd");
+        expected.add("proxy");
+        expected.add("webapp");
+        expected.add("jndi");
+        expected.add("lowresources");
+        expected.add("https");
+        expected.add("plus");
+        expected.add("requestlog");
+        expected.add("jsp");
+        // (only present if enabled) expected.add("jsp-impl");
+        expected.add("monitor");
+        expected.add("xml");
+        expected.add("servlet");
+        expected.add("jaas");
+        expected.add("http");
+        expected.add("base");
+        expected.add("server");
+        expected.add("annotations");
+        expected.add("resources");
+        expected.add("logging"); 
+        
+        ConfigurationAssert.assertContainsUnordered("All Modules",expected,moduleNames);
     }
 
     @Test
@@ -93,7 +122,7 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
         File baseDir = testdir.getEmptyDir();
-        String cmdLine[] = new String[] {"jetty.version=TEST"};
+        String cmdLine[] = new String[] {"jetty.version=TEST", "java.version=1.7.0_21"};
         
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
@@ -109,13 +138,35 @@ public class ModulesTest
         args.parse(config);
 
         // Test Modules
-        Modules modules = new Modules();
-        modules.registerAll(basehome,args);
+        Modules modules = new Modules(basehome,args);
+        modules.registerAll();
         modules.enable("[sj]{1}.*",TEST_SOURCE);
+        modules.buildGraph();
 
-        String expected[] = { "jmx", "stats", "spdy", "security", "jndi", "jsp", "servlet", "jaas", "server" };
+        List<String> expected = new ArrayList<>();
+        expected.add("jmx");
+        expected.add("stats");
+        expected.add("spdy");
+        expected.add("security");
+        expected.add("jndi");
+        expected.add("jsp");
+        expected.add("servlet");
+        expected.add("jaas");
+        expected.add("server");
+        // transitive
+        expected.add("base");
+        expected.add("npn");
+        expected.add("npn-boot");
+        expected.add("xml");
+        expected.add("jsp-impl");
+        
+        List<String> resolved = new ArrayList<>();
+        for (Module module : modules.resolveEnabled())
+        {
+            resolved.add(module.getName());
+        }
 
-        Assert.assertThat("Enabled Module count",modules.resolveEnabled().size(),is(expected.length));
+        ConfigurationAssert.assertContainsUnordered("Enabled Modules",expected,resolved);
     }
 
     @Test
@@ -140,13 +191,14 @@ public class ModulesTest
         args.parse(config);
 
         // Test Modules
-        Modules modules = new Modules();
-        modules.registerAll(basehome,args);
-        modules.buildGraph();
+        Modules modules = new Modules(basehome, args);
+        modules.registerAll();
 
         // Enable 2 modules
         modules.enable("server",TEST_SOURCE);
         modules.enable("http",TEST_SOURCE);
+
+        modules.buildGraph();
 
         // Collect active module list
         List<Module> active = modules.resolveEnabled();
@@ -211,14 +263,15 @@ public class ModulesTest
         args.parse(config);
 
         // Test Modules
-        Modules modules = new Modules();
-        modules.registerAll(basehome,args);
-        modules.buildGraph();
-        // modules.dump();
+        Modules modules = new Modules(basehome,args);
+        modules.registerAll();
 
         // Enable 2 modules
         modules.enable("websocket",TEST_SOURCE);
         modules.enable("http",TEST_SOURCE);
+
+        modules.buildGraph();
+        // modules.dump();
 
         // Collect active module list
         List<Module> active = modules.resolveEnabled();

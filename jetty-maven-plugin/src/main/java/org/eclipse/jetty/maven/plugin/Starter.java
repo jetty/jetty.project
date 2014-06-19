@@ -23,6 +23,7 @@ import java.io.FileInputStream;
 import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -415,19 +416,14 @@ public class Starter
     
     
     /**
+     * Apply any jetty xml files given
      * @throws Exception
      */
     public void applyJettyXml() throws Exception
     {
         if (jettyXmls == null)
             return;
-        
-        for ( File xmlFile : jettyXmls )
-        {
-            LOG.info( "Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath() );        
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(xmlFile));
-            xmlConfiguration.configure(this.server);
-        }
+        this.server.applyXmlConfigurations(jettyXmls);
     }
 
 

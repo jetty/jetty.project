@@ -74,6 +74,30 @@ public class TestUseCases
     }
 
     @Test
+    public void testWithJspDefault() throws Exception
+    {
+        assertUseCase("home","base.with.jsp.default","assert-jsp-apache.txt");
+    }
+
+    @Test
+    public void testWithJspApache() throws Exception
+    {
+        assertUseCase("home","base.with.jsp.apache","assert-jsp-apache.txt");
+    }
+    
+    @Test
+    public void testWithJspGlassfish() throws Exception
+    {
+        assertUseCase("home","base.with.jsp.glassfish","assert-jsp-glassfish.txt");
+    }
+
+    @Test
+    public void testWithJspGlassfishCmdLine() throws Exception
+    {
+        assertUseCase("home","base.with.jsp.default","assert-jsp-glassfish.txt","jsp-impl=glassfish");
+    }
+
+    @Test
     public void testWithMissingNpnVersion() throws Exception
     {
         assertUseCase("home","base.missing.npn.version","assert-missing-npn-version.txt","java.version=1.7.0_01");
@@ -85,12 +109,6 @@ public class TestUseCases
         assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt","java.version=1.7.0_21");
     }
     
-    @Test
-    public void testWithSpdyBadNpnVersion() throws Exception
-    {
-        assertUseCase("home","base.enable.spdy.bad.npn.version","assert-enable-spdy-bad-npn-version.txt","java.version=1.7.0_01");
-    }
-
     @Test
     public void testWithDatabase() throws Exception
     {

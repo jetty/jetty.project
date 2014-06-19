@@ -389,10 +389,10 @@ public class Main
         }
 
         boolean transitive = module.isEnabled() && (module.getSources().size() == 0);
-        boolean has_ini_lines = module.getInitialise().size() > 0;
+        boolean hasDefinedDefaults = module.getDefaultConfig().size() > 0;
 
         // If it is not enabled or is transitive with ini template lines or toplevel and doesn't exist
-        if (!module.isEnabled() || (transitive && has_ini_lines) || (topLevel && !FS.exists(startd_ini) && !appendStartIni))
+        if (!module.isEnabled() || (transitive && hasDefinedDefaults) || (topLevel && !FS.exists(startd_ini) && !appendStartIni))
         {
             // File BufferedWriter
             BufferedWriter writer = null;
@@ -430,7 +430,7 @@ public class Main
                 out.println("--module=" + name);
                 args.parse("--module=" + name,source);
                 modules.enable(name,Collections.singletonList(source));
-                for (String line : module.getInitialise())
+                for (String line : module.getDefaultConfig())
                 {
                     out.println(line);
                     args.parse(line,source);
@@ -490,9 +490,8 @@ public class Main
 
         // Process dependencies
         module.expandProperties(args.getProperties());
-        modules.registerParentsIfMissing(baseHome,args,module);
+        modules.registerParentsIfMissing(module);
         modules.buildGraph();
-        
         
         // process new ini modules
         if (topLevel)
@@ -573,9 +572,9 @@ public class Main
 
         // ------------------------------------------------------------
         // 3) Module Registration
-        Modules modules = new Modules();
+        Modules modules = new Modules(baseHome,args);
         StartLog.debug("Registering all modules");
-        modules.registerAll(baseHome, args);
+        modules.registerAll();
 
         // ------------------------------------------------------------
         // 4) Active Module Resolution
@@ -584,7 +583,7 @@ public class Main
             List<String> msources = args.getSources(enabledModule);
             modules.enable(enabledModule,msources);
         }
-
+        
         StartLog.debug("Building Module Graph");
         modules.buildGraph();
 
@@ -600,6 +599,7 @@ public class Main
         // 6) Resolve Extra XMLs
         args.resolveExtraXmls(baseHome);
         
+        // ------------------------------------------------------------
         // 9) Resolve Property Files
         args.resolvePropertyFiles(baseHome);
 

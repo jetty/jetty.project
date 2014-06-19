@@ -27,6 +27,7 @@ import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.List;
@@ -449,7 +450,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
 
    
    
-    
+
     /**
      * @throws Exception
      */
@@ -458,28 +459,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         if (getJettyXmlFiles() == null)
             return;
 
-        XmlConfiguration last = null;
-        for ( File xmlFile : getJettyXmlFiles() )
-        {
-            getLog().info( "Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath() );        
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(xmlFile));
-            
-            //chain ids from one config file to another
-            if (last == null)
-                xmlConfiguration.getIdMap().put("Server", this.server); 
-            else
-                xmlConfiguration.getIdMap().putAll(last.getIdMap());
-            
-            //Set the system properties each time in case the config file set a new one
-            Enumeration<?> ensysprop = System.getProperties().propertyNames();
-            while (ensysprop.hasMoreElements())
-            {
-                String name = (String)ensysprop.nextElement();
-                xmlConfiguration.getProperties().put(name,System.getProperty(name));
-            }
-            last = xmlConfiguration;
-            xmlConfiguration.configure(); 
-        }
+        this.server.applyXmlConfigurations(getJettyXmlFiles());
     }
 
 

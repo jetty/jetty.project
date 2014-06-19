@@ -60,8 +60,8 @@ public class ModuleGraphWriterTest
         StartArgs args = new StartArgs();
         args.parse(config);
 
-        Modules modules = new Modules();
-        modules.registerAll(basehome, args);
+        Modules modules = new Modules(basehome, args);
+        modules.registerAll();
         modules.buildGraph();
 
         Path outputFile = basehome.getBasePath("graph.dot");
