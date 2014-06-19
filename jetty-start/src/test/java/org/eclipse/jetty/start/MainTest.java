@@ -133,6 +133,31 @@ public class MainTest
 
         ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-jvm.txt");
     }
+    
+    @Test
+    public void testWithSpdy() throws Exception
+    {
+        List<String> cmdLineArgs = new ArrayList<>();
+
+        File homePath = MavenTestingUtils.getTestResourceDir("usecases/home").getAbsoluteFile();
+        cmdLineArgs.add("jetty.home=" + homePath);
+        cmdLineArgs.add("user.dir=" + homePath);
+
+        // Modules
+        cmdLineArgs.add("--module=server");
+        cmdLineArgs.add("--module=deploy");
+        cmdLineArgs.add("--module=spdy");
+
+        Main main = new Main();
+
+        StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
+        BaseHome baseHome = main.getBaseHome();
+
+        Assert.assertThat("jetty.home",baseHome.getHome(),is(homePath.getAbsolutePath()));
+        Assert.assertThat("jetty.base",baseHome.getBase(),is(homePath.getAbsolutePath()));
+
+        ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-spdy.txt");
+    }
 
     @Test
     public void testJettyHomeWithSpaces() throws Exception

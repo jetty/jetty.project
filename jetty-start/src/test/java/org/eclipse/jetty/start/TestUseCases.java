@@ -106,7 +106,7 @@ public class TestUseCases
     @Test
     public void testWithSpdy() throws Exception
     {
-        assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt","java.version=1.7.0_21");
+        assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt","java.version=1.7.0_60");
     }
     
     @Test

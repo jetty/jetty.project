@@ -402,7 +402,10 @@ public class Module
     {
         StringBuilder str = new StringBuilder();
         str.append("Module[").append(logicalName);
-        str.append(",").append(fileRef);
+        if (!logicalName.equals(fileRef))
+        {
+            str.append(",file=").append(fileRef);
+        }
         if (enabled)
         {
             str.append(",enabled");
