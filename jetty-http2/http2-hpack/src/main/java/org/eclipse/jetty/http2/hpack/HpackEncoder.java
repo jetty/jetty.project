@@ -209,6 +209,7 @@ public class HpackEncoder
                 {
                     // entries like :status: 200 and :method: GET are worthwhile putting into ref set.
                     // as they are likely to be repeated.
+                    encoding="StaticIndexed";
                     int index=_context.index(entry);
                     buffer.put((byte)0x80);
                     NBitInteger.encode(buffer,7,index);
