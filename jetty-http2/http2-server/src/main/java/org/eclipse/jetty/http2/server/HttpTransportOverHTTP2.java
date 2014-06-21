@@ -39,6 +39,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     private static final Logger LOG = Log.getLogger(HttpTransportOverHTTP2.class);
 
     private final AtomicBoolean commit = new AtomicBoolean();
+    private final Callback commitCallback = new CommitCallback();
     private final IStream stream;
     private final HeadersFrame request;
 
@@ -57,18 +58,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
         if (commit.compareAndSet(false, true))
         {
-            commit(info, !hasContent, !hasContent ? callback : new Callback.Adapter()
-            {
-                @Override
-                public void failed(Throwable x)
-                {
-                    // TODO
-                }
-            });
+            boolean endStream = !hasContent && lastContent;
+            commit(info, endStream, !hasContent ? callback : commitCallback);
         }
         else
         {
-            // TODO
+            callback.failed(new IllegalStateException());
         }
 
         if (hasContent)
@@ -82,7 +77,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Response #{}:{}{} {}{}{}",
-                    stream.getId(), System.lineSeparator(), HttpVersion.HTTP_2, info.getStatus(), System.lineSeparator(), info.getHttpFields());
+                    stream.getId(), System.lineSeparator(), HttpVersion.HTTP_2, info.getStatus(),
+                    System.lineSeparator(), info.getHttpFields());
         }
 
         MetaData metaData = new MetaData.Response(HttpVersion.HTTP_2, info.getStatus(), info.getHttpFields());
@@ -98,7 +94,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             LOG.debug("HTTP2 Response #{}: {} content bytes{}",
                     stream.getId(), content.remaining(), lastContent ? " (last chunk)" : "");
         }
-
         DataFrame frame = new DataFrame(stream.getId(), content, lastContent);
         stream.data(frame, callback);
     }
@@ -111,5 +106,26 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     @Override
     public void abort()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 Response #{} aborted");
+        stream.getSession().disconnect();
+    }
+
+    private class CommitCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 Response #{} committed", stream.getId());
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP2 Response #" + stream.getId() + " failed to commit", x);
+            stream.getSession().disconnect();
+        }
     }
 }
