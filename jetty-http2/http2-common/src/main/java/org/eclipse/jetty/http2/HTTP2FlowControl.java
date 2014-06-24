@@ -75,6 +75,7 @@ public class HTTP2FlowControl implements FlowControl
         int delta = frame.getWindowDelta();
         if (frame.getStreamId() > 0)
         {
+            // The stream may have been reset concurrently.
             if (stream != null)
             {
                 int oldSize = stream.updateWindowSize(delta);
@@ -84,7 +85,7 @@ public class HTTP2FlowControl implements FlowControl
         }
         else
         {
-            int oldSize = session.updateWindowSize(frame.getWindowDelta());
+            int oldSize = session.updateWindowSize(delta);
             if (LOG.isDebugEnabled())
                 LOG.debug("Updated session window {} -> {} for {}", oldSize, oldSize + delta, session);
         }
