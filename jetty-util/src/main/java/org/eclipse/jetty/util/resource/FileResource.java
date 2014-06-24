@@ -98,7 +98,7 @@ public class FileResource extends Resource
         
         _file=file;
         _uri=normalizeURI(_file,url.toURI());
-        _alias=checkAlias(_file);
+        _alias=checkFileAlias(_file);
     }
 
     /* -------------------------------------------------------- */
@@ -108,17 +108,12 @@ public class FileResource extends Resource
         _file=file;
         URI file_uri=_file.toURI();
         _uri=normalizeURI(_file,uri);
-        
-        if (!_uri.equals(file_uri.toString()))
-        {
-            // URI and File URI are different.  Is it just an encoding difference?
-            if (!file_uri.toString().equals(URIUtil.decodePath(uri.toString())))
-                 _alias=_file.toURI();
-            else
-                _alias=checkAlias(_file);
-        }
+
+        // Is it a URI alias?
+        if (!URIUtil.equalsIgnoreEncodings(_uri,file_uri.toString()))
+            _alias=_file.toURI();
         else
-            _alias=checkAlias(_file);
+            _alias=checkFileAlias(_file);
     }
 
     /* -------------------------------------------------------- */
@@ -126,7 +121,7 @@ public class FileResource extends Resource
     {
         _file=file;
         _uri=normalizeURI(_file,_file.toURI());
-        _alias=checkAlias(_file);
+        _alias=checkFileAlias(_file);
     }
 
     /* -------------------------------------------------------- */
@@ -144,7 +139,7 @@ public class FileResource extends Resource
     }
 
     /* -------------------------------------------------------- */
-    private static URI checkAlias(File file)
+    private static URI checkFileAlias(File file)
     {
         try
         {
