@@ -815,6 +815,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         @Override
         public void failed(Throwable x)
         {
+            if (stream != null)
+                stream.close();
             close(ErrorCode.INTERNAL_ERROR, "generator_error", Adapter.INSTANCE);
             callback.failed(x);
         }

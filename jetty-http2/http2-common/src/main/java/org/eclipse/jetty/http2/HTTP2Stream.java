@@ -54,7 +54,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     private final ISession session;
     private final HeadersFrame frame;
     private volatile Listener listener;
-    private volatile boolean reset = false;
+    private volatile boolean reset;
 
     public HTTP2Stream(Scheduler scheduler, ISession session, HeadersFrame frame)
     {
@@ -131,8 +131,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
 
         // The stream is now gone, we must close it to
         // avoid that its idle timeout is rescheduled.
-        closeState.set(CloseState.CLOSED);
-        onClose();
+        close();
 
         session.reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR), disconnectOnFailure);
 
@@ -220,19 +219,15 @@ public class HTTP2Stream extends IdleTimeout implements IStream
                 }
                 case LOCALLY_CLOSED:
                 {
-                    if (local)
-                        return;
-                    if (closeState.compareAndSet(current, CloseState.CLOSED))
-                        return;
-                    break;
+                    if (!local)
+                        close();
+                    return;
                 }
                 case REMOTELY_CLOSED:
                 {
-                    if (!local)
-                        return;
-                    if (closeState.compareAndSet(current, CloseState.CLOSED))
-                        return;
-                    break;
+                    if (local)
+                        close();
+                    return;
                 }
                 default:
                 {
@@ -252,6 +247,13 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     public int updateWindowSize(int delta)
     {
         return windowSize.getAndAdd(delta);
+    }
+
+    @Override
+    public void close()
+    {
+        closeState.set(CloseState.CLOSED);
+        onClose();
     }
 
     protected void notifyData(Stream stream, DataFrame frame, Callback callback)
