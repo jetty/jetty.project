@@ -20,12 +20,12 @@ package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.hpack.HpackEncoder;
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -55,12 +55,15 @@ public class PushPromiseGenerator extends FrameGenerator
 
         encoder.encode(metaData, lease);
 
+        // The promised streamId.
+        int fixedLength = 4;
+
         long length = lease.getTotalLength();
-        if (length > Frame.MAX_LENGTH)
+        if (length > Frame.MAX_LENGTH - fixedLength)
             throw new IllegalArgumentException("Invalid headers, too big");
 
         // Space for the promised streamId.
-        length += 4;
+        length += fixedLength;
 
         int flags = Flag.END_HEADERS;
 

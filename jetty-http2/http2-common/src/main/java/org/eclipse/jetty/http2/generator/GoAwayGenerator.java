@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 
 import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.Frame;
@@ -46,7 +47,15 @@ public class GoAwayGenerator extends FrameGenerator
         if (lastStreamId < 0)
             throw new IllegalArgumentException("Invalid last stream id: " + lastStreamId);
 
-        int length = 4 + 4 + (payload != null ? payload.length : 0);
+        // The last streamId + the error code.
+        int fixedLength = 4 + 4;
+
+        // Make sure we don't exceed the frame max length.
+        int maxPayloadLength = Frame.MAX_LENGTH - fixedLength;
+        if (payload != null && payload.length > maxPayloadLength)
+            payload = Arrays.copyOfRange(payload, 0, maxPayloadLength);
+
+        int length = fixedLength + (payload != null ? payload.length : 0);
         ByteBuffer header = generateHeader(lease, FrameType.GO_AWAY, length, Flag.NONE, 0);
 
         header.putInt(lastStreamId);
