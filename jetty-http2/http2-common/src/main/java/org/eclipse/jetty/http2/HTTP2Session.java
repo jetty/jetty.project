@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
@@ -319,14 +320,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     public void reset(ResetFrame frame, Callback callback)
     {
         if (closed.get())
-        {
             callback.succeeded();
-        }
         else
-        {
-            // TODO: think about moving reset() to Stream.
             control(getStream(frame.getStreamId()), frame, callback);
-        }
     }
 
     @Override
@@ -677,8 +673,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             for (int i = 0; i < reset.size(); ++i)
             {
                 FlusherEntry entry = reset.get(i);
-                // TODO: introduce a StreamResetException ?
-                entry.failed(new IllegalStateException());
+                entry.reset();
             }
             reset.clear();
 
@@ -781,6 +776,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 LOG.debug("Frame generation failure", x);
                 failed(x);
             }
+        }
+
+        public void reset()
+        {
+            callback.failed(new EOFException("reset"));
         }
 
         @Override
