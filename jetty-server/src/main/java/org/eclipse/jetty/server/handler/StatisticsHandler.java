@@ -193,35 +193,35 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
         }
     }
 
-    private void updateResponse(Request request)
+    protected void updateResponse(Request request)
     {
         Response response = request.getResponse();
-        switch (response.getStatus() / 100)
+        if (request.isHandled())
         {
-            case 0:
-                if (request.isHandled())
+            switch (response.getStatus() / 100)
+            {
+                case 1:
+                    _responses1xx.incrementAndGet();
+                    break;
+                case 2:
                     _responses2xx.incrementAndGet();
-                else
+                    break;
+                case 3:
+                    _responses3xx.incrementAndGet();
+                    break;
+                case 4:
                     _responses4xx.incrementAndGet();
-                break;
-            case 1:
-                _responses1xx.incrementAndGet();
-                break;
-            case 2:
-                _responses2xx.incrementAndGet();
-                break;
-            case 3:
-                _responses3xx.incrementAndGet();
-                break;
-            case 4:
-                _responses4xx.incrementAndGet();
-                break;
-            case 5:
-                _responses5xx.incrementAndGet();
-                break;
-            default:
-                break;
+                    break;
+                case 5:
+                    _responses5xx.incrementAndGet();
+                    break;
+                default:
+                    break;
+            }
         }
+        else
+            // will fall through to not found handler
+            _responses4xx.incrementAndGet();
         _responsesTotalBytes.addAndGet(response.getContentCount());
     }
 

@@ -45,7 +45,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
         
         _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
-        assertEquals(0,_response.getStatus());
+        assertEquals(200,_response.getStatus());
     }
     
     @Test

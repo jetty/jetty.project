@@ -32,6 +32,7 @@ import java.nio.charset.StandardCharsets;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.UrlEncoded;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -81,6 +82,47 @@ public class FileResourceTest
         }
     }
 
+    @Test
+    public void testSingleQuoteInFileName() throws Exception
+    {
+        createDummyFile("foo's.txt");
+        createDummyFile("f o's.txt");
+        
+        URI refQuoted = testdir.getDir().toURI().resolve("foo's.txt");
+
+        try(FileResource fileres = new FileResource(refQuoted))
+        {
+            Assert.assertThat(fileres.exists(),is(true));
+            Assert.assertThat(fileres.getAlias(),Matchers.nullValue());
+        }
+        
+        URI refEncoded = testdir.getDir().toURI().resolve("foo%27s.txt");
+
+        try(FileResource fileres = new FileResource(refEncoded))
+        {
+            Assert.assertThat(fileres.exists(),is(true));
+            Assert.assertThat(fileres.getAlias(),Matchers.nullValue());
+        }
+        
+        URI refQuoteSpace = testdir.getDir().toURI().resolve("f%20o's.txt");
+
+        try(FileResource fileres = new FileResource(refQuoteSpace))
+        {
+            Assert.assertThat(fileres.exists(),is(true));
+            Assert.assertThat(fileres.getAlias(),Matchers.nullValue());
+        }
+        
+        URI refEncodedSpace = testdir.getDir().toURI().resolve("f%20o%27s.txt");
+
+        try(FileResource fileres = new FileResource(refEncodedSpace))
+        {
+            Assert.assertThat(fileres.exists(),is(true));
+            Assert.assertThat(fileres.getAlias(),Matchers.nullValue());
+        }
+    }
+
+    
+    
     @Ignore("Cannot get null to be seen by FileResource")
     @Test
     public void testExist_BadNull() throws Exception
