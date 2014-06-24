@@ -39,6 +39,7 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
@@ -356,7 +357,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Sending {}", entry.frame);
-        flusher.append(entry);
+        // Ping frames are prepended to process them as soon as possible.
+        if (entry.frame.getType() == FrameType.PING)
+            flusher.prepend(entry);
+        else
+            flusher.append(entry);
         flusher.iterate();
     }
 
