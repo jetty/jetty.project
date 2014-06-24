@@ -78,7 +78,15 @@ public class HeadersBodyParser extends BodyParser
                     {
                         return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame");
                     }
+
+                    // For now we don't support HEADERS frames that don't have END_HEADERS.
+                    if (!hasFlag(Flag.END_HEADERS))
+                    {
+                        return notifyConnectionFailure(ErrorCode.INTERNAL_ERROR, "unsupported_headers_frame");
+                    }
+
                     length = getBodyLength();
+
                     if (isPaddingHigh())
                     {
                         state = State.PADDING_HIGH;
