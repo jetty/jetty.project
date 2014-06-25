@@ -491,4 +491,18 @@ public abstract class AbstractFSResourceTest
             // Expected path
         }
     }
+    
+    @Test
+    public void testEncoding() throws Exception
+    {
+        File specials = testdir.getFile("a file with,spe#ials");
+        try(Resource res= newResource(specials))
+        {
+            assertThat("Specials URL", res.getURI().toASCIIString(), containsString("a%20file%20with,spe%23ials"));
+            assertThat("Specials Filename", res.getFile().toString(), containsString("a file with,spe#ials"));
+            
+            res.delete();
+            assertThat("File should have been deleted.",res.exists(),is(false));
+        }
+    }
 }

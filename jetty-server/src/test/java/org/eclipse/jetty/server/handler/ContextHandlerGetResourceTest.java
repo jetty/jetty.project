@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -122,7 +118,7 @@ public class ContextHandlerGetResourceTest
         try
         {
             context.getResource(path);
-            fail();
+            fail("Expected " + MalformedURLException.class);
         }
         catch(MalformedURLException e)
         {
@@ -131,7 +127,7 @@ public class ContextHandlerGetResourceTest
         try
         {
             context.getServletContext().getResource(path);
-            fail();
+            fail("Expected " + MalformedURLException.class);
         }
         catch(MalformedURLException e)
         {
@@ -300,17 +296,20 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testSlashSlash() throws Exception
     {
+        File expected = new File(docroot, OS.separators("subdir/data.txt"));
+        URL expectedUrl = expected.toURI().toURL();
+        
         String path="//subdir/data.txt";
         Resource resource=context.getResource(path);
-        assertNull(resource);
+        assertThat("Resource: " + resource, resource.getFile(), is(expected));
         URL url=context.getServletContext().getResource(path);
-        assertNull(url);
+        assertThat("Resource: " + url, url, is(expectedUrl));
         
         path="/subdir//data.txt";
         resource=context.getResource(path);
-        assertNull(resource);
+        assertThat("Resource: " + resource, resource.getFile(), is(expected));
         url=context.getServletContext().getResource(path);
-        assertNull(url);
+        assertThat("Resource: " + url, url, is(expectedUrl));
     }
 
     @Test

@@ -33,6 +33,7 @@ import java.util.zip.ZipFile;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.resource.FileResource;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
 
@@ -100,10 +101,10 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 
         if (url.getProtocol().equals("file"))
         {
-            // some osgi frameworks do use the file protocole directly in some
+            // some osgi frameworks do use the file protocol directly in some
             // situations. Do use the FileResource to transform the URL into a
             // File: URL#toURI is broken
-            return new FileResource(url).getFile().getParentFile().getParentFile();
+            return new PathResource(url).getFile().getParentFile().getParentFile();
         }
         else if (url.getProtocol().equals("bundleentry"))
         {

@@ -33,12 +33,13 @@ import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -105,9 +106,24 @@ public class PathResource extends Resource
     }
 
     @Override
-    public Resource addPath(String apath) throws IOException, MalformedURLException
+    public Resource addPath(final String subpath) throws IOException, MalformedURLException
     {
-        return new PathResource(this.path.resolve(apath));
+        String cpath = URIUtil.canonicalPath(subpath);
+        
+        if ((cpath == null)||(cpath.length()==0))
+            throw new MalformedURLException();
+
+        if ("/".equals(cpath))
+            return this;
+        
+        // subpaths are always under PathResource
+        // compensate for input subpaths like "/subdir"
+        // where default java.nio.file behavior would be
+        // to treat that like an absolute path
+        StringBuilder relpath = new StringBuilder();
+        relpath.append(".").append(File.separator);
+        relpath.append(cpath);
+        return new PathResource(this.path.resolve(relpath.toString()).normalize());
     }
 
     @Override
@@ -325,7 +341,7 @@ public class PathResource extends Resource
             PathResource destRes = (PathResource)dest;
             try
             {
-                Path result = Files.move(path,destRes.path,StandardCopyOption.ATOMIC_MOVE);
+                Path result = Files.move(path,destRes.path);
                 return Files.exists(result,linkOptions);
             }
             catch (IOException e)
@@ -340,6 +356,19 @@ public class PathResource extends Resource
         }
     }
 
+    @Override
+    public void copyTo(File destination) throws IOException
+    {
+        if (isDirectory())
+        {
+            IO.copyDir(this.path.toFile(),destination);
+        }
+        else
+        {
+            Files.copy(this.path,destination.toPath());
+        }
+    }
+
     public void setFollowLinks(boolean followLinks)
     {
         if (followLinks)
@@ -350,5 +379,11 @@ public class PathResource extends Resource
         {
             linkOptions = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return this.uri.toASCIIString();
     }
 }

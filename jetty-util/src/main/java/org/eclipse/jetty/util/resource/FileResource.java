@@ -46,7 +46,9 @@ import org.eclipse.jetty.util.log.Logger;
  * insensitivity).  By default this is turned on, or it can be controlled 
  * by calling the static method @see FileResource#setCheckAliases(boolean)
  * 
+ * @deprecated use {@link PathResource} instead
  */
+@Deprecated
 public class FileResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(FileResource.class);
