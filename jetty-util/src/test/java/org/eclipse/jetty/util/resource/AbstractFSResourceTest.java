@@ -33,6 +33,7 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
@@ -86,7 +87,7 @@ public abstract class AbstractFSResourceTest
         }
         else if (OS.IS_WINDOWS)
         {
-            newResource(new URI("file:/dev/null"));
+            newResource(new URI("file://some\"text\""));
         }
     }
 
@@ -339,7 +340,7 @@ public abstract class AbstractFSResourceTest
             Files.createFile(foo);
             Files.createSymbolicLink(bar,foo);
         }
-        catch (UnsupportedOperationException e)
+        catch (UnsupportedOperationException | FileSystemException e)
         {
             // if unable to create symlink, no point testing the rest
             // this is the path that Microsoft Windows takes.
