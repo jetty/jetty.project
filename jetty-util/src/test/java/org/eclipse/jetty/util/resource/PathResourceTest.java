@@ -22,32 +22,17 @@ import java.io.File;
 import java.io.IOException;
 import java.net.URI;
 
-import org.junit.Ignore;
-import org.junit.Test;
-
-public class FileResourceTest extends AbstractFSResourceTest
+public class PathResourceTest extends AbstractFSResourceTest
 {
     @Override
     public Resource newResource(URI uri) throws IOException
     {
-        return new FileResource(uri);
+        return new PathResource(uri);
     }
-    
+
     @Override
     public Resource newResource(File file) throws IOException
     {
-        return new FileResource(file);
-    }
-    
-    @Ignore("Cannot get null to be seen by FileResource")
-    @Test
-    public void testExist_BadNull() throws Exception
-    {
-    }
-
-    @Ignore("Validation shouldn't be done in FileResource")
-    @Test
-    public void testExist_BadNullX() throws Exception
-    {
+        return new PathResource(file);
     }
 }
