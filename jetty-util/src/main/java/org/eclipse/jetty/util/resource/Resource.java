@@ -352,6 +352,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * Returns an URL representing the given resource
      */
+    // TODO: should deprecate this one and only use getURI()
     public abstract URL getURL();
 
     /* ------------------------------------------------------------ */
@@ -405,6 +406,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * Deletes the given resource
      */
+    // TODO: can throw IOException
     public abstract boolean delete()
         throws SecurityException;
     
@@ -412,6 +414,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * Rename the given resource
      */
+    // TODO: can throw IOException
     public abstract boolean renameTo( Resource dest)
         throws SecurityException;
     
@@ -420,6 +423,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Returns a list of resource names contained in the given resource
      * The resource names are not URL encoded.
      */
+    // TODO: can throw IOException
     public abstract String[] list();
 
     /* ------------------------------------------------------------ */

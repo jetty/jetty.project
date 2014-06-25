@@ -236,6 +236,11 @@ public class ConnectionPool implements Closeable, Dumpable
     @Override
     public String toString()
     {
-        return String.format("%s %d/%d", getClass().getSimpleName(), connectionCount.get(), maxConnections);
+        return String.format("%s[c=%d/%d,a=%d,i=%d]",
+                getClass().getSimpleName(),
+                connectionCount.get(),
+                maxConnections,
+                activeConnections.size(),
+                idleConnections.size());
     }
 }
