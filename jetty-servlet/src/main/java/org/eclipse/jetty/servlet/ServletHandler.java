@@ -160,7 +160,8 @@ public class ServletHandler extends ScopedHandler
         
         if (getServletMapping("/")==null && _ensureDefaultServlet)
         {
-            LOG.debug("Adding Default404Servlet to {}",this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Adding Default404Servlet to {}",this);
             addServletWithMapping(Default404Servlet.class,"/");
             updateMappings();  
             getServletMapping("/").setDefault(true);
@@ -543,7 +544,9 @@ public class ServletHandler extends ScopedHandler
             }
         }
 
-        LOG.debug("chain={}",chain);
+        if (LOG.isDebugEnabled())
+            LOG.debug("chain={}",chain);
+
         Throwable th=null;
         try
         {
@@ -1528,7 +1531,8 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     protected void notFound(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        LOG.debug("Not Found {}",request.getRequestURI());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Not Found {}",request.getRequestURI());
         if (getHandler()!=null)
             nextHandle(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()),baseRequest,request,response);
     }
@@ -1630,7 +1634,8 @@ public class ServletHandler extends ScopedHandler
             // pass to next filter
             if (_filterHolder!=null)
             {
-                LOG.debug("call filter {}", _filterHolder);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("call filter {}", _filterHolder);
                 Filter filter= _filterHolder.getFilter();
                 
                 //if the request already does not support async, then the setting for the filter
@@ -1729,7 +1734,8 @@ public class ServletHandler extends ScopedHandler
                 notFound((request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest(), srequest, (HttpServletResponse)response);
             else
             {
-                LOG.debug("call servlet {}", _servletHolder);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("call servlet {}", _servletHolder);
                 _servletHolder.handle(_baseRequest,request, response);
             }    
         }

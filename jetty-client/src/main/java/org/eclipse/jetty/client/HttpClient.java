@@ -480,9 +480,14 @@ public class HttpClient extends ContainerLifeCycle
             {
                 HttpDestination existing = destinations.putIfAbsent(origin, destination);
                 if (existing != null)
+                {
                     destination = existing;
+                }
                 else
-                    LOG.debug("Created {}", destination);
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Created {}", destination);
+                }
                 if (!isRunning())
                     destinations.remove(origin);
             }

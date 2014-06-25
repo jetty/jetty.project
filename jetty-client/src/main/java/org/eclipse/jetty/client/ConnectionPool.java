@@ -81,21 +81,24 @@ public class ConnectionPool implements Closeable, Dumpable
 
             if (next > maxConnections)
             {
-                LOG.debug("Max connections {}/{} reached", current, maxConnections);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Max connections {}/{} reached", current, maxConnections);
                 // Try again the idle connections
                 return acquireIdleConnection();
             }
 
             if (connectionCount.compareAndSet(current, next))
             {
-                LOG.debug("Connection {}/{} creation", next, maxConnections);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Connection {}/{} creation", next, maxConnections);
 
                 destination.newConnection(new Promise<Connection>()
                 {
                     @Override
                     public void succeeded(Connection connection)
                     {
-                        LOG.debug("Connection {}/{} creation succeeded {}", next, maxConnections, connection);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Connection {}/{} creation succeeded {}", next, maxConnections, connection);
                         if (activate(connection))
                             connectionPromise.succeeded(connection);
                     }
@@ -103,7 +106,8 @@ public class ConnectionPool implements Closeable, Dumpable
                     @Override
                     public void failed(Throwable x)
                     {
-                        LOG.debug("Connection " + next + "/" + maxConnections + " creation failed", x);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Connection " + next + "/" + maxConnections + " creation failed", x);
                         connectionCount.decrementAndGet();
                         connectionPromise.failed(x);
                     }
@@ -127,13 +131,15 @@ public class ConnectionPool implements Closeable, Dumpable
     {
         if (activeConnections.offer(connection))
         {
-            LOG.debug("Connection active {}", connection);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection active {}", connection);
             acquired(connection);
             return true;
         }
         else
         {
-            LOG.debug("Connection active overflow {}", connection);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection active overflow {}", connection);
             connection.close();
             return false;
         }
@@ -151,12 +157,14 @@ public class ConnectionPool implements Closeable, Dumpable
             // Make sure we use "hot" connections first
             if (idleConnections.offerFirst(connection))
             {
-                LOG.debug("Connection idle {}", connection);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Connection idle {}", connection);
                 return true;
             }
             else
             {
-                LOG.debug("Connection idle overflow {}", connection);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Connection idle overflow {}", connection);
                 connection.close();
             }
         }
@@ -177,7 +185,8 @@ public class ConnectionPool implements Closeable, Dumpable
         if (removed)
         {
             int pooled = connectionCount.decrementAndGet();
-            LOG.debug("Connection removed {} - pooled: {}", connection, pooled);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection removed {} - pooled: {}", connection, pooled);
         }
         return removed;
     }

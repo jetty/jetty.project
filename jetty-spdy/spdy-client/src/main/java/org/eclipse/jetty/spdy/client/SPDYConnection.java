@@ -139,11 +139,13 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
-        LOG.debug("Shutting down output {}", endPoint);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shutting down output {}", endPoint);
         endPoint.shutdownOutput();
         if (!onlyOutput)
         {
-            LOG.debug("Closing {}", endPoint);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closing {}", endPoint);
             endPoint.close();
         }
     }
@@ -158,7 +160,8 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
     protected boolean onReadTimeout()
     {
         boolean idle = this.idle;
-        LOG.debug("Idle timeout on {}, idle={}", this, idle);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Idle timeout on {}, idle={}", this, idle);
         if (idle)
             goAway(session);
         return false;

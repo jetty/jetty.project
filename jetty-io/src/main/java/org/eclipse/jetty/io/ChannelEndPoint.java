@@ -61,7 +61,8 @@ public class ChannelEndPoint extends AbstractEndPoint
 
     protected void shutdownInput()
     {
-        LOG.debug("ishut {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("ishut {}", this);
         _ishut=true;
         if (_oshut)
             close();
@@ -70,7 +71,8 @@ public class ChannelEndPoint extends AbstractEndPoint
     @Override
     public void shutdownOutput()
     {
-        LOG.debug("oshut {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("oshut {}", this);
         _oshut = true;
         if (_channel.isOpen())
         {
@@ -109,7 +111,8 @@ public class ChannelEndPoint extends AbstractEndPoint
     public void close()
     {
         super.close();
-        LOG.debug("close {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("close {}", this);
         try
         {
             _channel.close();

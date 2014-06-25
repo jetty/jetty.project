@@ -146,7 +146,8 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
             {
                 if (_eofState != null)
                 {
-                    LOG.debug("{} eof {}", this, _eofState);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} eof {}", this, _eofState);
                     _contentState = _eofState;
                 }
             }
@@ -237,7 +238,8 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         {
             if (!isEOF())
             {
-                LOG.debug("{} early EOF", this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} early EOF", this);
                 _eofState = EARLY_EOF;
                 if (_listener == null)
                     return;
@@ -256,7 +258,8 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
         {
             if (!isEOF())
             {
-                LOG.debug("{} EOF", this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} EOF", this);
                 _eofState = EOF;
                 if (_listener == null)
                     return;

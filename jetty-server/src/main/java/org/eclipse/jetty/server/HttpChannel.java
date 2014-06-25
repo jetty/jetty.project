@@ -247,7 +247,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
      */
     public boolean handle()
     {
-        LOG.debug("{} handle enter", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} handle enter", this);
 
         final HttpChannel<?>last = setCurrentHttpChannel(this);
 
@@ -270,7 +271,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                 boolean error=false;
                 try
                 {
-                    LOG.debug("{} action {}",this,action);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} action {}",this,action);
 
                     switch(action)
                     {
@@ -411,7 +413,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
             }
         }
 
-        LOG.debug("{} handle exit, result {}", this, action);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} handle exit, result {}", this, action);
 
         return action!=Action.WAIT;
     }
@@ -666,7 +669,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     @Override
     public boolean messageComplete()
     {
-        LOG.debug("{} messageComplete", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} messageComplete", this);
         _request.getHttpInput().messageComplete();
         return true;
     }

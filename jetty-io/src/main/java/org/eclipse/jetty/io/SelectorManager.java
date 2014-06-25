@@ -377,11 +377,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         @Override
         protected void doStop() throws Exception
         {
-            LOG.debug("Stopping {}", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stopping {}", this);
             Stop stop = new Stop();
             submit(stop);
             stop.await(getStopTimeout());
-            LOG.debug("Stopped {}", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stopped {}", this);
         }
 
         /**
@@ -419,7 +421,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             // change to the queue and process the state.
 
             _changes.offer(change);
-            LOG.debug("Queued change {}", change);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Queued change {}", change);
 
             out: while (true)
             {
@@ -463,7 +466,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             try
             {
-                LOG.debug("Running change {}", change);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Running change {}", change);
                 change.run();
             }
             catch (Throwable x)
@@ -480,14 +484,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             try
             {
                 _thread.setName(name + "-selector-" + SelectorManager.this.getClass().getSimpleName()+"@"+Integer.toHexString(SelectorManager.this.hashCode())+"/"+_id);
-                LOG.debug("Starting {} on {}", _thread, this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
                     select();
                 runChanges();
             }
             finally
             {
-                LOG.debug("Stopped {} on {}", _thread, this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Stopped {} on {}", _thread, this);
                 _thread.setName(name);
             }
         }
@@ -671,13 +677,15 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             Connection connection = newConnection(channel, endPoint, selectionKey.attachment());
             endPoint.setConnection(connection);
             connectionOpened(connection);
-            LOG.debug("Created {}", endPoint);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Created {}", endPoint);
             return endPoint;
         }
 
         public void destroyEndPoint(EndPoint endPoint)
         {
-            LOG.debug("Destroyed {}", endPoint);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Destroyed {}", endPoint);
             Connection connection = endPoint.getConnection();
             if (connection != null)
                 connectionClosed(connection);
@@ -792,7 +800,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 try
                 {
                     SelectionKey key = _channel.register(_selector, SelectionKey.OP_ACCEPT, null);
-                    LOG.debug("{} acceptor={}", this, key);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} acceptor={}", this, key);
                 }
                 catch (Throwable x)
                 {
@@ -881,7 +890,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 SocketChannel channel = connect.channel;
                 if (channel.isConnectionPending())
                 {
-                    LOG.debug("Channel {} timed out while connecting, closing it", channel);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Channel {} timed out while connecting, closing it", channel);
                     connect.failed(new SocketTimeoutException());
                 }
             }

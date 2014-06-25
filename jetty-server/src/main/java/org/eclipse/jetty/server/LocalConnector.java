@@ -133,12 +133,14 @@ public class LocalConnector extends AbstractConnector
      */
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
     {
-        LOG.debug("requests {}", BufferUtil.toUTF8String(requestsBuffer));
+        if (LOG.isDebugEnabled())
+            LOG.debug("requests {}", BufferUtil.toUTF8String(requestsBuffer));
         LocalEndPoint endp = executeRequest(requestsBuffer);
         endp.waitUntilClosedOrIdleFor(idleFor,units);
         ByteBuffer responses = endp.takeOutput();
         endp.getConnection().close();
-        LOG.debug("responses {}", BufferUtil.toUTF8String(responses));
+        if (LOG.isDebugEnabled())
+            LOG.debug("responses {}", BufferUtil.toUTF8String(responses));
         return responses;
     }
 
@@ -164,7 +166,8 @@ public class LocalConnector extends AbstractConnector
     @Override
     protected void accept(int acceptorID) throws IOException, InterruptedException
     {
-        LOG.debug("accepting {}", acceptorID);
+        if (LOG.isDebugEnabled())
+            LOG.debug("accepting {}", acceptorID);
         LocalEndPoint endPoint = _connects.take();
         endPoint.onOpen();
         onEndPointOpened(endPoint);
@@ -249,7 +252,8 @@ public class LocalConnector extends AbstractConnector
                     {
                         if (size==getOutput().remaining())
                         {
-                            LOG.debug("idle for {} {}",idleFor,units);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("idle for {} {}",idleFor,units);
                             return;
                         }
                         size=getOutput().remaining();

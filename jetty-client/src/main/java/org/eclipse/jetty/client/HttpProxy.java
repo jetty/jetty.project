@@ -186,7 +186,8 @@ public class HttpProxy extends ProxyConfiguration.Proxy
                     // Avoid setting fill interest in the old Connection,
                     // without closing the underlying EndPoint.
                     oldConnection.softClose();
-                    LOG.debug("HTTP tunnel established: {} over {}", oldConnection, newConnection);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP tunnel established: {} over {}", oldConnection, newConnection);
                 }
                 catch (Throwable x)
                 {

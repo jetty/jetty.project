@@ -133,7 +133,8 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
         @Override
         public void succeeded()
         {
-            LOG.debug("Written SOCKS4 connect request");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Written SOCKS4 connect request");
             fillInterested();
         }
 
@@ -153,7 +154,8 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
             {
                 ByteBuffer buffer = BufferUtil.allocate(8);
                 int filled = getEndPoint().fill(buffer);
-                LOG.debug("Read SOCKS4 connect response, {} bytes", filled);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Read SOCKS4 connect response, {} bytes", filled);
                 if (filled != 8)
                     throw new IOException("Invalid response from SOCKS4 proxy");
                 int result = buffer.get(1);
@@ -179,7 +181,8 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
                     connectionFactory = new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory);
                 org.eclipse.jetty.io.Connection connection = connectionFactory.newConnection(getEndPoint(), context);
                 ClientConnectionFactory.Helper.replaceConnection(this, connection);
-                LOG.debug("SOCKS4 tunnel established: {} over {}", this, connection);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("SOCKS4 tunnel established: {} over {}", this, connection);
             }
             catch (Throwable x)
             {

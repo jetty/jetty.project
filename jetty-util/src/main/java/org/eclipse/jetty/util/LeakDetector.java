@@ -138,7 +138,8 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
             {
                 @SuppressWarnings("unchecked")
                 LeakInfo leakInfo = (LeakInfo)queue.remove();
-                LOG.debug("Resource GC'ed: {}", leakInfo);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Resource GC'ed: {}", leakInfo);
                 if (resources.remove(leakInfo.id) != null)
                     leaked(leakInfo);
             }

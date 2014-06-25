@@ -116,23 +116,27 @@ public class InputStreamResponseListener extends Listener.Adapter
 
                 byte[] bytes = new byte[remaining];
                 content.get(bytes);
-                LOG.debug("Queuing {}/{} bytes", bytes, remaining);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Queuing {}/{} bytes", bytes, remaining);
                 queue.offer(bytes);
 
                 long newLength = length.addAndGet(remaining);
                 while (newLength >= maxBufferSize)
                 {
-                    LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, maxBufferSize);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, maxBufferSize);
                     // Block to avoid infinite buffering
                     if (!await())
                         break;
                     newLength = length.get();
-                    LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, maxBufferSize);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, maxBufferSize);
                 }
             }
             else
             {
-                LOG.debug("Queuing skipped, empty content {}", content);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Queuing skipped, empty content {}", content);
             }
         }
         else
@@ -147,12 +151,14 @@ public class InputStreamResponseListener extends Listener.Adapter
         this.result = result;
         if (result.isSucceeded())
         {
-            LOG.debug("Queuing end of content {}{}", EOF, "");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Queuing end of content {}{}", EOF, "");
             queue.offer(EOF);
         }
         else
         {
-            LOG.debug("Queuing failure {} {}", FAILURE, failure);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Queuing failure {} {}", FAILURE, failure);
             queue.offer(FAILURE);
             this.failure = result.getFailure();
             responseLatch.countDown();
@@ -288,7 +294,8 @@ public class InputStreamResponseListener extends Listener.Adapter
                 else
                 {
                     bytes = take();
-                    LOG.debug("Dequeued {}/{} bytes", bytes, bytes.length);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Dequeued {}/{} bytes", bytes, bytes.length);
                 }
             }
         }
@@ -319,7 +326,8 @@ public class InputStreamResponseListener extends Listener.Adapter
             if (!closed)
             {
                 super.close();
-                LOG.debug("Queuing close {}{}", CLOSED, "");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Queuing close {}{}", CLOSED, "");
                 queue.offer(CLOSED);
                 closed = true;
                 signal();

@@ -89,7 +89,8 @@ public class ResponseContentParser extends StreamContentParser
 
         public boolean parse(ByteBuffer buffer)
         {
-            LOG.debug("Response {} {} content {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Response {} {} content {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
 
             int remaining = buffer.remaining();
             while (remaining > 0)

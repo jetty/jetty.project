@@ -289,11 +289,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             // Look for a precompiled JSP Servlet
             String precompiled=getClassNameForJsp(_forcedPath);
-            LOG.debug("Checking for precompiled servlet {} for jsp {}", precompiled, _forcedPath);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Checking for precompiled servlet {} for jsp {}", precompiled, _forcedPath);
             ServletHolder jsp=getServletHandler().getServlet(precompiled);
             if (jsp!=null)
             {
-                LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
                 // set the className for this servlet to the precompiled one
                 setClassName(jsp.getClassName());
             }
@@ -305,7 +307,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     jsp=getServletHandler().getServlet("jsp");
                     if (jsp!=null)
                     {
-                        LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
                         setClassName(jsp.getClassName());
                         //copy jsp init params that don't exist for this servlet
                         for (Map.Entry<String, String> entry:jsp.getInitParameters().entrySet())
@@ -591,7 +594,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
             initMultiPart();
 
-            LOG.debug("Filter.init {}",_servlet);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Filter.init {}",_servlet);
             _servlet.init(_config);
         }
         catch (UnavailableException e)
@@ -642,7 +646,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if ("?".equals(getInitParameter("classpath")))
         {
             String classpath = ch.getClassPath();
-            LOG.debug("classpath=" + classpath);
+            if (LOG.isDebugEnabled())
+                LOG.debug("classpath=" + classpath);
             if (classpath != null)
                 setInitParameter("classpath", classpath);
         }

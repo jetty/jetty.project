@@ -124,7 +124,8 @@ public abstract class AbstractConnection implements Connection
      */
     public void fillInterested()
     {
-        LOG.debug("fillInterested {}",this);           
+        if (LOG.isDebugEnabled())
+            LOG.debug("fillInterested {}",this);
         
         while(true)
         {
@@ -136,7 +137,8 @@ public abstract class AbstractConnection implements Connection
     
     public void fillInterested(Callback callback)
     {
-        LOG.debug("fillInterested {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("fillInterested {}",this);
 
         while(true)
         {
@@ -162,7 +164,8 @@ public abstract class AbstractConnection implements Connection
      */
     protected void onFillInterestedFailed(Throwable cause)
     {
-        LOG.debug("{} onFillInterestedFailed {}", this, cause);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onFillInterestedFailed {}", this, cause);
         if (_endPoint.isOpen())
         {
             boolean close = true;
@@ -193,7 +196,8 @@ public abstract class AbstractConnection implements Connection
     @Override
     public void onOpen()
     {
-        LOG.debug("onOpen {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen {}", this);
 
         for (Listener listener : listeners)
             listener.onOpened(this);
@@ -202,7 +206,8 @@ public abstract class AbstractConnection implements Connection
     @Override
     public void onClose()
     {
-        LOG.debug("onClose {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onClose {}",this);
 
         for (Listener listener : listeners)
             listener.onClosed(this);
@@ -262,7 +267,8 @@ public abstract class AbstractConnection implements Connection
             return true;
         if(_state.compareAndSet(state,next))
         {
-            LOG.debug("{}-->{} {}",state,next,this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{}-->{} {}",state,next,this);
             if (next!=state)
                 next.onEnter(AbstractConnection.this);
             return true;

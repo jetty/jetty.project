@@ -262,7 +262,8 @@ public class SessionHandler extends ScopedHandler
                         requested_session_id = cookies[i].getValue();
                         requested_session_id_from_cookie = true;
 
-                        LOG.debug("Got Session ID {} from cookie",requested_session_id);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Got Session ID {} from cookie",requested_session_id);
 
                         if (requested_session_id != null)
                         {

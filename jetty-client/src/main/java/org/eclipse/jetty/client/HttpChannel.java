@@ -46,7 +46,8 @@ public abstract class HttpChannel
         if (this.exchange.compareAndSet(null, exchange))
         {
             exchange.associate(this);
-            LOG.debug("{} associated to {}", exchange, this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} associated to {}", exchange, this);
         }
         else
         {
@@ -59,7 +60,8 @@ public abstract class HttpChannel
         HttpExchange exchange = this.exchange.getAndSet(null);
         if (exchange != null)
             exchange.disassociate(this);
-        LOG.debug("{} disassociated from {}", exchange, this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} disassociated from {}", exchange, this);
         return exchange;
     }
 

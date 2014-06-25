@@ -477,7 +477,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         throws SQLException
         {
             _dbName = dbMeta.getDatabaseProductName().toLowerCase(Locale.ENGLISH);
-            LOG.debug ("Using database {}",_dbName);
+            if (LOG.isDebugEnabled())
+                LOG.debug ("Using database {}",_dbName);
             _isLower = dbMeta.storesLowerCaseIdentifiers();
             _isUpper = dbMeta.storesUpperCaseIdentifiers(); 
         }

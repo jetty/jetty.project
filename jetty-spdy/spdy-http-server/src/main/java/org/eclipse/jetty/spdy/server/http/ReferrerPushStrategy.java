@@ -167,7 +167,8 @@ public class ReferrerPushStrategy implements PushStrategy
             String origin = scheme + "://" + host;
             String url = requestHeaders.get(HTTPSPDYHeader.URI.name(version)).getValue();
             String absoluteURL = origin + url;
-            LOG.debug("Applying push strategy for {}", absoluteURL);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Applying push strategy for {}", absoluteURL);
             if (isMainResource(url, responseHeaders))
             {
                 MainResource mainResource = getOrCreateMainResource(absoluteURL);
@@ -190,7 +191,8 @@ public class ReferrerPushStrategy implements PushStrategy
                         result = getPushResources(absoluteURL);
                 }
             }
-            LOG.debug("Pushing {} resources for {}: {}", result.size(), absoluteURL, result);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Pushing {} resources for {}: {}", result.size(), absoluteURL, result);
         }
         return result;
     }
@@ -208,7 +210,8 @@ public class ReferrerPushStrategy implements PushStrategy
         MainResource mainResource = mainResources.get(absoluteURL);
         if (mainResource == null)
         {
-            LOG.debug("Creating new main resource for {}", absoluteURL);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Creating new main resource for {}", absoluteURL);
             MainResource value = new MainResource(absoluteURL);
             mainResource = mainResources.putIfAbsent(absoluteURL, value);
             if (mainResource == null)
@@ -283,7 +286,8 @@ public class ReferrerPushStrategy implements PushStrategy
             long delay = TimeUnit.NANOSECONDS.toMillis(System.nanoTime() - firstResourceAdded.get());
             if (!referrer.startsWith(origin) && !isPushOriginAllowed(origin))
             {
-                LOG.debug("Skipped store of push metadata {} for {}: Origin: {} doesn't match or origin not allowed",
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Skipped store of push metadata {} for {}: Origin: {} doesn't match or origin not allowed",
                         url, name, origin);
                 return false;
             }
@@ -293,18 +297,21 @@ public class ReferrerPushStrategy implements PushStrategy
             // although in rare cases few more resources will be stored
             if (resources.size() >= maxAssociatedResources)
             {
-                LOG.debug("Skipped store of push metadata {} for {}: max associated resources ({}) reached",
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Skipped store of push metadata {} for {}: max associated resources ({}) reached",
                         url, name, maxAssociatedResources);
                 return false;
             }
             if (delay > referrerPushPeriod)
             {
-                LOG.debug("Delay: {}ms longer than referrerPushPeriod ({}ms). Not adding resource: {} for: {}", delay,
-                        referrerPushPeriod, url, name);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Delay: {}ms longer than referrerPushPeriod ({}ms). Not adding resource: {} for: {}",
+                        delay, referrerPushPeriod, url, name);
                 return false;
             }
 
-            LOG.debug("Adding: {} to: {} with delay: {}ms.", url, this, delay);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Adding: {} to: {} with delay: {}ms.", url, this, delay);
             resources.add(url);
             return true;
         }

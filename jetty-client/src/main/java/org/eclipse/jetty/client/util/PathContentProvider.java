@@ -107,7 +107,8 @@ public class PathContentProvider extends AbstractTypedContentProvider
                 if (channel == null)
                 {
                     channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
-                    LOG.debug("Opened file {}", filePath);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Opened file {}", filePath);
                 }
 
                 buffer.clear();

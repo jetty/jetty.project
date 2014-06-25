@@ -67,7 +67,8 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
                 redispatch=true;
             else
             {
-                LOG.debug("Dispatch {}", this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Dispatch {}", this);
                 dispatched=true;
                 execute(this);
             }
@@ -83,12 +84,14 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         {
             try
             {
-                LOG.debug("Executing {}",this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Executing {}",this);
                 super.run();
             }
             finally
             {
-                LOG.debug("Completing {}", this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Completing {}", this);
                 synchronized (this)
                 {
                     dispatched = redispatch;
@@ -130,7 +133,8 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         if (!headersComplete && headerComplete())
             dispatch=true;
 
-        LOG.debug("HTTP > {} bytes of content", dataInfo.length());
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP > {} bytes of content", dataInfo.length());
 
         // We need to copy the dataInfo since we do not know when its bytes
         // will be consumed. When the copy is consumed, we consume also the
@@ -145,7 +149,8 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
                 dataInfo.consume(delta);
             }
         };
-        LOG.debug("Queuing last={} content {}", endRequest, copyDataInfo);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing last={} content {}", endRequest, copyDataInfo);
 
         if (content(copyDataInfo))
             dispatch=true;
@@ -184,7 +189,8 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         // that  we have to deal with
         ByteBuffer uri = BufferUtil.toBuffer(uriHeader.getValue());
 
-        LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.getValue(), httpVersion);
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.getValue(), httpVersion);
         startRequest(httpMethod, httpMethod.asString(), uri, httpVersion);
 
         Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
@@ -223,7 +229,8 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
                 {
                     // Spec says headers must be single valued
                     String value = header.getValue();
-                    LOG.debug("HTTP > {}: {}", name, value);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP > {}: {}", name, value);
                     parsedHeader(new HttpField(name,value));
                     break;
                 }

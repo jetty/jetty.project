@@ -117,11 +117,13 @@ public abstract class HttpReceiver
         if (protocolHandler != null)
         {
             handlerListener = protocolHandler.getResponseListener();
-            LOG.debug("Found protocol handler {}", protocolHandler);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Found protocol handler {}", protocolHandler);
         }
         exchange.getConversation().updateResponseListeners(handlerListener);
 
-        LOG.debug("Response begin {}", response);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Response begin {}", response);
         ResponseNotifier notifier = destination.getResponseNotifier();
         notifier.notifyBegin(conversation.getResponseListeners(), response);
 
@@ -337,7 +339,8 @@ public abstract class HttpReceiver
         Result result = exchange.terminateResponse(null);
 
         HttpResponse response = exchange.getResponse();
-        LOG.debug("Response success {}", response);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Response success {}", response);
         List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifySuccess(listeners, response);
@@ -347,7 +350,8 @@ public abstract class HttpReceiver
             boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
             if (!ordered)
                 channel.exchangeTerminated(result);
-            LOG.debug("Request/Response succeeded {}", response);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request/Response succeeded {}", response);
             notifier.notifyComplete(listeners, result);
             if (ordered)
                 channel.exchangeTerminated(result);
@@ -388,7 +392,8 @@ public abstract class HttpReceiver
         Result result = exchange.terminateResponse(failure);
 
         HttpResponse response = exchange.getResponse();
-        LOG.debug("Response failure {} {}", response, failure);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Response failure {} {}", response, failure);
         List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifyFailure(listeners, response, failure);
@@ -398,7 +403,8 @@ public abstract class HttpReceiver
             boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
             if (!ordered)
                 channel.exchangeTerminated(result);
-            LOG.debug("Request/Response failed {}", response);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Request/Response failed {}", response);
             notifier.notifyComplete(listeners, result);
             if (ordered)
                 channel.exchangeTerminated(result);
