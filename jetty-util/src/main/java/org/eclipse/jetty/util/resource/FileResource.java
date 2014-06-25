@@ -148,7 +148,8 @@ public class FileResource extends Resource
 
             if (!abs.equals(can))
             {
-                LOG.debug("ALIAS abs={} can={}",abs,can);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("ALIAS abs={} can={}",abs,can);
 
                 URI alias=new File(can).toURI();
                 // Have to encode the path as File.toURI does not!

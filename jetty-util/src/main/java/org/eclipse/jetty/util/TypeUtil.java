@@ -569,8 +569,9 @@ public class TypeUtil
                 
                 // target has no annotations
                 if ( parameterAnnotations == null || parameterAnnotations.length == 0 )
-                {                
-                    LOG.debug("Target has no parameter annotations");                   
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Target has no parameter annotations");
                     return constructor.newInstance(arguments);
                 }
                 else
@@ -588,19 +589,22 @@ public class TypeUtil
                                
                                if (namedArgMap.containsKey(param.value()))
                                {
-                                   LOG.debug("placing named {} in position {}", param.value(), count);
+                                   if (LOG.isDebugEnabled())
+                                       LOG.debug("placing named {} in position {}", param.value(), count);
                                    swizzled[count] = namedArgMap.get(param.value());
                                }
                                else
                                {
-                                   LOG.debug("placing {} in position {}", arguments[count], count);
+                                   if (LOG.isDebugEnabled())
+                                       LOG.debug("placing {} in position {}", arguments[count], count);
                                    swizzled[count] = arguments[count];
                                }
                                ++count;
                            }
                            else
                            {
-                               LOG.debug("passing on annotation {}", annotation);
+                               if (LOG.isDebugEnabled())
+                                   LOG.debug("passing on annotation {}", annotation);
                            }
                        }
                    }

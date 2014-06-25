@@ -94,7 +94,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public void onOpen()
     {
-        LOG.debug("onOpen {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen {}",this);
         super.onOpen();
     }
 
@@ -102,7 +103,8 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     public void onClose()
     {
         super.onClose();
-        LOG.debug("onClose {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onClose {}",this);
         _writeFlusher.onClose();
         _fillInterest.onClose();
     }

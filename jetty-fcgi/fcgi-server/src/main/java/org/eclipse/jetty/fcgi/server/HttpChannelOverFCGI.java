@@ -137,7 +137,8 @@ public class HttpChannelOverFCGI extends HttpChannel
             while (true)
             {
                 State current = state.get();
-                LOG.debug("Dispatching, state={}", current);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Dispatching, state={}", current);
                 switch (current)
                 {
                     case IDLE:
@@ -172,7 +173,8 @@ public class HttpChannelOverFCGI extends HttpChannel
             while (true)
             {
                 State current = state.get();
-                LOG.debug("Running, state={}", current);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Running, state={}", current);
                 switch (current)
                 {
                     case DISPATCH:

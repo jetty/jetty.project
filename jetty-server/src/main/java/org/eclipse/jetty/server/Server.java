@@ -384,7 +384,8 @@ public class Server extends HandlerWrapper implements Attributes
         if (stopTimeout>0)
         {
             long stop_by=System.currentTimeMillis()+stopTimeout;
-            LOG.debug("Graceful shutdown {} by ",this,new Date(stop_by));
+            if (LOG.isDebugEnabled())
+                LOG.debug("Graceful shutdown {} by ",this,new Date(stop_by));
 
             // Wait for shutdowns
             for (Future<Void> future: futures)

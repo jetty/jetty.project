@@ -137,7 +137,8 @@ public class Flusher
 
         private void shutdown()
         {
-            LOG.debug("Shutting down {}", endPoint);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Shutting down {}", endPoint);
             endPoint.shutdownOutput();
         }
     }

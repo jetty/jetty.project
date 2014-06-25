@@ -227,7 +227,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             @Override
             public void resume()
             {
-                LOG.debug("Content consumed asynchronously, resuming processing");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Content consumed asynchronously, resuming processing");
                 process();
             }
 

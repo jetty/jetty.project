@@ -175,14 +175,16 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
                 }
                 else
                 {
-                    LOG.debug("Queued {}", request);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Queued {}", request);
                     requestNotifier.notifyQueued(request);
                     send();
                 }
             }
             else
             {
-                LOG.debug("Max queue size {} exceeded by {}", client.getMaxRequestsQueuedPerDestination(), request);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Max queue size {} exceeded by {}", client.getMaxRequestsQueuedPerDestination(), request);
                 request.abort(new RejectedExecutionException("Max requests per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded for " + this));
             }
         }

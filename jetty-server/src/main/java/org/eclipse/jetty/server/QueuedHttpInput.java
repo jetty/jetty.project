@@ -56,7 +56,8 @@ public class QueuedHttpInput extends HttpInput
         {
             boolean wasEmpty = _inputQ.isEmpty();
             _inputQ.add(item);
-            LOG.debug("{} queued {}", this, item);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} queued {}", this, item);
             if (wasEmpty)
             {
                 if (!onAsyncRead())
@@ -90,7 +91,8 @@ public class QueuedHttpInput extends HttpInput
             while (item != null && remaining(item) == 0)
             {
                 _inputQ.pollUnsafe();
-                LOG.debug("{} consumed {}", this, item);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} consumed {}", this, item);
                 item = _inputQ.peekUnsafe();
             }
             return item;
@@ -105,7 +107,8 @@ public class QueuedHttpInput extends HttpInput
             {
                 try
                 {
-                    LOG.debug("{} waiting for content", this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} waiting for content", this);
                     lock().wait();
                 }
                 catch (InterruptedException e)

@@ -60,22 +60,15 @@ public class ELContextCleaner implements ServletContextListener
             //Get rid of references
             purgeEntries(field);
 
-            LOG.debug("javax.el.BeanELResolver purged");
+            if (LOG.isDebugEnabled())
+                LOG.debug("javax.el.BeanELResolver purged");
         }
 
         catch (ClassNotFoundException e)
         {
             //BeanELResolver not on classpath, ignore
         }
-        catch (SecurityException e)
-        {
-            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
-        }
-        catch (IllegalArgumentException e)
-        {
-            LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
-        }
-        catch (IllegalAccessException e)
+        catch (SecurityException | IllegalArgumentException | IllegalAccessException e)
         {
             LOG.warn("Cannot purge classes from javax.el.BeanELResolver", e);
         }
@@ -113,14 +106,19 @@ public class ELContextCleaner implements ServletContextListener
         while (itor.hasNext())
         {
             Class clazz = itor.next();
-            LOG.debug("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
             if (Thread.currentThread().getContextClassLoader().equals(clazz.getClassLoader()))
             {
                 itor.remove();
-                LOG.debug("removed");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("removed");
             }
             else
-                LOG.debug("not removed: "+"contextclassloader="+Thread.currentThread().getContextClassLoader()+"clazz's classloader="+clazz.getClassLoader());
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("not removed: "+"contextclassloader="+Thread.currentThread().getContextClassLoader()+"clazz's classloader="+clazz.getClassLoader());
+            }
         }
     }
 }

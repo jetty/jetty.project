@@ -148,7 +148,8 @@ public class SocketAddressResolver
                     long start = System.nanoTime();
                     InetSocketAddress result = new InetSocketAddress(host, port);
                     long elapsed = System.nanoTime() - start;
-                    LOG.debug("Resolved {} in {} ms", host, TimeUnit.NANOSECONDS.toMillis(elapsed));
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Resolved {} in {} ms", host, TimeUnit.NANOSECONDS.toMillis(elapsed));
                     if (complete.compareAndSet(false, true))
                     {
                         if (result.isUnresolved())

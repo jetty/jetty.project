@@ -100,7 +100,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         HttpInput input = newHttpInput();
         _channel = newHttpChannel(input);
         _parser = newHttpParser();
-        LOG.debug("New HTTP Connection {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("New HTTP Connection {}", this);
     }
 
     protected HttpGenerator newHttpGenerator()
@@ -188,7 +189,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onFillable()
     {
-        LOG.debug("{} onFillable {}", this, _channel.getState());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onFillable {}", this, _channel.getState());
 
         final HttpConnection last=setCurrentConnection(this);
         int filled=Integer.MAX_VALUE;
@@ -325,7 +327,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
             if (connection != null)
             {
-                LOG.debug("Upgrade from {} to {}", this, connection);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Upgrade from {} to {}", this, connection);
                 onClose();
                 getEndPoint().setConnection(connection);
                 connection.onOpen();

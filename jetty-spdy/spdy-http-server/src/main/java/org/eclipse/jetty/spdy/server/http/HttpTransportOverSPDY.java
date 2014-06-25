@@ -130,7 +130,8 @@ public class HttpTransportOverSPDY implements HttpTransport
                 StreamException exception = new StreamException(stream.getId(), StreamStatus.PROTOCOL_ERROR,
                         "Stream already committed!");
                 callback.failed(exception);
-                LOG.debug("Committed response twice.", exception);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Committed response twice.", exception);
                 return;
             }
             sendReply(info, !hasContent ? callback : new Callback.Adapter()
@@ -147,7 +148,8 @@ public class HttpTransportOverSPDY implements HttpTransport
         if (hasContent)
         {
             // send the data and let it call the callback
-            LOG.debug("Send content: {} on stream: {} lastContent={}", BufferUtil.toDetailString(content), stream,
+            if (LOG.isDebugEnabled())
+                LOG.debug("Send content: {} on stream: {} lastContent={}", BufferUtil.toDetailString(content), stream,
                     lastContent);
             stream.data(new ByteBufferDataInfo(endPoint.getIdleTimeout(), TimeUnit.MILLISECONDS, content, lastContent
             ), callback);
@@ -156,7 +158,8 @@ public class HttpTransportOverSPDY implements HttpTransport
         else if (lastContent && info == null)
         {
             // send empty data to close and let the send call the callback
-            LOG.debug("No content and lastContent=true. Sending empty ByteBuffer to close stream: {}", stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("No content and lastContent=true. Sending empty ByteBuffer to close stream: {}", stream);
             stream.data(new ByteBufferDataInfo(endPoint.getIdleTimeout(), TimeUnit.MILLISECONDS,
                     BufferUtil.EMPTY_BUFFER, lastContent), callback);
         }
@@ -180,7 +183,8 @@ public class HttpTransportOverSPDY implements HttpTransport
         if (reason != null)
             httpStatus.append(" ").append(reason);
         headers.put(HTTPSPDYHeader.STATUS.name(version), httpStatus.toString());
-        LOG.debug("HTTP < {} {}", httpVersion, httpStatus);
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP < {} {}", httpVersion, httpStatus);
 
         // TODO merge the two Field classes into one
         HttpFields fields = info.getHttpFields();
@@ -192,7 +196,8 @@ public class HttpTransportOverSPDY implements HttpTransport
                 String name = field.getName();
                 String value = field.getValue();
                 headers.add(name, value);
-                LOG.debug("HTTP < {}: {}", name, value);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("HTTP < {}: {}", name, value);
             }
         }
 
@@ -202,14 +207,16 @@ public class HttpTransportOverSPDY implements HttpTransport
             headers.add(HttpHeader.X_POWERED_BY.asString(), HttpConfiguration.SERVER_VERSION);
 
         ReplyInfo reply = new ReplyInfo(headers, close);
-        LOG.debug("Sending reply: {} on stream: {}", reply, stream);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Sending reply: {} on stream: {}", reply, stream);
         reply(stream, reply, callback);
     }
 
     @Override
     public void completed()
     {
-        LOG.debug("Completed {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Completed {}", this);
     }
 
     private void reply(Stream stream, ReplyInfo replyInfo, Callback callback)
@@ -249,7 +256,8 @@ public class HttpTransportOverSPDY implements HttpTransport
         public void completed()
         {
             Stream stream = getStream();
-            LOG.debug("Resource pushed for {} on {}",
+            if (LOG.isDebugEnabled())
+                LOG.debug("Resource pushed for {} on {}",
                     getRequestHeaders().get(HTTPSPDYHeader.URI.name(version)), stream);
             coordinator.complete();
         }
@@ -268,7 +276,8 @@ public class HttpTransportOverSPDY implements HttpTransport
 
         private void coordinate()
         {
-            LOG.debug("Pushing resources: {}", resources);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Pushing resources: {}", resources);
             // Must send all push frames to the client at once before we
             // return from this method and send the main resource data
             for (String pushResource : resources)
@@ -277,13 +286,15 @@ public class HttpTransportOverSPDY implements HttpTransport
 
         private void sendNextResourceData()
         {
-            LOG.debug("{} sendNextResourceData active: {}", hashCode(), active.get());
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} sendNextResourceData active: {}", hashCode(), active.get());
             if (active.compareAndSet(false, true))
             {
                 PushResource resource = queue.poll();
                 if (resource != null)
                 {
-                    LOG.debug("Opening new push channel for: {}", resource);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Opening new push channel for: {}", resource);
                     HttpChannelOverSPDY pushChannel = newHttpChannelOverSPDY(resource.getPushStream(), resource.getPushRequestHeaders());
                     pushChannel.requestStart(resource.getPushRequestHeaders(), true);
                     return;
@@ -322,7 +333,8 @@ public class HttpTransportOverSPDY implements HttpTransport
                 @Override
                 public void succeeded(Stream pushStream)
                 {
-                    LOG.debug("Headers pushed for {} on {}", pushHeaders.get(HTTPSPDYHeader.URI.name(version)), pushStream);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Headers pushed for {} on {}", pushHeaders.get(HTTPSPDYHeader.URI.name(version)), pushStream);
                     queue.offer(new PushResource(pushStream, pushRequestHeaders));
                     sendNextResourceData();
                 }

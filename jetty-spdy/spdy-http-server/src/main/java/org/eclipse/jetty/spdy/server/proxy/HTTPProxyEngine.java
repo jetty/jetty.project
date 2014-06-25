@@ -88,7 +88,8 @@ public class HTTPProxyEngine extends ProxyEngine
         String host = proxyServerInfo.getHost();
         int port = proxyServerInfo.getAddress().getPort();
 
-        LOG.debug("Sending HTTP request to: {}", host + ":" + port);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Sending HTTP request to: {}", host + ":" + port);
         final Request request = httpClient.newRequest(host, port)
                 .path(path)
                 .method(HttpMethod.fromString(method));
@@ -119,7 +120,8 @@ public class HTTPProxyEngine extends ProxyEngine
             @Override
             public void onData(Stream clientStream, final DataInfo clientDataInfo)
             {
-                LOG.debug("received clientDataInfo: {} for stream: {}", clientDataInfo, clientStream);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("received clientDataInfo: {} for stream: {}", clientDataInfo, clientStream);
 
                 DeferredContentProvider contentProvider = (DeferredContentProvider)request.getContent();
                 contentProvider.offer(clientDataInfo.asByteBuffer(true));
@@ -139,7 +141,8 @@ public class HTTPProxyEngine extends ProxyEngine
             @Override
             public void onHeaders(final Response response)
             {
-                LOG.debug("onHeaders called with response: {}. Sending replyInfo to client.", response);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onHeaders called with response: {}. Sending replyInfo to client.", response);
                 Fields responseHeaders = createResponseHeaders(clientStream, response);
                 removeHopHeaders(responseHeaders);
                 ReplyInfo replyInfo = new ReplyInfo(responseHeaders, false);
@@ -163,7 +166,8 @@ public class HTTPProxyEngine extends ProxyEngine
             @Override
             public void onContent(final Response response, ByteBuffer content)
             {
-                LOG.debug("onContent called with response: {} and content: {}. Sending response content to client.",
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onContent called with response: {} and content: {}. Sending response content to client.",
                         response, content);
                 final ByteBuffer contentCopy = httpClient.getByteBufferPool().acquire(content.remaining(), true);
                 BufferUtil.flipPutFlip(content, contentCopy);
@@ -194,7 +198,8 @@ public class HTTPProxyEngine extends ProxyEngine
             @Override
             public void onSuccess(Response response)
             {
-                LOG.debug("onSuccess called. Closing client stream.");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("onSuccess called. Closing client stream.");
                 clientStream.data(new ByteBufferDataInfo(BufferUtil.EMPTY_BUFFER, true), LOGGING_CALLBACK);
             }
 
@@ -264,7 +269,8 @@ public class HTTPProxyEngine extends ProxyEngine
         @Override
         public void succeeded()
         {
-            LOG.debug("succeeded");
+            if (LOG.isDebugEnabled())
+                LOG.debug("succeeded");
         }
     }
 }

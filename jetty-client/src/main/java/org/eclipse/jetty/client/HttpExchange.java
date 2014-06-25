@@ -151,7 +151,8 @@ public class HttpExchange
         if ((current & terminated) == terminated)
         {
             // Request and response terminated
-            LOG.debug("{} terminated", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} terminated", this);
             return new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
         }
         return null;
@@ -174,7 +175,8 @@ public class HttpExchange
                     requestFailure = failure;
                 if ((code & 0b0100) == 0b0100)
                     responseFailure = failure;
-                LOG.debug("{} updated", this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} updated", this);
             }
             break;
         }
@@ -185,7 +187,8 @@ public class HttpExchange
     {
         if (destination.remove(this))
         {
-            LOG.debug("Aborting while queued {}: {}", this, cause);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Aborting while queued {}: {}", this, cause);
             return fail(cause);
         }
         else
@@ -195,7 +198,8 @@ public class HttpExchange
                 return fail(cause);
 
             boolean aborted = channel.abort(cause);
-            LOG.debug("Aborted while active ({}) {}: {}", aborted, this, cause);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Aborted while active ({}) {}: {}", aborted, this, cause);
             return aborted;
         }
     }
@@ -204,7 +208,8 @@ public class HttpExchange
     {
         if (update(0b0101, cause) == 0b0101)
         {
-            LOG.debug("Failing {}: {}", this, cause);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Failing {}: {}", this, cause);
             destination.getRequestNotifier().notifyFailure(request, cause);
             List<Response.ResponseListener> listeners = getConversation().getResponseListeners();
             ResponseNotifier responseNotifier = destination.getResponseNotifier();

@@ -132,7 +132,8 @@ public class ObjectMBean implements DynamicMBean
                 {
                     Class<?> mClass = (Object.class.equals(oClass))?oClass=ObjectMBean.class:Loader.loadClass(oClass,mName);
 
-                    LOG.debug("ObjectMbean: mbeanFor {} mClass={}", o, mClass);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("ObjectMbean: mbeanFor {} mClass={}", o, mClass);
 
                     try
                     {
@@ -149,7 +150,8 @@ public class ObjectMBean implements DynamicMBean
                         }
                     }
 
-                    LOG.debug("mbeanFor {} is {}", o, mbean);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("mbeanFor {} is {}", o, mbean);
 
                     return mbean;
                 }
@@ -241,7 +243,8 @@ public class ObjectMBean implements DynamicMBean
                 Class<?> o_class=_managed.getClass();
                 List<Class<?>> influences = findInfluences(new ArrayList<Class<?>>(), _managed.getClass());
 
-                LOG.debug("Influence Count: {}", influences.size() );
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Influence Count: {}", influences.size() );
 
                 // Process Type Annotations
                 ManagedObject primary = o_class.getAnnotation( ManagedObject.class);
@@ -252,7 +255,8 @@ public class ObjectMBean implements DynamicMBean
                 }
                 else
                 {
-                    LOG.debug("No @ManagedObject declared on {}", _managed.getClass());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("No @ManagedObject declared on {}", _managed.getClass());
                 }
 
 
@@ -263,10 +267,13 @@ public class ObjectMBean implements DynamicMBean
 
                     ManagedObject typeAnnotation = oClass.getAnnotation( ManagedObject.class );
 
-                    LOG.debug("Influenced by: " + oClass.getCanonicalName() );
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Influenced by: " + oClass.getCanonicalName() );
+
                     if ( typeAnnotation == null )
                     {
-                        LOG.debug("Annotations not found for: {}", oClass.getCanonicalName() );
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Annotations not found for: {}", oClass.getCanonicalName() );
                         continue;
                     }
 
@@ -279,7 +286,8 @@ public class ObjectMBean implements DynamicMBean
                         if (methodAttributeAnnotation != null)
                         {
                             // TODO sort out how a proper name could get here, its a method name as an attribute at this point.
-                            LOG.debug("Attribute Annotation found for: {}", method.getName());
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Attribute Annotation found for: {}", method.getName());
                             MBeanAttributeInfo mai = defineAttribute(method,methodAttributeAnnotation);
                             if ( mai != null )
                             {
@@ -291,9 +299,9 @@ public class ObjectMBean implements DynamicMBean
 
                         if (methodOperationAnnotation != null)
                         {
-                            LOG.debug("Method Annotation found for: {}", method.getName());
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Method Annotation found for: {}", method.getName());
                             MBeanOperationInfo oi = defineOperation(method,methodOperationAnnotation);
-
                             if (oi != null)
                             {
                                 operations.add(oi);
@@ -480,7 +488,8 @@ public class ObjectMBean implements DynamicMBean
     /* ------------------------------------------------------------ */
     public AttributeList setAttributes(AttributeList attrs)
     {
-        LOG.debug("setAttributes");
+        if (LOG.isDebugEnabled())
+            LOG.debug("setAttributes");
 
         AttributeList results = new AttributeList(attrs.size());
         Iterator<Object> iter = attrs.iterator();
@@ -503,7 +512,8 @@ public class ObjectMBean implements DynamicMBean
     /* ------------------------------------------------------------ */
     public Object invoke(String name, Object[] params, String[] signature) throws MBeanException, ReflectionException
     {
-        LOG.debug("ObjectMBean:invoke " + name);
+        if (LOG.isDebugEnabled())
+            LOG.debug("ObjectMBean:invoke " + name);
 
         String methodKey = name + "(";
         if (signature != null)
@@ -562,12 +572,14 @@ public class ObjectMBean implements DynamicMBean
             try
             {
                 Class<?> mbeanClazz = Class.forName(mName);
-                LOG.debug("MBean Influence found for " + aClass.getSimpleName());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("MBean Influence found for " + aClass.getSimpleName());
                 influences.add(mbeanClazz);
             }
             catch (ClassNotFoundException cnfe)
             {
-                LOG.debug("No MBean Influence for " + aClass.getSimpleName());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No MBean Influence for " + aClass.getSimpleName());
             }
 
             // So are the super classes
@@ -637,7 +649,8 @@ public class ObjectMBean implements DynamicMBean
         String uName = name.substring(0, 1).toUpperCase(Locale.ENGLISH) + name.substring(1);
         Class<?> oClass = onMBean ? this.getClass() : _managed.getClass();
 
-        LOG.debug("defineAttribute {} {}:{}:{}:{}",name,onMBean,readonly,oClass,description);
+        if (LOG.isDebugEnabled())
+            LOG.debug("defineAttribute {} {}:{}:{}:{}",name,onMBean,readonly,oClass,description);
 
         Method setter = null;
 
@@ -646,7 +659,9 @@ public class ObjectMBean implements DynamicMBean
         {
             String declaredSetter = attributeAnnotation.setter();
 
-            LOG.debug("DeclaredSetter: {}", declaredSetter);
+            if (LOG.isDebugEnabled())
+                LOG.debug("DeclaredSetter: {}", declaredSetter);
+
             Method[] methods = oClass.getMethods();
             for (int m = 0; m < methods.length; m++)
             {
@@ -670,7 +685,8 @@ public class ObjectMBean implements DynamicMBean
                             LOG.warn("Type conflict for mbean attr {} in {}", name, oClass);
                             continue;
                         }
-                        LOG.debug("Declared Setter: " + declaredSetter);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Declared Setter: " + declaredSetter);
                     }
                 }
 
@@ -696,16 +712,17 @@ public class ObjectMBean implements DynamicMBean
         {
             if (component_type==null)
             {
-	        LOG.warn("No mbean type for {} on {}", name, _managed.getClass());
-		return null;
-	    }
+                LOG.warn("No mbean type for {} on {}", name, _managed.getClass());
+                return null;
+            }
 
             if (component_type.isPrimitive() && !component_type.isArray())
             {
-	        LOG.warn("Cannot convert mbean primative {}", name);
-		return null;
-	    }
-            LOG.debug("passed convert checks {} for type {}", name, component_type);
+                LOG.warn("Cannot convert mbean primative {}", name);
+                return null;
+            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("passed convert checks {} for type {}", name, component_type);
         }
 
         try
@@ -772,7 +789,8 @@ public class ObjectMBean implements DynamicMBean
 
         if ( returnType.isArray() )
         {
-            LOG.debug("returnType is array, get component type");
+            if (LOG.isDebugEnabled())
+                LOG.debug("returnType is array, get component type");
             returnType = returnType.getComponentType();
         }
 
@@ -783,8 +801,8 @@ public class ObjectMBean implements DynamicMBean
 
         String impactName = methodAnnotation.impact();
 
-
-        LOG.debug("defineOperation {} {}:{}:{}", method.getName(), onMBean, impactName, description);
+        if (LOG.isDebugEnabled())
+            LOG.debug("defineOperation {} {}:{}:{}", method.getName(), onMBean, impactName, description);
 
         String signature = method.getName();
 
@@ -836,7 +854,9 @@ public class ObjectMBean implements DynamicMBean
             signature += ")";
 
             Class<?> returnClass = method.getReturnType();
-            LOG.debug("Method Cache: " + signature );
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Method Cache: " + signature );
 
             if ( _methods.containsKey(signature) )
             {

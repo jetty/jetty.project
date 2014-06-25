@@ -130,7 +130,8 @@ public class HttpContent implements Callback, Closeable
             if (content != AFTER)
             {
                 content = buffer = AFTER;
-                LOG.debug("Advanced content past last chunk");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Advanced content past last chunk");
             }
             return false;
         }

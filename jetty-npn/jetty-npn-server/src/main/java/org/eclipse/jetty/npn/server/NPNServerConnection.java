@@ -53,7 +53,8 @@ public class NPNServerConnection extends NegotiatingServerConnection implements 
     @Override
     public void protocolSelected(String protocol)
     {
-        LOG.debug("{} protocol selected {}", this, protocol);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} protocol selected {}", this, protocol);
         setProtocol(protocol != null ? protocol : getDefaultProtocol());
         NextProtoNego.remove(getSSLEngine());
     }

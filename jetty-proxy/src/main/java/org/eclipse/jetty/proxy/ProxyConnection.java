@@ -73,7 +73,8 @@ public abstract class ProxyConnection extends AbstractConnection
         try
         {
             final int filled = read(getEndPoint(), buffer);
-            LOG.debug("{} filled {} bytes", this, filled);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} filled {} bytes", this, filled);
             if (filled > 0)
             {
                 write(getConnection().getEndPoint(), buffer, new Callback()
@@ -81,7 +82,8 @@ public abstract class ProxyConnection extends AbstractConnection
                     @Override
                     public void succeeded()
                     {
-                        LOG.debug("{} wrote {} bytes", this, filled);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{} wrote {} bytes", this, filled);
                         bufferPool.release(buffer);
                         invoker.invoke(null);
                     }

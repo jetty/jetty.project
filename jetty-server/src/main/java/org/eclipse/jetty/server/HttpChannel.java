@@ -30,7 +30,6 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
@@ -40,7 +39,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
@@ -214,7 +212,8 @@ public class HttpChannel implements Runnable
      */
     public boolean handle()
     {
-        LOG.debug("{} handle enter", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} handle enter", this);
 
         final HttpChannel last = setCurrentHttpChannel(this);
 
@@ -237,7 +236,8 @@ public class HttpChannel implements Runnable
                 boolean error=false;
                 try
                 {
-                    LOG.debug("{} action {}",this,action);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} action {}",this,action);
 
                     switch(action)
                     {
@@ -378,7 +378,8 @@ public class HttpChannel implements Runnable
             }
         }
 
-        LOG.debug("{} handle exit, result {}", this, action);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} handle exit, result {}", this, action);
 
         return action!=Action.WAIT;
     }
@@ -523,7 +524,8 @@ public class HttpChannel implements Runnable
 
     public void onRequestComplete()
     {
-        LOG.debug("{} onRequestComplete", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onRequestComplete", this);
         _request.getHttpInput().messageComplete();
     }
 

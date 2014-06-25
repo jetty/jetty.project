@@ -557,12 +557,16 @@ public class Scanner extends AbstractLifeCycle
             {
                 if ((_filter == null) || ((_filter != null) && _filter.accept(f.getParentFile(), f.getName())))
                 {
-                    LOG.debug("scan accepted {}",f);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("scan accepted {}",f);
                     String name = f.getCanonicalPath();
                     scanInfoMap.put(name, new TimeNSize(f.lastModified(),f.length()));
                 }
                 else
-                    LOG.debug("scan rejected {}",f);
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("scan rejected {}",f);
+                }
             }
             
             // If it is a directory, scan if it is a known directory or the depth is OK.

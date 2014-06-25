@@ -54,7 +54,8 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
     @Override
     protected void doStart() throws Exception
     {
-        LOG.debug("starting {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("starting {}",this);
         if (_server==null)
             LOG.warn("No Server set for {}",this);
         super.doStart();
@@ -67,7 +68,8 @@ public abstract class AbstractHandler extends ContainerLifeCycle implements Hand
     @Override
     protected void doStop() throws Exception
     {
-        LOG.debug("stopping {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("stopping {}",this);
         super.doStop();
     }
 

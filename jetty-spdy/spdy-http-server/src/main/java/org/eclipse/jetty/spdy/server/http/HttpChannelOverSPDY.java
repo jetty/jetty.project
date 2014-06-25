@@ -71,7 +71,8 @@ public class HttpChannelOverSPDY extends HttpChannel
 
     public void requestContent(final DataInfo dataInfo, boolean endRequest)
     {
-        LOG.debug("HTTP > {} bytes of content", dataInfo.length());
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP > {} bytes of content", dataInfo.length());
 
         // We need to copy the dataInfo since we do not know when its bytes
         // will be consumed. When the copy is consumed, we consume also the
@@ -104,7 +105,8 @@ public class HttpChannelOverSPDY extends HttpChannel
 
         HttpURI uri = new HttpURI(uriHeader.getValue());
 
-        LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.getValue(), httpVersion);
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.getValue(), httpVersion);
 
         Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
         if (schemeHeader != null)
@@ -146,7 +148,8 @@ public class HttpChannelOverSPDY extends HttpChannel
                 {
                     // Spec says headers must be single valued
                     String value = header.getValue();
-                    LOG.debug("HTTP > {}: {}", name, value);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("HTTP > {}: {}", name, value);
                     fields.add(new HttpField(name, value));
                     break;
                 }

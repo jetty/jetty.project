@@ -257,7 +257,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 throw new UnavailableException("resourceCache specified with resource bases");
             _cache=(ResourceCache)_servletContext.getAttribute(resourceCache);
 
-            LOG.debug("Cache {}={}",resourceCache,_cache);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Cache {}={}",resourceCache,_cache);
         }
 
         _etags = getInitBoolean("etags",_etags);
@@ -560,7 +561,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 // else look for a welcome file
                 else if (null!=(welcome=getWelcomeFile(pathInContext)))
                 {
-                    LOG.debug("welcome={}",welcome);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("welcome={}",welcome);
                     if (_redirectWelcome)
                     {
                         // Redirect to the index

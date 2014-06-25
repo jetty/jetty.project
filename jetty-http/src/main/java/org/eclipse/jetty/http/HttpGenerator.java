@@ -287,7 +287,8 @@ public class HttpGenerator
             {
                 if (BufferUtil.hasContent(content))
                 {
-                    LOG.debug("discarding content in COMPLETING");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("discarding content in COMPLETING");
                     BufferUtil.clear(content);
                 }
 
@@ -310,7 +311,8 @@ public class HttpGenerator
             case END:
                 if (BufferUtil.hasContent(content))
                 {
-                    LOG.debug("discarding content in COMPLETING");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("discarding content in COMPLETING");
                     BufferUtil.clear(content);
                 }
                 return Result.DONE;
@@ -436,7 +438,8 @@ public class HttpGenerator
             {
                 if (BufferUtil.hasContent(content))
                 {
-                    LOG.debug("discarding content in COMPLETING");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("discarding content in COMPLETING");
                     BufferUtil.clear(content);
                 }
 
@@ -462,7 +465,8 @@ public class HttpGenerator
             case END:
                 if (BufferUtil.hasContent(content))
                 {
-                    LOG.debug("discarding content in COMPLETING");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("discarding content in COMPLETING");
                     BufferUtil.clear(content);
                 }
                 return Result.DONE;
