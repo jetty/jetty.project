@@ -226,7 +226,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (LOG.isDebugEnabled())
         {
             String reason = tryConvertPayload(frame.getPayload());
-            LOG.debug("Received {}: {}/'{}'", frame.getType(), frame.getError(), reason);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Received {}: {}/'{}'", frame.getType(), frame.getError(), reason);
         }
 
         flusher.close();

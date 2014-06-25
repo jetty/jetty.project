@@ -345,7 +345,8 @@ public class HpackEncoder
         if (p>=0)
         {
             int e=buffer.position();
-            LOG.debug("encoded '{}' by {} to '{}'",field,encoding,TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p));
+            if (LOG.isDebugEnabled())
+                LOG.debug("encoded '{}' by {} to '{}'",field,encoding,TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p));
         }
     }
 }

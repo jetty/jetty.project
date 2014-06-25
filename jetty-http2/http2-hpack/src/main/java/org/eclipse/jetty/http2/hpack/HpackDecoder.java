@@ -87,7 +87,8 @@ public class HpackDecoder
                     _context.get(index).removeFromRefSet();
                 else if (entry.isStatic())
                 {
-                    LOG.debug("decode IdxStatic {}",entry);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("decode IdxStatic {}",entry);
                     // emit field
                     _builder.emit(entry.getHttpField());
                     
@@ -98,7 +99,8 @@ public class HpackDecoder
                 }
                 else
                 {
-                    LOG.debug("decode Idx {}",entry);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("decode Idx {}",entry);
                     // emit
                     _builder.emit(entry.getHttpField());
                     // add to reference set
@@ -227,7 +229,8 @@ public class HpackDecoder
                 else if (f==3)
                 {
                     // clear reference set
-                    LOG.debug("decode clear");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("decode clear");
                     _context.clearReferenceSet();
                 }   
             }
