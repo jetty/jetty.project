@@ -176,7 +176,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
                 else
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Queued {}", request);
+                        LOG.debug("Queued {} for {}", request, this);
                     requestNotifier.notifyQueued(request);
                     send();
                 }
@@ -184,7 +184,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Max queue size {} exceeded by {}", client.getMaxRequestsQueuedPerDestination(), request);
+                    LOG.debug("Max queue size {} exceeded by {} for {}", client.getMaxRequestsQueuedPerDestination(), request, this);
                 request.abort(new RejectedExecutionException("Max requests per destination " + client.getMaxRequestsQueuedPerDestination() + " exceeded for " + this));
             }
         }
@@ -258,9 +258,10 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
     @Override
     public String toString()
     {
-        return String.format("%s(%s)%s",
+        return String.format("%s[%s]%s,queue=%d",
                 HttpDestination.class.getSimpleName(),
                 asString(),
-                proxy == null ? "" : " via " + proxy);
+                proxy == null ? "" : "(via " + proxy + ")",
+                exchanges.size());
     }
 }

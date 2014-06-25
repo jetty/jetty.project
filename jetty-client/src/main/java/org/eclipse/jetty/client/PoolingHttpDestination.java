@@ -94,7 +94,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         HttpClient client = getHttpClient();
         final HttpExchange exchange = getHttpExchanges().poll();
         if (LOG.isDebugEnabled())
-            LOG.debug("Processing exchange {} on connection {}", exchange, connection);
+            LOG.debug("Processing exchange {} on {} of {}", exchange, connection, this);
         if (exchange == null)
         {
             if (!connectionPool.release(connection))
@@ -212,5 +212,11 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     public void dump(Appendable out, String indent) throws IOException
     {
         ContainerLifeCycle.dump(out, indent, Arrays.asList(connectionPool));
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s,pool=%s", super.toString(), connectionPool);
     }
 }
