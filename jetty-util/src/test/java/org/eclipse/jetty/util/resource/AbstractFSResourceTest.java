@@ -33,7 +33,9 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -323,12 +325,57 @@ public abstract class AbstractFSResourceTest
                     expected,actual);
         }
     }
-
+    
+    @Test
+    public void testSymlink() throws Exception
+    {
+        File dir = testdir.getDir();
+        
+        Path foo = new File(dir, "foo").toPath();
+        Path bar = new File(dir, "bar").toPath();
+        
+        try
+        {
+            Files.createFile(foo);
+            Files.createSymbolicLink(bar,foo);
+        }
+        catch (UnsupportedOperationException e)
+        {
+            // if unable to create symlink, no point testing the rest
+            // this is the path that Microsoft Windows takes.
+            assumeNoException(e);
+        }
+        
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource resFoo = base.addPath("foo");
+            Resource resBar = base.addPath("bar");
+            
+            // Access to the same resource, but via a symlink means that they are not equivalent
+            assertThat("foo.equals(bar)", resFoo.equals(resBar), is(false));
+            
+            assertThat("foo.alias", resFoo.getAlias(), nullValue());
+            assertThat("bar.alias", resBar.getAlias(), is(foo.toUri()));
+        }
+    }
+    
     @Test
     public void testSemicolon() throws Exception
     {
-        assumeTrue(!OS.IS_WINDOWS);
-        createEmptyFile("foo;");
+        File dir = testdir.getDir();
+        
+        try
+        {
+            // attempt to create file
+            Path foo = new File(dir, "foo;").toPath();
+            Files.createFile(foo);
+        }
+        catch (Exception e)
+        {
+            // if unable to create file, no point testing the rest
+            // this is the path that Microsoft Windows takes.
+            assumeNoException(e);
+        }
 
         try (Resource base = newResource(testdir.getDir()))
         {
