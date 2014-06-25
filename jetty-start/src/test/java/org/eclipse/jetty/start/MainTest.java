@@ -142,6 +142,7 @@ public class MainTest
         File homePath = MavenTestingUtils.getTestResourceDir("usecases/home").getAbsoluteFile();
         cmdLineArgs.add("jetty.home=" + homePath);
         cmdLineArgs.add("user.dir=" + homePath);
+        cmdLineArgs.add("java.version=1.7.0_60");
 
         // Modules
         cmdLineArgs.add("--module=server");
