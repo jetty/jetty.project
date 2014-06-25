@@ -386,11 +386,17 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // This IteratingCallback never completes.
         }
-
+        
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            // TODO This IteratingCallback never completes???
+        }
+        
         @Override
         public void writeSuccess()
         {

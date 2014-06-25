@@ -368,9 +368,15 @@ public abstract class CompressExtension extends AbstractExtension
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // This IteratingCallback never completes.
+        }
+        
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            // TODO This IteratingCallback never completes???
         }
 
         @Override

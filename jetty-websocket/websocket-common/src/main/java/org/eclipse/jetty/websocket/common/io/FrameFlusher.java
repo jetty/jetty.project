@@ -91,13 +91,13 @@ public class FrameFlusher
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // This IteratingCallback never completes.
         }
 
         @Override
-        public void failed(Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
             for (FrameEntry entry : entries)
             {

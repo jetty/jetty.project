@@ -773,7 +773,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         }
 
         @Override
-        public void failed(Throwable failure)
+        public void onCompleteFailure(Throwable failure)
         {
             content.failed(failure);
             super.failed(failure);
@@ -781,7 +781,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // Nothing to do, since we always return false from process().
             // Termination is obtained via LastContentCallback.
