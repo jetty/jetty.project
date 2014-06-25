@@ -258,9 +258,11 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.17</version>
           <configuration>
             <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
+            <runMode>random</runMode>
             <systemProperties>
               <!--
               <property>
