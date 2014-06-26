@@ -569,21 +569,22 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             super(true);
         }
 
-        void reset(ResponseInfo info, ByteBuffer content, boolean last, Callback callback)
+        private void reset(ResponseInfo info, ByteBuffer content, boolean last, Callback callback)
         {
             if (reset())
             {
-                _info=info;
-                _content=content;
-                _lastContent=last;
-                _header=null;
-                _shutdownOut=false;
-                _callback=callback;
+                _info = info;
+                _content = content;
+                _lastContent = last;
+                _callback = callback;
+                _header = null;
+                _shutdownOut = false;
             }
-            else 
-                throw new WritePendingException();
+            else
+            {
+                callback.failed(new WritePendingException());
+            }
         }
-        
 
         @Override
         public Action process() throws Exception
