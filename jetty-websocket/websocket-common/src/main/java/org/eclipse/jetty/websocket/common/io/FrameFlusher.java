@@ -105,7 +105,6 @@ public class FrameFlusher
                 entry.release();
             }
             entries.clear();
-            super.failed(x);
             failure = x;
             onFailure(x);
         }

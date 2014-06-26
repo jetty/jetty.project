@@ -261,7 +261,6 @@ public class Flusher
             // Notify outside the synchronized block.
             for (StandardSession.FrameBytes frame : failed)
                 frame.failed(x);
-            super.failed(x);
         }
     }
 }

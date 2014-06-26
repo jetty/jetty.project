@@ -111,8 +111,6 @@ public class Flusher
                     break;
                 result.failed(x);
             }
-
-            super.failed(x);
         }
     }
 
