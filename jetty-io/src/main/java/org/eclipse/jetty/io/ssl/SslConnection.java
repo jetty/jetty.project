@@ -820,7 +820,6 @@ public class SslConnection extends AbstractConnection
             }
             catch (Exception e)
             {
-                getEndPoint().close();
                 throw e;
             }
             finally
