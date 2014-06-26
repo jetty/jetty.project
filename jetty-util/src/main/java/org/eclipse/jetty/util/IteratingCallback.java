@@ -71,14 +71,25 @@ public abstract class IteratingCallback implements Callback
         /**
          * Indicates that {@link #process()} has completed the overall job.
          */
-        SUCCEEDED,
-        /**
-         * Indicates that {@link #process()} has failed the overall job.
-         */
-        FAILED
+        SUCCEEDED
     }
 
-    private final AtomicReference<State> _state = new AtomicReference<>(State.INACTIVE);
+    private final AtomicReference<State> _state;
+    
+    protected IteratingCallback()
+    {
+        _state = new AtomicReference<>(State.INACTIVE);
+    }
+    
+    protected IteratingCallback(boolean needReset)
+    {
+        _state = new AtomicReference<>(needReset?State.SUCCEEDED:State.INACTIVE);
+    }
+    
+    protected State getState()
+    {
+        return _state.get();
+    }
 
     /**
      * Method called by {@link #iterate()} to process the sub task.
@@ -91,7 +102,6 @@ public abstract class IteratingCallback implements Callback
      * <li>{@link Action#SCHEDULED} when the sub task asynchronous execution
      * has been started</li>
      * <li>{@link Action#SUCCEEDED} when the overall job is completed</li>
-     * <li>{@link Action#FAILED} when the overall job cannot be completed</li>
      * </ul>
      *
      * @throws Exception if the sub task processing throws
@@ -101,7 +111,12 @@ public abstract class IteratingCallback implements Callback
     /**
      * Invoked when the overall task has completed successfully.
      */
-    protected abstract void completed();
+    protected abstract void onCompleteSuccess();
+    
+    /**
+     * Invoked when the overall task has completely failed.
+     */
+    protected abstract void onCompleteFailure(Throwable x);
 
     /**
      * This method must be invoked by applications to start the processing
@@ -196,13 +211,7 @@ public abstract class IteratingCallback implements Callback
                 case SUCCEEDED:
                 {
                     // The overall job has completed.
-                    if (completeSuccess())
-                        completed();
-                    return true;
-                }
-                case FAILED:
-                {
-                    completeFailure();
+                    completeSuccess();
                     return true;
                 }
                 default:
@@ -265,43 +274,49 @@ public abstract class IteratingCallback implements Callback
      * {@code super.failed(Throwable)}.
      */
     @Override
-    public void failed(Throwable x)
+    public final void failed(Throwable x)
     {
-        completeFailure();
+        completeFailure(x);
     }
 
-    private boolean completeSuccess()
+    protected void completeSuccess()
     {
         while (true)
         {
             State current = _state.get();
-            if (current == State.FAILED)
+            switch(current)
             {
-                // Success arrived too late, sorry.
-                return false;
-            }
-            else
-            {
-                if (_state.compareAndSet(current, State.SUCCEEDED))
-                    return true;
+                case SUCCEEDED:
+                case FAILED:
+                    // Already complete!.
+                    return;
+                default:
+                    if (_state.compareAndSet(current, State.SUCCEEDED))
+                    {
+                        onCompleteSuccess();
+                        return;
+                    }
             }
         }
     }
 
-    private void completeFailure()
+    protected void completeFailure(Throwable x)
     {
         while (true)
         {
             State current = _state.get();
-            if (current == State.SUCCEEDED)
+            switch(current)
             {
-                // Failed arrived too late, sorry.
-                return;
-            }
-            else
-            {
-                if (_state.compareAndSet(current, State.FAILED))
-                    break;
+                case SUCCEEDED:
+                case FAILED:
+                    // Already complete!.
+                    return;
+                default:
+                    if (_state.compareAndSet(current, State.FAILED))
+                    {
+                        onCompleteFailure(x);
+                        return;
+                    }
             }
         }
     }
@@ -312,6 +327,23 @@ public abstract class IteratingCallback implements Callback
     public boolean isIdle()
     {
         return _state.get() == State.INACTIVE;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return true if the callback is not INACTIVE, FAILED or SUCCEEDED.
+     */
+    public boolean isInUse()
+    {
+        switch(_state.get())
+        {
+            case INACTIVE:
+            case FAILED:
+            case SUCCEEDED:
+                return false;
+            default:
+                return true;
+        }
     }
 
     /**
@@ -330,12 +362,42 @@ public abstract class IteratingCallback implements Callback
         return _state.get() == State.SUCCEEDED;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Reset the callback
+     * <p>A callback can only be reset to INACTIVE from the SUCCEEDED or FAILED states or if it is already INACTIVE.
+     * @return True if the reset was successful
+     */
+    public boolean reset()
+    {
+        while (true)
+        {
+            switch(_state.get())
+            {
+                case INACTIVE:
+                    return true;
+                    
+                case SUCCEEDED:
+                    if (_state.compareAndSet(State.SUCCEEDED, State.INACTIVE))
+                        return true;
+                    break;
+                    
+                case FAILED:
+                    if (_state.compareAndSet(State.FAILED, State.INACTIVE))
+                        return true;
+                    break;
+                    
+                default:
+                    return false;
+            }
+        }
+    }
+    
     @Override
     public String toString()
     {
         return String.format("%s[%s]", super.toString(), _state);
     }
-
+    
     /**
      * The internal states of this callback
      */

@@ -23,9 +23,9 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
@@ -281,8 +281,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                             _response.getHttpOutput().reopen();
                             _request.setDispatcherType(DispatcherType.REQUEST);
 
-                            for (HttpConfiguration.Customizer customizer : _configuration.getCustomizers())
-                                customizer.customize(getConnector(),_configuration,_request);
+                            List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
+                            if (!customizers.isEmpty())
+                            {
+                                for (HttpConfiguration.Customizer customizer : customizers)
+                                    customizer.customize(getConnector(), _configuration, _request);
+                            }
                             getServer().handle(this);
                             break;
 

@@ -368,9 +368,18 @@ public abstract class CompressExtension extends AbstractExtension
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // This IteratingCallback never completes.
+        }
+        
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            // Fail all the frames in the queue.
+            FrameEntry entry;
+            while ((entry = entries.poll()) != null)
+                notifyCallbackFailure(entry.callback, x);
         }
 
         @Override
@@ -388,10 +397,6 @@ public abstract class CompressExtension extends AbstractExtension
             // If something went wrong, very likely the compression context
             // will be invalid, so we need to fail this IteratingCallback.
             failed(x);
-            // Now no more frames can be queued, fail those in the queue.
-            FrameEntry entry;
-            while ((entry = entries.poll()) != null)
-                notifyCallbackFailure(entry.callback, x);
         }
     }
 }

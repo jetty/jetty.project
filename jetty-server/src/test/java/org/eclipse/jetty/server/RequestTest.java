@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -63,6 +65,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
+import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -960,7 +963,6 @@ public class RequestTest
         assertEquals("other", cookies.get(1).getName());
         assertEquals("quoted=;value", cookies.get(1).getValue());
 
-
         cookies.clear();
         response=_connector.getResponses(
                 "GET /other HTTP/1.1\n"+
@@ -975,7 +977,8 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n"
         );
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        assertThat(response.substring(15),containsString("HTTP/1.1 200 OK"));
         assertEquals(4,cookies.size());
         assertEquals("name", cookies.get(0).getName());
         assertEquals("value", cookies.get(0).getValue());
@@ -999,7 +1002,8 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n"
         );
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        assertThat(response.substring(15),containsString("HTTP/1.1 200 OK"));
         assertEquals(4,cookies.size());
         assertEquals("name", cookies.get(0).getName());
         assertEquals("value", cookies.get(0).getValue());

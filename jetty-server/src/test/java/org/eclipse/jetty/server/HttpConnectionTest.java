@@ -72,7 +72,9 @@ public class HttpConnectionTest
         connector.setIdleTimeout(500);
         server.addConnector(connector);
         server.setHandler(new DumpHandler());
-        server.addBean(new ErrorHandler());
+        ErrorHandler eh=new ErrorHandler();
+        eh.setServer(server);
+        server.addBean(eh);
         server.start();
     }
 
