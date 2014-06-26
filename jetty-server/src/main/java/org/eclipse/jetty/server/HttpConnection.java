@@ -557,14 +557,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
     private class SendCallback extends IteratingCallback
     {
-        ByteBuffer _content;
-        boolean _lastContent;
-        ResponseInfo _info;
-        ByteBuffer _header;
-        volatile Callback _callback; // TODO is this memory barrier needed?
-        boolean _shutdownOut;
+        private ResponseInfo _info;
+        private ByteBuffer _content;
+        private boolean _lastContent;
+        private Callback _callback;
+        private ByteBuffer _header;
+        private boolean _shutdownOut;
 
-        SendCallback()
+        private SendCallback()
         {
             super(true);
         }
