@@ -799,7 +799,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private abstract class AsyncICB extends IteratingCallback
     {
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             while(true)
             {
@@ -828,9 +828,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void failed(Throwable e)
+        public void onCompleteFailure(Throwable e)
         {
-            super.failed(e);
             _onError=e;
             _channel.getState().onWritePossible();
         }
@@ -950,9 +949,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
-            super.completed();
+            super.onCompleteSuccess();
             if (_complete)
                 closed();
         }
@@ -1015,9 +1014,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void failed(Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
-            super.failed(x);
+            super.onCompleteFailure(x);
             _channel.getByteBufferPool().release(_buffer);
             try
             {
@@ -1079,9 +1078,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void failed(Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
-            super.failed(x);
+            super.onCompleteFailure(x);
             _channel.getByteBufferPool().release(_buffer);
             try
             {
@@ -1093,5 +1092,4 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
         }
     }
-
 }

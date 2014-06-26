@@ -27,6 +27,7 @@ import java.net.URISyntaxException;
 import java.net.URL;
 import java.nio.channels.FileChannel;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.DirectoryIteratorException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -265,31 +266,53 @@ public class PathResource extends Resource
     }
 
     @Override
+    public URI getAlias()
+    {
+        if (Files.isSymbolicLink(path))
+        {
+            try
+            {
+                return path.toRealPath().toUri();
+            }
+            catch (IOException e)
+            {
+                LOG.debug(e);
+                return null;
+            }
+        }
+        else
+        {
+            return null;
+        }
+    }
+
+    @Override
     public String[] list()
     {
-        try
+        try (DirectoryStream<Path> dir = Files.newDirectoryStream(path))
         {
             List<String> entries = new ArrayList<>();
-            try (DirectoryStream<Path> dir = Files.newDirectoryStream(path))
+            for (Path entry : dir)
             {
-                for (Path entry : dir)
+                String name = entry.getFileName().toString();
+
+                if (Files.isDirectory(entry))
                 {
-                    String name = entry.getFileName().toString();
-                    
-                    if (Files.isDirectory(entry))
-                    {
-                        name += "/";
-                    }
-                    
-                    entries.add(name);
+                    name += "/";
                 }
+
+                entries.add(name);
             }
             int size = entries.size();
             return entries.toArray(new String[size]);
         }
+        catch (DirectoryIteratorException e)
+        {
+            LOG.debug(e);
+        }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            LOG.debug(e);
         }
         return null;
     }

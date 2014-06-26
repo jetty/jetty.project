@@ -713,7 +713,13 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
 
         @Override
-        public void failed(Throwable x)
+        protected void onCompleteSuccess()
+        {
+            throw new IllegalStateException();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable x)
         {
             LOG.debug(x);
             lease.recycle();
@@ -723,13 +729,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 entry.failed(x);
             }
             active.clear();
-            super.failed(x);
-        }
-
-        @Override
-        protected void completed()
-        {
-            throw new IllegalStateException();
         }
 
         public void close()

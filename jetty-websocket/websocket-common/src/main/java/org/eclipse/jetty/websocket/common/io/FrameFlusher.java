@@ -91,13 +91,13 @@ public class FrameFlusher
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // This IteratingCallback never completes.
         }
 
         @Override
-        public void failed(Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
             for (FrameEntry entry : entries)
             {
@@ -105,7 +105,6 @@ public class FrameFlusher
                 entry.release();
             }
             entries.clear();
-            super.failed(x);
             failure = x;
             onFailure(x);
         }

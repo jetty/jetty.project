@@ -150,11 +150,19 @@ public class FragmentExtension extends AbstractExtension
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // This IteratingCallback never completes.
         }
-
+        
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            // This IteratingCallback never fails.
+            // The callback are those provided by WriteCallback (implemented
+            // below) and even in case of writeFailed() we call succeeded().
+        }
+        
         @Override
         public void writeSuccess()
         {
