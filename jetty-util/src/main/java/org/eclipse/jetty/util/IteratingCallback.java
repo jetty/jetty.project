@@ -71,11 +71,7 @@ public abstract class IteratingCallback implements Callback
         /**
          * Indicates that {@link #process()} has completed the overall job.
          */
-        SUCCEEDED,
-        /**
-         * Indicates that {@link #process()} has failed the overall job.
-         */
-        FAILED
+        SUCCEEDED
     }
 
     private final AtomicReference<State> _state;
@@ -106,7 +102,6 @@ public abstract class IteratingCallback implements Callback
      * <li>{@link Action#SCHEDULED} when the sub task asynchronous execution
      * has been started</li>
      * <li>{@link Action#SUCCEEDED} when the overall job is completed</li>
-     * <li>{@link Action#FAILED} when the overall job cannot be completed</li>
      * </ul>
      *
      * @throws Exception if the sub task processing throws
@@ -217,12 +212,6 @@ public abstract class IteratingCallback implements Callback
                 {
                     // The overall job has completed.
                     completeSuccess();
-                    return true;
-                }
-                case FAILED:
-                {
-                    // The overall job has failed.
-                    completeFailure(new Exception("process failed"));
                     return true;
                 }
                 default:
