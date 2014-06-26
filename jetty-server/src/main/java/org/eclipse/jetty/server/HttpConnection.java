@@ -687,29 +687,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         protected void onCompleteSuccess()
         {
-            Callback cb=_callback;
-            _info=null;
-            _content=null;
-            _lastContent=false;
             releaseHeader();
-            _callback=null;
+            _callback.succeeded();
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
-            cb.succeeded();
         }
 
         @Override
         public void onCompleteFailure(final Throwable x)
         {
-            Callback cb=_callback;
-            _info=null;
-            _content=null;
-            _lastContent=false;
             releaseHeader();
-            _callback=null;
+            failedCallback(_callback,x);
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
-            failedCallback(cb,x);
         }
         
         @Override
