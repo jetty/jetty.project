@@ -22,7 +22,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
-import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ErrorCode;
@@ -86,7 +86,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         Parser parser = newServerParser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
-                        endPoint, parser, getInputBufferSize(), listener, session);
+                        endPoint, parser, session, getInputBufferSize(), listener);
 
         return configure(connection, connector, endPoint);
     }
@@ -98,20 +98,18 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private class HTTP2ServerConnection extends HTTP2Connection
     {
         private final ServerSessionListener listener;
-        private final Session session;
 
-        public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, int inputBufferSize, ServerSessionListener listener, Session session)
+        public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
         {
-            super(byteBufferPool, executor, endPoint, parser, inputBufferSize);
+            super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
             this.listener = listener;
-            this.session = session;
         }
 
         @Override
         public void onOpen()
         {
             super.onOpen();
-            notifyConnect(session);
+            notifyConnect(getSession());
         }
 
         @Override
@@ -119,11 +117,11 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
-            session.close(ErrorCode.NO_ERROR, "idle_timeout", closeCallback);
+            getSession().close(ErrorCode.NO_ERROR, "idle_timeout", closeCallback);
             return false;
         }
 
-        private void notifyConnect(Session session)
+        private void notifyConnect(ISession session)
         {
             try
             {

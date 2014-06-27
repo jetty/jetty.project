@@ -34,5 +34,7 @@ public interface ISession extends Session
 
     public int updateWindowSize(int delta);
 
+    public void shutdown();
+
     public void disconnect();
 }

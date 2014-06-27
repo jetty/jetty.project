@@ -30,6 +30,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ErrorCode;
@@ -50,7 +51,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2Client extends ContainerLifeCycle
 {
-    private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
+    private final Queue<ISession> sessions = new ConcurrentLinkedQueue<>();
     private final SelectorManager selector;
     private final ByteBufferPool byteBufferPool;
     private long idleTimeout;
@@ -96,7 +97,7 @@ public class HTTP2Client extends ContainerLifeCycle
 
     private void closeConnections()
     {
-        for (Session session : sessions)
+        for (ISession session : sessions)
             session.close(ErrorCode.NO_ERROR, null, Callback.Adapter.INSTANCE);
         sessions.clear();
     }
@@ -131,20 +132,18 @@ public class HTTP2Client extends ContainerLifeCycle
             Generator generator = new Generator(byteBufferPool, 4096);
             HTTP2Session session = new HTTP2ClientSession(getScheduler(), endpoint, generator, context.listener, new HTTP2FlowControl(65535));
             Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
-            return new HTTP2ClientConnection(byteBufferPool, getExecutor(), endpoint, parser, 8192, context.promise, session);
+            return new HTTP2ClientConnection(byteBufferPool, getExecutor(), endpoint, parser, session, 8192, context.promise);
         }
     }
 
     private class HTTP2ClientConnection extends HTTP2Connection implements Callback
     {
         private final Promise<Session> promise;
-        private final Session session;
 
-        public HTTP2ClientConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, int bufferSize, Promise<Session> promise, Session session)
+        public HTTP2ClientConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise)
         {
-            super(byteBufferPool, executor, endpoint, parser, bufferSize);
+            super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
             this.promise = promise;
-            this.session = session;
         }
 
         @Override
@@ -158,7 +157,7 @@ public class HTTP2Client extends ContainerLifeCycle
         public void onClose()
         {
             super.onClose();
-            sessions.remove(session);
+            sessions.remove(getSession());
         }
 
         @Override
@@ -166,15 +165,15 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
-            session.close(ErrorCode.NO_ERROR, "idle_timeout", closeCallback);
+            getSession().close(ErrorCode.NO_ERROR, "idle_timeout", closeCallback);
             return false;
         }
 
         @Override
         public void succeeded()
         {
-            sessions.offer(session);
-            promise.succeeded(session);
+            sessions.offer(getSession());
+            promise.succeeded(getSession());
         }
 
         @Override

@@ -44,14 +44,21 @@ public class HTTP2Connection extends AbstractConnection
     };
     private final ByteBufferPool byteBufferPool;
     private final Parser parser;
+    private final ISession session;
     private final int bufferSize;
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, int bufferSize)
+    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
         super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
         this.parser = parser;
+        this.session = session;
         this.bufferSize = bufferSize;
+    }
+
+    protected ISession getSession()
+    {
+        return session;
     }
 
     @Override
@@ -85,7 +92,7 @@ public class HTTP2Connection extends AbstractConnection
             }
             else if (filled < 0)
             {
-                close();
+                shutdown(endPoint, session);
                 return -1;
             }
             else
@@ -108,5 +115,11 @@ public class HTTP2Connection extends AbstractConnection
             LOG.debug("Could not read from " + endPoint, x);
             return -1;
         }
+    }
+
+    private void shutdown(EndPoint endPoint, ISession session)
+    {
+        if (!endPoint.isOutputShutdown())
+            session.shutdown();
     }
 }

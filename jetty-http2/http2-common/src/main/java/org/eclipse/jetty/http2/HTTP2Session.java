@@ -366,13 +366,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         flusher.iterate();
     }
 
-    public void disconnect()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Disconnecting");
-        endPoint.close();
-    }
-
     protected IStream createLocalStream(HeadersFrame frame)
     {
         IStream stream = newStream(frame);
@@ -470,6 +463,24 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     public int updateWindowSize(int delta)
     {
         return windowSize.getAndAdd(delta);
+    }
+
+    @Override
+    public void shutdown()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shutting down");
+
+        // Append a fake FlusherEntry that disconnects when the queue is drained.
+        flusher.append(new ShutdownFlusherEntry());
+        flusher.iterate();
+    }
+
+    public void disconnect()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Disconnecting");
+        endPoint.close();
     }
 
     private void updateLastStreamId(int streamId)
@@ -575,6 +586,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     fail = true;
                 else
                     queue.offer(entry);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Appended {}, queue={}", entry, queue.size());
             }
             if (fail)
                 closed(entry);
@@ -740,6 +753,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 queued = new ArrayDeque<>(queue);
             }
 
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closing, queued={}", queued.size());
+
             while (true)
             {
                 FlusherEntry item = queued.poll();
@@ -870,6 +886,39 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     removeStream(stream, true);
                 callback.succeeded();
             }
+        }
+    }
+
+    private class ShutdownFlusherEntry extends FlusherEntry
+    {
+        public ShutdownFlusherEntry()
+        {
+            super(null, null, Adapter.INSTANCE);
+        }
+
+        @Override
+        public void generate(ByteBufferPool.Lease lease)
+        {
+        }
+
+        @Override
+        public void succeeded()
+        {
+            flusher.close();
+            disconnect();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            flusher.close();
+            disconnect();
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x", "ShutdownFrame", hashCode());
         }
     }
 
