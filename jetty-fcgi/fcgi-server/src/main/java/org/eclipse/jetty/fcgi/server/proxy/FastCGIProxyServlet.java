@@ -19,6 +19,7 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.net.URI;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 import javax.servlet.RequestDispatcher;
@@ -136,6 +137,23 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             if (!getHttpClient().isDefaultPort(request.getScheme(), port))
                 host += ":" + port;
             proxyRequest.header(HttpHeader.HOST, host);
+            proxyRequest.header(HttpHeader.X_FORWARDED_HOST, host);
+        }
+
+        // PHP does not like multiple Cookie headers, coalesce into one.
+        List<String> cookies = proxyRequest.getHeaders().getValuesList(HttpHeader.COOKIE.asString());
+        if (cookies.size() > 1)
+        {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < cookies.size(); ++i)
+            {
+                if (i > 0)
+                    builder.append("; ");
+                String cookie = cookies.get(i);
+                builder.append(cookie);
+            }
+            proxyRequest.header(HttpHeader.COOKIE, null);
+            proxyRequest.header(HttpHeader.COOKIE, builder.toString());
         }
 
         super.customizeProxyRequest(proxyRequest, request);
