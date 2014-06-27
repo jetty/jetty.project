@@ -71,7 +71,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         if (!fields.contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
             fields.add(ACCEPT_ENCODING_GZIP);
 
-
         // TODO make this a better field for h2 hpack generation
         if (getHttpConfiguration().getSendServerVersion())
             getResponse().getHttpFields().add(SERVER_VERSION);
@@ -103,6 +102,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         BufferUtil.clearToFill(copy);
         copy.put(original).flip();
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 Request #{}: {} bytes of content", stream.getId(), copy.remaining());
+
         onContent(new HttpInput.Content(copy)
         {
             @Override
@@ -118,7 +120,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                 byteBufferPool.release(copy);
                 callback.failed(x);
             }
-            
         });
 
         if (frame.isEndStream())
@@ -126,5 +127,4 @@ public class HttpChannelOverHTTP2 extends HttpChannel
             onRequestComplete();
         }
     }
-
 }
