@@ -485,29 +485,4 @@ public class ResourceTest
         // A class path must exist
         assertTrue("Class path resource does not exist.",resource.exists());
     }
-    
-    @Test
-    public void testUncPathResourceFile() throws Exception
-    {
-        // This test is intended to run only on Windows platform
-        assumeTrue(OS.IS_WINDOWS);
-        
-        String path = __userURL.toURI().getPath().replace('/','\\')+"ResourceTest.java";
-        System.err.println(path);
-        
-        Resource resource = Resource.newResource(path, false);
-        System.err.println(resource);
-        assertTrue(resource.exists());      
-        
-        /*
-        
-        String uncPath = "\\\\127.0.0.1"+__userURL.toURI().getPath().replace('/','\\').replace(':','$')+"ResourceTest.java";
-        System.err.println(uncPath);
-        
-        Resource uncResource = Resource.newResource(uncPath, false);
-        System.err.println(uncResource);
-        assertTrue(uncResource.exists());
-        
-        */
-    }
 }
