@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
@@ -76,16 +77,16 @@ public class AliasedConstraintTest
         loginService.putUser("user3",new Password("password"),new String[] { "foo" });
 
         context.setContextPath("/ctx");
+        context.setResourceBase(MavenTestingUtils.getTestResourceDir("docroot").getAbsolutePath());
         server.setHandler(context);
         context.setHandler(session);
+        // context.addAliasCheck(new AllowSymLinkAliasChecker());
 
         server.addBean(loginService);
 
         security = new ConstraintSecurityHandler();
         session.setHandler(security);
         ResourceHandler handler = new ResourceHandler();
-        String resourceBase = MavenTestingUtils.getTestResourceDir("docroot").getAbsolutePath();
-        handler.setResourceBase(resourceBase);
         security.setHandler(handler);
 
         List<ConstraintMapping> constraints = new ArrayList<>();
