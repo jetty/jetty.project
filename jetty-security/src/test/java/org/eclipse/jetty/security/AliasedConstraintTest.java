@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -52,7 +51,6 @@ import org.junit.runners.Parameterized.Parameters;
  * This is mainly here to test security bypass techniques using aliased names that should be caught.
  */
 @RunWith(Parameterized.class)
-@Ignore("need to verify alias logic with greg")
 public class AliasedConstraintTest
 {
     private static final String TEST_REALM = "TestRealm";
@@ -122,12 +120,12 @@ public class AliasedConstraintTest
         final String OPENCONTENT = "this is open content";
 
         data.add(new Object[] { "/ctx/all/index.txt", HttpStatus.OK_200, OPENCONTENT });
-        data.add(new Object[] { "/ctx/ALL/index.txt", HttpStatus.OK_200, OPENCONTENT });
-        data.add(new Object[] { "/ctx/ALL/Fred/../index.txt", HttpStatus.OK_200, OPENCONTENT });
+        data.add(new Object[] { "/ctx/ALL/index.txt", HttpStatus.NOT_FOUND_404, null });
+        data.add(new Object[] { "/ctx/ALL/Fred/../index.txt", HttpStatus.NOT_FOUND_404, null });
         data.add(new Object[] { "/ctx/../bar/../ctx/all/index.txt", HttpStatus.OK_200, OPENCONTENT });
         data.add(new Object[] { "/ctx/forbid/index.txt", HttpStatus.FORBIDDEN_403, null });
         data.add(new Object[] { "/ctx/all/../forbid/index.txt", HttpStatus.FORBIDDEN_403, null });
-        data.add(new Object[] { "/ctx/FoRbId/index.txt", HttpStatus.FORBIDDEN_403, null });
+        data.add(new Object[] { "/ctx/FoRbId/index.txt", HttpStatus.NOT_FOUND_404, null });
 
         return data;
     }
@@ -159,6 +157,9 @@ public class AliasedConstraintTest
                 break;
             case 403:
                 assertThat(response,startsWith("HTTP/1.1 403 Forbidden"));
+                break;
+            case 404:
+                assertThat(response,startsWith("HTTP/1.1 404 Not Found"));
                 break;
             default:
                 fail("Write a handler for response status code: " + expectedStatusCode);
