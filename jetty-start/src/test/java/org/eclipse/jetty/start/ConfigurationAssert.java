@@ -51,7 +51,7 @@ public class ConfigurationAssert
      */
     public static void assertConfiguration(BaseHome baseHome, StartArgs args, String filename) throws FileNotFoundException, IOException
     {
-        File testResourcesDir = MavenTestingUtils.getTestResourcesDir();
+        Path testResourcesDir = MavenTestingUtils.getTestResourcesDir().toPath().toAbsolutePath();
         File file = MavenTestingUtils.getTestResourceFile(filename);
         TextFile textFile = new TextFile(file.toPath());
 
@@ -149,12 +149,17 @@ public class ConfigurationAssert
         assertContainsUnordered("Files/Dirs",expectedFiles,actualFiles);
     }
 
-    private static String shorten(BaseHome baseHome, Path path, File testResourcesDir)
+    private static String shorten(BaseHome baseHome, Path path, Path testResourcesDir)
     {
         String value = baseHome.toShortForm(path);
-        if (value.startsWith(testResourcesDir.getAbsolutePath()))
+        if (value.startsWith("${"))
         {
-            int len = testResourcesDir.getAbsolutePath().length();
+            return value;
+        }
+
+        if (path.startsWith(testResourcesDir))
+        {
+            int len = testResourcesDir.toString().length();
             value = "${maven-test-resources}" + value.substring(len);
         }
         return value;

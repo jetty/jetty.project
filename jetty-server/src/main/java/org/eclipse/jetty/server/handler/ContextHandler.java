@@ -1648,10 +1648,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param path
+     * @param resource
+     * @return True if the alias is OK
+     */
     public boolean checkAlias(String path, Resource resource)
     {
         // Is the resource aliased?
-            if (resource.getAlias() != null)
+        if (resource.getAlias() != null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());

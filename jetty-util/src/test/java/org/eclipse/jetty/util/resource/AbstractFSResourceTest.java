@@ -83,12 +83,18 @@ public abstract class AbstractFSResourceTest
     {
         if (OS.IS_UNIX)
         {
+            // A windows path is invalid under unix
             newResource(new URI("file://Z:/:"));
         }
         else if (OS.IS_WINDOWS)
         {
-            newResource(new URI("file://some\"text\""));
+            // "CON" is a reserved name under windows
+            newResource(new URI("file://CON"));
         }
+        else
+        {
+            assumeFalse("Unknown OS type",false);
+        }   
     }
 
     @Test

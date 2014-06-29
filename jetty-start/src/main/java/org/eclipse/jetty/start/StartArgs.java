@@ -664,6 +664,8 @@ public class StartArgs
         {
             return;
         }
+        
+        StartLog.debug("parse(\"%s\", \"%s\", %b)",rawarg,source,replaceProps);
 
         final String arg = rawarg.trim();
 
