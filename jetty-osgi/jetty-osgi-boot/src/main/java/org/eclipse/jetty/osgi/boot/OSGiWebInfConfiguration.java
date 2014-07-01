@@ -23,6 +23,7 @@ import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
@@ -51,6 +52,9 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
     
     
     public static final String CONTAINER_BUNDLE_PATTERN = "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern";
+    public static final String FRAGMENT_AND_REQUIRED_BUNDLES = "org.eclipse.jetty.osgi.fragmentAndRequiredBundles";
+    public static final String FRAGMENT_AND_REQUIRED_RESOURCES = "org.eclipse.jetty.osgi.fragmentAndRequiredResources";
+    
     
     /* ------------------------------------------------------------ */
     /** 
@@ -87,7 +91,6 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
             while (tokenizer.hasMoreTokens())
                 names.add(tokenizer.nextToken());
         }
-
         HashSet<Resource> matchingResources = new HashSet<Resource>();
         if ( !names.isEmpty() || pattern != null)
         {
@@ -111,14 +114,20 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
                         matchingResources.addAll(getBundleAsResource(bundle));
                 }
             }
-        }
-        
+        }        
         for (Resource r:matchingResources)
         {
             context.getMetaData().addContainerResource(r);
         }
     }
     
+    @Override
+    public void postConfigure(WebAppContext context) throws Exception
+    {
+        context.setAttribute(FRAGMENT_AND_REQUIRED_BUNDLES, null); 
+        context.setAttribute(FRAGMENT_AND_REQUIRED_RESOURCES, null);
+        super.postConfigure(context);
+    }
     
     /* ------------------------------------------------------------ */
     /** 
@@ -137,12 +146,34 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         if (webInfJars != null)
             mergedResources.addAll(webInfJars);
         
-        //add fragment jars as if in WEB-INF/lib of the associated webapp
-        Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles((Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
-        for (Bundle frag : fragments)
+        //add fragment jars and any Required-Bundles as if in WEB-INF/lib of the associated webapp
+        Bundle[] bundles = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles((Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE));
+        if (bundles != null && bundles.length > 0)
         {
-            File fragFile = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(frag);
-            mergedResources.add(Resource.newResource(fragFile.toURI()));  
+            Set<Bundle> fragsAndReqsBundles = (Set<Bundle>)context.getAttribute(FRAGMENT_AND_REQUIRED_BUNDLES);
+            if (fragsAndReqsBundles == null)
+            {
+                fragsAndReqsBundles = new HashSet<Bundle>();
+                context.setAttribute(FRAGMENT_AND_REQUIRED_BUNDLES, fragsAndReqsBundles);
+            }
+            
+            Set<Resource> fragsAndReqsResources = (Set<Resource>)context.getAttribute(FRAGMENT_AND_REQUIRED_RESOURCES);
+            if (fragsAndReqsResources == null)
+            {
+                fragsAndReqsResources = new HashSet<Resource>();
+                context.setAttribute(FRAGMENT_AND_REQUIRED_RESOURCES, fragsAndReqsResources);
+            }
+            
+            for (Bundle b : bundles)
+            {
+                //add to context attribute storing associated fragments and required bundles
+                fragsAndReqsBundles.add(b);
+                File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(b);
+                Resource r = Resource.newResource(f.toURI());
+                //add to convenience context attribute storing fragments and required bundles as Resources
+                fragsAndReqsResources.add(r);
+                mergedResources.add(r);
+            }
         }
         
         return mergedResources;
@@ -165,9 +196,8 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         Bundle bundle = (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
         if (bundle != null)
         {
-            //TODO anything we need to do to improve PackageAdminServiceTracker?
-            Bundle[] fragments = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles(bundle);
-            if (fragments != null && fragments.length != 0)
+            Set<Bundle> fragments = (Set<Bundle>)context.getAttribute(FRAGMENT_AND_REQUIRED_BUNDLES);
+            if (fragments != null && !fragments.isEmpty())
             {
                 // sorted extra resource base found in the fragments.
                 // the resources are either overriding the resourcebase found in the
