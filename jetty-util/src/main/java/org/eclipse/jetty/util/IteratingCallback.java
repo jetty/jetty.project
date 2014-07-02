@@ -376,7 +376,7 @@ public abstract class IteratingCallback implements Callback
                 default:
                     if (_state.compareAndSet(current, State.CLOSED))
                     {
-                        onCompleteFailure(new IllegalStateException("Closed with pending callback "+current));
+                        onCompleteFailure(new IllegalStateException("Closed with pending callback "+this));
                         return;
                     }
             }

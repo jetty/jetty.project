@@ -705,7 +705,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public String toString()
         {
-            return String.format("SendCB@%x{s=%s,i=%s,cb=%s}",hashCode(),getState(),_info,_callback);
+            return String.format("%s[i=%s,cb=%s]",super.toString(),getState(),_info,_callback);
         }
     }
 
