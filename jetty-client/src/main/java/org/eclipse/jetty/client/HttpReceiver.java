@@ -301,6 +301,9 @@ public abstract class HttpReceiver
         if (decoder != null)
         {
             buffer = decoder.decode(buffer);
+            
+            // TODO If the decoder consumes all the content, should we return here?
+            
             if (LOG.isDebugEnabled())
                 LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(buffer));
         }
