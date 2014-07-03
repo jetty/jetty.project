@@ -32,6 +32,8 @@ import javax.servlet.UnavailableException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.util.URIUtil;
+
 public class BalancerServlet extends ProxyServlet
 {
     private static final String BALANCER_MEMBER_PREFIX = "balancerMember.";
@@ -86,7 +88,7 @@ public class BalancerServlet extends ProxyServlet
         }
     }
 
-    private void initStickySessions() throws ServletException
+    private void initStickySessions()
     {
         _stickySessions = Boolean.parseBoolean(getServletConfig().getInitParameter("stickySessions"));
     }
@@ -219,17 +221,17 @@ public class BalancerServlet extends ProxyServlet
             URI locationURI = URI.create(headerValue).normalize();
             if (locationURI.isAbsolute() && isBackendLocation(locationURI))
             {
-                String newURI = request.getScheme() + "://" + request.getServerName() + ":" + request.getServerPort();
+                StringBuilder newURI = URIUtil.newURIBuilder(request.getScheme(), request.getServerName(), request.getServerPort());
                 String component = locationURI.getRawPath();
                 if (component != null)
-                    newURI += component;
+                    newURI.append(component);
                 component = locationURI.getRawQuery();
                 if (component != null)
-                    newURI += "?" + component;
+                    newURI.append('?').append(component);
                 component = locationURI.getRawFragment();
                 if (component != null)
-                    newURI += "#" + component;
-                return URI.create(newURI).normalize().toString();
+                    newURI.append('#').append(component);
+                return URI.create(newURI.toString()).normalize().toString();
             }
         }
         return headerValue;
