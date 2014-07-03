@@ -61,10 +61,15 @@ public class SPDYClientFactoryTest extends AbstractTest
 
         session.goAway(new GoAwayInfo(5, TimeUnit.SECONDS));
 
-        // Sleep a while to allow the factory to remove the session
-        // since it is done asynchronously by the selector thread
-        TimeUnit.SECONDS.sleep(1);
+        for (int i=0;i<10;i++)
+        {
+            // Sleep a while to allow the factory to remove the session
+            // since it is done asynchronously by the selector thread
+            TimeUnit.SECONDS.sleep(1);
+            if (clientFactory.getSessions().isEmpty())
+                return;
+        }
 
-        Assert.assertTrue(clientFactory.getSessions().isEmpty());
+        Assert.fail(clientFactory.getSessions().toString());
     }
 }

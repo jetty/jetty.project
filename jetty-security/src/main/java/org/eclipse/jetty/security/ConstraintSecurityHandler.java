@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
@@ -627,7 +628,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
     @Override
     protected RoleInfo prepareConstraintInfo(String pathInContext, Request request)
     {
-        Map<String, RoleInfo> mappings = (Map<String, RoleInfo>)_constraintMap.match(pathInContext);
+        Map<String, RoleInfo> mappings = _constraintMap.match(pathInContext);
 
         if (mappings != null)
         {
@@ -700,11 +701,8 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
             {
                 String scheme = httpConfig.getSecureScheme();
                 int port = httpConfig.getSecurePort();
-                String url = ("https".equalsIgnoreCase(scheme) && port==443)
-                    ? "https://"+request.getServerName()+request.getRequestURI()
-                    : scheme + "://" + request.getServerName() + ":" + port + request.getRequestURI();                    
-                if (request.getQueryString() != null)
-                    url += "?" + request.getQueryString();
+                
+                String url = URIUtil.newURI(scheme, request.getServerName(), port,request.getRequestURI(),request.getQueryString());
                 response.setContentLength(0);
                 response.sendRedirect(url);
             }

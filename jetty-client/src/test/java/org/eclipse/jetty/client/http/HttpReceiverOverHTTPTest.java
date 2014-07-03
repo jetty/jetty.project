@@ -42,6 +42,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -230,8 +231,12 @@ public class HttpReceiverOverHTTPTest
             @Override
             public void onContent(Response response, ByteBuffer content)
             {
+                boolean hadRemaining=content.hasRemaining();
                 super.onContent(response, content);
-                latch.countDown();
+                
+                // TODO gzip decoding can pass on empty chunks. Currently ignoring them here, but could be done at the decoder???
+                if (hadRemaining) // Ignore empty chunks
+                    latch.countDown();                
             }
         };
         HttpExchange exchange = new HttpExchange(destination, request, Collections.<Response.ResponseListener>singletonList(listener));
