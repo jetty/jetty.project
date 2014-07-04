@@ -31,6 +31,7 @@ import java.util.Arrays;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.MultipartConfigElement;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -53,6 +54,7 @@ import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -127,6 +129,7 @@ public class RequestTest
 
     }
 
+    @Ignore("Empty headers are not 7230 compliant")
     @Test
     public void testEmptyHeaders() throws Exception
     {
@@ -1058,6 +1061,7 @@ public class RequestTest
 
     }
 
+    @Ignore("No longer relevant")
     @Test
     public void testCookieLeak() throws Exception
     {
@@ -1103,7 +1107,7 @@ public class RequestTest
         +
         "POST / HTTP/1.1\r\n"+
         "Host: whatever\r\n"+
-        "Cookie:\r\n"+
+        "Cookie: \r\n"+
         "Connection: close\r\n"+
         "\r\n";
 

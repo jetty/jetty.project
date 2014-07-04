@@ -569,7 +569,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         private final ByteBufferPool.Lease lease = new ByteBufferPool.Lease(generator.getByteBufferPool());
         private final int maxGather;
         private final List<FlusherEntry> active;
-        private boolean closed;
 
         private Flusher(int maxGather)
         {
@@ -582,7 +581,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             boolean fail = false;
             synchronized (queue)
             {
-                if (closed)
+                if (isClosed())
                     fail = true;
                 else
                     queue.offer(entry);
@@ -598,7 +597,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             boolean fail = false;
             synchronized (queue)
             {
-                if (closed)
+                if (isClosed())
                     fail = true;
                 else
                     queue.add(0, entry);
@@ -620,9 +619,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             synchronized (queue)
             {
-                if (closed)
-                    return Action.IDLE;
-
                 int sessionWindow = getWindowSize();
                 int nonStalledIndex = 0;
                 int size = queue.size();
@@ -749,20 +745,16 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             Queue<FlusherEntry> queued;
             synchronized (queue)
             {
-                closed = true;
+                super.close();
                 queued = new ArrayDeque<>(queue);
-            }
+            }        
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Closing, queued={}", queued.size());
-
-            while (true)
-            {
-                FlusherEntry item = queued.poll();
-                if (item == null)
-                    break;
+            
+            for (FlusherEntry item: queued)
                 closed(item);
-            }
+
         }
 
         protected void closed(FlusherEntry item)

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util;
 
 import java.io.EOFException;
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -360,7 +361,7 @@ public abstract class IteratingCallback implements Callback
         }
     }
 
-    public final void close()
+    public void close()
     {
         while (true)
         {
@@ -376,7 +377,7 @@ public abstract class IteratingCallback implements Callback
                 default:
                     if (_state.compareAndSet(current, State.CLOSED))
                     {
-                        onCompleteFailure(new IllegalStateException("Closed with pending callback "+this));
+                        onCompleteFailure(new ClosedChannelException());
                         return;
                     }
             }
