@@ -156,6 +156,14 @@ public class Starter
         //configure webapp from properties file describing unassembled webapp
         configureWebApp();
         
+        //make it a quickstart if the quickstart-web.xml file exists
+        if (webApp.getTempDirectory() != null)
+        {
+            File qs = new File (webApp.getTempDirectory(), "quickstart-web.xml");
+            if (qs.exists() && qs.isFile())
+                webApp.setQuickStartWebDescriptor(Resource.newResource(qs));
+        }
+        
         //set up the webapp from the context xml file provided
         //NOTE: just like jetty:run mojo this means that the context file can
         //potentially override settings made in the pom. Ideally, we'd like
@@ -203,6 +211,9 @@ public class Starter
         if (str != null)
             webApp.setDescriptor(str); 
         
+        str = (String)props.get("quickstart.web.xml");
+        if (str != null)
+            webApp.setQuickStartWebDescriptor(Resource.newResource(new File(str)));
         
         // - the tmp directory
         str = (String)props.getProperty("tmp.dir");
@@ -217,8 +228,9 @@ public class Starter
         str = (String)props.getProperty("base.dirs");
         if (str != null && !"".equals(str.trim()))
         {
-            webApp.setWar(str);
-            webApp.setBaseResource(new ResourceCollection(str.split(File.pathSeparator)));
+            ResourceCollection bases = new ResourceCollection(str.split(","));
+            webApp.setWar(bases.getResources()[0].toString());
+            webApp.setBaseResource(bases);
         }
         
         // - put virtual webapp base resource first on resource path or not

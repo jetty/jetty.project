@@ -61,7 +61,7 @@ public class XmlAppendable
         _out.append("<?xml version=\"1.0\" encoding=\""+encoding+"\"?>\n");
     }
 
-    public XmlAppendable open(String tag, Map<String,String> attributes) throws IOException
+    public XmlAppendable openTag(String tag, Map<String,String> attributes) throws IOException
     {
         _out.append(_space).append('<').append(tag);
         attributes(attributes);
@@ -72,7 +72,7 @@ public class XmlAppendable
         return this;
     }
     
-    public XmlAppendable open(String tag) throws IOException
+    public XmlAppendable openTag(String tag) throws IOException
     {
         _out.append(_space).append('<').append(tag).append(">\n");
         _space=_space+SPACES.substring(0,_indent);
@@ -159,7 +159,7 @@ public class XmlAppendable
         return this;
     }
     
-    public XmlAppendable close() throws IOException
+    public XmlAppendable closeTag() throws IOException
     {
         if (_tags.isEmpty())
             throw new IllegalStateException("Tags closed");

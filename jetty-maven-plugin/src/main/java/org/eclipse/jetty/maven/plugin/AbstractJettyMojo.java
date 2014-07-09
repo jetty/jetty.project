@@ -684,7 +684,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * 
      */
-    private void printSystemProperties ()
+    protected void printSystemProperties ()
     {
         // print out which system properties were set up
         if (getLog().isDebugEnabled())
