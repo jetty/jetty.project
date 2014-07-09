@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.http;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -1348,7 +1351,7 @@ public class HttpParserTest
         HttpParser.RequestHandler handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parser.parseNext(buffer);
-        assertEquals("::1",_host);
+        assertEquals("[::1]",_host);
         assertEquals(0,_port);
     }
     
@@ -1426,7 +1429,7 @@ public class HttpParserTest
         HttpParser.RequestHandler handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parser.parseNext(buffer);
-        assertEquals("::1",_host);
+        assertEquals("[::1]",_host);
         assertEquals(8888,_port);
     }
 

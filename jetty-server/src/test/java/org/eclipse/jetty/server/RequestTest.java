@@ -485,7 +485,7 @@ public class RequestTest
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals("http://[::1]/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("80",results.get(i++));
 
 
@@ -499,7 +499,7 @@ public class RequestTest
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals("http://[::1]:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("8888",results.get(i++));
 
 
@@ -515,7 +515,7 @@ public class RequestTest
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals("https://[::1]/",results.get(i++));
         assertEquals("remote",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("443",results.get(i++));
 
 
@@ -531,7 +531,7 @@ public class RequestTest
         assertThat(response, Matchers.containsString("200 OK"));
         assertEquals("https://[::1]:8888/",results.get(i++));
         assertEquals("remote",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("8888",results.get(i++));
     }
 
