@@ -389,6 +389,60 @@ public class GzipFilterDefaultTest
         }
     }
     
+    
+    @Test
+    public void testIsNotGzipCompressedByExcludedContentType() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
+
+        int filesize = tester.getOutputBufferSize() * 4;
+        tester.prepareServerFile("test_quotes.txt", filesize);
+    
+
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("excludedMimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            HttpTester.Response http = tester.assertIsResponseNotGzipCompressed("GET","test_quotes.txt", filesize, HttpStatus.OK_200);
+            Assert.assertNull(http.get("Vary"));
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    
+    @Test
+    public void testIsNotGzipCompressedByExcludedContentTypeWithCharset() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, compressionType);
+        tester.setGzipFilterClass(testFilter);
+
+        int filesize = tester.getOutputBufferSize() * 4;
+        tester.prepareServerFile("test_quotes.txt", filesize);
+        tester.addMimeType("txt","text/plain;charset=UTF-8");
+
+        FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
+        holder.setInitParameter("excludedMimeTypes","text/plain");
+
+        try
+        {
+            tester.start();
+            HttpTester.Response http = tester.assertIsResponseNotGzipCompressed("GET","test_quotes.txt", filesize, HttpStatus.OK_200);
+            Assert.assertNull(http.get("Vary"));
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    
+    
     @Test
     public void testGzipCompressedByContentTypeWithEncoding() throws Exception
     { 

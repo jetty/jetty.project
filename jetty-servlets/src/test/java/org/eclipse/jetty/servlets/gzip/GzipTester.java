@@ -395,7 +395,6 @@ public class GzipTester
         String uri = "/context/"+filename;
         HttpTester.Response response = executeRequest(method,uri);
         assertResponseHeaders(expectedFilesize,status,response);
-
         // Assert that the contents are what we expect.
         if (filename != null)
         {
@@ -635,6 +634,11 @@ public class GzipTester
     public void setUserAgent(String ua)
     {
         this.userAgent = ua;
+    }
+    
+    public void addMimeType (String extension, String mimetype)
+    {
+        this.tester.getContext().getMimeTypes().addMimeMapping(extension, mimetype);
     }
 
     public void start() throws Exception

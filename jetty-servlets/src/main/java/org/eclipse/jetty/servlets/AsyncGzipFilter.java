@@ -317,18 +317,22 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
             super.doFilter(request,response,chain);
             return;
         }
-        
+
         // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
         if (_mimeTypes.size()>0 && _excludeMimeTypes)
         {
             String mimeType = _context.getMimeType(request.getRequestURI());
-            
-            if (mimeType!=null && _mimeTypes.contains(mimeType))
+
+            if (mimeType!=null)
             {
-                LOG.debug("{} excluded by path suffix {}",this,request);
-                // handle normally without setting vary header
-                super.doFilter(request,response,chain);
-                return;
+                mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
+                if (_mimeTypes.contains(mimeType))
+                {
+                    LOG.debug("{} excluded by path suffix {}",this,request);
+                    // handle normally without setting vary header
+                    super.doFilter(request,response,chain);
+                    return;
+                }
             }
         }
 
