@@ -48,7 +48,7 @@ public class HostPortHttpField extends HttpField
                 int close=authority.lastIndexOf(']');
                 if (close<0)
                     throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Bad ipv6");
-                _host=authority.substring(1,close);
+                _host=authority.substring(0,close+1);
 
                 if (authority.length()>close+1)
                 {
