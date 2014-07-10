@@ -21,7 +21,6 @@ package org.eclipse.jetty.webapp;
 
 import java.net.URI;
 import java.net.URL;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;

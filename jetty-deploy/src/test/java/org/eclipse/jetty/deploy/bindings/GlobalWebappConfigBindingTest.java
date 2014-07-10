@@ -26,7 +26,6 @@ import static org.hamcrest.Matchers.not;
 import java.io.File;
 import java.util.List;
 
-import org.eclipse.jetty.deploy.providers.ScanningAppProvider;
 import org.eclipse.jetty.deploy.test.XmlConfiguredJetty;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;

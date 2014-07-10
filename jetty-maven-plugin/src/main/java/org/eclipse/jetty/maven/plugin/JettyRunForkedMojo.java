@@ -39,34 +39,35 @@ import java.util.Random;
 import java.util.Set;
 
 import org.apache.maven.artifact.Artifact;
-import org.apache.maven.plugin.AbstractMojo;
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
-import org.apache.maven.project.MavenProject;
+import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 /**
  * <p>
- *  This goal is used to assemble your webapp into a war and automatically deploy it to Jetty in a forked JVM.
+ *  This goal is used to deploy your unassembled webapp into a forked JVM.
  *  </p>
  *  <p>
- *  You need to define a jetty.xml file to configure connectors etc and a context xml file that sets up anything special
- *  about your webapp. This plugin will fill in the:
- *  <ul>
- *  <li>context path
- *  <li>classes
- *  <li>web.xml
- *  <li>root of the webapp
- *  </ul>
- *  Based on a combination of information that you supply and the location of files in your unassembled webapp.
+ *  You need to define a jetty.xml file to configure connectors etc. You can use the normal setters of o.e.j.webapp.WebAppContext on the <b>webApp</b>
+ *  configuration element for this plugin. You may also need context xml file for any particularly complex webapp setup.
+ *  about your webapp.
  *  </p>
  *  <p>
- *  There is a <a href="run-war-mojo.html">reference guide</a> to the configuration parameters for this plugin, and more detailed information
- *  with examples in the <a href="http://docs.codehaus.org/display/JETTY/Maven+Jetty+Plugin/">Configuration Guide</a>.
+ *  Unlike the other jetty goals, this does NOT support the <b>scanIntervalSeconds</b> parameter: the webapp will be deployed only once.
+ *  </p>
+ *  <p>
+ *  The <b>stopKey</b>, <b>stopPort</b> configuration elements can be used to control the stopping of the forked process. By default, this plugin will launch
+ *  the forked jetty instance and wait for it to complete (in which case it acts much like the <b>jetty:run</b> goal, and you will need to Cntrl-C to stop).
+ *  By setting the configuration element <b>waitForChild</b> to <b>false</b>, the plugin will terminate after having forked the jetty process. In this case
+ *  you can use the <b>jetty:stop</b> goal to terminate the process.
+ *  <p>
+ *  See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
  *  </p>
  * 
  * @goal run-forked
@@ -75,49 +76,17 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * @description Runs Jetty in forked JVM on an unassembled webapp
  *
  */
-public class JettyRunForkedMojo extends AbstractMojo
+public class JettyRunForkedMojo extends JettyRunMojo
 {    
     public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
     public static final String FAKE_WEBAPP = "webapp-tmp";
     
     
     public String PORT_SYSPROPERTY = "jetty.port";
-    
-    /**
-     * Whether or not to include dependencies on the plugin's classpath with &lt;scope&gt;provided&lt;/scope&gt;
-     * Use WITH CAUTION as you may wind up with duplicate jars/classes.
-     * @parameter  default-value="false"
-     */
-    protected boolean useProvidedScope;
-    
-    
-    /**
-     * The maven project.
-     *
-     * @parameter expression="${project}"
-     * @required
-     * @readonly
-     */
-    private MavenProject project;
 
     
-    /**
-     * If true, the &lt;testOutputDirectory&gt;
-     * and the dependencies of &lt;scope&gt;test&lt;scope&gt;
-     * will be put first on the runtime classpath.
-     * @parameter alias="useTestClasspath" default-value="false"
-     */
-    private boolean useTestScope;
+ 
     
-    
-    /**
-     * The default location of the web.xml file. Will be used
-     * if &lt;webAppConfig&gt;&lt;descriptor&gt; is not set.
-     * 
-     * @parameter expression="${basedir}/src/main/webapp/WEB-INF/web.xml"
-     * @readonly
-     */
-    private String webXml;
     
     
     /**
@@ -129,118 +98,6 @@ public class JettyRunForkedMojo extends AbstractMojo
      */
     protected File target;
     
-    
-    /**
-     * The temporary directory to use for the webapp.
-     * Defaults to target/tmp
-     *
-     * @parameter alias="tmpDirectory" expression="${project.build.directory}/tmp"
-     * @required
-     * @readonly
-     */
-    protected File tempDirectory;
-    
-    
-    
-    /**
-     * Whether temporary directory contents should survive webapp restarts.
-     * 
-     * @parameter default-value="false"
-     */
-    private boolean persistTempDirectory;
-
-    
-    /**
-     * The directory containing generated classes.
-     *
-     * @parameter expression="${project.build.outputDirectory}"
-     * @required
-     * 
-     */
-    private File classesDirectory;    
-    
-    
-    /**
-     * The directory containing generated test classes.
-     * 
-     * @parameter expression="${project.build.testOutputDirectory}"
-     * @required
-     */
-    private File testClassesDirectory;
-   
-    
-    /**
-     * Root directory for all html/jsp etc files
-     *
-     * @parameter expression="${basedir}/src/main/webapp"
-     *
-     */
-    private File webAppSourceDirectory;
-
-    /**
-     * Resource Bases
-     *
-     * @parameter
-     *
-     */
-     private String[] resourceBases;
-
-    /**
-     * If true, the webAppSourceDirectory will be first on the list of 
-     * resources that form the resource base for the webapp. If false, 
-     * it will be last.
-     * 
-     * @parameter  default-value="true"
-     */
-    private boolean baseAppFirst;
-    
-
-    /**
-     * Location of jetty xml configuration files whose contents 
-     * will be applied before any plugin configuration. Optional.
-     * @parameter
-     */
-    private String jettyXml;
-    
-    /**
-     * The context path for the webapp. Defaults to / for jetty-9
-     *
-     * @parameter expression="/"
-     */
-    private String contextPath;
-
-
-    /**
-     * Location of a context xml configuration file whose contents
-     * will be applied to the webapp AFTER anything in &lt;webAppConfig&gt;.Optional.
-     * @parameter
-     */
-    private String contextXml;
-
-    
-    /**  
-     * @parameter expression="${jetty.skip}" default-value="false"
-     */
-    private boolean skip;
-
-    
-    /**
-     * Port to listen to stop jetty on executing -DSTOP.PORT=&lt;stopPort&gt; 
-     * -DSTOP.KEY=&lt;stopKey&gt; -jar start.jar --stop
-     * @parameter
-     * @required
-     */
-    protected int stopPort;
- 
-    
-    /**
-     * Key to provide when stopping jetty on executing java -DSTOP.KEY=&lt;stopKey&gt; 
-     * -DSTOP.PORT=&lt;stopPort&gt; -jar start.jar --stop
-     * @parameter
-     * @required
-     */
-    protected String stopKey;
-
     
     /**
      * Arbitrary jvm args to pass to the forked process
@@ -284,9 +141,9 @@ public class JettyRunForkedMojo extends AbstractMojo
      */
     private Random random;    
     
+ 
     
-    
-    
+    private Resource originalBaseResource;
     
     
     /**
@@ -360,331 +217,61 @@ public class JettyRunForkedMojo extends AbstractMojo
      */
     public void execute() throws MojoExecutionException, MojoFailureException
     {
-        getLog().info("Configuring Jetty for project: " + project.getName());
-        if (skip)
-        {
-            getLog().info("Skipping Jetty start: jetty.skip==true");
-            return;
-        }
-        PluginLog.setLog(getLog());
         Runtime.getRuntime().addShutdownHook(new ShutdownThread());
         random = new Random();
-        startJettyRunner();
+        super.execute();
     }
     
     
-    
-    
-    /**
-     * @return
-     * @throws MojoExecutionException
-     */
-    public List<String> getProvidedJars() throws MojoExecutionException
-    {  
-        //if we are configured to include the provided dependencies on the plugin's classpath
-        //(which mimics being on jetty's classpath vs being on the webapp's classpath), we first
-        //try and filter out ones that will clash with jars that are plugin dependencies, then
-        //create a new classloader that we setup in the parent chain.
-        if (useProvidedScope)
-        {
-            
-                List<String> provided = new ArrayList<String>();        
-                for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
-                {                   
-                    Artifact artifact = iter.next();
-                    if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()) && !isPluginArtifact(artifact))
-                    {
-                        provided.add(artifact.getFile().getAbsolutePath());
-                        if (getLog().isDebugEnabled()) { getLog().debug("Adding provided artifact: "+artifact);}
-                    }
-                }
-                return provided;
 
-        }
-        else
-            return null;
-    }
-    
-   
-    
-    
-    /**
-     * @return
-     * @throws MojoExecutionException
-     */
-    public File prepareConfiguration() throws MojoExecutionException
+
+    @Override
+    public void startJetty() throws MojoExecutionException
     {
-        try
-        {   
-            //work out the configuration based on what is configured in the pom
-            File propsFile = new File (target, "fork.props");
-            if (propsFile.exists())
-                propsFile.delete();   
-
-            propsFile.createNewFile();
-            //propsFile.deleteOnExit();
-
-            Properties props = new Properties();
-
-
-            //web.xml
-            if (webXml != null)
-                props.put("web.xml", webXml);
-
-            //sort out the context path
-            if (contextPath != null)
-                props.put("context.path", contextPath);
-
-            //sort out the tmp directory (make it if it doesn't exist)
-            if (tempDirectory != null)
-            {
-                if (!tempDirectory.exists())
-                    tempDirectory.mkdirs();
-                props.put("tmp.dir", tempDirectory.getAbsolutePath());
-            }
-            
-            props.put("tmp.dir.persist", Boolean.toString(persistTempDirectory));
-
-            if (resourceBases == null)
-            {
-                //sort out base dir of webapp
-                if (webAppSourceDirectory == null || !webAppSourceDirectory.exists())
-                {
-                    webAppSourceDirectory = new File (project.getBasedir(), DEFAULT_WEBAPP_SRC);
-                    if (!webAppSourceDirectory.exists())
-                    {
-                        //try last resort of making a fake empty dir
-                        File target = new File(project.getBuild().getDirectory());
-                        webAppSourceDirectory = new File(target, FAKE_WEBAPP);
-                        if (!webAppSourceDirectory.exists())
-                            webAppSourceDirectory.mkdirs();
-                    }
-                }
-                resourceBases = new String[] { webAppSourceDirectory.getAbsolutePath() };
-            }
-            StringBuffer rb = new StringBuffer(resourceBases[0]);
-            for (int i=1; i<resourceBases.length; i++) 
-            {
-                rb.append(File.pathSeparator);
-                rb.append(resourceBases[i]);
-            }
-            props.put("base.dirs", rb.toString());
-
-            //sort out the resource base directories of the webapp
-            StringBuilder builder = new StringBuilder();
-            props.put("base.first", Boolean.toString(baseAppFirst));
-
-            //web-inf classes
-            List<File> classDirs = getClassesDirs();
-            StringBuffer strbuff = new StringBuffer();
-            for (int i=0; i<classDirs.size(); i++)
-            {
-                File f = classDirs.get(i);
-                strbuff.append(f.getAbsolutePath());
-                if (i < classDirs.size()-1)
-                    strbuff.append(",");
-            }
-
-            if (classesDirectory != null)
-            {
-                props.put("classes.dir", classesDirectory.getAbsolutePath());
-            }
-            
-            if (useTestScope && testClassesDirectory != null)
-            {
-                props.put("testClasses.dir", testClassesDirectory.getAbsolutePath());
-            }
-
-            //web-inf lib
-            List<File> deps = getDependencyFiles();
-            strbuff.setLength(0);
-            for (int i=0; i<deps.size(); i++)
-            {
-                File d = deps.get(i);
-                strbuff.append(d.getAbsolutePath());
-                if (i < deps.size()-1)
-                    strbuff.append(",");
-            }
-            props.put("lib.jars", strbuff.toString());
-
-            //any war files
-            List<Artifact> warArtifacts = getWarArtifacts(); 
-            for (int i=0; i<warArtifacts.size(); i++)
-            {
-                strbuff.setLength(0);           
-                Artifact a  = warArtifacts.get(i);
-                strbuff.append(a.getGroupId()+",");
-                strbuff.append(a.getArtifactId()+",");
-                strbuff.append(a.getFile().getAbsolutePath());
-                props.put("maven.war.artifact."+i, strbuff.toString());
-            }
-          
-            
-            //any overlay configuration
-            WarPluginInfo warPlugin = new WarPluginInfo(project);
-            
-            //add in the war plugins default includes and excludes
-            props.put("maven.war.includes", toCSV(warPlugin.getDependentMavenWarIncludes()));
-            props.put("maven.war.excludes", toCSV(warPlugin.getDependentMavenWarExcludes()));
-            
-            
-            List<OverlayConfig> configs = warPlugin.getMavenWarOverlayConfigs();
-            int i=0;
-            for (OverlayConfig c:configs)
-            {
-                props.put("maven.war.overlay."+(i++), c.toString());
-            }
-            
-            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(propsFile)))
-            {
-                props.store(out, "properties for forked webapp");
-            }
-            return propsFile;
-        }
-        catch (Exception e)
-        {
-            throw new MojoExecutionException("Prepare webapp configuration", e);
-        }
-    }
-    
-
-    
-    
-    /**
-     * @return
-     */
-    private List<File> getClassesDirs ()
-    {
-        List<File> classesDirs = new ArrayList<File>();
-        
-        //if using the test classes, make sure they are first
-        //on the list
-        if (useTestScope && (testClassesDirectory != null))
-            classesDirs.add(testClassesDirectory);
-        
-        if (classesDirectory != null)
-            classesDirs.add(classesDirectory);
-        
-        return classesDirs;
-    }
-  
-    
-  
-    
-    /**
-     * @return
-     * @throws MalformedURLException
-     * @throws IOException
-     */
-    private List<Artifact> getWarArtifacts()
-    throws MalformedURLException, IOException
-    {
-        List<Artifact> warArtifacts = new ArrayList<Artifact>();
-        for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
-        {
-            Artifact artifact = (Artifact) iter.next();  
-            
-            if (artifact.getType().equals("war"))
-                warArtifacts.add(artifact);
-        }
-
-        return warArtifacts;
-    }
-    
-    
-    
-    
-    /**
-     * @return
-     */
-    private List<File> getDependencyFiles ()
-    {
-        List<File> dependencyFiles = new ArrayList<File>();
-
-        for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
-        {
-            Artifact artifact = (Artifact) iter.next();
-            // Test never appears here !
-            if (((!Artifact.SCOPE_PROVIDED.equals(artifact.getScope())) && (!Artifact.SCOPE_TEST.equals( artifact.getScope())))
-                    ||
-                (useTestScope && Artifact.SCOPE_TEST.equals( artifact.getScope())))
-            {
-                dependencyFiles.add(artifact.getFile());
-                getLog().debug( "Adding artifact " + artifact.getFile().getName() + " for WEB-INF/lib " );
-            }
-        }
-        
-        return dependencyFiles; 
-    }
-    
-    
-    
-    
-    /**
-     * @param artifact
-     * @return
-     */
-    public boolean isPluginArtifact(Artifact artifact)
-    {
-        if (pluginArtifacts == null || pluginArtifacts.isEmpty())
-            return false;
-        
-        boolean isPluginArtifact = false;
-        for (Iterator<Artifact> iter = pluginArtifacts.iterator(); iter.hasNext() && !isPluginArtifact; )
-        {
-            Artifact pluginArtifact = iter.next();
-            if (getLog().isDebugEnabled()) { getLog().debug("Checking "+pluginArtifact);}
-            if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) && pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
-                isPluginArtifact = true;
-        }
-        
-        return isPluginArtifact;
-    }
-    
-    
-    
-    
-    /**
-     * @return
-     * @throws Exception
-     */
-    private Set<Artifact> getExtraJars()
-    throws Exception
-    {
-        Set<Artifact> extraJars = new HashSet<Artifact>();
-  
-        
-        List l = pluginArtifacts;
-        Artifact pluginArtifact = null;
-
-        if (l != null)
-        {
-            Iterator itor = l.iterator();
-            while (itor.hasNext() && pluginArtifact == null)
-            {              
-                Artifact a = (Artifact)itor.next();
-                if (a.getArtifactId().equals(plugin.getArtifactId())) //get the jetty-maven-plugin jar
-                {
-                    extraJars.add(a);
-                }
-            }
-        }
-
-        return extraJars;
-    }
-
-    
-
-    
-    /**
-     * @throws MojoExecutionException
-     */
-    public void startJettyRunner() throws MojoExecutionException
-    {      
+        //Only do enough setup to be able to produce a quickstart-web.xml file to
+        //pass onto the forked process to run      
         try
         {
+            printSystemProperties();
+
+            //apply any config from a jetty.xml file first to our "fake" server instance
+            //TODO probably not necessary
+            applyJettyXml ();  
+
         
+            server.configureHandlers();
+                   
+            //ensure config of the webapp based on settings in plugin
+            configureWebApplication();
+            
+            //copy the base resource as configured by the plugin
+            originalBaseResource = webApp.getBaseResource();
+            
+            //set the webapp up to do very little other than generate the quickstart-web.xml
+            webApp.setCopyWebDir(false);
+            webApp.setCopyWebInf(false);
+            webApp.setGenerateQuickStart(true);
+            webApp.setQuickStartDir(target);
+            
+            server.addWebApplication(webApp);
+                       
+            //if our server has a thread pool associated we can do any annotation scanning multithreaded,
+            //otherwise scanning will be single threaded
+            QueuedThreadPool tpool = server.getBean(QueuedThreadPool.class);
+            if (tpool != null)
+                tpool.start();
+            else
+                webApp.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE.toString());
+            
+             webApp.start(); //just enough to generate the quickstart           
+           
+            //save config of the webapp BEFORE we stop
             File props = prepareConfiguration();
+            
+            webApp.stop();
+            
+            if (tpool != null)
+                tpool.stop();
             
             List<String> cmd = new ArrayList<String>();
             cmd.add(getJavaBin());
@@ -699,7 +286,7 @@ public class JettyRunForkedMojo extends AbstractMojo
                 }
             }
             
-            String classPath = getClassPath();
+            String classPath = getContainerClassPath();
             if (classPath != null && classPath.length() > 0)
             {
                 cmd.add("-cp");
@@ -803,15 +390,262 @@ public class JettyRunForkedMojo extends AbstractMojo
             throw new MojoExecutionException("Failed to create Jetty process", ex);
         }
     }
+
+
+
+
+    /**
+     * @return
+     * @throws MojoExecutionException
+     */
+    public List<String> getProvidedJars() throws MojoExecutionException
+    {  
+        //if we are configured to include the provided dependencies on the plugin's classpath
+        //(which mimics being on jetty's classpath vs being on the webapp's classpath), we first
+        //try and filter out ones that will clash with jars that are plugin dependencies, then
+        //create a new classloader that we setup in the parent chain.
+        if (useProvidedScope)
+        {
+            
+                List<String> provided = new ArrayList<String>();        
+                for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
+                {                   
+                    Artifact artifact = iter.next();
+                    if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()) && !isPluginArtifact(artifact))
+                    {
+                        provided.add(artifact.getFile().getAbsolutePath());
+                        if (getLog().isDebugEnabled()) { getLog().debug("Adding provided artifact: "+artifact);}
+                    }
+                }
+                return provided;
+
+        }
+        else
+            return null;
+    }
     
- 
+   
+    
+    
+    /**
+     * @return
+     * @throws MojoExecutionException
+     */
+    public File prepareConfiguration() throws MojoExecutionException
+    {
+        try
+        {   
+            //work out the configuration based on what is configured in the pom
+            File propsFile = new File (target, "fork.props");
+            if (propsFile.exists())
+                propsFile.delete();   
+
+            propsFile.createNewFile();
+            //propsFile.deleteOnExit();
+
+            Properties props = new Properties();
+
+
+            //web.xml
+            if (webApp.getDescriptor() != null)
+            {
+                props.put("web.xml", webApp.getDescriptor());
+            }
+            
+            if (webApp.getQuickStartWebDescriptor() != null)
+            {
+                props.put("quickstart.web.xml", webApp.getQuickStartWebDescriptor().getFile().getAbsolutePath());
+            }
+
+            //sort out the context path
+            if (webApp.getContextPath() != null)
+            {
+                props.put("context.path", webApp.getContextPath());       
+            }
+
+            //tmp dir
+            props.put("tmp.dir", webApp.getTempDirectory().getAbsolutePath());
+            props.put("tmp.dir.persist", Boolean.toString(webApp.isPersistTempDirectory()));
+            
+            //resource bases - these are what has been configured BEFORE the webapp started and 
+            //potentially reordered them and included any resources from META-INF
+            if (originalBaseResource != null)
+            {
+                StringBuffer rb = new StringBuffer();
+                if (originalBaseResource instanceof ResourceCollection)
+                {
+                    ResourceCollection resources = ((ResourceCollection)originalBaseResource);
+                    for (Resource r:resources.getResources())
+                    {
+                        if (rb.length() > 0) rb.append(",");
+                        rb.append(r.toString());
+                    }        
+                }
+                else  
+                    rb.append(originalBaseResource.toString());
+                
+               props.put("base.dirs", rb.toString());                    
+            }
+
+            //sort out the resource base directories of the webapp
+            props.put("base.first", Boolean.toString(webApp.getBaseAppFirst()));
+
+            //web-inf classes
+            if (webApp.getClasses() != null)
+            {
+                props.put("classes.dir",webApp.getClasses().getAbsolutePath());
+            }
+            
+            if (useTestScope && webApp.getTestClasses() != null)
+            {
+                props.put("testClasses.dir", webApp.getTestClasses().getAbsolutePath());
+            }
+
+            //web-inf lib
+            List<File> deps = webApp.getWebInfLib();
+            StringBuffer strbuff = new StringBuffer();
+            for (int i=0; i<deps.size(); i++)
+            {
+                File d = deps.get(i);
+                strbuff.append(d.getAbsolutePath());
+                if (i < deps.size()-1)
+                    strbuff.append(",");
+            }
+            props.put("lib.jars", strbuff.toString());
+
+            //any war files
+            List<Artifact> warArtifacts = getWarArtifacts(); 
+            for (int i=0; i<warArtifacts.size(); i++)
+            {
+                strbuff.setLength(0);           
+                Artifact a  = warArtifacts.get(i);
+                strbuff.append(a.getGroupId()+",");
+                strbuff.append(a.getArtifactId()+",");
+                strbuff.append(a.getFile().getAbsolutePath());
+                props.put("maven.war.artifact."+i, strbuff.toString());
+            }
+          
+            
+            //any overlay configuration
+            WarPluginInfo warPlugin = new WarPluginInfo(project);
+            
+            //add in the war plugins default includes and excludes
+            props.put("maven.war.includes", toCSV(warPlugin.getDependentMavenWarIncludes()));
+            props.put("maven.war.excludes", toCSV(warPlugin.getDependentMavenWarExcludes()));
+            
+            
+            List<OverlayConfig> configs = warPlugin.getMavenWarOverlayConfigs();
+            int i=0;
+            for (OverlayConfig c:configs)
+            {
+                props.put("maven.war.overlay."+(i++), c.toString());
+            }
+            
+            try (OutputStream out = new BufferedOutputStream(new FileOutputStream(propsFile)))
+            {
+                props.store(out, "properties for forked webapp");
+            }
+            return propsFile;
+        }
+        catch (Exception e)
+        {
+            throw new MojoExecutionException("Prepare webapp configuration", e);
+        }
+    }
+    
+
+    
+    
+  
+    
+    /**
+     * @return
+     * @throws MalformedURLException
+     * @throws IOException
+     */
+    private List<Artifact> getWarArtifacts()
+    throws MalformedURLException, IOException
+    {
+        List<Artifact> warArtifacts = new ArrayList<Artifact>();
+        for ( Iterator<Artifact> iter = project.getArtifacts().iterator(); iter.hasNext(); )
+        {
+            Artifact artifact = (Artifact) iter.next();  
+            
+            if (artifact.getType().equals("war"))
+                warArtifacts.add(artifact);
+        }
+
+        return warArtifacts;
+    }
+    
+    
+    
+    
+    
+    
+    /**
+     * @param artifact
+     * @return
+     */
+    public boolean isPluginArtifact(Artifact artifact)
+    {
+        if (pluginArtifacts == null || pluginArtifacts.isEmpty())
+            return false;
+        
+        boolean isPluginArtifact = false;
+        for (Iterator<Artifact> iter = pluginArtifacts.iterator(); iter.hasNext() && !isPluginArtifact; )
+        {
+            Artifact pluginArtifact = iter.next();
+            if (getLog().isDebugEnabled()) { getLog().debug("Checking "+pluginArtifact);}
+            if (pluginArtifact.getGroupId().equals(artifact.getGroupId()) && pluginArtifact.getArtifactId().equals(artifact.getArtifactId()))
+                isPluginArtifact = true;
+        }
+        
+        return isPluginArtifact;
+    }
+    
+    
+    
+    
+    /**
+     * @return
+     * @throws Exception
+     */
+    private Set<Artifact> getExtraJars()
+    throws Exception
+    {
+        Set<Artifact> extraJars = new HashSet<Artifact>();
+  
+        
+        List l = pluginArtifacts;
+        Artifact pluginArtifact = null;
+
+        if (l != null)
+        {
+            Iterator itor = l.iterator();
+            while (itor.hasNext() && pluginArtifact == null)
+            {              
+                Artifact a = (Artifact)itor.next();
+                if (a.getArtifactId().equals(plugin.getArtifactId())) //get the jetty-maven-plugin jar
+                {
+                    extraJars.add(a);
+                }
+            }
+        }
+
+        return extraJars;
+    }
+
+    
+
+   
 
     
     /**
      * @return
      * @throws Exception
      */
-    public String getClassPath() throws Exception
+    public String getContainerClassPath() throws Exception
     {
         StringBuilder classPath = new StringBuilder();
         for (Object obj : pluginArtifacts)

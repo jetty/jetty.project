@@ -25,7 +25,6 @@ import java.util.List;
 
 import javax.servlet.Filter;
 
-import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestStaticMimeTypeServlet;

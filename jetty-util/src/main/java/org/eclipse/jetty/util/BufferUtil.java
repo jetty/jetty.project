@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -930,7 +929,7 @@ public class BufferUtil
         buf.append(buffer.getClass().getSimpleName());
         buf.append("@");
         if (buffer.hasArray())
-            buf.append(Integer.toHexString(((Object)buffer.array()).hashCode()));
+            buf.append(Integer.toHexString(Arrays.hashCode(buffer.array())));
         else
             buf.append(Integer.toHexString(buf.hashCode()));
         buf.append("[p=");

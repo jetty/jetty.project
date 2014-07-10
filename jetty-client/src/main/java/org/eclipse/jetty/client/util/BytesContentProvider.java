@@ -22,8 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.eclipse.jetty.client.api.ContentProvider;
-
 /**
  * A {@link ContentProvider} for byte arrays.
  */

@@ -21,9 +21,7 @@ package org.eclipse.jetty.client.util;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Authentication;
-import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;

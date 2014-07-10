@@ -25,7 +25,6 @@ import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;

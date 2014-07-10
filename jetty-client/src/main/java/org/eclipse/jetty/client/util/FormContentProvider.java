@@ -24,7 +24,6 @@ import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 import java.nio.charset.UnsupportedCharsetException;
 
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.util.Fields;
 
 /**
