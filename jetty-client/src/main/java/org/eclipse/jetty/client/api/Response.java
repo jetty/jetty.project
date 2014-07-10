@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.List;
 
-import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;

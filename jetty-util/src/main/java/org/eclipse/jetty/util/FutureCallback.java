@@ -151,7 +151,7 @@ public class FutureCallback implements Future<Void>,Callback
     @Override
     public String toString()
     {
-        return String.format("FutureCallback@%x{%b,%b}",hashCode(),_done,_cause==COMPLETED);
+        return String.format("FutureCallback@%x{%b,%b}",hashCode(),_done.get(),_cause==COMPLETED);
     }
     
 }

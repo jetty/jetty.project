@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.EOFException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**

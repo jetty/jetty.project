@@ -239,6 +239,12 @@ public class StdErrLog extends AbstractLogger
      */
     public static int getLoggingLevel(Properties props, final String name)
     {
+        if ((props == null) || (props.isEmpty()))
+        {
+            // Default Logging Level
+            return getLevelId("log.LEVEL","INFO");
+        }
+        
         // Calculate the level this named logger should operate under.
         // Checking with FQCN first, then each package segment from longest to shortest.
         String nameSegment = name;

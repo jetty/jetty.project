@@ -41,7 +41,6 @@ import org.eclipse.jetty.io.NetworkTrafficListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.After;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class NetworkTrafficListenerTest

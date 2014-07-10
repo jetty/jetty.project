@@ -27,9 +27,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 
 import javax.servlet.AsyncContext;
@@ -1060,7 +1058,15 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     /* ------------------------------------------------------------ */
     protected void writeHeaders(HttpServletResponse response,HttpContent content,long count)
-    {        
+    {
+        if (content == null)
+        {
+            // No content, then no headers to process
+            // This is possible during bypass write because of wrapping
+            // See .sendData() for more details.
+            return;
+        }
+        
         if (content.getContentType()!=null && response.getContentType()==null)
             response.setContentType(content.getContentType().toString());
 

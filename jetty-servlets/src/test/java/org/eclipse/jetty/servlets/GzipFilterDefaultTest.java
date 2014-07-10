@@ -20,7 +20,6 @@ package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.util.Arrays;
-import java.util.Collection;
 import java.util.List;
 
 import javax.servlet.Filter;

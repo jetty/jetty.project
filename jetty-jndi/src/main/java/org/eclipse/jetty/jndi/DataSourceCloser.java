@@ -24,7 +24,6 @@ import java.sql.Statement;
 
 import javax.sql.DataSource;
 
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;

@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.deploy;
 
-import java.io.IOException;
-
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 

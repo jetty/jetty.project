@@ -27,7 +27,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.HttpOutput;
-import org.eclipse.jetty.servlets.GzipFilter;
 
 /**
  * A sample servlet to serve static content, using a order of construction that has caused problems for

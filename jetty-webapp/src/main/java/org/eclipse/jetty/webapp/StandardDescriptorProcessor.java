@@ -33,7 +33,6 @@ import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
 import javax.servlet.SessionTrackingMode;
 
 import org.eclipse.jetty.security.ConstraintAware;
