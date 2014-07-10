@@ -35,7 +35,7 @@ import org.eclipse.jetty.util.log.Logger;
 /* ------------------------------------------------------------ */
 /** A Parser for HTTP 0.9, 1.0 and 1.1
  * <p>
- * The is parser parses HTTP client and server messages from buffers
+ * This parser parses HTTP client and server messages from buffers
  * passed in the {@link #parseNext(ByteBuffer)} method.  The parsed
  * elements of the HTTP message are passed as event calls to the 
  * {@link HttpHandler} instance the parser is constructed with.
