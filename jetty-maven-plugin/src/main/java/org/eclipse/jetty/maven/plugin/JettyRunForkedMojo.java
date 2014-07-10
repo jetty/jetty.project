@@ -43,6 +43,7 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
+import org.eclipse.jetty.quickstart.QuickStartDescriptorGenerator;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -97,6 +98,13 @@ public class JettyRunForkedMojo extends JettyRunMojo
      * @readonly
      */
     protected File target;
+    
+    /**
+     * The file into which to generate the quickstart web xml for the forked process to use
+     * 
+     * @parameter expression="${project.build.directory}/fork-web.xml"
+     */
+    protected File forkWebXml;
     
     
     /**
@@ -229,7 +237,11 @@ public class JettyRunForkedMojo extends JettyRunMojo
     public void startJetty() throws MojoExecutionException
     {
         //Only do enough setup to be able to produce a quickstart-web.xml file to
-        //pass onto the forked process to run      
+        //pass onto the forked process to run     
+        
+        if (forkWebXml == null)
+            forkWebXml = new File (target, "fork-web.xml");
+        
         try
         {
             printSystemProperties();
@@ -251,7 +263,13 @@ public class JettyRunForkedMojo extends JettyRunMojo
             webApp.setCopyWebDir(false);
             webApp.setCopyWebInf(false);
             webApp.setGenerateQuickStart(true);
-            webApp.setQuickStartDir(target);
+         
+            if (!forkWebXml.getParentFile().exists())
+                forkWebXml.getParentFile().mkdirs();
+            if (!forkWebXml.exists())
+                forkWebXml.createNewFile();
+            
+            webApp.setQuickStartWebDescriptor(Resource.newResource(forkWebXml));
             
             server.addWebApplication(webApp);
                        
