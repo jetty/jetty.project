@@ -283,10 +283,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
 
         String servlet_class = node.getString("servlet-class", false, true);
-
+        if ("".equals(servlet_class))
+            servlet_class = null;
 
         //Handle the default jsp servlet instance
-        if (id != null && id.equals("jsp"))
+        if (id != null && id.equals("jsp") && servlet_class != null)
         {
             try
             {

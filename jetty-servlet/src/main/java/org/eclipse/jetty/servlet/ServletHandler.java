@@ -849,18 +849,6 @@ public class ServletHandler extends ScopedHandler
             {
                 try
                 {
-                   /* if (servlet.getClassName() == null && servlet.getForcedPath() != null)
-                    {
-                        ServletHolder forced_holder = _servletPathMap.match(servlet.getForcedPath());
-                        if (forced_holder == null || forced_holder.getClassName() == null)
-                        {
-                            mx.add(new IllegalStateException("No forced path servlet for " + servlet.getForcedPath()));
-                            continue;
-                        }
-                        System.err.println("ServletHandler setting forced path classname to "+forced_holder.getClassName()+ " for "+servlet.getForcedPath());
-                        servlet.setClassName(forced_holder.getClassName());
-                    }*/
-                    
                     servlet.start();
                     servlet.initialize();
                 }
