@@ -124,9 +124,7 @@ public class HttpChannelOverSPDY extends HttpChannel
             {
                 if (specialHeader != HTTPSPDYHeader.HOST)
                     continue;
-
                 name = "host";
-                hostPort = new HostPortHttpField(header.getValue());
             }
 
             switch (name)
@@ -141,7 +139,7 @@ public class HttpChannelOverSPDY extends HttpChannel
                 }
                 case "host":
                 {
-                    // Do not add it now.
+                    hostPort = new HostPortHttpField(header.getValue());
                     break;
                 }
                 default:

@@ -238,7 +238,7 @@ public abstract class ProxySPDYToHTTPTest
             @Override
             public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
-                response.addHeader("some response", "header");
+                response.addHeader("someResponse", "header");
                 response.flushBuffer();
                 try
                 {

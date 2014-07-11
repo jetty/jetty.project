@@ -398,7 +398,8 @@ public class CrossOriginFilterTest
                 "Upgrade: WebSocket\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
-        String response = tester.getResponses(request);
+        String response = tester.getResponses(request,1,TimeUnit.SECONDS);
+        System.err.println(response);
         Assert.assertTrue(response.contains("HTTP/1.1 200"));
         Assert.assertFalse(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER));
         Assert.assertFalse(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER));

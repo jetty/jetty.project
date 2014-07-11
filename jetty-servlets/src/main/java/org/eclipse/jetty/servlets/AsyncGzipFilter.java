@@ -488,7 +488,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
         }
 
         // If not HTTP/2, then we must check the accept encoding header
-        if (request.getHttpVersion().ordinal()!=HttpVersion.HTTP_2.ordinal())
+        if (request.getHttpVersion()!=HttpVersion.HTTP_2)
         {
             HttpField accept = request.getHttpFields().getField(HttpHeader.ACCEPT_ENCODING);
 

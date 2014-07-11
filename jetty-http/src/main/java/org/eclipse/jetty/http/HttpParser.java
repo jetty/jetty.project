@@ -1056,6 +1056,8 @@ public class HttpParser
                         break;
                     }
                      
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Illegal character '{}' in {}",ch,BufferUtil.toDetailString(buffer));
                     throw new BadMessageException("Illegal character");
 
                 case HEADER_VALUE:
