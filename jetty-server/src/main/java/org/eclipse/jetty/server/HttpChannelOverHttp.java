@@ -132,7 +132,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
 
                 case EXPECT:
                 {
-                    if (getRequest().getHttpVersion().getVersion()==HttpVersion.HTTP_1_1.getVersion())
+                    if (_version==HttpVersion.HTTP_1_1)
                     {
                         HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
                         switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
@@ -213,7 +213,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public void earlyEOF()
     {
         // If we have no request yet, just close
-        if (getRequest().getMethod()==null)
+        if (_method==null)
             _httpConnection.close();
         else
             onEarlyEOF();
@@ -254,7 +254,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     persistent=false;
                         
                 if (!persistent)
-                    persistent = HttpMethod.CONNECT.is(getRequest().getMethod());
+                    persistent = HttpMethod.CONNECT.is(_method);
                 if (persistent)
                     getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
                     
@@ -280,7 +280,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     persistent=true;
                 
                 if (!persistent)
-                    persistent = HttpMethod.CONNECT.is(getRequest().getMethod());
+                    persistent = HttpMethod.CONNECT.is(_method);
                 if (!persistent)
                     getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
                 break;
