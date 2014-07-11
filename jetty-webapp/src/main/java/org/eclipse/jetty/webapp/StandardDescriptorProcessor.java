@@ -292,15 +292,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             try
             {
                 Loader.loadClass(this.getClass(), servlet_class);
-
-                //Ensure there is a scratch dir
-                if (holder.getInitParameter("scratchdir") == null)
-                {
-                    File tmp = context.getTempDirectory();
-                    File scratch = new File(tmp, "jsp");
-                    if (!scratch.exists()) scratch.mkdir();
-                    holder.setInitParameter("scratchdir", scratch.getAbsolutePath());
-                }
             }
             catch (ClassNotFoundException e)
             {

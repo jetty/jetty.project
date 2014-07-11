@@ -570,6 +570,15 @@ public class QuickStartDescriptorGenerator
         
         if (holder instanceof FilterHolder)
             out.tag(tag + "-class",origin(md,ot + tag + "-class"),holder.getClassName());
+        else if (holder instanceof ServletHolder)
+        {
+            ServletHolder s = (ServletHolder)holder;
+            if (s.getForcedPath() != null && s.getClassName() == null)
+                out.tag("jsp-file",s.getForcedPath());
+            else
+                out.tag(tag + "-class",origin(md,ot + tag + "-class"),s.getClassName());
+
+        }
 
         for (String p : holder.getInitParameters().keySet())
         {
@@ -584,11 +593,6 @@ public class QuickStartDescriptorGenerator
         if (holder instanceof ServletHolder)
         {
             ServletHolder s = (ServletHolder)holder;
-            if (s.getForcedPath() != null && s.getClassName() == null)
-                out.tag("jsp-file",s.getForcedPath());
-            else
-                out.tag(tag + "-class",origin(md,ot + tag + "-class"),s.getClassName());
-
             if (s.getInitOrder() != 0)
                 out.tag("load-on-startup",Integer.toString(s.getInitOrder()));
 

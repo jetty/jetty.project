@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -595,7 +596,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             initMultiPart();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Filter.init {}",_servlet);
+                LOG.debug("Servlet.init {}",_servlet);
             _servlet.init(_config);
         }
         catch (UnavailableException e)
@@ -651,6 +652,18 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (classpath != null)
                 setInitParameter("classpath", classpath);
         }
+        
+        /* ensure scratch dir */
+        File scratch = null;
+        if (getInitParameter("scratchdir") == null)
+        {
+            File tmp = (File)getServletHandler().getServletContext().getAttribute(ServletContext.TEMPDIR);
+            scratch = new File(tmp, "jsp");
+            setInitParameter("scratchdir", scratch.getAbsolutePath());
+        }
+     
+        scratch = new File (getInitParameter("scratchdir"));
+        if (!scratch.exists()) scratch.mkdir();
     }
 
     /* ------------------------------------------------------------ */
