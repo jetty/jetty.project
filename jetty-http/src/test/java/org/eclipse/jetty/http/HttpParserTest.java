@@ -1391,7 +1391,7 @@ public class HttpParserTest
     {
         ByteBuffer buffer= BufferUtil.toBuffer(
                 "GET / HTTP/1.1\015\012"
-                        + "Host: myhost:xxx\015\012"
+                        + "Host: myhost:testBadPort\015\012"
                         + "Connection: close\015\012"
                         + "\015\012");
 

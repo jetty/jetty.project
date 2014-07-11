@@ -50,7 +50,7 @@ public class XmlAppendable
     
     public XmlAppendable(Appendable out, int indent) throws IOException
     {
-        this(out,indent,"UTF-8");
+        this(out,indent,"utf-8");
     }
     
     public XmlAppendable(Appendable out, int indent, String encoding) throws IOException

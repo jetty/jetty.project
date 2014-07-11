@@ -360,7 +360,7 @@ public class HttpConnectionTest
                                            "12345\015\012"+
                                            "0;\015\012\015\012");
             offset = checkContains(response,offset,"HTTP/1.1 200");
-            offset = checkContains(response,offset,"encoding=ISO-8859-1");
+            offset = checkContains(response,offset,"encoding=iso-8859-1");
             offset = checkContains(response,offset,"/R1");
             offset = checkContains(response,offset,"12345");
 

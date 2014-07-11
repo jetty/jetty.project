@@ -186,10 +186,12 @@ public class HttpParser
             HttpField field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type);
             CACHE.put(field);
             
-            for (String charset : new String[]{"UTF-8","ISO-8859-1"})
+            for (String charset : new String[]{"utf-8","iso-8859-1"})
             {
                 CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
                 CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+"; charset="+charset));
+                CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset.toUpperCase()));
+                CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+"; charset="+charset.toUpperCase()));
             }
         }
     
@@ -1234,7 +1236,9 @@ public class HttpParser
             BufferUtil.clear(buffer);
 
             Throwable cause = e.getCause();
-            boolean stack = (cause instanceof RuntimeException) || (cause instanceof Error) || LOG.isDebugEnabled();
+            boolean stack = LOG.isDebugEnabled() || 
+                    (!(cause instanceof NumberFormatException )  && (cause instanceof RuntimeException || cause instanceof Error));
+            
             if (stack)
                 LOG.warn("bad HTTP parsed: "+e._code+(e.getReason()!=null?" "+e.getReason():"")+" for "+_handler,e);
             else

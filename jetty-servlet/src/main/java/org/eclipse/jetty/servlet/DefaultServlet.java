@@ -847,8 +847,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             return;
         }
 
-        data=dir.getBytes("UTF-8");
-        response.setContentType("text/html; charset=UTF-8");
+        data=dir.getBytes("utf-8");
+        response.setContentType("text/html;charset=utf-8");
         response.setContentLength(data.length);
         response.getOutputStream().write(data);
     }
