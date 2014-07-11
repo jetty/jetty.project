@@ -23,6 +23,7 @@ import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServlet;
 
+import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
@@ -108,6 +109,6 @@ public class AbstractTest
         String host = "localhost";
         int port = connector.getLocalPort();
         String authority = host + ":" + port;
-        return new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, method, new HostPortHttpField(authority), path, fields);
+        return new FinalMetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, method, new HostPortHttpField(authority), path, fields);
     }
 }

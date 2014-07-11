@@ -20,6 +20,7 @@ package org.eclipse.jetty.spdy.server.http;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -163,7 +164,7 @@ public class HttpChannelOverSPDY extends HttpChannel
         // At last, add the Host header.
         fields.add(hostPort);
 
-        MetaData.Request request = new MetaData.Request(httpVersion, httpMethod.asString(), uri, fields, hostPort);
+        MetaData.Request request = new FinalMetaData.Request(httpVersion, httpMethod.asString(), uri, fields, hostPort);
         onRequest(request);
         return true;
     }

@@ -22,22 +22,20 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -49,7 +47,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -100,7 +97,6 @@ public class HttpChannel implements Runnable
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
-    private HttpVersion _version = HttpVersion.HTTP_1_1;
 
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
@@ -120,10 +116,6 @@ public class HttpChannel implements Runnable
         return _state;
     }
 
-    public HttpVersion getHttpVersion()
-    {
-        return _version;
-    }
     /**
      * @return the number of requests handled by this connection
      */
@@ -458,60 +450,9 @@ public class HttpChannel implements Runnable
     public void onRequest(MetaData.Request request)
     {
         _requests.incrementAndGet();
-        // TODO directly inject MetaData.Request to Request
-        
+
         _request.setTimeStamp(System.currentTimeMillis());
-
-        _request.setHttpVersion(_version = request.getHttpVersion());
-        _request.setMethod(request.getMethod());
-        _request.setScheme(request.getScheme().asString());
-
-        HttpURI uri = request.getURI();
-        
-        String uriHost=uri.getHost();
-        if (uriHost!=null)
-        {
-            // Give precidence to authority in absolute URI
-            _request.setServerName(uriHost);
-            _request.setServerPort(uri.getPort());
-        }
-        else
-        {
-            _request.setServerName(request.getHost());
-            _request.setServerPort(request.getPort());
-        }
-        
-        _request.setUri(request.getURI());
-        
-        
-        String path;
-        try
-        {
-            path = uri.getDecodedPath();
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
-            LOG.ignore(e);
-            path = uri.getDecodedPath(StandardCharsets.ISO_8859_1);
-        }
-        
-        String info = URIUtil.canonicalPath(path); // TODO should this be done prior to decoding???
-
-        if (info == null)
-        {
-            if( path==null && uri.getScheme()!=null && uri.getHost()!=null)
-            {
-                info = "/";
-                _request.setRequestURI("");
-            }
-            else
-                throw new BadMessageException(400,"Bad URI");
-        }
-        _request.setPathInfo(info);
-        
-        // TODO avoid playing in headers
-        _request.getHttpFields().addAll(request.getFields());
+        _request.setMetaData(request);
 
         // TODO make this a better field for h2 hpack generation
         if (_configuration.getSendDateHeader())

@@ -60,6 +60,7 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.http.HttpField;
@@ -69,6 +70,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -127,10 +129,10 @@ public class Request implements HttpServletRequest
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
 
     private final HttpChannel _channel;
-    private final HttpFields _fields=new HttpFields();
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
     private final HttpInput _input;
 
+    private MetaData.Request _metadata;
     private boolean _secure;
     private boolean _asyncSupported = true;
     private boolean _newContext;
@@ -152,7 +154,6 @@ public class Request implements HttpServletRequest
     private MultiMap<String> _parameters;
     private String _pathInfo;
     private int _serverPort;
-    private HttpVersion _httpVersion = HttpVersion.HTTP_1_1;
     private String _queryEncoding;
     private String _queryString;
     private BufferedReader _reader;
@@ -182,7 +183,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public HttpFields getHttpFields()
     {
-        return _fields;
+        return _metadata.getFields();
     }
 
     /* ------------------------------------------------------------ */
@@ -200,6 +201,7 @@ public class Request implements HttpServletRequest
             throw new IllegalArgumentException(listener.getClass().toString());
     }
 
+    /* ------------------------------------------------------------ */
     public void extractParameters()
     {
         if (_paramsExtracted)
@@ -221,6 +223,7 @@ public class Request implements HttpServletRequest
         _parameters = restoreParameters();
     }
 
+    /* ------------------------------------------------------------ */
     private MultiMap<String> extractQueryParameters()
     {
         MultiMap<String> result = new MultiMap<>();
@@ -248,6 +251,7 @@ public class Request implements HttpServletRequest
         return result;
     }
 
+    /* ------------------------------------------------------------ */
     private MultiMap<String> extractContentParameters()
     {
         MultiMap<String> result = new MultiMap<>();
@@ -276,6 +280,7 @@ public class Request implements HttpServletRequest
         return result;
     }
 
+    /* ------------------------------------------------------------ */
     public void extractFormParameters(MultiMap<String> params)
     {
         try
@@ -341,6 +346,7 @@ public class Request implements HttpServletRequest
         }
     }
 
+    /* ------------------------------------------------------------ */
     private void extractMultipartParameters(MultiMap<String> result)
     {
         try
@@ -480,7 +486,7 @@ public class Request implements HttpServletRequest
     @Override
     public int getContentLength()
     {
-        return (int)_fields.getLongField(HttpHeader.CONTENT_LENGTH.toString());
+        return (int)_metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -490,7 +496,7 @@ public class Request implements HttpServletRequest
     @Override
     public long getContentLengthLong()
     {
-        return _fields.getLongField(HttpHeader.CONTENT_LENGTH.toString());
+        return _metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -506,7 +512,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getContentType()
     {
-        String content_type = _fields.getStringField(HttpHeader.CONTENT_TYPE);
+        String content_type = _metadata.getFields().getStringField(HttpHeader.CONTENT_TYPE);
         if (_characterEncoding==null && content_type!=null)
         {
             MimeTypes.Type mime = MimeTypes.CACHE.get(content_type);
@@ -543,7 +549,7 @@ public class Request implements HttpServletRequest
     @Override
     public Cookie[] getCookies()
     {
-        if (_cookiesExtracted)
+        if (_metadata==null || _cookiesExtracted)
         {
             if (_cookies == null || _cookies.getCookies().length == 0)
                 return null;
@@ -553,7 +559,7 @@ public class Request implements HttpServletRequest
 
         _cookiesExtracted = true;
 
-        Enumeration<?> enm = _fields.getValues(HttpHeader.COOKIE.toString());
+        Enumeration<?> enm = _metadata.getFields().getValues(HttpHeader.COOKIE.toString());
 
         // Handle no cookies
         if (enm != null)
@@ -582,7 +588,7 @@ public class Request implements HttpServletRequest
     @Override
     public long getDateHeader(String name)
     {
-        return _fields.getDateField(name);
+        return _metadata==null?-1:_metadata.getFields().getDateField(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -599,7 +605,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getHeader(String name)
     {
-        return _fields.getStringField(name);
+        return _metadata==null?null:_metadata.getFields().getStringField(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -609,7 +615,9 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<String> getHeaderNames()
     {
-        return _fields.getFieldNames();
+        if (_metadata==null)
+            return Collections.emptyEnumeration();
+        return _metadata.getFields().getFieldNames();
     }
 
     /* ------------------------------------------------------------ */
@@ -619,7 +627,9 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<String> getHeaders(String name)
     {
-        Enumeration<String> e = _fields.getValues(name);
+        if (_metadata==null)
+            return Collections.emptyEnumeration();
+        Enumeration<String> e = _metadata.getFields().getValues(name);
         if (e == null)
             return Collections.enumeration(Collections.<String>emptyList());
         return e;
@@ -658,7 +668,7 @@ public class Request implements HttpServletRequest
     @Override
     public int getIntHeader(String name)
     {
-        return (int)_fields.getLongField(name);
+        return _metadata==null?-1:(int)_metadata.getFields().getLongField(name);
     }
 
 
@@ -669,7 +679,10 @@ public class Request implements HttpServletRequest
     @Override
     public Locale getLocale()
     {
-        Enumeration<String> enm = _fields.getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
+        if (_metadata==null)
+            return Locale.getDefault();
+            
+        Enumeration<String> enm = _metadata.getFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
 
         // handle no locale
         if (enm == null || !enm.hasMoreElements())
@@ -706,8 +719,10 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<Locale> getLocales()
     {
-
-        Enumeration<String> enm = _fields.getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
+        if (_metadata==null)
+            return Collections.enumeration(__defaultLocale);
+        
+        Enumeration<String> enm = _metadata.getFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
 
         // handle no locale
         if (enm == null || !enm.hasMoreElements())
@@ -907,7 +922,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getProtocol()
     {
-        return _httpVersion.toString();
+        return _metadata==null?null:_metadata.getHttpVersion().toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -916,7 +931,7 @@ public class Request implements HttpServletRequest
      */
     public HttpVersion getHttpVersion()
     {
-        return _httpVersion;
+        return _metadata==null?null:_metadata.getHttpVersion();
     }
 
     /* ------------------------------------------------------------ */
@@ -1181,7 +1196,7 @@ public class Request implements HttpServletRequest
         }
 
         // Return host from header field
-        HttpField host = _fields.getField(HttpHeader.HOST);
+        HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
         if (host!=null)
         {
             HostPortHttpField authority = (host instanceof HostPortHttpField)
@@ -1518,9 +1533,67 @@ public class Request implements HttpServletRequest
         return _savedNewSessions.get(key);
     }
 
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param request
+     */
+    public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
+    {
+        _metadata=request;
+        setMethod(request.getMethod());
+        setScheme(request.getScheme().asString());
+
+        HttpURI uri = request.getURI();
+        
+        String uriHost=uri.getHost();
+        if (uriHost!=null)
+        {
+            // Give precidence to authority in absolute URI
+            setServerName(uriHost);
+            setServerPort(uri.getPort());
+        }
+        else
+        {
+            setServerName(request.getHost());
+            setServerPort(request.getPort());
+        }
+        
+        setUri(request.getURI());
+        
+        
+        String path;
+        try
+        {
+            path = uri.getDecodedPath();
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
+            LOG.ignore(e);
+            path = uri.getDecodedPath(StandardCharsets.ISO_8859_1);
+        }
+        
+        String info = URIUtil.canonicalPath(path); // TODO should this be done prior to decoding???
+
+        if (info == null)
+        {
+            if( path==null && uri.getScheme()!=null && uri.getHost()!=null)
+            {
+                info = "/";
+                setRequestURI("");
+            }
+            else
+                throw new BadMessageException(400,"Bad URI");
+        }
+        setPathInfo(info);
+    }
+    
     /* ------------------------------------------------------------ */
     protected void recycle()
     {
+        _metadata=null;
+        
         if (_context != null)
             throw new IllegalStateException("Request in context!");
         
@@ -1560,7 +1633,6 @@ public class Request implements HttpServletRequest
         _httpMethod = null;
         _pathInfo = null;
         _serverPort = 0;
-        _httpVersion = HttpVersion.HTTP_1_1;
         _queryEncoding = null;
         _queryString = null;
         _requestedSessionId = null;
@@ -1585,7 +1657,6 @@ public class Request implements HttpServletRequest
         _savedNewSessions=null;
         _multiPartInputStream = null;
         _remote=null;
-        _fields.clear();
         _input.recycle();
     }
 
@@ -1728,8 +1799,7 @@ public class Request implements HttpServletRequest
      */
     public void setContentType(String contentType)
     {
-        _fields.put(HttpHeader.CONTENT_TYPE,contentType);
-
+        _metadata.getFields().put(HttpHeader.CONTENT_TYPE,contentType);
     }
 
     /* ------------------------------------------------------------ */
@@ -1816,16 +1886,6 @@ public class Request implements HttpServletRequest
     public void setPathInfo(String pathInfo)
     {
         _pathInfo = pathInfo;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param version
-     *            The protocol to set.
-     */
-    public void setHttpVersion(HttpVersion version)
-    {
-        _httpVersion = version;
     }
 
     /* ------------------------------------------------------------ */
@@ -1965,6 +2025,7 @@ public class Request implements HttpServletRequest
      * @param uri
      *            The uri to set.
      */
+    @Deprecated // is this still needed or can we use meta data?
     public void setUri(HttpURI uri)
     {
         _uri = uri;

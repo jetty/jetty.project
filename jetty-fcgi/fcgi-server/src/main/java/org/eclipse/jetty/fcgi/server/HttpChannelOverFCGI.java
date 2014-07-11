@@ -23,6 +23,7 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -87,7 +88,7 @@ public class HttpChannelOverFCGI extends HttpChannel
         String uri = path;
         if (query != null && query.length() > 0)
             uri += "?" + query;
-        onRequest(new MetaData.Request(HttpVersion.fromString(version), method, new HttpURI(uri), fields, hostPort));
+        onRequest(new FinalMetaData.Request(HttpVersion.fromString(version), method, new HttpURI(uri), fields, hostPort));
     }
 
     private HttpField convertHeader(HttpField field)

@@ -1218,7 +1218,8 @@ public class Response implements HttpServletResponse
         _contentLength = -1;
         _fields.clear();
 
-        String connection = _channel.getRequest().getHttpFields().getStringField(HttpHeader.CONNECTION);
+        String connection = _channel.getRequest().getHeader(HttpHeader.CONNECTION.asString());
+                
         if (connection != null)
         {
             String[] values = connection.split(",");

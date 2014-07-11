@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -50,7 +51,7 @@ public class HeadersGenerateParseTest
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", new HostPortHttpField("localhost:8080"), "/path", fields);
+        MetaData.Request metaData = new FinalMetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", new HostPortHttpField("localhost:8080"), "/path", fields);
 
         final List<HeadersFrame> frames = new ArrayList<>();
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
@@ -116,7 +117,7 @@ public class HeadersGenerateParseTest
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new MetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", new HostPortHttpField("localhost:8080"), "/path", fields);
+        MetaData.Request metaData = new FinalMetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", new HostPortHttpField("localhost:8080"), "/path", fields);
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.generateHeaders(lease, streamId, metaData, false);

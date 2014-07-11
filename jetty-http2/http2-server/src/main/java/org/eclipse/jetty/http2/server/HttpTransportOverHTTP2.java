@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.server;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -81,7 +82,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                     System.lineSeparator(), info.getHttpFields());
         }
 
-        MetaData metaData = new MetaData.Response(HttpVersion.HTTP_2, info.getStatus(), info.getHttpFields());
+        MetaData metaData = new FinalMetaData.Response(HttpVersion.HTTP_2, info.getStatus(), info.getHttpFields());
         HeadersFrame frame = new HeadersFrame(stream.getId(), metaData, null, endStream);
         stream.headers(frame, callback);
     }

@@ -24,16 +24,16 @@ import static org.junit.Assert.assertEquals;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.junit.Assert;
-import org.junit.Test;
-import org.eclipse.jetty.http.MetaData.Request;
 import org.eclipse.jetty.http.MetaData.Response;
 import org.eclipse.jetty.util.BufferUtil;
+import org.junit.Assert;
+import org.junit.Test;
 
 
 public class HpackTest
@@ -51,7 +51,7 @@ public class HpackTest
         fields0.add(HttpHeader.SERVER,"jetty");
         fields0.add(HttpHeader.SET_COOKIE,"abcdefghijklmnopqrstuvwxyz");
         fields0.add("custom-key","custom-value");
-        Response original0 = new Response(HttpVersion.HTTP_2,200,fields0);
+        Response original0 = new FinalMetaData.Response(HttpVersion.HTTP_2,200,fields0);
         
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer,original0);
@@ -73,7 +73,7 @@ public class HpackTest
         fields1.add(HttpHeader.CONTENT_LENGTH,"1234");
         fields1.add(HttpHeader.SERVER,"jetty");
         fields1.add("Custom-Key","Other-Value");
-        Response original1 = new Response(HttpVersion.HTTP_2,200,fields1);
+        Response original1 = new FinalMetaData.Response(HttpVersion.HTTP_2,200,fields1);
 
         // Same again?
         BufferUtil.clearToFill(buffer);
@@ -97,7 +97,7 @@ public class HpackTest
         HttpFields fields0 = new HttpFields();
         fields0.add("1234567890","1234567890123456789012345678901234567890");
         fields0.add("Cookie","abcdeffhijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
-        MetaData original0= new MetaData(HttpVersion.HTTP_2,fields0);
+        MetaData original0= new FinalMetaData(HttpVersion.HTTP_2,fields0);
         
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer,original0);
@@ -110,7 +110,7 @@ public class HpackTest
         fields1.add("1234567890","1234567890123456789012345678901234567890");
         fields1.add("Cookie","abcdeffhijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQR");
         fields1.add("x","y");
-        MetaData original1 = new MetaData(HttpVersion.HTTP_2,fields1);
+        MetaData original1 = new FinalMetaData(HttpVersion.HTTP_2,fields1);
 
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer,original1);

@@ -23,6 +23,8 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.AbstractMetaData;
+import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -31,6 +33,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -55,6 +58,54 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     private boolean _expect = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
+    private final MetaData.Request _metadata = new AbstractMetaData.Request()
+    {
+        @Override
+        public String getMethod()
+        {
+            return _method;
+        }
+
+        @Override
+        public HttpScheme getScheme()
+        {
+            String scheme = _uri.getScheme();
+            if (scheme==null || !scheme.endsWith("s"))
+                return HttpScheme.HTTP;
+            return HttpScheme.HTTPS;
+        }
+
+        @Override
+        public String getHost()
+        {
+            return _hostPort==null?null:_hostPort.getHost();
+        }
+
+        @Override
+        public int getPort()
+        {
+            return _hostPort==null?0:_hostPort.getPort();
+        }
+
+        @Override
+        public HttpURI getURI()
+        {
+            return _uri;
+        }
+
+        @Override
+        public HttpVersion getHttpVersion()
+        {
+            return _version;
+        }
+        
+        @Override
+        public HttpFields getFields()
+        {
+            return _fields;
+        }
+        
+    };
     
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
@@ -295,7 +346,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         if (!persistent)
             _httpConnection._generator.setPersistent(false);
 
-        onRequest(new MetaData.Request(_version,_method,_uri,_fields,_hostPort));
+        onRequest(_metadata);
         return true;
     }
 
