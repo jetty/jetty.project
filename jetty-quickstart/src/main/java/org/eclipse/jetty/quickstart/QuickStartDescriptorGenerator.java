@@ -593,7 +593,7 @@ public class QuickStartDescriptorGenerator
         if (holder instanceof ServletHolder)
         {
             ServletHolder s = (ServletHolder)holder;
-            if (s.getInitOrder() != 0)
+            if (s.getInitOrder() >= 0)
                 out.tag("load-on-startup",Integer.toString(s.getInitOrder()));
 
             if (s.getRunAsRole() != null)
