@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
@@ -557,16 +556,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
         boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
           
         if (LOG.isDebugEnabled())
-        {       
+        {
             for (ParserTask p:_parserTasks)
                 LOG.debug("Scanned {} in {}ms", p.getResource(), TimeUnit.MILLISECONDS.convert(p.getStatistic().getElapsed(), TimeUnit.NANOSECONDS));
+
+            LOG.debug("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
+                    _containerPathStats.getTotal(), _webInfLibStats.getTotal(), _webInfClassesStats.getTotal(),
+                    (TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS)),
+                    context);
         }
-        
-        LOG.debug("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
-                 _containerPathStats.getTotal(), _webInfLibStats.getTotal(), _webInfClassesStats.getTotal(),
-                 (TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS)),
-                 context);
-     
+
         if (timeout)
             me.add(new Exception("Timeout scanning annotations"));
         me.ifExceptionThrow();   

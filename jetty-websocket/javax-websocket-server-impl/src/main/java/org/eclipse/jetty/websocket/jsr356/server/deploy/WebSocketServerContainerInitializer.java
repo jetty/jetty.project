@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356.server.deploy;
 
 import java.util.HashSet;
 import java.util.Set;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -74,16 +73,26 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         if (TypeUtil.isFalse(enable))
         {
             if (c.isEmpty())
-                LOG.debug("JSR-356 support disabled via attribute on context {} - {}",context.getContextPath(),context);
+            {
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("JSR-356 support disabled via attribute on context {} - {}",context.getContextPath(),context);
+                }
+            }
             else
+            {
                 LOG.warn("JSR-356 support disabled via attribute on context {} - {}",context.getContextPath(),context);
+            }
             return;
         }
         
         // Disabled if not explicitly enabled and there are no discovered annotations or interfaces
         if (!TypeUtil.isTrue(enable) && c.isEmpty())
         {
-            LOG.debug("No JSR-356 annotations or interfaces discovered. JSR-356 support disabled",context.getContextPath(),context);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("No JSR-356 annotations or interfaces discovered. JSR-356 support disabled",context.getContextPath(),context);
+            }
             return;
         }
 
@@ -107,7 +116,10 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
 
-        LOG.debug("Found {} classes",c.size());
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Found {} classes",c.size());
+        }
 
         // Now process the incoming classes
         Set<Class<? extends Endpoint>> discoveredExtendedEndpoints = new HashSet<>();
@@ -116,9 +128,12 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
         filterClasses(c,discoveredExtendedEndpoints,discoveredAnnotatedEndpoints,serverAppConfigs);
 
-        LOG.debug("Discovered {} extends Endpoint classes",discoveredExtendedEndpoints.size());
-        LOG.debug("Discovered {} @ServerEndpoint classes",discoveredAnnotatedEndpoints.size());
-        LOG.debug("Discovered {} ServerApplicationConfig classes",serverAppConfigs.size());
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Discovered {} extends Endpoint classes",discoveredExtendedEndpoints.size());
+            LOG.debug("Discovered {} @ServerEndpoint classes",discoveredAnnotatedEndpoints.size());
+            LOG.debug("Discovered {} ServerApplicationConfig classes",serverAppConfigs.size());
+        }
 
         // Process the server app configs to determine endpoint filtering
         boolean wasFiltered = false;
@@ -127,7 +142,10 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
         for (Class<? extends ServerApplicationConfig> clazz : serverAppConfigs)
         {
-            LOG.debug("Found ServerApplicationConfig: {}",clazz);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Found ServerApplicationConfig: {}",clazz);
+            }
             try
             {
                 ServerApplicationConfig config = clazz.newInstance();
@@ -160,8 +178,11 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             deployableExtendedEndpointConfigs = new HashSet<>();
         }
 
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Deploying {} ServerEndpointConfig(s)",deployableExtendedEndpointConfigs.size());
+        }
         // Deploy what should be deployed.
-        LOG.debug("Deploying {} ServerEndpointConfig(s)",deployableExtendedEndpointConfigs.size());
         for (ServerEndpointConfig config : deployableExtendedEndpointConfigs)
         {
             try
@@ -174,7 +195,10 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
             }
         }
 
-        LOG.debug("Deploying {} @ServerEndpoint(s)",deployableAnnotatedEndpoints.size());
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Deploying {} @ServerEndpoint(s)",deployableAnnotatedEndpoints.size());
+        }
         for (Class<?> annotatedClass : deployableAnnotatedEndpoints)
         {
             try

@@ -456,7 +456,8 @@ public class ConnectHandler extends HandlerWrapper
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            ConnectHandler.LOG.debug("Connected to {}", channel.getRemoteAddress());
+            if (ConnectHandler.LOG.isDebugEnabled())
+                ConnectHandler.LOG.debug("Connected to {}", channel.getRemoteAddress());
             ConnectContext connectContext = (ConnectContext)attachment;
             UpstreamConnection connection = newUpstreamConnection(endpoint, connectContext);
             connection.setInputBufferSize(getBufferSize());

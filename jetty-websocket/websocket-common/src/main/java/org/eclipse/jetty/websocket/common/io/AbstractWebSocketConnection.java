@@ -78,7 +78,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 return;
             }
 
-            LOG.debug("Write flush failure",x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Write flush failure",x);
             ioState.onWriteFailure(x);
         }
     }
@@ -155,7 +156,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
         private void onLocalClose()
         {
-            LOG.debug("Local Close Confirmed {}",close);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Local Close Confirmed {}",close);
             if (close.isAbnormal())
             {
                 ioState.onAbnormalClose(close);
@@ -260,7 +262,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void close(int statusCode, String reason)
     {
-        LOG.debug("close({},{})",statusCode,reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("close({},{})",statusCode,reason);
         CloseInfo close = new CloseInfo(statusCode,reason);
         this.outgoingFrame(close.asFrame(),new OnCloseLocalCallback(close),BatchMode.OFF);
     }
@@ -273,13 +276,15 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     private void disconnect(boolean onlyOutput)
     {
-        LOG.debug("{} disconnect({})",policy.getBehavior(),onlyOutput?"outputOnly":"both");
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} disconnect({})",policy.getBehavior(),onlyOutput?"outputOnly":"both");
         // close FrameFlusher, we cannot write anymore at this point.
         flusher.close();
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
-        LOG.debug("Shutting down output {}",endPoint);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shutting down output {}",endPoint);
         endPoint.shutdownOutput();
         if (!onlyOutput)
         {
@@ -296,7 +301,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         }
         catch (RejectedExecutionException e)
         {
-            LOG.debug("Job not dispatched: {}",task);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Job not dispatched: {}",task);
         }
     }
 
@@ -401,7 +407,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void onClose()
     {
-        LOG.debug("{} onClose()",policy.getBehavior());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onClose()",policy.getBehavior());
         super.onClose();
         // ioState.onDisconnected();
         flusher.close();
@@ -410,11 +417,13 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void onConnectionStateChange(ConnectionState state)
     {
-        LOG.debug("{} Connection State Change: {}",policy.getBehavior(),state);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} Connection State Change: {}",policy.getBehavior(),state);
         switch (state)
         {
             case OPEN:
-                LOG.debug("fillInterested");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("fillInterested");
                 fillInterested();
                 break;
             case CLOSED:
@@ -446,7 +455,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public void onFillable()
     {
-        LOG.debug("{} onFillable()",policy.getBehavior());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onFillable()",policy.getBehavior());
         stats.countOnFillableEvents.incrementAndGet();
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
         try
@@ -501,7 +511,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     {
         IOState state = getIOState();
         ConnectionState cstate = state.getConnectionState();
-        LOG.debug("{} Read Timeout - {}",policy.getBehavior(),cstate);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} Read Timeout - {}",policy.getBehavior(),cstate);
 
         if (cstate == ConnectionState.CLOSED)
         {

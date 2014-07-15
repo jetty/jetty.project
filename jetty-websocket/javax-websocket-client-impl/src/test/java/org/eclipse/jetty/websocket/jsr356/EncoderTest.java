@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -28,7 +26,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.ContainerProvider;
 import javax.websocket.EncodeException;
@@ -51,6 +48,8 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
 
 public class EncoderTest
 {
@@ -182,7 +181,8 @@ public class EncoderTest
 
         public void write(Quotes quotes) throws IOException, EncodeException
         {
-            LOG.debug("Writing Quotes: {}",quotes);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Writing Quotes: {}",quotes);
             this.session.getBasicRemote().sendObject(quotes);
         }
     }

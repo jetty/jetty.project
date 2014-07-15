@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class ParamsContentParser extends ContentParser
 {
-    private static final Logger logger = Log.getLogger(ParamsContentParser.class);
+    private static final Logger LOG = Log.getLogger(ParamsContentParser.class);
 
     private final ServerParser.Listener listener;
     private State state = State.LENGTH;
@@ -212,7 +212,8 @@ public class ParamsContentParser extends ContentParser
         }
         catch (Throwable x)
         {
-            logger.debug("Exception while invoking listener " + listener, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while invoking listener " + listener, x);
         }
     }
 
@@ -224,7 +225,8 @@ public class ParamsContentParser extends ContentParser
         }
         catch (Throwable x)
         {
-            logger.debug("Exception while invoking listener " + listener, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while invoking listener " + listener, x);
         }
     }
 

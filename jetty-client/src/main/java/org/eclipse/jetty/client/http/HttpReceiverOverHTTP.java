@@ -120,7 +120,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             }
             catch (Throwable x)
             {
-                LOG.debug(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
                 failAndClose(x);
                 return true;
             }

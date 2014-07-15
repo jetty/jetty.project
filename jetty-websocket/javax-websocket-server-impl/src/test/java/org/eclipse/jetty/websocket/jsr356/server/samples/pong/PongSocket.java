@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.pong;
 
 import java.nio.charset.StandardCharsets;
-
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;
@@ -48,7 +47,8 @@ public class PongSocket
     @OnMessage
     public void onPong(PongMessage pong)
     {
-        LOG.debug("onPong(): PongMessage.appData={}",BufferUtil.toDetailString(pong.getApplicationData()));
+        if (LOG.isDebugEnabled())
+            LOG.debug("onPong(): PongMessage.appData={}",BufferUtil.toDetailString(pong.getApplicationData()));
         byte buf[] = BufferUtil.toArray(pong.getApplicationData());
         String message = new String(buf,StandardCharsets.UTF_8);
         this.session.getAsyncRemote().sendText("@OnMessage(PongMessage)[" + path + "]:" + message);

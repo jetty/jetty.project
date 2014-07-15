@@ -39,7 +39,8 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
     @Override
     public void onOpen(Session session, EndpointConfig config)
     {
-        LOG.debug("onOpen({}, {})",session,config);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen({}, {})",session,config);
         session.addMessageHandler(this);
         this.session = session;
         this.config = config;
@@ -47,7 +48,8 @@ public abstract class AbstractStringEndpoint extends Endpoint implements Message
 
     public void onClose(Session session, CloseReason closeReason)
     {
-        LOG.debug("onClose({}, {})",session,closeReason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onClose({}, {})",session,closeReason);
         this.session = null;
     }
 

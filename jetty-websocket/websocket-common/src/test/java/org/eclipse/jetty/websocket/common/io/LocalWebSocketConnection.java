@@ -82,21 +82,24 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public void close(int statusCode, String reason)
     {
-        LOG.debug("close({}, {})",statusCode,reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("close({}, {})",statusCode,reason);
         CloseInfo close = new CloseInfo(statusCode,reason);
         ioState.onCloseLocal(close);
     }
 
     public void connect()
     {
-        LOG.debug("connect()");
+        if (LOG.isDebugEnabled())
+            LOG.debug("connect()");
         ioState.onConnected();
     }
 
     @Override
     public void disconnect()
     {
-        LOG.debug("disconnect()");
+        if (LOG.isDebugEnabled())
+            LOG.debug("disconnect()");
     }
 
     @Override
@@ -179,7 +182,8 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
     @Override
     public void onConnectionStateChange(ConnectionState state)
     {
-        LOG.debug("Connection State Change: {}",state);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connection State Change: {}",state);
         switch (state)
         {
             case CLOSED:
@@ -200,7 +204,8 @@ public class LocalWebSocketConnection implements LogicalConnection, IncomingFram
 
     public void open()
     {
-        LOG.debug("open()");
+        if (LOG.isDebugEnabled())
+            LOG.debug("open()");
         ioState.onOpened();
     }
 

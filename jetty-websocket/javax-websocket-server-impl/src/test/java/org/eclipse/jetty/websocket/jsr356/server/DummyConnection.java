@@ -145,7 +145,8 @@ public class DummyConnection implements LogicalConnection
     @Override
     public void setNextIncomingFrames(IncomingFrames incoming)
     {
-        LOG.debug("setNextIncomingFrames({})",incoming);
+        if (LOG.isDebugEnabled())
+            LOG.debug("setNextIncomingFrames({})",incoming);
     }
 
     @Override

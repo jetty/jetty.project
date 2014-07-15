@@ -392,7 +392,8 @@ public class FrameFlusher
         }
         catch (Throwable x)
         {
-            LOG.debug("Exception while notifying failure of callback " + callback,x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while notifying failure of callback " + callback,x);
         }
     }
 
@@ -407,7 +408,8 @@ public class FrameFlusher
         }
         catch (Throwable x)
         {
-            LOG.debug("Exception while notifying success of callback " + callback,x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while notifying success of callback " + callback,x);
         }
     }
 

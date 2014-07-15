@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.Matchers.is;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
@@ -34,6 +32,8 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.is;
 
 @WebSocket
 public class TrackingInputStreamSocket
@@ -76,7 +76,8 @@ public class TrackingInputStreamSocket
     @OnWebSocketClose
     public void onClose(int statusCode, String reason)
     {
-        LOG.debug("{} onClose({},{})",id,statusCode,reason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onClose({},{})",id,statusCode,reason);
         closeCode = statusCode;
         closeMessage.append(reason);
         closeLatch.countDown();
@@ -91,7 +92,8 @@ public class TrackingInputStreamSocket
     @OnWebSocketMessage
     public void onInputStream(InputStream stream)
     {
-        LOG.debug("{} onInputStream({})",id,stream);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onInputStream({})",id,stream);
         try
         {
             String msg = IO.toString(stream);

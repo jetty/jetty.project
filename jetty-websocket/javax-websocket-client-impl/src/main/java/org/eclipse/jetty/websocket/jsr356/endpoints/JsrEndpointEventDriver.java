@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.MessageHandler;
@@ -76,7 +75,10 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             final MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.BINARY);
             if (wrapper == null)
             {
-                LOG.debug("No BINARY MessageHandler declared");
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("No BINARY MessageHandler declared");
+                }
                 return;
             }
             if (wrapper.wantsPartialMessages())
@@ -128,7 +130,10 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     @Override
     public void onConnect()
     {
-        LOG.debug("onConnect({}, {})",jsrsession,config);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onConnect({}, {})",jsrsession,config);
+        }
         try
         {
             endpoint.onOpen(jsrsession,config);
@@ -171,7 +176,10 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             final MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.TEXT);
             if (wrapper == null)
             {
-                LOG.debug("No TEXT MessageHandler declared");
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("No TEXT MessageHandler declared");
+                }
                 return;
             }
             if (wrapper.wantsPartialMessages())
@@ -232,7 +240,10 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
         final MessageHandlerWrapper wrapper = jsrsession.getMessageHandlerWrapper(MessageType.PONG);
         if (wrapper == null)
         {
-            LOG.debug("No PONG MessageHandler declared");
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("No PONG MessageHandler declared");
+            }
             return;
         }
         
