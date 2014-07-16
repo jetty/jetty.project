@@ -367,10 +367,10 @@ public class RequestTest
         assertEquals(null,results.get(i++));
 
         assertEquals("text/html;charset=utf8",results.get(i++));
-        assertEquals("UTF-8",results.get(i++));
+        assertEquals("utf-8",results.get(i++));
 
         assertEquals("text/html; charset=\"utf8\"",results.get(i++));
-        assertEquals("UTF-8",results.get(i++));
+        assertEquals("utf-8",results.get(i++));
 
         assertTrue(results.get(i++).startsWith("text/html"));
         assertEquals(" x=z; ",results.get(i++));
