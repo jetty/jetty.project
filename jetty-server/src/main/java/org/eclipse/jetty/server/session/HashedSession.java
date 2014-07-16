@@ -145,24 +145,23 @@ public class HashedSession extends MemSession
     throws Exception
     {   
         File file = null;
-        FileOutputStream fos = null;
         if (!_saveFailed && _hashSessionManager._storeDir != null)
         {
-            try
+            file = new File(_hashSessionManager._storeDir, super.getId());
+            if (file.exists())
             {
-                file = new File(_hashSessionManager._storeDir, super.getId());
-                if (file.exists())
-                    file.delete();
-                file.createNewFile();
-                fos = new FileOutputStream(file);
+                file.delete();
+            }
+
+            try(FileOutputStream fos = new FileOutputStream(file,false))
+            {
                 save(fos);
-                IO.close(fos);
             }
             catch (Exception e)
             {
                 saveFailed(); // We won't try again for this session
-                if (fos != null) IO.close(fos);
-                if (file != null) file.delete(); // No point keeping the file if we didn't save the whole session
+                if (file != null) 
+                    file.delete(); // No point keeping the file if we didn't save the whole session
                 throw e;             
             }
         }

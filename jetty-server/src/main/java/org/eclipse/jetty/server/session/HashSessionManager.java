@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server.session;
 
 import java.io.DataInputStream;
-import java.io.EOFException;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
@@ -36,7 +35,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -568,18 +566,22 @@ public class HashSessionManager extends AbstractSessionManager
     {        
         File file = new File(_storeDir,idInCuster);
 
-        FileInputStream in = null;
         Exception error = null;
-        try
+        if (!file.exists())
         {
-            if (file.exists())
+            if (LOG.isDebugEnabled())
             {
-                in = new FileInputStream(file);
-                HashedSession session = restoreSession(in, null);
-                addSession(session, false);
-                session.didActivate();
-                return session;
+                LOG.debug("Not loading: {}",file);
             }
+            return null;
+        }
+        
+        try (FileInputStream in = new FileInputStream(file))
+        {
+            HashedSession session = restoreSession(in,null);
+            addSession(session,false);
+            session.didActivate();
+            return session;
         }
         catch (Exception e)
         {
@@ -587,8 +589,6 @@ public class HashSessionManager extends AbstractSessionManager
         }
         finally
         {
-            if (in != null) IO.close(in);
-            
             if (error != null)
             {
                 if (isDeleteUnrestorableSessions() && file.exists() && file.getParentFile().equals(_storeDir) )
@@ -602,7 +602,10 @@ public class HashSessionManager extends AbstractSessionManager
                 }
             }
             else
-               file.delete(); //delete successfully restored file
+            {
+                // delete successfully restored file
+                file.delete();
+            }
         }
         return null;
     }
@@ -640,8 +643,10 @@ public class HashSessionManager extends AbstractSessionManager
 
         if (session == null)
             session = (HashedSession)newSession(created, accessed, clusterId);
+        
         session.setRequests(requests);
 
+        // Attributes
         int size = di.readInt();
 
         restoreSessionAttributes(di, size, session);
@@ -651,7 +656,7 @@ public class HashSessionManager extends AbstractSessionManager
             int maxIdle = di.readInt();
             session.setMaxInactiveInterval(maxIdle);
         }
-        catch (EOFException e)
+        catch (IOException e)
         {
             LOG.debug("No maxInactiveInterval persisted for session "+clusterId);
             LOG.ignore(e);
@@ -666,6 +671,8 @@ public class HashSessionManager extends AbstractSessionManager
     {
         if (size>0)
         {
+            // input stream should not be closed here
+            @SuppressWarnings("resource")
             ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(is);
             for (int i=0; i<size;i++)
             {
