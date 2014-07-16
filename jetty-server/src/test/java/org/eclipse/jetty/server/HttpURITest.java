@@ -136,11 +136,11 @@ public class HttpURITest
        /*33*/ {"/?abc=test",null, null, null,null,"/", null,"abc=test",null},
        /*34*/ {"/#fragment",null, null, null,null,"/", null,null,"fragment"},
        /*35*/ {"http://192.0.0.1:8080/","http","//192.0.0.1:8080","192.0.0.1","8080","/",null,null,null},
-       /*36*/ {"http://[2001:db8::1]:8080/","http","//[2001:db8::1]:8080","2001:db8::1","8080","/",null,null,null},
-       /*37*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","2001:db8::1","8080","/",null,null,null},
-       /*38*/ {"http://[2001:db8::1]/","http","//[2001:db8::1]","2001:db8::1",null,"/",null,null,null},
+       /*36*/ {"http://[2001:db8::1]:8080/","http","//[2001:db8::1]:8080","[2001:db8::1]","8080","/",null,null,null},
+       /*37*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","[2001:db8::1]","8080","/",null,null,null},
+       /*38*/ {"http://[2001:db8::1]/","http","//[2001:db8::1]","[2001:db8::1]",null,"/",null,null,null},
        /*39*/ {"//[2001:db8::1]:8080/",null,null,null,null,"//[2001:db8::1]:8080/",null,null,null},
-       /*40*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","2001:db8::1","8080","/",null,null,null},
+       /*40*/ {"http://user@[2001:db8::1]:8080/","http","//user@[2001:db8::1]:8080","[2001:db8::1]","8080","/",null,null,null},
        /*41*/ {"*",null,null,null,null,"*",null, null,null}
     };
 
@@ -353,7 +353,7 @@ public class HttpURITest
     {
        /* 0*/ {"  localhost:8080  ","localhost","8080"},
        /* 1*/ {"  127.0.0.1:8080  ","127.0.0.1","8080"},
-       /* 2*/ {"  [127::0::0::1]:8080  ","127::0::0::1","8080"},
+       /* 2*/ {"  [127::0::0::1]:8080  ","[127::0::0::1]","8080"},
        /* 3*/ {"  error  ",null,null},
        /* 4*/ {"  http://localhost:8080/  ",null,null},
     };
