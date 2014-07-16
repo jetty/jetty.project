@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.quickstart;
 
+import java.io.FileOutputStream;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
@@ -31,6 +33,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 public class QuickStartWebApp extends WebAppContext
 {
     private static final Logger LOG = Log.getLogger(QuickStartWebApp.class);
+    
+    
     
     public static final String[] __configurationClasses = new String[] 
             {
@@ -164,8 +168,14 @@ public class QuickStartWebApp extends WebAppContext
 
     public void generateQuickstartWebXml(String extraXML) throws Exception
     {
-       QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, this.getWebInf().getFile(), extraXML);
-       generator.generateQuickStartWebXml();
+        Resource descriptor = getWebInf().addPath(QuickStartDescriptorGenerator.DEFAULT_QUICKSTART_DESCRIPTOR_NAME);
+        if (!descriptor.exists())
+            descriptor.getFile().createNewFile();
+        QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, extraXML);
+        try (FileOutputStream fos = new FileOutputStream(descriptor.getFile()))
+        {
+            generator.generateQuickStartWebXml(fos);
+        }
     }
 
   

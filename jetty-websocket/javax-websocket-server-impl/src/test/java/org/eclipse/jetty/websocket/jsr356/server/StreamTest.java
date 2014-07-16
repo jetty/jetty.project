@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.*;
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -34,7 +32,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCode;
@@ -70,6 +67,9 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.equalToIgnoringCase;
+import static org.hamcrest.Matchers.is;
 
 public class StreamTest
 {
@@ -114,7 +114,8 @@ public class StreamTest
         }
         int port = connector.getLocalPort();
         serverUri = new URI(String.format("ws://%s:%d/",host,port));
-        LOG.debug("Server started on {}",serverUri);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Server started on {}",serverUri);
     }
 
     @AfterClass
@@ -290,7 +291,8 @@ public class StreamTest
                 if (outputFile.exists())
                 {
                     closeReason = String.format("Received %,d bytes",outputFile.length());
-                    LOG.debug(closeReason);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(closeReason);
                 }
                 else
                 {

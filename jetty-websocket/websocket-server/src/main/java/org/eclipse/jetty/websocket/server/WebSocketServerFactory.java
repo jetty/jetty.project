@@ -512,8 +512,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         extensionStack.configure(wsConnection.getParser());
         extensionStack.configure(wsConnection.getGenerator());
 
-        LOG.debug("HttpConnection: {}", http);
-        LOG.debug("WebSocketConnection: {}", wsConnection);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HttpConnection: {}", http);
+            LOG.debug("WebSocketConnection: {}", wsConnection);
+        }
 
         // Setup Session
         WebSocketSession session = createSession(request.getRequestURI(), driver, wsConnection);
@@ -553,11 +556,15 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Tell jetty about the new upgraded connection
         request.setServletAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, wsConnection);
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("Handshake Response: {}", handshaker);
+
         // Process (version specific) handshake response
-        LOG.debug("Handshake Response: {}", handshaker);
         handshaker.doHandshakeResponse(request, response);
 
-        LOG.debug("Websocket upgrade {} {} {} {}", request.getRequestURI(), version, response.getAcceptedSubProtocol(), wsConnection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Websocket upgrade {} {} {} {}", request.getRequestURI(), version, response.getAcceptedSubProtocol(), wsConnection);
+
         return true;
     }
 }

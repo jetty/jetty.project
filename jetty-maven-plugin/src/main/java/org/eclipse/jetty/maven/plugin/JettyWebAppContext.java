@@ -19,6 +19,7 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -66,7 +67,7 @@ public class JettyWebAppContext extends WebAppContext
     
    
 
-    private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar";
+    private static final String DEFAULT_CONTAINER_INCLUDE_JAR_PATTERN = ".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$|.*javax.servlet.jsp.jstl-[^/]*\\.jar|.*taglibs-standard-impl-.*\\.jar";
     private static final String WEB_INF_CLASSES_PREFIX = "/WEB-INF/classes";
     private static final String WEB_INF_LIB_PREFIX = "/WEB-INF/lib";
 
@@ -125,7 +126,7 @@ public class JettyWebAppContext extends WebAppContext
 
     private boolean _isGenerateQuickStart;
     private PreconfigureDescriptorProcessor _preconfigProcessor;
-    private File _quickStartDir;
+   
 
   
 
@@ -274,15 +275,7 @@ public class JettyWebAppContext extends WebAppContext
         return _isGenerateQuickStart;
     }
     
-    public void setQuickStartDir (File dir)
-    {
-        _quickStartDir = dir;
-    }
-    
-    public File getQuickStartDir()
-    {
-        return _quickStartDir;
-    }
+   
     
     
     @Override
@@ -290,9 +283,14 @@ public class JettyWebAppContext extends WebAppContext
     {
         if (isGenerateQuickStart())
         {
-            QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, (getQuickStartDir()==null?getTempDirectory():getQuickStartDir()), _preconfigProcessor.getXML());
-            File f = generator.generateQuickStartWebXml();
-            setQuickStartWebDescriptor(Resource.newResource(f));
+            if (getQuickStartWebDescriptor() == null)
+                throw new IllegalStateException ("No location to generate quickstart descriptor");
+
+            QuickStartDescriptorGenerator generator = new QuickStartDescriptorGenerator(this, _preconfigProcessor.getXML());
+            try (FileOutputStream fos = new FileOutputStream(getQuickStartWebDescriptor().getFile()))
+            {
+                generator.generateQuickStartWebXml(fos);
+            }
         }
         else
             super.startWebapp();
@@ -303,7 +301,9 @@ public class JettyWebAppContext extends WebAppContext
     public void doStart () throws Exception
     {
         //choose if this will be a quickstart or normal start
-        if (getQuickStartWebDescriptor() == null)
+        if (!isGenerateQuickStart() && getQuickStartWebDescriptor() != null)
+            setConfigurations(_quickStartConfigurations);
+        else
         {
             setConfigurations(_defaultConfigurations);
             if (isGenerateQuickStart())
@@ -312,8 +312,6 @@ public class JettyWebAppContext extends WebAppContext
                 getMetaData().addDescriptorProcessor(_preconfigProcessor);
             }
         }
-        else
-            setConfigurations(_quickStartConfigurations);
         
 
         //inject configurations with config from maven plugin    

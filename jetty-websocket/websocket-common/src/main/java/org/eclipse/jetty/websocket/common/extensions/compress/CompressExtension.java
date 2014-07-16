@@ -135,7 +135,9 @@ public abstract class CompressExtension extends AbstractExtension
         ByteAccumulator accumulator = new ByteAccumulator(maxSize);
 
         decompressor.setInput(input, 0, input.length);
-        LOG.debug("Decompressing {} bytes", input.length);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Decompressing {} bytes", input.length);
 
         try
         {
@@ -164,7 +166,8 @@ public abstract class CompressExtension extends AbstractExtension
                     accumulator.addChunk(output, 0, decompressed);
                 }
             }
-            LOG.debug("Decompressed {}->{} bytes", input.length, accumulator.getLength());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Decompressed {}->{} bytes", input.length, accumulator.getLength());
             return accumulator;
         }
         catch (DataFormatException x)
@@ -187,7 +190,8 @@ public abstract class CompressExtension extends AbstractExtension
         }
 
         FrameEntry entry = new FrameEntry(frame, callback, batchMode);
-        LOG.debug("Queuing {}", entry);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing {}", entry);
         entries.offer(entry);
         flusher.iterate();
     }
@@ -201,7 +205,8 @@ public abstract class CompressExtension extends AbstractExtension
         }
         catch (Throwable x)
         {
-            LOG.debug("Exception while notifying success of callback " + callback, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while notifying success of callback " + callback, x);
         }
     }
 
@@ -214,7 +219,8 @@ public abstract class CompressExtension extends AbstractExtension
         }
         catch (Throwable x)
         {
-            LOG.debug("Exception while notifying failure of callback " + callback, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while notifying failure of callback " + callback, x);
         }
     }
 
@@ -290,7 +296,8 @@ public abstract class CompressExtension extends AbstractExtension
             ByteBuffer data = frame.getPayload();
             int remaining = data.remaining();
             int inputLength = Math.min(remaining, INPUT_BUFSIZE);
-            LOG.debug("Compressing {}: {} bytes in {} bytes chunk", entry, remaining, inputLength);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Compressing {}: {} bytes in {} bytes chunk", entry, remaining, inputLength);
 
             // Avoid to copy the bytes if the ByteBuffer
             // is backed by an array.

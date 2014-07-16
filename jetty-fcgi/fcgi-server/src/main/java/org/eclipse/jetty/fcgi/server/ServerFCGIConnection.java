@@ -95,7 +95,8 @@ public class ServerFCGIConnection extends AbstractConnection
         }
         catch (Exception x)
         {
-            LOG.debug(x);
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             // TODO: fail and close ?
         }
         finally

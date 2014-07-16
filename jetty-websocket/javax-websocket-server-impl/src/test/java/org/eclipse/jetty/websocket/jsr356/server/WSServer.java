@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.io.File;
 import java.io.IOException;
 import java.net.MalformedURLException;
@@ -48,6 +46,8 @@ import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Utility to build out exploded directory WebApps, in the /target/tests/ directory, for testing out servers that use javax.websocket endpoints.
@@ -178,8 +178,8 @@ public class WSServer
         }
         int port = connector.getLocalPort();
         serverUri = new URI(String.format("ws://%s:%d%s/",host,port,contextPath));
-        LOG.debug("Server started on {}",serverUri);
-
+        if (LOG.isDebugEnabled())
+            LOG.debug("Server started on {}",serverUri);
     }
 
     public void stop()

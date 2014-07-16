@@ -123,7 +123,8 @@ public class HttpSenderOverHTTP extends HttpSender
         }
         catch (Throwable x)
         {
-            LOG.debug(x);
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             callback.failed(x);
         }
     }
@@ -181,7 +182,8 @@ public class HttpSenderOverHTTP extends HttpSender
         }
         catch (Exception x)
         {
-            LOG.debug(x);
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             callback.failed(x);
         }
     }

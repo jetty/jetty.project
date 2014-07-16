@@ -21,7 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
@@ -73,7 +72,8 @@ public class JsrCreator implements WebSocketCreator
             }
             catch (IOException e)
             {
-                LOG.debug("Unable to send error response",e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unable to send error response",e);
             }
             return null;
         }
@@ -132,7 +132,8 @@ public class JsrCreator implements WebSocketCreator
         }
         catch (InstantiationException e)
         {
-            LOG.debug("Unable to create websocket: " + config.getEndpointClass().getName(),e);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unable to create websocket: " + config.getEndpointClass().getName(),e);
             return null;
         }
     }

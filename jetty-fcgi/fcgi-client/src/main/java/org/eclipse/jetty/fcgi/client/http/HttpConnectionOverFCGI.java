@@ -150,7 +150,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             }
             catch (Exception x)
             {
-                LOG.debug(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
                 close(x);
                 return false;
             }

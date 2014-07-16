@@ -214,7 +214,8 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
     public void close()
     {
         abort(new AsynchronousCloseException());
-        LOG.debug("Closed {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Closed {}", this);
     }
 
     public void release(Connection connection)

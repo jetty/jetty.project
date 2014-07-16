@@ -69,7 +69,8 @@ public class FragmentExtension extends AbstractExtension
         }
 
         FrameEntry entry = new FrameEntry(frame, callback, batchMode);
-        LOG.debug("Queuing {}", entry);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing {}", entry);
         entries.offer(entry);
         flusher.iterate();
     }
@@ -143,7 +144,8 @@ public class FragmentExtension extends AbstractExtension
             ByteBuffer payloadFragment = payload.slice();
             payload.limit(limit);
             fragment.setPayload(payloadFragment);
-            LOG.debug("Fragmented {}->{}", frame, fragment);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Fragmented {}->{}", frame, fragment);
             payload.position(newLimit);
 
             nextOutgoingFrame(fragment, this, entry.batchMode);
@@ -193,7 +195,8 @@ public class FragmentExtension extends AbstractExtension
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying success of callback " + callback, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while notifying success of callback " + callback, x);
             }
         }
 
@@ -206,7 +209,8 @@ public class FragmentExtension extends AbstractExtension
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while notifying failure of callback " + callback, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while notifying failure of callback " + callback, x);
             }
         }
     }

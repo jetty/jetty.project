@@ -205,7 +205,8 @@ public abstract class HttpReceiver
         }
         catch (IOException x)
         {
-            LOG.debug(x);
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
         }
     }
 
@@ -451,7 +452,10 @@ public abstract class HttpReceiver
     {
         boolean updated = responseState.compareAndSet(from, to);
         if (!updated)
-            LOG.debug("State update failed: {} -> {}: {}", from, to, responseState.get());
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("State update failed: {} -> {}: {}", from, to, responseState.get());
+        }
         return updated;
     }
 

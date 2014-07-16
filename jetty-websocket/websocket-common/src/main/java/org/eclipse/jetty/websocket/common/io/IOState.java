@@ -174,7 +174,8 @@ public class IOState
 
     private void notifyStateListeners(ConnectionState state)
     {
-        LOG.debug("Notify State Listeners: {}",state);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Notify State Listeners: {}",state);
         for (ConnectionStateListener listener : listeners)
         {
             if (LOG.isDebugEnabled())
@@ -192,7 +193,8 @@ public class IOState
      */
     public void onAbnormalClose(CloseInfo close)
     {
-        LOG.debug("onAbnormalClose({})",close);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onAbnormalClose({})",close);
         ConnectionState event = null;
         synchronized (this)
         {
@@ -225,7 +227,8 @@ public class IOState
         ConnectionState event = null;
         ConnectionState abnormalEvent = null;
         ConnectionState initialState = this.state;
-        LOG.debug("onCloseLocal({}) : {}",close,initialState);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onCloseLocal({}) : {}",close,initialState);
         if (initialState == ConnectionState.CLOSED)
         {
             // already closed
@@ -239,7 +242,8 @@ public class IOState
             LOG.debug("FastClose in CONNECTED detected");
             // Force the state open (to allow read/write to endpoint)
             onOpened();
-            LOG.debug("FastClose continuing with Closure");
+            if (LOG.isDebugEnabled())
+                LOG.debug("FastClose continuing with Closure");
         }
 
         synchronized (this)
@@ -300,7 +304,8 @@ public class IOState
      */
     public void onCloseRemote(CloseInfo close)
     {
-        LOG.debug("onCloseRemote({})",close);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onCloseRemote({})",close);
         ConnectionState event = null;
         synchronized (this)
         {
@@ -321,7 +326,8 @@ public class IOState
             in = false;
             inputAvailable = false;
 
-            LOG.debug("onCloseRemote(), input={}, output={}",in,out);
+            if (LOG.isDebugEnabled())
+                LOG.debug("onCloseRemote(), input={}, output={}",in,out);
 
             if (!in && !out)
             {

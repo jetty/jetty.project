@@ -352,7 +352,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
                 {
                     try
                     {
-                        LOG.debug("{}.onSessionClosed()",listener.getClass().getSimpleName());
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{}.onSessionClosed()",listener.getClass().getSimpleName());
                         listener.onSessionClosed(this);
                     }
                     catch (Throwable t)
