@@ -335,6 +335,7 @@ public class ServletHandlerTest
 
         //add a non-programmatic one to begin with
         handler.addFilterWithMapping(fh1, "/*", EnumSet.allOf(DispatcherType.class));           
+        handler.updateMappings();
         FilterMapping[] mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertTrue(fh1 == mappings[0].getFilterHolder());
@@ -343,6 +344,7 @@ public class ServletHandlerTest
         fh4.setServletHandler(handler);
         handler.addFilter(fh4);
         fh4.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");
+        handler.updateMappings();
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(2, mappings.length);
@@ -353,6 +355,7 @@ public class ServletHandlerTest
         fh3.setServletHandler(handler);
         handler.addFilter(fh3);
         fh3.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
+        handler.updateMappings();
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(3, mappings.length);
@@ -364,6 +367,7 @@ public class ServletHandlerTest
         fh5.setServletHandler(handler);
         handler.addFilter(fh5);
         fh5.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");
+        handler.updateMappings();
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(4, mappings.length);
@@ -376,6 +380,7 @@ public class ServletHandlerTest
         FilterHolder f = new FilterHolder(Source.EMBEDDED);
         f.setName("non-programmatic");     
         handler.addFilterWithMapping(f, "/*", EnumSet.allOf(DispatcherType.class));
+        handler.updateMappings();
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(5, mappings.length);
@@ -391,6 +396,7 @@ public class ServletHandlerTest
         pf.setName("programmaticA");
         handler.addFilter(pf);
         pf.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), true, "/*");
+        handler.updateMappings();
         mappings = handler.getFilterMappings();
         assertNotNull(mappings);
         assertEquals(6, mappings.length);
@@ -407,6 +413,7 @@ public class ServletHandlerTest
         pf2.setName("programmaticB");
         handler.addFilter(pf2);
         pf2.getRegistration().addMappingForUrlPatterns(EnumSet.allOf(DispatcherType.class), false, "/*");
+        handler.updateMappings();
         mappings = handler.getFilterMappings();
 
         assertNotNull(mappings);

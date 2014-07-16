@@ -116,8 +116,6 @@ public class ServletHandler extends ScopedHandler
 
     private ServletHolder[] _servlets=new ServletHolder[0];
     private ServletMapping[] _servletMappings;
-    private Map<String,ServletMapping> _servletPathMappings = new HashMap<String,ServletMapping>();
-
     private final Map<String,FilterHolder> _filterNameMap= new HashMap<>();
     private List<FilterMapping> _filterPathMappings;
     private MultiMap<FilterMapping> _filterNameMappings;
@@ -340,7 +338,6 @@ public class ServletHandler extends ScopedHandler
         _filterPathMappings=null;
         _filterNameMappings=null;
         _servletPathMap=null;
-        _servletPathMappings=null;
     }
 
     /* ------------------------------------------------------------ */
@@ -415,10 +412,26 @@ public class ServletHandler extends ScopedHandler
      */
     public ServletMapping getServletMapping(String pathSpec)
     {
-        if (pathSpec == null || _servletPathMappings == null)
+        if (pathSpec == null || _servletMappings == null)
             return null;
         
-        return _servletPathMappings.get(pathSpec);
+        ServletMapping mapping = null;
+        for (int i=0; i<_servletMappings.length && mapping == null; i++)
+        {
+            ServletMapping m = _servletMappings[i];
+            if (m.getPathSpecs() != null)
+            {
+                for (String p:m.getPathSpecs())
+                {
+                    if (pathSpec.equals(p))
+                    {
+                        mapping = m;
+                        break;
+                    }
+                }
+            }
+        }
+        return mapping;
     }
     
     /* ------------------------------------------------------------ */
@@ -1443,9 +1456,7 @@ public class ServletHandler extends ScopedHandler
                 //for each path, look at the mappings where it is referenced
                 //if a mapping is for a servlet that is not enabled, skip it
                 Set<ServletMapping> mappings = sms.get(pathSpec);
-                
-                
-           
+
                 ServletMapping finalMapping = null;
                 for (ServletMapping mapping : mappings)
                 {
@@ -1483,7 +1494,6 @@ public class ServletHandler extends ScopedHandler
             }
      
             _servletPathMap=pm;
-            _servletPathMappings=servletPathMappings;
         }
 
         // flush filter chain cache
@@ -1542,7 +1552,7 @@ public class ServletHandler extends ScopedHandler
     {
         updateBeans(_filterMappings,filterMappings);
         _filterMappings = filterMappings;
-        updateMappings();
+        if (isStarted()) updateMappings();
         invalidateChainsCache();
     }
 
@@ -1567,7 +1577,7 @@ public class ServletHandler extends ScopedHandler
     {
         updateBeans(_servletMappings,servletMappings);
         _servletMappings = servletMappings;
-        updateMappings();
+        if (isStarted()) updateMappings();
         invalidateChainsCache();
     }
 
