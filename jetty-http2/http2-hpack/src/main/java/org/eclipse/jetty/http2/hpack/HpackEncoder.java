@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
-import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
 import org.eclipse.jetty.io.ByteBufferPool.Lease;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -40,9 +39,6 @@ public class HpackEncoder
     
     private final static HttpField[] __status= new HttpField[599];
     
-    private final static EnumSet<HttpHeader> __NEVER_INDEX = 
-            EnumSet.of(HttpHeader.SET_COOKIE,
-                    HttpHeader.SET_COOKIE2);
     
     private final static EnumSet<HttpHeader> __DO_NOT_HUFFMAN = 
             EnumSet.of(HttpHeader.COOKIE,
@@ -53,22 +49,33 @@ public class HpackEncoder
                     HttpHeader.PROXY_AUTHENTICATE,
                     HttpHeader.PROXY_AUTHORIZATION);
     
-    private final static EnumSet<HttpHeader> __USE_REFERENCE_SET = 
-            EnumSet.of(HttpHeader.ACCEPT,
-                    HttpHeader.ACCEPT_CHARSET,
-                    HttpHeader.ACCEPT_ENCODING,
-                    HttpHeader.ACCEPT_LANGUAGE,
-                    HttpHeader.ACCEPT_RANGES,
-                    HttpHeader.ALLOW,
-                    HttpHeader.AUTHORIZATION,
-                    HttpHeader.CACHE_CONTROL,
-                    HttpHeader.CONTENT_LANGUAGE,
-                    HttpHeader.COOKIE,
+    private final static EnumSet<HttpHeader> __DO_NOT_INDEX = 
+            EnumSet.of(
+                    HttpHeader.CONTENT_MD5,
+                    HttpHeader.CONTENT_RANGE,
+                    HttpHeader.ETAG,
+                    HttpHeader.IF_MODIFIED_SINCE,
+                    HttpHeader.IF_UNMODIFIED_SINCE,
+                    HttpHeader.IF_NONE_MATCH,
+                    HttpHeader.IF_RANGE,
+                    HttpHeader.IF_MATCH,
+                    HttpHeader.RANGE,
+                    HttpHeader.EXPIRES,
+                    HttpHeader.LAST_MODIFIED,
+                    HttpHeader.SET_COOKIE,
+                    HttpHeader.SET_COOKIE2);
+    
+
+    private final static EnumSet<HttpHeader> __NEVER_INDEX = 
+            EnumSet.of(HttpHeader.SET_COOKIE,
+                    HttpHeader.SET_COOKIE2);
+    
+    private final static EnumSet<HttpHeader> __DATE_HEADER = 
+            EnumSet.of(HttpHeader.IF_MODIFIED_SINCE,
                     HttpHeader.DATE,
-                    HttpHeader.HOST,
-                    HttpHeader.SERVER,
-                    HttpHeader.SERVLET_ENGINE,
-                    HttpHeader.USER_AGENT);
+                    HttpHeader.EXPIRES,
+                    HttpHeader.LAST_MODIFIED,
+                    HttpHeader.IF_UNMODIFIED_SINCE);
     
     static
     {
@@ -218,32 +225,36 @@ public class HpackEncoder
             HttpHeader header = field.getHeader();
             final boolean never_index;
             final boolean huffman;
-            final boolean reference;
+            final boolean indexed;
+            final boolean date;
             final int name_bits;
             final byte mask;
             if (header==null)
             {
                 never_index=false;
                 huffman=true;
-                reference=true;
+                indexed=true;
+                date=false;
                 name_bits = 6;
                 mask=(byte)0x40;
             }
-            else if (__USE_REFERENCE_SET.contains(header))
+            else if (__DO_NOT_INDEX.contains(header))
             {
-                reference=true;
-                never_index=false;
-                huffman=!__DO_NOT_HUFFMAN.contains(header);
-                name_bits = 6;
-                mask=(byte)0x40;
-            }
-            else
-            {
-                reference=false;
+                indexed=false;
                 never_index=__NEVER_INDEX.contains(header);
+                date=__DATE_HEADER.contains(header);
                 huffman=!__DO_NOT_HUFFMAN.contains(header);
                 name_bits = 4;
                 mask=never_index?(byte)0x01:(byte)0x00;
+            }
+            else
+            {
+                indexed=true;
+                never_index=false;
+                huffman=!__DO_NOT_HUFFMAN.contains(header);
+                date=__DATE_HEADER.contains(header);
+                name_bits = 6;
+                mask=(byte)0x40;
             }
 
             // Add the mask bits
@@ -257,7 +268,7 @@ public class HpackEncoder
                 encoding="Lit"+
                         ((name_entry==null)?"HuffName":"IdxName")+
                         (huffman?"HuffVal":"LitVal")+
-                        (reference?"Idxd":(never_index?"NeverIdx":""));
+                        (indexed?"Idxd":(never_index?"NeverIdx":""));
             }
             
             if (name_entry!=null)
@@ -272,6 +283,7 @@ public class HpackEncoder
 
             // Add the literal value
             String value=field.getValue();
+            
             if (huffman)
             {
                 // huffman literal value
@@ -295,7 +307,7 @@ public class HpackEncoder
 
             // If we want the field referenced, then we add it to our
             // table and reference set.
-            if (reference)
+            if (indexed)
                 _context.add(field);
         }
 

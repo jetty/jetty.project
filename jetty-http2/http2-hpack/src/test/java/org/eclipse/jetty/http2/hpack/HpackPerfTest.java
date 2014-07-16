@@ -38,7 +38,7 @@ import org.junit.Test;
 
 public class HpackPerfTest
 {
-    int _maxHeaderTableSize=16*1024;
+    int _maxHeaderTableSize=4*1024;
     int _unencodedSize;
     int _encodedSize;
     
@@ -51,8 +51,9 @@ public class HpackPerfTest
 
     @After
     public void after()
-    {
-        System.err.printf("headertable=%d unencoded=%d encoded=%d%n",_maxHeaderTableSize,_unencodedSize,_encodedSize);
+    {        
+        System.err.printf("headertable=%d unencoded=%d encoded=%d p=%d%%%n",_maxHeaderTableSize,_unencodedSize,_encodedSize,(100*_encodedSize+49)/_unencodedSize);
+
     }
     
     @Test
@@ -127,6 +128,7 @@ public class HpackPerfTest
                 }
             }
         }
+
     }
     
     
