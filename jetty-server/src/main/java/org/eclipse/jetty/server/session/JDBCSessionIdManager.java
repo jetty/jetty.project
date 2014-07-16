@@ -778,10 +778,10 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         if (LOG.isDebugEnabled())
             LOG.debug("Scavenging every "+_scavengeIntervalMs+" ms");
         
-        //if (_timer!=null && (period!=old_period || _task==null))
-        if (_scheduler != null && (period!=old_period || _task==null))
+        synchronized (this)
         {
-            synchronized (this)
+            //if (_timer!=null && (period!=old_period || _task==null))
+            if (_scheduler != null && (period!=old_period || _task==null))
             {
                 if (_task!=null)
                     _task.cancel();

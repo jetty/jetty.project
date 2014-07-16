@@ -307,9 +307,9 @@ public class HashSessionManager extends AbstractSessionManager
 
         _scavengePeriodMs=period;
     
-        if (_timer!=null && (period!=old_period || _task==null))
+        synchronized (this)
         {
-            synchronized (this)
+            if (_timer!=null && (period!=old_period || _task==null))
             {
                 if (_task!=null)
                 {
