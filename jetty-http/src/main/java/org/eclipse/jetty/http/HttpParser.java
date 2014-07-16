@@ -860,7 +860,7 @@ public class HttpParser
                     {
                         throw new BadMessage(HttpStatus.BAD_REQUEST_400,"Bad IPv6 Host header");
                     }
-                    host = host.substring(1,len-1);
+                    host = host.substring(0,len);
                 }
                 else if (len!=host.length())
                     host = host.substring(0,len);
