@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.TypeUtil;
+import org.junit.Ignore;
 import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
@@ -41,6 +42,7 @@ public class HpackDecoderTest
 {
 
     @Test
+    @Ignore
     public void testDecodeD_3()
     {        
         HpackDecoder decoder = new HpackDecoder(4096,8192);
@@ -91,6 +93,7 @@ public class HpackDecoderTest
     }
 
     @Test
+    @Ignore
     public void testDecodeD_4()
     {
         HpackDecoder decoder = new HpackDecoder(4096,8192);

@@ -21,9 +21,7 @@ package org.eclipse.jetty.http2.hpack;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.Iterator;
 import java.util.Map;
-import java.util.NoSuchElementException;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpField;
@@ -167,18 +165,9 @@ public class HpackContext
     
     private int _maxHeaderTableSizeInBytes;
     private int _headerTableSizeInBytes;
-    private final Entry _refSet=new Entry();
     private final HeaderTable _headerTable;
     private final Map<HttpField,Entry> _fieldMap = new HashMap<>();
     private final Map<String,Entry> _nameMap = new HashMap<>();
-    private Iterable<Entry> referenceSet = new Iterable<Entry>()
-    {
-        @Override
-        public Iterator<Entry> iterator()
-        {
-            return iterateReferenceSet();
-        }
-    };
     
     HpackContext(int maxHeaderTableSize)
     {
@@ -217,21 +206,20 @@ public class HpackContext
     
     public Entry get(int index)
     {
-        index=index-_headerTable.size();
-        if (index>0)
-        {
-            if (index>=__staticTable.length)
-                return null;
+        if (index<__staticTable.length)
             return __staticTable[index];
-        }
-        
-        return _headerTable.getUnsafe(-index);
+            
+        int d=_headerTable.size()-index+__staticTable.length-1;
+
+        if (d>=0) 
+            return _headerTable.getUnsafe(d);      
+        return null;
     }
     
     public Entry add(HttpField field)
     {
-        int i=_headerTable.getNextIndexUnsafe();
-        Entry entry=new Entry(i,field);
+        int slot=_headerTable.getNextSlotUnsafe();
+        Entry entry=new Entry(slot,field);
         int size = entry.getSize();
         if (size>_maxHeaderTableSizeInBytes)
         {
@@ -276,109 +264,12 @@ public class HpackContext
 
     public int index(Entry entry)
     {
-        if (entry._index<0)
+        if (entry._slot<0)
             return 0;
         if (entry.isStatic())
-            return _headerTable.size() + entry._index;
-        return _headerTable.index(entry);
-    }
-    
-    public void addToRefSet(Entry entry)
-    {
-        entry.addToRefSet(this);
-    }
-    
-    public Iterable<Entry> getReferenceSet()
-    {
-        return referenceSet;
-    }
-    
-    public void clearReferenceSet()
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug(String.format("RefSet[%x] cleared",hashCode()));
-        Entry entry = _refSet._refSetNext;
-        while(entry!=_refSet)
-        {
-            Entry next = entry._refSetNext;
-            entry.removeFromRefSet();
-            entry=next;
-        }
-    }
-    
+            return entry._slot;
 
-    public void removedUnusedReferences(ByteBuffer buffer)
-    {
-        Entry entry = _refSet._refSetNext;
-        while(entry!=_refSet)
-        {
-            Entry next = entry._refSetNext;
-            
-            if (entry.isUsed())
-                entry._used=false;
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(String.format("RefSet[%x] remove unused %s",hashCode(),entry));
-                // encode the reference to remove it
-                buffer.put((byte)0x80);
-                NBitInteger.encode(buffer,7,index(entry));
-                entry.removeFromRefSet();
-            }
-            entry=next;
-        }
-    }
-
-    public void emitUnusedReferences(MetaDataBuilder builder)
-    {
-        Entry entry = _refSet._refSetNext;
-        while(entry!=_refSet)
-        {
-            if (entry.isUsed())
-                entry._used=false;
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(String.format("RefSet[%x] emit unref %s",hashCode(),entry));
-                builder.emit(entry.getHttpField());
-            }
-            
-            entry=entry._refSetNext;
-        }
-    }
-
-    
-    public Iterator<Entry> iterateReferenceSet()
-    {
-        return new Iterator<Entry>()
-        {
-            Entry _next = _refSet._refSetNext;
-
-            @Override
-            public boolean hasNext()
-            {
-                return _next!=_refSet;
-            }
-
-            @Override
-            public Entry next()
-            {
-                if (_next==_refSet)
-                    throw new NoSuchElementException();
-                Entry next=_next;
-                _next=_next._refSetNext;
-                return next;
-            }
-
-            @Override
-            public void remove()
-            {
-                if (_next._refSetPrev==_refSet)
-                    throw new NoSuchElementException();
-                    
-                _next._refSetPrev.removeFromRefSet();
-            }
-        };
+        return _headerTable.index(entry)+__staticTable.length-1;
     }
     
     private void evict()
@@ -389,8 +280,7 @@ public class HpackContext
             if (LOG.isDebugEnabled())
                 LOG.debug(String.format("HdrTbl[%x] evict %s",hashCode(),entry));
             _headerTableSizeInBytes-=entry.getSize();
-            entry.removeFromRefSet();
-            entry._index=-1;
+            entry._slot=-1;
             _fieldMap.remove(entry.getHttpField());
             String lc=StringUtil.asciiToLowerCase(entry.getHttpField().getName());
             if (entry==_nameMap.get(lc))
@@ -425,8 +315,8 @@ public class HpackContext
         {
             // Relay on super.growUnsafe to pack all entries 0 to _nextSlot
             super.resizeUnsafe(newCapacity);
-            for (int i=0;i<_nextSlot;i++)
-                ((Entry)_elements[i])._index=i;
+            for (int s=0;s<_nextSlot;s++)
+                ((Entry)_elements[s])._slot=s;
         }
 
         /* ------------------------------------------------------------ */
@@ -456,7 +346,7 @@ public class HpackContext
          */
         private int index(Entry entry)
         {
-            return entry._index>=_nextE?_size-entry._index+_nextE:_nextSlot-entry._index;
+            return entry._slot>=_nextE?_size-entry._slot+_nextE:_nextSlot-entry._slot;
         }
 
     }
@@ -469,64 +359,24 @@ public class HpackContext
     public static class Entry
     {
         final HttpField _field;
-        int _index;
-        Entry _refSetNext=this;
-        Entry _refSetPrev=this;
-        boolean _used;
+        int _slot;
         
         Entry()
         {    
-            _index=0;
+            _slot=0;
             _field=null;
         }
         
         Entry(int index,String name, String value)
         {    
-            _index=index;
+            _slot=index;
             _field=new HttpField(name,value);
         }
         
-        Entry(int index, HttpField field)
+        Entry(int slot, HttpField field)
         {    
-            _index=index;
+            _slot=slot;
             _field=field;
-        }
-        
-        private void addToRefSet(HpackContext ctx)
-        {
-            if (isStatic())
-                throw new IllegalStateException("static");
-            if (_index<0)
-                throw new IllegalStateException("evicted");
-            if (_refSetNext!=this)
-                return;
-
-            _used=true;
-            _refSetNext=ctx._refSet;
-            _refSetPrev=ctx._refSet._refSetPrev;
-            ctx._refSet._refSetPrev._refSetNext=this;
-            ctx._refSet._refSetPrev=this;
-            if (LOG.isDebugEnabled())
-                LOG.debug(String.format("RefSet[%x] added",ctx.hashCode(),this));
-        }
-
-        public boolean isInReferenceSet()
-        {
-            return _refSetNext!=this;
-        }
-        
-        public void removeFromRefSet()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug(String.format("RefSet[?] remove %s",this));
-            if (_refSetNext!=this)
-            {
-                _refSetNext._refSetPrev=_refSetPrev;
-                _refSetPrev._refSetNext=_refSetNext;
-                _refSetNext=this;
-                _refSetPrev=this;
-                _used=false;
-            }
         }
 
         public int getSize()
@@ -551,17 +401,7 @@ public class HpackContext
         
         public String toString()
         {
-            return String.format("{%s,%d,%s,%x}",isStatic()?"S":"D",_index,_field,hashCode());
-        }
-
-        public void used()
-        {
-            _used=true;
-        }
-
-        public boolean isUsed()
-        {
-            return _used;
+            return String.format("{%s,%d,%s,%x}",isStatic()?"S":"D",_slot,_field,hashCode());
         }
     } 
     

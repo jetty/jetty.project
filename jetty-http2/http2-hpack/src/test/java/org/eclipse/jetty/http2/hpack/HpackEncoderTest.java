@@ -79,34 +79,15 @@ public class HpackEncoderTest
         
         // All are in the header table
         Assert.assertEquals(4,encoder.getContext().size());
-        
-        // All are in the reference set
-        HashSet<HttpField> refSet = new HashSet<>();
-        for (Entry entry : encoder.getContext().getReferenceSet())
-            refSet.add(entry.getHttpField());
-        Assert.assertEquals(4,refSet.size());
-        for (int i=0;i<=3;i++) 
-            Assert.assertTrue(refSet.contains(field[i]));
-        
+                
         // encode exact same fields again!
         BufferUtil.clearToFill(buffer);
         encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
         BufferUtil.flipToFlush(buffer,0);
 
-        // nothing should be encoded!
-        assertThat(buffer.remaining(),Matchers.is(0));
-        
         // All are in the header table
         Assert.assertEquals(4,encoder.getContext().size());
         
-        // All are in the reference set
-        refSet.clear();
-        for (Entry entry : encoder.getContext().getReferenceSet())
-            refSet.add(entry.getHttpField());
-        Assert.assertEquals(4,refSet.size());
-        for (int i=0;i<=3;i++) 
-            Assert.assertTrue(refSet.contains(field[i]));
-
         // Add 4 more fields
         for (int i=4;i<=7;i++)  
             fields.add(field[i]);
@@ -121,14 +102,6 @@ public class HpackEncoderTest
 
         // max header table size reached
         Assert.assertEquals(5,encoder.getContext().size());
-        
-        // last 5 in reference set
-        refSet.clear();
-        for (Entry entry : encoder.getContext().getReferenceSet())
-            refSet.add(entry.getHttpField());
-        Assert.assertEquals(5,refSet.size());
-        for (int i=3;i<=7;i++) 
-            Assert.assertTrue(refSet.contains(field[i]));
         
         
         // remove some fields
@@ -146,18 +119,6 @@ public class HpackEncoderTest
         // max header table size reached
         Assert.assertEquals(5,encoder.getContext().size());
 
-        // last 5 in reference set
-        refSet.clear();
-        for (Entry entry : encoder.getContext().getReferenceSet())
-            refSet.add(entry.getHttpField());
-        Assert.assertEquals(4,refSet.size());
-        for (int i=0;i<=7;i++)
-        {
-            if (i%2==1)
-                Assert.assertTrue(refSet.contains(field[i]));
-            else
-                Assert.assertFalse(refSet.contains(field[i]));
-        }
 
         // remove another fields
         fields.remove(field[1].getName());
@@ -173,18 +134,6 @@ public class HpackEncoderTest
         // max header table size reached
         Assert.assertEquals(5,encoder.getContext().size());
 
-        // last 5 in reference set
-        refSet.clear();
-        for (Entry entry : encoder.getContext().getReferenceSet())
-            refSet.add(entry.getHttpField());
-        Assert.assertEquals(3,refSet.size());
-        for (int i=2;i<=7;i++)
-        {
-            if (i%2==1)
-                Assert.assertTrue(refSet.contains(field[i]));
-            else
-                Assert.assertFalse(refSet.contains(field[i]));
-        }
         
         // re add the field
 
@@ -201,40 +150,8 @@ public class HpackEncoderTest
         // max header table size reached
         Assert.assertEquals(5,encoder.getContext().size());
 
-        // last 5 in reference set
-        refSet.clear();
-        for (Entry entry : encoder.getContext().getReferenceSet())
-            refSet.add(entry.getHttpField());
-        Assert.assertEquals(4,refSet.size());
-        for (int i=0;i<=7;i++)
-        {
-            if (i%2==1)
-                Assert.assertTrue(refSet.contains(field[i]));
-            else
-                Assert.assertFalse(refSet.contains(field[i]));
-        }
     }
 
-    @Test
-    public void testDoNotReferenceStatics()
-    {
-        HpackEncoder encoder = new HpackEncoder(38*5);
-        ByteBuffer buffer = BufferUtil.allocate(4096);
-        
-        HttpFields fields = new HttpFields();
-        fields.put(":method","POST");
-
-        // encode
-        BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
-        BufferUtil.flipToFlush(buffer,0);
-        
-        // something was encoded!
-        assertThat(buffer.remaining(),Matchers.greaterThan(0));
-        
-        // empty header table
-        Assert.assertEquals(0,encoder.getContext().size());
-    }
 
     @Test
     public void testNeverIndexSetCookie()

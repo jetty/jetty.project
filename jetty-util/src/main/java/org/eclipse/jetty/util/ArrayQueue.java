@@ -92,9 +92,9 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
 
     /* ------------------------------------------------------------ */
     /**
-     * @return the next index to be used
+     * @return the next slot to be used
      */
-    public int getNextIndexUnsafe()
+    public int getNextSlotUnsafe()
     {
         return _nextSlot;
     }

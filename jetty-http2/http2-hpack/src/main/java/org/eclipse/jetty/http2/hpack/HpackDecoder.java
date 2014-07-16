@@ -83,19 +83,15 @@ public class HpackDecoder
                 // indexed
                 int index = NBitInteger.decode(buffer,7);
                 Entry entry=_context.get(index);
-                if (entry.isInReferenceSet())
-                    _context.get(index).removeFromRefSet();
-                else if (entry.isStatic())
+                if (entry.isStatic())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("decode IdxStatic {}",entry);
                     // emit field
                     _builder.emit(entry.getHttpField());
                     
-                    // copy and add to reference set if there is room
-                    Entry new_entry = _context.add(entry.getHttpField());
-                    if (new_entry!=null)
-                        _context.addToRefSet(new_entry);
+                    // TODO copy and add to reference set if there is room
+                    // _context.add(entry.getHttpField());
                 }
                 else
                 {
@@ -103,8 +99,6 @@ public class HpackDecoder
                         LOG.debug("decode Idx {}",entry);
                     // emit
                     _builder.emit(entry.getHttpField());
-                    // add to reference set
-                    _context.addToRefSet(entry);
                 }
             }
             else 
@@ -210,10 +204,7 @@ public class HpackDecoder
                     if (indexed)
                     {
                         // add to header table
-                        Entry new_entry=_context.add(field);
-                        // and to ref set if there was room in header table
-                        if (new_entry!=null)
-                            _context.addToRefSet(new_entry);
+                        _context.add(field);
                     }
                 }
                 else if (f==2)
@@ -228,15 +219,12 @@ public class HpackDecoder
                 }
                 else if (f==3)
                 {
-                    // clear reference set
                     if (LOG.isDebugEnabled())
-                        LOG.debug("decode clear");
-                    _context.clearReferenceSet();
+                        LOG.debug("unused");
                 }   
             }
         }
         
-        _context.emitUnusedReferences(_builder);
         return _builder.build();
     }
 

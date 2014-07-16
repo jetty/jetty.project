@@ -215,26 +215,26 @@ public class HpackContextTest
         // Add a single entry  
         entry[0]=ctx.add(field[0]);
         
-        // Check new entry is 1 
+        // Check new entry is 62 
         assertEquals(1,ctx.size());
-        assertEquals(1,ctx.index(entry[0]));
-        assertEquals(entry[0],ctx.get(1));
+        assertEquals(62,ctx.index(entry[0]));
+        assertEquals(entry[0],ctx.get(62));
         
-        // and statics have moved up 1
-        assertEquals(":authority",ctx.get(1+1).getHttpField().getName());
-        assertEquals(3+1,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+1).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+1).getHttpField().getName());
-        assertEquals(null,ctx.get(62+1));
+        // and statics have moved up 0
+        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
+        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
+        assertEquals(methodPost,ctx.get(3+0).getHttpField());
+        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
+        assertEquals(null,ctx.get(62+0+ctx.size()));
         
 
         // Add 4 more entries
         for (int i=1;i<=4;i++)  
             entry[i]=ctx.add(field[i]);
 
-        // Check newest entry is at 1 oldest at 5
+        // Check newest entry is at 62 oldest at 66
         assertEquals(5,ctx.size());
-        int index=5;
+        int index=66;
         for (int i=0;i<=4;i++)  
         {
             assertEquals(index,ctx.index(entry[i]));
@@ -242,18 +242,18 @@ public class HpackContextTest
             index--;
         }
 
-        // and statics have moved up 5
-        assertEquals(":authority",ctx.get(1+5).getHttpField().getName());
-        assertEquals(3+5,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+5).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+5).getHttpField().getName());
-        assertEquals(null,ctx.get(62+5));
+        // and statics have moved up 0
+        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
+        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
+        assertEquals(methodPost,ctx.get(3+0).getHttpField());
+        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
+        assertEquals(null,ctx.get(62+0+ctx.size()));
         
         // add 1 more entry and this should cause an eviction!
         entry[5]=ctx.add(field[5]);
 
         // Check newest entry is at 1 oldest at 5
-        index=5;
+        index=66;
         for (int i=1;i<=5;i++)  
         {
             assertEquals(index,ctx.index(entry[i]));
@@ -264,19 +264,19 @@ public class HpackContextTest
         assertNull(ctx.get(field[0]));
         assertEquals(0,ctx.index(entry[0]));
 
-        // and statics have moved up just 5
-        assertEquals(":authority",ctx.get(1+5).getHttpField().getName());
-        assertEquals(3+5,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+5).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+5).getHttpField().getName());
-        assertEquals(null,ctx.get(62+5));
+        // and statics have moved up 0
+        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
+        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
+        assertEquals(methodPost,ctx.get(3+0).getHttpField());
+        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
+        assertEquals(null,ctx.get(62+0+ctx.size()));
         
         // Add 4 more entries
         for (int i=6;i<=9;i++)  
             entry[i]=ctx.add(field[i]);
         
         // Check newest entry is at 1 oldest at 5
-        index=5;
+        index=66;
         for (int i=5;i<=9;i++)  
         {
             assertEquals(index,ctx.index(entry[i]));
@@ -295,7 +295,7 @@ public class HpackContextTest
         for (int i=10;i<=52;i++)
             entry[i]=ctx.add(new HttpField("n"+i,"v"+i));
 
-        index=5;
+        index=66;
         for (int i=48;i<=52;i++)  
         {
             assertEquals(index,ctx.index(entry[i]));
@@ -304,210 +304,6 @@ public class HpackContextTest
         }
     }
     
-    
-    @Test
-    public void testRefSetAddStatic()
-    {
-        try
-        {
-            HpackContext ctx = new HpackContext(4096);
-
-            HttpField methodGet = new HttpField(":method","GET");
-            Entry entry = ctx.get(methodGet);
-            ctx.addToRefSet(entry);
-            fail();
-        }
-        catch(IllegalStateException e)
-        {}
-    }
-    
-    @Test
-    public void testRefSetAddEvicted()
-    {
-        try
-        {
-            HpackContext ctx = new HpackContext(38);
-            HttpField field0 = new HttpField("foo","bar");
-            HttpField field1 = new HttpField("xxx","yyy");
-            Entry entry = ctx.add(field0);
-            ctx.add(field1);
-            ctx.addToRefSet(entry);
-            fail();
-        }
-        catch(IllegalStateException e)
-        {}
-    }
-
-    @Test
-    public void testRefSetEmptyIteration()
-    {
-        HpackContext ctx = new HpackContext(4096);
-        for (Entry entry: ctx.getReferenceSet() )
-            fail("unexpected:"+entry);
-        Iterator<Entry> iter = ctx.iterateReferenceSet();
-        assertFalse(iter.hasNext());
-        
-        try
-        {
-            iter.next();
-            fail();
-        }
-        catch(NoSuchElementException e)
-        {
-        }
-        
-        try
-        {
-            iter.remove();
-            fail();
-        }
-        catch(NoSuchElementException e)
-        {
-        }
-        
-    }
-    
-
-    @Test
-    public void testRefSet()
-    {
-        // Only enough space for 5 entries
-        HpackContext ctx = new HpackContext(38*5);
-        
-        HttpField[] field = 
-        {
-           new HttpField("fo0","b0r"),
-           new HttpField("fo1","b1r"),
-           new HttpField("fo2","b2r"),
-           new HttpField("fo3","b3r"),
-           new HttpField("fo4","b4r"),
-           new HttpField("fo5","b5r"),
-           new HttpField("fo6","b6r"),
-           new HttpField("fo7","b7r"),
-           new HttpField("fo8","b8r"),
-           new HttpField("fo9","b9r"),
-           new HttpField("foA","bAr"),
-        };
-        Entry[] entry = new Entry[field.length];
-        
-        // Add 5 entries
-        for (int i=0;i<=4;i++)  
-            entry[i]=ctx.add(field[i]);
-        
-        // Add 3 entries to reference set
-        ctx.addToRefSet(ctx.get(3));
-        ctx.addToRefSet(ctx.get(1));
-        ctx.addToRefSet(ctx.get(5));
-        
-        // check isInReferenceSet
-        assertTrue(ctx.get(1).isInReferenceSet());
-        assertFalse(ctx.get(2).isInReferenceSet());
-        assertTrue(ctx.get(3).isInReferenceSet());
-        assertFalse(ctx.get(4).isInReferenceSet());
-        assertTrue(ctx.get(5).isInReferenceSet());
-
-        // iterate ref set
-        HashSet<HttpField> fields = new HashSet<>();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(3,fields.size());
-        assertTrue(fields.contains(field[0]));
-        assertTrue(fields.contains(field[2]));
-        assertTrue(fields.contains(field[4]));
-        
-        // duplicate add ignored
-        ctx.addToRefSet(ctx.get(1));
-        fields.clear();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(3,fields.size());
-        assertTrue(fields.contains(field[0]));
-        assertTrue(fields.contains(field[2]));
-        assertTrue(fields.contains(field[4]));
-        
-        // remove entry
-        ctx.get(3).removeFromRefSet();
-        fields.clear();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(2,fields.size());
-        assertTrue(fields.contains(field[0]));
-        assertTrue(fields.contains(field[4]));
-
-        // check isInReferenceSet
-        assertTrue(ctx.get(1).isInReferenceSet());
-        assertFalse(ctx.get(2).isInReferenceSet());
-        assertFalse(ctx.get(3).isInReferenceSet());
-        assertFalse(ctx.get(4).isInReferenceSet());
-        assertTrue(ctx.get(5).isInReferenceSet());
-
-        // iterator remove
-        Iterator<Entry> iter=ctx.iterateReferenceSet();
-        iter.next();
-        iter.remove();
-        fields.clear();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(1,fields.size());
-
-        // Add 5 new entries to cause evictions
-        for (int i=5;i<=9;i++)  
-            entry[i]=ctx.add(field[i]);
-        fields.clear();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(0,fields.size());
-        
-    }
-
-    @Test
-    public void testRefSetClear()
-    {
-        // Only enough space for 5 entries
-        HpackContext ctx = new HpackContext(38*5);
-        
-        HttpField[] field = 
-        {
-           new HttpField("fo0","b0r"),
-           new HttpField("fo1","b1r"),
-           new HttpField("fo2","b2r"),
-           new HttpField("fo3","b3r"),
-           new HttpField("fo4","b4r"),
-           new HttpField("fo5","b5r"),
-           new HttpField("fo6","b6r"),
-           new HttpField("fo7","b7r"),
-           new HttpField("fo8","b8r"),
-           new HttpField("fo9","b9r"),
-           new HttpField("foA","bAr"),
-        };
-        Entry[] entry = new Entry[field.length];
-        
-        // Add 5 entries
-        for (int i=0;i<=4;i++)  
-            entry[i]=ctx.add(field[i]);
-        
-        // Add 3 entries to reference set
-        ctx.clearReferenceSet();
-        ctx.addToRefSet(ctx.get(3));
-        ctx.addToRefSet(ctx.get(1));
-        ctx.addToRefSet(ctx.get(5));
-        
-        // iterate ref set
-        HashSet<HttpField> fields = new HashSet<>();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(3,fields.size());
-        assertTrue(fields.contains(field[0]));
-        assertTrue(fields.contains(field[2]));
-        assertTrue(fields.contains(field[4]));
-        
-        // Clear set 
-        ctx.clearReferenceSet();
-        fields.clear();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(0,fields.size());
-    }
 
     @Test
     public void testResize()
@@ -539,7 +335,7 @@ public class HpackContextTest
         assertEquals(5,ctx.size());
         
         // check indexes
-        int index=5;
+        int index=66;
         for (int i=0;i<=4;i++)  
         {
             assertEquals(index,ctx.index(entry[i]));
@@ -547,89 +343,54 @@ public class HpackContextTest
             index--;
         }
 
-        // and statics have moved up 5
-        assertEquals(":authority",ctx.get(1+5).getHttpField().getName());
-        assertEquals(3+5,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+5).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+5).getHttpField().getName());
-        assertEquals(null,ctx.get(62+5));
+        // and statics have moved up 0
+        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
+        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
+        assertEquals(methodPost,ctx.get(3+0).getHttpField());
+        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
+        assertEquals(null,ctx.get(62+ctx.size()));
         
         
-        // Add 3 entries to reference set
-        ctx.addToRefSet(ctx.get(3));
-        ctx.addToRefSet(ctx.get(1));
-        ctx.addToRefSet(ctx.get(5));
-
-        
-        
-        // iterate ref set
-        HashSet<HttpField> fields = new HashSet<>();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(3,fields.size());
-        assertTrue(fields.contains(field[0]));
-        assertTrue(fields.contains(field[2]));
-        assertTrue(fields.contains(field[4]));
         
         // resize so that only 2 entries may be held
         ctx.resize(38*2);
         assertEquals(2,ctx.size());
         
         // check indexes
-        index=2;
+        index=63;
         for (int i=3;i<=4;i++)  
         {
             assertEquals(index,ctx.index(entry[i]));
             assertEquals(entry[i],ctx.get(index));
             index--;
         }
-        
-        // and statics have moved up 2
-        assertEquals(":authority",ctx.get(1+2).getHttpField().getName());
-        assertEquals(3+2,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+2).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+2).getHttpField().getName());
-        assertEquals(null,ctx.get(62+2));
-        
-        // check reference set 
-        fields.clear();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(1,fields.size());
-        assertFalse(fields.contains(field[0]));
-        assertFalse(fields.contains(field[2]));
-        assertTrue(fields.contains(field[4]));
-        
 
+        // and statics have moved up 0
+        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
+        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
+        assertEquals(methodPost,ctx.get(3+0).getHttpField());
+        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
+        assertEquals(null,ctx.get(62+ctx.size()));
+        
         // resize so that 6.5 entries may be held
         ctx.resize(38*6+19);
         assertEquals(2,ctx.size());
-        
 
         // check indexes
-        index=2;
+        index=63;
         for (int i=3;i<=4;i++)  
         {
             assertEquals(index,ctx.index(entry[i]));
             assertEquals(entry[i],ctx.get(index));
             index--;
         }
-        
-        // and statics have moved up 2
-        assertEquals(":authority",ctx.get(1+2).getHttpField().getName());
-        assertEquals(3+2,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+2).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+2).getHttpField().getName());
-        assertEquals(null,ctx.get(62+2));
-        
-        // check reference set 
-        fields.clear();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(1,fields.size());
-        assertFalse(fields.contains(field[0]));
-        assertFalse(fields.contains(field[2]));
-        assertTrue(fields.contains(field[4]));
+
+        // and statics have moved up 0
+        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
+        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
+        assertEquals(methodPost,ctx.get(3+0).getHttpField());
+        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
+        assertEquals(null,ctx.get(62+ctx.size()));
         
 
         // Add 5 entries
@@ -639,29 +400,21 @@ public class HpackContextTest
         assertEquals(6,ctx.size());
 
         // check indexes
-        index=6;
+        index=67;
         for (int i=4;i<=9;i++)  
         {
             assertEquals(index,ctx.index(entry[i]));
             assertEquals(entry[i],ctx.get(index));
             index--;
         }
+
+        // and statics have moved up 0
+        assertEquals(":authority",ctx.get(1+0).getHttpField().getName());
+        assertEquals(3+0,ctx.index(ctx.get(methodPost)));
+        assertEquals(methodPost,ctx.get(3+0).getHttpField());
+        assertEquals("www-authenticate",ctx.get(61+0).getHttpField().getName());
+        assertEquals(null,ctx.get(62+ctx.size()));
         
-        // and statics have moved up 6
-        assertEquals(":authority",ctx.get(1+6).getHttpField().getName());
-        assertEquals(3+6,ctx.index(ctx.get(methodPost)));
-        assertEquals(methodPost,ctx.get(3+6).getHttpField());
-        assertEquals("www-authenticate",ctx.get(61+6).getHttpField().getName());
-        assertEquals(null,ctx.get(62+6));
-        
-        // check reference set 
-        fields.clear();
-        for (Entry e: ctx.getReferenceSet() )
-            fields.add(e.getHttpField());
-        assertEquals(1,fields.size());
-        assertFalse(fields.contains(field[0]));
-        assertFalse(fields.contains(field[2]));
-        assertTrue(fields.contains(field[4]));
     }
     
     @Test

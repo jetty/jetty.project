@@ -161,7 +161,6 @@ public class HpackEncoder
             encode(buffer,field);
         }
 
-        _context.removedUnusedReferences(buffer);
     }
 
     public void encodeMaxHeaderTableSize(ByteBuffer buffer, int maxHeaderTableSize)
@@ -171,12 +170,6 @@ public class HpackEncoder
         buffer.put((byte)0x20);
         NBitInteger.encode(buffer,4,maxHeaderTableSize);
         _context.resize(maxHeaderTableSize);
-    }
-
-    public void encodeClearReferenceSet(ByteBuffer buffer)
-    {
-        buffer.put((byte)0x30);
-        _context.clearReferenceSet();
     }
 
     private void encode(ByteBuffer buffer, HttpField field)
@@ -192,49 +185,18 @@ public class HpackEncoder
 
         if (entry!=null)
         {
-            // if entry is already in the reference set, then nothing more to do.
-            if (entry.isInReferenceSet())
-            {
-                entry.used();
-                encoding="InRefSet";
-            }
-
             // Is this as static field
-            else if (entry.isStatic())
+            if (entry.isStatic())
             {
-                // TODO Strategy decision to make!
-                // Should we add to reference set or just always send as indexed?
+                // entries like :status: 200 and :method: GET are worthwhile putting into ref set.
+                // as they are likely to be repeated.
+                encoding="StaticIndexed";
+                int index=_context.index(entry);
+                buffer.put((byte)0x80);
+                NBitInteger.encode(buffer,7,index);
 
-                if (((StaticEntry)entry).useRefSet())
-                {
-                    // entries like :status: 200 and :method: GET are worthwhile putting into ref set.
-                    // as they are likely to be repeated.
-                    encoding="StaticIndexed";
-                    int index=_context.index(entry);
-                    buffer.put((byte)0x80);
-                    NBitInteger.encode(buffer,7,index);
-                    entry=_context.add(entry.getHttpField());
-                    if (entry!=null)
-                        _context.addToRefSet(entry);
-                }
-                else
-                {        
-                    // Let's send other statics as indexed to reduce churn in header table!
-                    // BUGGER! Can't do that as we have to copy them into header table.
-                    // Oh well all the static fields have small values, so
-                    // lets send as literal header, indexed name.
-                    // We don't need never indexed because the cookie fields are name only and we can
-                    // huffman encode the value for the same reason. 
-                    
-                    // Add the token
-                    buffer.put((byte)0x00);
-                    // Add the name index
-                    NBitInteger.encode(buffer,4,_context.index(entry));
-                    // Add the value
-                    buffer.put(entry.getStaticHuffmanValue());
-
-                    encoding="LiteralStaticIdxNameHuffmanValue";
-                }
+                // TODO Copy?
+                // entry=_context.add(entry.getHttpField());
             }
             else
             {
@@ -244,7 +206,6 @@ public class HpackEncoder
                 int index=_context.index(entry);
                 buffer.put((byte)0x80);
                 NBitInteger.encode(buffer,7,index);
-                _context.addToRefSet(entry);
             }
         }
         else
@@ -335,11 +296,7 @@ public class HpackEncoder
             // If we want the field referenced, then we add it to our
             // table and reference set.
             if (reference)
-            {
-                Entry new_entry=_context.add(field);
-                if (new_entry!=null)
-                    _context.addToRefSet(new_entry);
-            }
+                _context.add(field);
         }
 
         if (p>=0)
