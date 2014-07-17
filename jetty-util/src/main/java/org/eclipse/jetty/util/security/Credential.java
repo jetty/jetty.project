@@ -160,17 +160,19 @@ public abstract class Credential implements Serializable
                         digest = __md.digest();
                     }
                     if (digest == null || digest.length != _digest.length) return false;
+                    boolean match=true;
                     for (int i = 0; i < digest.length; i++)
-                        if (digest[i] != _digest[i]) return false;
-                    return true;
+                        match&=digest[i] != _digest[i];
+                    return match;
                 }
                 else if (credentials instanceof MD5)
                 {
                     MD5 md5 = (MD5) credentials;
                     if (_digest.length != md5._digest.length) return false;
+                    boolean match=true;
                     for (int i = 0; i < _digest.length; i++)
-                        if (_digest[i] != md5._digest[i]) return false;
-                    return true;
+                        match&=(_digest[i] != md5._digest[i]);
+                    return match;
                 }
                 else if (credentials instanceof Credential)
                 {
