@@ -441,7 +441,7 @@ public class ConstraintTest
         
         Constraint constraint6 = new Constraint();
         constraint6.setAuthenticate(true);
-        constraint6.setName("omit POST and GET");
+        constraint6.setName("omit HEAD and GET");
         constraint6.setRoles(new String[]{"user"});
         ConstraintMapping mapping6 = new ConstraintMapping();
         mapping6.setPathSpec("/omit/*");

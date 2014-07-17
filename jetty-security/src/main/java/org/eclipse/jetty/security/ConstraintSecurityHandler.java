@@ -511,21 +511,6 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
                 mappings.put(ALL_METHODS,roleInfo);
             }
         }
-        else
-        {
-            //combine with any entry that covers all methods
-            if (httpMethod == null)
-            {
-                for (Map.Entry<String, RoleInfo> entry : mappings.entrySet())
-                {
-                    if (entry.getKey() != null)
-                    {
-                        RoleInfo specific = entry.getValue();
-                        specific.combine(roleInfo);
-                    }
-                }
-            }
-        }
     }
 
     /* ------------------------------------------------------------ */
