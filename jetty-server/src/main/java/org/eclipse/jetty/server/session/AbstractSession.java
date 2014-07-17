@@ -397,7 +397,6 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
     
     /* ------------------------------------------------------------ */
-    @SuppressWarnings({ "unchecked" })
     @Override
     public Enumeration<String> getAttributeNames()
     {

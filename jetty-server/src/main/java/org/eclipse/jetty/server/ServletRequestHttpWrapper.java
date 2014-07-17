@@ -48,126 +48,151 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
         super(request);
     }
 
+    @Override
     public String getAuthType()
     {
         return null;
     }
 
+    @Override
     public Cookie[] getCookies()
     {
         return null;
     }
 
+    @Override
     public long getDateHeader(String name)
     {
         return 0;
     }
 
+    @Override
     public String getHeader(String name)
     {
         return null;
     }
 
-    public Enumeration getHeaders(String name)
+    @Override
+    public Enumeration<String> getHeaders(String name)
     {
         return null;
     }
 
-    public Enumeration getHeaderNames()
+    @Override
+    public Enumeration<String> getHeaderNames()
     {
         return null;
     }
 
+    @Override
     public int getIntHeader(String name)
     {
         return 0;
     }
 
+    @Override
     public String getMethod()
     {
         return null;
     }
 
+    @Override
     public String getPathInfo()
     {
         return null;
     }
 
+    @Override
     public String getPathTranslated()
     {
         return null;
     }
 
+    @Override
     public String getContextPath()
     {
         return null;
     }
 
+    @Override
     public String getQueryString()
     {
         return null;
     }
 
+    @Override
     public String getRemoteUser()
     {
         return null;
     }
 
+    @Override
     public boolean isUserInRole(String role)
     {
         return false;
     }
 
+    @Override
     public Principal getUserPrincipal()
     {
         return null;
     }
 
+    @Override
     public String getRequestedSessionId()
     {
         return null;
     }
 
+    @Override
     public String getRequestURI()
     {
         return null;
     }
 
+    @Override
     public StringBuffer getRequestURL()
     {
         return null;
     }
 
+    @Override
     public String getServletPath()
     {
         return null;
     }
 
+    @Override
     public HttpSession getSession(boolean create)
     {
         return null;
     }
 
+    @Override
     public HttpSession getSession()
     {
         return null;
     }
 
+    @Override
     public boolean isRequestedSessionIdValid()
     {
         return false;
     }
 
+    @Override
     public boolean isRequestedSessionIdFromCookie()
     {
         return false;
     }
 
+    @Override
     public boolean isRequestedSessionIdFromURL()
     {
         return false;
     }
 
+    @Override
     public boolean isRequestedSessionIdFromUrl()
     {
         return false;
@@ -176,6 +201,7 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
     /**
      * @see javax.servlet.http.HttpServletRequest#authenticate(javax.servlet.http.HttpServletResponse)
      */
+    @Override
     public boolean authenticate(HttpServletResponse response) throws IOException, ServletException
     {
         return false;
@@ -184,6 +210,7 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
     /**
      * @see javax.servlet.http.HttpServletRequest#getPart(java.lang.String)
      */
+    @Override
     public Part getPart(String name) throws IOException, ServletException
     {
         return null;
@@ -192,6 +219,7 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
     /**
      * @see javax.servlet.http.HttpServletRequest#getParts()
      */
+    @Override
     public Collection<Part> getParts() throws IOException, ServletException
     {
         return null;
@@ -200,6 +228,7 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
     /**
      * @see javax.servlet.http.HttpServletRequest#login(java.lang.String, java.lang.String)
      */
+    @Override
     public void login(String username, String password) throws ServletException
     {
 
@@ -208,6 +237,7 @@ public class ServletRequestHttpWrapper extends ServletRequestWrapper implements 
     /**
      * @see javax.servlet.http.HttpServletRequest#logout()
      */
+    @Override
     public void logout() throws ServletException
     {
 

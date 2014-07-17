@@ -71,7 +71,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
      * The value (if any) for a Trie row. 
      * A row may be a leaf, a node or both in the Trie tree.
      */
-    private final Object[] _value;
+    private final V[] _value;
     
     /**
      * The number of rows allocated
@@ -96,7 +96,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     public ArrayTernaryTrie(boolean insensitive, int capacityInNodes)
     {
         super(insensitive);
-        _value=new Object[capacityInNodes];
+        _value=(V[])new Object[capacityInNodes];
         _tree=new char[capacityInNodes*ROW_SIZE];
         _key=new String[capacityInNodes];
     }
@@ -216,7 +216,7 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
             }
         }
         
-        return (V)_value[t];
+        return _value[t];
     }
 
     

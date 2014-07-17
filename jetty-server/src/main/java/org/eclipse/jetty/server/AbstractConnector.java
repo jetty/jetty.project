@@ -140,7 +140,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Scheduler _scheduler;
     private final ByteBufferPool _byteBufferPool;
     private final Thread[] _acceptors;
-    private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap());
+    private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<EndPoint, Boolean>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private volatile CountDownLatch _stopping;
     private long _idleTimeout = 30000;

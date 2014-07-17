@@ -125,9 +125,12 @@ public class ServletHandler extends ScopedHandler
     
     private ListenerHolder[] _listeners=new ListenerHolder[0];
 
-    protected final ConcurrentMap<?, ?> _chainCache[] = new ConcurrentMap[FilterMapping.ALL];
-    protected final Queue<?>[] _chainLRU = new Queue[FilterMapping.ALL];
-    
+    @SuppressWarnings("unchecked")
+    protected final ConcurrentMap<String, FilterChain> _chainCache[] = new ConcurrentMap[FilterMapping.ALL];
+
+    @SuppressWarnings("unchecked")
+    protected final Queue<String>[] _chainLRU = new Queue[FilterMapping.ALL];
+
 
 
     /* ------------------------------------------------------------ */
@@ -745,8 +748,8 @@ public class ServletHandler extends ScopedHandler
             if (filters.size() > 0)
                 chain= new CachedChain(filters, servletHolder);
 
-            final Map<String,FilterChain> cache=(Map<String, FilterChain>)_chainCache[dispatch];
-            final Queue<String> lru=(Queue<String>)_chainLRU[dispatch];
+            final Map<String,FilterChain> cache=_chainCache[dispatch];
+            final Queue<String> lru=_chainLRU[dispatch];
 
         	// Do we have too many cached chains?
         	while (_maxFilterChainsCacheSize>0 && cache.size()>=_maxFilterChainsCacheSize)

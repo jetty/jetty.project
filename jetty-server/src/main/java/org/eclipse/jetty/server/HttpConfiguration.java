@@ -103,7 +103,7 @@ public class HttpConfiguration
     {
         return _customizers;
     }
-    
+
     public <T> T getCustomizer(Class<T> type)
     {
         for (Customizer c : _customizers)

@@ -795,7 +795,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (_servlet == null)
             return false;
 
-        Class c = _servlet.getClass();
+        Class<?> c = _servlet.getClass();
 
         boolean result = false;
         while (c != null && !result)
@@ -827,7 +827,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         jsp = jsp.substring(i);
         try
         {
-            Class jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
+            Class<?> jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
             Method makeJavaIdentifier = jspUtil.getMethod("makeJavaIdentifier", String.class);
             return (String)makeJavaIdentifier.invoke(null, jsp);
         }
@@ -853,7 +853,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             return "";
         try
         {
-            Class jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
+            Class<?> jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
             Method makeJavaPackage = jspUtil.getMethod("makeJavaPackage", String.class);
             return (String)makeJavaPackage.invoke(null, jsp.substring(0,i));
         } 

@@ -79,7 +79,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
      * The value (if any) for a Trie row. 
      * A row may be a leaf, a node or both in the Trie tree.
      */
-    private final Object[] _value;
+    private final V[] _value;
     
     /**
      * A big index for each row.
@@ -102,7 +102,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
     public ArrayTrie(int capacityInNodes)
     {
         super(true);
-        _value=new Object[capacityInNodes];
+        _value=(V[])new Object[capacityInNodes];
         _rowIndex=new char[capacityInNodes*32];
         _key=new String[capacityInNodes];
     }
@@ -183,7 +183,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                     return null;
             }
         }
-        return (V)_value[t];
+        return _value[t];
     }
 
     /* ------------------------------------------------------------ */
