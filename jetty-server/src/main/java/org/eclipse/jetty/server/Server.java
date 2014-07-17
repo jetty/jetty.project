@@ -495,7 +495,6 @@ public class Server extends HandlerWrapper implements Attributes
             response.sendError(HttpStatus.BAD_REQUEST_400);
         request.setHandled(true);
         response.setStatus(200);
-        response.getHttpFields().put(HttpHeader.ALLOW,"GET,POST,HEAD,OPTIONS");
         response.setContentLength(0);
         response.closeOutput();
     }
