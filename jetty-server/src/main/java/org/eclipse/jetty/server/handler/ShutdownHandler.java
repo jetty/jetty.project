@@ -133,6 +133,7 @@ public class ShutdownHandler extends HandlerWrapper
         }
     }
 
+    @SuppressWarnings("resource")
     private String getServerUrl()
     {
         NetworkConnector connector=null;

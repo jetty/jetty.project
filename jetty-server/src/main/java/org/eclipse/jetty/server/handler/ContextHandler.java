@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -107,7 +106,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 {
     public final static int SERVLET_MAJOR_VERSION=3;
     public final static int SERVLET_MINOR_VERSION=0;
-    public static final Class[] SERVLET_LISTENER_TYPES = new Class[] {ServletContextListener.class,
+    public static final Class<?>[] SERVLET_LISTENER_TYPES = new Class[] {ServletContextListener.class,
                                                                       ServletContextAttributeListener.class,
                                                                       ServletRequestListener.class,
                                                                       ServletRequestAttributeListener.class};
@@ -509,8 +508,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /*
      * @see javax.servlet.ServletContext#getInitParameterNames()
      */
-    @SuppressWarnings("rawtypes")
-    public Enumeration getInitParameterNames()
+    public Enumeration<String> getInitParameterNames()
     {
         return Collections.enumeration(_initParams.keySet());
     }
@@ -1128,7 +1126,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
                 if (!_requestAttributeListeners.isEmpty())
                 {
-                    ListIterator<ServletRequestAttributeListener> iter = _requestAttributeListeners.listIterator(_requestAttributeListeners.size());
                     for (int i=_requestAttributeListeners.size();i-->0;)
                         baseRequest.removeEventListener(_requestAttributeListeners.get(i));
                 }
@@ -1884,7 +1881,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                         matched_path = context_path;
                     }
 
-                    if (matched_path.equals(context_path))
+                    if (matched_path != null && matched_path.equals(context_path))
                         contexts.add(ch);
                 }
             }
@@ -2062,7 +2059,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         /*
          * @see javax.servlet.ServletContext#getInitParameterNames()
          */
-        @SuppressWarnings("unchecked")
         @Override
         public Enumeration<String> getInitParameterNames()
         {
@@ -2199,6 +2195,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             try
             {
+                @SuppressWarnings("unchecked")
                 Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(ContextHandler.class,className):_classLoader.loadClass(className);
                 addListener(clazz);
             }
@@ -2293,9 +2290,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                //classloader, or a parent of it
                try
                {
-                   Class reflect = Loader.loadClass(getClass(), "sun.reflect.Reflection");
+                   Class<?> reflect = Loader.loadClass(getClass(), "sun.reflect.Reflection");
                    Method getCallerClass = reflect.getMethod("getCallerClass", Integer.TYPE);
-                   Class caller = (Class)getCallerClass.invoke(null, 2);
+                   Class<?> caller = (Class<?>)getCallerClass.invoke(null, 2);
 
                    boolean ok = false;
                    ClassLoader callerLoader = caller.getClassLoader();

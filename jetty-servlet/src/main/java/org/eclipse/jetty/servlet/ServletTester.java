@@ -98,7 +98,7 @@ public class ServletTester extends ContainerLifeCycle
         return _context.getAttribute(name);
     }
 
-    public Enumeration getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
         return _context.getAttributeNames();
     }
@@ -123,7 +123,7 @@ public class ServletTester extends ContainerLifeCycle
         return _context.setInitParameter(name,value);
     }
 
-    public Enumeration getInitParameterNames()
+    public Enumeration<String> getInitParameterNames()
     {
         return _context.getInitParameterNames();
     }

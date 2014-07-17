@@ -72,8 +72,8 @@ public class Invoker extends HttpServlet
 
     private ContextHandler _contextHandler;
     private ServletHandler _servletHandler;
-    private Map.Entry _invokerEntry;
-    private Map _parameters;
+    private Map.Entry<String, ServletHolder> _invokerEntry;
+    private Map<String, String> _parameters;
     private boolean _nonContextServlets;
     private boolean _verbose;
 
@@ -87,10 +87,10 @@ public class Invoker extends HttpServlet
         while (handler!=null && !(handler instanceof ServletHandler) && (handler instanceof HandlerWrapper))
             handler=((HandlerWrapper)handler).getHandler();
         _servletHandler = (ServletHandler)handler;
-        Enumeration e = getInitParameterNames();
+        Enumeration<String> e = getInitParameterNames();
         while(e.hasMoreElements())
         {
-            String param=(String)e.nextElement();
+            String param=e.nextElement();
             String value=getInitParameter(param);
             String lvalue=value.toLowerCase(Locale.ENGLISH);
             if ("nonContextServlets".equals(param))
@@ -104,7 +104,7 @@ public class Invoker extends HttpServlet
             else
             {
                 if (_parameters==null)
-                    _parameters=new HashMap();
+                    _parameters=new HashMap<String, String>();
                 _parameters.put(param,value);
             }
         }
@@ -151,7 +151,7 @@ public class Invoker extends HttpServlet
             ServletMapping mapping = new ServletMapping();
             mapping.setServletName(servlet);
             mapping.setPathSpec(URIUtil.addPaths(servlet_path,servlet)+"/*");
-            _servletHandler.setServletMappings((ServletMapping[])ArrayUtil.addToArray(_servletHandler.getServletMappings(), mapping, ServletMapping.class));
+            _servletHandler.setServletMappings(ArrayUtil.addToArray(_servletHandler.getServletMappings(), mapping, ServletMapping.class));
         }
         else
         {
@@ -171,7 +171,7 @@ public class Invoker extends HttpServlet
 
                 // Check for existing mapping (avoid threaded race).
                 String path=URIUtil.addPaths(servlet_path,servlet);
-                Map.Entry entry = _servletHandler.getHolderEntry(path);
+                Map.Entry<String, ServletHolder> entry = _servletHandler.getHolderEntry(path);
 
                 if (entry!=null && !entry.equals(_invokerEntry))
                 {

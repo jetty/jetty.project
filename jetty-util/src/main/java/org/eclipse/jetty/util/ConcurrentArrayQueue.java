@@ -166,6 +166,7 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
         return _blocks.compareAndSet(TAIL_OFFSET,current,update);
     }
 
+    @SuppressWarnings("unchecked")
     @Override
     public T poll()
     {
@@ -274,7 +275,7 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
             }
             else
             {
-                Object element = currentHeadBlock.peek(head);
+                T element = currentHeadBlock.peek(head);
                 if (element == REMOVED_ELEMENT)
                 {
                     // Already removed, try next index
@@ -282,7 +283,7 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
                 }
                 else
                 {
-                    return (T)element;
+                    return element;
                 }
             }
         }
@@ -419,8 +420,11 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 
                     advance();
 
-                    if (element != REMOVED_ELEMENT)
-                        return (T)element;
+                    if (element != REMOVED_ELEMENT) {
+                        @SuppressWarnings("unchecked")
+                        T e = (T)element;
+                        return e;
+                    }
                 }
             }
 
@@ -516,9 +520,10 @@ public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
             elements = new AtomicReferenceArray<>(blockSize);
         }
 
-        public Object peek(int index)
+        @SuppressWarnings("unchecked")
+        public E peek(int index)
         {
-            return elements.get(index);
+            return (E)elements.get(index);
         }
 
         public boolean store(int index, E item)

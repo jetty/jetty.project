@@ -606,6 +606,7 @@ public class Server extends HandlerWrapper implements Attributes
     /**
      * @return The URI of the first {@link NetworkConnector} and first {@link ContextHandler}, or null
      */
+    @SuppressWarnings("resource")
     public URI getURI()
     {
         NetworkConnector connector=null;

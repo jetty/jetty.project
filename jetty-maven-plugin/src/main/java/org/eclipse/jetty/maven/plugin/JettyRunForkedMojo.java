@@ -246,11 +246,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
         {
             printSystemProperties();
 
-            //apply any config from a jetty.xml file first to our "fake" server instance
-            //TODO probably not necessary
-            applyJettyXml ();  
+            //do NOT apply the jettyXml configuration - as the jvmArgs may be needed for it to work 
 
-        
+            //ensure handler structure enabled
             server.configureHandlers();
                    
             //ensure config of the webapp based on settings in plugin
@@ -271,9 +269,10 @@ public class JettyRunForkedMojo extends JettyRunMojo
             
             webApp.setQuickStartWebDescriptor(Resource.newResource(forkWebXml));
             
+            //add webapp to our fake server instance
             server.addWebApplication(webApp);
                        
-            //if our server has a thread pool associated we can do any annotation scanning multithreaded,
+            //if our server has a thread pool associated we can do annotation scanning multithreaded,
             //otherwise scanning will be single threaded
             QueuedThreadPool tpool = server.getBean(QueuedThreadPool.class);
             if (tpool != null)
