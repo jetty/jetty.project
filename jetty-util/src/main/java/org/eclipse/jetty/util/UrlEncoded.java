@@ -684,87 +684,89 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             int c;
             
             int totalLength = 0;
-            ByteArrayOutputStream2 output = new ByteArrayOutputStream2();
             
-            int size=0;
-            
-            while ((c=in.read())>0)
+            try(ByteArrayOutputStream2 output = new ByteArrayOutputStream2();)
             {
-                switch ((char) c)
+                int size=0;
+
+                while ((c=in.read())>0)
                 {
-                    case '&':
-                        size=output.size();
-                        value = size==0?"":output.toString(charset);
-                        output.setCount(0);
-                        if (key != null)
-                        {
-                            map.add(key,value);
-                        }
-                        else if (value!=null&&value.length()>0)
-                        {
-                            map.add(value,"");
-                        }
-                        key = null;
-                        value=null;
-                        if (maxKeys>0 && map.size()>maxKeys)
-                            throw new IllegalStateException("Form too many keys");
-                        break;
-                    case '=':
-                        if (key!=null)
-                        {
+                    switch ((char) c)
+                    {
+                        case '&':
+                            size=output.size();
+                            value = size==0?"":output.toString(charset);
+                            output.setCount(0);
+                            if (key != null)
+                            {
+                                map.add(key,value);
+                            }
+                            else if (value!=null&&value.length()>0)
+                            {
+                                map.add(value,"");
+                            }
+                            key = null;
+                            value=null;
+                            if (maxKeys>0 && map.size()>maxKeys)
+                                throw new IllegalStateException("Form too many keys");
+                            break;
+                        case '=':
+                            if (key!=null)
+                            {
+                                output.write(c);
+                                break;
+                            }
+                            size=output.size();
+                            key = size==0?"":output.toString(charset);
+                            output.setCount(0);
+                            break;
+                        case '+':
+                            output.write(' ');
+                            break;
+                        case '%':
+                            int code0=in.read();
+                            if ('u'==code0)
+                            {
+                                int code1=in.read();
+                                if (code1>=0)
+                                {
+                                    int code2=in.read();
+                                    if (code2>=0)
+                                    {
+                                        int code3=in.read();
+                                        if (code3>=0)
+                                            output.write(new String(Character.toChars((convertHexDigit(code0)<<12)+(convertHexDigit(code1)<<8)+(convertHexDigit(code2)<<4)+convertHexDigit(code3))).getBytes(charset));
+                                    }
+                                }
+
+                            }
+                            else if (code0>=0)
+                            {
+                                int code1=in.read();
+                                if (code1>=0)
+                                    output.write((convertHexDigit(code0)<<4)+convertHexDigit(code1));
+                            }
+                            break;
+                        default:
                             output.write(c);
                             break;
-                        }
-                        size=output.size();
-                        key = size==0?"":output.toString(charset);
-                        output.setCount(0);
-                        break;
-                    case '+':
-                        output.write(' ');
-                        break;
-                    case '%':
-                        int code0=in.read();
-                        if ('u'==code0)
-                        {
-                            int code1=in.read();
-                            if (code1>=0)
-                            {
-                                int code2=in.read();
-                                if (code2>=0)
-                                {
-                                    int code3=in.read();
-                                    if (code3>=0)
-                                        output.write(new String(Character.toChars((convertHexDigit(code0)<<12)+(convertHexDigit(code1)<<8)+(convertHexDigit(code2)<<4)+convertHexDigit(code3))).getBytes(charset));
-                                }
-                            }
-                            
-                        }
-                        else if (code0>=0)
-                        {
-                            int code1=in.read();
-                            if (code1>=0)
-                                output.write((convertHexDigit(code0)<<4)+convertHexDigit(code1));
-                        }
-                        break;
-                    default:
-                        output.write(c);
-                    break;
-                }
-                
-                totalLength++;
-                if (maxLength>=0 && totalLength > maxLength)
-                    throw new IllegalStateException("Form too large");
-            }
+                    }
 
-            size=output.size();
-            if (key != null)
-            {
-                value = size==0?"":output.toString(charset);
-                output.setCount(0);
-                map.add(key,value);
+                    totalLength++;
+                    if (maxLength>=0 && totalLength > maxLength)
+                        throw new IllegalStateException("Form too large");
+                }
+
+                size=output.size();
+                if (key != null)
+                {
+                    value = size==0?"":output.toString(charset);
+                    output.setCount(0);
+                    map.add(key,value);
+                }
+                else if (size>0)
+                    map.add(output.toString(charset),"");
             }
-            else if (size>0)
-                map.add(output.toString(charset),"");
         }
     }
     

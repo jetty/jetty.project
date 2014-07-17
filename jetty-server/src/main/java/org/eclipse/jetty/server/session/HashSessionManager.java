@@ -665,14 +665,14 @@ public class HashSessionManager extends AbstractSessionManager
         return session;
     }
 
-    
+
+    @SuppressWarnings("resource")
     private void restoreSessionAttributes (InputStream is, int size, HashedSession session)
     throws Exception
     {
         if (size>0)
         {
             // input stream should not be closed here
-            @SuppressWarnings("resource")
             ClassLoadingObjectInputStream ois =  new ClassLoadingObjectInputStream(is);
             for (int i=0; i<size;i++)
             {
