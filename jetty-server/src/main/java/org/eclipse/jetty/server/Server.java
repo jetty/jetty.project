@@ -53,6 +53,7 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -517,10 +518,11 @@ public class Server extends HandlerWrapper implements Attributes
         {
             // this is a dispatch with a path
             ServletContext context=event.getServletContext();
-            HttpURI uri = new HttpURI(context==null?path:URIUtil.addPaths(context.getContextPath(),path));
+            HttpURI uri = new HttpURI(URIUtil.encodePath(context==null?path:URIUtil.addPaths(context.getContextPath(),path)));
             baseRequest.setUri(uri);
             baseRequest.setRequestURI(null);
-            baseRequest.setPathInfo(baseRequest.getRequestURI());
+            baseRequest.setPathInfo(uri.getDecodedPath());
+            
             if (uri.getQuery()!=null)
                 baseRequest.mergeQueryParameters(uri.getQuery(), true); //we have to assume dispatch path and query are UTF8
         }
