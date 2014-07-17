@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -46,6 +47,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Jetty;
@@ -140,6 +142,19 @@ public class Server extends HandlerWrapper implements Attributes
     public boolean getStopAtShutdown()
     {
         return _stopAtShutdown;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set a graceful stop time.
+     * The {@link StatisticsHandler} must be configured so that open connections can
+     * be tracked for a graceful shutdown.
+     * @see org.eclipse.jetty.util.component.ContainerLifeCycle#setStopTimeout(long)
+     */
+    @Override
+    public void setStopTimeout(long stopTimeout)
+    {
+        super.setStopTimeout(stopTimeout);
     }
 
     /* ------------------------------------------------------------ */
