@@ -158,6 +158,12 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    /** Set stop server at shutdown behaviour.
+     * @param stop If true, this server instance will be explicitly stopped when the
+     * JVM is shutdown. Otherwise the JVM is stopped with the server running.
+     * @see Runtime#addShutdownHook(Thread)
+     * @see ShutdownThread
+     */
     public void setStopAtShutdown(boolean stop)
     {
         //if we now want to stop
@@ -668,6 +674,7 @@ public class Server extends HandlerWrapper implements Attributes
         return this.getClass().getName()+"@"+Integer.toHexString(hashCode());
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {
