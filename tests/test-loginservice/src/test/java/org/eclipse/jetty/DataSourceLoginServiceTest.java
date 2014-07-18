@@ -76,6 +76,9 @@ public class DataSourceLoginServiceTest
         System.setProperty("derby.system.home", dbPath);
         FS.ensureEmpty(_dbRoot);
         
+        File dstest = new File(_dbRoot, "dstest");
+        FS.ensureEmpty(dstest);
+        
         File scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
         DatabaseLoginServiceTestServer.createDB(dbPath, scriptFile, "jdbc:derby:dstest;create=true");
         
