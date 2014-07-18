@@ -53,29 +53,42 @@ import org.junit.Test;
  */
 public class DataSourceLoginServiceTest
 {
+    
+    
     public static final String _content = "This is some protected content";
     private static File _docRoot;
-    private static File _dbRoot;
     private static HttpClient _client;
     private static String __realm = "DSRealm";
     private static URI _baseUri;
     private static final int __cacheInterval = 200;
     private static DatabaseLoginServiceTestServer _testServer;
 
+
+    
+    
     @BeforeClass
     public static void setUp() throws Exception
     {
-        _docRoot = MavenTestingUtils.getTargetTestingDir(DataSourceLoginServiceTest.class.getSimpleName());
-        FS.ensureEmpty(_docRoot);    
-
+       
+        _docRoot = MavenTestingUtils.getTargetTestingDir("loginservice-test");
+        FS.ensureDirExists(_docRoot);
+        
         File content = new File(_docRoot,"input.txt");
         FileOutputStream out = new FileOutputStream(content);
         out.write(_content.getBytes("utf-8"));
         out.close();
 
-        File scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
-        _dbRoot = DatabaseLoginServiceTestServer.createDB(scriptFile,"dstest");
         
+        //clear previous runs
+        File scriptFile = MavenTestingUtils.getTestResourceFile("droptables.sql");
+        int result = DatabaseLoginServiceTestServer.runscript(scriptFile);
+        //ignore result as derby spits errors for dropping tables that dont exist
+        
+        //create afresh
+        scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
+        result = DatabaseLoginServiceTestServer.runscript(scriptFile);
+         assertThat("runScript result",result, is(0));
+         
         _testServer = new DatabaseLoginServiceTestServer();
         _testServer.setResourceBase(_docRoot.getAbsolutePath());
         _testServer.setLoginService(configureLoginService());
@@ -115,7 +128,8 @@ public class DataSourceLoginServiceTest
          
          //create a datasource
          EmbeddedDataSource ds = new EmbeddedDataSource();
-         ds.setDatabaseName(_dbRoot.getAbsolutePath());
+         File db = new File (DatabaseLoginServiceTestServer.getDbRoot(), "loginservice");
+         ds.setDatabaseName(db.getAbsolutePath());
          org.eclipse.jetty.plus.jndi.Resource binding = new org.eclipse.jetty.plus.jndi.Resource(null, "dstest",
                                                                                                       ds);
          assertThat("Created binding for dstest", binding, notNullValue());
@@ -157,9 +171,10 @@ public class DataSourceLoginServiceTest
      protected void changePassword (String user, String newpwd) throws Exception
      {
          Loader.loadClass(this.getClass(), "org.apache.derby.jdbc.EmbeddedDriver").newInstance();
-         try (Connection connection = DriverManager.getConnection("jdbc:derby:dstest", "", ""))
+         try (Connection connection = DriverManager.getConnection(DatabaseLoginServiceTestServer.__dbURL, "", "");
+              Statement stmt = connection.createStatement())
          {
-             Statement stmt = connection.createStatement();
+             connection.setAutoCommit(true);
              stmt.executeUpdate("update users set pwd='"+newpwd+"' where username='"+user+"'");
          }
          
