@@ -19,6 +19,7 @@
 
 package org.eclipse.jetty;
 
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
 import java.io.File;
@@ -27,6 +28,7 @@ import java.net.URI;
 import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletResponse;
 
@@ -76,9 +78,6 @@ public class DataSourceLoginServiceTest
         System.setProperty("derby.system.home", dbPath);
         FS.ensureEmpty(_dbRoot);
         
-        File dstest = new File(_dbRoot, "dstest");
-        FS.ensureEmpty(dstest);
-        
         File scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
         DatabaseLoginServiceTestServer.createDB(dbPath, scriptFile, "jdbc:derby:dstest;create=true");
         
@@ -125,7 +124,7 @@ public class DataSourceLoginServiceTest
          ds.setDatabaseName(db.getAbsolutePath());
          org.eclipse.jetty.plus.jndi.Resource binding = new org.eclipse.jetty.plus.jndi.Resource(null, "dstest",
                                                                                                       ds);
-         
+         assertThat("Created binding for dstest", binding, notNullValue());
          return loginService;
      }
      
@@ -145,7 +144,7 @@ public class DataSourceLoginServiceTest
              String newpwd = String.valueOf(System.currentTimeMillis());
              
              changePassword("jetty", newpwd);
-             Thread.currentThread().sleep(2*__cacheInterval); //pause to ensure cache invalidates
+             TimeUnit.MILLISECONDS.sleep(2*__cacheInterval);  //pause to ensure cache invalidates
              
              startClient("jetty", newpwd);
              

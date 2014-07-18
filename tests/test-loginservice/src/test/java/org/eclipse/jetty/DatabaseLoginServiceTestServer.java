@@ -19,6 +19,9 @@
 
 package org.eclipse.jetty;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -44,7 +47,6 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -54,8 +56,6 @@ import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 
 
@@ -64,7 +64,6 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class DatabaseLoginServiceTestServer
 {
-    private static final Logger LOG = Log.getLogger(DatabaseLoginServiceTestServer.class);
     protected Server _server;
     protected static String _protocol;
     protected static URI _baseUri;
@@ -73,7 +72,7 @@ public class DatabaseLoginServiceTestServer
     protected TestHandler _handler;
     protected static String _requestContent;
     
-    protected static boolean createDB(String homeDir, File scriptFile, String dbUrl)
+    protected static void createDB(String homeDir, File scriptFile, String dbUrl) throws Exception
     {
         try (FileInputStream fileStream = new FileInputStream(scriptFile))
         {
@@ -83,12 +82,7 @@ public class DatabaseLoginServiceTestServer
             OutputStream out = new ByteArrayOutputStream();
             int result = ij.runScript(connection, fileStream, "UTF-8", out, "UTF-8");
 
-            return (result==0);
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Unable to create EmbeddedDriver",e);
-            return false;
+            assertThat("runScript result",result, is(0));
         }
     }
   
@@ -118,7 +112,7 @@ public class DatabaseLoginServiceTestServer
             {
                 baseRequest.setHandled(true);
 
-                File file = new File(_resourcePath, URLDecoder.decode(request.getPathInfo()));
+                File file = new File(_resourcePath, URLDecoder.decode(request.getPathInfo(), "utf-8"));
                 FS.ensureDirExists(file.getParentFile());
 
                 out = new FileOutputStream(file);
