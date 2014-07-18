@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * @version $Rev: 4660 $ $Date: 2009-02-25 17:29:53 +0100 (Wed, 25 Feb 2009) $
+ * @deprecated
  */
 public class HashCrossContextPsuedoSession<T> implements CrossContextPsuedoSession<T>
 {

@@ -79,6 +79,35 @@ public class GracefulStopTest
             Assert.assertThat(out,Matchers.containsString("200 OK"));
         }
     }
+    
+    @Test
+    public void testGracefulTimout() throws Exception
+    {
+        server.setStopTimeout(100);
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    TimeUnit.SECONDS.sleep(1);
+                    server.stop();
+                }
+                catch (Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        }.start();
+
+        try(Socket socket = new Socket("localhost",server.getBean(NetworkConnector.class).getLocalPort());)
+        {
+            socket.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            String out = IO.toString(socket.getInputStream());
+            Assert.assertEquals("",out);
+        }
+    }
 
     private static class TestHandler extends AbstractHandler
     {

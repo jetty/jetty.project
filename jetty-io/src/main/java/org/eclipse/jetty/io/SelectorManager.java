@@ -486,7 +486,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
                     select();
-                runChanges();
+                while(isStopping())
+                    runChanges();
             }
             finally
             {

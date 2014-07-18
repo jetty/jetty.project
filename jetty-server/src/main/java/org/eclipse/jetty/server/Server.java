@@ -32,6 +32,7 @@ import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -46,11 +47,13 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -143,6 +146,25 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Set a graceful stop time.
+     * The {@link StatisticsHandler} must be configured so that open connections can
+     * be tracked for a graceful shutdown.
+     * @see org.eclipse.jetty.util.component.ContainerLifeCycle#setStopTimeout(long)
+     */
+    @Override
+    public void setStopTimeout(long stopTimeout)
+    {
+        super.setStopTimeout(stopTimeout);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set stop server at shutdown behaviour.
+     * @param stop If true, this server instance will be explicitly stopped when the
+     * JVM is shutdown. Otherwise the JVM is stopped with the server running.
+     * @see Runtime#addShutdownHook(Thread)
+     * @see ShutdownThread
+     */
     public void setStopAtShutdown(boolean stop)
     {
         //if we now want to stop
@@ -474,7 +496,6 @@ public class Server extends HandlerWrapper implements Attributes
             response.sendError(HttpStatus.BAD_REQUEST_400);
         request.setHandled(true);
         response.setStatus(200);
-        response.getHttpFields().put(HttpHeader.ALLOW,"GET,POST,HEAD,OPTIONS");
         response.setContentLength(0);
         response.closeOutput();
     }
@@ -497,10 +518,11 @@ public class Server extends HandlerWrapper implements Attributes
         {
             // this is a dispatch with a path
             ServletContext context=event.getServletContext();
-            HttpURI uri = new HttpURI(context==null?path:URIUtil.addPaths(context.getContextPath(),path));
+            HttpURI uri = new HttpURI(URIUtil.encodePath(context==null?path:URIUtil.addPaths(context.getContextPath(),path)));
             baseRequest.setUri(uri);
             baseRequest.setRequestURI(null);
-            baseRequest.setPathInfo(baseRequest.getRequestURI());
+            baseRequest.setPathInfo(uri.getDecodedPath());
+            
             if (uri.getQuery()!=null)
                 baseRequest.mergeQueryParameters(uri.getQuery(), true); //we have to assume dispatch path and query are UTF8
         }
@@ -653,6 +675,7 @@ public class Server extends HandlerWrapper implements Attributes
         return this.getClass().getName()+"@"+Integer.toHexString(hashCode());
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     public void dump(Appendable out,String indent) throws IOException
     {

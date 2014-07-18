@@ -186,9 +186,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
         int cores = Runtime.getRuntime().availableProcessors();
         if (acceptors < 0)
-            acceptors = 1 + cores / 16;
-        if (acceptors > 2 * cores)
-            LOG.warn("Acceptors should be <= 2*availableProcessors: " + this);
+            acceptors=Math.max(1, Math.min(4,cores/8));        
+        if (acceptors > cores)
+            LOG.warn("Acceptors should be <= availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
     }
 
@@ -256,7 +256,11 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
         _stopping=new CountDownLatch(_acceptors.length);
         for (int i = 0; i < _acceptors.length; i++)
-            getExecutor().execute(new Acceptor(i));
+        {
+            Acceptor a = new Acceptor(i);
+            addBean(a);
+            getExecutor().execute(a);
+        }
 
         LOG.info("Started {}", this);
     }
@@ -294,6 +298,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _stopping=null;
 
         super.doStop();
+        
+        for (Acceptor a : getBeans(Acceptor.class))
+            removeBean(a);
 
         LOG.info("Stopped {}", this);
     }
@@ -435,6 +442,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private class Acceptor implements Runnable
     {
         private final int _acceptor;
+        private String _name;
 
         private Acceptor(int id)
         {
@@ -445,8 +453,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         public void run()
         {
             Thread current = Thread.currentThread();
-            String name = current.getName();
-            current.setName(name + "-acceptor-" + _acceptor + "-" + AbstractConnector.this);
+            String name=current.getName();
+            _name=String.format("%s-acceptor-%d@%x-%s",name,_acceptor,hashCode(),AbstractConnector.this.toString());
+            current.setName(_name);
 
             synchronized (AbstractConnector.this)
             {
@@ -483,6 +492,16 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                     stopping.countDown();
             }
         }
+        
+        @Override
+        public String toString()
+        {
+            String name=_name;
+            if (name==null)
+                return String.format("acceptor-%d@%x", _acceptor, hashCode());
+            return name;
+        }
+        
     }
 
 
