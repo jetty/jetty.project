@@ -28,7 +28,6 @@ import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.Statement;
 
-import javax.naming.NamingException;
 import javax.servlet.http.HttpServletResponse;
 
 import org.apache.derby.jdbc.EmbeddedDataSource;
@@ -37,9 +36,8 @@ import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BasicAuthentication;
 import org.eclipse.jetty.plus.security.DataSourceLoginService;
-import org.eclipse.jetty.security.JDBCLoginService;
-import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
@@ -58,40 +56,34 @@ public class DataSourceLoginServiceTest
     private static File _dbRoot;
     private static HttpClient _client;
     private static String __realm = "DSRealm";
-    private static String _baseUrl;
+    private static URI _baseUri;
     private static final int __cacheInterval = 200;
     private static DatabaseLoginServiceTestServer _testServer;
-
-  
-
 
     @BeforeClass
     public static void setUp() throws Exception
     {
-        _docRoot = new File("target/test-output/docroot/");
-        _docRoot.mkdirs();
-        _docRoot.deleteOnExit();
+        _docRoot = MavenTestingUtils.getTargetTestingDir(DataSourceLoginServiceTest.class.getSimpleName());
+        FS.ensureEmpty(_docRoot);    
 
         File content = new File(_docRoot,"input.txt");
         FileOutputStream out = new FileOutputStream(content);
         out.write(_content.getBytes("utf-8"));
         out.close();
 
-        _dbRoot = new File("target/test-output/derby");
+        _dbRoot = new File(_docRoot, "derby");
         String dbPath = _dbRoot.getAbsolutePath();
         System.setProperty("derby.system.home", dbPath);
-        if (_dbRoot.exists())
-            IO.delete(_dbRoot);
+        FS.ensureEmpty(_dbRoot);
         
-        _dbRoot.mkdirs();
-        
-        DatabaseLoginServiceTestServer.createDB(dbPath, "src/test/resources/createdb.sql", "jdbc:derby:dstest;create=true");
+        File scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
+        DatabaseLoginServiceTestServer.createDB(dbPath, scriptFile, "jdbc:derby:dstest;create=true");
         
         _testServer = new DatabaseLoginServiceTestServer();
         _testServer.setResourceBase(_docRoot.getAbsolutePath());
         _testServer.setLoginService(configureLoginService());
         _testServer.start();
-        _baseUrl = _testServer.getBaseUrl();
+        _baseUri = _testServer.getBaseUri();
      }
 
      @AfterClass
@@ -141,7 +133,7 @@ public class DataSourceLoginServiceTest
          {
              startClient("jetty", "jetty");
 
-             ContentResponse response = _client.GET(_baseUrl + "input.txt");
+             ContentResponse response = _client.GET(_baseUri.resolve("input.txt"));
              assertEquals(HttpServletResponse.SC_OK,response.getStatus());
              assertEquals(_content, response.getContentAsString());
              
@@ -154,7 +146,7 @@ public class DataSourceLoginServiceTest
              
              startClient("jetty", newpwd);
              
-             response = _client.GET(_baseUrl + "input.txt");
+             response = _client.GET(_baseUri.resolve("input.txt"));
              assertEquals(HttpServletResponse.SC_OK,response.getStatus());
              assertEquals(_content, response.getContentAsString());
              
@@ -185,7 +177,7 @@ public class DataSourceLoginServiceTest
          executor.setName(executor.getName() + "-client");
          _client.setExecutor(executor);
          AuthenticationStore authStore = _client.getAuthenticationStore();
-         authStore.addAuthentication(new BasicAuthentication(URI.create(_baseUrl), __realm, user, pwd));
+         authStore.addAuthentication(new BasicAuthentication(_baseUri, __realm, user, pwd));
          _client.start();
      }
 

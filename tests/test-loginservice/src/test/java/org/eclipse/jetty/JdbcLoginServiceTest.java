@@ -38,6 +38,8 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.security.JDBCLoginService;
 import org.eclipse.jetty.security.LoginService;
+import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.AfterClass;
@@ -64,39 +66,38 @@ public class JdbcLoginServiceTest
     private static File _docRoot;
     private static HttpClient _client;
     private static String __realm = "JdbcRealm";
-    private static String _baseUrl;
+    private static URI _baseUri;
     private static DatabaseLoginServiceTestServer _testServer;
-
-  
-
 
     @BeforeClass
     public static void setUp() throws Exception
     {
-        _docRoot = new File("target/test-output/docroot/");
-        _docRoot.mkdirs();
-        _docRoot.deleteOnExit();
+        _docRoot = MavenTestingUtils.getTargetTestingDir(JdbcLoginServiceTest.class.getSimpleName());
+        FS.ensureEmpty(_docRoot);    
 
         File content = new File(_docRoot,"input.txt");
-        FileOutputStream out = new FileOutputStream(content);
-        out.write(_content.getBytes("utf-8"));
-        out.close();
+        
+        try (FileOutputStream out = new FileOutputStream(content))
+        {
+            out.write(_content.getBytes("utf-8"));
+        }
 
-        File dbRoot = new File("target/test-output/derby");
+        File dbRoot = new File(_docRoot, "derby");
         String dbPath = dbRoot.getAbsolutePath();
         System.setProperty("derby.system.home", dbPath);
-        if (dbRoot.exists())
-            IO.delete(dbRoot);
+        FS.ensureEmpty(dbRoot);
         
-        dbRoot.mkdirs();   
+        File scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
+        DatabaseLoginServiceTestServer.createDB(dbPath, scriptFile, "jdbc:derby:jdbcrealm;create=true");
         
-        DatabaseLoginServiceTestServer.createDB(dbPath, "src/test/resources/createdb.sql", "jdbc:derby:jdbcrealm;create=true");
-        LoginService loginService = new JDBCLoginService(__realm, "./src/test/resources/jdbcrealm.properties");
+        File jdbcRealmFile = MavenTestingUtils.getTestResourceFile("jdbcrealm.properties");
+        
+        LoginService loginService = new JDBCLoginService(__realm, jdbcRealmFile.getAbsolutePath());
         _testServer = new DatabaseLoginServiceTestServer();
         _testServer.setResourceBase(_docRoot.getAbsolutePath());
         _testServer.setLoginService(loginService);
         _testServer.start();
-        _baseUrl = _testServer.getBaseUrl();
+        _baseUri = _testServer.getBaseUri();
      }
 
      @AfterClass
@@ -117,7 +118,7 @@ public class JdbcLoginServiceTest
          {
              startClient();
 
-             Request request = _client.newRequest(_baseUrl + "output.txt");
+             Request request = _client.newRequest(_baseUri.resolve("output.txt"));
              request.method(HttpMethod.PUT);
              request.content(new BytesContentProvider(_content.getBytes()));
              ContentResponse response = request.send();
@@ -140,7 +141,7 @@ public class JdbcLoginServiceTest
          {
              startClient();
 
-             ContentResponse response = _client.GET(_baseUrl + "input.txt");
+             ContentResponse response = _client.GET(_baseUri.resolve("input.txt"));
              assertEquals(HttpServletResponse.SC_OK,response.getStatus());
              assertEquals(_content, response.getContentAsString());
          }
@@ -158,7 +159,7 @@ public class JdbcLoginServiceTest
          {
              startClient();
 
-             Request request = _client.newRequest(_baseUrl + "input.txt");
+             Request request = _client.newRequest(_baseUri.resolve("input.txt"));
              request.method(HttpMethod.HEAD);
              ContentResponse response = request.send();
              int responseStatus = response.getStatus();
@@ -177,7 +178,7 @@ public class JdbcLoginServiceTest
          {
              startClient();
 
-             Request request = _client.newRequest(_baseUrl + "test");
+             Request request = _client.newRequest(_baseUri.resolve("test"));
              request.method(HttpMethod.POST);
              request.content(new BytesContentProvider(_content.getBytes()));
              ContentResponse response = request.send();
@@ -198,7 +199,7 @@ public class JdbcLoginServiceTest
          executor.setName(executor.getName() + "-client");
          _client.setExecutor(executor);
          AuthenticationStore authStore = _client.getAuthenticationStore();
-         authStore.addAuthentication(new BasicAuthentication(URI.create(_baseUrl), __realm, "jetty", "jetty"));
+         authStore.addAuthentication(new BasicAuthentication(_baseUri, __realm, "jetty", "jetty"));
          _client.start();
      }
 
@@ -212,17 +213,13 @@ public class JdbcLoginServiceTest
          }
      }
 
-   
-
      protected HttpClient getClient()
      {
          return _client;
      }
 
-
      protected String getContent()
      {
          return _content;
      }
-
 }

@@ -25,6 +25,7 @@ import java.io.FileInputStream;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.URI;
 import java.net.URLDecoder;
 import java.sql.Connection;
 import java.sql.DriverManager;
@@ -43,36 +44,37 @@ import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
 import org.eclipse.jetty.server.Handler;
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.NetworkConnector;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 
 
 /**
  * DatabaseLoginServiceTestServer
- *
- *
  */
 public class DatabaseLoginServiceTestServer
 {
+    private static final Logger LOG = Log.getLogger(DatabaseLoginServiceTestServer.class);
     protected Server _server;
     protected static String _protocol;
-    protected static String _baseUrl;
+    protected static URI _baseUri;
     protected LoginService _loginService;
     protected String _resourceBase;
     protected TestHandler _handler;
     protected static String _requestContent;
     
-    protected static boolean createDB(String homeDir, String fileName, String dbUrl)
+    protected static boolean createDB(String homeDir, File scriptFile, String dbUrl)
     {
-        File scriptFile = new File(fileName);
         try (FileInputStream fileStream = new FileInputStream(scriptFile))
         {
             Loader.loadClass(fileStream.getClass(), "org.apache.derby.jdbc.EmbeddedDriver").newInstance();
@@ -85,6 +87,7 @@ public class DatabaseLoginServiceTestServer
         }
         catch (Exception e)
         {
+            LOG.warn("Unable to create EmbeddedDriver",e);
             return false;
         }
     }
@@ -116,12 +119,11 @@ public class DatabaseLoginServiceTestServer
                 baseRequest.setHandled(true);
 
                 File file = new File(_resourcePath, URLDecoder.decode(request.getPathInfo()));
-                file.getParentFile().mkdirs();
-                file.deleteOnExit();
+                FS.ensureDirExists(file.getParentFile());
 
                 out = new FileOutputStream(file);
 
-                    response.setStatus(HttpServletResponse.SC_CREATED);
+                response.setStatus(HttpServletResponse.SC_CREATED);
             }
 
             if (baseRequest.getMethod().equals("POST"))
@@ -175,8 +177,8 @@ public class DatabaseLoginServiceTestServer
     {
         configureServer();
         _server.start();
-        int port = ((NetworkConnector)_server.getConnectors()[0]).getLocalPort();
-        _baseUrl = _protocol+"://localhost:"+port+ "/";
+        //_server.dumpStdErr();
+        _baseUri = _server.getURI();
     }
     
     public void stop() throws Exception
@@ -184,9 +186,9 @@ public class DatabaseLoginServiceTestServer
         _server.stop();
     }
     
-    public String getBaseUrl()
+    public URI getBaseUri()
     {
-        return _baseUrl;
+        return _baseUri;
     }
    
     public TestHandler getTestHandler()
