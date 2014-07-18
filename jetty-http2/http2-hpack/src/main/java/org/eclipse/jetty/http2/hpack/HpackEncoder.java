@@ -69,14 +69,7 @@ public class HpackEncoder
     private final static EnumSet<HttpHeader> __NEVER_INDEX = 
             EnumSet.of(HttpHeader.SET_COOKIE,
                     HttpHeader.SET_COOKIE2);
-    
-    private final static EnumSet<HttpHeader> __DATE_HEADER = 
-            EnumSet.of(HttpHeader.IF_MODIFIED_SINCE,
-                    HttpHeader.DATE,
-                    HttpHeader.EXPIRES,
-                    HttpHeader.LAST_MODIFIED,
-                    HttpHeader.IF_UNMODIFIED_SINCE);
-    
+        
     static
     {
         for (HttpStatus.Code code : HttpStatus.Code.values())
@@ -182,6 +175,7 @@ public class HpackEncoder
     private void encode(ByteBuffer buffer, HttpField field)
     {
         final int p=LOG.isDebugEnabled()?buffer.position():-1;
+        
         String encoding=null;
 
         // TODO currently we do not check if there is enough space, so we will always
@@ -207,10 +201,10 @@ public class HpackEncoder
             }
             else
             {
-                encoding="IdxField";
-
                 // So we can emit the index and add the entry to the reference Set
                 int index=_context.index(entry);
+                if (p>=0)
+                    encoding="IdxField"+(1+NBitInteger.octectsNeeded(7,index));
                 buffer.put((byte)0x80);
                 NBitInteger.encode(buffer,7,index);
             }
@@ -226,7 +220,6 @@ public class HpackEncoder
             final boolean never_index;
             final boolean huffman;
             final boolean indexed;
-            final boolean date;
             final int name_bits;
             final byte mask;
             if (header==null)
@@ -234,7 +227,6 @@ public class HpackEncoder
                 never_index=false;
                 huffman=true;
                 indexed=true;
-                date=false;
                 name_bits = 6;
                 mask=(byte)0x40;
             }
@@ -242,17 +234,23 @@ public class HpackEncoder
             {
                 indexed=false;
                 never_index=__NEVER_INDEX.contains(header);
-                date=__DATE_HEADER.contains(header);
                 huffman=!__DO_NOT_HUFFMAN.contains(header);
                 name_bits = 4;
                 mask=never_index?(byte)0x01:(byte)0x00;
+            }
+            else if (header==HttpHeader.CONTENT_LENGTH && field.getValue().length()>1)
+            {
+                indexed=false;
+                never_index=false;
+                huffman=true;
+                name_bits = 4;
+                mask=(byte)0x00;
             }
             else
             {
                 indexed=true;
                 never_index=false;
                 huffman=!__DO_NOT_HUFFMAN.contains(header);
-                date=__DATE_HEADER.contains(header);
                 name_bits = 6;
                 mask=(byte)0x40;
             }
@@ -266,7 +264,7 @@ public class HpackEncoder
             if (p>=0)
             {
                 encoding="Lit"+
-                        ((name_entry==null)?"HuffName":"IdxName")+
+                        ((name_entry==null)?"HuffName":("IdxName"+(_context.index(name_entry)<64?'1':'X')))+
                         (huffman?"HuffVal":"LitVal")+
                         (indexed?"Idxd":(never_index?"NeverIdx":""));
             }
@@ -316,6 +314,6 @@ public class HpackEncoder
             int e=buffer.position();
             if (LOG.isDebugEnabled())
                 LOG.debug("encoded '{}' by {} to '{}'",field,encoding,TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p));
-        }
+        }        
     }
 }
