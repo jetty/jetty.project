@@ -54,6 +54,7 @@ import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.security.Constraint;
@@ -70,10 +71,20 @@ public class DatabaseLoginServiceTestServer
     protected LoginService _loginService;
     protected String _resourceBase;
     protected TestHandler _handler;
+    private static File commonDerbySystemHome;
     protected static String _requestContent;
     
-    protected static void createDB(String homeDir, File scriptFile, String dbUrl) throws Exception
+    protected static File createDB(File scriptFile, String dbName) throws Exception
     {
+        if(commonDerbySystemHome == null)
+        {
+            commonDerbySystemHome = MavenTestingUtils.getTargetTestingDir("derby-system-common");
+            FS.ensureEmpty(commonDerbySystemHome);
+            System.setProperty("derby.system.home", commonDerbySystemHome.getAbsolutePath());
+        }
+        
+        String dbUrl = "jdbc:derby:directory:" + dbName + ";create=true";
+        
         try (FileInputStream fileStream = new FileInputStream(scriptFile))
         {
             Loader.loadClass(fileStream.getClass(), "org.apache.derby.jdbc.EmbeddedDriver").newInstance();
@@ -83,6 +94,10 @@ public class DatabaseLoginServiceTestServer
             int result = ij.runScript(connection, fileStream, "UTF-8", out, "UTF-8");
 
             assertThat("runScript result",result, is(0));
+            
+            File dbRoot = new File(commonDerbySystemHome, dbName);
+            assertThat("exists: " + dbRoot, dbRoot.exists(), is(true));
+            return dbRoot;
         }
     }
   

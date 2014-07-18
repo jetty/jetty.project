@@ -73,13 +73,8 @@ public class DataSourceLoginServiceTest
         out.write(_content.getBytes("utf-8"));
         out.close();
 
-        _dbRoot = new File(_docRoot, "derby");
-        String dbPath = _dbRoot.getAbsolutePath();
-        System.setProperty("derby.system.home", dbPath);
-        FS.ensureEmpty(_dbRoot);
-        
         File scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
-        DatabaseLoginServiceTestServer.createDB(dbPath, scriptFile, "jdbc:derby:dstest;create=true");
+        _dbRoot = DatabaseLoginServiceTestServer.createDB(scriptFile,"dstest");
         
         _testServer = new DatabaseLoginServiceTestServer();
         _testServer.setResourceBase(_docRoot.getAbsolutePath());
@@ -120,8 +115,7 @@ public class DataSourceLoginServiceTest
          
          //create a datasource
          EmbeddedDataSource ds = new EmbeddedDataSource();
-         File db = new File (_dbRoot, "dstest");
-         ds.setDatabaseName(db.getAbsolutePath());
+         ds.setDatabaseName(_dbRoot.getAbsolutePath());
          org.eclipse.jetty.plus.jndi.Resource binding = new org.eclipse.jetty.plus.jndi.Resource(null, "dstest",
                                                                                                       ds);
          assertThat("Created binding for dstest", binding, notNullValue());

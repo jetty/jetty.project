@@ -81,14 +81,9 @@ public class JdbcLoginServiceTest
         {
             out.write(_content.getBytes("utf-8"));
         }
-
-        File dbRoot = new File(_docRoot, "derby");
-        String dbPath = dbRoot.getAbsolutePath();
-        System.setProperty("derby.system.home", dbPath);
-        FS.ensureEmpty(dbRoot);
         
         File scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
-        DatabaseLoginServiceTestServer.createDB(dbPath, scriptFile, "jdbc:derby:jdbcrealm;create=true");
+        DatabaseLoginServiceTestServer.createDB(scriptFile,"jdbcrealm");
         
         File jdbcRealmFile = MavenTestingUtils.getTestResourceFile("jdbcrealm.properties");
         
