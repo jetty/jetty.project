@@ -19,9 +19,6 @@
 
 package org.eclipse.jetty;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-
 import java.io.ByteArrayOutputStream;
 import java.io.File;
 import java.io.FileInputStream;
@@ -65,6 +62,7 @@ import org.eclipse.jetty.util.security.Constraint;
  */
 public class DatabaseLoginServiceTestServer
 {
+    protected static String __dbURL = "jdbc:derby:loginservice;create=true";
     protected Server _server;
     protected static String _protocol;
     protected static URI _baseUri;
@@ -74,30 +72,30 @@ public class DatabaseLoginServiceTestServer
     private static File commonDerbySystemHome;
     protected static String _requestContent;
     
-    protected static File createDB(File scriptFile, String dbName) throws Exception
+    protected static File _dbRoot;
+
+
+    static
     {
-        if(commonDerbySystemHome == null)
-        {
-            commonDerbySystemHome = MavenTestingUtils.getTargetTestingDir("derby-system-common");
-            FS.ensureEmpty(commonDerbySystemHome);
-            System.setProperty("derby.system.home", commonDerbySystemHome.getAbsolutePath());
-        }
-        
-        String dbUrl = "jdbc:derby:directory:" + dbName + ";create=true";
-        
+        _dbRoot = new File(MavenTestingUtils.getTargetTestingDir("loginservice-test"), "derby");
+        FS.ensureDirExists(_dbRoot);
+        System.setProperty("derby.system.home", _dbRoot.getAbsolutePath());
+    }
+
+    public static File getDbRoot ()
+    {
+        return _dbRoot;
+    }
+
+    public static int runscript (File scriptFile) throws Exception
+    {  
+        //System.err.println("Running script:"+scriptFile.getAbsolutePath());
         try (FileInputStream fileStream = new FileInputStream(scriptFile))
         {
             Loader.loadClass(fileStream.getClass(), "org.apache.derby.jdbc.EmbeddedDriver").newInstance();
-            Connection connection = DriverManager.getConnection(dbUrl, "", "");
-
-            OutputStream out = new ByteArrayOutputStream();
-            int result = ij.runScript(connection, fileStream, "UTF-8", out, "UTF-8");
-
-            assertThat("runScript result",result, is(0));
-            
-            File dbRoot = new File(commonDerbySystemHome, dbName);
-            assertThat("exists: " + dbRoot, dbRoot.exists(), is(true));
-            return dbRoot;
+            Connection connection = DriverManager.getConnection(__dbURL, "", "");
+            ByteArrayOutputStream out = new ByteArrayOutputStream();
+            return ij.runScript(connection, fileStream, "UTF-8", out, "UTF-8");
         }
     }
   

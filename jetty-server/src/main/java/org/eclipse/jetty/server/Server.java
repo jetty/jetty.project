@@ -419,7 +419,7 @@ public class Server extends HandlerWrapper implements Attributes
                 }
                 catch (Exception e)
                 {
-                    mex.add(e.getCause());
+                    mex.add(e);
                 }
             }
         }

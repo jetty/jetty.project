@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertTrue;
+
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.FileInputStream;
@@ -49,6 +51,8 @@ import org.junit.Test;
 
 public class JdbcLoginServiceTest
 {
+ 
+    
     private static String _content =
         "Lorem ipsum dolor sit amet, consectetur adipiscing elit. In quis felis nunc. "+
         "Quisque suscipit mauris et ante auctor ornare rhoncus lacus aliquet. Pellentesque "+
@@ -68,22 +72,31 @@ public class JdbcLoginServiceTest
     private static String __realm = "JdbcRealm";
     private static URI _baseUri;
     private static DatabaseLoginServiceTestServer _testServer;
+    
+ 
 
     @BeforeClass
     public static void setUp() throws Exception
     {
-        _docRoot = MavenTestingUtils.getTargetTestingDir(JdbcLoginServiceTest.class.getSimpleName());
-        FS.ensureEmpty(_docRoot);    
-
+        _docRoot = MavenTestingUtils.getTargetTestingDir("loginservice-test");
+        FS.ensureDirExists(_docRoot);
         File content = new File(_docRoot,"input.txt");
+      
         
         try (FileOutputStream out = new FileOutputStream(content))
         {
             out.write(_content.getBytes("utf-8"));
         }
+
+        //drop any tables that might have existed
+        File scriptFile = MavenTestingUtils.getTestResourceFile("droptables.sql");
+        int result =  DatabaseLoginServiceTestServer.runscript(scriptFile);
+        //ignore result, if the tables dont already exist, derby spits out an error
         
-        File scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
-        DatabaseLoginServiceTestServer.createDB(scriptFile,"jdbcrealm");
+        //create the tables afresh
+        scriptFile = MavenTestingUtils.getTestResourceFile("createdb.sql");
+        result = DatabaseLoginServiceTestServer.runscript(scriptFile);
+        assertThat("runScript result",result, is(0));
         
         File jdbcRealmFile = MavenTestingUtils.getTestResourceFile("jdbcrealm.properties");
         
