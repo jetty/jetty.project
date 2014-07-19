@@ -51,6 +51,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -706,7 +707,13 @@ public class AsyncServletTest
                             {
                                 ((HttpServletResponse)async.getResponse()).addHeader("history","resume");
                                 if (path!=null)             
-                                    async.dispatch(path);
+                                {
+                                    int q=path.indexOf('?');
+                                    String uriInContext=(q>=0)
+                                        ?URIUtil.encodePath(path.substring(0,q))+path.substring(q)
+                                        :URIUtil.encodePath(path);
+                                    async.dispatch(uriInContext);
+                                }
                                 else
                                     async.dispatch();
                             }
