@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.awt.geom.PathIterator;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
@@ -513,16 +514,15 @@ public class Server extends HandlerWrapper implements Attributes
 
         final Request baseRequest=connection.getRequest();
         final String path=event.getPath();
-
+        
         if (path!=null)
         {
             // this is a dispatch with a path
             ServletContext context=event.getServletContext();
-            HttpURI uri = new HttpURI(URIUtil.encodePath(context==null?path:URIUtil.addPaths(context.getContextPath(),path)));
+            HttpURI uri = new HttpURI(URIUtil.addPaths(context==null?null:context.getContextPath(), path));            
             baseRequest.setUri(uri);
             baseRequest.setRequestURI(null);
             baseRequest.setPathInfo(uri.getDecodedPath());
-            
             if (uri.getQuery()!=null)
                 baseRequest.mergeQueryParameters(uri.getQuery(), true); //we have to assume dispatch path and query are UTF8
         }
