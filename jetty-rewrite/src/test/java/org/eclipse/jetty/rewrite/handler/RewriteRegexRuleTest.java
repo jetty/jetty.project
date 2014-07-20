@@ -89,7 +89,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
             if (test[5]!=null)
             {
                 MultiMap<String> params=new MultiMap<String>();
-                UrlEncoded.decodeTo(test[5],params, StandardCharsets.UTF_8,-1);
+                UrlEncoded.decodeTo(test[5],params, StandardCharsets.UTF_8);
                                
                 for (String n:params.keySet())
                     assertEquals(params.getString(n),_request.getParameter(n));

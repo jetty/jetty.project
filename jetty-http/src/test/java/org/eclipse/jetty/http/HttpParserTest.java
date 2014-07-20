@@ -1561,7 +1561,7 @@ public class HttpParserTest
         }
 
         @Override
-        public boolean startRequest(String method, HttpURI uri, HttpVersion version)
+        public boolean startRequest(String method, String uri, HttpVersion version)
         {
             _fields.clear();
             _headers= -1;

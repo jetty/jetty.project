@@ -34,7 +34,7 @@ public interface MetaData extends Iterable<HttpField>
         public HttpScheme getScheme();
         public String getHost();
         public int getPort();
-        public HttpURI getURI();
+        public String getURI();
     }
 
     /* -------------------------------------------------------- */

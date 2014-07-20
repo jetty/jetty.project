@@ -51,22 +51,19 @@ public class FinalMetaData extends AbstractMetaData
         private final HttpVersion _version;
         private final HttpFields _fields;
         private final String _method;
-        private final HttpURI _uri;
+        private final String _uri;
         private final HostPortHttpField _hostPort;
         private final HttpScheme _scheme;
 
-        public Request(HttpVersion version, String method, HttpURI uri, HttpFields fields, HostPortHttpField hostPort)
+        public Request(HttpVersion version, String scheme, String method, String uri, HttpFields fields, HostPortHttpField hostPort)
         {
             _fields=fields;
             _version=version;
             _method=method;
             _uri=uri;
             _hostPort = hostPort;
-            String scheme = uri.getScheme();
             if (scheme == null)
-            {
                 _scheme = HttpScheme.HTTP;
-            }
             else
             {
                 HttpScheme s = HttpScheme.CACHE.get(scheme);
@@ -75,11 +72,6 @@ public class FinalMetaData extends AbstractMetaData
         }
 
         public Request(HttpVersion version, HttpScheme scheme, String method, HostPortHttpField authority, String path, HttpFields fields)
-        {
-            this(version,scheme,method,authority,new HttpURI(path),fields);
-        }
-        
-        public Request(HttpVersion version, HttpScheme scheme, String method, HostPortHttpField authority, HttpURI path, HttpFields fields)
         {
             _fields=fields;
             _version=version;
@@ -126,7 +118,7 @@ public class FinalMetaData extends AbstractMetaData
         }
 
         @Override
-        public HttpURI getURI()
+        public String getURI()
         {
             return _uri;
         }

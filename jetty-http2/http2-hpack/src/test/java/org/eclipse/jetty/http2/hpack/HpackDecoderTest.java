@@ -53,7 +53,7 @@ public class HpackDecoderTest
         
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP,request.getScheme());
-        assertEquals("/",request.getURI().getPath());
+        assertEquals("/",request.getURI());
         assertEquals("www.example.com",request.getHost());
         assertFalse(request.iterator().hasNext());
         
@@ -66,7 +66,7 @@ public class HpackDecoderTest
 
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP,request.getScheme());
-        assertEquals("/",request.getURI().getPath());
+        assertEquals("/",request.getURI());
         assertEquals("www.example.com",request.getHost());
         Iterator<HttpField> iterator=request.iterator();
         assertTrue(iterator.hasNext());
@@ -82,7 +82,7 @@ public class HpackDecoderTest
         
         assertEquals("GET",request.getMethod());
         assertEquals(HttpScheme.HTTPS,request.getScheme());
-        assertEquals("/index.html",request.getURI().getPath());
+        assertEquals("/index.html",request.getURI());
         assertEquals("www.example.com",request.getHost());
         iterator=request.iterator();
         assertTrue(iterator.hasNext());
@@ -103,7 +103,7 @@ public class HpackDecoderTest
         
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP,request.getScheme());
-        assertEquals("/",request.getURI().getPath());
+        assertEquals("/",request.getURI());
         assertEquals("www.example.com",request.getHost());
         assertFalse(request.iterator().hasNext());
         
@@ -116,7 +116,7 @@ public class HpackDecoderTest
 
         assertEquals("GET", request.getMethod());
         assertEquals(HttpScheme.HTTP,request.getScheme());
-        assertEquals("/",request.getURI().getPath());
+        assertEquals("/",request.getURI());
         assertEquals("www.example.com",request.getHost());
         Iterator<HttpField> iterator=request.iterator();
         assertTrue(iterator.hasNext());
@@ -131,7 +131,7 @@ public class HpackDecoderTest
         
         assertEquals("GET",request.getMethod());
         assertEquals(HttpScheme.HTTPS,request.getScheme());
-        assertEquals("/index.html",request.getURI().getPath());
+        assertEquals("/index.html",request.getURI());
         assertEquals("www.example.com",request.getHost());
         iterator=request.iterator();
         assertTrue(iterator.hasNext());

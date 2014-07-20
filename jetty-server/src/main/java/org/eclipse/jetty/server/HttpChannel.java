@@ -205,9 +205,6 @@ public class HttpChannel implements Runnable
      */
     public boolean handle()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} handle enter", this);
-
         final HttpChannel last = setCurrentHttpChannel(this);
 
         String threadName = null;
@@ -215,6 +212,7 @@ public class HttpChannel implements Runnable
         {
             threadName = Thread.currentThread().getName();
             Thread.currentThread().setName(threadName + " - " + _request.getUri());
+            LOG.debug("{} handle enter", this);
         }
 
         HttpChannelState.Action action = _state.handling();

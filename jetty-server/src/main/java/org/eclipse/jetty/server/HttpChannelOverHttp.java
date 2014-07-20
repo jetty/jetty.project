@@ -35,7 +35,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
@@ -50,7 +49,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
      */
     private final HttpConnection _httpConnection;
     private String _method; 
-    private HttpURI _uri;
+    private String _uri;
     private HttpVersion _version;
     private final HttpFields _fields = new HttpFields();
     private HostPortHttpField _hostPort;
@@ -69,10 +68,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         @Override
         public HttpScheme getScheme()
         {
-            String scheme = _uri.getScheme();
-            if (scheme==null || !scheme.endsWith("s"))
-                return HttpScheme.HTTP;
-            return HttpScheme.HTTPS;
+            return HttpScheme.HTTP;
         }
 
         @Override
@@ -88,7 +84,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         }
 
         @Override
-        public HttpURI getURI()
+        public String getURI()
         {
             return _uri;
         }
@@ -141,10 +137,10 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     }
 
     @Override
-    public boolean startRequest(String method, HttpURI uri, HttpVersion version)
+    public boolean startRequest(String method, String uri, HttpVersion version)
     {
         _method=method;
-        _uri=uri;
+        _uri=uri.toString();
         _version=version;
         _expect = false;
         _expect100Continue = false;

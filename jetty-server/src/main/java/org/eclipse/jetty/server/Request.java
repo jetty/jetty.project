@@ -948,12 +948,7 @@ public class Request implements HttpServletRequest
     public String getQueryString()
     {
         if (_queryString == null && _uri != null)
-        {
-            if (_queryEncoding == null)
-                _queryString = _uri.getQuery();
-            else
-                _queryString = _uri.getQuery(_queryEncoding);
-        }
+            _queryString = _uri.getQuery();
         return _queryString;
     }
 
@@ -1544,7 +1539,7 @@ public class Request implements HttpServletRequest
         setMethod(request.getMethod());
         setScheme(request.getScheme().asString());
 
-        HttpURI uri = request.getURI();
+        HttpURI uri = new HttpURI(request.getURI());
         
         String uriHost=uri.getHost();
         if (uriHost!=null)
@@ -1559,20 +1554,10 @@ public class Request implements HttpServletRequest
             setServerPort(request.getPort());
         }
         
-        setUri(request.getURI());
+        setUri(uri);
         
         
-        String path;
-        try
-        {
-            path = uri.getDecodedPath();
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
-            LOG.ignore(e);
-            path = uri.getDecodedPath(StandardCharsets.ISO_8859_1);
-        }
+        String path = uri.getDecodedPath();
         
         String info = URIUtil.canonicalPath(path); // TODO should this be done prior to decoding???
 
@@ -2182,13 +2167,13 @@ public class Request implements HttpServletRequest
     {
         MultiMap<String> newQueryParams = new MultiMap<>();
         // Have to assume ENCODING because we can't know otherwise.
-        UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING, -1);
+        UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING);
 
         MultiMap<String> oldQueryParams = _queryParameters;
         if (oldQueryParams == null && _queryString != null)
         {
             oldQueryParams = new MultiMap<>();
-            UrlEncoded.decodeTo(_queryString, oldQueryParams, getQueryEncoding(), -1);
+            UrlEncoded.decodeTo(_queryString, oldQueryParams, getQueryEncoding());
         }
 
         MultiMap<String> mergedQueryParams = newQueryParams;

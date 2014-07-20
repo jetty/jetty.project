@@ -42,7 +42,7 @@ public class MetaDataBuilder
     private String _method;
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
-    private HttpURI _path;        
+    private String _path;        
 
     private HttpFields _fields = new HttpFields(10);
     
@@ -91,10 +91,6 @@ public class MetaDataBuilder
                     _scheme = (HttpScheme)value.getStaticValue();
                     break;
                     
-                case ":path":
-                    _path = (HttpURI)value.getStaticValue();
-                    break;
-                    
                 default:
                     throw new IllegalArgumentException();
             }
@@ -120,7 +116,7 @@ public class MetaDataBuilder
                     break;
 
                 case ":path":
-                    _path=new HttpURI(field.getValue());
+                    _path=field.getValue();
                     break;
 
                 default:

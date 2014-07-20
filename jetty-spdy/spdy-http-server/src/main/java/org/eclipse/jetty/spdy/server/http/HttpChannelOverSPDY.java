@@ -25,6 +25,7 @@ import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -104,7 +105,6 @@ public class HttpChannelOverSPDY extends HttpChannel
         HttpMethod httpMethod = HttpMethod.fromString(methodHeader.getValue());
         HttpVersion httpVersion = HttpVersion.fromString(versionHeader.getValue());
 
-        HttpURI uri = new HttpURI(uriHeader.getValue());
 
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.getValue(), httpVersion);
@@ -164,7 +164,7 @@ public class HttpChannelOverSPDY extends HttpChannel
         // At last, add the Host header.
         fields.add(hostPort);
 
-        MetaData.Request request = new FinalMetaData.Request(httpVersion, httpMethod.asString(), uri, fields, hostPort);
+        MetaData.Request request = new FinalMetaData.Request(httpVersion, HttpScheme.HTTP.asString(), httpMethod==null?methodHeader.getValue():httpMethod.asString(), uriHeader.getValue(), fields, hostPort);
         onRequest(request);
         return true;
     }

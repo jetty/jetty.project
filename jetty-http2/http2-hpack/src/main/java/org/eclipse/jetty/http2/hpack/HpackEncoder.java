@@ -142,7 +142,7 @@ public class HpackEncoder
             encode(buffer,new HttpField(":scheme",request.getScheme().asString()));
             encode(buffer,new HttpField(":method",request.getMethod()));
             encode(buffer,new HttpField(":authority",request.getPort()>0?(request.getHost()+':'+request.getPort()):request.getHost())); 
-            encode(buffer,new HttpField(":path",request.getURI().getPath()));
+            encode(buffer,new HttpField(":path",request.getURI()));
             
         }
         else if (metadata.isResponse())

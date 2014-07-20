@@ -57,6 +57,7 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -297,9 +298,9 @@ public class RequestTest
         "Connection: close\n"+
         "\n";
 
-        LOG.info("Expecting NotUtf8Exception byte 62 in state 3...");
+        LOG.info("Expecting NotUtf8Exception in state 36...");
         String responses=_connector.getResponses(request);
-        assertTrue(responses.startsWith("HTTP/1.1 200"));
+        assertThat(responses,startsWith("HTTP/1.1 200"));
     }
 
     @Test
