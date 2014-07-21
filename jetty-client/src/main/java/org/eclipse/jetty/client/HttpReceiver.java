@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -282,7 +283,7 @@ public abstract class HttpReceiver
      * @param buffer the response HTTP content buffer
      * @return whether the processing should continue
      */
-    protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, Callback callback)
+    protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, final Callback callback)
     {
         out: while (true)
         {
@@ -307,19 +308,46 @@ public abstract class HttpReceiver
         if (LOG.isDebugEnabled())
             LOG.debug("Response content {}{}{}", response, System.lineSeparator(), BufferUtil.toDetailString(buffer));
 
-        ContentDecoder decoder = this.decoder;
-        if (decoder != null)
-        {
-            buffer = decoder.decode(buffer);
-            
-            // TODO If the decoder consumes all the content, should we return here?
-            
-            if (LOG.isDebugEnabled())
-                LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(buffer));
-        }
-
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-        notifier.notifyContent(exchange.getConversation().getResponseListeners(), response, buffer, callback);
+        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+
+        ContentDecoder decoder = this.decoder;
+        if (decoder == null)
+        {
+            notifier.notifyContent(listeners, response, buffer, callback);
+        }
+        else
+        {
+            List<ByteBuffer> decodeds = new ArrayList<>(2);
+            while (buffer.hasRemaining())
+            {
+                ByteBuffer decoded = decoder.decode(buffer);
+                if (!decoded.hasRemaining())
+                    continue;
+                decodeds.add(decoded);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(decoded));
+            }
+
+            if (decodeds.isEmpty())
+            {
+                callback.succeeded();
+            }
+            else
+            {
+                Callback partial = new Callback.Adapter()
+                {
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        callback.failed(x);
+                    }
+                };
+
+                for (int i = 1, size = decodeds.size(); i <= size; ++i)
+                    notifier.notifyContent(listeners, response, decodeds.get(i - 1), i < size ? partial : callback);
+            }
+        }
 
         if (!updateResponseState(ResponseState.TRANSIENT, ResponseState.CONTENT))
             terminateResponse(exchange, failure);
