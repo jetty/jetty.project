@@ -539,9 +539,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public void failed()
         {
+            _generator.setPersistent(false);
             getEndPoint().shutdownOutput();
         }
-        
 
         @Override
         public boolean messageComplete()

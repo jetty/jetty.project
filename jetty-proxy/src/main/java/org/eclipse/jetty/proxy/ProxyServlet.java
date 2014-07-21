@@ -34,6 +34,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
@@ -559,8 +560,15 @@ public class ProxyServlet extends HttpServlet
     protected void onResponseFailure(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, Throwable failure)
     {
         _log.debug(getRequestId(request) + " proxying failed", failure);
-        if (!response.isCommitted())
+        if (response.isCommitted())
         {
+            request.setAttribute("org.eclipse.jetty.server.Response.failure", failure);
+            AsyncContext asyncContext = request.getAsyncContext();
+            asyncContext.complete();
+        }
+        else
+        {
+            response.resetBuffer();
             if (failure instanceof TimeoutException)
                 response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
             else
