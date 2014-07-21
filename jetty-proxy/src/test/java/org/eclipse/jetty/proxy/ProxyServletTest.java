@@ -32,6 +32,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -44,8 +45,14 @@ import java.util.zip.GZIPOutputStream;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -67,6 +74,7 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -102,6 +110,7 @@ public class ProxyServletTest
     private HttpClient client;
     private Server proxy;
     private ServerConnector proxyConnector;
+    private ServletContextHandler proxyContext;
     private ProxyServlet proxyServlet;
     private Server server;
     private ServerConnector serverConnector;
@@ -121,16 +130,18 @@ public class ProxyServletTest
         proxy = new Server();
 
         HttpConfiguration configuration = new HttpConfiguration();
+        configuration.setSendDateHeader(false);
+        configuration.setSendServerVersion(false);
         String value = initParams.get("outputBufferSize");
         if (value != null)
             configuration.setOutputBufferSize(Integer.valueOf(value));
         proxyConnector = new ServerConnector(proxy, new HttpConnectionFactory(configuration));
         proxy.addConnector(proxyConnector);
 
-        ServletContextHandler proxyCtx = new ServletContextHandler(proxy, "/", true, false);
+        proxyContext = new ServletContextHandler(proxy, "/", true, false);
         ServletHolder proxyServletHolder = new ServletHolder(proxyServlet);
         proxyServletHolder.setInitParameters(initParams);
-        proxyCtx.addServlet(proxyServletHolder, "/*");
+        proxyContext.addServlet(proxyServletHolder, "/*");
 
         proxy.start();
 
@@ -1052,6 +1063,42 @@ public class ProxyServletTest
 
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination("http", "localhost", port);
         Assert.assertEquals(0, destination.getConnectionPool().getIdleConnections().size());
+    }
+
+    @Test
+    public void testResponseHeadersAreNotRemoved() throws Exception
+    {
+        prepareProxy();
+        proxyContext.stop();
+        final String headerName = "X-Test";
+        final String headerValue = "test-value";
+        proxyContext.addFilter(new FilterHolder(new Filter()
+        {
+            @Override
+            public void init(FilterConfig filterConfig) throws ServletException
+            {
+            }
+
+            @Override
+            public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+            {
+                ((HttpServletResponse)response).addHeader(headerName, headerValue);
+                chain.doFilter(request, response);
+            }
+
+            @Override
+            public void destroy()
+            {
+            }
+        }), "/*", EnumSet.of(DispatcherType.REQUEST));
+        proxyContext.start();
+        prepareServer(new EmptyHttpServlet());
+
+        HttpClient client = prepareClient();
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort()).send();
+
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertEquals(headerValue, response.getHeaders().get(headerName));
     }
 
     // TODO: test proxy authentication

@@ -517,10 +517,6 @@ public class ProxyServlet extends HttpServlet
 
     protected void onResponseHeaders(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
-        // Clear the response headers in case it comes with predefined ones.
-        for (String name : response.getHeaderNames())
-            response.setHeader(name, null);
-
         for (HttpField field : proxyResponse.getHeaders())
         {
             String headerName = field.getName();
