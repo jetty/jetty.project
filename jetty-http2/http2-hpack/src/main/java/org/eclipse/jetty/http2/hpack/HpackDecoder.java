@@ -189,9 +189,11 @@ public class HpackDecoder
                             break;
                             
                         case ":path":
+                            // TODO is this needed
+                            /*
                             if (indexed)
                                 field = new StaticValueHttpField(header,name,value,new HttpURI(value));
-                            else
+                            else*/
                                 field = new HttpField(header,name,value);
                             break;
                             

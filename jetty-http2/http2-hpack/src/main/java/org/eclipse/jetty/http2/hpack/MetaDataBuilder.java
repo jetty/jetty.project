@@ -92,7 +92,7 @@ public class MetaDataBuilder
                     break;
                     
                 default:
-                    throw new IllegalArgumentException();
+                    throw new IllegalArgumentException(field.getName());
             }
         }
         else
