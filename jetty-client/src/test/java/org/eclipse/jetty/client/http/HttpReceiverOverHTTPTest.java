@@ -18,22 +18,18 @@
 
 package org.eclipse.jetty.client.http;
 
-import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpFields;
@@ -203,44 +199,5 @@ public class HttpReceiverOverHTTPTest
         {
             Assert.assertTrue(e.getCause() instanceof HttpResponseException);
         }
-    }
-
-    @Test
-    public void test_Receive_GZIPResponseContent_Fragmented() throws Exception
-    {
-        byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (GZIPOutputStream gzipOutput = new GZIPOutputStream(baos))
-        {
-            gzipOutput.write(data);
-        }
-        byte[] gzip = baos.toByteArray();
-
-        endPoint.setInput("" +
-                "HTTP/1.1 200 OK\r\n" +
-                "Content-Length: " + gzip.length + "\r\n" +
-                "Content-Encoding: gzip\r\n" +
-                "\r\n");
-        HttpExchange exchange = newExchange();
-        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
-        connection.getHttpChannel().receive();
-        endPoint.reset();
-
-        ByteBuffer buffer = ByteBuffer.wrap(gzip);
-        int fragment = buffer.limit() - 1;
-        buffer.limit(fragment);
-        endPoint.setInput(buffer);
-        connection.getHttpChannel().receive();
-        endPoint.reset();
-
-        buffer.limit(gzip.length);
-        buffer.position(fragment);
-        endPoint.setInput(buffer);
-        connection.getHttpChannel().receive();
-
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.getStatus());
-        Assert.assertArrayEquals(data, response.getContent());
     }
 }
