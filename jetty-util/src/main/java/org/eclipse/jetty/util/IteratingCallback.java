@@ -50,7 +50,6 @@ import java.util.concurrent.atomic.AtomicReference;
  */
 public abstract class IteratingCallback implements Callback
 {
-
     /**
      * The internal states of this callback
      */
@@ -86,10 +85,11 @@ public abstract class IteratingCallback implements Callback
          */
         FAILED,
         /**
-         * The ICB has been closed and cannot be reset
+         * This callback has been closed and cannot be reset.
          */ 
         CLOSED
     }
+
     /**
      * The indication of the overall progress of the overall job that
      * implementations of {@link #process()} must return.
@@ -123,14 +123,9 @@ public abstract class IteratingCallback implements Callback
     
     protected IteratingCallback(boolean needReset)
     {
-        _state = new AtomicReference<>(needReset?State.SUCCEEDED:State.INACTIVE);
+        _state = new AtomicReference<>(needReset ? State.SUCCEEDED : State.INACTIVE);
     }
     
-    protected State getState()
-    {
-        return _state.get();
-    }
-
     /**
      * Method called by {@link #iterate()} to process the sub task.
      * <p/>
@@ -149,14 +144,31 @@ public abstract class IteratingCallback implements Callback
     protected abstract Action process() throws Exception;
 
     /**
-     * Invoked when the overall task has completed successfully.
+     * @deprecated Use {@link #onCompleteSuccess()} instead.
      */
-    protected abstract void onCompleteSuccess();
+    @Deprecated
+    protected void completed()
+    {
+    }
+
+    /**
+     * Invoked when the overall task has completed successfully.
+     *
+     * @see #onCompleteFailure(Throwable)
+     */
+    protected void onCompleteSuccess()
+    {
+        completed();
+    }
     
     /**
-     * Invoked when the overall task has completely failed.
+     * Invoked when the overall task has completed with a failure.
+     *
+     * @see #onCompleteSuccess()
      */
-    protected abstract void onCompleteFailure(Throwable x);
+    protected void onCompleteFailure(Throwable x)
+    {
+    }
 
     /**
      * This method must be invoked by applications to start the processing
@@ -318,9 +330,10 @@ public abstract class IteratingCallback implements Callback
                     return;
                 }
                 case CLOSED:
-                    // too late!
+                {
+                    // Too late!
                     return;
-                    
+                }
                 default:
                 {
                     throw new IllegalStateException(toString());
@@ -335,49 +348,56 @@ public abstract class IteratingCallback implements Callback
      * {@code super.failed(Throwable)}.
      */
     @Override
-    public final void failed(Throwable x)
+    public void failed(Throwable x)
     {
         while (true)
         {
             State current = _state.get();
-            switch(current)
+            switch (current)
             {
                 case SUCCEEDED:
                 case FAILED:
                 case INACTIVE:
                 case CLOSED:
+                {
                     // Already complete!.
                     return;
-                    
+                }
                 default:
+                {
                     if (_state.compareAndSet(current, State.FAILED))
                     {
                         onCompleteFailure(x);
                         return;
                     }
+                }
             }
         }
     }
 
-    public final void close()
+    public void close()
     {
         while (true)
         {
             State current = _state.get();
-            switch(current)
+            switch (current)
             {
                 case INACTIVE:
                 case SUCCEEDED:
                 case FAILED:
+                {
                     if (_state.compareAndSet(current, State.CLOSED))
                         return;
                     break;
+                }
                 default:
+                {
                     if (_state.compareAndSet(current, State.CLOSED))
                     {
-                        onCompleteFailure(new IllegalStateException("Closed with pending callback "+this));
+                        onCompleteFailure(new IllegalStateException("Closed with pending callback " + this));
                         return;
                     }
+                }
             }
         }
     }
@@ -412,10 +432,13 @@ public abstract class IteratingCallback implements Callback
         return _state.get() == State.SUCCEEDED;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Reset the callback
-     * <p>A callback can only be reset to INACTIVE from the SUCCEEDED or FAILED states or if it is already INACTIVE.
-     * @return True if the reset was successful
+    /**
+     * Resets this callback.
+     * <p/>
+     * A callback can only be reset to INACTIVE from the
+     * SUCCEEDED or FAILED states or if it is already INACTIVE.
+     *
+     * @return true if the reset was successful
      */
     public boolean reset()
     {
