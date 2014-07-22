@@ -450,7 +450,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _sendCallback.iterate();
     }
 
-    
     private class SendCallback extends IteratingCallback
     {
         private ResponseInfo _info;
@@ -623,7 +622,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public String toString()
         {
-            return String.format("%s[i=%s,cb=%s]",super.toString(),getState(),_info,_callback);
+            return String.format("%s[i=%s,cb=%s]",super.toString(),_info,_callback);
         }
     }
 

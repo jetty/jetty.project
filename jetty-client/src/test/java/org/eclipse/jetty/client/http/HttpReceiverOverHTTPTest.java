@@ -18,23 +18,18 @@
 
 package org.eclipse.jetty.client.http;
 
-import java.io.ByteArrayOutputStream;
 import java.io.EOFException;
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-import java.util.zip.GZIPOutputStream;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpFields;
@@ -204,63 +199,5 @@ public class HttpReceiverOverHTTPTest
         {
             Assert.assertTrue(e.getCause() instanceof HttpResponseException);
         }
-    }
-
-    @Test
-    public void test_Receive_GZIPResponseContent_Fragmented() throws Exception
-    {
-        byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        ByteArrayOutputStream baos = new ByteArrayOutputStream();
-        try (GZIPOutputStream gzipOutput = new GZIPOutputStream(baos))
-        {
-            gzipOutput.write(data);
-        }
-        byte[] gzip = baos.toByteArray();
-
-        endPoint.setInput("" +
-                "HTTP/1.1 200 OK\r\n" +
-                "Content-Length: " + gzip.length + "\r\n" +
-                "Content-Encoding: gzip\r\n" +
-                "\r\n");
-
-        HttpRequest request = (HttpRequest)client.newRequest("http://localhost");
-        final CountDownLatch latch = new CountDownLatch(1);
-        FutureResponseListener listener = new FutureResponseListener(request)
-        {
-            @Override
-            public void onContent(Response response, ByteBuffer content)
-            {
-                boolean hadRemaining=content.hasRemaining();
-                super.onContent(response, content);
-                
-                // TODO gzip decoding can pass on empty chunks. Currently ignoring them here, but could be done at the decoder???
-                if (hadRemaining) // Ignore empty chunks
-                    latch.countDown();                
-            }
-        };
-        HttpExchange exchange = new HttpExchange(destination, request, Collections.<Response.ResponseListener>singletonList(listener));
-        connection.getHttpChannel().associate(exchange);
-        exchange.requestComplete();
-        exchange.terminateRequest(null);
-        connection.getHttpChannel().receive();
-        endPoint.reset();
-
-        ByteBuffer buffer = ByteBuffer.wrap(gzip);
-        int fragment = buffer.limit() - 1;
-        buffer.limit(fragment);
-        endPoint.setInput(buffer);
-        connection.getHttpChannel().receive();
-        endPoint.reset();
-
-        buffer.limit(gzip.length);
-        buffer.position(fragment);
-        endPoint.setInput(buffer);
-        connection.getHttpChannel().receive();
-
-        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-        Assert.assertNotNull(response);
-        Assert.assertEquals(200, response.getStatus());
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertArrayEquals(data, response.getContent());
     }
 }

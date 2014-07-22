@@ -353,10 +353,27 @@ public class HttpChannel implements Runnable
                 _state.completed();
 
                 if (!_response.isCommitted() && !_request.isHandled())
+                {
                     _response.sendError(404);
+                }
                 else
-                    // Complete generating the response
-                    _response.closeOutput();
+                {
+                    // There is no way in the Servlet API to directly close a connection,
+                    // so we rely on applications to pass this attribute to signal they
+                    // want to hard close the connection, without even closing the output.
+                    Object failure = _request.getAttribute("org.eclipse.jetty.server.Response.failure");
+                    if (failure != null)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Explicit response failure", failure);
+                        failed();
+                    }
+                    else
+                    {
+                        // Complete generating the response
+                        _response.closeOutput();
+                    }
+                }
             }
             catch(EofException|ClosedChannelException e)
             {

@@ -24,7 +24,6 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.AbstractMetaData;
-import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -44,9 +43,6 @@ import org.eclipse.jetty.io.EndPoint;
  */
 class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ProxyHandler
 {
-    /**
-     * 
-     */
     private final HttpConnection _httpConnection;
     private String _method; 
     private String _uri;
@@ -100,7 +96,6 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         {
             return _fields;
         }
-        
     };
     
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput input)
@@ -140,7 +135,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public boolean startRequest(String method, String uri, HttpVersion version)
     {
         _method=method;
-        _uri=uri.toString();
+        _uri=uri;
         _version=version;
         _expect = false;
         _expect100Continue = false;
@@ -158,7 +153,6 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         request.setServerPort(dPort);
         request.setRemoteAddr(InetSocketAddress.createUnresolved(sAddr,sPort));
     }
-    
 
     @Override
     public void parsedHeader(HttpField field)
@@ -255,7 +249,6 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         }
     }
 
-    
     @Override
     public void earlyEOF()
     {
@@ -356,9 +349,9 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     public void failed()
     {
+        _httpConnection._generator.setPersistent(false);
         getEndPoint().shutdownOutput();
     }
-    
 
     @Override
     public boolean messageComplete()
@@ -367,10 +360,6 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         return false;
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.HttpParser.HttpHandler#getHeaderCacheSize()
-     */
     @Override
     public int getHeaderCacheSize()
     {

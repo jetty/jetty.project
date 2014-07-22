@@ -28,13 +28,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.ForkInvoker;
+import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Logger;
 
 public abstract class ProxyConnection extends AbstractConnection
 {
     protected static final Logger LOG = ConnectHandler.LOG;
-    private final ForkInvoker<Void> invoker = new ProxyForkInvoker();
+    private final IteratingCallback pipe = new ProxyIteratingCallback();
     private final ByteBufferPool bufferPool;
     private final ConcurrentMap<String, Object> context;
     private Connection connection;
@@ -69,52 +69,7 @@ public abstract class ProxyConnection extends AbstractConnection
     @Override
     public void onFillable()
     {
-        final ByteBuffer buffer = getByteBufferPool().acquire(getInputBufferSize(), true);
-        try
-        {
-            final int filled = read(getEndPoint(), buffer);
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} filled {} bytes", this, filled);
-            if (filled > 0)
-            {
-                write(getConnection().getEndPoint(), buffer, new Callback()
-                {
-                    @Override
-                    public void succeeded()
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("{} wrote {} bytes", this, filled);
-                        bufferPool.release(buffer);
-                        invoker.invoke(null);
-                    }
-
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        LOG.debug(this + " failed to write " + filled + " bytes", x);
-                        bufferPool.release(buffer);
-                        connection.close();
-                    }
-                });
-            }
-            else if (filled == 0)
-            {
-                bufferPool.release(buffer);
-                fillInterested();
-            }
-            else
-            {
-                bufferPool.release(buffer);
-                connection.getEndPoint().shutdownOutput();
-            }
-        }
-        catch (IOException x)
-        {
-            LOG.debug(this + " could not fill", x);
-            bufferPool.release(buffer);
-            close();
-            connection.close();
-        }
+        pipe.iterate();
     }
 
     protected abstract int read(EndPoint endPoint, ByteBuffer buffer) throws IOException;
@@ -130,29 +85,73 @@ public abstract class ProxyConnection extends AbstractConnection
                 getEndPoint().getRemoteAddress().getPort());
     }
 
-    private class ProxyForkInvoker extends ForkInvoker<Void> implements Runnable
+    private class ProxyIteratingCallback extends IteratingCallback
     {
-        private ProxyForkInvoker()
+        private ByteBuffer buffer;
+        private int filled;
+
+        @Override
+        protected Action process() throws Exception
         {
-            super(4);
+            buffer = bufferPool.acquire(getInputBufferSize(), true);
+            try
+            {
+                int filled = this.filled = read(getEndPoint(), buffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} filled {} bytes", ProxyConnection.this, filled);
+                if (filled > 0)
+                {
+                    write(connection.getEndPoint(), buffer, this);
+                    return Action.SCHEDULED;
+                }
+                else if (filled == 0)
+                {
+                    bufferPool.release(buffer);
+                    fillInterested();
+                    return Action.IDLE;
+                }
+                else
+                {
+                    bufferPool.release(buffer);
+                    connection.getEndPoint().shutdownOutput();
+                    return Action.SUCCEEDED;
+                }
+            }
+            catch (IOException x)
+            {
+                LOG.debug(ProxyConnection.this + " could not fill", x);
+                disconnect();
+                return Action.SUCCEEDED;
+            }
         }
 
         @Override
-        public void fork(Void arg)
+        public void succeeded()
         {
-            getExecutor().execute(this);
-        }
-        
-        @Override
-        public void run()
-        {
-            onFillable();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} wrote {} bytes", ProxyConnection.this, filled);
+            bufferPool.release(buffer);
+            super.succeeded();
         }
 
         @Override
-        public void call(Void arg)
+        protected void onCompleteSuccess()
         {
-            onFillable();
+        }
+
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(ProxyConnection.this + " failed to write " + filled + " bytes", x);
+            disconnect();
+        }
+
+        private void disconnect()
+        {
+            bufferPool.release(buffer);
+            ProxyConnection.this.close();
+            connection.close();
         }
     }
 }
