@@ -259,7 +259,7 @@ public class WarBundleManifestGenerator
         {
             poundIndex = url.length();
         }
-        UrlEncoded.decodeUtf8To(url.getBytes(), questionMarkIndex+1,
+        UrlEncoded.decodeUtf8To(url, questionMarkIndex+1,
                     poundIndex - questionMarkIndex - 1, res);
         return res;
     }
