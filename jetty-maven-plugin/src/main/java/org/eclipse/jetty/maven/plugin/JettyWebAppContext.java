@@ -139,7 +139,7 @@ public class JettyWebAppContext extends WebAppContext
     }
     public void setContainerIncludeJarPattern(String pattern)
     {
-    	_containerIncludeJarPattern = pattern;
+        _containerIncludeJarPattern = pattern;
     }
     
     public String getContainerIncludeJarPattern()
@@ -150,7 +150,7 @@ public class JettyWebAppContext extends WebAppContext
     
     public String getWebInfIncludeJarPattern()
     {
-    	return _webInfIncludeJarPattern;
+        return _webInfIncludeJarPattern;
     }
     public void setWebInfIncludeJarPattern(String pattern)
     {

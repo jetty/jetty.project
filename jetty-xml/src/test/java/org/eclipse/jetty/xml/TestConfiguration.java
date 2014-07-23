@@ -79,7 +79,7 @@ public class TestConfiguration extends HashMap<String,Object>
 
     public void setPropertyTest(int value)
     {
-    	propValue=value;
+        propValue=value;
     }
 
     public TestConfiguration getNested()

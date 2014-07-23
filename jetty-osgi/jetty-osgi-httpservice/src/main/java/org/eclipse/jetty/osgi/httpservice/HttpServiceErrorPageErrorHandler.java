@@ -35,46 +35,46 @@ import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 public class HttpServiceErrorPageErrorHandler extends ErrorPageErrorHandler
 {
 
-	private static HttpServiceErrorPageErrorHandler INSTANCE;
-	
-	public static HttpServiceErrorPageErrorHandler getInstance()
-	{
-		return INSTANCE;
-	}
-	
-	public HttpServiceErrorPageErrorHandler()
-	{
-		INSTANCE = this;
-	}
+        private static HttpServiceErrorPageErrorHandler INSTANCE;
+        
+        public static HttpServiceErrorPageErrorHandler getInstance()
+        {
+                return INSTANCE;
+        }
+        
+        public HttpServiceErrorPageErrorHandler()
+        {
+                INSTANCE = this;
+        }
 
-	@Override
-	public void handle(String target, Request baseRequest,
-			HttpServletRequest request, HttpServletResponse response)
-			throws IOException {
-		if (HttpServiceErrorHandlerHelper.getCustomErrorHandler() != null)
-		{
-			try
-			{
-				HttpServiceErrorHandlerHelper.getCustomErrorHandler().service(request, response);
-			}
-			catch (ServletException e)
-			{
-				//well
-			}
-		}
-		if (!response.isCommitted())
-		{
-			super.handle(target, baseRequest, request, response);
-		}
-	}
+        @Override
+        public void handle(String target, Request baseRequest,
+                        HttpServletRequest request, HttpServletResponse response)
+                        throws IOException {
+                if (HttpServiceErrorHandlerHelper.getCustomErrorHandler() != null)
+                {
+                        try
+                        {
+                                HttpServiceErrorHandlerHelper.getCustomErrorHandler().service(request, response);
+                        }
+                        catch (ServletException e)
+                        {
+                                //well
+                        }
+                }
+                if (!response.isCommitted())
+                {
+                        super.handle(target, baseRequest, request, response);
+                }
+        }
 
-	@Override
-	protected void doStop() throws Exception
-	{
-		INSTANCE = null;
-		super.doStop();
-	}
-	
-	
-	
+        @Override
+        protected void doStop() throws Exception
+        {
+                INSTANCE = null;
+                super.doStop();
+        }
+        
+        
+        
 }

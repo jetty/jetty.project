@@ -49,7 +49,6 @@ import org.junit.Test;
  */
 public class AsyncContextDispatchWithQueryStrings 
 {
-
     private Server _server = new Server();
     private ServletContextHandler _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
     private LocalConnector _connector = new LocalConnector(_server);
@@ -73,7 +72,8 @@ public class AsyncContextDispatchWithQueryStrings
     }
 
     @Test
-    public void testMultipleDispatchesWithNewQueryStrings() throws Exception {
+    public void testMultipleDispatchesWithNewQueryStrings() throws Exception 
+    {
         String request = 
                 "GET /initialCall?initialParam=right HTTP/1.1\r\n" + 
                         "Host: localhost\r\n" + 
@@ -84,7 +84,8 @@ public class AsyncContextDispatchWithQueryStrings
     }
 
     @After
-    public void tearDown() throws Exception {
+    public void tearDown() throws Exception 
+    {
         _server.stop();
         _server.join();
     }

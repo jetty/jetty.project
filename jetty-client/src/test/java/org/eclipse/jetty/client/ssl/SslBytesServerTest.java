@@ -1049,9 +1049,9 @@ public class SslBytesServerTest extends SslBytesTest
     @Test
     public void testRequestWithBigContentWriteBlockedThenReset() throws Exception
     {
-    	// Don't run on Windows (buggy JVM)
-    	Assume.assumeTrue(!OS.IS_WINDOWS);
-    	
+        // Don't run on Windows (buggy JVM)
+        Assume.assumeTrue(!OS.IS_WINDOWS);
+        
         final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
@@ -1110,10 +1110,10 @@ public class SslBytesServerTest extends SslBytesTest
     @Test
     public void testRequestWithBigContentReadBlockedThenReset() throws Exception
     {
-    	// Don't run on Windows (buggy JVM)
-    	Assume.assumeTrue(!OS.IS_WINDOWS);
-    	
-    	final SSLSocket client = newClient();
+        // Don't run on Windows (buggy JVM)
+        Assume.assumeTrue(!OS.IS_WINDOWS);
+        
+        final SSLSocket client = newClient();
 
         SimpleProxy.AutomaticFlow automaticProxyFlow = proxy.startAutomaticFlow();
         client.startHandshake();

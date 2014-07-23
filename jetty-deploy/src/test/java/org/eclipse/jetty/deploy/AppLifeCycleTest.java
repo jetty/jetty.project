@@ -36,10 +36,10 @@ import org.junit.Test;
  */
 public class AppLifeCycleTest
 {
-	@Rule
-	public TestingDir testdir = new TestingDir();
+        @Rule
+        public TestingDir testdir = new TestingDir();
 
-	private void assertNoPath(String from, String to)
+        private void assertNoPath(String from, String to)
     {
         assertPath(from,to,new ArrayList<String>());
     }

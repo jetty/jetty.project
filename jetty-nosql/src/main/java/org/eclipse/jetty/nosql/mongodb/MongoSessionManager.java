@@ -654,7 +654,7 @@ public class MongoSessionManager extends NoSqlSessionManager
     /*------------------------------------------------------------ */
     private String getContextKey()
     {
-    	return __CONTEXT + "." + _contextId;
+        return __CONTEXT + "." + _contextId;
     }
     
     /*------------------------------------------------------------ */
@@ -664,7 +664,7 @@ public class MongoSessionManager extends NoSqlSessionManager
      */
     private String getContextAttributeKey(String attr)
     {
-    	return getContextKey()+ "." + attr;
+        return getContextKey()+ "." + attr;
     }
     
     @ManagedOperation(value="purge invalid sessions in the session store based on normal criteria", impact="ACTION")

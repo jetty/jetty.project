@@ -751,23 +751,23 @@ public class ServletHandler extends ScopedHandler
             final Map<String,FilterChain> cache=_chainCache[dispatch];
             final Queue<String> lru=_chainLRU[dispatch];
 
-        	// Do we have too many cached chains?
-        	while (_maxFilterChainsCacheSize>0 && cache.size()>=_maxFilterChainsCacheSize)
-        	{
-        	    // The LRU list is not atomic with the cache map, so be prepared to invalidate if
-        	    // a key is not found to delete.
-        	    // Delete by LRU (where U==created)
-        	    String k=lru.poll();
-        	    if (k==null)
-        	    {
-        	        cache.clear();
-        	        break;
-        	    }
-        	    cache.remove(k);
-        	}
+                // Do we have too many cached chains?
+                while (_maxFilterChainsCacheSize>0 && cache.size()>=_maxFilterChainsCacheSize)
+                {
+                    // The LRU list is not atomic with the cache map, so be prepared to invalidate if
+                    // a key is not found to delete.
+                    // Delete by LRU (where U==created)
+                    String k=lru.poll();
+                    if (k==null)
+                    {
+                        cache.clear();
+                        break;
+                    }
+                    cache.remove(k);
+                }
 
-        	cache.put(key,chain);
-        	lru.add(key);
+                cache.put(key,chain);
+                lru.add(key);
         }
         else if (filters.size() > 0)
             chain = new Chain(baseRequest,filters, servletHolder);

@@ -288,9 +288,9 @@ public class ServletContextHandler extends ContextHandler
                         decorator.decorate(holder.getListener());
                     }
                 }
-    	    }
-    	}
-    	
+            }
+        }
+        
         super.startContext();
 
         // OK to Initialize servlet handler now that all relevant object trees have been started

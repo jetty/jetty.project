@@ -26,8 +26,8 @@ public class Counter implements java.io.Serializable
 
     public int getCount()
     {
-	counter++;
-	return counter;
+        counter++;
+        return counter;
     }
 
     public void setLast(String uri) {

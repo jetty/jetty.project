@@ -173,64 +173,64 @@ public class ContextHandlerCollection extends HandlerCollection
     {
         Handler[] handlers = getHandlers();
         if (handlers==null || handlers.length==0)
-	    return;
+            return;
 
-	HttpChannelState async = baseRequest.getHttpChannelState();
-	if (async.isAsync())
-	{
-	    ContextHandler context=async.getContextHandler();
-	    if (context!=null)
-	    {
-	        Handler branch = _contextBranches.get(context);
-	        
-	        if (branch==null)
-	            context.handle(target,baseRequest,request, response);
-	        else
-	            branch.handle(target, baseRequest, request, response);
-	        return;
-	    }
-	}
-	
-	// data structure which maps a request to a context; first-best match wins
-	// { context path => [ context ] }
-	// }
-	if (target.startsWith("/"))
-	{
-	    int limit = target.length()-1;
-
-	    while (limit>=0)
-	    {
-	        // Get best match
-	        Map.Entry<String,Branch[]> branches = _pathBranches.getBest(target,1,limit);
-	        
-	        
-	        if (branches==null)
-	            break;
+        HttpChannelState async = baseRequest.getHttpChannelState();
+        if (async.isAsync())
+        {
+            ContextHandler context=async.getContextHandler();
+            if (context!=null)
+            {
+                Handler branch = _contextBranches.get(context);
                 
-	        int l=branches.getKey().length();
-	        if (l==1 || target.length()==l || target.charAt(l)=='/')
-	        {
-	            for (Branch branch : branches.getValue())
-	            {
-	                branch.getHandler().handle(target,baseRequest, request, response);
-	                if (baseRequest.isHandled())
-	                    return;
-	            }
-	        }
-	        
-	        limit=l-2;
-	    }
-	}
-	else
-	{
+                if (branch==null)
+                    context.handle(target,baseRequest,request, response);
+                else
+                    branch.handle(target, baseRequest, request, response);
+                return;
+            }
+        }
+        
+        // data structure which maps a request to a context; first-best match wins
+        // { context path => [ context ] }
+        // }
+        if (target.startsWith("/"))
+        {
+            int limit = target.length()-1;
+
+            while (limit>=0)
+            {
+                // Get best match
+                Map.Entry<String,Branch[]> branches = _pathBranches.getBest(target,1,limit);
+                
+                
+                if (branches==null)
+                    break;
+                
+                int l=branches.getKey().length();
+                if (l==1 || target.length()==l || target.charAt(l)=='/')
+                {
+                    for (Branch branch : branches.getValue())
+                    {
+                        branch.getHandler().handle(target,baseRequest, request, response);
+                        if (baseRequest.isHandled())
+                            return;
+                    }
+                }
+                
+                limit=l-2;
+            }
+        }
+        else
+        {
             // This may not work in all circumstances... but then I think it should never be called
-	    for (int i=0;i<handlers.length;i++)
-	    {
-		handlers[i].handle(target,baseRequest, request, response);
-		if ( baseRequest.isHandled())
-		    return;
-	    }
-	}
+            for (int i=0;i<handlers.length;i++)
+            {
+                handlers[i].handle(target,baseRequest, request, response);
+                if ( baseRequest.isHandled())
+                    return;
+            }
+        }
     }
 
     /* ------------------------------------------------------------ */
