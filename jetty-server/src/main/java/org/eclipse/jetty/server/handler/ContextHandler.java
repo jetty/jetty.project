@@ -870,27 +870,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _scontext.clearAttributes();
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
-    public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response) throws IOException
+    public boolean checkVirtualHost(final Request baseRequest)
     {
-        DispatcherType dispatch = baseRequest.getDispatcherType();
-
-        switch (_availability)
-        {
-            case SHUTDOWN:
-            case UNAVAILABLE:
-                baseRequest.setHandled(true);
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                return false;
-            default:
-                if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
-                    return false;
-        }
-
-        // Check the vhosts
         if (_vhosts != null && _vhosts.length > 0)
         {
             String vhost = normalizeHostname(baseRequest.getServerName());
@@ -926,27 +907,61 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (!match || connectorName && !connectorMatch)
                 return false;
         }
-
+        return true;
+    }
+    
+    public boolean checkContextPath(String uri)
+    {
         // Are we not the root context?
         if (_contextPath.length() > 1)
         {
             // reject requests that are not for us
-            if (!target.startsWith(_contextPath))
+            if (!uri.startsWith(_contextPath))
                 return false;
-            if (target.length() > _contextPath.length() && target.charAt(_contextPath.length()) != '/')
+            if (uri.length() > _contextPath.length() && uri.charAt(_contextPath.length()) != '/')
                 return false;
+        }
+        return true;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+     */
+    public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response) throws IOException
+    {
+        DispatcherType dispatch = baseRequest.getDispatcherType();
 
-            // redirect null path infos
-            if (!_allowNullPathInfo && _contextPath.length() == target.length())
-            {
-                // context request must end with /
+        // Check the vhosts
+        if (!checkVirtualHost(baseRequest))
+            return false;
+
+        if (!checkContextPath(target))
+            return false;
+        
+        // Are we not the root context?
+        // redirect null path infos
+        if (!_allowNullPathInfo && _contextPath.length() == target.length() && _contextPath.length()>1)
+        {
+            // context request must end with /
+            baseRequest.setHandled(true);
+            if (baseRequest.getQueryString() != null)
+                response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH) + "?" + baseRequest.getQueryString());
+            else
+                response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH));
+            return false;
+        }
+
+        switch (_availability)
+        {
+            case SHUTDOWN:
+            case UNAVAILABLE:
                 baseRequest.setHandled(true);
-                if (baseRequest.getQueryString() != null)
-                    response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH) + "?" + baseRequest.getQueryString());
-                else
-                    response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH));
+                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return false;
-            }
+            default:
+                if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
+                    return false;
         }
 
         return true;

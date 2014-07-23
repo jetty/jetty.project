@@ -541,10 +541,7 @@ public class Response implements HttpServletResponse
     @Override
     public void sendError(int sc) throws IOException
     {
-        if (sc == 102)
-            sendProcessing();
-        else
-            sendError(sc, null);
+        sendError(sc, null);
     }
 
     @Override
@@ -552,6 +549,17 @@ public class Response implements HttpServletResponse
     {
         if (isIncluding())
             return;
+
+        switch(code)
+        {
+            case -1:
+                _channel.abort();
+                return;
+            case 102:
+                sendProcessing();
+                return;
+            default:
+        }
 
         if (isCommitted())
             LOG.warn("Committed before "+code+" "+message);

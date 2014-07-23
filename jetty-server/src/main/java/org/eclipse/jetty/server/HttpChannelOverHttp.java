@@ -347,10 +347,10 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     }
 
     @Override
-    public void failed()
+    public void abort()
     {
-        _httpConnection._generator.setPersistent(false);
-        getEndPoint().shutdownOutput();
+	super.abort();
+	_generator.setPersistent(false);
     }
 
     @Override

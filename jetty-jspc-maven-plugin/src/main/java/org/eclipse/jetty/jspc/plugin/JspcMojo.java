@@ -83,6 +83,21 @@ public class JspcMojo extends AbstractMojo
 
 
     /**
+     * JettyJspC
+     *
+     * Add some extra setters to standard JspC class to help configure it
+     * for running in maven.
+     */
+    public static class JettyJspC extends JspC
+    {
+        public void setClassLoader (ClassLoader loader)
+        {
+            this.loader = loader;
+        }
+    }
+    
+    
+    /**
      * Whether or not to include dependencies on the plugin's classpath with &lt;scope&gt;provided&lt;/scope&gt;
      * Use WITH CAUTION as you may wind up with duplicate jars/classes.
      * 
@@ -219,7 +234,7 @@ public class JspcMojo extends AbstractMojo
      * 
      * @parameter
      */
-    private JspC jspc;
+    private JettyJspC jspc;
 
 
 
@@ -286,19 +301,22 @@ public class JspcMojo extends AbstractMojo
             if (i+1<webAppUrls.size())
                 webAppClassPath.append(System.getProperty("path.separator"));
         }
-
-        Thread.currentThread().setContextClassLoader(webAppClassLoader);
+        
+        //Interpose a fake classloader as the webapp class loader. This is because the Apache JspC class
+        //uses a TldScanner which ignores jars outside of the WEB-INF/lib path on the webapp classloader.
+        //It will, however, look at all jars on the parents of the webapp classloader.
+        URLClassLoader fakeWebAppClassLoader = new URLClassLoader(new URL[0], webAppClassLoader);
+        Thread.currentThread().setContextClassLoader(fakeWebAppClassLoader);
   
         if (jspc == null)
-            jspc = new JspC();
+            jspc = new JettyJspC();
         
         jspc.setWebXmlFragment(webXmlFragment);
         jspc.setUriroot(webAppSourceDirectory);     
         jspc.setOutputDir(generatedClasses);
         jspc.setClassPath(sysClassPath+System.getProperty("path.separator")+webAppClassPath.toString());
+        jspc.setClassLoader(fakeWebAppClassLoader);
         jspc.setCompile(true);
-        //jspc.setSystemClassPath(sysClassPath);
-               
 
         // JspC#setExtensions() does not exist, so 
         // always set concrete list of files that will be processed.

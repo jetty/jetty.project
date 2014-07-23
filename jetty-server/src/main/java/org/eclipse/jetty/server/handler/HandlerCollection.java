@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.util.Arrays;
 import java.util.List;
 
 import javax.servlet.ServletException;
@@ -184,5 +185,13 @@ public class HandlerCollection extends AbstractHandlerContainer
         for (Handler child: children)
             child.destroy();
         super.destroy();
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String toString()
+    {
+        Handler[] handlers=getHandlers();
+        return super.toString()+(handlers==null?"[]":Arrays.asList(getHandlers()).toString());
     }
 }

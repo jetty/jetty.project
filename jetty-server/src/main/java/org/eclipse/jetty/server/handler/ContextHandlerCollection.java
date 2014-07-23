@@ -19,6 +19,15 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
+import java.lang.reflect.Array;
+import java.util.Arrays;
+import java.util.HashMap;
+import java.util.HashSet;
+import java.util.List;
+import java.util.Map;
+import java.util.Set;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ConcurrentMap;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -52,7 +61,8 @@ public class ContextHandlerCollection extends HandlerCollection
 {
     private static final Logger LOG = Log.getLogger(ContextHandlerCollection.class);
 
-    private volatile Trie<ContextHandler[]> _contexts;
+    private final ConcurrentMap<ContextHandler,Handler> _contextBranches = new ConcurrentHashMap<>();
+    private volatile Trie<Map.Entry<String,Branch[]>> _pathBranches;
     private Class<? extends ContextHandler> _contextClass = ContextHandler.class;
 
     /* ------------------------------------------------------------ */
@@ -69,70 +79,69 @@ public class ContextHandlerCollection extends HandlerCollection
     @ManagedOperation("update the mapping of context path to context")
     public void mapContexts()
     {
-        int capacity=512;
+        _contextBranches.clear();
+        
+        if (getHandlers()==null)
+        {
+            _pathBranches=new ArrayTernaryTrie<>(false,16);
+            return;
+        }
+        
+        // Create map of contextPath to handler Branch
+        Map<String,Branch[]> map = new HashMap<>();
+        for (Handler handler:getHandlers())
+        {
+            Branch branch=new Branch(handler);
+            for (String contextPath : branch.getContextPaths())
+            {
+                Branch[] branches=map.get(contextPath);
+                map.put(contextPath, ArrayUtil.addToArray(branches, branch, Branch.class));
+            }
+            
+            for (ContextHandler context : branch.getContextHandlers())
+                _contextBranches.putIfAbsent(context, branch.getHandler());
+        }
+        
+        // Sort the branches so those with virtual hosts are considered before those without
+        for (Map.Entry<String,Branch[]> entry: map.entrySet())
+        {
+            Branch[] branches=entry.getValue();
+            Branch[] sorted=new Branch[branches.length];
+            int i=0;
+            for (Branch branch:branches)
+                if (branch.hasVirtualHost())
+                    sorted[i++]=branch;
+            for (Branch branch:branches)
+                if (!branch.hasVirtualHost())
+                    sorted[i++]=branch;
+            entry.setValue(sorted);
+        }
         
         // Loop until we have a big enough trie to hold all the context paths
-        Trie<ContextHandler[]> trie;
+        int capacity=512;
+        Trie<Map.Entry<String,Branch[]>> trie;
         loop: while(true)
         {
             trie=new ArrayTernaryTrie<>(false,capacity);
-
-            Handler[] branches = getHandlers();
-
-            // loop over each group of contexts
-            for (int b=0;branches!=null && b<branches.length;b++)
+            for (Map.Entry<String,Branch[]> entry: map.entrySet())
             {
-                Handler[] handlers=null;
-
-                if (branches[b] instanceof ContextHandler)
+                if (!trie.put(entry.getKey().substring(1),entry))
                 {
-                    handlers = new Handler[]{ branches[b] };
-                }
-                else if (branches[b] instanceof HandlerContainer)
-                {
-                    handlers = ((HandlerContainer)branches[b]).getChildHandlersByClass(ContextHandler.class);
-                }
-                else
-                    continue;
-
-                // for each context handler in a group
-                for (int i=0;handlers!=null && i<handlers.length;i++)
-                {
-                    ContextHandler handler=(ContextHandler)handlers[i];
-                    String contextPath=handler.getContextPath().substring(1);
-                    ContextHandler[] contexts=trie.get(contextPath);
-                    
-                    if (!trie.put(contextPath,ArrayUtil.addToArray(contexts,handler,ContextHandler.class)))
-                    {
-                        capacity+=512;
-                        continue loop;
-                    }
+                    capacity+=512;
+                    continue loop;
                 }
             }
+            break loop;
+        }
             
-            break;
-        }
         
-        // Sort the contexts so those with virtual hosts are considered before those without
-        for (String ctx : trie.keySet())
+        if (LOG.isDebugEnabled())
         {
-            ContextHandler[] contexts=trie.get(ctx);
-            ContextHandler[] sorted=new ContextHandler[contexts.length];
-            int i=0;
-            for (ContextHandler handler:contexts)
-                if (handler.getVirtualHosts()!=null && handler.getVirtualHosts().length>0)
-                    sorted[i++]=handler;
-            for (ContextHandler handler:contexts)
-                if (handler.getVirtualHosts()==null || handler.getVirtualHosts().length==0)
-                    sorted[i++]=handler;
-            trie.put(ctx,sorted);
+            for (String ctx : trie.keySet())
+                LOG.debug("{}->{}",ctx,Arrays.asList(trie.get(ctx).getValue()));
         }
-
-        //for (String ctx : trie.keySet())
-        //    System.err.printf("'%s'->%s%n",ctx,Arrays.asList(trie.get(ctx)));
-        _contexts=trie;
+        _pathBranches=trie;
     }
-
 
     /* ------------------------------------------------------------ */
     /*
@@ -172,11 +181,16 @@ public class ContextHandlerCollection extends HandlerCollection
 	    ContextHandler context=async.getContextHandler();
 	    if (context!=null)
 	    {
-	        context.handle(target,baseRequest,request, response);
+	        Handler branch = _contextBranches.get(context);
+	        
+	        if (branch==null)
+	            context.handle(target,baseRequest,request, response);
+	        else
+	            branch.handle(target, baseRequest, request, response);
 	        return;
 	    }
 	}
-
+	
 	// data structure which maps a request to a context; first-best match wins
 	// { context path => [ context ] }
 	// }
@@ -187,16 +201,18 @@ public class ContextHandlerCollection extends HandlerCollection
 	    while (limit>=0)
 	    {
 	        // Get best match
-	        ContextHandler[] contexts = _contexts.getBest(target,1,limit);
-	        if (contexts==null)
+	        Map.Entry<String,Branch[]> branches = _pathBranches.getBest(target,1,limit);
+	        
+	        
+	        if (branches==null)
 	            break;
-
-	        int l=contexts[0].getContextPath().length();
+                
+	        int l=branches.getKey().length();
 	        if (l==1 || target.length()==l || target.charAt(l)=='/')
 	        {
-	            for (ContextHandler handler : contexts)
+	            for (Branch branch : branches.getValue())
 	            {
-	                handler.handle(target,baseRequest, request, response);
+	                branch.getHandler().handle(target,baseRequest, request, response);
 	                if (baseRequest.isHandled())
 	                    return;
 	            }
@@ -216,7 +232,6 @@ public class ContextHandlerCollection extends HandlerCollection
 	    }
 	}
     }
-
 
     /* ------------------------------------------------------------ */
     /** Add a context handler.
@@ -261,6 +276,65 @@ public class ContextHandlerCollection extends HandlerCollection
         if (contextClass ==null || !(ContextHandler.class.isAssignableFrom(contextClass)))
             throw new IllegalArgumentException();
         _contextClass = contextClass;
+    }
+
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    /* ------------------------------------------------------------ */
+    private final static class Branch
+    {
+        private final Handler _handler;
+        private final ContextHandler[] _contexts;
+        
+        Branch(Handler handler)
+        {
+            _handler=handler;
+
+            if (handler instanceof ContextHandler)
+            {
+                _contexts = new ContextHandler[]{(ContextHandler)handler};
+            }
+            else if (handler instanceof HandlerContainer)
+            {
+                Handler[] contexts=((HandlerContainer)handler).getChildHandlersByClass(ContextHandler.class);
+                _contexts = new ContextHandler[contexts.length];
+                System.arraycopy(contexts, 0, _contexts, 0, contexts.length);
+            }
+            else
+                _contexts = new ContextHandler[0];
+        }
+        
+        Set<String> getContextPaths()
+        {
+            Set<String> set = new HashSet<String>();
+            for (ContextHandler context:_contexts)
+                set.add(context.getContextPath());
+            return set;
+        }
+        
+        boolean hasVirtualHost()
+        {
+            for (ContextHandler context:_contexts)
+                if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
+                    return true;
+            return false;
+        }
+        
+        ContextHandler[] getContextHandlers()
+        {
+            return _contexts;
+        }
+        
+        Handler getHandler()
+        {
+            return _handler;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("{%s,%s}",_handler,Arrays.asList(_contexts));
+        }
     }
 
 

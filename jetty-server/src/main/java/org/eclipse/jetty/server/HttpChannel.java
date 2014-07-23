@@ -358,21 +358,8 @@ public class HttpChannel implements Runnable
                 }
                 else
                 {
-                    // There is no way in the Servlet API to directly close a connection,
-                    // so we rely on applications to pass this attribute to signal they
-                    // want to hard close the connection, without even closing the output.
-                    Object failure = _request.getAttribute("org.eclipse.jetty.server.Response.failure");
-                    if (failure != null)
-                    {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Explicit response failure", failure);
-                        failed();
-                    }
-                    else
-                    {
-                        // Complete generating the response
-                        _response.closeOutput();
-                    }
+                    // Complete generating the response
+                    _response.closeOutput();
                 }
             }
             catch(EofException|ClosedChannelException e)
@@ -604,10 +591,11 @@ public class HttpChannel implements Runnable
 
     /**
      * If a write or similar to this channel fails this method should be called. The standard implementation
-     * of {@link #failed()} is a noop. But the different implementations of HttpChannel might want to take actions.
+     * is to call {@link HttpTransport#abort()}
      */
-    public void failed()
+    public void abort()
     {
+        _transport.abort();
     }
 
     private class CommitCallback implements Callback
