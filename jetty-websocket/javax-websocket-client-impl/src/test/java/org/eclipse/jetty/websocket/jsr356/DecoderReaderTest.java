@@ -272,7 +272,6 @@ public class DecoderReaderTest
     }
 
     // TODO analyse and fix 
-    @Ignore
     @Test
     @Ignore ("Quotes appear to be able to arrive in any order?")
     public void testTwoQuotes() throws Exception

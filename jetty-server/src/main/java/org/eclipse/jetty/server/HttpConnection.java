@@ -450,7 +450,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _sendCallback.iterate();
     }
 
-            super.abort();
     private class SendCallback extends IteratingCallback
     {
         private ResponseInfo _info;
