@@ -1,4 +1,59 @@
-jetty-9.2.2-SNAPSHOT
+jetty-9.2.2-v20140723 - 23 July 2014
+ + 411323 DosFilter/QoSFilter should use AsyncContext rather than
+   Continuations.
+ + 432815 Fixed selector stop race
+ + 434536 Improved Customizer javadoc
+ + 435322 Fixed Iterating Callback close
+ + 435653 encode async dispatched requestURI
+ + 435895 jetty spring module is not in distribution
+ + 436874 WebSocket client throwing a NullPointer when handling a pong
+ + 436894 GzipFilter code cleanup
+ + 436916 CGI: "Search docroot for a matching execCmd" logic is wrong
+ + 436987 limited range of default acceptors and selectors
+ + 437051 Refactor Filter chain handling of Request.isAsyncSupported
+ + 437395 Start / Properties in template sections should be default applied for
+   enabled modules
+ + 437419 Allow scanning of META-INF for resources,fragments,tlds for unpacked
+   jars
+ + 437430 jettyXml not consistent between jetty:run and jetty:run-forked
+ + 437462 consistent test failure in jetty-start under windows
+ + 437706 ServletTester calls LocalConnector method with hardcoded timeout
+ + 437800 URLs with single quote and spaces return 404
+ + 437996 avoid async status race by not setting 200 on handled
+ + 438079 Review garbage creation in 9.2.x series.
+ + 438190 findbug improvements
+ + 438204 leave IPv6 addresses [] wrapped in getServerName
+ + 438327 Remove hard coded Allow from OPTIONS *
+ + 438331 AbstractLogger.debug(String,long) infinite loop
+ + 438434 ResourceHandler checks aliases
+ + 438895 Add mvn jetty:effective-web-xml goal
+ + 439066 javadoc setStopAtShutdown
+ + 439067 Improved graceful stop timeout handling
+ + 439194 Do not configure fake server for jetty:run-forked
+ + 439201 GzipFilter and AsyncGzipFilter should strip charset from Content-Type
+   before making exclusion comparison in doFilter
+ + 439369 Deprecate CrossContextPseudoSession
+ + 439387 Ensure empty servlet-class never generated for quickstart
+ + 439390 Ensure jsp scratchdir is created same way for quickstart and
+   non-quickstart
+ + 439394 load-on-startup with value 0 not preserved for quickstart
+ + 439399 Scan tlds for apache jasper standard taglib with jetty-maven-plugin
+ + 439438 DataSourceLoginService does not refresh passwords when changed in
+   database
+ + 439507 Possible timing side-channel when comparing MD5-Credentials
+ + 439540 setReuseAddress() in ServerConnector.java is not coded properly
+ + 439652 GzipHandler super.doStart
+ + 439663 Allow mappings to be declared before servlet/filter
+ + 439672 support using Apache commons daemon for managing Jetty
+ + 439753 ConstraintSecurityHandler has dead code for processing constraints
+ + 439788 CORS filter headers gone between 9.2.0.M0 and 9.2.1 .v20140609 for
+   ProxyServlet requests.
+ + 439809 mvn jetty:jspc cannot find taglibs in dependency jars
+ + 439895 No event callback should be invoked after the "failure" callback.
+ + 440020 Abort bad proxy responses with sendError(-1)
+ + 440038 Content decoding may fail.
+ + 440114 ContextHandlerCollection does not skip context wrappers
+ + 440122 Remove usages of ForkInvoker.
 
 jetty-9.2.1.v20140609 - 09 June 2014
  + 347110 Supprt ClassFileTransormers in WebAppClassLoader
