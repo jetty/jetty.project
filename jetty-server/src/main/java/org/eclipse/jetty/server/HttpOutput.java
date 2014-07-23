@@ -157,7 +157,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         catch(IOException e)
                         {
                             LOG.debug(e);
-                            _channel.failed();
+                            _channel.abort();
                         }
                         releaseBuffer();
                         return;
@@ -192,7 +192,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         catch(IOException e)
                         {
                             LOG.debug(e);
-                            _channel.failed();
+                            _channel.abort();
                         }
                         releaseBuffer();
                         return;

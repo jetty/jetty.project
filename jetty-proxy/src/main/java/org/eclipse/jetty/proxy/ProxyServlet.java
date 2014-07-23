@@ -32,6 +32,7 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -51,6 +52,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
@@ -558,7 +560,15 @@ public class ProxyServlet extends HttpServlet
         _log.debug(getRequestId(request) + " proxying failed", failure);
         if (response.isCommitted())
         {
-            request.setAttribute("org.eclipse.jetty.server.Response.failure", failure);
+            // Use Jetty specific behavior to close connection
+            try
+            {
+                response.sendError(-1);
+            }
+            catch (IOException e)
+            {
+                getServletContext().log("close failed", e);
+            }
             AsyncContext asyncContext = request.getAsyncContext();
             asyncContext.complete();
         }
