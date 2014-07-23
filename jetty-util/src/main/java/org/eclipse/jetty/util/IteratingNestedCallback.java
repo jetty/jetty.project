@@ -48,15 +48,14 @@ public abstract class IteratingNestedCallback extends IteratingCallback
     }
     
     @Override
-    protected void completed()
+    protected void onCompleteSuccess()
     {
         _callback.succeeded();
     }
-
+    
     @Override
-    public void failed(Throwable x)
+    protected void onCompleteFailure(Throwable x)
     {
-        super.failed(x);
         _callback.failed(x);
     }
 

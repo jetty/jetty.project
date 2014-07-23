@@ -54,6 +54,23 @@ public class HttpConfiguration
     private boolean _sendXPoweredBy = false; //send X-Powered-By: header
     private boolean _sendDateHeader = true; //send Date: header
 
+    
+    /* ------------------------------------------------------------ */
+    /** 
+     * <p>An interface that allows a request object to be customized 
+     * for a particular HTTP connector configuration.  Unlike Filters, customizer are
+     * applied before the request is submitted for processing and can be specific to the 
+     * connector on which the request was received.
+     * 
+     * <p>Typically Customizers perform tasks such as: <ul>
+     *  <li>process header fields that may be injected by a proxy or load balancer.
+     *  <li>setup attributes that may come from the connection/connector such as SSL Session IDs
+     *  <li>Allow a request to be marked as secure or authenticated if those have been offloaded
+     *  and communicated by header, cookie or other out-of-band mechanism
+     *  <li>Set request attributes/fields that are determined by the connector on which the
+     *  request was received
+     *  </ul>
+     */
     public interface Customizer
     {
         public void customize(Connector connector, HttpConfiguration channelConfig, Request request);
@@ -103,7 +120,8 @@ public class HttpConfiguration
     {
         return _customizers;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public <T> T getCustomizer(Class<T> type)
     {
         for (Customizer c : _customizers)

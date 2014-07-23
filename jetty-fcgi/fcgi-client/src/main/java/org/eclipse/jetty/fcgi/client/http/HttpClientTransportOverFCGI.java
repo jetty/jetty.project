@@ -70,7 +70,8 @@ public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         HttpConnectionOverFCGI connection = new HttpConnectionOverFCGI(endPoint, destination, isMultiplexed());
-        LOG.debug("Created {}", connection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created {}", connection);
         @SuppressWarnings("unchecked")
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
         promise.succeeded(connection);

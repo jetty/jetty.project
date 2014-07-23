@@ -320,7 +320,8 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             throw new RuntimeException(e);
         }
 
-        LOG.debug("{} added {}",this,new_bean);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} added {}",this,new_bean);
 
         return true;
     }

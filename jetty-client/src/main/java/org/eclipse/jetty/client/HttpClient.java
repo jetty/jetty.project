@@ -24,7 +24,6 @@ import java.net.CookiePolicy;
 import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -480,9 +479,14 @@ public class HttpClient extends ContainerLifeCycle
             {
                 HttpDestination existing = destinations.putIfAbsent(origin, destination);
                 if (existing != null)
+                {
                     destination = existing;
+                }
                 else
-                    LOG.debug("Created {}", destination);
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Created {}", destination);
+                }
                 if (!isRunning())
                     destinations.remove(origin);
             }

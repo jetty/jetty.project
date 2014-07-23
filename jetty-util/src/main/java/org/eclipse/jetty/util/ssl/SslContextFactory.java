@@ -251,7 +251,8 @@ public class SslContextFactory extends AbstractLifeCycle
 
                 if (_trustAll)
                 {
-                    LOG.debug("No keystore or trust store configured.  ACCEPTING UNTRUSTED CERTIFICATES!!!!!");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("No keystore or trust store configured.  ACCEPTING UNTRUSTED CERTIFICATES!!!!!");
                     // Create a trust manager that does not validate certificate chains
                     trust_managers = TRUST_ALL_CERTS;
                 }
@@ -304,9 +305,11 @@ public class SslContextFactory extends AbstractLifeCycle
             }
 
             SSLEngine engine = newSSLEngine();
-            LOG.debug("Enabled Protocols {} of {}",Arrays.asList(engine.getEnabledProtocols()),Arrays.asList(engine.getSupportedProtocols()));
             if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Enabled Protocols {} of {}",Arrays.asList(engine.getEnabledProtocols()),Arrays.asList(engine.getSupportedProtocols()));
                 LOG.debug("Enabled Ciphers   {} of {}",Arrays.asList(engine.getEnabledCipherSuites()),Arrays.asList(engine.getSupportedCipherSuites()));
+            }
         }
     }
 

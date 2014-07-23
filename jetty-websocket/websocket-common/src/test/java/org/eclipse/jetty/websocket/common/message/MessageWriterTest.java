@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.Matchers.is;
-
 import java.util.Arrays;
 
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -39,6 +37,8 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.TestName;
+
+import static org.hamcrest.Matchers.is;
 
 public class MessageWriterTest
 {
@@ -122,7 +122,8 @@ public class MessageWriterTest
     {
         int bufsize = (int)(policy.getMaxTextMessageBufferSize() * 2.5);
         char buf[] = new char[bufsize];
-        LOG.debug("Buffer size: {}",bufsize);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Buffer size: {}",bufsize);
         Arrays.fill(buf,'x');
         buf[bufsize - 1] = 'o'; // mark last entry for debugging
 

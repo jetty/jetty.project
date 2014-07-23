@@ -30,6 +30,8 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
@@ -77,6 +79,35 @@ public class GracefulStopTest
             socket.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             String out = IO.toString(socket.getInputStream());
             Assert.assertThat(out,Matchers.containsString("200 OK"));
+        }
+    }
+    
+    @Test
+    public void testGracefulTimout() throws Exception
+    {
+        server.setStopTimeout(100);
+        new Thread()
+        {
+            @Override
+            public void run()
+            {
+                try
+                {
+                    TimeUnit.SECONDS.sleep(1);
+                    server.stop();
+                }
+                catch (Exception e)
+                {
+                    //e.printStackTrace();
+                }
+            }
+        }.start();
+
+        try(Socket socket = new Socket("localhost",server.getBean(NetworkConnector.class).getLocalPort());)
+        {
+            socket.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
+            String out = IO.toString(socket.getInputStream());
+            Assert.assertEquals("",out);
         }
     }
 

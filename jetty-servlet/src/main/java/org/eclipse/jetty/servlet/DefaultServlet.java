@@ -25,8 +25,10 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.net.URL;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.List;
+import java.util.StringTokenizer;
 
 import javax.servlet.AsyncContext;
 import javax.servlet.RequestDispatcher;
@@ -125,6 +127,9 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
+ *                    
+ * otherGzipFileExtensions
+ *                    Other file extensions that signify that a file is gzip compressed. Eg ".svgz"
  *
  *
  * </PRE>
@@ -164,6 +169,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     private String _relativeResourceBase;
     private ServletHandler _servletHandler;
     private ServletHolder _defaultHolder;
+    private List<String> _gzipEquivalentFileExtensions;
 
     /* ------------------------------------------------------------ */
     @Override
@@ -249,18 +255,19 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 throw new UnavailableException("resourceCache specified with resource bases");
             _cache=(ResourceCache)_servletContext.getAttribute(resourceCache);
 
-            LOG.debug("Cache {}={}",resourceCache,_cache);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Cache {}={}",resourceCache,_cache);
         }
 
         _etags = getInitBoolean("etags",_etags);
         
         try
         {
-            if (_cache==null && max_cached_files>0)
+            if (_cache==null && (max_cached_files!=-2 || max_cache_size!=-2 || max_cached_file_size!=-2))
             {
                 _cache= new ResourceCache(null,this,_mimeTypes,_useFileMappedBuffer,_etags);
 
-                if (max_cache_size>0)
+                if (max_cache_size>=0)
                     _cache.setMaxCacheSize(max_cache_size);
                 if (max_cached_file_size>=-1)
                     _cache.setMaxCachedFileSize(max_cached_file_size);
@@ -273,15 +280,33 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             LOG.warn(Log.EXCEPTION,e);
             throw new UnavailableException(e.toString());
         }
-
-        _servletHandler= _contextHandler.getChildHandlerByClass(ServletHandler.class);
-        for (ServletHolder h :_servletHandler.getServlets())
-            if (h.getServletInstance()==this)
-                _defaultHolder=h;
-
         
-        if (LOG.isDebugEnabled())
-            LOG.debug("resource base = "+_resourceBase);
+       _gzipEquivalentFileExtensions = new ArrayList<String>();
+       String otherGzipExtensions = getInitParameter("otherGzipFileExtensions");
+       if (otherGzipExtensions != null)
+       {
+           //comma separated list
+           StringTokenizer tok = new StringTokenizer(otherGzipExtensions,",",false);
+           while (tok.hasMoreTokens())
+           {
+               String s = tok.nextToken().trim();
+               _gzipEquivalentFileExtensions.add((s.charAt(0)=='.'?s:"."+s));
+           }
+       }
+       else
+       {
+           //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
+           _gzipEquivalentFileExtensions.add(".svgz");   
+       }
+
+       _servletHandler= _contextHandler.getChildHandlerByClass(ServletHandler.class);
+       for (ServletHolder h :_servletHandler.getServlets())
+           if (h.getServletInstance()==this)
+               _defaultHolder=h;
+
+
+       if (LOG.isDebugEnabled())
+           LOG.debug("resource base = "+_resourceBase);
     }
 
     /**
@@ -496,7 +521,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                     {
-                        if (gzip)
+                        if (gzip || isGzippedContent(pathInContext))
                         {
                             response.setHeader(HttpHeader.CONTENT_ENCODING.asString(),"gzip");
                             String mt=_servletContext.getMimeType(pathInContext);
@@ -534,7 +559,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 // else look for a welcome file
                 else if (null!=(welcome=getWelcomeFile(pathInContext)))
                 {
-                    LOG.debug("welcome={}",welcome);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("welcome={}",welcome);
                     if (_redirectWelcome)
                     {
                         // Redirect to the index
@@ -583,6 +609,20 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 resource.close();
         }
 
+    }
+
+    /**
+     * @param resource
+     * @return
+     */
+    protected boolean isGzippedContent(String path)
+    {
+        if (path == null) return false;
+      
+        for (String suffix:_gzipEquivalentFileExtensions)
+            if (path.endsWith(suffix))
+                return true;
+        return false;
     }
 
     /* ------------------------------------------------------------ */
@@ -1018,7 +1058,15 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     /* ------------------------------------------------------------ */
     protected void writeHeaders(HttpServletResponse response,HttpContent content,long count)
-    {        
+    {
+        if (content == null)
+        {
+            // No content, then no headers to process
+            // This is possible during bypass write because of wrapping
+            // See .sendData() for more details.
+            return;
+        }
+        
         if (content.getContentType()!=null && response.getContentType()==null)
             response.setContentType(content.getContentType().toString());
 

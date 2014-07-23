@@ -20,12 +20,10 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectionKey;
-import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
@@ -37,7 +35,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -208,7 +205,8 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("factories") ConnectionFactory... factories)
     {
         super(server,executor,scheduler,bufferPool,acceptors,factories);
-        _manager = new ServerConnectorManager(getExecutor(), getScheduler(), selectors > 0 ? selectors : Runtime.getRuntime().availableProcessors());
+        _manager = new ServerConnectorManager(getExecutor(), getScheduler(), 
+            selectors>0?selectors:Math.max(1,Math.min(4,Runtime.getRuntime().availableProcessors()/2)));
         addBean(_manager, true);
     }
 

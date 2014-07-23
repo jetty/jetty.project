@@ -663,7 +663,49 @@ public class URIUtil
         }
         return false;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Create a new URI from the arguments, handling IPv6 host encoding and default ports
+     * @param scheme
+     * @param server
+     * @param port
+     * @param path
+     * @param query
+     * @return A String URI
+     */
+    public static String newURI(String scheme,String server, int port,String path,String query)
+    {
+        StringBuilder builder = newURIBuilder(scheme, server, port);
+        builder.append(path);
+        if (query!=null && query.length()>0)
+            builder.append('?').append(query);
+        return builder.toString();
+    }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Create a new URI StringBuilder from the arguments, handling IPv6 host encoding and default ports
+     * @param scheme
+     * @param server
+     * @param port
+     * @return a StringBuilder containing URI prefix
+     */
+    public static StringBuilder newURIBuilder(String scheme,String server, int port)
+    {
+        StringBuilder builder = new StringBuilder();
+        appendSchemeHostPort(builder, scheme, server, port);
+        return builder;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports</p>
+     * @param url StringBuilder to append to
+     * @param scheme
+     * @param server
+     * @param port
+     */
     public static void appendSchemeHostPort(StringBuilder url,String scheme,String server, int port)
     {
         if (server.indexOf(':')>=0&&server.charAt(0)!='[')
@@ -671,10 +713,34 @@ public class URIUtil
         else
             url.append(scheme).append("://").append(server);
 
-        if (port > 0 && (("http".equalsIgnoreCase(scheme) && port != 80) || ("https".equalsIgnoreCase(scheme) && port != 443)))
-            url.append(':').append(port);
+        if (port > 0)
+        {
+            switch(scheme)
+            {
+                case "http":
+                    if (port!=80) 
+                        url.append(':').append(port);
+                    break;
+                    
+                case "https":
+                    if (port!=443) 
+                        url.append(':').append(port);
+                    break;
+
+                default:
+                    url.append(':').append(port);
+            }
+        }
     }
     
+    /* ------------------------------------------------------------ */
+    /** 
+     * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports</p>
+     * @param url StringBuffer to append to
+     * @param scheme
+     * @param server
+     * @param port
+     */
     public static void appendSchemeHostPort(StringBuffer url,String scheme,String server, int port)
     {
         synchronized (url)
@@ -684,9 +750,54 @@ public class URIUtil
             else
                 url.append(scheme).append("://").append(server);
 
-            if (port > 0 && (("http".equalsIgnoreCase(scheme) && port != 80) || ("https".equalsIgnoreCase(scheme) && port != 443)))
-                url.append(':').append(port);
+            if (port > 0)
+            {
+                switch(scheme)
+                {
+                    case "http":
+                        if (port!=80) 
+                            url.append(':').append(port);
+                        break;
+                        
+                    case "https":
+                        if (port!=443) 
+                            url.append(':').append(port);
+                        break;
+
+                    default:
+                        url.append(':').append(port);
+                }
+            }
         }
+    }
+
+    public static boolean equalsIgnoreEncodings(String uriA, String uriB)
+    {
+        int lenA=uriA.length();
+        int lenB=uriB.length();
+        int a=0;
+        int b=0;
+        
+        while (a<lenA && b<lenB)
+        {
+            int oa=uriA.charAt(a++);
+            int ca=oa;
+            if (ca=='%')
+                ca=TypeUtil.convertHexDigit(uriA.charAt(a++))*16+TypeUtil.convertHexDigit(uriA.charAt(a++));
+            
+            int ob=uriB.charAt(b++);
+            int cb=ob;
+            if (cb=='%')
+                cb=TypeUtil.convertHexDigit(uriB.charAt(b++))*16+TypeUtil.convertHexDigit(uriB.charAt(b++));
+            
+            if (ca!=cb)
+                return false;
+            
+            if (ca=='/' && oa!=ob)
+                return false;
+        }
+        
+        return a==lenA && b==lenB;
     }
 }
 

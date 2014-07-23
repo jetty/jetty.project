@@ -20,8 +20,6 @@ package org.eclipse.jetty.io;
 
 import java.io.Closeable;
 
-import org.eclipse.jetty.util.Callback;
-
 /**
  * <p>A {@link Connection} is associated to an {@link EndPoint} so that I/O events
  * happening on the {@link EndPoint} can be processed by the {@link Connection}.</p>

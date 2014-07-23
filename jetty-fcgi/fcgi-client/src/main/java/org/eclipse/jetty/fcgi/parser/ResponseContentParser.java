@@ -89,7 +89,8 @@ public class ResponseContentParser extends StreamContentParser
 
         public boolean parse(ByteBuffer buffer)
         {
-            LOG.debug("Response {} {} content {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Response {} {} content {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
 
             int remaining = buffer.remaining();
             while (remaining > 0)
@@ -186,7 +187,8 @@ public class ResponseContentParser extends StreamContentParser
             }
             catch (Throwable x)
             {
-                logger.debug("Exception while invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
             }
             return false;
         }
@@ -199,7 +201,8 @@ public class ResponseContentParser extends StreamContentParser
             }
             catch (Throwable x)
             {
-                logger.debug("Exception while invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
             }
         }
 
@@ -211,7 +214,8 @@ public class ResponseContentParser extends StreamContentParser
             }
             catch (Throwable x)
             {
-                logger.debug("Exception while invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
             }
         }
 
@@ -232,7 +236,8 @@ public class ResponseContentParser extends StreamContentParser
             }
             catch (Throwable x)
             {
-                logger.debug("Exception while invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
             }
         }
 
@@ -264,7 +269,8 @@ public class ResponseContentParser extends StreamContentParser
             }
             catch (Throwable x)
             {
-                logger.debug("Exception while invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
                 return false;
             }
         }

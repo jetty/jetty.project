@@ -34,21 +34,21 @@ public class SessionValueSavingTest extends AbstractSessionValueSavingTest
         return new JdbcTestServer(port,max,scavenge);
     }
 
-	@Test
-	public void testSessionValueSaving() throws Exception 
-	{
-		super.testSessionValueSaving();
-	} 
+        @Test
+        public void testSessionValueSaving() throws Exception 
+        {
+                super.testSessionValueSaving();
+        } 
 
-	@After
-	public void tearDown() throws Exception 
-	{
-	    try
-	    {
-	        DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-	    }
-	    catch( SQLException expected )
-	    {
-	    }
-	}
+        @After
+        public void tearDown() throws Exception 
+        {
+            try
+            {
+                DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
+            }
+            catch( SQLException expected )
+            {
+            }
+        }
 }

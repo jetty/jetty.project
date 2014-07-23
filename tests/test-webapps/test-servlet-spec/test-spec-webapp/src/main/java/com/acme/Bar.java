@@ -20,9 +20,9 @@ package com.acme;
 
 
 public class Bar {
-	
-	@Foo(2)
-	public void someMethod () {
-	}
+        
+        @Foo(2)
+        public void someMethod () {
+        }
 
 }

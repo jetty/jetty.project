@@ -23,6 +23,7 @@ import java.nio.ByteBuffer;
 import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.Map;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
@@ -97,7 +98,7 @@ public class ServletTester extends ContainerLifeCycle
         return _context.getAttribute(name);
     }
 
-    public Enumeration getAttributeNames()
+    public Enumeration<String> getAttributeNames()
     {
         return _context.getAttributeNames();
     }
@@ -122,7 +123,7 @@ public class ServletTester extends ContainerLifeCycle
         return _context.setInitParameter(name,value);
     }
 
-    public Enumeration getInitParameterNames()
+    public Enumeration<String> getInitParameterNames()
     {
         return _context.getInitParameterNames();
     }
@@ -191,10 +192,20 @@ public class ServletTester extends ContainerLifeCycle
     {
         return _connector.getResponses(request);
     }
-
+    
+    public String getResponses(String request, long idleFor,TimeUnit units) throws Exception
+    {
+        return _connector.getResponses(request, idleFor, units);
+    }
+    
     public ByteBuffer getResponses(ByteBuffer request) throws Exception
     {
         return _connector.getResponses(request);
+    }
+    
+    public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
+    {
+        return _connector.getResponses(requestsBuffer, idleFor, units);
     }
 
     /* ------------------------------------------------------------ */

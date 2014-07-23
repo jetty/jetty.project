@@ -27,10 +27,6 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Locale;
-import java.util.Set;
-
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;

@@ -23,7 +23,6 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 
@@ -83,13 +82,19 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
                 if (events.isBinaryPartialSupported())
                 {
                     // Partial Message Support (does not use messageAppender)
-                    LOG.debug("Partial Binary Message: fin={}",fin);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Partial Binary Message: fin={}",fin);
+                    }
                     activeMessage = new BinaryPartialOnMessage(this);
                 }
                 else
                 {
                     // Whole Message Support
-                    LOG.debug("Whole Binary Message");
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Whole Binary Message");
+                    }
                     activeMessage = new SimpleBinaryMessage(this);
                 }
             }
@@ -101,7 +106,10 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
             // Streaming Message Support
             if (activeMessage == null)
             {
-                LOG.debug("Binary Message InputStream");
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Binary Message InputStream");
+                }
                 final MessageInputStream stream = new MessageInputStream();
                 activeMessage = stream;
 
@@ -124,7 +132,10 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
             }
         }
 
-        LOG.debug("handled = {}",handled);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("handled = {}",handled);
+        }
 
         // Process any active MessageAppender
         if (handled && (activeMessage != null))
@@ -290,13 +301,19 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
                 if (events.isTextPartialSupported())
                 {
                     // Partial Message Support
-                    LOG.debug("Partial Text Message: fin={}",fin);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Partial Text Message: fin={}",fin);
+                    }
                     activeMessage = new TextPartialOnMessage(this);
                 }
                 else
                 {
                     // Whole Message Support
-                    LOG.debug("Whole Text Message");
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Whole Text Message");
+                    }
                     activeMessage = new SimpleTextMessage(this);
                 }
             }
@@ -308,7 +325,10 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
             // Streaming Message Support
             if (activeMessage == null)
             {
-                LOG.debug("Text Message Writer");
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Text Message Writer");
+                }
 
                 final MessageReader stream = new MessageReader(new MessageInputStream());
                 activeMessage = stream;
@@ -332,7 +352,10 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
             }
         }
 
-        LOG.debug("handled = {}",handled);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("handled = {}", handled);
+        }
 
         // Process any active MessageAppender
         if (handled && (activeMessage != null))
@@ -347,7 +370,10 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
     @Override
     public void onTextMessage(String message)
     {
-        LOG.debug("onText({})",message);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onText({})",message);
+        }
 
         try
         {

@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
@@ -159,14 +158,11 @@ public class SharedBlockingCallback
             {
                 if (_state == null)
                 {
-                    // TODO remove when feedback received on 435322
-                    if (cause==null)
-                        LOG.warn("null failed cause (please report stack trace) ",new Throwable());
                     _state = cause==null?FAILED:cause;
                     _complete.signalAll();
                 }
                 else if (_state == IDLE)
-                    throw new IllegalStateException("IDLE");
+                    throw new IllegalStateException("IDLE",cause);
             }
             finally
             {
@@ -249,9 +245,15 @@ public class SharedBlockingCallback
             }
             finally
             {
-                _state = IDLE;
-                _idle.signalAll();
-                _lock.unlock();
+                try 
+                {
+                    _state = IDLE;
+                    _idle.signalAll();
+                } 
+                finally 
+                {
+                    _lock.unlock();
+                }
             }
         }
 

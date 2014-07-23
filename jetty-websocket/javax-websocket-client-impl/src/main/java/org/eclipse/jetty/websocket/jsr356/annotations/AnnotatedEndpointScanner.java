@@ -22,7 +22,6 @@ import java.lang.annotation.Annotation;
 import java.lang.reflect.Method;
 import java.util.LinkedList;
 import java.util.List;
-
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnClose;
 import javax.websocket.OnError;
@@ -89,7 +88,10 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
     @Override
     public void onMethodAnnotation(AnnotatedEndpointMetadata<T, C> metadata, Class<?> pojo, Method method, Annotation annotation)
     {
-        LOG.debug("onMethodAnnotation({}, {}, {}, {})",metadata,pojo,method,annotation);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onMethodAnnotation({}, {}, {}, {})",metadata,pojo,method,annotation);
+        }
 
         if (isAnnotation(annotation,OnOpen.class))
         {
@@ -190,11 +192,17 @@ public class AnnotatedEndpointScanner<T extends Annotation, C extends EndpointCo
     {
         for (IJsrParamId paramId : paramIds)
         {
-            LOG.debug("{}.process()",paramId);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{}.process()",paramId);
+            }
             if (paramId.process(param,callable))
             {
                 // Successfully identified
-                LOG.debug("Identified: {}",param);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Identified: {}",param);
+                }
                 return true;
             }
         }

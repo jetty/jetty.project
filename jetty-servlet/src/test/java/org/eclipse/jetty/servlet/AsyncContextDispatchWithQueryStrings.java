@@ -45,67 +45,67 @@ import org.junit.Test;
  */
 public class AsyncContextDispatchWithQueryStrings {
 
-	private Server _server = new Server();
-	private ServletContextHandler _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
-	private LocalConnector _connector = new LocalConnector(_server);
+        private Server _server = new Server();
+        private ServletContextHandler _contextHandler = new ServletContextHandler(ServletContextHandler.NO_SESSIONS);
+        private LocalConnector _connector = new LocalConnector(_server);
 
-	@Before
-	public void setUp() throws Exception {
-		_connector.setIdleTimeout(30000);
-		_server.setConnectors(new Connector[] { _connector });
+        @Before
+        public void setUp() throws Exception {
+                _connector.setIdleTimeout(30000);
+                _server.setConnectors(new Connector[] { _connector });
 
-		_contextHandler.setContextPath("/");
-		_contextHandler.addServlet(new ServletHolder(new TestServlet()), "/initialCall");
-		_contextHandler.addServlet(new ServletHolder(new TestServlet()), "/firstDispatchWithNewQueryString");
-		_contextHandler.addServlet(new ServletHolder(new TestServlet()), "/secondDispatchNewValueForExistingQueryString");
+                _contextHandler.setContextPath("/");
+                _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/initialCall");
+                _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/firstDispatchWithNewQueryString");
+                _contextHandler.addServlet(new ServletHolder(new TestServlet()), "/secondDispatchNewValueForExistingQueryString");
 
-		HandlerList handlers = new HandlerList();
-		handlers.setHandlers(new Handler[] { _contextHandler, new DefaultHandler() });
+                HandlerList handlers = new HandlerList();
+                handlers.setHandlers(new Handler[] { _contextHandler, new DefaultHandler() });
 
-		_server.setHandler(handlers);
-		_server.start();
-	}
+                _server.setHandler(handlers);
+                _server.start();
+        }
 
-	@Test
-	public void testMultipleDispatchesWithNewQueryStrings() throws Exception {
-		String request = "GET /initialCall?initialParam=right HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
-				+ "Connection: close\r\n" + "\r\n";
-		String responseString = _connector.getResponses(request);
-		assertTrue("Not the expected response. Check STDOUT for details.", responseString.startsWith("HTTP/1.1 200"));
-	}
+        @Test
+        public void testMultipleDispatchesWithNewQueryStrings() throws Exception {
+                String request = "GET /initialCall?initialParam=right HTTP/1.1\r\n" + "Host: localhost\r\n" + "Content-Type: application/x-www-form-urlencoded\r\n"
+                                + "Connection: close\r\n" + "\r\n";
+                String responseString = _connector.getResponses(request);
+                assertTrue("Not the expected response. Check STDOUT for details.", responseString.startsWith("HTTP/1.1 200"));
+        }
 
-	@After
-	public void tearDown() throws Exception {
-		_server.stop();
-		_server.join();
-	}
+        @After
+        public void tearDown() throws Exception {
+                _server.stop();
+                _server.join();
+        }
 
-	private class TestServlet extends HttpServlet {
-		private static final long serialVersionUID = 1L;
+        private class TestServlet extends HttpServlet {
+                private static final long serialVersionUID = 1L;
 
-		@Override
-		protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
-			String path = request.getRequestURI();
-			String queryString = request.getQueryString();
-			if ("/initialCall".equals(path)) 
-			{
-			    AsyncContext async = request.startAsync();
-		            async.dispatch("/firstDispatchWithNewQueryString?newQueryString=initialValue");
-	                    assertEquals("initialParam=right", queryString);
-			} 
-			else if ("/firstDispatchWithNewQueryString".equals(path)) 
-			{
+                @Override
+                protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException {
+                        String path = request.getRequestURI();
+                        String queryString = request.getQueryString();
+                        if ("/initialCall".equals(path)) 
+                        {
+                            AsyncContext async = request.startAsync();
+                            async.dispatch("/firstDispatchWithNewQueryString?newQueryString=initialValue");
+                            assertEquals("initialParam=right", queryString);
+                        } 
+                        else if ("/firstDispatchWithNewQueryString".equals(path)) 
+                        {
                             AsyncContext async = request.startAsync();
                             async.dispatch("/secondDispatchNewValueForExistingQueryString?newQueryString=newValue");
                             assertEquals("newQueryString=initialValue&initialParam=right", queryString);
-			} 
-			else 
-			{
-			    response.setContentType("text/html");
-			    response.setStatus(HttpServletResponse.SC_OK);
-			    response.getWriter().println("<h1>woohhooooo</h1>");
-			    assertEquals("newQueryString=newValue&initialParam=right", queryString);
-			}
-		}
-	}
+                        } 
+                        else 
+                        {
+                            response.setContentType("text/html");
+                            response.setStatus(HttpServletResponse.SC_OK);
+                            response.getWriter().println("<h1>woohhooooo</h1>");
+                            assertEquals("newQueryString=newValue&initialParam=right", queryString);
+                        }
+                }
+        }
 }

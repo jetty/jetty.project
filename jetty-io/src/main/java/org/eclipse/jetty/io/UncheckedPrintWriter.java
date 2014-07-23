@@ -129,7 +129,8 @@ public class UncheckedPrintWriter extends PrintWriter
             _ioException.initCause(th);
         }
 
-        LOG.debug(th);
+        if (LOG.isDebugEnabled())
+            LOG.debug(th);
     }
 
 

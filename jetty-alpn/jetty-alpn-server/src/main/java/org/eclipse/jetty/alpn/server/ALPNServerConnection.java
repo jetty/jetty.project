@@ -62,7 +62,8 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
         {
             negotiated = getDefaultProtocol();
         }
-        LOG.debug("{} protocol selected {}", this, negotiated);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} protocol selected {}", this, negotiated);
         setProtocol(negotiated);
         ALPN.remove(getSSLEngine());
         return negotiated;

@@ -24,7 +24,6 @@ import java.util.Collections;
 import java.util.Iterator;
 
 import org.eclipse.jetty.client.api.ContentProvider;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -130,7 +129,8 @@ public class HttpContent implements Callback, Closeable
             if (content != AFTER)
             {
                 content = buffer = AFTER;
-                LOG.debug("Advanced content past last chunk");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Advanced content past last chunk");
             }
             return false;
         }

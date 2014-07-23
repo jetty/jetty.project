@@ -153,7 +153,7 @@ public class FuturePromise<C> implements Future<C>,Promise<C>
     @Override
     public String toString()
     {
-        return String.format("FutureCallback@%x{%b,%b,%s}",hashCode(),_done,_cause==COMPLETED,_result);
+        return String.format("FutureCallback@%x{%b,%b,%s}",hashCode(),_done.get(),_cause==COMPLETED,_result);
     }
     
 }

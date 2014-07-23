@@ -262,16 +262,14 @@ public class IteratingCallbackTest
         int processed=0;
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             completed.countDown();
         }
         
-
         @Override
-        public void failed(Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
-            super.failed(x);
             completed.countDown();
         }
 

@@ -29,6 +29,7 @@ public class SimplestServer
     {
         Server server = new Server(8080);
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }

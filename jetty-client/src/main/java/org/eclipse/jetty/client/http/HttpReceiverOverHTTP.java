@@ -120,7 +120,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             }
             catch (Throwable x)
             {
-                LOG.debug(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
                 failAndClose(x);
                 return true;
             }
@@ -230,7 +231,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             @Override
             public void resume()
             {
-                LOG.debug("Content consumed asynchronously, resuming processing");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Content consumed asynchronously, resuming processing");
                 process();
             }
 

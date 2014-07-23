@@ -30,8 +30,8 @@ import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.BlockingWriteCallback;
-import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.BlockingWriteCallback.WriteBlocker;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 
 /**
@@ -121,7 +121,8 @@ public class MessageWriter extends Writer
         {
             flush(true);
             bufferPool.release(buffer);
-            LOG.debug("Stream closed, {} frames sent", frameCount);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stream closed, {} frames sent", frameCount);
             // Notify without holding locks.
             notifySuccess();
         }
@@ -143,7 +144,8 @@ public class MessageWriter extends Writer
             closed = fin;
 
             ByteBuffer data = utf.getByteBuffer();
-            LOG.debug("flush({}): {}", fin, BufferUtil.toDetailString(buffer));
+            if (LOG.isDebugEnabled())
+                LOG.debug("flush({}): {}", fin, BufferUtil.toDetailString(buffer));
             frame.setPayload(data);
             frame.setFin(fin);
 

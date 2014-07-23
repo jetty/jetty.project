@@ -258,9 +258,11 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.17</version>
           <configuration>
             <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
+            <runMode>random</runMode>
             <systemProperties>
               <!--
               <property>
@@ -878,6 +880,32 @@
       </properties>
     </profile>
     <profile>
+      <id>7u60</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_60</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.7.v20140316</npn.version>
+        <alpn.version>7.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u65</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_65</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.7.v20140316</npn.version>
+        <alpn.version>7.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
       <id>8u00</id>
       <activation>
         <property>
@@ -895,6 +923,18 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_05</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u11</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_11</value>
         </property>
       </activation>
       <properties>

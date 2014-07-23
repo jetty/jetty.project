@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.List;
-
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
@@ -44,7 +43,10 @@ public class BasicServerEndpointConfigurator extends ServerEndpointConfig.Config
     @Override
     public <T> T getEndpointInstance(Class<T> endpointClass) throws InstantiationException
     {
-        LOG.debug(".getEndpointInstance({})",endpointClass);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug(".getEndpointInstance({})",endpointClass);
+        }
         try
         {
             return endpointClass.newInstance();

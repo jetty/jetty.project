@@ -67,8 +67,8 @@ public class ClientConnectTest
         Throwable cause = e.getCause();
         if(!errorClass.isInstance(cause)) 
         {
-        	cause.printStackTrace(System.err);
-        	Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
+                cause.printStackTrace(System.err);
+                Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
         }
 
         // Validate websocket captured cause
@@ -359,15 +359,15 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-        	if(OS.IS_WINDOWS) 
-        	{
-        		// On windows, this is a SocketTimeoutException
-        		assertExpectedError(e, wsocket, SocketTimeoutException.class);
-        	} else
-        	{
-	            // Expected path - java.net.ConnectException
-	            assertExpectedError(e,wsocket,ConnectException.class);
-        	}
+                if(OS.IS_WINDOWS) 
+                {
+                        // On windows, this is a SocketTimeoutException
+                        assertExpectedError(e, wsocket, SocketTimeoutException.class);
+                } else
+                {
+                    // Expected path - java.net.ConnectException
+                    assertExpectedError(e,wsocket,ConnectException.class);
+                }
         }
     }
 

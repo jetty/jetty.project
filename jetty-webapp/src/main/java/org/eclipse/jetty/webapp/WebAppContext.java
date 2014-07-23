@@ -914,7 +914,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     protected void loadConfigurations()
-    	throws Exception
+        throws Exception
     {
         //if the configuration instances have been set explicitly, use them
         if (_configurations.size()>0)

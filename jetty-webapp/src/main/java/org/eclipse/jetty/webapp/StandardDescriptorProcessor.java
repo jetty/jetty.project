@@ -33,7 +33,6 @@ import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
 import javax.servlet.SessionTrackingMode;
 
 import org.eclipse.jetty.security.ConstraintAware;
@@ -284,23 +283,15 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
 
         String servlet_class = node.getString("servlet-class", false, true);
-
+        if ("".equals(servlet_class))
+            servlet_class = null;
 
         //Handle the default jsp servlet instance
-        if (id != null && id.equals("jsp"))
+        if (id != null && id.equals("jsp") && servlet_class != null)
         {
             try
             {
                 Loader.loadClass(this.getClass(), servlet_class);
-
-                //Ensure there is a scratch dir
-                if (holder.getInitParameter("scratchdir") == null)
-                {
-                    File tmp = context.getTempDirectory();
-                    File scratch = new File(tmp, "jsp");
-                    if (!scratch.exists()) scratch.mkdir();
-                    holder.setInitParameter("scratchdir", scratch.getAbsolutePath());
-                }
             }
             catch (ClassNotFoundException e)
             {

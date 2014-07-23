@@ -156,7 +156,8 @@ public class HttpRedirector
             URI newURI = extractRedirectURI(response);
             if (newURI != null)
             {
-                LOG.debug("Redirecting to {} (Location: {})", newURI, location);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Redirecting to {} (Location: {})", newURI, location);
                 return redirect(request, response, listener, newURI);
             }
             else

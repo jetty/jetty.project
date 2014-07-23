@@ -240,18 +240,18 @@ public class ResourceHandler extends HandlerWrapper
      */
     public Resource getStylesheet()
     {
-    	if(_stylesheet != null)
-    	{
-    	    return _stylesheet;
-    	}
-    	else
-    	{
-    	    if(_defaultStylesheet == null)
-    	    {
-    	        _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
-    	    }
-    	    return _defaultStylesheet;
-    	}
+        if(_stylesheet != null)
+        {
+            return _stylesheet;
+        }
+        else
+        {
+            if(_defaultStylesheet == null)
+            {
+                _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
+            }
+            return _defaultStylesheet;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -269,12 +269,12 @@ public class ResourceHandler extends HandlerWrapper
                 _stylesheet = null;
             }
         }
-    	catch(Exception e)
-    	{
-    	    LOG.warn(e.toString());
-    	    LOG.debug(e);
-    	    throw new IllegalArgumentException(stylesheet);
-    	}
+        catch(Exception e)
+        {
+            LOG.warn(e.toString());
+            LOG.debug(e);
+            throw new IllegalArgumentException(stylesheet);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -308,15 +308,16 @@ public class ResourceHandler extends HandlerWrapper
         {
             if (_context==null)
                 return null;
-            base=_context.getBaseResource();
-            if (base==null)
-                return null;
+            return _context.getResource(path);
         }
 
         try
         {
             path=URIUtil.canonicalPath(path);
-            return base.addPath(path);
+            Resource r = base.addPath(path);
+            if (r!=null && r.getAlias()!=null && !_context.checkAlias(path, r))
+                return null;
+            return r;
         }
         catch(Exception e)
         {

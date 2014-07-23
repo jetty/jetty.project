@@ -209,14 +209,16 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
             {
                 for (String type:MimeTypes.getKnownMimeTypes())
                 {
+                    if (type.equals("image/svg+xml")) //always compressable (unless .svgz file)
+                        continue;
                     if (type.startsWith("image/")||
                         type.startsWith("audio/")||
                         type.startsWith("video/"))
                         _mimeTypes.add(type);
-                    _mimeTypes.add("application/compress");
-                    _mimeTypes.add("application/zip");
-                    _mimeTypes.add("application/gzip");
                 }
+                _mimeTypes.add("application/compress");
+                _mimeTypes.add("application/zip");
+                _mimeTypes.add("application/gzip");
             }
             else
             {
@@ -315,21 +317,32 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
             super.doFilter(request,response,chain);
             return;
         }
-        
+
         // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
-        if (_mimeTypes.size()>0)
+        if (_mimeTypes.size()>0 && _excludeMimeTypes)
         {
             String mimeType = _context.getMimeType(request.getRequestURI());
-            
-            if (mimeType!=null && _mimeTypes.contains(mimeType)==_excludeMimeTypes)
+
+            if (mimeType!=null)
             {
-                LOG.debug("{} excluded by path suffix {}",this,request);
-                // handle normally without setting vary header
-                super.doFilter(request,response,chain);
-                return;
+                mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
+                if (_mimeTypes.contains(mimeType))
+                {
+                    LOG.debug("{} excluded by path suffix {}",this,request);
+                    // handle normally without setting vary header
+                    super.doFilter(request,response,chain);
+                    return;
+                }
             }
         }
 
+        //If the Content-Encoding is already set, then we won't compress
+        if (response.getHeader("Content-Encoding") != null)
+        {
+            super.doFilter(request,response,chain);
+            return;
+        }
+        
         if (_checkGzExists && request.getServletContext()!=null)
         {
             String path=request.getServletContext().getRealPath(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()));

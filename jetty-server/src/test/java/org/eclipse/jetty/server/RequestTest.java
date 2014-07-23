@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertNotNull;
@@ -483,7 +485,7 @@ public class RequestTest
         assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://[::1]/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("80",results.get(i++));
 
 
@@ -497,7 +499,7 @@ public class RequestTest
         assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://[::1]:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("8888",results.get(i++));
 
 
@@ -513,7 +515,7 @@ public class RequestTest
         assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("https://[::1]/",results.get(i++));
         assertEquals("remote",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("443",results.get(i++));
 
 
@@ -529,7 +531,7 @@ public class RequestTest
         assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("https://[::1]:8888/",results.get(i++));
         assertEquals("remote",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("8888",results.get(i++));
     }
 
@@ -960,7 +962,6 @@ public class RequestTest
         assertEquals("other", cookies.get(1).getName());
         assertEquals("quoted=;value", cookies.get(1).getValue());
 
-
         cookies.clear();
         response=_connector.getResponses(
                 "GET /other HTTP/1.1\n"+
@@ -975,7 +976,8 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n"
         );
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        assertThat(response.substring(15),containsString("HTTP/1.1 200 OK"));
         assertEquals(4,cookies.size());
         assertEquals("name", cookies.get(0).getName());
         assertEquals("value", cookies.get(0).getValue());
@@ -999,7 +1001,8 @@ public class RequestTest
                 "Connection: close\n"+
                 "\n"
         );
-        assertTrue(response.startsWith("HTTP/1.1 200 OK"));
+        assertThat(response,startsWith("HTTP/1.1 200 OK"));
+        assertThat(response.substring(15),containsString("HTTP/1.1 200 OK"));
         assertEquals(4,cookies.size());
         assertEquals("name", cookies.get(0).getName());
         assertEquals("value", cookies.get(0).getValue());

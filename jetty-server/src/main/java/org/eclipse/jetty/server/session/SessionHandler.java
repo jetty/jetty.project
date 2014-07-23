@@ -49,10 +49,12 @@ public class SessionHandler extends ScopedHandler
     final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
 
     public final static EnumSet<SessionTrackingMode> DEFAULT_TRACKING = EnumSet.of(SessionTrackingMode.COOKIE,SessionTrackingMode.URL);
-    
-    public static final Class[] SESSION_LISTENER_TYPES = new Class[] {HttpSessionAttributeListener.class,
-                                                                      HttpSessionIdListener.class,
-                                                                      HttpSessionListener.class};
+
+    @SuppressWarnings("unchecked")
+    public static final Class<? extends EventListener>[] SESSION_LISTENER_TYPES = 
+        new Class[] {HttpSessionAttributeListener.class,
+                     HttpSessionIdListener.class,
+                     HttpSessionListener.class};
 
 
 
@@ -262,7 +264,8 @@ public class SessionHandler extends ScopedHandler
                         requested_session_id = cookies[i].getValue();
                         requested_session_id_from_cookie = true;
 
-                        LOG.debug("Got Session ID {} from cookie",requested_session_id);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Got Session ID {} from cookie",requested_session_id);
 
                         if (requested_session_id != null)
                         {

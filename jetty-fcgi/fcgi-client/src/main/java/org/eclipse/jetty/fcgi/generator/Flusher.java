@@ -82,7 +82,7 @@ public class Flusher
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // We never return Action.SUCCEEDED, so this method is never called.
             throw new IllegalStateException();
@@ -98,7 +98,7 @@ public class Flusher
         }
 
         @Override
-        public void failed(Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
             if (active != null)
                 active.failed(x);
@@ -111,8 +111,6 @@ public class Flusher
                     break;
                 result.failed(x);
             }
-
-            super.failed(x);
         }
     }
 
@@ -137,7 +135,8 @@ public class Flusher
 
         private void shutdown()
         {
-            LOG.debug("Shutting down {}", endPoint);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Shutting down {}", endPoint);
             endPoint.shutdownOutput();
         }
     }

@@ -33,9 +33,9 @@ public class HttpURITest
     {
         {"/path/to/context",null,null,"-1","/path/to/context",null,null,null},
         {"http://example.com/path/to/context;param?query=%22value%22#fragment","http","example.com","-1","/path/to/context","param","query=%22value%22","fragment"},
-        {"http://[::1]/path/to/context;param?query=%22value%22#fragment","http","::1","-1","/path/to/context","param","query=%22value%22","fragment"},
+        {"http://[::1]/path/to/context;param?query=%22value%22#fragment","http","[::1]","-1","/path/to/context","param","query=%22value%22","fragment"},
         {"http://example.com:8080/path/to/context;param?query=%22value%22#fragment","http","example.com","8080","/path/to/context","param","query=%22value%22","fragment"},
-        {"http://[::1]:8080/path/to/context;param?query=%22value%22#fragment","http","::1","8080","/path/to/context","param","query=%22value%22","fragment"},
+        {"http://[::1]:8080/path/to/context;param?query=%22value%22#fragment","http","[::1]","8080","/path/to/context","param","query=%22value%22","fragment"},
     };
     
     public static int

@@ -167,7 +167,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             // random chance to reseed
             if (_reseed>0 && (r0%_reseed)== 1L)
             {
-                LOG.debug("Reseeding {}",this);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Reseeding {}",this);
                 if (_random instanceof SecureRandom)
                 {
                     SecureRandom secure = (SecureRandom)_random;

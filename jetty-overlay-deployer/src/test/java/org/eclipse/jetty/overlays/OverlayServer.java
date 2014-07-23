@@ -86,7 +86,7 @@ public class OverlayServer
         server.setStopAtShutdown(true);
         //server.setSendServerVersion(true);
         
-	// Uncomment to work with JNDI examples
+        // Uncomment to work with JNDI examples
         // new org.eclipse.jetty.plus.jndi.Transaction(new com.atomikos.icatch.jta.UserTransactionImp());
         
 

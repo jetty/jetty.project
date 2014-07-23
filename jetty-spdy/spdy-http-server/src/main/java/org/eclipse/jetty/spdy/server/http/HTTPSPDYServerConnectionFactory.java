@@ -94,7 +94,8 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
             // can arrive on the same connection, so we need to create an
             // HttpChannel for each SYN in order to run concurrently.
 
-            LOG.debug("Received {} on {}", synInfo, stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Received {} on {}", synInfo, stream);
 
             Fields headers = synInfo.getHeaders();
             // According to SPDY/3 spec section 3.2.1 user-agents MUST support gzip compression. Firefox omits the
@@ -136,7 +137,8 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
         @Override
         public void onHeaders(Stream stream, HeadersInfo headersInfo)
         {
-            LOG.debug("Received {} on {}", headersInfo, stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Received {} on {}", headersInfo, stream);
             HttpChannelOverSPDY channel = (HttpChannelOverSPDY)stream.getAttribute(CHANNEL_ATTRIBUTE);
             channel.requestHeaders(headersInfo.getHeaders(), headersInfo.isClose());
         }
@@ -150,7 +152,8 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
         @Override
         public void onData(Stream stream, final DataInfo dataInfo)
         {
-            LOG.debug("Received {} on {}", dataInfo, stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Received {} on {}", dataInfo, stream);
             HttpChannelOverSPDY channel = (HttpChannelOverSPDY)stream.getAttribute(CHANNEL_ATTRIBUTE);
             channel.requestContent(dataInfo, dataInfo.isClose());
         }

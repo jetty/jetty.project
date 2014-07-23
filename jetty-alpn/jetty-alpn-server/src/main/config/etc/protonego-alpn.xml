@@ -3,14 +3,17 @@
 
 <Configure id="protonego" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
     <Arg name="protocols">
-	<Array type="String">
-	    <Item>spdy/3</Item>
-	    <Item>spdy/2</Item>
-	    <Item>http/1.1</Item>
-	</Array>
+        <Array type="String">
+            <Item>spdy/3</Item>
+            <Item>spdy/2</Item>
+            <Item>http/1.1</Item>
+        </Array>
     </Arg>
-   
+
     <Set name="defaultProtocol">http/1.1</Set>
+
+    <!-- Enables NPN debugging on System.err -->
+    <!--<Set class="org.eclipse.jetty.alpn.ALPN" name="debug" type="boolean">true</Set>-->
 
 </Configure>
 

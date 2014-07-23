@@ -82,7 +82,7 @@ public class ServiceConnection
      */
     public String getServiceUrl()
     {
-    	return _serviceUrl;
+        return _serviceUrl;
     }
     
     /* ------------------------------------------------------------ */

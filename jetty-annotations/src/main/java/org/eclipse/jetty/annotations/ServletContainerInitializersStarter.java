@@ -19,12 +19,8 @@
 package org.eclipse.jetty.annotations;
 
 import java.util.List;
-import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
-
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;

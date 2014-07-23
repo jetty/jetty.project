@@ -92,6 +92,9 @@ public class FormAuthModule extends BaseAuthModule
         setErrorPage(errorPage);
     }
 
+    /**
+     * @deprecated
+     */
     public FormAuthModule(CallbackHandler callbackHandler, CrossContextPsuedoSession<UserInfo> ssoSource, 
                           String loginPage, String errorPage)
     {

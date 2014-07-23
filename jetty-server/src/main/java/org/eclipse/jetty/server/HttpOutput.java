@@ -24,10 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
-import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.http.HttpContent;
@@ -160,7 +157,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         catch(IOException e)
                         {
                             LOG.debug(e);
-                            _channel.failed();
+                            _channel.abort();
                         }
                         releaseBuffer();
                         return;
@@ -195,7 +192,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         catch(IOException e)
                         {
                             LOG.debug(e);
-                            _channel.failed();
+                            _channel.abort();
                         }
                         releaseBuffer();
                         return;
@@ -755,7 +752,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         {
                             Throwable th=_onError;
                             _onError=null;
-                            LOG.debug("onError",th);
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("onError",th);
                             _writeListener.onError(th);
                             close();
 
@@ -763,7 +761,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         }
 
                 }
-                continue loop;
+                continue;
             }
 
             switch(_state.get())
@@ -798,7 +796,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private abstract class AsyncICB extends IteratingCallback
     {
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             while(true)
             {
@@ -827,9 +825,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void failed(Throwable e)
+        public void onCompleteFailure(Throwable e)
         {
-            super.failed(e);
             _onError=e;
             _channel.getState().onWritePossible();
         }
@@ -949,9 +946,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
-            super.completed();
+            super.onCompleteSuccess();
             if (_complete)
                 closed();
         }
@@ -1014,9 +1011,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void failed(Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
-            super.failed(x);
+            super.onCompleteFailure(x);
             _channel.getByteBufferPool().release(_buffer);
             try
             {
@@ -1078,9 +1075,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
 
         @Override
-        public void failed(Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
-            super.failed(x);
+            super.onCompleteFailure(x);
             _channel.getByteBufferPool().release(_buffer);
             try
             {
@@ -1092,5 +1089,4 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             }
         }
     }
-
 }

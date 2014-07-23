@@ -86,7 +86,8 @@ public class FileDestroyable implements Destroyable
         {
             if (file.exists())
             {
-                LOG.debug("Destroy {}",file);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Destroy {}",file);
                 IO.delete(file);
             }
         }

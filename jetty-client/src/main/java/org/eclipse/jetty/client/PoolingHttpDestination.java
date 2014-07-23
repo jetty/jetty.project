@@ -93,7 +93,8 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     {
         HttpClient client = getHttpClient();
         final HttpExchange exchange = getHttpExchanges().poll();
-        LOG.debug("Processing exchange {} on connection {}", exchange, connection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing exchange {} on {} of {}", exchange, connection, this);
         if (exchange == null)
         {
             if (!connectionPool.release(connection))
@@ -101,7 +102,8 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
 
             if (!client.isRunning())
             {
-                LOG.debug("{} is stopping", client);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} is stopping", client);
                 connection.close();
             }
         }
@@ -111,7 +113,8 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
             Throwable cause = request.getAbortCause();
             if (cause != null)
             {
-                LOG.debug("Aborted before processing {}: {}", exchange, cause);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Aborted before processing {}: {}", exchange, cause);
                 // It may happen that the request is aborted before the exchange
                 // is created. Aborting the exchange a second time will result in
                 // a no-operation, so we just abort here to cover that edge case.
@@ -145,18 +148,25 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     {
         @SuppressWarnings("unchecked")
         C connection = (C)c;
-        LOG.debug("{} released", connection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} released", connection);
         HttpClient client = getHttpClient();
         if (client.isRunning())
         {
             if (connectionPool.isActive(connection))
+            {
                 process(connection, false);
+            }
             else
-                LOG.debug("{} explicit", connection);
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} explicit", connection);
+            }
         }
         else
         {
-            LOG.debug("{} is stopped", client);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} is stopped", client);
             close(connection);
             connection.close();
         }
@@ -202,5 +212,11 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     public void dump(Appendable out, String indent) throws IOException
     {
         ContainerLifeCycle.dump(out, indent, Arrays.asList(connectionPool));
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s,pool=%s", super.toString(), connectionPool);
     }
 }

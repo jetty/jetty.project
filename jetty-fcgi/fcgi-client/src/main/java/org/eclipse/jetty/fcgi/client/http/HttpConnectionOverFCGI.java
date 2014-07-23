@@ -150,7 +150,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             }
             catch (Exception x)
             {
-                LOG.debug(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
                 close(x);
                 return false;
             }
@@ -415,7 +416,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
         private void noChannel(int request)
         {
-            LOG.debug("Channel not found for request {}", request);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Channel not found for request {}", request);
         }
     }
 }

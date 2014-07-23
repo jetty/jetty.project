@@ -41,12 +41,11 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.security.Password;
+import org.eclipse.jetty.util.security.Credential;
 
 
 /**
  *
- * //TODO JASPI cf JDBCLoginService
  * DataSourceUserRealm
  *
  * Obtain user/password/role information from a database
@@ -70,6 +69,7 @@ public class DataSourceLoginService extends MappedLoginService
     private String _userRoleTableUserKey = "user_id";
     private String _userRoleTableRoleKey = "role_id";
     private int _cacheMs = 30000;
+    private long _lastPurge = 0;
     private String _userSql;
     private String _roleSql;
     private boolean _createTables = false;
@@ -282,7 +282,9 @@ public class DataSourceLoginService extends MappedLoginService
     protected void loadUsers()
     {
     }
-
+    
+ 
+    
     /* ------------------------------------------------------------ */
     /** Load user's info from database.
      *
@@ -293,9 +295,8 @@ public class DataSourceLoginService extends MappedLoginService
     {
         try
         {
-            initDb();
             try (Connection connection = getConnection();
-                    PreparedStatement statement1 = connection.prepareStatement(_userSql))
+                 PreparedStatement statement1 = connection.prepareStatement(_userSql))
             {
                 statement1.setObject(1, userName);
                 try (ResultSet rs1 = statement1.executeQuery())
@@ -311,10 +312,12 @@ public class DataSourceLoginService extends MappedLoginService
                             try (ResultSet rs2 = statement2.executeQuery())
                             {
                                 while (rs2.next())
+                                {
                                     roles.add(rs2.getString(_roleTableRoleField));
+                                }
                             }
                         }
-                        return putUser(userName,new Password(credentials), roles.toArray(new String[roles.size()]));
+                        return putUser(userName, Credential.getCredential(credentials), roles.toArray(new String[roles.size()]));
                     }
                 }
             }
@@ -328,6 +331,22 @@ public class DataSourceLoginService extends MappedLoginService
             LOG.warn("Problem loading user info for "+userName, e);
         }
         return null;
+    }
+    
+    
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public UserIdentity login(String username, Object credentials)
+    {
+        long now = System.currentTimeMillis();
+        if (now - _lastPurge > _cacheMs || _cacheMs == 0)
+        {
+            _users.clear();
+            _lastPurge = now;
+        }
+ 
+        return super.login(username,credentials);
     }
 
     /* ------------------------------------------------------------ */
@@ -347,7 +366,7 @@ public class DataSourceLoginService extends MappedLoginService
         InitialContext ic = new InitialContext();
         assert ic!=null;
 
-        //TODO webapp scope?
+        //TODO Should we try webapp scope too?
 
         //try finding the datasource in the Server scope
         if (_server != null)

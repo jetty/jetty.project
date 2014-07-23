@@ -56,7 +56,8 @@ public class AllowSymLinkAliasChecker implements AliasCheck
                 URI real = file.toPath().toRealPath().toUri();
                 if (real.equals(resource.getAlias()))
                 {
-                    LOG.debug("Allow symlink {} --> {}",resource,real);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Allow symlink {} --> {}",resource,real);
                     return true;
                 }
             }
@@ -79,7 +80,8 @@ public class AllowSymLinkAliasChecker implements AliasCheck
                 }
                 if (resource.getAlias().equals(d.toURI()))
                 {
-                    LOG.debug("Allow symlink {} --> {}",resource,d);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Allow symlink {} --> {}",resource,d);
                     return true;
                 }
             }

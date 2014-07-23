@@ -30,7 +30,6 @@ import java.nio.file.StandardOpenOption;
 import java.util.Iterator;
 import java.util.NoSuchElementException;
 
-import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -107,7 +106,8 @@ public class PathContentProvider extends AbstractTypedContentProvider
                 if (channel == null)
                 {
                     channel = Files.newByteChannel(filePath, StandardOpenOption.READ);
-                    LOG.debug("Opened file {}", filePath);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Opened file {}", filePath);
                 }
 
                 buffer.clear();

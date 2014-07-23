@@ -495,7 +495,6 @@ public class PartialRFC2616Test
              "Host: localhost\n"+
              "\n");
          offset=checkContains(response,offset, "HTTP/1.1 200","200")+1;
-         offset=checkContains(response,offset, "Allow: GET,POST,HEAD,OPTIONS","Allow")+1;
 
          offset=0;
          response=connector.getResponses("GET * HTTP/1.1\n"+

@@ -262,6 +262,7 @@ public class GzipHandler extends HandlerWrapper
                 _mimeTypes.add("application/gzip");
             }
         }
+        super.doStart();
     }
 
     /* ------------------------------------------------------------ */

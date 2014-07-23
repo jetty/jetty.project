@@ -55,8 +55,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  *  This can be used, for example, to deploy a static webapp that is not part of your maven build. 
  *  </p>
  *  <p>
- *  There is a <a href="run-mojo.html">reference guide</a> to the configuration parameters for this plugin, and more detailed information
- *  with examples in the <a href="http://docs.codehaus.org/display/JETTY/Maven+Jetty+Plugin">Configuration Guide</a>.
+ *  There is a <a href="http://www.eclipse.org/jetty/documentation/current/maven-and-jetty.html">reference guide</a> to the configuration parameters for this plugin.
  *  </p>
  * 
  * 

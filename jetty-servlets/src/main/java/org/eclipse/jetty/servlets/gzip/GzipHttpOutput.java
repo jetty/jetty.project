@@ -151,6 +151,16 @@ public class GzipHttpOutput extends HttpOutput
             }
         }
         
+        // Has the Content-Encoding header already been set?
+        String ce=getHttpChannel().getResponse().getHeader("Content-Encoding");
+        if (ce != null)
+        {
+            LOG.debug("{} exclude by content-encoding {}",this,ce);
+            noCompression();
+            super.write(content,complete,callback);
+            return;
+        }
+        
         // Are we the thread that commits?
         if (_state.compareAndSet(GZState.MIGHT_COMPRESS,GZState.COMMITTING))
         {
@@ -188,6 +198,7 @@ public class GzipHttpOutput extends HttpOutput
             
             gzip(content,complete,callback);
         }
+        // TODO else ?
     }
 
     public void noCompression()

@@ -36,7 +36,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.annotation.HandlesTypes;
 
@@ -442,14 +441,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
        
        // Resolve container initializers
        List<ContainerInitializer> initializers = 
-    		   (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
+                   (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
        if (initializers != null && initializers.size()>0)
        {
            Map<String, Set<String>> map = ( Map<String, Set<String>>) context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
            if (map == null)
                LOG.warn ("ServletContainerInitializers: detected. Class hierarchy: empty");
            for (ContainerInitializer i : initializers)
-        	   i.resolveClasses(context,map);
+                   i.resolveClasses(context,map);
        }
     }
 
@@ -557,16 +556,16 @@ public class AnnotationConfiguration extends AbstractConfiguration
         boolean timeout = !latch.await(getMaxScanWait(context), TimeUnit.SECONDS);
           
         if (LOG.isDebugEnabled())
-        {       
+        {
             for (ParserTask p:_parserTasks)
                 LOG.debug("Scanned {} in {}ms", p.getResource(), TimeUnit.MILLISECONDS.convert(p.getStatistic().getElapsed(), TimeUnit.NANOSECONDS));
+
+            LOG.debug("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
+                    _containerPathStats.getTotal(), _webInfLibStats.getTotal(), _webInfClassesStats.getTotal(),
+                    (TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS)),
+                    context);
         }
-        
-        LOG.debug("Scanned {} container path jars, {} WEB-INF/lib jars, {} WEB-INF/classes dirs in {}ms for context {}",
-                 _containerPathStats.getTotal(), _webInfLibStats.getTotal(), _webInfClassesStats.getTotal(),
-                 (TimeUnit.MILLISECONDS.convert(System.nanoTime()-start, TimeUnit.NANOSECONDS)),
-                 context);
-     
+
         if (timeout)
             me.add(new Exception("Timeout scanning annotations"));
         me.ifExceptionThrow();   

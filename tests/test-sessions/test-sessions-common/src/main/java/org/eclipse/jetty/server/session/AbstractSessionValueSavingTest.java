@@ -133,8 +133,8 @@ public abstract class AbstractSessionValueSavingTest
                 System.out.println("not init call " + session);
                 if (session!=null)
                 {
-                	long value = System.currentTimeMillis();
-                	System.out.println("Setting test to : " + value);
+                        long value = System.currentTimeMillis();
+                        System.out.println("Setting test to : " + value);
                     session.setAttribute("test", value);
 
                 }
@@ -148,14 +148,14 @@ public abstract class AbstractSessionValueSavingTest
 
         private void sendResult(HttpSession session, PrintWriter writer)
         {
-        	if (session != null)
-        	{
-        		writer.print(session.getAttribute("test"));
-        	}
-        	else
-        	{
-        		writer.print(0);
-        	}
+                if (session != null)
+                {
+                        writer.print(session.getAttribute("test"));
+                }
+                else
+                {
+                        writer.print(0);
+                }
         }
 
     }

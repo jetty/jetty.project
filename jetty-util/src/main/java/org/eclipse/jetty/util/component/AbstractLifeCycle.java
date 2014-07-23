@@ -174,15 +174,15 @@ public abstract class AbstractLifeCycle implements LifeCycle
     {
         _state = __STARTED;
         if (LOG.isDebugEnabled())
-            
-        LOG.debug(STARTED+" @{}ms {}",ManagementFactory.getRuntimeMXBean().getUptime(),this);
+            LOG.debug(STARTED+" @{}ms {}",ManagementFactory.getRuntimeMXBean().getUptime(),this);
         for (Listener listener : _listeners)
             listener.lifeCycleStarted(this);
     }
 
     private void setStarting()
     {
-        LOG.debug("starting {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("starting {}",this);
         _state = __STARTING;
         for (Listener listener : _listeners)
             listener.lifeCycleStarting(this);
@@ -190,7 +190,8 @@ public abstract class AbstractLifeCycle implements LifeCycle
 
     private void setStopping()
     {
-        LOG.debug("stopping {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("stopping {}",this);
         _state = __STOPPING;
         for (Listener listener : _listeners)
             listener.lifeCycleStopping(this);
@@ -199,7 +200,8 @@ public abstract class AbstractLifeCycle implements LifeCycle
     private void setStopped()
     {
         _state = __STOPPED;
-        LOG.debug("{} {}",STOPPED,this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} {}",STOPPED,this);
         for (Listener listener : _listeners)
             listener.lifeCycleStopped(this);
     }

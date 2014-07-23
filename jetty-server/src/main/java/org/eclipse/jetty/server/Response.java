@@ -112,7 +112,7 @@ public class Response implements HttpServletResponse
     private final HttpFields _fields = new HttpFields();
     private final AtomicInteger _include = new AtomicInteger();
     private HttpOutput _out;
-    private int _status = HttpStatus.NOT_SET_000;
+    private int _status = HttpStatus.OK_200;
     private String _reason;
     private Locale _locale;
     private MimeTypes.Type _mimeType;
@@ -137,7 +137,7 @@ public class Response implements HttpServletResponse
 
     protected void recycle()
     {
-        _status = HttpStatus.NOT_SET_000;
+        _status = HttpStatus.OK_200;
         _reason = null;
         _locale = null;
         _mimeType = null;
@@ -541,10 +541,7 @@ public class Response implements HttpServletResponse
     @Override
     public void sendError(int sc) throws IOException
     {
-        if (sc == 102)
-            sendProcessing();
-        else
-            sendError(sc, null);
+        sendError(sc, null);
     }
 
     @Override
@@ -552,6 +549,17 @@ public class Response implements HttpServletResponse
     {
         if (isIncluding())
             return;
+
+        switch(code)
+        {
+            case -1:
+                _channel.abort();
+                return;
+            case 102:
+                sendProcessing();
+                return;
+            default:
+        }
 
         if (isCommitted())
             LOG.warn("Committed before "+code+" "+message);
@@ -1290,8 +1298,6 @@ public class Response implements HttpServletResponse
 
     protected ResponseInfo newResponseInfo()
     {
-        if (_status == HttpStatus.NOT_SET_000)
-            _status = HttpStatus.OK_200;
         return new ResponseInfo(_channel.getRequest().getHttpVersion(), _fields, getLongContentLength(), getStatus(), getReason(), _channel.getRequest().isHead());
     }
 

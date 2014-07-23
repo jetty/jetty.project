@@ -18,16 +18,16 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.startsWith;
-
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.startsWith;
 
 @SuppressWarnings("serial")
 public class EventCapture extends EventQueue<String>
@@ -67,7 +67,8 @@ public class EventCapture extends EventQueue<String>
     public void add(String format, Object... args)
     {
         String msg = String.format(format,args);
-        LOG.debug("EVENT: {}",msg);
+        if (LOG.isDebugEnabled())
+            LOG.debug("EVENT: {}",msg);
         super.offer(msg);
     }
 

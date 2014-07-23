@@ -50,7 +50,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
      */
     public SpnegoAuthenticator( String authMethod )
     {
-    	_authMethod = authMethod;
+        _authMethod = authMethod;
     }
 
     @Override
@@ -77,10 +77,10 @@ public class SpnegoAuthenticator extends LoginAuthenticator
         {
             try
             {
-            	 if (DeferredAuthentication.isDeferred(res))
-            	 {
+                 if (DeferredAuthentication.isDeferred(res))
+                 {
                      return Authentication.UNAUTHENTICATED;
-            	 }
+                 }
 
                 LOG.debug("SpengoAuthenticator: sending challenge");
                 res.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), HttpHeader.NEGOTIATE.asString());

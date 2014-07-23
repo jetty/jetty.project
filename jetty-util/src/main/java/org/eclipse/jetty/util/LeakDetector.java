@@ -20,7 +20,6 @@ package org.eclipse.jetty.util;
 
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
-import java.lang.ref.WeakReference;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -138,7 +137,8 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
             {
                 @SuppressWarnings("unchecked")
                 LeakInfo leakInfo = (LeakInfo)queue.remove();
-                LOG.debug("Resource GC'ed: {}", leakInfo);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Resource GC'ed: {}", leakInfo);
                 if (resources.remove(leakInfo.id) != null)
                     leaked(leakInfo);
             }

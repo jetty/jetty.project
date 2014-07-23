@@ -218,7 +218,7 @@ public class Flusher
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // will never be called as process always returns SCHEDULED or IDLE
             throw new IllegalStateException();
@@ -242,7 +242,7 @@ public class Flusher
         }
 
         @Override
-        public void failed(Throwable x)
+        public void onCompleteFailure(Throwable x)
         {
             List<StandardSession.FrameBytes> failed = new ArrayList<>();
             synchronized (lock)
@@ -261,7 +261,6 @@ public class Flusher
             // Notify outside the synchronized block.
             for (StandardSession.FrameBytes frame : failed)
                 frame.failed(x);
-            super.failed(x);
         }
     }
 }
