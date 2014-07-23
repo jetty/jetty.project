@@ -158,6 +158,8 @@ public class LocalConnector extends AbstractConnector
 
     private LocalEndPoint executeRequest(ByteBuffer rawRequest)
     {
+        if (!isStarted())
+            throw new IllegalStateException("!STARTED");
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(rawRequest);
         _connects.add(endp);
