@@ -33,7 +33,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.security.CrossContextPsuedoSession;
 import org.eclipse.jetty.security.authentication.DeferredAuthentication;
 import org.eclipse.jetty.security.authentication.LoginCallbackImpl;
 import org.eclipse.jetty.security.authentication.SessionAuthentication;
@@ -79,7 +78,6 @@ public class FormAuthModule extends BaseAuthModule
 
     private String _formLoginPath;
 
-    private CrossContextPsuedoSession<UserInfo> ssoSource;
 
     public FormAuthModule()
     {
@@ -92,17 +90,6 @@ public class FormAuthModule extends BaseAuthModule
         setErrorPage(errorPage);
     }
 
-    /**
-     * @deprecated
-     */
-    public FormAuthModule(CallbackHandler callbackHandler, CrossContextPsuedoSession<UserInfo> ssoSource, 
-                          String loginPage, String errorPage)
-    {
-        super(callbackHandler);
-        this.ssoSource = ssoSource;
-        setLoginPage(loginPage);
-        setErrorPage(errorPage);
-    }
 
     @Override
     public void initialize(MessagePolicy requestPolicy, MessagePolicy responsePolicy, 
@@ -112,7 +99,6 @@ public class FormAuthModule extends BaseAuthModule
         super.initialize(requestPolicy, responsePolicy, handler, options);
         setLoginPage((String) options.get(LOGIN_PAGE_KEY));
         setErrorPage((String) options.get(ERROR_PAGE_KEY));
-        ssoSource = (CrossContextPsuedoSession<UserInfo>) options.get(SSO_SOURCE_KEY);
     }
 
     private void setLoginPage(String path)
@@ -231,17 +217,7 @@ public class FormAuthModule extends BaseAuthModule
 
                 return AuthStatus.SUCCESS;  
             }
-            else if (ssoSource != null)
-            {
-                UserInfo userInfo = ssoSource.fetch(request);
-                if (userInfo != null)
-                {
-                    boolean success = tryLogin(messageInfo, clientSubject, response, session, userInfo.getUserName(), new Password(new String(userInfo.getPassword())));
-                    if (success) { return AuthStatus.SUCCESS; }
-                }
-            }
             
-           
 
             // if we can't send challenge
             if (DeferredAuthentication.isDeferred(response))
@@ -310,12 +286,6 @@ public class FormAuthModule extends BaseAuthModule
                 }
             }
 
-            // Sign-on to SSO mechanism
-            if (ssoSource != null)
-            {
-                UserInfo userInfo = new UserInfo(username, pwdChars);
-                ssoSource.store(userInfo, response);
-            }
             return true;
         }
         return false;
