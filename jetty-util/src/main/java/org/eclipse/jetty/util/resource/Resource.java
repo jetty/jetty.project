@@ -549,7 +549,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             buf.append("</TD></TR>");
         }
         buf.append("</TABLE>\n");
-	buf.append("</BODY></HTML>\n");
+        buf.append("</BODY></HTML>\n");
         
         return buf.toString();
     }

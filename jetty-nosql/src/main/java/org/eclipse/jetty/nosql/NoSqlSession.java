@@ -207,7 +207,7 @@ public class NoSqlSession extends MemSession
     /* ------------------------------------------------------------ */
     public Object getVersion()
     {
-    	return _version;
+        return _version;
     }
 
     @Override

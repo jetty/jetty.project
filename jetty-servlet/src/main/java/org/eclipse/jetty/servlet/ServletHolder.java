@@ -569,7 +569,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     /* ------------------------------------------------------------ */
     private void initServlet()
-    	throws ServletException
+        throws ServletException
     {
         Object old_run_as = null;
         try

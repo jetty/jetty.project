@@ -30,8 +30,8 @@ import org.junit.Test;
  */
 public class ScanningAppProviderStartupTest
 {
-	@Rule
-	public TestingDir testdir = new TestingDir();
+        @Rule
+        public TestingDir testdir = new TestingDir();
     private static XmlConfiguredJetty jetty;
 
     @Before

@@ -49,15 +49,15 @@ public  class WelcomeFilter implements Filter
     public void init(FilterConfig filterConfig)
     {
         welcome=filterConfig.getInitParameter("welcome");
-	if (welcome==null)
-	    welcome="index.html";
+        if (welcome==null)
+            welcome="index.html";
     }
 
     /* ------------------------------------------------------------ */
     public void doFilter(ServletRequest request,
                          ServletResponse response,
                          FilterChain chain)
-	throws IOException, ServletException
+        throws IOException, ServletException
     {
         String path=((HttpServletRequest)request).getServletPath();
         if (welcome!=null && path.endsWith("/"))

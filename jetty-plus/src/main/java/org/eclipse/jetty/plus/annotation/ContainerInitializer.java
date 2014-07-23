@@ -157,7 +157,7 @@ public class ContainerInitializer
                 interested.add(c.getName());
         }
 
-    	return String.format("ContainerInitializer{%s,interested=%s,applicable=%s,annotated=%s}",_target.getClass().getName(),interested,_applicableTypeNames,_annotatedTypeNames);
+        return String.format("ContainerInitializer{%s,interested=%s,applicable=%s,annotated=%s}",_target.getClass().getName(),interested,_applicableTypeNames,_annotatedTypeNames);
     }
 
     public void resolveClasses(WebAppContext context, Map<String, Set<String>> classMap) 
