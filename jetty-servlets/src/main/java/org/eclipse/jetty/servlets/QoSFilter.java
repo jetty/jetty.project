@@ -362,8 +362,10 @@ public class QoSFilter implements Filter
         public void onTimeout(AsyncEvent event) throws IOException
         {
             // Remove before it's redispatched, so it won't be
-            // redispatched again in the finally block below.
-            _queues[priority].remove(event.getAsyncContext());
+            // redispatched again at the end of the filtering.
+            AsyncContext asyncContext = event.getAsyncContext();
+            _queues[priority].remove(asyncContext);
+            asyncContext.dispatch();
         }
 
         @Override
