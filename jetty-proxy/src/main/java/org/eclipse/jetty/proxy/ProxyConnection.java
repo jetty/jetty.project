@@ -119,7 +119,8 @@ public abstract class ProxyConnection extends AbstractConnection
             }
             catch (IOException x)
             {
-                LOG.debug(ProxyConnection.this + " could not fill", x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(ProxyConnection.this + " could not fill", x);
                 disconnect();
                 return Action.SUCCEEDED;
             }

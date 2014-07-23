@@ -32,7 +32,6 @@ import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletContext;
@@ -52,7 +51,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
@@ -203,7 +201,8 @@ public class ProxyServlet extends HttpServlet
         }
         catch (Exception x)
         {
-            _log.debug(x);
+            if (_log.isDebugEnabled())
+                _log.debug(x);
         }
     }
 
@@ -364,7 +363,8 @@ public class ProxyServlet extends HttpServlet
         {
             if (!_whiteList.contains(hostPort))
             {
-                _log.debug("Host {}:{} not whitelisted", host, port);
+                if (_log.isDebugEnabled())
+                    _log.debug("Host {}:{} not whitelisted", host, port);
                 return false;
             }
         }
@@ -372,7 +372,8 @@ public class ProxyServlet extends HttpServlet
         {
             if (_blackList.contains(hostPort))
             {
-                _log.debug("Host {}:{} blacklisted", host, port);
+                if (_log.isDebugEnabled())
+                    _log.debug("Host {}:{} blacklisted", host, port);
                 return false;
             }
         }
@@ -391,7 +392,8 @@ public class ProxyServlet extends HttpServlet
             StringBuffer uri = request.getRequestURL();
             if (request.getQueryString() != null)
                 uri.append("?").append(request.getQueryString());
-            _log.debug("{} rewriting: {} -> {}", requestId, uri, rewrittenURI);
+            if (_log.isDebugEnabled())
+                _log.debug("{} rewriting: {} -> {}", requestId, uri, rewrittenURI);
         }
 
         if (rewrittenURI == null)
@@ -495,7 +497,8 @@ public class ProxyServlet extends HttpServlet
 
     protected void onClientRequestFailure(Request proxyRequest, HttpServletRequest request, Throwable failure)
     {
-        _log.debug(getRequestId(request) + " client request failure", failure);
+        if (_log.isDebugEnabled())
+            _log.debug(getRequestId(request) + " client request failure", failure);
         proxyRequest.abort(failure);
     }
 
@@ -538,7 +541,8 @@ public class ProxyServlet extends HttpServlet
     {
         try
         {
-            _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
+            if (_log.isDebugEnabled())
+                _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
             response.getOutputStream().write(buffer, offset, length);
             callback.succeeded();
         }
@@ -550,27 +554,30 @@ public class ProxyServlet extends HttpServlet
 
     protected void onResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
-        _log.debug("{} proxying successful", getRequestId(request));
+        if (_log.isDebugEnabled())
+            _log.debug("{} proxying successful", getRequestId(request));
         AsyncContext asyncContext = request.getAsyncContext();
         asyncContext.complete();
     }
 
     protected void onResponseFailure(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, Throwable failure)
     {
-        _log.debug(getRequestId(request) + " proxying failed", failure);
+        if (_log.isDebugEnabled())
+            _log.debug(getRequestId(request) + " proxying failed", failure);
         if (response.isCommitted())
         {
-            // Use Jetty specific behavior to close connection
             try
             {
+                // Use Jetty specific behavior to close connection.
                 response.sendError(-1);
+                AsyncContext asyncContext = request.getAsyncContext();
+                asyncContext.complete();
             }
-            catch (IOException e)
+            catch (IOException x)
             {
-                getServletContext().log("close failed", e);
+                if (_log.isDebugEnabled())
+                    _log.debug(getRequestId(request) + " could not close the connection", failure);
             }
-            AsyncContext asyncContext = request.getAsyncContext();
-            asyncContext.complete();
         }
         else
         {
@@ -687,7 +694,8 @@ public class ProxyServlet extends HttpServlet
             String contextPath = config.getServletContext().getContextPath();
             _prefix = _prefix == null ? contextPath : (contextPath + _prefix);
 
-            proxyServlet._log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
+            if (proxyServlet._log.isDebugEnabled())
+                proxyServlet._log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
         }
 
         protected URI rewriteURI(HttpServletRequest request)
@@ -807,7 +815,8 @@ public class ProxyServlet extends HttpServlet
                 onResponseSuccess(request, response, result.getResponse());
             else
                 onResponseFailure(request, response, result.getResponse(), result.getFailure());
-            _log.debug("{} proxying complete", getRequestId(request));
+            if (_log.isDebugEnabled())
+                _log.debug("{} proxying complete", getRequestId(request));
         }
     }
 
@@ -832,7 +841,8 @@ public class ProxyServlet extends HttpServlet
         @Override
         protected ByteBuffer onRead(byte[] buffer, int offset, int length)
         {
-            _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
+            if (_log.isDebugEnabled())
+                _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
             return onRequestContent(proxyRequest, request, buffer, offset, length);
         }
 
