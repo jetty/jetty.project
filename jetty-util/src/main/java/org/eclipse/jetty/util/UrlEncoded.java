@@ -780,6 +780,16 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             }
         }
     }
+
+    /* -------------------------------------------------------------- */
+    /** Decode String with % encoding.
+     * This method makes the assumption that the majority of calls
+     * will need no decoding.
+     */
+    public static String decodeString(String encoded)
+    {
+        return decodeString(encoded,0,encoded.length(),ENCODING);
+    }
     
     /* -------------------------------------------------------------- */
     /** Decode String with % encoding.

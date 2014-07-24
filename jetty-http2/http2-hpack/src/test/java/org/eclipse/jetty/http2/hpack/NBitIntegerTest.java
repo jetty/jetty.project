@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.http2.hpack;
 
+import static org.junit.Assert.assertEquals;
+
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class NBitIntegerTest
 {

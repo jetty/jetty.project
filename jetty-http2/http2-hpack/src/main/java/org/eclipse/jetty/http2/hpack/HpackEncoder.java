@@ -24,6 +24,7 @@ import java.util.EnumSet;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
@@ -139,10 +140,11 @@ public class HpackEncoder
             MetaData.Request request = (MetaData.Request)metadata;
             
             // TODO optimise these to avoid HttpField creation
-            encode(buffer,new HttpField(":scheme",request.getScheme().asString()));
+            String scheme=request.getURI().getScheme();
+            encode(buffer,new HttpField(":scheme",scheme==null?HttpScheme.HTTP.asString():scheme));
             encode(buffer,new HttpField(":method",request.getMethod()));
-            encode(buffer,new HttpField(":authority",request.getPort()>0?(request.getHost()+':'+request.getPort()):request.getHost())); 
-            encode(buffer,new HttpField(":path",request.getURI()));
+            encode(buffer,new HttpField(":authority",request.getURI().getAuthority())); 
+            encode(buffer,new HttpField(":path",request.getURI().getPathQuery()));
             
         }
         else if (metadata.isResponse())

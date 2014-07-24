@@ -19,19 +19,18 @@
 
 package org.eclipse.jetty.http2.hpack;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.TypeUtil;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
 
 
 /* ------------------------------------------------------------ */
@@ -52,9 +51,9 @@ public class HpackDecoderTest
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
         
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP,request.getScheme());
-        assertEquals("/",request.getURI());
-        assertEquals("www.example.com",request.getHost());
+        assertEquals(HttpScheme.HTTP.asString(),request.getURI().getScheme());
+        assertEquals("/",request.getURI().getPath());
+        assertEquals("www.example.com",request.getURI().getHost());
         assertFalse(request.iterator().hasNext());
         
         
@@ -65,9 +64,9 @@ public class HpackDecoderTest
         request = (MetaData.Request)decoder.decode(buffer);
 
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP,request.getScheme());
-        assertEquals("/",request.getURI());
-        assertEquals("www.example.com",request.getHost());
+        assertEquals(HttpScheme.HTTP.asString(),request.getURI().getScheme());
+        assertEquals("/",request.getURI().getPath());
+        assertEquals("www.example.com",request.getURI().getHost());
         Iterator<HttpField> iterator=request.iterator();
         assertTrue(iterator.hasNext());
         assertEquals(new HttpField("cache-control","no-cache"),iterator.next());
@@ -81,9 +80,9 @@ public class HpackDecoderTest
         request = (MetaData.Request)decoder.decode(buffer);
         
         assertEquals("GET",request.getMethod());
-        assertEquals(HttpScheme.HTTPS,request.getScheme());
-        assertEquals("/index.html",request.getURI());
-        assertEquals("www.example.com",request.getHost());
+        assertEquals(HttpScheme.HTTPS.asString(),request.getURI().getScheme());
+        assertEquals("/index.html",request.getURI().getPath());
+        assertEquals("www.example.com",request.getURI().getHost());
         iterator=request.iterator();
         assertTrue(iterator.hasNext());
         assertEquals(new HttpField("custom-key","custom-value"),iterator.next());
@@ -102,9 +101,9 @@ public class HpackDecoderTest
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
         
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP,request.getScheme());
-        assertEquals("/",request.getURI());
-        assertEquals("www.example.com",request.getHost());
+        assertEquals(HttpScheme.HTTP.asString(),request.getURI().getScheme());
+        assertEquals("/",request.getURI().getPath());
+        assertEquals("www.example.com",request.getURI().getHost());
         assertFalse(request.iterator().hasNext());
         
         
@@ -115,9 +114,9 @@ public class HpackDecoderTest
         request = (MetaData.Request)decoder.decode(buffer);
 
         assertEquals("GET", request.getMethod());
-        assertEquals(HttpScheme.HTTP,request.getScheme());
-        assertEquals("/",request.getURI());
-        assertEquals("www.example.com",request.getHost());
+        assertEquals(HttpScheme.HTTP.asString(),request.getURI().getScheme());
+        assertEquals("/",request.getURI().getPath());
+        assertEquals("www.example.com",request.getURI().getHost());
         Iterator<HttpField> iterator=request.iterator();
         assertTrue(iterator.hasNext());
         assertEquals(new HttpField("cache-control","no-cache"),iterator.next());
@@ -130,9 +129,9 @@ public class HpackDecoderTest
         request = (MetaData.Request)decoder.decode(buffer);
         
         assertEquals("GET",request.getMethod());
-        assertEquals(HttpScheme.HTTPS,request.getScheme());
-        assertEquals("/index.html",request.getURI());
-        assertEquals("www.example.com",request.getHost());
+        assertEquals(HttpScheme.HTTPS.asString(),request.getURI().getScheme());
+        assertEquals("/index.html",request.getURI().getPath());
+        assertEquals("www.example.com",request.getURI().getHost());
         iterator=request.iterator();
         assertTrue(iterator.hasNext());
         assertEquals(new HttpField("custom-key","custom-value"),iterator.next());

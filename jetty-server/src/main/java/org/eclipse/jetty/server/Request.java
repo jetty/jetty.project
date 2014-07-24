@@ -922,7 +922,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getProtocol()
     {
-        return _metadata==null?null:_metadata.getHttpVersion().toString();
+        return _metadata==null?null:_metadata.getVersion().toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -931,7 +931,7 @@ public class Request implements HttpServletRequest
      */
     public HttpVersion getHttpVersion()
     {
-        return _metadata==null?null:_metadata.getHttpVersion();
+        return _metadata==null?null:_metadata.getVersion();
     }
 
     /* ------------------------------------------------------------ */
@@ -1117,7 +1117,7 @@ public class Request implements HttpServletRequest
     public String getRequestURI()
     {
         if (_requestURI == null && _uri != null)
-            _requestURI = _uri.getPathAndParam();
+            _requestURI = _uri.getPath();
         return _requestURI;
     }
 
@@ -1537,9 +1537,11 @@ public class Request implements HttpServletRequest
     {
         _metadata=request;
         setMethod(request.getMethod());
-        setScheme(request.getScheme().asString());
-
-        HttpURI uri = new HttpURI(request.getURI());
+        HttpURI uri = request.getURI();
+        
+        String scheme=uri.getScheme();
+        if (scheme!=null)
+            setScheme(scheme);
         
         String uriHost=uri.getHost();
         if (uriHost!=null)
@@ -1548,29 +1550,32 @@ public class Request implements HttpServletRequest
             setServerName(uriHost);
             setServerPort(uri.getPort());
         }
-        else
-        {
-            setServerName(request.getHost());
-            setServerPort(request.getPort());
-        }
         
         setUri(uri);
         
         
         String path = uri.getDecodedPath();
-        
-        String info = URIUtil.canonicalPath(path); // TODO should this be done prior to decoding???
-
-        if (info == null)
+        String info;
+        if (path==null || path.length()==0)
         {
-            if( path==null && uri.getScheme()!=null && uri.getHost()!=null)
-            {
-                info = "/";
-                setRequestURI("");
-            }
+            if (uri.isAbsolute())
+                path="/";
             else
                 throw new BadMessageException(400,"Bad URI");
+            info=path;
         }
+        else if (!path.startsWith("/"))
+        {
+            if (!"*".equals(path) && !HttpMethod.CONNECT.is(getMethod()))
+                throw new BadMessageException(400,"Bad URI");
+            info=path;
+        }
+        else
+            info = URIUtil.canonicalPath(path);// TODO should this be done prior to decoding???
+        
+        if (info == null)
+            throw new BadMessageException(400,"Bad URI");
+        
         setPathInfo(info);
     }
     
@@ -2010,7 +2015,6 @@ public class Request implements HttpServletRequest
      * @param uri
      *            The uri to set.
      */
-    @Deprecated // is this still needed or can we use meta data?
     public void setUri(HttpURI uri)
     {
         _uri = uri;

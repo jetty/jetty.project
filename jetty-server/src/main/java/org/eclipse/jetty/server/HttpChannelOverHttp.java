@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.AbstractMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -34,9 +33,11 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
+import org.omg.stub.java.rmi._Remote_Stub;
 
 /**
  * A HttpChannel customized to be transported over the HTTP/1 protocol
@@ -44,64 +45,22 @@ import org.eclipse.jetty.io.EndPoint;
 class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ProxyHandler
 {
     private final HttpConnection _httpConnection;
-    private String _method; 
-    private String _uri;
-    private HttpVersion _version;
     private final HttpFields _fields = new HttpFields();
-    private HostPortHttpField _hostPort;
     private HttpField _connection;
     private boolean _expect = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
-    private final MetaData.Request _metadata = new AbstractMetaData.Request()
-    {
-        @Override
-        public String getMethod()
-        {
-            return _method;
-        }
-
-        @Override
-        public HttpScheme getScheme()
-        {
-            return HttpScheme.HTTP;
-        }
-
-        @Override
-        public String getHost()
-        {
-            return _hostPort==null?null:_hostPort.getHost();
-        }
-
-        @Override
-        public int getPort()
-        {
-            return _hostPort==null?0:_hostPort.getPort();
-        }
-
-        @Override
-        public String getURI()
-        {
-            return _uri;
-        }
-
-        @Override
-        public HttpVersion getHttpVersion()
-        {
-            return _version;
-        }
-        
-        @Override
-        public HttpFields getFields()
-        {
-            return _fields;
-        }
-    };
+    
+    private final HttpURI _uri = new HttpURI();
+    private final MetaData.Request _metadata = new MetaData.Request();
+    
     
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
         super(connector,config,endPoint,transport,input);
         _httpConnection = httpConnection;
+        _metadata.setFields(_fields);
+        _metadata.setURI(_uri);
     }
 
     @Override
@@ -111,10 +70,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;
-        _method=null;
-        _uri=null;
-        _version=null;
-        _hostPort=null;
+        _uri.clear();
         _connection=null;
         _fields.clear();
     }
@@ -134,9 +90,9 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     public boolean startRequest(String method, String uri, HttpVersion version)
     {
-        _method=method;
-        _uri=uri;
-        _version=version;
+        _metadata.setMethod(method);
+        _uri.parse(uri);
+        _metadata.setHttpVersion(version);
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;
@@ -146,7 +102,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     public void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort)
     {
-        _method=HttpMethod.CONNECT.asString();
+        _metadata.setMethod(HttpMethod.CONNECT.asString());
         Request request = getRequest();
         request.setAttribute("PROXY", protocol);
         request.setServerName(sAddr);
@@ -168,12 +124,16 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     break;
 
                 case HOST:
-                    _hostPort=(HostPortHttpField)field;
+                    if (!_uri.isAbsolute() && field instanceof HostPortHttpField)
+                    {
+                        HostPortHttpField hp = (HostPortHttpField)field;
+                        _uri.setAuth(hp.getHost(),hp.getPort());
+                    }
                     break;
 
                 case EXPECT:
                 {
-                    if (_version==HttpVersion.HTTP_1_1)
+                    if (_metadata.getVersion()==HttpVersion.HTTP_1_1)
                     {
                         HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
                         switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
@@ -253,7 +213,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public void earlyEOF()
     {
         // If we have no request yet, just close
-        if (_method==null)
+        if (_metadata.getMethod()==null)
             _httpConnection.close();
         else
             onEarlyEOF();
@@ -279,7 +239,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     {
         boolean persistent;
 
-        switch (_version)
+        switch (_metadata.getVersion())
         {
             case HTTP_1_0:
             {
@@ -294,7 +254,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     persistent=false;
                         
                 if (!persistent)
-                    persistent = HttpMethod.CONNECT.is(_method);
+                    persistent = HttpMethod.CONNECT.is(_metadata.getMethod());
                 if (persistent)
                     getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
                     
@@ -320,7 +280,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     persistent=true;
                 
                 if (!persistent)
-                    persistent = HttpMethod.CONNECT.is(_method);
+                    persistent = HttpMethod.CONNECT.is(_metadata.getMethod());
                 if (!persistent)
                     getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
                 break;

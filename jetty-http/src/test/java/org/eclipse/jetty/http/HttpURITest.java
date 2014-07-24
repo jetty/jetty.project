@@ -20,7 +20,6 @@
 package org.eclipse.jetty.http;
 
 import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
@@ -75,7 +74,8 @@ public class HttpURITest
     {
         for (String[] test:tests)
         {
-            HttpURI uri = new HttpURI(new URI(test[INPUT]));
+            URI u=new URI(test[INPUT]);
+            HttpURI uri = new HttpURI(u);
 
             assertEquals(test[SCHEME], uri.getScheme());
             assertEquals(test[HOST], uri.getHost());
@@ -84,67 +84,11 @@ public class HttpURITest
             assertEquals(test[PARAM], uri.getParam());
             assertEquals(test[QUERY], uri.getQuery());
             assertEquals(test[FRAGMENT], uri.getFragment());
+            
+            assertEquals(u,uri.toURI());
         }
     }
 
-    private final String[][] partial_tests=
-    {
-       /* 0*/ {"/path/info",null,null,null,null,"/path/info",null,null,null},
-       /* 1*/ {"/path/info#fragment",null,null,null,null,"/path/info",null,null,"fragment"},
-       /* 2*/ {"/path/info?query",null,null,null,null,"/path/info",null,"query",null},
-       /* 3*/ {"/path/info?query#fragment",null,null,null,null,"/path/info",null,"query","fragment"},
-       /* 4*/ {"/path/info;param",null,null,null,null,"/path/info;param","param",null,null},
-       /* 5*/ {"/path/info;param#fragment",null,null,null,null,"/path/info;param","param",null,"fragment"},
-       /* 6*/ {"/path/info;param?query",null,null,null,null,"/path/info;param","param","query",null},
-       /* 7*/ {"/path/info;param?query#fragment",null,null,null,null,"/path/info;param","param","query","fragment"},
-       /* 8*/ {"//host/path/info",null,"//host","host",null,"/path/info",null,null,null},
-       /* 9*/ {"//user@host/path/info",null,"//user@host","host",null,"/path/info",null,null,null},
-       /*10*/ {"//user@host:8080/path/info",null,"//user@host:8080","host","8080","/path/info",null,null,null},
-       /*11*/ {"//host:8080/path/info",null,"//host:8080","host","8080","/path/info",null,null,null},
-       /*12*/ {"http:/path/info","http",null,null,null,"/path/info",null,null,null},
-       /*13*/ {"http:/path/info#fragment","http",null,null,null,"/path/info",null,null,"fragment"},
-       /*14*/ {"http:/path/info?query","http",null,null,null,"/path/info",null,"query",null},
-       /*15*/ {"http:/path/info?query#fragment","http",null,null,null,"/path/info",null,"query","fragment"},
-       /*16*/ {"http:/path/info;param","http",null,null,null,"/path/info;param","param",null,null},
-       /*17*/ {"http:/path/info;param#fragment","http",null,null,null,"/path/info;param","param",null,"fragment"},
-       /*18*/ {"http:/path/info;param?query","http",null,null,null,"/path/info;param","param","query",null},
-       /*19*/ {"http:/path/info;param?query#fragment","http",null,null,null,"/path/info;param","param","query","fragment"},
-       /*20*/ {"http://user@host:8080/path/info;param?query#fragment","http","//user@host:8080","host","8080","/path/info;param","param","query","fragment"},
-       /*21*/ {"xxxxx://user@host:8080/path/info;param?query#fragment","xxxxx","//user@host:8080","host","8080","/path/info;param","param","query","fragment"},
-       /*22*/ {"http:///;?#","http","//",null,null,"/;","","",""},
-       /*23*/ {"/path/info?a=?query",null,null,null,null,"/path/info",null,"a=?query",null},
-       /*24*/ {"/path/info?a=;query",null,null,null,null,"/path/info",null,"a=;query",null},
-       /*25*/ {"//host:8080//",null,"//host:8080","host","8080","//",null,null,null},
-       /*26*/ {"file:///path/info","file","//",null,null,"/path/info",null,null,null},
-       /*27*/ {"//",null,"//",null,null,null,null,null,null},
-       /*28*/ {"/;param",null, null, null,null,"/;param", "param",null,null},
-       /*29*/ {"/?x=y",null, null, null,null,"/", null,"x=y",null},
-       /*30*/ {"/?abc=test",null, null, null,null,"/", null,"abc=test",null},
-       /*31*/ {"/#fragment",null, null, null,null,"/", null,null,"fragment"},
-       /*32*/ {"http://localhost:8080", "http", "//localhost:8080", "localhost", "8080", null, null, null, null},
-       /*33*/ {"./?foo:bar=:1:1::::",null,null,null,null,"./",null,"foo:bar=:1:1::::",null}
-    };
-
-    @Test
-    public void testPartialURIs() throws Exception
-    {
-        HttpURI uri = new HttpURI(true);
-
-        for (int t=0;t<partial_tests.length;t++)
-        {
-            uri.parse(partial_tests[t][0]);
-            assertEquals(t+" "+partial_tests[t][0],partial_tests[t][1],uri.getScheme());
-            assertEquals(t+" "+partial_tests[t][0],partial_tests[t][2],uri.getAuthority());
-            assertEquals(t+" "+partial_tests[t][0],partial_tests[t][3],uri.getHost());
-            assertEquals(t+" "+partial_tests[t][0],partial_tests[t][4]==null?-1:Integer.parseInt(partial_tests[t][4]),uri.getPort());
-            assertEquals(t+" "+partial_tests[t][0],partial_tests[t][5],uri.getPath());
-            assertEquals(t+" "+partial_tests[t][0],partial_tests[t][6],uri.getParam());
-            assertEquals(t+" "+partial_tests[t][0],partial_tests[t][7],uri.getQuery());
-            assertEquals(t+" "+partial_tests[t][0],partial_tests[t][8],uri.getFragment());
-            assertEquals(partial_tests[t][0], uri.toString());
-        }
-
-    }
 
     private final String[][] path_tests=
     {
@@ -170,11 +114,11 @@ public class HttpURITest
        /*19*/ {"http:/path/info;param?query#fragment","http",null,null,null,"/path/info;param","param","query","fragment"},
        /*20*/ {"http://user@host:8080/path/info;param?query#fragment","http","//user@host:8080","host","8080","/path/info;param","param","query","fragment"},
        /*21*/ {"xxxxx://user@host:8080/path/info;param?query#fragment","xxxxx","//user@host:8080","host","8080","/path/info;param","param","query","fragment"},
-       /*22*/ {"http:///;?#","http","//",null,null,"/;","","",""},
+       /*22*/ {"http:///;?#","http","//","",null,"/;","","",""},
        /*23*/ {"/path/info?a=?query",null,null,null,null,"/path/info",null,"a=?query",null},
        /*24*/ {"/path/info?a=;query",null,null,null,null,"/path/info",null,"a=;query",null},
        /*25*/ {"//host:8080//",null,null,null,null,"//host:8080//",null,null,null},
-       /*26*/ {"file:///path/info","file","//",null,null,"/path/info",null,null,null},
+       /*26*/ {"file:///path/info","file","//","",null,"/path/info",null,null,null},
        /*27*/ {"//",null,null,null,null,"//",null,null,null},
        /*28*/ {"http://localhost/","http","//localhost","localhost",null,"/",null,null,null},
        /*29*/ {"http://localhost:8080/", "http", "//localhost:8080", "localhost","8080","/", null, null,null},
@@ -201,7 +145,6 @@ public class HttpURITest
         {
             uri.parse(path_tests[t][0]);
             assertEquals(t+" "+path_tests[t][0],path_tests[t][1],uri.getScheme());
-            assertEquals(t+" "+path_tests[t][0],path_tests[t][2],uri.getAuthority());
             assertEquals(t+" "+path_tests[t][0],path_tests[t][3],uri.getHost());
             assertEquals(t+" "+path_tests[t][0],path_tests[t][4]==null?-1:Integer.parseInt(path_tests[t][4]),uri.getPort());
             assertEquals(t+" "+path_tests[t][0],path_tests[t][5],uri.getPath());
@@ -270,36 +213,6 @@ public class HttpURITest
             MultiMap<String> parameters = new MultiMap<>();
             uri.decodeQueryTo(parameters,StandardCharsets.UTF_8);
             assertEquals(value,parameters.getString("value"));
-        }
-    }
-
-
-    private final String[][] connect_tests=
-    {
-       /* 0*/ {"localhost:8080","localhost","8080"},
-       /* 1*/ {"127.0.0.1:8080","127.0.0.1","8080"},
-       /* 2*/ {"[127::0::0::1]:8080","[127::0::0::1]","8080"},
-       /* 3*/ {"error",null,null},
-       /* 4*/ {"http://localhost:8080/",null,null},
-    };
-
-    @Test
-    public void testCONNECT() throws Exception
-    {
-        HttpURI uri = new HttpURI();
-        for (int i=0;i<connect_tests.length;i++)
-        {
-            try
-            {
-                uri.parseConnect(connect_tests[i][0]);
-                assertEquals("path"+i,connect_tests[i][0].trim(),uri.getPath());
-                assertEquals("host"+i,connect_tests[i][1],uri.getHost());
-                assertEquals("port"+i,Integer.parseInt(connect_tests[i][2]),uri.getPort());
-            }
-            catch(Exception e)
-            {
-                assertNull("error"+i,connect_tests[i][1]);
-            }
         }
     }
     

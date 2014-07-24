@@ -21,13 +21,11 @@ package org.eclipse.jetty.http2.hpack;
 
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 
@@ -133,10 +131,10 @@ public class MetaDataBuilder
             HttpFields fields = _fields;
             _fields = new HttpFields(Math.max(10,fields.size()+5));
             if (_method!=null)
-                return new FinalMetaData.Request(HttpVersion.HTTP_2,_scheme,_method,_authority,_path,fields);
+                return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields);
             if (_status!=0)
-                return new FinalMetaData.Response(HttpVersion.HTTP_2,_status,fields);
-            return new FinalMetaData(HttpVersion.HTTP_2,fields);
+                return new MetaData.Response(HttpVersion.HTTP_2,_status,fields);
+            return new MetaData(HttpVersion.HTTP_2,fields);
         }
         finally
         {

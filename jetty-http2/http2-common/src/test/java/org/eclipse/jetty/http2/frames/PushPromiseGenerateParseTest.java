@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -63,7 +62,7 @@ public class PushPromiseGenerateParseTest
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new FinalMetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", new HostPortHttpField("localhost:8080"), "/path", fields);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields);
 
         // Iterate a few times to be sure generator and parser are properly reset.
         for (int i = 0; i < 2; ++i)
@@ -85,10 +84,7 @@ public class PushPromiseGenerateParseTest
             Assert.assertEquals(streamId, frame.getStreamId());
             Assert.assertEquals(promisedStreamId, frame.getPromisedStreamId());
             MetaData.Request request = (MetaData.Request)frame.getMetaData();
-            Assert.assertSame(metaData.getScheme(), request.getScheme());
             Assert.assertEquals(metaData.getMethod(), request.getMethod());
-            Assert.assertEquals(metaData.getHost(), request.getHost());
-            Assert.assertEquals(metaData.getPort(), request.getPort());
             Assert.assertEquals(metaData.getURI(), request.getURI());
             for (int j = 0; j < fields.size(); ++j)
             {
@@ -119,7 +115,7 @@ public class PushPromiseGenerateParseTest
         HttpFields fields = new HttpFields();
         fields.put("Accept", "text/html");
         fields.put("User-Agent", "Jetty");
-        MetaData.Request metaData = new FinalMetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, "GET", new HostPortHttpField("localhost:8080"), "/path", fields);
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:8080"), "/path", HttpVersion.HTTP_2, fields);
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.generatePushPromise(lease, streamId, promisedStreamId, metaData);
@@ -137,10 +133,7 @@ public class PushPromiseGenerateParseTest
         Assert.assertEquals(streamId, frame.getStreamId());
         Assert.assertEquals(promisedStreamId, frame.getPromisedStreamId());
         MetaData.Request request = (MetaData.Request)frame.getMetaData();
-        Assert.assertSame(metaData.getScheme(), request.getScheme());
         Assert.assertEquals(metaData.getMethod(), request.getMethod());
-        Assert.assertEquals(metaData.getHost(), request.getHost());
-        Assert.assertEquals(metaData.getPort(), request.getPort());
         Assert.assertEquals(metaData.getURI(), request.getURI());
         for (int j = 0; j < fields.size(); ++j)
         {

@@ -30,7 +30,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -62,7 +61,7 @@ public class IdleTimeoutTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
                 stream.setIdleTimeout(10 * idleTimeout);
-                MetaData.Response metaData = new FinalMetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
                 return null;
@@ -145,7 +144,7 @@ public class IdleTimeoutTest extends AbstractTest
                 {
                     stream.setIdleTimeout(10 * idleTimeout);
                     Thread.sleep(2 * idleTimeout);
-                    MetaData.Response metaData = new FinalMetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                    MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                     HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                     stream.headers(responseFrame, Callback.Adapter.INSTANCE);
                     return null;
@@ -204,7 +203,7 @@ public class IdleTimeoutTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 stream.setIdleTimeout(10 * idleTimeout);
-                MetaData.Response metaData = new FinalMetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
                 return null;
@@ -279,7 +278,7 @@ public class IdleTimeoutTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 stream.setIdleTimeout(10 * idleTimeout);
-                MetaData.Response metaData = new FinalMetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
                 return null;

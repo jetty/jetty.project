@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.net.InetSocketAddress;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -46,7 +47,7 @@ import org.eclipse.jetty.server.HttpConfiguration.Customizer;
  */
 public class ForwardedRequestCustomizer implements Customizer
 {
-    private String _hostHeader;
+    private HostPortHttpField _hostHeader;
     private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
     private String _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
     private String _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
@@ -58,7 +59,7 @@ public class ForwardedRequestCustomizer implements Customizer
     /* ------------------------------------------------------------ */
     public String getHostHeader()
     {
-        return _hostHeader;
+        return _hostHeader.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -70,7 +71,7 @@ public class ForwardedRequestCustomizer implements Customizer
      */
     public void setHostHeader(String hostHeader)
     {
-        _hostHeader = hostHeader;
+        _hostHeader = new HostPortHttpField(hostHeader);
     }
 
     /* ------------------------------------------------------------ */
@@ -224,18 +225,17 @@ public class ForwardedRequestCustomizer implements Customizer
         if (_hostHeader != null)
         {
             // Update host header
-            httpFields.put(HttpHeader.HOST.toString(),_hostHeader);
-            request.setServerName(null);
-            request.setServerPort(-1);
-            request.getServerName();
+            httpFields.put(_hostHeader);
+            request.setServerName(_hostHeader.getHost());
+            request.setServerPort(_hostHeader.getPort());
         }
         else if (forwardedHost != null)
         {
             // Update host header
-            httpFields.put(HttpHeader.HOST.toString(),forwardedHost);
-            request.setServerName(null);
-            request.setServerPort(-1);
-            request.getServerName();
+            HostPortHttpField auth = new HostPortHttpField(forwardedHost);
+            httpFields.put(auth);
+            request.setServerName(auth.getHost());
+            request.setServerPort(auth.getPort());
         }
         else if (forwardedServer != null)
         {

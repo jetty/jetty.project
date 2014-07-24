@@ -87,7 +87,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Request #{}:{}{} {} {}{}{}",
-                    stream.getId(), System.lineSeparator(), request.getMethod(), request.getURI(), request.getHttpVersion(), System.lineSeparator(), fields);
+                    stream.getId(), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(), System.lineSeparator(), fields);
         }
 
         execute(this);

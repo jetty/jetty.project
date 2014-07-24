@@ -34,7 +34,6 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
@@ -100,8 +99,8 @@ public class HTTP2ServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new FinalMetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, HttpMethod.GET.asString(),
-                new HostPortHttpField(host + ":" + port), path, fields);
+        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP, new HostPortHttpField(host + ":" + port),
+                path, HttpVersion.HTTP_2, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, request);
@@ -149,8 +148,8 @@ public class HTTP2ServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new FinalMetaData.Request(HttpVersion.HTTP_2, HttpScheme.HTTP, HttpMethod.GET.asString(),
-                new HostPortHttpField(host + ":" + port), path, fields);
+        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP, new HostPortHttpField(host + ":" + port),
+                path, HttpVersion.HTTP_2, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, request);
@@ -212,8 +211,8 @@ public class HTTP2ServerTest
         String host = "localhost";
         int port = connector.getLocalPort();
         HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new FinalMetaData.Request(HttpVersion.HTTP_2,HttpScheme.HTTP, HttpMethod.GET.asString(),
-                new HostPortHttpField(host + ":" + port), path, fields);
+        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(),HttpScheme.HTTP, new HostPortHttpField(host + ":" + port),
+                path, HttpVersion.HTTP_2, fields);
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, request);
