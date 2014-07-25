@@ -92,13 +92,12 @@ public class HpackDecoderTest
     }
 
     @Test
-    @Ignore
     public void testDecodeD_4()
     {
         HpackDecoder decoder = new HpackDecoder(4096,8192);
         
         // First request
-        String encoded="828786448ce7cf9bebe89b6fb16fa9b6ff";
+        String encoded="828684418cf1e3c2e5f23a6ba0ab90f4ff";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
@@ -108,10 +107,9 @@ public class HpackDecoderTest
         assertEquals("/",request.getURI().getPath());
         assertEquals("www.example.com",request.getURI().getHost());
         assertFalse(request.iterator().hasNext());
-        
-        
+                
         // Second request
-        encoded="5c86b9b9949556bf";
+        encoded="828684be5886a8eb10649cbf";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
         request = (MetaData.Request)decoder.decode(buffer);
@@ -125,20 +123,6 @@ public class HpackDecoderTest
         assertEquals(new HttpField("cache-control","no-cache"),iterator.next());
         assertFalse(iterator.hasNext());
 
-        // Third request
-        encoded="30858c8b844088571c5cdb737b2faf89571c5cdb73724d9c57";
-        buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
-        
-        request = (MetaData.Request)decoder.decode(buffer);
-        
-        assertEquals("GET",request.getMethod());
-        assertEquals(HttpScheme.HTTPS.asString(),request.getURI().getScheme());
-        assertEquals("/index.html",request.getURI().getPath());
-        assertEquals("www.example.com",request.getURI().getHost());
-        iterator=request.iterator();
-        assertTrue(iterator.hasNext());
-        assertEquals(new HttpField("custom-key","custom-value"),iterator.next());
-        assertFalse(iterator.hasNext());
     }
 
 }

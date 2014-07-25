@@ -82,7 +82,11 @@ public class HpackDecoder
                 // indexed
                 int index = NBitInteger.decode(buffer,7);
                 Entry entry=_context.get(index);
-                if (entry.isStatic())
+                if (entry==null)
+                {
+                    throw new BadMessageException("Unknown index "+index);
+                }
+                else if (entry.isStatic())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("decode IdxStatic {}",entry);
@@ -239,5 +243,11 @@ public class HpackDecoder
         for (int i=start;i<end;i++)
             builder.append((char)(0x7f&array[i]));
         return builder.toString();
+    }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("HpackDecoder@%x{%s}",hashCode(),_context);
     }
 }

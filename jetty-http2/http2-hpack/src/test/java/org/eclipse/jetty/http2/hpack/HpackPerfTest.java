@@ -25,9 +25,9 @@ import java.io.FilenameFilter;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ajax.JSON;
@@ -121,7 +121,7 @@ public class HpackPerfTest
                     }
 
                     BufferUtil.clearToFill(buffer);
-                    encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
+                    encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
                     BufferUtil.flipToFlush(buffer,0);
                     _encodedSize+=buffer.remaining();
                     
