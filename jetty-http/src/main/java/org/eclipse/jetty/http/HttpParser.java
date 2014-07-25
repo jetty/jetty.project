@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -142,8 +143,7 @@ public class HttpParser
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
-    private ByteBuffer _uri=ByteBuffer.allocate(INITIAL_URI_LENGTH); // Tune?
-    private HttpURI _httpURI=new HttpURI(StandardCharsets.UTF_8);
+    private Utf8StringBuilder _uri=new Utf8StringBuilder(INITIAL_URI_LENGTH); // Tune?
     private EndOfContent _endOfContent;
     private long _contentLength;
     private long _contentPosition;
@@ -523,7 +523,7 @@ public class HttpParser
                         }
                         else
                         {
-                            _uri.clear();
+                            _uri.reset();
                             setState(State.URI);
                             // quick scan for space or EoBuffer
                             if (buffer.hasArray())
@@ -543,18 +543,11 @@ public class HttpParser
                                     LOG.warn("URI is too large >"+_maxHeaderBytes);
                                     throw new BadMessageException(HttpStatus.REQUEST_URI_TOO_LONG_414);
                                 }
-                                if (_uri.remaining()<=len)
-                                {
-                                    ByteBuffer uri = ByteBuffer.allocate(_uri.capacity()+2*len);
-                                    _uri.flip();
-                                    uri.put(_uri);
-                                    _uri=uri;
-                                }
-                                _uri.put(array,p-1,len+1);
+                                _uri.append(array,p-1,len+1);
                                 buffer.position(i-buffer.arrayOffset());
                             }
                             else
-                                _uri.put(ch);
+                                _uri.append(ch);
                         }
                     }
                     else if (ch < HttpTokens.SPACE)
@@ -591,19 +584,11 @@ public class HttpParser
                     else if (ch < HttpTokens.SPACE && ch>=0)
                     {
                         // HTTP/0.9
-                        _uri.flip();
                         throw new BadMessageException("HTTP/0.9 not supported");
                     }
                     else
                     {
-                        if (!_uri.hasRemaining())
-                        {
-                            ByteBuffer uri = ByteBuffer.allocate(_uri.capacity()*2);
-                            _uri.flip();
-                            uri.put(_uri);
-                            _uri=uri;
-                        }
-                        _uri.put(ch);
+                        _uri.append(ch);
                     }
                     break;
 
@@ -634,8 +619,7 @@ public class HttpParser
                                     if (!(_requestHandler instanceof ProxyHandler))
                                         throw new BadMessageException();
                                     
-                                    _uri.flip();
-                                    String protocol=BufferUtil.toString(_uri);
+                                    String protocol=_uri.toString();
                                     // This is the proxy protocol, so we can assume entire first line is in buffer else 400
                                     buffer.position(buffer.position()-1);
                                     String sAddr = getProxyField(buffer);
@@ -682,7 +666,6 @@ public class HttpParser
                         else
                         {
                             // HTTP/0.9
-                            _uri.flip();
                             throw new BadMessageException("HTTP/0.9 not supported");
                         }
                     }
@@ -709,14 +692,8 @@ public class HttpParser
                         }
 
                         setState(State.HEADER);
-                        _uri.flip();
                         
-                        if (_method == HttpMethod.CONNECT)
-                            _httpURI.parseConnect(_uri.array(),_uri.arrayOffset()+_uri.position(),_uri.remaining());
-                        else
-                            _httpURI.parse(_uri.array(),_uri.arrayOffset()+_uri.position(),_uri.remaining());
-                        
-                        handle=_requestHandler.startRequest(_methodString,_httpURI, _version)||handle;
+                        handle=_requestHandler.startRequest(_methodString,_uri.toString(), _version)||handle;
                         continue;
                     }
                     else if (ch>=HttpTokens.SPACE)
@@ -1185,7 +1162,7 @@ public class HttpParser
                     if (_headerBytes>_maxHeaderBytes)
                     {
                         // Don't want to waste time reading data of a closed request
-                        throw new IllegalStateException("too much data after closed");
+                        throw new IllegalStateException("too much data when seeking close");
                     }
                 }
             }
@@ -1491,7 +1468,6 @@ public class HttpParser
         _contentChunk=null;
         _headerBytes=0;
         _host=false;
-        _httpURI.clear();
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -1572,7 +1548,7 @@ public class HttpParser
          * @param version
          * @return true if handling parsing should return.
          */
-        public boolean startRequest(String method, HttpURI uri, HttpVersion version);
+        public boolean startRequest(String method, String uri, HttpVersion version);
 
     }
 

@@ -82,23 +82,23 @@ public class ConnectorServer extends AbstractLifeCycle
     public ConnectorServer(JMXServiceURL svcUrl, Map<String,?> environment, String name)
          throws Exception
     {
-    	String urlPath = svcUrl.getURLPath();
-    	int idx = urlPath.indexOf("rmi://");
-    	if (idx > 0)
-    	{
-    	    String hostPort = urlPath.substring(idx+6, urlPath.indexOf('/', idx+6));
-    	    String regHostPort = startRegistry(hostPort);
-    	    if (regHostPort != null) {
-    	        urlPath = urlPath.replace(hostPort,regHostPort);
-    	        svcUrl = new JMXServiceURL(svcUrl.getProtocol(), svcUrl.getHost(), svcUrl.getPort(), urlPath);
-    	    }
-    	}
+        String urlPath = svcUrl.getURLPath();
+        int idx = urlPath.indexOf("rmi://");
+        if (idx > 0)
+        {
+            String hostPort = urlPath.substring(idx+6, urlPath.indexOf('/', idx+6));
+            String regHostPort = startRegistry(hostPort);
+            if (regHostPort != null) {
+                urlPath = urlPath.replace(hostPort,regHostPort);
+                svcUrl = new JMXServiceURL(svcUrl.getProtocol(), svcUrl.getHost(), svcUrl.getPort(), urlPath);
+            }
+        }
         MBeanServer mbeanServer = ManagementFactory.getPlatformMBeanServer();
         _connectorServer = JMXConnectorServerFactory.newJMXConnectorServer(svcUrl, environment, mbeanServer);
         mbeanServer.registerMBean(_connectorServer,new ObjectName(name));
     }
 
-	/* ------------------------------------------------------------ */
+        /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
      */

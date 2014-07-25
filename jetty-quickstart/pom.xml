@@ -7,7 +7,7 @@
   <modelVersion>4.0.0</modelVersion>
   <groupId>org.eclipse.jetty</groupId>
   <artifactId>jetty-quickstart</artifactId>
-  <name>Example :: Jetty Quick Start</name>
+  <name>Jetty :: Quick Start</name>
   <description>Jetty Quick Start</description>
   <url>http://www.eclipse.org/jetty</url>
   <dependencies>
@@ -82,74 +82,6 @@
   </dependencies>
   <build>
     <plugins>
-
-    <plugin>
-      <groupId>org.codehaus.mojo</groupId>
-      <artifactId>appassembler-maven-plugin</artifactId>
-      <version>1.7</version>
-      <configuration>
-        <platforms>
-          <platform>unix</platform>
-        </platforms>
-        <programs>
-          <program>
-            <id>preconfigure</id>
-            <mainClass>org.eclipse.jetty.quickstart.PreconfigureQuickStartWar</mainClass>
-          </program>
-          <program>
-            <mainClass>org.eclipse.jetty.quickstart.QuickStartWar</mainClass>
-            <id>quickstart</id>
-          </program>
-        </programs>
-      </configuration>
-      </plugin>
-
-      <plugin>
-        <artifactId>maven-dependency-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>copy</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.tests</groupId>
-                  <artifactId>test-jndi-webapp</artifactId>
-                  <version>${project.version}</version>
-                  <type>war</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${basedir}/target</outputDirectory>
-                  <destFileName>test-jndi.war</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.tests</groupId>
-                  <artifactId>test-spec-webapp</artifactId>
-                  <version>${project.version}</version>
-                  <type>war</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${basedir}/target</outputDirectory>
-                  <destFileName>test-spec.war</destFileName>
-                </artifactItem>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty</groupId>
-                  <artifactId>test-jetty-webapp</artifactId>
-                  <version>${project.version}</version>
-                  <type>war</type>
-                  <overWrite>true</overWrite>
-                  <includes>**</includes>
-                  <outputDirectory>${basedir}/target</outputDirectory>
-                  <destFileName>test-standard.war</destFileName>
-                </artifactItem>
-              </artifactItems>
-            </configuration>
-          </execution>
-	</executions>
-      </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-assembly-plugin</artifactId>

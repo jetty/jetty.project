@@ -20,8 +20,6 @@
 package org.eclipse.jetty.http2.hpack;
 
 import org.eclipse.jetty.http.HostPortHttpField;
-import org.eclipse.jetty.http2.hpack.HpackContext;
-import org.eclipse.jetty.util.StringUtil;
 
 
 /* ------------------------------------------------------------ */

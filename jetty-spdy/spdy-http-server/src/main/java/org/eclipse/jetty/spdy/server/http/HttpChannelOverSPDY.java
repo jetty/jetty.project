@@ -20,7 +20,6 @@ package org.eclipse.jetty.spdy.server.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -104,14 +103,10 @@ public class HttpChannelOverSPDY extends HttpChannel
         HttpMethod httpMethod = HttpMethod.fromString(methodHeader.getValue());
         HttpVersion httpVersion = HttpVersion.fromString(versionHeader.getValue());
 
-        HttpURI uri = new HttpURI(uriHeader.getValue());
 
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.getValue(), httpVersion);
 
-        Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
-        if (schemeHeader != null)
-            getRequest().setScheme(schemeHeader.getValue());
 
         HostPortHttpField hostPort = null;
         HttpFields fields = new HttpFields();
@@ -162,9 +157,18 @@ public class HttpChannelOverSPDY extends HttpChannel
         }
 
         // At last, add the Host header.
-        fields.add(hostPort);
+        if (hostPort!=null)
+            fields.add(hostPort);
 
-        MetaData.Request request = new FinalMetaData.Request(httpVersion, httpMethod.asString(), uri, fields, hostPort);
+        Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
+        
+        HttpURI uri = new HttpURI(uriHeader.getValue());
+        if (uri.getScheme()==null && schemeHeader!=null)
+            uri.setScheme(schemeHeader.getValue());
+        if (uri.getHost()==null && hostPort!=null)
+            uri.setAuthority(hostPort.getHost(),hostPort.getPort());
+        
+        MetaData.Request request = new MetaData.Request(httpMethod==null?methodHeader.getValue():httpMethod.asString(), uri, httpVersion, fields);
         onRequest(request);
         return true;
     }

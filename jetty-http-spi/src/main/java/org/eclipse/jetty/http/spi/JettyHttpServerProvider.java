@@ -43,7 +43,7 @@ public class JettyHttpServerProvider extends HttpServerProvider
 
     public static void setServer(Server server)
     {
-    	_server = server;
+        _server = server;
     }
 
     @Override
@@ -51,7 +51,7 @@ public class JettyHttpServerProvider extends HttpServerProvider
             throws IOException
     {
         Server server = _server;
-    	boolean shared = true;
+        boolean shared = true;
 
         if (server == null)
         {

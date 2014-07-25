@@ -205,16 +205,14 @@ public class HttpChannel implements Runnable
      */
     public boolean handle()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} handle enter", this);
-
         final HttpChannel last = setCurrentHttpChannel(this);
 
         String threadName = null;
         if (LOG.isDebugEnabled())
         {
             threadName = Thread.currentThread().getName();
-            Thread.currentThread().setName(threadName + " - " + _request.getUri());
+            Thread.currentThread().setName(threadName + " - " + _request.getHttpURI());
+            LOG.debug("{} handle enter", this);
         }
 
         HttpChannelState.Action action = _state.handling();
@@ -327,7 +325,7 @@ public class HttpChannel implements Runnable
                     if (e instanceof EofException)
                         LOG.debug(e);
                     else
-                        LOG.warn(String.valueOf(_request.getUri()), e);
+                        LOG.warn(String.valueOf(_request.getHttpURI()), e);
                     _state.error(e);
                     _request.setHandled(true);
                     handleException(e);
@@ -355,10 +353,14 @@ public class HttpChannel implements Runnable
                 _state.completed();
 
                 if (!_response.isCommitted() && !_request.isHandled())
+                {
                     _response.sendError(404);
+                }
                 else
+                {
                     // Complete generating the response
                     _response.closeOutput();
+                }
             }
             catch(EofException|ClosedChannelException e)
             {
@@ -589,10 +591,11 @@ public class HttpChannel implements Runnable
 
     /**
      * If a write or similar to this channel fails this method should be called. The standard implementation
-     * of {@link #failed()} is a noop. But the different implementations of HttpChannel might want to take actions.
+     * is to call {@link HttpTransport#abort()}
      */
-    public void failed()
+    public void abort()
     {
+        _transport.abort();
     }
 
     private class CommitCallback implements Callback

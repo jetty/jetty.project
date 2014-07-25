@@ -440,9 +440,13 @@ public class Response implements HttpServletResponse
             int port = uri.getPort();
             if (port < 0)
                 port = HttpScheme.HTTPS.asString().equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
-            if (!request.getServerName().equalsIgnoreCase(uri.getHost()) ||
-                    request.getServerPort() != port ||
-                    !path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
+            
+            // Is it the same server?
+            if (!request.getServerName().equalsIgnoreCase(uri.getHost()))
+                return url;
+            if (request.getServerPort() != port)
+                return url;
+            if (!path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
                 return url;
         }
 
@@ -541,10 +545,7 @@ public class Response implements HttpServletResponse
     @Override
     public void sendError(int sc) throws IOException
     {
-        if (sc == 102)
-            sendProcessing();
-        else
-            sendError(sc, null);
+        sendError(sc, null);
     }
 
     @Override
@@ -552,6 +553,17 @@ public class Response implements HttpServletResponse
     {
         if (isIncluding())
             return;
+
+        switch(code)
+        {
+            case -1:
+                _channel.abort();
+                return;
+            case 102:
+                sendProcessing();
+                return;
+            default:
+        }
 
         if (isCommitted())
             LOG.warn("Committed before "+code+" "+message);

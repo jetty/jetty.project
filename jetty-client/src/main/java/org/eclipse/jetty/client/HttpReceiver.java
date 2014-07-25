@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashMap;
@@ -49,9 +50,8 @@ import org.eclipse.jetty.util.log.Logger;
  * is available</li>
  * <li>{@link #responseHeader(HttpExchange, HttpField)}, when a HTTP field is available</li>
  * <li>{@link #responseHeaders(HttpExchange)}, when all HTTP headers are available</li>
- * <li>{@link #responseContent(HttpExchange, ByteBuffer, Callback)}, when HTTP content is available; this is the only
- * method that may be invoked multiple times with different buffers containing different content</li>
- * <li>{@link #responseSuccess(HttpExchange)}, when the response is complete</li>
+ * <li>{@link #responseContent(HttpExchange, ByteBuffer, Callback)}, when HTTP content is available</li>
+ * <li>{@link #responseSuccess(HttpExchange)}, when the response is successful</li>
  * </ol>
  * At any time, subclasses may invoke {@link #responseFailure(Throwable)} to indicate that the response has failed
  * (for example, because of I/O exceptions).
@@ -69,7 +69,8 @@ public abstract class HttpReceiver
 
     private final AtomicReference<ResponseState> responseState = new AtomicReference<>(ResponseState.IDLE);
     private final HttpChannel channel;
-    private volatile ContentDecoder decoder;
+    private ContentDecoder decoder;
+    private Throwable failure;
 
     protected HttpReceiver(HttpChannel channel)
     {
@@ -104,7 +105,7 @@ public abstract class HttpReceiver
      */
     protected boolean responseBegin(HttpExchange exchange)
     {
-        if (!updateResponseState(ResponseState.IDLE, ResponseState.BEGIN))
+        if (!updateResponseState(ResponseState.IDLE, ResponseState.TRANSIENT))
             return false;
 
         HttpConversation conversation = exchange.getConversation();
@@ -126,6 +127,9 @@ public abstract class HttpReceiver
             LOG.debug("Response begin {}", response);
         ResponseNotifier notifier = destination.getResponseNotifier();
         notifier.notifyBegin(conversation.getResponseListeners(), response);
+
+        if (!updateResponseState(ResponseState.TRANSIENT, ResponseState.BEGIN))
+            terminateResponse(exchange, failure);
 
         return true;
     }
@@ -152,7 +156,7 @@ public abstract class HttpReceiver
                 case BEGIN:
                 case HEADER:
                 {
-                    if (updateResponseState(current, ResponseState.HEADER))
+                    if (updateResponseState(current, ResponseState.TRANSIENT))
                         break out;
                     break;
                 }
@@ -187,6 +191,9 @@ public abstract class HttpReceiver
                 }
             }
         }
+
+        if (!updateResponseState(ResponseState.TRANSIENT, ResponseState.HEADER))
+            terminateResponse(exchange, failure);
 
         return true;
     }
@@ -228,7 +235,7 @@ public abstract class HttpReceiver
                 case BEGIN:
                 case HEADER:
                 {
-                    if (updateResponseState(current, ResponseState.HEADERS))
+                    if (updateResponseState(current, ResponseState.TRANSIENT))
                         break out;
                     break;
                 }
@@ -261,6 +268,9 @@ public abstract class HttpReceiver
             }
         }
 
+        if (!updateResponseState(ResponseState.TRANSIENT, ResponseState.HEADERS))
+            terminateResponse(exchange, failure);
+
         return true;
     }
 
@@ -273,7 +283,7 @@ public abstract class HttpReceiver
      * @param buffer the response HTTP content buffer
      * @return whether the processing should continue
      */
-    protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, Callback callback)
+    protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, final Callback callback)
     {
         out: while (true)
         {
@@ -283,7 +293,7 @@ public abstract class HttpReceiver
                 case HEADERS:
                 case CONTENT:
                 {
-                    if (updateResponseState(current, ResponseState.CONTENT))
+                    if (updateResponseState(current, ResponseState.TRANSIENT))
                         break out;
                     break;
                 }
@@ -298,19 +308,49 @@ public abstract class HttpReceiver
         if (LOG.isDebugEnabled())
             LOG.debug("Response content {}{}{}", response, System.lineSeparator(), BufferUtil.toDetailString(buffer));
 
+        ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
+        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+
         ContentDecoder decoder = this.decoder;
-        if (decoder != null)
+        if (decoder == null)
         {
-            buffer = decoder.decode(buffer);
-            
-            // TODO If the decoder consumes all the content, should we return here?
-            
-            if (LOG.isDebugEnabled())
-                LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(buffer));
+            notifier.notifyContent(listeners, response, buffer, callback);
+        }
+        else
+        {
+            List<ByteBuffer> decodeds = new ArrayList<>(2);
+            while (buffer.hasRemaining())
+            {
+                ByteBuffer decoded = decoder.decode(buffer);
+                if (!decoded.hasRemaining())
+                    continue;
+                decodeds.add(decoded);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Response content decoded ({}) {}{}{}", decoder, response, System.lineSeparator(), BufferUtil.toDetailString(decoded));
+            }
+
+            if (decodeds.isEmpty())
+            {
+                callback.succeeded();
+            }
+            else
+            {
+                Callback partial = new Callback.Adapter()
+                {
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        callback.failed(x);
+                    }
+                };
+
+                for (int i = 1, size = decodeds.size(); i <= size; ++i)
+                    notifier.notifyContent(listeners, response, decodeds.get(i - 1), i < size ? partial : callback);
+            }
         }
 
-        ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-        notifier.notifyContent(exchange.getConversation().getResponseListeners(), response, buffer, callback);
+        if (!updateResponseState(ResponseState.TRANSIENT, ResponseState.CONTENT))
+            terminateResponse(exchange, failure);
 
         return true;
     }
@@ -332,16 +372,17 @@ public abstract class HttpReceiver
         if (!completed)
             return false;
 
-        // Reset to be ready for another response
+        responseState.set(ResponseState.IDLE);
+
+        // Reset to be ready for another response.
         reset();
 
         // Mark atomically the response as terminated and succeeded,
         // with respect to concurrency between request and response.
-        // If there is a non-null result, then both sender and
-        // receiver are reset and ready to be reused, and the
-        // connection closed/pooled (depending on the transport).
         Result result = exchange.terminateResponse(null);
 
+        // It is important to notify *after* we reset and terminate
+        // because the notification may trigger another request/response.
         HttpResponse response = exchange.getResponse();
         if (LOG.isDebugEnabled())
             LOG.debug("Response success {}", response);
@@ -349,17 +390,7 @@ public abstract class HttpReceiver
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifySuccess(listeners, response);
 
-        if (result != null)
-        {
-            boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
-            if (!ordered)
-                channel.exchangeTerminated(result);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Request/Response succeeded {}", response);
-            notifier.notifyComplete(listeners, result);
-            if (ordered)
-                channel.exchangeTerminated(result);
-        }
+        terminateResponse(exchange, result);
 
         return true;
     }
@@ -388,7 +419,20 @@ public abstract class HttpReceiver
         if (!completed)
             return false;
 
-        // Dispose to avoid further responses
+        this.failure = failure;
+
+        // Update the state to avoid more response processing.
+        boolean fail;
+        while (true)
+        {
+            ResponseState current = responseState.get();
+            if (updateResponseState(current, ResponseState.FAILURE))
+            {
+                fail = current != ResponseState.TRANSIENT;
+                break;
+            }
+        }
+
         dispose();
 
         // Mark atomically the response as terminated and failed,
@@ -402,19 +446,45 @@ public abstract class HttpReceiver
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifyFailure(listeners, response, failure);
 
+        if (fail)
+        {
+            terminateResponse(exchange, result);
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Concurrent failure: response termination skipped, performed by helpers");
+        }
+
+        return true;
+    }
+
+    private void terminateResponse(HttpExchange exchange, Throwable failure)
+    {
+        Result result = exchange.terminateResponse(failure);
+        terminateResponse(exchange, result);
+    }
+
+    private void terminateResponse(HttpExchange exchange, Result result)
+    {
+        HttpResponse response = exchange.getResponse();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Response complete {}", response);
+
         if (result != null)
         {
             boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
             if (!ordered)
                 channel.exchangeTerminated(result);
             if (LOG.isDebugEnabled())
-                LOG.debug("Request/Response failed {}", response);
+                LOG.debug("Request/Response {} {}", failure == null ? "succeeded" : "failed", response);
+            List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+            ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
             notifier.notifyComplete(listeners, result);
             if (ordered)
                 channel.exchangeTerminated(result);
         }
-
-        return true;
     }
 
     /**
@@ -427,7 +497,6 @@ public abstract class HttpReceiver
     protected void reset()
     {
         decoder = null;
-        responseState.set(ResponseState.IDLE);
     }
 
     /**
@@ -440,7 +509,6 @@ public abstract class HttpReceiver
     protected void dispose()
     {
         decoder = null;
-        responseState.set(ResponseState.FAILURE);
     }
 
     public boolean abort(Throwable cause)
@@ -464,6 +532,10 @@ public abstract class HttpReceiver
      */
     private enum ResponseState
     {
+        /**
+         * One of the response*() methods is being executed.
+         */
+        TRANSIENT,
         /**
          * The response is not yet received, the initial state
          */

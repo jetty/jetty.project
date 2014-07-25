@@ -564,7 +564,10 @@ public class HttpFields implements Iterable<HttpField>
     @Override
     public int hashCode()
     {
-        return _fields.hashCode();
+        int hash=0;
+        for (HttpField field:_fields)
+            hash+=field.hashCode();
+        return hash;
     }
 
     @Override

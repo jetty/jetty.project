@@ -100,7 +100,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     {
         if (_query==null)
         {
-            request.setRequestURI(newURI);
+            request.setURIPathQuery(newURI);
         }
         else
         {
@@ -108,9 +108,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
             
             if (!_queryGroup && request.getQueryString()!=null)
                 query=request.getQueryString()+"&"+query;
-            HttpURI uri=new HttpURI(newURI+"?"+query);
-            request.setUri(uri);
-            request.setRequestURI(newURI);
+            request.setURIPathQuery(newURI);
             request.setQueryString(query);
         }
     }

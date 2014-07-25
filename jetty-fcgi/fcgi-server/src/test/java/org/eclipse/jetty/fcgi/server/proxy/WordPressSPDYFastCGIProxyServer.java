@@ -21,6 +21,7 @@ package org.eclipse.jetty.fcgi.server.proxy;
 import java.util.EnumSet;
 import java.util.HashMap;
 import java.util.Map;
+
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.server.Server;

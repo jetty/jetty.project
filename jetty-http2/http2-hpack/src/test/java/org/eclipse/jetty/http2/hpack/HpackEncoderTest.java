@@ -20,10 +20,11 @@
 package org.eclipse.jetty.http2.hpack;
 
 
+import static org.junit.Assert.assertThat;
+
 import java.nio.ByteBuffer;
 import java.util.HashSet;
 
-import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -33,8 +34,6 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.junit.Assert.assertThat;
 
 
 /* ------------------------------------------------------------ */
@@ -71,7 +70,7 @@ public class HpackEncoderTest
         // encode them
         ByteBuffer buffer = BufferUtil.allocate(4096);
         int pos = BufferUtil.flipToFill(buffer);
-        encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
+        encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
         BufferUtil.flipToFlush(buffer,pos);
         
         // something was encoded!
@@ -82,7 +81,7 @@ public class HpackEncoderTest
                 
         // encode exact same fields again!
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
+        encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
         BufferUtil.flipToFlush(buffer,0);
 
         // All are in the header table
@@ -94,7 +93,7 @@ public class HpackEncoderTest
         
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
+        encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
         BufferUtil.flipToFlush(buffer,0);
 
         // something was encoded!
@@ -110,7 +109,7 @@ public class HpackEncoderTest
 
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
+        encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!
@@ -125,7 +124,7 @@ public class HpackEncoderTest
 
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
+        encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!
@@ -141,7 +140,7 @@ public class HpackEncoderTest
 
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
+        encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!
@@ -164,7 +163,7 @@ public class HpackEncoderTest
 
         // encode
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
+        encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!
@@ -176,7 +175,7 @@ public class HpackEncoderTest
 
         // encode again
         BufferUtil.clearToFill(buffer);
-        encoder.encode(buffer,new FinalMetaData(HttpVersion.HTTP_2,fields));
+        encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
         BufferUtil.flipToFlush(buffer,0);
         
         // something was encoded!

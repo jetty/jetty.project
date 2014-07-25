@@ -43,8 +43,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
-import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -670,32 +668,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-    }
-
-    @Test
-    public void test_GZIP_ContentEncoding() throws Exception
-    {
-        final byte[] data = {0, 1, 2, 3, 4, 5, 6, 7, 8, 9};
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-                response.setHeader("Content-Encoding", "gzip");
-                GZIPOutputStream gzipOutput = new GZIPOutputStream(response.getOutputStream());
-                gzipOutput.write(data);
-                gzipOutput.finish();
-            }
-        });
-
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
-
-        Assert.assertEquals(200, response.getStatus());
-        Assert.assertArrayEquals(data, response.getContent());
     }
 
     @Slow

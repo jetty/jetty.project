@@ -255,7 +255,7 @@ public class HttpTester
         private String _uri;
 
         @Override
-        public boolean startRequest(String method, HttpURI uri, HttpVersion version)
+        public boolean startRequest(String method, String uri, HttpVersion version)
         {
             _method=method;
             _uri=uri.toString();

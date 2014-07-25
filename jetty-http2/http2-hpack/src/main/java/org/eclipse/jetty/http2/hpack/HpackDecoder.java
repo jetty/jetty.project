@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.TypeUtil;
@@ -183,9 +182,11 @@ public class HpackDecoder
                             break;
                             
                         case ":path":
+                            // TODO is this needed
+                            /*
                             if (indexed)
                                 field = new StaticValueHttpField(header,name,value,new HttpURI(value));
-                            else
+                            else*/
                                 field = new HttpField(header,name,value);
                             break;
                             

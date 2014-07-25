@@ -216,7 +216,7 @@ public class RuleContainer extends Rule
                     if (rule instanceof Rule.ApplyURI)
                         ((Rule.ApplyURI)rule).applyURI((Request)request,((Request)request).getRequestURI(), encoded);
                     else
-                        ((Request)request).setRequestURI(encoded);
+                        ((Request)request).setURIPathQuery(encoded);
                 }
 
                 if (_rewritePathInfo)

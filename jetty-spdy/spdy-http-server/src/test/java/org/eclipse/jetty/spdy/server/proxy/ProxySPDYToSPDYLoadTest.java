@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.spdy.server.proxy;
 
+import static junit.framework.Assert.fail;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
 import java.util.ArrayList;
@@ -59,10 +63,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static junit.framework.Assert.fail;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 @RunWith(value = Parameterized.class)
 public abstract class ProxySPDYToSPDYLoadTest

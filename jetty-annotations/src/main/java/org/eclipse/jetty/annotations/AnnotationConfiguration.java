@@ -441,14 +441,14 @@ public class AnnotationConfiguration extends AbstractConfiguration
        
        // Resolve container initializers
        List<ContainerInitializer> initializers = 
-    		   (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
+                   (List<ContainerInitializer>)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZERS);
        if (initializers != null && initializers.size()>0)
        {
            Map<String, Set<String>> map = ( Map<String, Set<String>>) context.getAttribute(AnnotationConfiguration.CLASS_INHERITANCE_MAP);
            if (map == null)
                LOG.warn ("ServletContainerInitializers: detected. Class hierarchy: empty");
            for (ContainerInitializer i : initializers)
-        	   i.resolveClasses(context,map);
+                   i.resolveClasses(context,map);
        }
     }
 

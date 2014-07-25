@@ -124,9 +124,9 @@ public class ResourceTest
         __userURL=uri.toURL();
         
         __userURL = MavenTestingUtils.getTestResourcesDir().toURI().toURL();
-	FilePermission perm = (FilePermission) __userURL.openConnection().getPermission();
-	__userDir = new File(perm.getName()).getCanonicalPath() + File.separatorChar;
-	__relDir = "src/test/resources/".replace('/', File.separatorChar);  
+        FilePermission perm = (FilePermission) __userURL.openConnection().getPermission();
+        __userDir = new File(perm.getName()).getCanonicalPath() + File.separatorChar;
+        __relDir = "src/test/resources/".replace('/', File.separatorChar);  
         
         //System.err.println("User Dir="+__userDir);
         //System.err.println("Rel  Dir="+__relDir);

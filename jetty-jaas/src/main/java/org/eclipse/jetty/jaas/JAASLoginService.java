@@ -210,7 +210,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                             }
                             else if (callback instanceof RequestParameterCallback)
                             {
-                            	HttpChannel channel = HttpChannel.getCurrentHttpChannel();
+                                HttpChannel channel = HttpChannel.getCurrentHttpChannel();
 
                                 if (channel == null)
                                     return;

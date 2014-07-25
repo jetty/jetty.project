@@ -109,7 +109,7 @@ public class HttpClientCustomProxyTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                if (!URI.create(baseRequest.getUri().toString()).isAbsolute())
+                if (!URI.create(baseRequest.getHttpURI().toString()).isAbsolute())
                     response.setStatus(HttpServletResponse.SC_USE_PROXY);
                 else if (serverHost.equals(request.getServerName()))
                     response.setStatus(status);

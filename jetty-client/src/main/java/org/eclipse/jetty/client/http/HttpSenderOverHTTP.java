@@ -196,12 +196,11 @@ public class HttpSenderOverHTTP extends HttpSender
     }
 
     @Override
-    protected RequestState dispose()
+    protected void dispose()
     {
         generator.abort();
-        RequestState result = super.dispose();
+        super.dispose();
         shutdownOutput();
-        return result;
     }
 
     private void shutdownOutput()

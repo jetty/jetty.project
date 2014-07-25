@@ -29,7 +29,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.http.FinalMetaData;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -73,7 +72,7 @@ public class FlowControlTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
                 HttpFields fields = new HttpFields();
-                MetaData.Response response = new FinalMetaData.Response(HttpVersion.HTTP_2, 200, fields);
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
 
@@ -151,7 +150,7 @@ public class FlowControlTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                MetaData.Response metaData = new FinalMetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
 
@@ -243,7 +242,7 @@ public class FlowControlTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                MetaData.Response metaData = new FinalMetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
                 return new Stream.Listener.Adapter()
@@ -348,7 +347,7 @@ public class FlowControlTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
                 // For every stream, send down half the window size of data.
-                MetaData.Response metaData = new FinalMetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
                 DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(windowSize / 2), true);
@@ -430,7 +429,7 @@ public class FlowControlTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
             {
-                MetaData.Response metaData = new FinalMetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
                 stream.headers(responseFrame, Callback.Adapter.INSTANCE);
                 DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.wrap(data), true);

@@ -63,9 +63,9 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     public void testFullMethod() throws Exception
     {
-    	// Don't run on Windows (buggy JVM)
-    	Assume.assumeTrue(!OS.IS_WINDOWS);
-    	
+        // Don't run on Windows (buggy JVM)
+        Assume.assumeTrue(!OS.IS_WINDOWS);
+        
         try
         {
             super.testFullMethod();
@@ -79,8 +79,8 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
     @Override
     public void testFullURI() throws Exception
     {
-    	// Don't run on Windows (buggy JVM)
-    	Assume.assumeTrue(!OS.IS_WINDOWS);
+        // Don't run on Windows (buggy JVM)
+        Assume.assumeTrue(!OS.IS_WINDOWS);
         try
         {
             super.testFullURI();

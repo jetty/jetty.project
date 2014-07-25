@@ -154,14 +154,6 @@ public class DefaultServletTest
 
         String response = connector.getResponses(req1.toString());
 
-        assertResponseContains("/one/", response);
-        assertResponseContains("/two/", response);
-        assertResponseContains("/three/", response);
-        if (!OS.IS_WINDOWS)
-        {
-            assertResponseContains("/f%3F%3Fr", response);
-        }
-
         assertResponseNotContains("<script>", response);
     }
 

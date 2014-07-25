@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -697,7 +698,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         contentLatch.set(new CountDownLatch(1));
         callback.succeeded();
 
-        Assert.assertTrue(completeLatch.await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(2, contentCount.get());
     }
 }

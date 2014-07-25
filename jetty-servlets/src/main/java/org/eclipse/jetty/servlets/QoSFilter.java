@@ -23,7 +23,9 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
-
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -35,27 +37,27 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationListener;
-import org.eclipse.jetty.continuation.ContinuationSupport;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Quality of Service Filter.
- *
+ * <p/>
  * This filter limits the number of active requests to the number set by the "maxRequests" init parameter (default 10).
  * If more requests are received, they are suspended and placed on priority queues.  Priorities are determined by
  * the {@link #getPriority(ServletRequest)} method and are a value between 0 and the value given by the "maxPriority"
  * init parameter (default 10), with higher values having higher priority.
- * </p><p>
+ * <p/>
  * This filter is ideal to prevent wasting threads waiting for slow/limited
  * resources such as a JDBC connection pool.  It avoids the situation where all of a
  * containers thread pool may be consumed blocking on such a slow resource.
  * By limiting the number of active threads, a smaller thread pool may be used as
  * the threads are not wasted waiting.  Thus more memory may be available for use by
  * the active threads.
- * </p><p>
+ * <p/>
  * Furthermore, this filter uses a priority when resuming waiting requests. So that if
  * a container is under load, and there are many requests waiting for resources,
  * the {@link #getPriority(ServletRequest)} method is used, so that more important
@@ -63,175 +65,168 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * maxRequest limit slightly smaller than the containers thread pool and a high priority
  * allocated to admin users.  Thus regardless of load, admin users would always be
  * able to access the web application.
- * </p><p>
+ * <p/>
  * The maxRequest limit is policed by a {@link Semaphore} and the filter will wait a short while attempting to acquire
  * the semaphore. This wait is controlled by the "waitMs" init parameter and allows the expense of a suspend to be
  * avoided if the semaphore is shortly available.  If the semaphore cannot be obtained, the request will be suspended
  * for the default suspend period of the container or the valued set as the "suspendMs" init parameter.
- * </p><p>
+ * <p/>
  * If the "managedAttr" init parameter is set to true, then this servlet is set as a {@link ServletContext} attribute with the
  * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
  * manage the configuration of the filter.
- * </p>
- *
- *
  */
 @ManagedObject("Quality of Service Filter")
 public class QoSFilter implements Filter
 {
-    final static int __DEFAULT_MAX_PRIORITY=10;
-    final static int __DEFAULT_PASSES=10;
-    final static int __DEFAULT_WAIT_MS=50;
-    final static long __DEFAULT_TIMEOUT_MS = -1;
+    private static final Logger LOG = Log.getLogger(QoSFilter.class);
 
-    final static String MANAGED_ATTR_INIT_PARAM="managedAttr";
-    final static String MAX_REQUESTS_INIT_PARAM="maxRequests";
-    final static String MAX_PRIORITY_INIT_PARAM="maxPriority";
-    final static String MAX_WAIT_INIT_PARAM="waitMs";
-    final static String SUSPEND_INIT_PARAM="suspendMs";
+    static final int __DEFAULT_MAX_PRIORITY = 10;
+    static final int __DEFAULT_PASSES = 10;
+    static final int __DEFAULT_WAIT_MS = 50;
+    static final long __DEFAULT_TIMEOUT_MS = -1;
 
-    ServletContext _context;
+    static final String MANAGED_ATTR_INIT_PARAM = "managedAttr";
+    static final String MAX_REQUESTS_INIT_PARAM = "maxRequests";
+    static final String MAX_PRIORITY_INIT_PARAM = "maxPriority";
+    static final String MAX_WAIT_INIT_PARAM = "waitMs";
+    static final String SUSPEND_INIT_PARAM = "suspendMs";
 
-    protected long _waitMs;
-    protected long _suspendMs;
-    protected int _maxRequests;
-
+    private final String _suspended = "QoSFilter@" + Integer.toHexString(hashCode()) + ".SUSPENDED";
+    private final String _resumed = "QoSFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
+    private long _waitMs;
+    private long _suspendMs;
+    private int _maxRequests;
     private Semaphore _passes;
-    private Queue<Continuation>[] _queue;
-    private ContinuationListener[] _listener;
-    private String _suspended="QoSFilter@"+this.hashCode();
+    private Queue<AsyncContext>[] _queues;
+    private AsyncListener[] _listeners;
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.Filter#init(javax.servlet.FilterConfig)
-     */
     public void init(FilterConfig filterConfig)
     {
-        _context=filterConfig.getServletContext();
-
-        int max_priority=__DEFAULT_MAX_PRIORITY;
-        if (filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM)!=null)
-            max_priority=Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
-        _queue=new Queue[max_priority+1];
-        _listener = new ContinuationListener[max_priority + 1];
-        for (int p=0;p<_queue.length;p++)
+        int max_priority = __DEFAULT_MAX_PRIORITY;
+        if (filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM) != null)
+            max_priority = Integer.parseInt(filterConfig.getInitParameter(MAX_PRIORITY_INIT_PARAM));
+        _queues = new Queue[max_priority + 1];
+        _listeners = new AsyncListener[_queues.length];
+        for (int p = 0; p < _queues.length; ++p)
         {
-            _queue[p]=new ConcurrentLinkedQueue<Continuation>();
-
-            final int priority=p;
-            _listener[p] = new ContinuationListener()
-            {
-                public void onComplete(Continuation continuation)
-                {}
-
-                public void onTimeout(Continuation continuation)
-                {
-                    _queue[priority].remove(continuation);
-                }
-            };
+            _queues[p] = new ConcurrentLinkedQueue<>();
+            _listeners[p] = new QoSAsyncListener(p);
         }
 
-        int maxRequests=__DEFAULT_PASSES;
-        if (filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM)!=null)
-            maxRequests=Integer.parseInt(filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM));
-        _passes=new Semaphore(maxRequests,true);
+        int maxRequests = __DEFAULT_PASSES;
+        if (filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM) != null)
+            maxRequests = Integer.parseInt(filterConfig.getInitParameter(MAX_REQUESTS_INIT_PARAM));
+        _passes = new Semaphore(maxRequests, true);
         _maxRequests = maxRequests;
 
         long wait = __DEFAULT_WAIT_MS;
-        if (filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM)!=null)
-            wait=Integer.parseInt(filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM));
-        _waitMs=wait;
+        if (filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM) != null)
+            wait = Integer.parseInt(filterConfig.getInitParameter(MAX_WAIT_INIT_PARAM));
+        _waitMs = wait;
 
         long suspend = __DEFAULT_TIMEOUT_MS;
-        if (filterConfig.getInitParameter(SUSPEND_INIT_PARAM)!=null)
-            suspend=Integer.parseInt(filterConfig.getInitParameter(SUSPEND_INIT_PARAM));
-        _suspendMs=suspend;
+        if (filterConfig.getInitParameter(SUSPEND_INIT_PARAM) != null)
+            suspend = Integer.parseInt(filterConfig.getInitParameter(SUSPEND_INIT_PARAM));
+        _suspendMs = suspend;
 
-        if (_context!=null && Boolean.parseBoolean(filterConfig.getInitParameter(MANAGED_ATTR_INIT_PARAM)))
-            _context.setAttribute(filterConfig.getFilterName(),this);
+        ServletContext context = filterConfig.getServletContext();
+        if (context != null && Boolean.parseBoolean(filterConfig.getInitParameter(MANAGED_ATTR_INIT_PARAM)))
+            context.setAttribute(filterConfig.getFilterName(), this);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
-     */
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain)
-    throws IOException, ServletException
+    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
-        boolean accepted=false;
+        boolean accepted = false;
         try
         {
-            if (request.getAttribute(_suspended)==null)
+            Boolean suspended = (Boolean)request.getAttribute(_suspended);
+            if (suspended == null)
             {
-                accepted=_passes.tryAcquire(_waitMs,TimeUnit.MILLISECONDS);
+                accepted = _passes.tryAcquire(getWaitMs(), TimeUnit.MILLISECONDS);
                 if (accepted)
                 {
-                    request.setAttribute(_suspended,Boolean.FALSE);
+                    request.setAttribute(_suspended, Boolean.FALSE);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Accepted {}", request);
                 }
                 else
                 {
-                    request.setAttribute(_suspended,Boolean.TRUE);
+                    request.setAttribute(_suspended, Boolean.TRUE);
                     int priority = getPriority(request);
-                    Continuation continuation = ContinuationSupport.getContinuation(request);
-                    if (_suspendMs>0)
-                        continuation.setTimeout(_suspendMs);
-                    continuation.suspend();
-                    continuation.addContinuationListener(_listener[priority]);
-                    _queue[priority].add(continuation);
+                    AsyncContext asyncContext = request.startAsync();
+                    long suspendMs = getSuspendMs();
+                    if (suspendMs > 0)
+                        asyncContext.setTimeout(suspendMs);
+                    asyncContext.addListener(_listeners[priority]);
+                    _queues[priority].add(asyncContext);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Suspended {}", request);
                     return;
                 }
             }
             else
             {
-                Boolean suspended=(Boolean)request.getAttribute(_suspended);
-
-                if (suspended.booleanValue())
+                if (suspended)
                 {
-                    request.setAttribute(_suspended,Boolean.FALSE);
-                    if (request.getAttribute("javax.servlet.resumed")==Boolean.TRUE)
+                    request.setAttribute(_suspended, Boolean.FALSE);
+                    Boolean resumed = (Boolean)request.getAttribute(_resumed);
+                    if (resumed == Boolean.TRUE)
                     {
                         _passes.acquire();
-                        accepted=true;
+                        accepted = true;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Resumed {}", request);
                     }
                     else
                     {
                         // Timeout! try 1 more time.
-                        accepted = _passes.tryAcquire(_waitMs,TimeUnit.MILLISECONDS);
+                        accepted = _passes.tryAcquire(getWaitMs(), TimeUnit.MILLISECONDS);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Timeout {}", request);
                     }
                 }
                 else
                 {
-                    // pass through resume of previously accepted request
+                    // Pass through resume of previously accepted request.
                     _passes.acquire();
                     accepted = true;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Passthrough {}", request);
                 }
             }
 
             if (accepted)
             {
-                chain.doFilter(request,response);
+                chain.doFilter(request, response);
             }
             else
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Rejected {}", request);
                 ((HttpServletResponse)response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
             }
         }
-        catch(InterruptedException e)
+        catch (InterruptedException e)
         {
-            _context.log("QoS",e);
             ((HttpServletResponse)response).sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
         }
         finally
         {
             if (accepted)
             {
-                for (int p=_queue.length;p-->0;)
+                for (int p = _queues.length - 1; p >= 0; --p)
                 {
-                    Continuation continutaion=_queue[p].poll();
-                    if (continutaion!=null && continutaion.isSuspended())
+                    AsyncContext asyncContext = _queues[p].poll();
+                    if (asyncContext != null)
                     {
-                        continutaion.resume();
-                        break;
+                        ServletRequest candidate = asyncContext.getRequest();
+                        Boolean suspended = (Boolean)candidate.getAttribute(_suspended);
+                        if (suspended == Boolean.TRUE)
+                        {
+                            candidate.setAttribute(_resumed, Boolean.TRUE);
+                            asyncContext.dispatch();
+                            break;
+                        }
                     }
                 }
                 _passes.release();
@@ -240,40 +235,40 @@ public class QoSFilter implements Filter
     }
 
     /**
-     * Get the request Priority.
-     * <p> The default implementation assigns the following priorities:<ul>
-     * <li> 2 - for a authenticated request
-     * <li> 1 - for a request with valid /non new session
+     * Computes the request priority.
+     * <p/>
+     * The default implementation assigns the following priorities:
+     * <ul>
+     * <li> 2 - for an authenticated request
+     * <li> 1 - for a request with valid / non new session
      * <li> 0 - for all other requests.
      * </ul>
-     * This method may be specialised to provide application specific priorities.
+     * This method may be overridden to provide application specific priorities.
      *
-     * @param request
-     * @return the request priority
+     * @param request the incoming request
+     * @return the computed request priority
      */
     protected int getPriority(ServletRequest request)
     {
         HttpServletRequest baseRequest = (HttpServletRequest)request;
-        if (baseRequest.getUserPrincipal() != null )
+        if (baseRequest.getUserPrincipal() != null)
+        {
             return 2;
+        }
         else
         {
             HttpSession session = baseRequest.getSession(false);
-            if (session!=null && !session.isNew())
+            if (session != null && !session.isNew())
                 return 1;
             else
                 return 0;
         }
     }
 
+    public void destroy()
+    {
+    }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.Filter#destroy()
-     */
-    public void destroy(){}
-
-    /* ------------------------------------------------------------ */
     /**
      * Get the (short) amount of time (in milliseconds) that the filter would wait
      * for the semaphore to become available before suspending a request.
@@ -286,7 +281,6 @@ public class QoSFilter implements Filter
         return _waitMs;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set the (short) amount of time (in milliseconds) that the filter would wait
      * for the semaphore to become available before suspending a request.
@@ -298,7 +292,6 @@ public class QoSFilter implements Filter
         _waitMs = value;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Get the amount of time (in milliseconds) that the filter would suspend
      * a request for while waiting for the semaphore to become available.
@@ -311,7 +304,6 @@ public class QoSFilter implements Filter
         return _suspendMs;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set the amount of time (in milliseconds) that the filter would suspend
      * a request for while waiting for the semaphore to become available.
@@ -323,7 +315,6 @@ public class QoSFilter implements Filter
         _suspendMs = value;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Get the maximum number of requests allowed to be processed
      * at the same time.
@@ -336,7 +327,6 @@ public class QoSFilter implements Filter
         return _maxRequests;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Set the maximum number of requests allowed to be processed
      * at the same time.
@@ -345,8 +335,42 @@ public class QoSFilter implements Filter
      */
     public void setMaxRequests(int value)
     {
-        _passes = new Semaphore((value-_maxRequests+_passes.availablePermits()), true);
+        _passes = new Semaphore((value - getMaxRequests() + _passes.availablePermits()), true);
         _maxRequests = value;
     }
 
+    private class QoSAsyncListener implements AsyncListener
+    {
+        private final int priority;
+
+        public QoSAsyncListener(int priority)
+        {
+            this.priority = priority;
+        }
+
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+        }
+
+        @Override
+        public void onComplete(AsyncEvent event) throws IOException
+        {
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
+        {
+            // Remove before it's redispatched, so it won't be
+            // redispatched again at the end of the filtering.
+            AsyncContext asyncContext = event.getAsyncContext();
+            _queues[priority].remove(asyncContext);
+            asyncContext.dispatch();
+        }
+
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+        }
+    }
 }

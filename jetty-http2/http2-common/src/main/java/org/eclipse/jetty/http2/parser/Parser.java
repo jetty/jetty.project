@@ -153,7 +153,7 @@ public class Parser
         catch (Throwable x)
         {
             LOG.debug(x);
-            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "parser_error");
+            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "parser_error: "+x);
             return false;
         }
     }
@@ -251,6 +251,7 @@ public class Parser
             @Override
             public void onConnectionFailure(int error, String reason)
             {
+                LOG.warn("onConnectionFailure {},{}",error,reason);
             }
         }
     }
