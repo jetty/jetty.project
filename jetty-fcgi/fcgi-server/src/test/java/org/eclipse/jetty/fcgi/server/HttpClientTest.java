@@ -698,7 +698,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         contentLatch.set(new CountDownLatch(1));
         callback.succeeded();
 
-        Assert.assertTrue(completeLatch.await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(2, contentCount.get());
     }
 }

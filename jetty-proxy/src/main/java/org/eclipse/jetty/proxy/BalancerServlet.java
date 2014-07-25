@@ -26,7 +26,6 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.Cookie;
@@ -133,7 +132,8 @@ public class BalancerServlet extends ProxyServlet
     protected URI rewriteURI(HttpServletRequest request)
     {
         BalancerMember balancerMember = selectBalancerMember(request);
-        _log.debug("Selected {}", balancerMember);
+        if (_log.isDebugEnabled())
+            _log.debug("Selected {}", balancerMember);
         String path = request.getRequestURI();
         String query = request.getQueryString();
         if (query != null)
