@@ -519,9 +519,8 @@ public class Server extends HandlerWrapper implements Attributes
         {
             // this is a dispatch with a path
             ServletContext context=event.getServletContext();
-            HttpURI uri = new HttpURI(URIUtil.addPaths(context==null?null:context.getContextPath(), path));            
-            baseRequest.setUri(uri);
-            baseRequest.setRequestURI(null);
+            baseRequest.setURIPathQuery(URIUtil.addPaths(context==null?null:context.getContextPath(), path));
+            HttpURI uri = baseRequest.getUri();
             baseRequest.setPathInfo(uri.getDecodedPath());
             if (uri.getQuery()!=null)
                 baseRequest.mergeQueryParameters(uri.getQuery(), true); //we have to assume dispatch path and query are UTF8

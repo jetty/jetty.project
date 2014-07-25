@@ -440,9 +440,13 @@ public class Response implements HttpServletResponse
             int port = uri.getPort();
             if (port < 0)
                 port = HttpScheme.HTTPS.asString().equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
-            if (!request.getServerName().equalsIgnoreCase(uri.getHost()) ||
-                    request.getServerPort() != port ||
-                    !path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
+            
+            // Is it the same server?
+            if (!request.getServerName().equalsIgnoreCase(uri.getHost()))
+                return url;
+            if (request.getServerPort() != port)
+                return url;
+            if (!path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
                 return url;
         }
 

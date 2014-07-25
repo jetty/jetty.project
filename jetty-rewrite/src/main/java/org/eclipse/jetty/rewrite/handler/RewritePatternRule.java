@@ -88,7 +88,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     {
         if (_query == null)
         {
-            request.setRequestURI(newURI);
+            request.setURIPathQuery(newURI);
         }
         else
         {
@@ -97,9 +97,7 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
                 queryString = queryString + "&" + _query;
             else
                 queryString = _query;
-            HttpURI uri = new HttpURI(newURI + "?" + queryString);
-            request.setUri(uri);
-            request.setRequestURI(newURI);
+            request.setURIPathQuery(newURI);
             request.setQueryString(queryString);
         }
     }

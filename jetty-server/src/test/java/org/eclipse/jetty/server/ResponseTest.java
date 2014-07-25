@@ -47,6 +47,8 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
@@ -415,8 +417,7 @@ public class ResponseTest
     {
         Response response = newResponse();
         Request request = response.getHttpChannel().getRequest();
-        request.setServerName("myhost");
-        request.setServerPort(8888);
+        request.setAuthority("myhost",8888);
         request.setContextPath("/path");
 
         assertEquals("http://myhost:8888/path/info;param?query=0&more=1#target", response.encodeURL("http://myhost:8888/path/info;param?query=0&more=1#target"));
@@ -491,9 +492,8 @@ public class ResponseTest
                     Response response = newResponse();
                     Request request = response.getHttpChannel().getRequest();
 
-                    request.setServerName(host);
-                    request.setServerPort(port);
-                    request.setUri(new HttpURI("/path/info;param;jsessionid=12345?query=0&more=1#target"));
+                    request.setAuthority(host,port);
+                    request.setURIPathQuery("/path/info;param;jsessionid=12345?query=0&more=1#target");
                     request.setContextPath("/path");
                     request.setRequestedSessionId("12345");
                     request.setRequestedSessionIdFromCookie(i>2);
@@ -657,7 +657,7 @@ public class ResponseTest
     @Test
     public void testFlushAfterFullContent() throws Exception
     {
-        Response response = _channel.getResponse();
+        Response response = newResponse();
         byte[] data = new byte[]{(byte)0xCA, (byte)0xFE};
         ServletOutputStream output = response.getOutputStream();
         response.setContentLength(data.length);
@@ -790,6 +790,7 @@ public class ResponseTest
     private Response newResponse()
     {
         _channel.reset();
+        _channel.getRequest().setMetaData(new MetaData.Request("GET",new HttpURI("/path/info"),HttpVersion.HTTP_1_0,new HttpFields()));
         return new Response(_channel, _channel.getResponse().getHttpOutput());
     }
 

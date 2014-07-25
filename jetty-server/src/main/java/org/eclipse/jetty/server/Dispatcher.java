@@ -180,7 +180,7 @@ public class Dispatcher implements RequestDispatcher
                     attr._servletPath=old_servlet_path;
                 }
 
-                baseRequest.setRequestURI(_uri);
+                baseRequest.setURIPathQuery(_uri);
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setServletPath(null);
                 baseRequest.setPathInfo(_uri);
@@ -197,7 +197,7 @@ public class Dispatcher implements RequestDispatcher
         finally
         {
             baseRequest.setHandled(old_handled);
-            baseRequest.setRequestURI(old_uri);
+            baseRequest.setURIPathQuery(old_uri);
             baseRequest.setContextPath(old_context_path);
             baseRequest.setServletPath(old_servlet_path);
             baseRequest.setPathInfo(old_path_info);

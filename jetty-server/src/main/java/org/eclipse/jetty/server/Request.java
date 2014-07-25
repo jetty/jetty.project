@@ -67,6 +67,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -133,6 +134,11 @@ public class Request implements HttpServletRequest
     private final HttpInput _input;
 
     private MetaData.Request _metadata;
+
+    private String _contextPath;
+    private String _servletPath;
+    private String _pathInfo;
+    
     private boolean _secure;
     private boolean _asyncSupported = true;
     private boolean _newContext;
@@ -144,32 +150,22 @@ public class Request implements HttpServletRequest
     private Authentication _authentication;
     private String _characterEncoding;
     private ContextHandler.Context _context;
-    private String _contextPath;
     private CookieCutter _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = __NONE;
-    private String _httpMethod;
     private MultiMap<String> _queryParameters;
     private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
-    private String _pathInfo;
-    private int _serverPort;
     private String _queryEncoding;
-    private String _queryString;
     private BufferedReader _reader;
     private String _readerEncoding;
     private InetSocketAddress _remote;
     private String _requestedSessionId;
-    private String _requestURI;
     private Map<Object, HttpSession> _savedNewSessions;
-    private String _scheme = URIUtil.HTTP;
     private UserIdentity.Scope _scope;
-    private String _serverName;
-    private String _servletPath;
     private HttpSession _session;
     private SessionManager _sessionManager;
     private long _timeStamp;
-    private HttpURI _uri;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
     
@@ -227,17 +223,17 @@ public class Request implements HttpServletRequest
     private MultiMap<String> extractQueryParameters()
     {
         MultiMap<String> result = new MultiMap<>();
-        if (_uri != null && _uri.hasQuery())
+        if (_metadata.getURI() != null && _metadata.getURI().hasQuery())
         {
             if (_queryEncoding == null)
             {
-                _uri.decodeQueryTo(result);
+                _metadata.getURI().decodeQueryTo(result);
             }
             else
             {
                 try
                 {
-                    _uri.decodeQueryTo(result, _queryEncoding);
+                    _metadata.getURI().decodeQueryTo(result, _queryEncoding);
                 }
                 catch (UnsupportedEncodingException e)
                 {
@@ -763,6 +759,21 @@ public class Request implements HttpServletRequest
     @Override
     public String getLocalAddr()
     {
+        if (_channel==null)
+        {
+            try
+            {
+                String name =InetAddress.getLocalHost().getHostAddress();
+                if (StringUtil.ALL_INTERFACES.equals(name))
+                    return null;
+                return name;
+            }
+            catch (java.net.UnknownHostException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        
         InetSocketAddress local=_channel.getLocalAddress();
         if (local==null)
             return "";
@@ -779,6 +790,20 @@ public class Request implements HttpServletRequest
     @Override
     public String getLocalName()
     {
+        if (_channel==null)
+        {
+            try
+            {
+                String name =InetAddress.getLocalHost().getHostName();
+                if (StringUtil.ALL_INTERFACES.equals(name))
+                    return null;
+                return name;
+            }
+            catch (java.net.UnknownHostException e)
+            {
+                LOG.ignore(e);
+            }
+        }
         InetSocketAddress local=_channel.getLocalAddress();
         return local.getHostString();
     }
@@ -790,6 +815,8 @@ public class Request implements HttpServletRequest
     @Override
     public int getLocalPort()
     {
+        if (_channel==null)
+            return 0;
         InetSocketAddress local=_channel.getLocalAddress();
         return local.getPort();
     }
@@ -801,7 +828,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getMethod()
     {
-        return _httpMethod;
+        return _metadata.getMethod();
     }
 
     /* ------------------------------------------------------------ */
@@ -947,9 +974,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getQueryString()
     {
-        if (_queryString == null && _uri != null)
-            _queryString = _uri.getQuery();
-        return _queryString;
+        return _metadata.getURI().getQuery();
     }
 
     /* ------------------------------------------------------------ */
@@ -1116,9 +1141,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestURI()
     {
-        if (_requestURI == null && _uri != null)
-            _requestURI = _uri.getPath();
-        return _requestURI;
+        return _metadata.getURI().getPath();
     }
 
     /* ------------------------------------------------------------ */
@@ -1165,7 +1188,8 @@ public class Request implements HttpServletRequest
     @Override
     public String getScheme()
     {
-        return _scheme;
+        String scheme=_metadata.getURI().getScheme();
+        return scheme==null?HttpScheme.HTTP.asString():scheme;
     }
 
     /* ------------------------------------------------------------ */
@@ -1175,52 +1199,45 @@ public class Request implements HttpServletRequest
     @Override
     public String getServerName()
     {
+        String name = _metadata.getURI().getHost();
+        
         // Return already determined host
-        if (_serverName != null)
-            return _serverName;
+        if (name != null)
+            return name;
 
-        if (_uri == null)
-            throw new IllegalStateException("No uri");
+        return findServerName();
+    }
 
-        // Return host from absolute URI
-        _serverName = _uri.getHost();
-        if (_serverName != null)
-        {
-            _serverPort = _uri.getPort();
-            return _serverName;
-        }
-
+    /* ------------------------------------------------------------ */
+    private String findServerName()
+    {
         // Return host from header field
         HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
         if (host!=null)
         {
+            // TODO is this needed now?
             HostPortHttpField authority = (host instanceof HostPortHttpField)
                 ?((HostPortHttpField)host)
                 :new HostPortHttpField(host.getValue());
-            _serverName=authority.getHost();
-            _serverPort=authority.getPort();
-            return _serverName;
+            _metadata.getURI().setAuthority(authority.getHost(),authority.getPort());
+            return authority.getHost();
         }
 
         // Return host from connection
-        if (_channel != null)
-        {
-            _serverName = getLocalName();
-            _serverPort = getLocalPort();
-            if (_serverName != null && !StringUtil.ALL_INTERFACES.equals(_serverName))
-                return _serverName;
-        }
+        String name=getLocalName();
+        if (name != null)
+            return name;
 
         // Return the local host
         try
         {
-            _serverName = InetAddress.getLocalHost().getHostAddress();
+            return InetAddress.getLocalHost().getHostAddress();
         }
         catch (java.net.UnknownHostException e)
         {
             LOG.ignore(e);
         }
-        return _serverName;
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1230,13 +1247,11 @@ public class Request implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        // If we have no port and have not decoded a server name
-        if (_serverPort <= 0 && _serverName == null)
-            // decode a server name, which will set the port if it can
-                getServerName();
-
+        HttpURI uri = _metadata.getURI();
+        int port = (uri.getHost()==null)?findServerPort():uri.getPort();
+            
         // If no port specified, return the default port for the scheme
-        if (_serverPort <= 0)
+        if (port <= 0)
         {
             if (getScheme().equalsIgnoreCase(URIUtil.HTTPS))
                 return 443;
@@ -1244,9 +1259,31 @@ public class Request implements HttpServletRequest
         }
         
         // return a specific port
-        return _serverPort;
+        return port;
     }
 
+    /* ------------------------------------------------------------ */
+    private int findServerPort()
+    {
+        // Return host from header field
+        HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
+        if (host!=null)
+        {
+            // TODO is this needed now?
+            HostPortHttpField authority = (host instanceof HostPortHttpField)
+                ?((HostPortHttpField)host)
+                :new HostPortHttpField(host.getValue());
+            _metadata.getURI().setAuthority(authority.getHost(),authority.getPort());
+            return authority.getPort();
+        }
+
+        // Return host from connection
+        if (_channel != null)
+            return getLocalPort();
+        
+        return -1;
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public ServletContext getServletContext()
@@ -1373,7 +1410,7 @@ public class Request implements HttpServletRequest
      */
     public HttpURI getUri()
     {
-        return _uri;
+        return _metadata.getURI();
     }
 
     /* ------------------------------------------------------------ */
@@ -1539,33 +1576,22 @@ public class Request implements HttpServletRequest
         setMethod(request.getMethod());
         HttpURI uri = request.getURI();
         
-        String scheme=uri.getScheme();
-        if (scheme!=null)
-            setScheme(scheme);
-        
-        String uriHost=uri.getHost();
-        if (uriHost!=null)
-        {
-            // Give precidence to authority in absolute URI
-            setServerName(uriHost);
-            setServerPort(uri.getPort());
-        }
-        
-        setUri(uri);
-        
-        
         String path = uri.getDecodedPath();
         String info;
         if (path==null || path.length()==0)
         {
             if (uri.isAbsolute())
+            {
                 path="/";
+                uri.setPath(path);
+            }
             else
                 throw new BadMessageException(400,"Bad URI");
             info=path;
         }
         else if (!path.startsWith("/"))
         {
+            System.err.println(request);
             if (!"*".equals(path) && !HttpMethod.CONNECT.is(getMethod()))
                 throw new BadMessageException(400,"Bad URI");
             info=path;
@@ -1619,23 +1645,16 @@ public class Request implements HttpServletRequest
         _cookiesExtracted = false;
         _context = null;
         _newContext=false;
-        _serverName = null;
-        _httpMethod = null;
         _pathInfo = null;
-        _serverPort = 0;
         _queryEncoding = null;
-        _queryString = null;
         _requestedSessionId = null;
         _requestedSessionIdFromCookie = false;
         _secure=false;
         _session = null;
         _sessionManager = null;
-        _requestURI = null;
         _scope = null;
-        _scheme = URIUtil.HTTP;
         _servletPath = null;
         _timeStamp = 0;
-        _uri = null;
         _queryParameters = null;
         _contentParameters = null;
         _parameters = null;
@@ -1859,13 +1878,13 @@ public class Request implements HttpServletRequest
      */
     public void setMethod(String method)
     {
-        _httpMethod = method;
+        _metadata.setMethod(method);
     }
 
     /* ------------------------------------------------------------ */
     public boolean isHead()
     {
-        return HttpMethod.HEAD.asString().equals(_httpMethod);
+        return _metadata!=null && HttpMethod.HEAD.is(_metadata.getMethod());
     }
 
     /* ------------------------------------------------------------ */
@@ -1890,7 +1909,6 @@ public class Request implements HttpServletRequest
     public void setQueryEncoding(String queryEncoding)
     {
         _queryEncoding = queryEncoding;
-        _queryString = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1900,7 +1918,7 @@ public class Request implements HttpServletRequest
      */
     public void setQueryString(String queryString)
     {
-        _queryString = queryString;
+        _metadata.getURI().setQuery(queryString);
         _queryEncoding = null; //assume utf-8
     }
 
@@ -1935,13 +1953,9 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param requestURI
-     *            The requestURI to set.
-     */
-    public void setRequestURI(String requestURI)
+    public void setURIPathQuery(String requestURI)
     {
-        _requestURI = requestURI;
+        _metadata.getURI().setPathQuery(requestURI);
     }
 
     /* ------------------------------------------------------------ */
@@ -1951,7 +1965,7 @@ public class Request implements HttpServletRequest
      */
     public void setScheme(String scheme)
     {
-        _scheme = scheme;
+        _metadata.getURI().setScheme(scheme);
     }
 
     /* ------------------------------------------------------------ */
@@ -1959,19 +1973,9 @@ public class Request implements HttpServletRequest
      * @param host
      *            The host to set.
      */
-    public void setServerName(String host)
+    public void setAuthority(String host,int port)
     {
-        _serverName = host;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param port
-     *            The port to set.
-     */
-    public void setServerPort(int port)
-    {
-        _serverPort = port;
+        _metadata.getURI().setAuthority(host,port);;
     }
 
     /* ------------------------------------------------------------ */
@@ -2008,16 +2012,6 @@ public class Request implements HttpServletRequest
     public void setTimeStamp(long ts)
     {
         _timeStamp = ts;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param uri
-     *            The uri to set.
-     */
-    public void setUri(HttpURI uri)
-    {
-        _uri = uri;
     }
 
     /* ------------------------------------------------------------ */
@@ -2060,7 +2054,7 @@ public class Request implements HttpServletRequest
     @Override
     public String toString()
     {
-        return (_handled?"[":"(") + getMethod() + " " + _uri + (_handled?"]@":")@") + hashCode() + " " + super.toString();
+        return (_handled?"[":"(") + getMethod() + " " + _metadata.getURI() + (_handled?"]@":")@") + hashCode() + " " + super.toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -2174,10 +2168,10 @@ public class Request implements HttpServletRequest
         UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING);
 
         MultiMap<String> oldQueryParams = _queryParameters;
-        if (oldQueryParams == null && _queryString != null)
+        if (oldQueryParams == null && getQueryString() != null)
         {
             oldQueryParams = new MultiMap<>();
-            UrlEncoded.decodeTo(_queryString, oldQueryParams, getQueryEncoding());
+            UrlEncoded.decodeTo(getQueryString(), oldQueryParams, getQueryEncoding());
         }
 
         MultiMap<String> mergedQueryParams = newQueryParams;

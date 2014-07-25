@@ -394,6 +394,12 @@ public class HttpURI
                             state=State.PATH;
                             break;
                         }
+                        case ';':
+                        {
+                            // multiple parameters
+                            m=i+1;
+                            break;
+                        }
                     }
                     continue;
                 }
@@ -625,17 +631,54 @@ public class HttpURI
     }
 
     /* ------------------------------------------------------------ */
+    public void setScheme(String scheme)
+    {
+        _scheme=scheme;
+        _uri=null;
+    }
+    
+    /* ------------------------------------------------------------ */
     /**
      * @param host
      * @param port
      */
-    public void setAuth(String host, int port)
+    public void setAuthority(String host, int port)
     {
         _host=host;
         _port=port;
         _uri=null;
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @param path
+     */
+    public void setPath(String path)
+    {
+        _uri=null;
+        _path=path;
+        _decodedPath=null;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setPathQuery(String path)
+    {
+        _uri=null;
+        _path=null;
+        _decodedPath=null;
+        _param=null;
+        _fragment=null;
+        if (path!=null)
+            parse(State.PATH,path,0,path.length());
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setQuery(String query)
+    {
+        _query=query;
+        _uri=null;
+    }
+    
     /* ------------------------------------------------------------ */
     public URI toURI() throws URISyntaxException
     {
@@ -657,4 +700,6 @@ public class HttpURI
             return _host+":"+_port;
         return _host;
     }
+
+
 }

@@ -73,11 +73,11 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
         _rule.matchAndApply("/",_request,_response);
         assertEquals("https",_request.getScheme());
 
-        _request.setScheme(null);
+        _request.setScheme("other");
         // header value doesn't match rule's value
         setRequestHeader("Front-End-Https", "off");
         _rule.matchAndApply("/",_request,_response);
-        assertEquals(null,_request.getScheme());
+        assertEquals("other",_request.getScheme());
 
         _request.setScheme(null);
         // header value can be any value

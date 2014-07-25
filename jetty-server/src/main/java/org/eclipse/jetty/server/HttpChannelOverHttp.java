@@ -105,8 +105,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         _metadata.setMethod(HttpMethod.CONNECT.asString());
         Request request = getRequest();
         request.setAttribute("PROXY", protocol);
-        request.setServerName(sAddr);
-        request.setServerPort(dPort);
+        request.setAuthority(sAddr,dPort);
         request.setRemoteAddr(InetSocketAddress.createUnresolved(sAddr,sPort));
     }
 
@@ -127,7 +126,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     if (!_uri.isAbsolute() && field instanceof HostPortHttpField)
                     {
                         HostPortHttpField hp = (HostPortHttpField)field;
-                        _uri.setAuth(hp.getHost(),hp.getPort());
+                        _uri.setAuthority(hp.getHost(),hp.getPort());
                     }
                     break;
 

@@ -226,21 +226,19 @@ public class ForwardedRequestCustomizer implements Customizer
         {
             // Update host header
             httpFields.put(_hostHeader);
-            request.setServerName(_hostHeader.getHost());
-            request.setServerPort(_hostHeader.getPort());
+            request.setAuthority(_hostHeader.getHost(),_hostHeader.getPort());
         }
         else if (forwardedHost != null)
         {
             // Update host header
             HostPortHttpField auth = new HostPortHttpField(forwardedHost);
             httpFields.put(auth);
-            request.setServerName(auth.getHost());
-            request.setServerPort(auth.getPort());
+            request.setAuthority(auth.getHost(),auth.getPort());
         }
         else if (forwardedServer != null)
         {
             // Use provided server name
-            request.setServerName(forwardedServer);
+            request.setAuthority(forwardedServer,request.getServerPort());
         }
 
         if (forwardedFor != null)
