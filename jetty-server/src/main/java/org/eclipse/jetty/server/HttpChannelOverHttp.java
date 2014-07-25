@@ -51,7 +51,6 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     
-    private final HttpURI _uri = new HttpURI();
     private final MetaData.Request _metadata = new MetaData.Request();
     
     
@@ -60,7 +59,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         super(connector,config,endPoint,transport,input);
         _httpConnection = httpConnection;
         _metadata.setFields(_fields);
-        _metadata.setURI(_uri);
+        _metadata.setURI(new HttpURI());
     }
 
     @Override
@@ -70,7 +69,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;
-        _uri.clear();
+        _metadata.getURI().clear();
         _connection=null;
         _fields.clear();
     }
@@ -91,7 +90,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public boolean startRequest(String method, String uri, HttpVersion version)
     {
         _metadata.setMethod(method);
-        _uri.parse(uri);
+        _metadata.getURI().parse(uri);
         _metadata.setHttpVersion(version);
         _expect = false;
         _expect100Continue = false;
@@ -123,10 +122,10 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     break;
 
                 case HOST:
-                    if (!_uri.isAbsolute() && field instanceof HostPortHttpField)
+                    if (!_metadata.getURI().isAbsolute() && field instanceof HostPortHttpField)
                     {
                         HostPortHttpField hp = (HostPortHttpField)field;
-                        _uri.setAuthority(hp.getHost(),hp.getPort());
+                        _metadata.getURI().setAuthority(hp.getHost(),hp.getPort());
                     }
                     break;
 

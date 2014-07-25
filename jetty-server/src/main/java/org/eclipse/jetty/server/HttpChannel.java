@@ -211,7 +211,7 @@ public class HttpChannel implements Runnable
         if (LOG.isDebugEnabled())
         {
             threadName = Thread.currentThread().getName();
-            Thread.currentThread().setName(threadName + " - " + _request.getUri());
+            Thread.currentThread().setName(threadName + " - " + _request.getHttpURI());
             LOG.debug("{} handle enter", this);
         }
 
@@ -325,7 +325,7 @@ public class HttpChannel implements Runnable
                     if (e instanceof EofException)
                         LOG.debug(e);
                     else
-                        LOG.warn(String.valueOf(_request.getUri()), e);
+                        LOG.warn(String.valueOf(_request.getHttpURI()), e);
                     _state.error(e);
                     _request.setHandled(true);
                     handleException(e);

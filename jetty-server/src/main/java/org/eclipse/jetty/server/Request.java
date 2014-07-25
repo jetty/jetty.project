@@ -128,6 +128,9 @@ public class Request implements HttpServletRequest
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
+    
+    private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
+
 
     private final HttpChannel _channel;
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
@@ -208,32 +211,32 @@ public class Request implements HttpServletRequest
         // Extract query string parameters; these may be replaced by a forward()
         // and may have already been extracted by mergeQueryParameters().
         if (_queryParameters == null)
-            _queryParameters = extractQueryParameters();
+            extractQueryParameters();
 
         // Extract content parameters; these cannot be replaced by a forward()
         // once extracted and may have already been extracted by getParts() or
         // by a processing happening after a form-based authentication.
         if (_contentParameters == null)
-            _contentParameters = extractContentParameters();
+            extractContentParameters();
 
-        _parameters = restoreParameters();
+        restoreParameters();
     }
 
     /* ------------------------------------------------------------ */
-    private MultiMap<String> extractQueryParameters()
+    private void extractQueryParameters()
     {
-        MultiMap<String> result = new MultiMap<>();
-        if (_metadata.getURI() != null && _metadata.getURI().hasQuery())
+        if (_metadata.getURI() == null || !_metadata.getURI().hasQuery())
+            _queryParameters=NO_PARAMS;
+        else
         {
+            _queryParameters = new MultiMap<>();
             if (_queryEncoding == null)
-            {
-                _metadata.getURI().decodeQueryTo(result);
-            }
+                _metadata.getURI().decodeQueryTo(_queryParameters);
             else
             {
                 try
                 {
-                    _metadata.getURI().decodeQueryTo(result, _queryEncoding);
+                    _metadata.getURI().decodeQueryTo(_queryParameters, _queryEncoding);
                 }
                 catch (UnsupportedEncodingException e)
                 {
@@ -244,17 +247,17 @@ public class Request implements HttpServletRequest
                 }
             }
         }
-        return result;
     }
 
     /* ------------------------------------------------------------ */
-    private MultiMap<String> extractContentParameters()
+    private void extractContentParameters()
     {
-        MultiMap<String> result = new MultiMap<>();
-
         String contentType = getContentType();
-        if (contentType != null && !contentType.isEmpty())
+        if (contentType == null || contentType.isEmpty())
+            _contentParameters=NO_PARAMS;
+        else
         {
+            _contentParameters=new MultiMap<>();
             contentType = HttpFields.valueParameters(contentType, null);
             int contentLength = getContentLength();
             if (contentLength != 0)
@@ -262,18 +265,17 @@ public class Request implements HttpServletRequest
                 if (MimeTypes.Type.FORM_ENCODED.is(contentType) && _inputState == __NONE &&
                         (HttpMethod.POST.is(getMethod()) || HttpMethod.PUT.is(getMethod())))
                 {
-                    extractFormParameters(result);
+                    extractFormParameters(_contentParameters);
                 }
                 else if (contentType.startsWith("multipart/form-data") &&
                         getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
                         _multiPartInputStream == null)
                 {
-                    extractMultipartParameters(result);
+                    extractMultipartParameters(_contentParameters);
                 }
             }
         }
-
-        return result;
+        
     }
 
     /* ------------------------------------------------------------ */
@@ -841,7 +843,7 @@ public class Request implements HttpServletRequest
         if (!_paramsExtracted)
             extractParameters();
         if (_parameters == null)
-            _parameters = restoreParameters();
+            restoreParameters();
         return _parameters.getValue(name,0);
     }
 
@@ -855,7 +857,7 @@ public class Request implements HttpServletRequest
         if (!_paramsExtracted)
             extractParameters();
         if (_parameters == null)
-            _parameters = restoreParameters();
+            restoreParameters();
         return Collections.unmodifiableMap(_parameters.toStringArrayMap());
     }
 
@@ -869,7 +871,7 @@ public class Request implements HttpServletRequest
         if (!_paramsExtracted)
             extractParameters();
         if (_parameters == null)
-            _parameters = restoreParameters();
+            restoreParameters();
         return Collections.enumeration(_parameters.keySet());
     }
 
@@ -883,38 +885,50 @@ public class Request implements HttpServletRequest
         if (!_paramsExtracted)
             extractParameters();
         if (_parameters == null)
-            _parameters = restoreParameters();
+            restoreParameters();
         List<String> vals = _parameters.getValues(name);
         if (vals == null)
             return null;
         return vals.toArray(new String[vals.size()]);
     }
 
-    private MultiMap<String> restoreParameters()
+    /* ------------------------------------------------------------ */
+    private void restoreParameters()
     {
-        MultiMap<String> result = new MultiMap<>();
         if (_queryParameters == null)
-            _queryParameters = extractQueryParameters();
-        result.addAllValues(_queryParameters);
-        result.addAllValues(_contentParameters);
-        return result;
+            extractQueryParameters();
+        
+        if (_queryParameters==NO_PARAMS || _queryParameters.size()==0)
+            _parameters=_contentParameters;
+        else if (_contentParameters==NO_PARAMS || _contentParameters.size()==0)
+            _parameters=_queryParameters;
+        else
+        {
+            _parameters = new MultiMap<>();
+            _parameters.addAllValues(_queryParameters);
+            _parameters.addAllValues(_contentParameters);
+        }
     }
 
+    /* ------------------------------------------------------------ */
     public MultiMap<String> getQueryParameters()
     {
         return _queryParameters;
     }
 
+    /* ------------------------------------------------------------ */
     public void setQueryParameters(MultiMap<String> queryParameters)
     {
         _queryParameters = queryParameters;
     }
 
+    /* ------------------------------------------------------------ */
     public void setContentParameters(MultiMap<String> contentParameters)
     {
         _contentParameters = contentParameters;
     }
 
+    /* ------------------------------------------------------------ */
     public void resetParameters()
     {
         _parameters = null;
@@ -1408,9 +1422,18 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the uri.
      */
-    public HttpURI getUri()
+    public HttpURI getHttpURI()
     {
         return _metadata.getURI();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param old_uri
+     */
+    public void setHttpURI(HttpURI uri)
+    {
+        _metadata.setURI(uri);
     }
 
     /* ------------------------------------------------------------ */
@@ -2161,24 +2184,35 @@ public class Request implements HttpServletRequest
         _authentication=Authentication.UNAUTHENTICATED;
     }
 
-    public void mergeQueryParameters(String newQuery, boolean updateQueryString)
+    /* ------------------------------------------------------------ */
+    public void mergeQueryParameters(String oldQuery,String newQuery, boolean updateQueryString)
     {
-        MultiMap<String> newQueryParams = new MultiMap<>();
+        // TODO  This is seriously ugly
+        
+        MultiMap<String> newQueryParams = null;
         // Have to assume ENCODING because we can't know otherwise.
-        UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING);
-
-        MultiMap<String> oldQueryParams = _queryParameters;
-        if (oldQueryParams == null && getQueryString() != null)
+        if (newQuery!=null)
         {
-            oldQueryParams = new MultiMap<>();
-            UrlEncoded.decodeTo(getQueryString(), oldQueryParams, getQueryEncoding());
+            newQueryParams = new MultiMap<>();
+            UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING);
         }
 
-        MultiMap<String> mergedQueryParams = newQueryParams;
-        if (oldQueryParams != null)
+        MultiMap<String> oldQueryParams = _queryParameters;
+        if (oldQueryParams == null && oldQuery != null)
+        {
+            oldQueryParams = new MultiMap<>();
+            UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryEncoding());
+        }
+
+        MultiMap<String> mergedQueryParams;
+        if (newQueryParams==null || newQueryParams.size()==0)
+            mergedQueryParams=oldQueryParams==null?NO_PARAMS:oldQueryParams;
+        else if (oldQueryParams==null || oldQueryParams.size()==0)
+            mergedQueryParams=newQueryParams==null?NO_PARAMS:newQueryParams;
+        else
         {
             // Parameters values are accumulated.
-            mergedQueryParams = new MultiMap<>(newQueryParams);
+            mergedQueryParams=new MultiMap<>(newQueryParams);
             mergedQueryParams.addAllValues(oldQueryParams);
         }
 
@@ -2189,13 +2223,19 @@ public class Request implements HttpServletRequest
         {
             // Build the new merged query string, parameters in the
             // new query string hide parameters in the old query string.
-            StringBuilder mergedQuery = new StringBuilder(newQuery);
+            StringBuilder mergedQuery = new StringBuilder();
+            if (newQuery!=null)
+                mergedQuery.append(newQuery);
             for (Map.Entry<String, List<String>> entry : mergedQueryParams.entrySet())
             {
-                if (newQueryParams.containsKey(entry.getKey()))
+                if (newQueryParams!=null && newQueryParams.containsKey(entry.getKey()))
                     continue;
                 for (String value : entry.getValue())
-                    mergedQuery.append("&").append(entry.getKey()).append("=").append(value);
+                {
+                    if (mergedQuery.length()>0)
+                        mergedQuery.append("&");
+                    mergedQuery.append(entry.getKey()).append("=").append(value);
+                }
             }
 
             setQueryString(mergedQuery.toString());
@@ -2227,5 +2267,6 @@ public class Request implements HttpServletRequest
             throw new ServletException(e);
         }
     }
+
     
 }

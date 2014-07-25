@@ -64,6 +64,7 @@ import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Dispatcher;
@@ -1933,21 +1934,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             try
             {
-                String query = null;
-                int q = 0;
-                if ((q = uriInContext.indexOf('?')) > 0)
-                {
-                    query = uriInContext.substring(q + 1);
-                    uriInContext = uriInContext.substring(0,q);
-                }
+                HttpURI uri = new HttpURI(null,null,0,uriInContext);
+                
+                String pathInfo=URIUtil.canonicalPath(uri.getDecodedPath());
+                if (pathInfo==null)
+                    return null;
 
-                String pathInContext = URIUtil.canonicalPath(URIUtil.decodePath(uriInContext));
-                if (pathInContext!=null)
-                {
-                    String uri = URIUtil.addPaths(getContextPath(),uriInContext);
-                    ContextHandler context = ContextHandler.this;
-                    return new Dispatcher(context,uri,pathInContext,query);
-                }
+                String contextPath=getContextPath();
+                if (contextPath!=null && contextPath.length()>0)
+                    uri.setPath(URIUtil.addPaths(contextPath,uri.getPath()));
+                
+                return new Dispatcher(ContextHandler.this,uri,pathInfo);
             }
             catch (Exception e)
             {
