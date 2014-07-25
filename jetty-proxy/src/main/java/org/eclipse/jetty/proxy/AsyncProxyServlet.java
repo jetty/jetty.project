@@ -85,7 +85,7 @@ public class AsyncProxyServlet extends ProxyServlet
         catch (Throwable x)
         {
             callback.failed(x);
-            onResponseFailure(request, response, proxyResponse, x);
+            proxyResponse.abort(x);
         }
     }
 
@@ -279,8 +279,7 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void onError(Throwable failure)
         {
-            HttpServletResponse response = (HttpServletResponse)request.getAsyncContext().getResponse();
-            onResponseFailure(request, response, proxyResponse, failure);
+            proxyResponse.abort(failure);
         }
     }
 
