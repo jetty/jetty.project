@@ -30,9 +30,9 @@ package org.eclipse.jetty.http;
  * <th>Code</th>
  * <th>Message</th>
  * <th>
- * <a href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a></th>
+ * <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1 Semantics and Content</a></th>
  * <th>
- * <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a></th>
+ * <a href="http://tools.ietf.org/html/rfc7238">RFC 7238 - HTTP/1.1 Permanent Redirect</a></th>
  * <th>
  * <a href="http://tools.ietf.org/html/rfc2518">RFC 2518 - WEBDAV</a></th>
  * </tr>
@@ -633,6 +633,7 @@ public class HttpStatus
     public final static int NOT_MODIFIED_304 = 304;
     public final static int USE_PROXY_305 = 305;
     public final static int TEMPORARY_REDIRECT_307 = 307;
+    public final static int PERMANENT_REDIRECT = 308;
 
     public final static int BAD_REQUEST_400 = 400;
     public final static int UNAUTHORIZED_401 = 401;
@@ -738,6 +739,8 @@ public class HttpStatus
         USE_PROXY(USE_PROXY_305, "Use Proxy"),
         /** <code>307 Temporary Redirect</code> */
         TEMPORARY_REDIRECT(TEMPORARY_REDIRECT_307, "Temporary Redirect"),
+        /** <code>308 Permanent Redirect</code> */
+        PERMANET_REDIRECT(PERMANENT_REDIRECT, "Permanent Redirect"),
 
         /*
          * --------------------------------------------------------------------
