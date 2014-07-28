@@ -95,6 +95,8 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
 
             HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2((IStream)stream, frame);
             HttpInputOverHTTP2 input = new HttpInputOverHTTP2();
+            
+            // TODO pool HttpChannels per connection - maybe associate with thread?
             HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport, input, stream);
             stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
 

@@ -45,7 +45,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     private static final HttpField ACCEPT_ENCODING_GZIP = new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip");
     private static final HttpField SERVER_VERSION=new HttpField(HttpHeader.SERVER,HttpConfiguration.SERVER_VERSION);
     private static final HttpField POWERED_BY=new HttpField(HttpHeader.X_POWERED_BY,HttpConfiguration.SERVER_VERSION);
-    private final Stream stream;
+    private final Stream stream; // TODO recycle channel for new Stream?
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input, Stream stream)
     {
