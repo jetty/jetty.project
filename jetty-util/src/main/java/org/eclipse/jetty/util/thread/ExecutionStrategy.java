@@ -59,7 +59,6 @@ public abstract class ExecutionStrategy implements Runnable
         _executor=executor;
     }
     
-    
     /* ------------------------------------------------------------ */
     /** Simple iterative strategy.
      * Iterate over production until complete and execute each task.
@@ -113,6 +112,7 @@ public abstract class ExecutionStrategy implements Runnable
     {
         private final AtomicInteger _threads = new AtomicInteger(0);
         private final AtomicReference<Boolean> _producing = new AtomicReference<Boolean>(Boolean.FALSE);
+        private volatile boolean _dispatched;
 
         public EatWhatYouKill(Producer producer, Executor executor)
         {
@@ -121,6 +121,7 @@ public abstract class ExecutionStrategy implements Runnable
         
         public void run()
         {
+            _dispatched=false;
             // count the dispatched threads
             _threads.incrementAndGet();
             try
@@ -146,9 +147,12 @@ public abstract class ExecutionStrategy implements Runnable
                     }
 
                     // then we may need another thread to keep producing
-                    if (!complete)
+                    if (!complete && !_dispatched)
+                    {
                         // Dispatch a thread to continue producing
+                        _dispatched=true;
                         _executor.execute(this);
+                    }
                     
                     // If there is a task, 
                     if (task!=null)
