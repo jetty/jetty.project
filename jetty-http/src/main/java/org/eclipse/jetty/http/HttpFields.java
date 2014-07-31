@@ -474,7 +474,7 @@ public class HttpFields implements Iterable<HttpField>
     public long getLongField(String name) throws NumberFormatException
     {
         HttpField field = getField(name);
-        return field==null?-1L:StringUtil.toLong(field.getValue());
+        return field==null?-1L:field.getLongValue();
     }
 
     /**

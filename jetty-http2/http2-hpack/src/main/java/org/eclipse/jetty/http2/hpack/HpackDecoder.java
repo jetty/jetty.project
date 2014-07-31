@@ -27,6 +27,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.TypeUtil;
@@ -41,6 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class HpackDecoder
 {
     public static final Logger LOG = Log.getLogger(HpackDecoder.class);
+    public final static HttpField.LongValueHttpField CONTENT_LENGTH_0 = new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH,0L);
     
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
@@ -79,7 +81,7 @@ public class HpackDecoder
             byte b = buffer.get();
             if (b<0)
             {
-                // indexed
+                // 7.1 indexed if the high bit is set
                 int index = NBitInteger.decode(buffer,7);
                 Entry entry=_context.get(index);
                 if (entry==null)
@@ -107,126 +109,143 @@ public class HpackDecoder
             else 
             {
                 // look at the first nibble in detail
-                int f=(b&0xF0)>>4;
+                byte f= (byte)((b&0xF0)>>4);
                 String name;
                 HttpHeader header;
                 String value;
+
+                boolean indexed;
+                int name_index;
                 
-                if (f<=1 || f>=4)
+                switch (f)
                 {
-                    // literal 
-                    boolean indexed=f>=4;
-                    int bits=indexed?6:4;
-                    boolean huffmanName=false;
+                    case 2: // 7.3
+                    case 3: // 7.3
+                        // change table size
+                        int size = NBitInteger.decode(buffer,5);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("decode resize="+size);
+                        if (size>_localMaxHeaderTableSize)
+                            throw new IllegalArgumentException();
+                        _context.resize(size);
+                        continue;
                     
-                    // decode the name
-                    int name_index=NBitInteger.decode(buffer,bits);
-                    if (name_index>0)
-                    {
-                        Entry name_entry=_context.get(name_index);
-                        name=name_entry.getHttpField().getName();
-                        header=name_entry.getHttpField().getHeader();
-                    }
-                    else
-                    {
-                        huffmanName = (buffer.get()&0x80)==0x80;
-                        int length = NBitInteger.decode(buffer,7);
-                        _builder.checkSize(length,huffmanName);
-                        if (huffmanName)
-                            name=Huffman.decode(buffer,length);
-                        else
-                            name=toASCIIString(buffer,length);
-                        for (int i=0;i<name.length();i++)
-                        {
-                            char c=name.charAt(i);
-                            if (c>='A'&&c<='Z')
-                            {
-                                throw new BadMessageException(400,"Uppercase header name");
-                            }
-                        }
-                        header=HttpHeader.CACHE.get(name);
-                    }
-                    
-                    // decode the value
-                    boolean huffmanValue = (buffer.get()&0x80)==0x80;
+                    case 0: // 7.2.2
+                    case 1: // 7.2.3
+                        indexed=false;
+                        name_index=NBitInteger.decode(buffer,4);
+                        break;
+                     
+                  
+                    case 4: // 7.2.1
+                    case 5: // 7.2.1
+                    case 6: // 7.2.1
+                    case 7: // 7.2.1
+                        indexed=true;
+                        name_index=NBitInteger.decode(buffer,6);
+                        break;
+                        
+                    default:
+                        throw new IllegalStateException();
+                }
+
+
+                boolean huffmanName=false;
+
+                // decode the name
+                if (name_index>0)
+                {
+                    Entry name_entry=_context.get(name_index);
+                    name=name_entry.getHttpField().getName();
+                    header=name_entry.getHttpField().getHeader();
+                }
+                else
+                {
+                    huffmanName = (buffer.get()&0x80)==0x80;
                     int length = NBitInteger.decode(buffer,7);
-                    _builder.checkSize(length,huffmanValue);
-                    if (huffmanValue)
-                        value=Huffman.decode(buffer,length);
+                    _builder.checkSize(length,huffmanName);
+                    if (huffmanName)
+                        name=Huffman.decode(buffer,length);
                     else
-                        value=toASCIIString(buffer,length);
-                    
-                    // Make the new field
-                    HttpField field;
-                    switch(name)
+                        name=toASCIIString(buffer,length);
+                    for (int i=0;i<name.length();i++)
                     {
-                        case ":method":
-                            HttpMethod method=HttpMethod.CACHE.get(value);
-                            if (method!=null)
-                                field = new StaticValueHttpField(header,name,method.asString(),method);
-                            else
-                                field = new AuthorityHttpField(value);    
-                            break;
-                            
-                        case ":status":
-                            Integer code = Integer.valueOf(value);
-                            field = new StaticValueHttpField(header,name,value,code);
-                            break;
-                            
-                        case ":scheme":
-                            HttpScheme scheme=HttpScheme.CACHE.get(value);
-                            if (scheme!=null)
-                                field = new StaticValueHttpField(header,name,scheme.asString(),scheme);
-                            else
-                                field = new AuthorityHttpField(value);
-                            break;
-                            
-                        case ":authority":
+                        char c=name.charAt(i);
+                        if (c>='A'&&c<='Z')
+                        {
+                            throw new BadMessageException(400,"Uppercase header name");
+                        }
+                    }
+                    header=HttpHeader.CACHE.get(name);
+                }
+
+                // decode the value
+                boolean huffmanValue = (buffer.get()&0x80)==0x80;
+                int length = NBitInteger.decode(buffer,7);
+                _builder.checkSize(length,huffmanValue);
+                if (huffmanValue)
+                    value=Huffman.decode(buffer,length);
+                else
+                    value=toASCIIString(buffer,length);
+
+                // Make the new field
+                HttpField field;
+                switch(name)
+                {
+                    case ":method":
+                        HttpMethod method=HttpMethod.CACHE.get(value);
+                        if (method!=null)
+                            field = new StaticValueHttpField(header,name,method.asString(),method);
+                        else
+                            field = new AuthorityHttpField(value);    
+                        break;
+
+                    case ":status":
+                        Integer code = Integer.valueOf(value);
+                        field = new StaticValueHttpField(header,name,value,code);
+                        break;
+
+                    case ":scheme":
+                        HttpScheme scheme=HttpScheme.CACHE.get(value);
+                        if (scheme!=null)
+                            field = new StaticValueHttpField(header,name,scheme.asString(),scheme);
+                        else
                             field = new AuthorityHttpField(value);
-                            break;
-                            
-                        case ":path":
-                            // TODO is this needed
-                            /*
-                            if (indexed)
-                                field = new StaticValueHttpField(header,name,value,new HttpURI(value));
-                            else*/
-                                field = new HttpField(header,name,value);
-                            break;
-                            
-                        default:
-                            field = new HttpField(header,name,value);
-                            break;
-                    }
-                    
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("decoded '"+field+"' by Lit"+(name_index>0?"IdxName":(huffmanName?"HuffName":"LitName"))+(huffmanValue?"HuffVal":"LitVal")+(indexed?"Idx":""));
-                    
-                    // emit the field
-                    _builder.emit(field);
-                    
-                    // if indexed
-                    if (indexed)
-                    {
-                        // add to header table
-                        _context.add(field);
-                    }
+                        break;
+
+                    case ":authority":
+                        field = new AuthorityHttpField(value);
+                        break;
+
+                    case ":path":
+                        field = new HttpField(header,name,value);
+                        break;
+
+                    case "content-length":
+                        if ("0".equals(value))
+                            field = CONTENT_LENGTH_0;
+                        else
+                            field = new HttpField.LongValueHttpField(header,value);
+                        break;
+                        
+                    default:
+                        field = new HttpField(header,name,value);
+                        break;
                 }
-                else if (f==2)
+
+                if (LOG.isDebugEnabled())
+                    LOG.debug("decoded '"+field+"' by Lit"+(name_index>0?"IdxName":(huffmanName?"HuffName":"LitName"))+(huffmanValue?"HuffVal":"LitVal")+(indexed?"Idx":""));
+
+                // emit the field
+                _builder.emit(field);
+
+                // if indexed
+                if (indexed)
                 {
-                    // change table size
-                    int size = NBitInteger.decode(buffer,4);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("decode resize="+size);
-                    if (size>_localMaxHeaderTableSize)
-                        throw new IllegalArgumentException();
-                    _context.resize(size);
+                    // add to header table
+                    _context.add(field);
                 }
-                else if (f==3)
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("unused");
-                }   
+
             }
         }
         

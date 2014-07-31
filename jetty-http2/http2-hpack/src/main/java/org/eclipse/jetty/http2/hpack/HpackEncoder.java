@@ -42,9 +42,7 @@ public class HpackEncoder
     
     
     private final static EnumSet<HttpHeader> __DO_NOT_HUFFMAN = 
-            EnumSet.of(HttpHeader.COOKIE,
-                    HttpHeader.SET_COOKIE,
-                    HttpHeader.SET_COOKIE2,
+            EnumSet.of(
                     HttpHeader.AUTHORIZATION,
                     HttpHeader.CONTENT_MD5,
                     HttpHeader.PROXY_AUTHENTICATE,
@@ -113,11 +111,11 @@ public class HpackEncoder
         _localMaxHeaderTableSize=localMaxHeaderTableSize;
     }
     
-    public void encode(MetaData metadata,Lease lease)
+    // TODO better handling of buffer size
+    public void encode(MetaData metadata,Lease lease,int buffersize)
     {
-        ByteBuffer buffer = lease.acquire(8*1024,false); // TODO make size configurable
+        ByteBuffer buffer = lease.acquire(buffersize,false); 
         lease.append(buffer,true);
-        // TODO handle multiple buffers if large size configured.
         BufferUtil.clearToFill(buffer);
         encode(buffer,metadata);
         BufferUtil.flipToFlush(buffer,0);
@@ -170,7 +168,7 @@ public class HpackEncoder
         if (maxHeaderTableSize>_remoteMaxHeaderTableSize)
             throw new IllegalArgumentException();
         buffer.put((byte)0x20);
-        NBitInteger.encode(buffer,4,maxHeaderTableSize);
+        NBitInteger.encode(buffer,5,maxHeaderTableSize);
         _context.resize(maxHeaderTableSize);
     }
 
@@ -188,77 +186,57 @@ public class HpackEncoder
 
         if (entry!=null)
         {
-            // Is this as static field
-            if (entry.isStatic())
-            {
-                // entries like :status: 200 and :method: GET are worthwhile putting into ref set.
-                // as they are likely to be repeated.
-                encoding="StaticIndexed";
-                int index=_context.index(entry);
-                buffer.put((byte)0x80);
-                NBitInteger.encode(buffer,7,index);
-
-                // TODO Copy?
-                // entry=_context.add(entry.getHttpField());
-            }
-            else
-            {
-                // So we can emit the index and add the entry to the reference Set
-                int index=_context.index(entry);
-                if (p>=0)
-                    encoding="IdxField"+(1+NBitInteger.octectsNeeded(7,index));
-                buffer.put((byte)0x80);
-                NBitInteger.encode(buffer,7,index);
-            }
+            int index=_context.index(entry);
+            if (p>=0)
+                encoding="Indexed"+index;
+            buffer.put((byte)0x80);
+            NBitInteger.encode(buffer,7,index);
         }
         else
         {
             // Must be a new entry, so we will have to send literally.
-            // TODO Strategy decision to make!
-            // What fields will we put in the reference set and what fields will we huffman encode?
 
-            // Let's make these decisions by lookup of known fields
             HttpHeader header = field.getHeader();
             final boolean never_index;
             final boolean huffman;
             final boolean indexed;
             final int name_bits;
-            final byte mask;
             if (header==null)
             {
+                // unknown header.
                 never_index=false;
                 huffman=true;
                 indexed=true;
                 name_bits = 6;
-                mask=(byte)0x40;
+                buffer.put((byte)0x40);
             }
             else if (__DO_NOT_INDEX.contains(header))
             {
+                // Non indexed field
                 indexed=false;
                 never_index=__NEVER_INDEX.contains(header);
                 huffman=!__DO_NOT_HUFFMAN.contains(header);
                 name_bits = 4;
-                mask=never_index?(byte)0x01:(byte)0x00;
+                buffer.put(never_index?(byte)0x10:(byte)0x00);
             }
             else if (header==HttpHeader.CONTENT_LENGTH && field.getValue().length()>1)
             {
+                // Non indexed content length for non zero value
                 indexed=false;
                 never_index=false;
                 huffman=true;
                 name_bits = 4;
-                mask=(byte)0x00;
+                buffer.put((byte)0x00);
             }
             else
             {
+                // indexed
                 indexed=true;
                 never_index=false;
                 huffman=!__DO_NOT_HUFFMAN.contains(header);
                 name_bits = 6;
-                mask=(byte)0x40;
+                buffer.put((byte)0x40);
             }
-
-            // Add the mask bits
-            buffer.put(mask);
 
             // Look for a name Index
             Entry name_entry = _context.get(field.getName());
@@ -266,9 +244,9 @@ public class HpackEncoder
             if (p>=0)
             {
                 encoding="Lit"+
-                        ((name_entry==null)?"HuffName":("IdxName"+(_context.index(name_entry)<64?'1':'X')))+
-                        (huffman?"HuffVal":"LitVal")+
-                        (indexed?"Idxd":(never_index?"NeverIdx":""));
+                        ((name_entry==null)?"HuffN":"IdxN")+
+                        (huffman?"HuffV":"LitV")+
+                        (indexed?"Idx":(never_index?"!!Idx":"!Idx"));
             }
             
             if (name_entry!=null)

@@ -114,9 +114,9 @@ public class MetaDataBuilder
                     break;
 
                 case ":path":
-                    _path=field.getValue();
+                    _path = field.getValue();
                     break;
-
+                    
                 default:
                     if (field.getName().charAt(0)!=':')
                         _fields.add(field);

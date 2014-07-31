@@ -35,6 +35,14 @@ public class StaticValueHttpField extends HttpField
         _value=value;
     }
     
+    public StaticValueHttpField(HttpHeader header,String valueString, Object value)
+    {
+        super(header,header.asString(),valueString);
+        if (value==null)
+            throw new IllegalArgumentException();
+        _value=value;
+    }
+    
     public StaticValueHttpField(String name, String valueString, Object value)
     {
         super(name,valueString);

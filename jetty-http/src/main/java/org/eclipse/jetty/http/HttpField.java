@@ -20,6 +20,8 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 
+import org.eclipse.jetty.util.StringUtil;
+
 /* ------------------------------------------------------------ */
 /** A HTTP Field
  */
@@ -65,6 +67,11 @@ public class HttpField
     public String getValue()
     {
         return _value;
+    }
+    
+    public long getLongValue()
+    {
+        return StringUtil.toLong(_value);
     }
     
     public String[] getValues()
@@ -349,19 +356,6 @@ public class HttpField
     }
     
     
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
-    
     @Override
     public String toString()
     {
@@ -419,5 +413,29 @@ public class HttpField
         if (!_value.equals(field.getValue()))
             return false;
         return true;
+    }
+    
+    
+    public static class LongValueHttpField extends HttpField
+    {
+        final long _long;
+        
+        public LongValueHttpField(HttpHeader header, long value)
+        {
+            super(header,Long.toString(value));
+            _long=value;
+        }
+        
+        public LongValueHttpField(HttpHeader header, String value)
+        {
+            super(header,value);
+            _long=StringUtil.toLong(value);
+        }
+        
+        @Override
+        public long getLongValue()
+        {
+            return _long;
+        }
     }
 }

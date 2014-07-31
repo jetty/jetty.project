@@ -51,7 +51,7 @@ public class HeadersGenerator extends FrameGenerator
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
-        encoder.encode(metaData, lease);
+        encoder.encode(metaData, lease,Frame.MAX_LENGTH);
 
         long length = lease.getTotalLength();
         if (length > Frame.MAX_LENGTH)
