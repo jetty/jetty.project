@@ -186,16 +186,7 @@ public class SharedBlockingCallback
             try
             {
                 while (_state == null)
-                {
-                    // TODO remove this debug timout!
-                    // This is here to help debug 435322,
-                    if (!_complete.await(10,TimeUnit.MINUTES))
-                    {
-                        IOException x = new IOException("DEBUG timeout");
-                        LOG.warn("Blocked too long (please report!!!) "+this, x);
-                        _state=x;
-                    }
-                }
+                    _complete.await();
 
                 if (_state == SUCCEEDED)
                     return;
@@ -241,7 +232,11 @@ public class SharedBlockingCallback
                 if (_state == IDLE)
                     throw new IllegalStateException("IDLE");
                 if (_state == null)
-                    LOG.debug("Blocker not complete",new Throwable());
+                {
+                    LOG.warn("Blocker not complete {}",this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(new Throwable());
+                }
             }
             finally
             {
@@ -249,6 +244,7 @@ public class SharedBlockingCallback
                 {
                     _state = IDLE;
                     _idle.signalAll();
+                    _complete.signalAll();
                 } 
                 finally 
                 {
@@ -263,7 +259,7 @@ public class SharedBlockingCallback
             _lock.lock();
             try
             {
-                return String.format("%s@%x{%s}",SharedBlockingCallback.class.getSimpleName(),hashCode(),_state);
+                return String.format("%s@%x{%s}",Blocker.class.getSimpleName(),hashCode(),_state);
             }
             finally
             {

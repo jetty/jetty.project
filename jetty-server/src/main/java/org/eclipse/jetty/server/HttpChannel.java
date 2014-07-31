@@ -45,6 +45,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
@@ -440,10 +441,11 @@ public class HttpChannel implements Runnable
     @Override
     public String toString()
     {
-        return String.format("%s@%x{r=%s,a=%s,uri=%s}",
+        return String.format("%s@%x{r=%s,c=%b,a=%s,uri=%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 _requests,
+                _committed.get(),
                 _state.getState(),
                 _state.getState()==HttpChannelState.State.IDLE?"-":_request.getRequestURI()
             );
@@ -516,7 +518,6 @@ public class HttpChannel implements Runnable
 
     protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete, final Callback callback)
     {
-        // TODO check that complete only set true once by changing _committed to AtomicRef<Enum>
         boolean committing = _committed.compareAndSet(false, true);
         if (committing)
         {
@@ -524,7 +525,7 @@ public class HttpChannel implements Runnable
             if (info==null)
                 info = _response.newResponseInfo();
 
-            // wrap callback to process 100 or 500 responses
+            // wrap callback to process 100 responses
             final int status=info.getStatus();
             final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback);
 
@@ -656,8 +657,10 @@ public class HttpChannel implements Runnable
         @Override
         public void succeeded()
         {
-             _committed.set(false);
-             super.succeeded();
+            if (_committed.compareAndSet(true, false))
+                super.succeeded();
+            else
+                super.failed(new IllegalStateException());
         }
 
     }

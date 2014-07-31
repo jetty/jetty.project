@@ -30,6 +30,7 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
+import java.io.OutputStream;
 import java.io.PrintWriter;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
@@ -41,6 +42,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -49,6 +51,7 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -69,7 +72,7 @@ public class HttpConnectionTest
         http.getHttpConfiguration().setResponseHeaderSize(1024);
         
         connector = new LocalConnector(server,http,null);
-        connector.setIdleTimeout(500);
+        connector.setIdleTimeout(5000);
         server.addConnector(connector);
         server.setHandler(new DumpHandler());
         ErrorHandler eh=new ErrorHandler();
@@ -324,6 +327,31 @@ public class HttpConnectionTest
         offset = checkContains(response,offset,"/R1");
         offset = checkContains(response,offset,"12345");
     }
+    
+    @Test
+    public void testEmptyFlush() throws Exception
+    {
+        server.stop();
+        server.setHandler(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                response.setStatus(200);
+                OutputStream out =response.getOutputStream();
+                out.flush();
+                out.flush();
+            }
+        });
+        server.start();
+        
+        String response=connector.getResponses("GET / HTTP/1.1\n"+
+            "Host: localhost\n"+
+            "Connection: close\n"+
+            "\n");
+        
+        assertThat(response, Matchers.containsString("200 OK"));
+    }
 
     @Test
     public void testCharset() throws Exception
@@ -431,6 +459,7 @@ public class HttpConnectionTest
     @Test
     public void testUnconsumedTimeout() throws Exception
     {
+        connector.setIdleTimeout(500);
         String response=null;
         String requests=null;
         int offset=0;
