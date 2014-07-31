@@ -78,14 +78,16 @@ public class GzipHttpOutput extends HttpOutput
                 break;
                 
             case COMMITTING:
-                throw new WritePendingException();
+                callback.failed(new WritePendingException());
+                break;
 
             case COMPRESSING:
                 gzip(content,complete,callback);
                 break;
 
-            case FINISHED:
-                throw new IllegalStateException();
+            default:
+                callback.failed(new IllegalStateException("state="+_state.get()));
+                break;
         }
     }
 
@@ -122,6 +124,8 @@ public class GzipHttpOutput extends HttpOutput
             else
                 new GzipBufferCB(content,complete,callback).iterate();
         }
+        else
+            callback.succeeded();
     }
 
     protected void commit(ByteBuffer content, boolean complete, Callback callback)
@@ -198,7 +202,8 @@ public class GzipHttpOutput extends HttpOutput
             
             gzip(content,complete,callback);
         }
-        // TODO else ?
+        else
+            callback.failed(new WritePendingException());
     }
 
     public void noCompression()
