@@ -73,7 +73,8 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            LOG.ignore(e);
+            // TODO: reevaluate severity level
+            LOG.warn("bad alias ({}) for {}", e.getClass().getName(), e.getMessage());
         }
         return null;
     }
