@@ -508,12 +508,15 @@ public class FileSystemResourceTest
         
         try (Resource base = newResource(testdir.getDir()))
         {
+            // Reference to actual resource that exists
             Resource resource = base.addPath("file");
                         
             assertThat("resource.alias", resource, hasNoAlias());
             assertThat("resource.uri.alias", newResource(resource.getURI()), hasNoAlias());
             assertThat("resource.file.alias", newResource(resource.getFile()), hasNoAlias());
 
+            // On some case insensitive file systems, lets see if an alternate
+            // case for the filename results in an alias reference
             Resource alias = base.addPath("FILE");
             if (alias.exists())
             {
@@ -525,6 +528,12 @@ public class FileSystemResourceTest
         }
     }
 
+    /**
+     * Test for Windows feature that exposes 8.3 filename references
+     * for long filenames.
+     * <p>
+     * See: http://support.microsoft.com/kb/142982
+     */
     @Test
     public void testCase8dot3Alias() throws Exception
     {
@@ -534,12 +543,15 @@ public class FileSystemResourceTest
         
         try (Resource base = newResource(testdir.getDir()))
         {
+            // Long filename
             Resource resource = base.addPath("TextFile.Long.txt");
                         
             assertThat("resource.alias", resource, hasNoAlias());
             assertThat("resource.uri.alias", newResource(resource.getURI()), hasNoAlias());
             assertThat("resource.file.alias", newResource(resource.getFile()), hasNoAlias());
 
+            // On some versions of Windows, the long filename can be referenced
+            // via a short 8.3 equivalent filename.
             Resource alias = base.addPath("TEXTFI~1.TXT");
             if (alias.exists())
             {
@@ -653,7 +665,7 @@ public class FileSystemResourceTest
 
             try
             {
-                // Attempt to reference same file, but via NTFS DATA stream
+                // Attempt to reference same file, but via NTFS DATA stream (encoded addPath version) 
                 Resource alias = base.addPath("testfile::%24DATA");
                 if (alias.exists())
                 {
@@ -684,7 +696,7 @@ public class FileSystemResourceTest
         }
         catch (Exception e)
         {
-            // if unable to create file, no point testing the rest
+            // if unable to create file, no point testing the rest.
             // this is the path that Microsoft Windows takes.
             assumeNoException(e);
         }
@@ -696,6 +708,9 @@ public class FileSystemResourceTest
         }
     }
 
+    /**
+     * The most basic access example
+     */
     @Test
     public void testExist_Normal() throws Exception
     {
