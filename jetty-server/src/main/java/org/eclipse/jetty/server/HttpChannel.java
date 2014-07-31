@@ -534,7 +534,7 @@ public class HttpChannel implements Runnable
         else if (info==null)
         {
             // This is a normal write
-            _transport.send(content, complete, callback);
+            _transport.send(null,content, complete, callback);
         }
         else
         {

@@ -29,10 +29,12 @@ package org.eclipse.jetty.http;
  * <th>Enum</th>
  * <th>Code</th>
  * <th>Message</th>
- * <th>
+ * <th> 
  * <a href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a></th>
+ * <th> 
+ * <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1 Semantics and Content</a></th>
  * <th>
- * <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a></th>
+ * <a href="http://tools.ietf.org/html/rfc7238">RFC 7238 - HTTP/1.1 Permanent Redirect</a></th>
  * <th>
  * <a href="http://tools.ietf.org/html/rfc2518">RFC 2518 - WEBDAV</a></th>
  * </tr>
@@ -48,7 +50,7 @@ package org.eclipse.jetty.http;
  * <td>Continue</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.1.1">Sec. 10.1.1</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.2.1">Sec. 6.2.1</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -57,7 +59,7 @@ package org.eclipse.jetty.http;
  * <td>Switching Protocols</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.1.2">Sec. 10.1.2</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.2.2">Sec. 6.2.2</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -82,7 +84,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.2">Sec. 9.2</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.2.1">Sec. 10.2.1</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.3.1">Sec. 6.3.1</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -92,7 +94,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.2">Sec. 9.2</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.2.2">Sec. 10.2.2</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.3.2">Sec. 6.3.2</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -102,7 +104,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.2">Sec. 9.2</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.2.3">Sec. 10.2.3</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.3.3">Sec. 6.3.3</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -111,7 +113,7 @@ package org.eclipse.jetty.http;
  * <td>Non Authoritative Information</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.2.4">Sec. 10.2.4</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.3.4">Sec. 6.3.4</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -121,7 +123,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.2">Sec. 9.2</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.2.5">Sec. 10.2.5</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.3.5">Sec. 6.3.5</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -130,7 +132,7 @@ package org.eclipse.jetty.http;
  * <td>Reset Content</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.2.6">Sec. 10.2.6</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.3.6">Sec. 6.3.6</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -139,7 +141,7 @@ package org.eclipse.jetty.http;
  * <td>Partial Content</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.2.7">Sec. 10.2.7</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.3.7">Sec. 6.3.7</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -175,7 +177,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.3">Sec. 9.3</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.3.1">Sec. 10.3.1</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.4.1">Sec. 6.4.1</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -185,7 +187,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.3">Sec. 9.3</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.3.2">Sec. 10.3.2</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.4.2">Sec. 6.4.2</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -203,7 +205,7 @@ package org.eclipse.jetty.http;
  * <td>Found</td>
  * <td>(was "<code>302 Moved Temporarily</code>")</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.3.3">Sec. 10.3.3</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.4.3">Sec. 6.4.3</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -212,7 +214,7 @@ package org.eclipse.jetty.http;
  * <td>See Other</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.3.4">Sec. 10.3.4</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.4.4">Sec. 6.4.4</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -222,7 +224,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.3">Sec. 9.3</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.3.5">Sec. 10.3.5</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.4.5">Sec. 6.4.5</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -231,7 +233,7 @@ package org.eclipse.jetty.http;
  * <td>Use Proxy</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.3.6">Sec. 10.3.6</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.4.6">Sec. 6.4.6</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -240,7 +242,7 @@ package org.eclipse.jetty.http;
  * <td><em>(Unused)</em></td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.3.7">Sec. 10.3.7</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.4.7">Sec. 6.4.7</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -249,7 +251,17 @@ package org.eclipse.jetty.http;
  * <td>Temporary Redirect</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.3.8">Sec. 10.3.8</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.4.8">Sec. 6.4.8</a></td>
+ * <td>&nbsp;</td>
+ * </tr>
+ *
+ * <tr>
+ * <td>{@link #PERMANENT_REDIRECT_308}</td>
+ * <td>307</td>
+ * <td>Permanent Redirect</td>
+ * <td>&nbsp;</td>
+ * <td>
+ * <a href="http://tools.ietf.org/html/rfc7238">RFC7238</a></td>
  * <td>&nbsp;</td>
  * </tr>
  *
@@ -265,7 +277,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.4">Sec. 9.4</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.1">Sec. 10.4.1</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.5.1">Sec. 6.5.1</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -275,7 +287,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.4">Sec. 9.4</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.2">Sec. 10.4.2</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.5.2">Sec. 6.5.2</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -285,7 +297,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.4">Sec. 9.4</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.3">Sec. 10.4.3</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.5.3">Sec. 6.5.3</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -295,7 +307,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.4">Sec. 9.4</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.4">Sec. 10.4.4</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.5.4">Sec. 6.5.4</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -305,7 +317,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.4">Sec. 9.4</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.5">Sec. 10.4.5</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.5.5">Sec. 6.5.5</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -314,7 +326,7 @@ package org.eclipse.jetty.http;
  * <td>Method Not Allowed</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.6">Sec. 10.4.6</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.5.6">Sec. 6.5.6</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -323,7 +335,7 @@ package org.eclipse.jetty.http;
  * <td>Not Acceptable</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.7">Sec. 10.4.7</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.5.7">Sec. 6.5.7</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -332,7 +344,7 @@ package org.eclipse.jetty.http;
  * <td>Proxy Authentication Required</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.8">Sec. 10.4.8</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.5.8">Sec. 6.5.8</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -341,7 +353,7 @@ package org.eclipse.jetty.http;
  * <td>Request Timeout</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.9">Sec. 10.4.9</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.5.9">Sec. 6.5.9</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -350,7 +362,7 @@ package org.eclipse.jetty.http;
  * <td>Conflict</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.10">Sec. 10.4.10</a>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-10.4.10">Sec. 10.4.10</a>
  * </td>
  * <td>&nbsp;</td>
  * </tr>
@@ -360,7 +372,7 @@ package org.eclipse.jetty.http;
  * <td>Gone</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.11">Sec. 10.4.11</a>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-10.4.11">Sec. 10.4.11</a>
  * </td>
  * <td>&nbsp;</td>
  * </tr>
@@ -370,7 +382,7 @@ package org.eclipse.jetty.http;
  * <td>Length Required</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.12">Sec. 10.4.12</a>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-10.4.12">Sec. 10.4.12</a>
  * </td>
  * <td>&nbsp;</td>
  * </tr>
@@ -380,7 +392,7 @@ package org.eclipse.jetty.http;
  * <td>Precondition Failed</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.13">Sec. 10.4.13</a>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-10.4.13">Sec. 10.4.13</a>
  * </td>
  * <td>&nbsp;</td>
  * </tr>
@@ -390,7 +402,7 @@ package org.eclipse.jetty.http;
  * <td>Request Entity Too Large</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.14">Sec. 10.4.14</a>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-10.4.14">Sec. 10.4.14</a>
  * </td>
  * <td>&nbsp;</td>
  * </tr>
@@ -400,7 +412,7 @@ package org.eclipse.jetty.http;
  * <td>Request-URI Too Long</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.15">Sec. 10.4.15</a>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-10.4.15">Sec. 10.4.15</a>
  * </td>
  * <td>&nbsp;</td>
  * </tr>
@@ -410,7 +422,7 @@ package org.eclipse.jetty.http;
  * <td>Unsupported Media Type</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.16">Sec. 10.4.16</a>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-10.4.16">Sec. 10.4.16</a>
  * </td>
  * <td>&nbsp;</td>
  * </tr>
@@ -420,7 +432,7 @@ package org.eclipse.jetty.http;
  * <td>Requested Range Not Satisfiable</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.17">Sec. 10.4.17</a>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-10.4.17">Sec. 10.4.17</a>
  * </td>
  * <td>&nbsp;</td>
  * </tr>
@@ -430,7 +442,7 @@ package org.eclipse.jetty.http;
  * <td>Expectation Failed</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.4.18">Sec. 10.4.18</a>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-10.4.18">Sec. 10.4.18</a>
  * </td>
  * <td>&nbsp;</td>
  * </tr>
@@ -537,7 +549,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.5">Sec. 9.5</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.5.1">Sec. 10.5.1</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.6.1">Sec. 6.6.1</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -547,7 +559,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.5">Sec. 9.5</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.5.2">Sec. 10.5.2</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.6.2">Sec. 6.6.2</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -557,7 +569,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.5">Sec. 9.5</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.5.3">Sec. 10.5.3</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.6.3">Sec. 6.6.3</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -567,7 +579,7 @@ package org.eclipse.jetty.http;
  * <td>
  * <a href="http://tools.ietf.org/html/rfc1945#section-9.5">Sec. 9.5</a></td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.5.4">Sec. 10.5.4</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.6.4">Sec. 6.6.4</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -576,7 +588,7 @@ package org.eclipse.jetty.http;
  * <td>Gateway Timeout</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.5.5">Sec. 10.5.5</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.6.5">Sec. 6.6.5</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -585,7 +597,7 @@ package org.eclipse.jetty.http;
  * <td>HTTP Version Not Supported</td>
  * <td>&nbsp;</td>
  * <td>
- * <a href="http://tools.ietf.org/html/rfc2616#section-10.5.6">Sec. 10.5.6</a></td>
+ * <a href="http://tools.ietf.org/html/rfc7231#section-6.6.6">Sec. 6.6.6</a></td>
  * <td>&nbsp;</td>
  * </tr>
  * <tr>
@@ -633,6 +645,7 @@ public class HttpStatus
     public final static int NOT_MODIFIED_304 = 304;
     public final static int USE_PROXY_305 = 305;
     public final static int TEMPORARY_REDIRECT_307 = 307;
+    public final static int PERMANENT_REDIRECT_308 = 308;
 
     public final static int BAD_REQUEST_400 = 400;
     public final static int UNAUTHORIZED_401 = 401;
@@ -683,7 +696,7 @@ public class HttpStatus
         /*
          * --------------------------------------------------------------------
          * Informational messages in 1xx series. As defined by ... RFC 1945 -
-         * HTTP/1.0 RFC 2616 - HTTP/1.1 RFC 2518 - WebDAV
+         * HTTP/1.0 RFC 7231 - HTTP/1.1 RFC 2518 - WebDAV
          */
 
         /** <code>100 Continue</code> */
@@ -696,7 +709,7 @@ public class HttpStatus
         /*
          * --------------------------------------------------------------------
          * Success messages in 2xx series. As defined by ... RFC 1945 - HTTP/1.0
-         * RFC 2616 - HTTP/1.1 RFC 2518 - WebDAV
+         * RFC 7231 - HTTP/1.1 RFC 2518 - WebDAV
          */
 
         /** <code>200 OK</code> */
@@ -719,7 +732,7 @@ public class HttpStatus
         /*
          * --------------------------------------------------------------------
          * Redirection messages in 3xx series. As defined by ... RFC 1945 -
-         * HTTP/1.0 RFC 2616 - HTTP/1.1
+         * HTTP/1.0 RFC 7231 - HTTP/1.1
          */
 
         /** <code>300 Mutliple Choices</code> */
@@ -738,11 +751,13 @@ public class HttpStatus
         USE_PROXY(USE_PROXY_305, "Use Proxy"),
         /** <code>307 Temporary Redirect</code> */
         TEMPORARY_REDIRECT(TEMPORARY_REDIRECT_307, "Temporary Redirect"),
+        /** <code>308 Permanent Redirect</code> */
+        PERMANET_REDIRECT(PERMANENT_REDIRECT_308, "Permanent Redirect"),
 
         /*
          * --------------------------------------------------------------------
          * Client Error messages in 4xx series. As defined by ... RFC 1945 -
-         * HTTP/1.0 RFC 2616 - HTTP/1.1 RFC 2518 - WebDAV
+         * HTTP/1.0 RFC 7231 - HTTP/1.1 RFC 2518 - WebDAV
          */
 
         /** <code>400 Bad Request</code> */
@@ -791,7 +806,7 @@ public class HttpStatus
         /*
          * --------------------------------------------------------------------
          * Server Error messages in 5xx series. As defined by ... RFC 1945 -
-         * HTTP/1.0 RFC 2616 - HTTP/1.1 RFC 2518 - WebDAV
+         * HTTP/1.0 RFC 7231 - HTTP/1.1 RFC 2518 - WebDAV
          */
 
         /** <code>500 Server Error</code> */
@@ -844,7 +859,7 @@ public class HttpStatus
          * Simple test against an code to determine if it falls into the
          * <code>Informational</code> message category as defined in the <a
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
-         * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
+         * and <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 -
          * HTTP/1.1</a>.
          *
          * @return true if within range of codes that belongs to
@@ -859,7 +874,7 @@ public class HttpStatus
          * Simple test against an code to determine if it falls into the
          * <code>Success</code> message category as defined in the <a
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
-         * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
+         * and <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 -
          * HTTP/1.1</a>.
          *
          * @return true if within range of codes that belongs to
@@ -874,7 +889,7 @@ public class HttpStatus
          * Simple test against an code to determine if it falls into the
          * <code>Redirection</code> message category as defined in the <a
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
-         * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
+         * and <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 -
          * HTTP/1.1</a>.
          *
          * @return true if within range of codes that belongs to
@@ -889,7 +904,7 @@ public class HttpStatus
          * Simple test against an code to determine if it falls into the
          * <code>Client Error</code> message category as defined in the <a
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
-         * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
+         * and <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 -
          * HTTP/1.1</a>.
          *
          * @return true if within range of codes that belongs to
@@ -904,7 +919,7 @@ public class HttpStatus
          * Simple test against an code to determine if it falls into the
          * <code>Server Error</code> message category as defined in the <a
          * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>,
-         * and <a href="http://tools.ietf.org/html/rfc2616">RFC 2616 -
+         * and <a href="http://tools.ietf.org/html/rfc7231">RFC 7231 -
          * HTTP/1.1</a>.
          *
          * @return true if within range of codes that belongs to
@@ -958,7 +973,7 @@ public class HttpStatus
      * Simple test against an code to determine if it falls into the
      * <code>Informational</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
-     * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
+     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
      *
      * @param code
      *            the code to test.
@@ -974,7 +989,7 @@ public class HttpStatus
      * Simple test against an code to determine if it falls into the
      * <code>Success</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
-     * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
+     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
      *
      * @param code
      *            the code to test.
@@ -990,7 +1005,7 @@ public class HttpStatus
      * Simple test against an code to determine if it falls into the
      * <code>Redirection</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
-     * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
+     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
      *
      * @param code
      *            the code to test.
@@ -1006,7 +1021,7 @@ public class HttpStatus
      * Simple test against an code to determine if it falls into the
      * <code>Client Error</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
-     * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
+     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
      *
      * @param code
      *            the code to test.
@@ -1022,7 +1037,7 @@ public class HttpStatus
      * Simple test against an code to determine if it falls into the
      * <code>Server Error</code> message category as defined in the <a
      * href="http://tools.ietf.org/html/rfc1945">RFC 1945 - HTTP/1.0</a>, and <a
-     * href="http://tools.ietf.org/html/rfc2616">RFC 2616 - HTTP/1.1</a>.
+     * href="http://tools.ietf.org/html/rfc7231">RFC 7231 - HTTP/1.1</a>.
      *
      * @param code
      *            the code to test.

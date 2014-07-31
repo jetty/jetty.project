@@ -149,7 +149,7 @@ public class Request implements HttpServletRequest
     private boolean _handled = false;
     private boolean _paramsExtracted;
     private boolean _requestedSessionIdFromCookie = false;
-    private volatile Attributes _attributes;
+    private Attributes _attributes;
     private Authentication _authentication;
     private String _characterEncoding;
     private ContextHandler.Context _context;
