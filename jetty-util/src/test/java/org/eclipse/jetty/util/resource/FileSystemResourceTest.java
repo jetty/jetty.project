@@ -629,6 +629,8 @@ public class FileSystemResourceTest
                 Resource alias = base.addPath("testfile::$DATA");
                 if (alias.exists())
                 {
+                    assumeThat(alias.getURI().getScheme(), is("http"));
+                    
                     // If it exists, it must be an alias
                     assertThat("resource.alias",alias,isAliasFor(resource));
                     assertThat("resource.uri.alias",newResource(alias.getURI()),isAliasFor(resource));
