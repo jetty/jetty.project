@@ -82,8 +82,7 @@ public class URIUtil
         byte[] bytes=null;
         if (buf==null)
         {
-        loop:
-            for (int i=0;i<path.length();i++)
+            loop: for (int i=0;i<path.length();i++)
             {
                 char c=path.charAt(i);
                 switch(c)
@@ -97,6 +96,8 @@ public class URIUtil
                     case '<':
                     case '>':
                     case ' ':
+                    case '[':
+                    case ']':
                         buf=new StringBuilder(path.length()*2);
                         break loop;
                     default:
@@ -106,103 +107,111 @@ public class URIUtil
                             buf=new StringBuilder(path.length()*2);
                             break loop;
                         }
-                       
                 }
             }
             if (buf==null)
                 return null;
         }
-        
-        synchronized(buf)
+
+        if (bytes!=null)
         {
-            if (bytes!=null)
+            for (int i=0;i<bytes.length;i++)
             {
-                for (int i=0;i<bytes.length;i++)
+                byte c=bytes[i];       
+                switch(c)
                 {
-                    byte c=bytes[i];       
-                    switch(c)
-                    {
-                      case '%':
-                          buf.append("%25");
-                          continue;
-                      case '?':
-                          buf.append("%3F");
-                          continue;
-                      case ';':
-                          buf.append("%3B");
-                          continue;
-                      case '#':
-                          buf.append("%23");
-                          continue;
-                      case '"':
-                          buf.append("%22");
-                          continue;
-                      case '\'':
-                          buf.append("%27");
-                          continue;
-                      case '<':
-                          buf.append("%3C");
-                          continue;
-                      case '>':
-                          buf.append("%3E");
-                          continue;
-                      case ' ':
-                          buf.append("%20");
-                          continue;
-                      default:
-                          if (c<0)
-                          {
-                              buf.append('%');
-                              TypeUtil.toHex(c,buf);
-                          }
-                          else
-                              buf.append((char)c);
-                          continue;
-                    }
-                }
-                
-            }
-            else
-            {
-                for (int i=0;i<path.length();i++)
-                {
-                    char c=path.charAt(i);       
-                    switch(c)
-                    {
-                        case '%':
-                            buf.append("%25");
-                            continue;
-                        case '?':
-                            buf.append("%3F");
-                            continue;
-                        case ';':
-                            buf.append("%3B");
-                            continue;
-                        case '#':
-                            buf.append("%23");
-                            continue;
-                        case '"':
-                            buf.append("%22");
-                            continue;
-                        case '\'':
-                            buf.append("%27");
-                            continue;
-                        case '<':
-                            buf.append("%3C");
-                            continue;
-                        case '>':
-                            buf.append("%3E");
-                            continue;
-                        case ' ':
-                            buf.append("%20");
-                            continue;
-                        default:
-                            buf.append(c);
-                            continue;
-                    }
+                    case '%':
+                        buf.append("%25");
+                        continue;
+                    case '?':
+                        buf.append("%3F");
+                        continue;
+                    case ';':
+                        buf.append("%3B");
+                        continue;
+                    case '#':
+                        buf.append("%23");
+                        continue;
+                    case '"':
+                        buf.append("%22");
+                        continue;
+                    case '\'':
+                        buf.append("%27");
+                        continue;
+                    case '<':
+                        buf.append("%3C");
+                        continue;
+                    case '>':
+                        buf.append("%3E");
+                        continue;
+                    case ' ':
+                        buf.append("%20");
+                        continue;
+                    case '[':
+                        buf.append("%5B");
+                        continue;
+                    case ']':
+                        buf.append("%5D");
+                        continue;
+                    default:
+                        if (c<0)
+                        {
+                            buf.append('%');
+                            TypeUtil.toHex(c,buf);
+                        }
+                        else
+                            buf.append((char)c);
+                        continue;
                 }
             }
         }
+        else
+        {
+            for (int i=0;i<path.length();i++)
+            {
+                char c=path.charAt(i);       
+                switch(c)
+                {
+                    case '%':
+                        buf.append("%25");
+                        continue;
+                    case '?':
+                        buf.append("%3F");
+                        continue;
+                    case ';':
+                        buf.append("%3B");
+                        continue;
+                    case '#':
+                        buf.append("%23");
+                        continue;
+                    case '"':
+                        buf.append("%22");
+                        continue;
+                    case '\'':
+                        buf.append("%27");
+                        continue;
+                    case '<':
+                        buf.append("%3C");
+                        continue;
+                    case '>':
+                        buf.append("%3E");
+                        continue;
+                    case ' ':
+                        buf.append("%20");
+                        continue;
+                    case '[':
+                        buf.append("%5B");
+                        continue;
+                    case ']':
+                        buf.append("%5D");
+                        continue;
+                    default:
+                        buf.append(c);
+                        continue;
+                }
+            }
+        }
+
 
         return buf;
     }

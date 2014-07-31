@@ -29,6 +29,7 @@ import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
+import java.lang.reflect.InvocationTargetException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -39,7 +40,10 @@ import java.nio.file.InvalidPathException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
+
+import javax.management.RuntimeErrorException;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.IO;
@@ -49,15 +53,78 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CollectionAssert;
 import org.junit.Rule;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameters;
 
-public abstract class AbstractFSResourceTest
+@RunWith(Parameterized.class)
+public class FileSystemResourceTest
 {
     @Rule
     public TestingDir testdir = new TestingDir();
+    
+    private final Class<? extends Resource> _class;
 
-    public abstract Resource newResource(URI uri) throws IOException;
+    @Parameters
+    public static Collection<Object[]> data() 
+    {
+        List<Object[]> data = new ArrayList<>();
+        data.add(new Class<?>[]{FileResource.class});
+        data.add(new Class<?>[]{PathResource.class});
+        return data;
+    }
+    
+    public FileSystemResourceTest(Class<? extends Resource> test)
+    {
+        _class=test;
+    }
+    
+    
+    public Resource newResource(URI uri) throws Exception
+    {
+        try
+        {
+            return _class.getConstructor(URI.class).newInstance(uri);
+        }
+        catch(InvocationTargetException e)
+        {
+            try
+            {
+                throw e.getTargetException();
+            }
+            catch(Exception|Error ex)
+            {
+                throw ex;
+            }
+            catch(Throwable th)
+            {
+                throw new Error(th);
+            }
+        }
+    }
 
-    public abstract Resource newResource(File file) throws IOException;
+    public Resource newResource(File file) throws Exception
+    {
+        try
+        {
+            return _class.getConstructor(File.class).newInstance(file); 
+        }
+        catch(InvocationTargetException e)
+        {
+            try
+            {
+                throw e.getTargetException();
+            }
+            catch(Exception|Error ex)
+            {
+                throw ex;
+            }
+            catch(Throwable th)
+            {
+                throw new Error(th);
+            }
+        }
+    }
 
     private URI createEmptyFile(String name) throws IOException
     {
@@ -361,10 +428,95 @@ public abstract class AbstractFSResourceTest
             // Access to the same resource, but via a symlink means that they are not equivalent
             assertThat("foo.equals(bar)", resFoo.equals(resBar), is(false));
             
-            assertThat("foo.alias", resFoo.getAlias(), nullValue());
-            assertThat("bar.alias", resBar.getAlias(), is(foo.toUri()));
+            assertThat("foo !alias", resFoo.getAlias(), nullValue());
+            assertThat(newResource(resFoo.getURI()).getAlias(), nullValue());
+            assertThat(newResource(resFoo.getFile()).getAlias(), nullValue());
+            
+            assertThat("bar alias", resBar.getAlias(), is(foo.toUri()));
+            assertThat(newResource(resBar.getURI()).getAlias(), is(foo.toUri()));
+            assertThat(newResource(resBar.getFile()).getAlias(), is(foo.toUri()));
         }
     }
+    
+
+    @Test
+    public void testCaseInsensitiveAlias() throws Exception
+    {
+        File dir = testdir.getDir();
+        Path path = new File(dir, "file").toPath();
+        Files.createFile(path);
+        
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource resource = base.addPath("file");
+                        
+            assertThat("!alias", resource.getAlias(), nullValue());
+            assertThat(newResource(resource.getURI()).getAlias(), nullValue());
+            assertThat(newResource(resource.getFile()).getAlias(), nullValue());
+
+            Resource alias = base.addPath("FILE");
+            if (alias.exists())
+            {
+                // If it exists, it must be an alias
+                assertThat(alias.getAlias(), is(path.toUri()));
+                assertThat(newResource(alias.getURI()).getAlias(), is(path.toUri()));
+                assertThat(newResource(alias.getFile()).getAlias(), is(path.toUri()));
+            }
+        }
+    }
+
+    @Test
+    public void testCase8dot3Alias() throws Exception
+    {
+        File dir = testdir.getDir();
+        Path path = new File(dir, "TextFile.Long.txt").toPath();
+        Files.createFile(path);
+        
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource resource = base.addPath("TextFile.Long.txt");
+                        
+            assertThat("!alias", resource.getAlias(), nullValue());
+            assertThat(newResource(resource.getURI()).getAlias(), nullValue());
+            assertThat(newResource(resource.getFile()).getAlias(), nullValue());
+
+            Resource alias = base.addPath("TEXTFI~1.TXT");
+            if (alias.exists())
+            {
+                // If it exists, it must be an alias
+                assertThat(alias.getAlias(), is(path.toUri()));
+                assertThat(newResource(alias.getURI()).getAlias(), is(path.toUri()));
+                assertThat(newResource(alias.getFile()).getAlias(), is(path.toUri()));
+            }
+        }
+    }
+
+    @Test
+    public void testCaseNTParamAlias() throws Exception
+    {
+        File dir = testdir.getDir();
+        Path path = new File(dir, "file").toPath();
+        Files.createFile(path);
+        
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource resource = base.addPath("file");
+                        
+            assertThat("!alias", resource.getAlias(), nullValue());
+            assertThat(newResource(resource.getURI()).getAlias(), nullValue());
+            assertThat(newResource(resource.getFile()).getAlias(), nullValue());
+
+            Resource alias = base.addPath("file::$DATA");
+            if (alias.exists())
+            {
+                // If it exists, it must be an alias
+                assertThat(alias.getAlias(), is(path.toUri()));
+                assertThat(newResource(alias.getURI()).getAlias(), is(path.toUri()));
+                assertThat(newResource(alias.getFile()).getAlias(), is(path.toUri()));
+            }
+        }
+    }
+    
     
     @Test
     public void testSemicolon() throws Exception
@@ -460,42 +612,46 @@ public abstract class AbstractFSResourceTest
     }
 
     @Test
-    public void testExist_BadNull() throws Exception
+    public void testExist_BadURINull() throws Exception
     {
         createEmptyFile("a.jsp");
 
         try
         {
             // request with null at end
-            URI ref = testdir.getDir().toURI().resolve("a.jsp%00");
-            assertThat("Null URI",ref,notNullValue());
+            URI uri = testdir.getDir().toURI().resolve("a.jsp%00");
+            assertThat("Null URI",uri,notNullValue());
 
-            newResource(ref);
-            fail("Should have thrown " + InvalidPathException.class);
+            Resource r = newResource(uri);
+            
+            // if we have r, then it better not exist
+            assertFalse(r.exists());
         }
         catch (InvalidPathException e)
         {
-            // Expected path
+            // Exception is acceptable
         }
     }
 
     @Test
-    public void testExist_BadNullX() throws Exception
+    public void testExist_BadURINullX() throws Exception
     {
         createEmptyFile("a.jsp");
 
         try
         {
             // request with null and x at end
-            URI ref = testdir.getDir().toURI().resolve("a.jsp%00x");
-            assertThat("NullX URI",ref,notNullValue());
+            URI uri = testdir.getDir().toURI().resolve("a.jsp%00x");
+            assertThat("NullX URI",uri,notNullValue());
 
-            newResource(ref);
-            fail("Should have thrown " + InvalidPathException.class);
+            Resource r = newResource(uri);
+            
+            // if we have r, then it better not exist
+            assertFalse(r.exists());
         }
         catch (InvalidPathException e)
         {
-            // Expected path
+            // Exception is acceptable
         }
     }
     

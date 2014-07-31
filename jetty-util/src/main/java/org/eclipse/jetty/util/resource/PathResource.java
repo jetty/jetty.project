@@ -49,10 +49,10 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(PathResource.class);
+    private final static LinkOption NO_FOLLOW_OPTIONS[] = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
 
     private final Path path;
     private final URI uri;
-    private LinkOption linkOptions[] = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
 
     public PathResource(File file)
     {
@@ -179,18 +179,13 @@ public class PathResource extends Resource
     @Override
     public boolean exists()
     {
-        return Files.exists(path,linkOptions);
+        return Files.exists(path,NO_FOLLOW_OPTIONS);
     }
 
     @Override
     public File getFile() throws IOException
     {
         return path.toFile();
-    }
-
-    public boolean getFollowLinks()
-    {
-        return (linkOptions != null) && (linkOptions.length > 0) && (linkOptions[0] == LinkOption.NOFOLLOW_LINKS);
     }
 
     @Override
@@ -249,7 +244,7 @@ public class PathResource extends Resource
     @Override
     public boolean isDirectory()
     {
-        return Files.isDirectory(path,linkOptions);
+        return Files.isDirectory(path,NO_FOLLOW_OPTIONS);
     }
 
     @Override
@@ -257,7 +252,7 @@ public class PathResource extends Resource
     {
         try
         {
-            FileTime ft = Files.getLastModifiedTime(path,linkOptions);
+            FileTime ft = Files.getLastModifiedTime(path,NO_FOLLOW_OPTIONS);
             return ft.toMillis();
         }
         catch (IOException e)
@@ -342,7 +337,7 @@ public class PathResource extends Resource
             try
             {
                 Path result = Files.move(path,destRes.path);
-                return Files.exists(result,linkOptions);
+                return Files.exists(result,NO_FOLLOW_OPTIONS);
             }
             catch (IOException e)
             {
@@ -366,18 +361,6 @@ public class PathResource extends Resource
         else
         {
             Files.copy(this.path,destination.toPath());
-        }
-    }
-
-    public void setFollowLinks(boolean followLinks)
-    {
-        if (followLinks)
-        {
-            linkOptions = new LinkOption[0];
-        }
-        else
-        {
-            linkOptions = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
         }
     }
 
