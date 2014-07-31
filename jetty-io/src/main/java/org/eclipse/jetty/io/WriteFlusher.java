@@ -338,18 +338,15 @@ abstract public class WriteFlusher
             if (DEBUG)
                 LOG.debug("flushed {}", flushed);
 
-            // Are we complete?
-            for (ByteBuffer b : buffers)
+            // if we are incomplete?
+            if (!flushed)
             {
-                if (!flushed||BufferUtil.hasContent(b))
-                {
-                    PendingState pending=new PendingState(buffers, callback);
-                    if (updateState(__WRITING,pending))
-                        onIncompleteFlushed();
-                    else
-                        fail(pending);
-                    return;
-                }
+                PendingState pending=new PendingState(buffers, callback);
+                if (updateState(__WRITING,pending))
+                    onIncompleteFlushed();
+                else
+                    fail(pending);
+                return;
             }
 
             // If updateState didn't succeed, we don't care as our buffers have been written
@@ -403,17 +400,14 @@ abstract public class WriteFlusher
             if (DEBUG)
                 LOG.debug("flushed {}", flushed);
 
-            // Are we complete?
-            for (ByteBuffer b : buffers)
+            // if we are incomplete?
+            if (!flushed)
             {
-                if (!flushed || BufferUtil.hasContent(b))
-                {
-                    if (updateState(__COMPLETING,pending))
-                        onIncompleteFlushed();
-                    else
-                        fail(pending);
-                    return;
-                }
+                if (updateState(__COMPLETING,pending))
+                    onIncompleteFlushed();
+                else
+                    fail(pending);
+                return;
             }
 
             // If updateState didn't succeed, we don't care as our buffers have been written
