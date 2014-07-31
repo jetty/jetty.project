@@ -116,6 +116,11 @@ public class HostnameVerificationTest
 
             // ExecutionException wraps an SSLHandshakeException
             Throwable cause = x.getCause();
+            if (cause==null)
+            {
+                x.printStackTrace();
+                Assert.fail("No cause?");
+            }
             if (cause instanceof SSLHandshakeException)
                 Assert.assertThat(cause.getCause().getCause(), Matchers.instanceOf(CertificateException.class));
             else

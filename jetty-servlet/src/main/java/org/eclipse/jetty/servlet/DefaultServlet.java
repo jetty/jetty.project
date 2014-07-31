@@ -27,9 +27,7 @@ import java.net.URL;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Enumeration;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.StringTokenizer;
 
 import javax.servlet.AsyncContext;
@@ -265,11 +263,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         
         try
         {
-            if (_cache==null && max_cached_files>0)
+            if (_cache==null && (max_cached_files!=-2 || max_cache_size!=-2 || max_cached_file_size!=-2))
             {
                 _cache= new ResourceCache(null,this,_mimeTypes,_useFileMappedBuffer,_etags);
 
-                if (max_cache_size>0)
+                if (max_cache_size>=0)
                     _cache.setMaxCacheSize(max_cache_size);
                 if (max_cached_file_size>=-1)
                     _cache.setMaxCachedFileSize(max_cached_file_size);
@@ -296,19 +294,19 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
            }
        }
        else
-        {
-            //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
-            _gzipEquivalentFileExtensions.add(".svgz");   
-        }
+       {
+           //.svgz files are gzipped svg files and must be served with Content-Encoding:gzip
+           _gzipEquivalentFileExtensions.add(".svgz");   
+       }
 
-        _servletHandler= _contextHandler.getChildHandlerByClass(ServletHandler.class);
-        for (ServletHolder h :_servletHandler.getServlets())
-            if (h.getServletInstance()==this)
-                _defaultHolder=h;
+       _servletHandler= _contextHandler.getChildHandlerByClass(ServletHandler.class);
+       for (ServletHolder h :_servletHandler.getServlets())
+           if (h.getServletInstance()==this)
+               _defaultHolder=h;
 
-        
-        if (LOG.isDebugEnabled())
-            LOG.debug("resource base = "+_resourceBase);
+
+       if (LOG.isDebugEnabled())
+           LOG.debug("resource base = "+_resourceBase);
     }
 
     /**
@@ -1060,7 +1058,15 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     /* ------------------------------------------------------------ */
     protected void writeHeaders(HttpServletResponse response,HttpContent content,long count)
-    {        
+    {
+        if (content == null)
+        {
+            // No content, then no headers to process
+            // This is possible during bypass write because of wrapping
+            // See .sendData() for more details.
+            return;
+        }
+        
         if (content.getContentType()!=null && response.getContentType()==null)
             response.setContentType(content.getContentType().toString());
 

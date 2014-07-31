@@ -22,6 +22,7 @@ import java.io.File;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
@@ -33,24 +34,6 @@ import org.junit.Test;
 
 public class HashSessionManagerTest
 {
-    @After
-    public void enableStacks()
-    {
-        enableStacks(true);
-    }
-
-    @Before
-    public void quietStacks()
-    {
-        enableStacks(false);
-    }
-    
-    protected void enableStacks(boolean enabled)
-    {
-        StdErrLog log = (StdErrLog)Log.getLogger("org.eclipse.jetty.server.session");
-        log.setHideStacks(!enabled);
-    }
-    
     @Test
     public void testDangerousSessionIdRemoval() throws Exception
     {
@@ -78,7 +61,8 @@ public class HashSessionManagerTest
         manager.setDeleteUnrestorableSessions(true);
         manager.setLazyLoad(true);
         File testDir = MavenTestingUtils.getTargetTestingDir("hashes");
-        testDir.mkdirs();
+        FS.ensureEmpty(testDir);
+        
         manager.setStoreDirectory(testDir);
 
         Assert.assertTrue(new File(testDir, "validFile.session").createNewFile());
@@ -88,7 +72,6 @@ public class HashSessionManagerTest
         manager.getSession("validFile.session");
 
         Assert.assertTrue("File shouldn't exist!", !new File(testDir,"validFile.session").exists());
-
     }
     
     @Test
@@ -116,7 +99,6 @@ public class HashSessionManagerTest
         server.start();
         manager.start();
         
-        
         HashedSession session = (HashedSession)manager.newHttpSession(new Request(null, null));
         String sessionId = session.getId();
         
@@ -124,7 +106,7 @@ public class HashSessionManagerTest
         session.setAttribute("two", new Integer(2));    
         
         //stop will persist sessions
-        manager.setMaxInactiveInterval(30); //change max inactive interval for *new* sessions
+        manager.setMaxInactiveInterval(30); // change max inactive interval for *new* sessions
         manager.stop();
         
         Assert.assertTrue("File should exist!", new File(testDir, session.getId()).exists());

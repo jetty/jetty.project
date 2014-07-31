@@ -57,6 +57,6 @@ public class CloseableDoSFilterTest extends AbstractDoSFilterTest
     public void testUnresponsiveClient() throws Exception
     {
         // TODO work out why this intermittently fails
-    	LOG.warn("Ignored Closeable testUnresponsiveClient");
+        LOG.warn("Ignored Closeable testUnresponsiveClient");
     }
 }

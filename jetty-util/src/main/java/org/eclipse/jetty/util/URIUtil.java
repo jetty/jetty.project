@@ -663,7 +663,49 @@ public class URIUtil
         }
         return false;
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Create a new URI from the arguments, handling IPv6 host encoding and default ports
+     * @param scheme
+     * @param server
+     * @param port
+     * @param path
+     * @param query
+     * @return A String URI
+     */
+    public static String newURI(String scheme,String server, int port,String path,String query)
+    {
+        StringBuilder builder = newURIBuilder(scheme, server, port);
+        builder.append(path);
+        if (query!=null && query.length()>0)
+            builder.append('?').append(query);
+        return builder.toString();
+    }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Create a new URI StringBuilder from the arguments, handling IPv6 host encoding and default ports
+     * @param scheme
+     * @param server
+     * @param port
+     * @return a StringBuilder containing URI prefix
+     */
+    public static StringBuilder newURIBuilder(String scheme,String server, int port)
+    {
+        StringBuilder builder = new StringBuilder();
+        appendSchemeHostPort(builder, scheme, server, port);
+        return builder;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports</p>
+     * @param url StringBuilder to append to
+     * @param scheme
+     * @param server
+     * @param port
+     */
     public static void appendSchemeHostPort(StringBuilder url,String scheme,String server, int port)
     {
         if (server.indexOf(':')>=0&&server.charAt(0)!='[')
@@ -671,10 +713,34 @@ public class URIUtil
         else
             url.append(scheme).append("://").append(server);
 
-        if (port > 0 && (("http".equalsIgnoreCase(scheme) && port != 80) || ("https".equalsIgnoreCase(scheme) && port != 443)))
-            url.append(':').append(port);
+        if (port > 0)
+        {
+            switch(scheme)
+            {
+                case "http":
+                    if (port!=80) 
+                        url.append(':').append(port);
+                    break;
+                    
+                case "https":
+                    if (port!=443) 
+                        url.append(':').append(port);
+                    break;
+
+                default:
+                    url.append(':').append(port);
+            }
+        }
     }
     
+    /* ------------------------------------------------------------ */
+    /** 
+     * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports</p>
+     * @param url StringBuffer to append to
+     * @param scheme
+     * @param server
+     * @param port
+     */
     public static void appendSchemeHostPort(StringBuffer url,String scheme,String server, int port)
     {
         synchronized (url)
@@ -684,8 +750,24 @@ public class URIUtil
             else
                 url.append(scheme).append("://").append(server);
 
-            if (port > 0 && (("http".equalsIgnoreCase(scheme) && port != 80) || ("https".equalsIgnoreCase(scheme) && port != 443)))
-                url.append(':').append(port);
+            if (port > 0)
+            {
+                switch(scheme)
+                {
+                    case "http":
+                        if (port!=80) 
+                            url.append(':').append(port);
+                        break;
+                        
+                    case "https":
+                        if (port!=443) 
+                            url.append(':').append(port);
+                        break;
+
+                    default:
+                        url.append(':').append(port);
+                }
+            }
         }
     }
 

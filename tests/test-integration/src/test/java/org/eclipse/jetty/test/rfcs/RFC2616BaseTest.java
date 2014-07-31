@@ -86,7 +86,7 @@ public abstract class RFC2616BaseTest
 
     public static void setUpServer(TestableJettyServer testableserver, Class<?> testclazz) throws Exception
     {
-    	File testWorkDir = MavenTestingUtils.getTargetTestingDir(testclazz.getName());
+        File testWorkDir = MavenTestingUtils.getTargetTestingDir(testclazz.getName());
         FS.ensureDirExists(testWorkDir);
 
         System.setProperty("java.io.tmpdir",testWorkDir.getAbsolutePath());

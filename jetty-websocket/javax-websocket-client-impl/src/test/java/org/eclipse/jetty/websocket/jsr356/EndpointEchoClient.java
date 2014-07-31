@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.notNullValue;
-
 import java.io.IOException;
-
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -30,6 +27,8 @@ import javax.websocket.Session;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
+
+import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Basic Echo Client from extended Endpoint
@@ -49,7 +48,8 @@ public class EndpointEchoClient extends Endpoint
     @Override
     public void onOpen(Session session, EndpointConfig config)
     {
-        LOG.debug("onOpen({}, {})",session,config);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onOpen({}, {})",session,config);
         this.session = session;
         Assert.assertThat("Session is required",session,notNullValue());
         Assert.assertThat("EndpointConfig is required",config,notNullValue());

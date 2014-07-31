@@ -664,6 +664,8 @@ public class StartArgs
         {
             return;
         }
+        
+        StartLog.debug("parse(\"%s\", \"%s\", %b)",rawarg,source,replaceProps);
 
         final String arg = rawarg.trim();
 
@@ -892,9 +894,9 @@ public class StartArgs
             // only add non-duplicates
             if (!propertyFileRefs.contains(arg))
             {
-            	propertyFileRefs.add(arg);
+                propertyFileRefs.add(arg);
             }
-        	return;
+                return;
         }
 
         // Anything else is unrecognized
@@ -936,7 +938,7 @@ public class StartArgs
             Path propertyFile = baseHome.getPath(propertyFileRef);
             if (!FS.exists(propertyFile))
             {
-            	propertyFile = baseHome.getPath("etc/" + propertyFileRef);
+                propertyFile = baseHome.getPath("etc/" + propertyFileRef);
             }
             addUniquePropertyFile(propertyFileRef,propertyFile);
         }

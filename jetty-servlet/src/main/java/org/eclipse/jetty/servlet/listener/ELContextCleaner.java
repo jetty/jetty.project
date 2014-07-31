@@ -52,7 +52,7 @@ public class ELContextCleaner implements ServletContextListener
         try
         {
             //Check that the BeanELResolver class is on the classpath
-            Class beanELResolver = Loader.loadClass(this.getClass(), "javax.el.BeanELResolver");
+            Class<?> beanELResolver = Loader.loadClass(this.getClass(), "javax.el.BeanELResolver");
 
             //Get a reference via reflection to the properties field which is holding class references
             Field field = getField(beanELResolver);
@@ -80,7 +80,7 @@ public class ELContextCleaner implements ServletContextListener
     }
 
 
-    protected Field getField (Class beanELResolver)
+    protected Field getField (Class<?> beanELResolver)
     throws SecurityException, NoSuchFieldException
     {
         if (beanELResolver == null)
@@ -98,14 +98,14 @@ public class ELContextCleaner implements ServletContextListener
         if (!properties.isAccessible())
             properties.setAccessible(true);
 
-        ConcurrentHashMap map = (ConcurrentHashMap) properties.get(null);
+        ConcurrentHashMap<Class<?>, Object> map = (ConcurrentHashMap<Class<?>, Object>) properties.get(null);
         if (map == null)
             return;
 
-        Iterator<Class> itor = map.keySet().iterator();
+        Iterator<Class<?>> itor = map.keySet().iterator();
         while (itor.hasNext())
         {
-            Class clazz = itor.next();
+            Class<?> clazz = itor.next();
             if (LOG.isDebugEnabled())
                 LOG.debug("Clazz: "+clazz+" loaded by "+clazz.getClassLoader());
             if (Thread.currentThread().getContextClassLoader().equals(clazz.getClassLoader()))

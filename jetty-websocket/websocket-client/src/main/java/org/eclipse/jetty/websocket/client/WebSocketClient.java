@@ -180,8 +180,8 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
             }
         }
 
-        // Validate websocket URI
-        LOG.debug("connect websocket {} to {}",websocket,toUri);
+        if (LOG.isDebugEnabled())
+            LOG.debug("connect websocket {} to {}",websocket,toUri);
 
         // Grab Connection Manager
         initialiseClient();
@@ -213,7 +213,8 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
             promise.setUpgradeListener(upgradeListener);
         }
 
-        LOG.debug("Connect Promise: {}",promise);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connect Promise: {}",promise);
 
         // Execute the connection on the executor thread
         executor.execute(promise);
@@ -225,7 +226,8 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     @Override
     protected void doStart() throws Exception
     {
-        LOG.debug("Starting {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Starting {}",this);
 
         if (sslContextFactory != null)
         {
@@ -253,13 +255,15 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
         super.doStart();
 
-        LOG.debug("Started {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Started {}",this);
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        LOG.debug("Stopping {}",this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stopping {}",this);
 
         if (cookieStore != null)
         {
@@ -268,7 +272,9 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         }
 
         super.doStop();
-        LOG.debug("Stopped {}",this);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stopped {}",this);
     }
 
     /**
@@ -418,10 +424,12 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
                 continue;
             }
 
-            LOG.debug("added {}",extension);
+            if (LOG.isDebugEnabled())
+                LOG.debug("added {}",extension);
             extensions.add(extension);
         }
-        LOG.debug("extensions={}",extensions);
+        if (LOG.isDebugEnabled())
+            LOG.debug("extensions={}",extensions);
         return extensions;
     }
 
@@ -463,14 +471,16 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     @Override
     public void onSessionClosed(WebSocketSession session)
     {
-        LOG.debug("Session Closed: {}",session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Session Closed: {}",session);
         removeBean(session);
     }
 
     @Override
     public void onSessionOpened(WebSocketSession session)
     {
-        LOG.debug("Session Opened: {}",session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Session Opened: {}",session);
     }
 
     public void setAsyncWriteTimeout(long ms)

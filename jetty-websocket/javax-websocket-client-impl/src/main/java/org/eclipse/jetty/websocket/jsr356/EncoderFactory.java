@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
@@ -92,7 +91,10 @@ public class EncoderFactory implements Configurable
 
     public EncoderMetadata getMetadataFor(Class<?> type)
     {
-        LOG.debug("getMetadataFor({})",type);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("getMetadataFor({})",type);
+        }
         EncoderMetadata metadata = metadatas.getMetadataByType(type);
 
         if (metadata != null)
@@ -140,7 +142,10 @@ public class EncoderFactory implements Configurable
     @Override
     public void init(EndpointConfig config)
     {
-        LOG.debug("init({})",config);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("init({})",config);
+        }
 
         // Instantiate all declared encoders
         for (EncoderMetadata metadata : metadatas)

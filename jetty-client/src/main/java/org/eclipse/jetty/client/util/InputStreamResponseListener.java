@@ -32,7 +32,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
@@ -146,25 +145,38 @@ public class InputStreamResponseListener extends Listener.Adapter
     }
 
     @Override
+    public void onSuccess(Response response)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing end of content {}{}", EOF, "");
+        queue.offer(EOF);
+        signal();
+    }
+
+    @Override
+    public void onFailure(Response response, Throwable failure)
+    {
+        fail(failure);
+        signal();
+    }
+
+    @Override
     public void onComplete(Result result)
     {
+        if (result.isFailed() && failure == null)
+            fail(result.getFailure());
         this.result = result;
-        if (result.isSucceeded())
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Queuing end of content {}{}", EOF, "");
-            queue.offer(EOF);
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Queuing failure {} {}", FAILURE, failure);
-            queue.offer(FAILURE);
-            this.failure = result.getFailure();
-            responseLatch.countDown();
-        }
         resultLatch.countDown();
         signal();
+    }
+
+    private void fail(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing failure {} {}", FAILURE, failure);
+        queue.offer(FAILURE);
+        this.failure = failure;
+        responseLatch.countDown();
     }
 
     protected boolean await()

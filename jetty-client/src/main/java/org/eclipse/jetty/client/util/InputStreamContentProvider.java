@@ -173,7 +173,8 @@ public class InputStreamContentProvider implements ContentProvider
             }
             catch (Throwable x)
             {
-                LOG.debug(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
                 if (failure == null)
                 {
                     failure = x;

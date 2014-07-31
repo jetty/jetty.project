@@ -102,7 +102,7 @@ public class GatewayServer extends Server
     
     public GatewayServer()
     {
-    	this("",DFT_EXT_PATH,DFT_CONNECT_PATH,new StandardTargetIdRetriever());
+        this("",DFT_EXT_PATH,DFT_CONNECT_PATH,new StandardTargetIdRetriever());
     }
 
     public GatewayServer(String contextPath, String externalServletPath,String gatewayServletPath, TargetIdRetriever targetIdRetriever)
@@ -145,7 +145,7 @@ public class GatewayServer extends Server
     
     public Gateway getGateway()
     {
-    	return gateway;
+        return gateway;
     }
     
     public ServletHolder getExternalServlet()

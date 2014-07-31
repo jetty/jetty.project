@@ -1247,7 +1247,7 @@ public class Request implements HttpServletRequest
                     _port=0;
                     return _serverName;
                 }
-                _serverName = hostPort.substring(1,len-1);
+                _serverName = hostPort.substring(0,len);
             }
             else if (len==hostPort.length())
                 _serverName=hostPort;

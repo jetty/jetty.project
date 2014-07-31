@@ -21,8 +21,6 @@ package org.eclipse.jetty.io;
 import java.io.Closeable;
 import java.io.IOException;
 import java.net.ConnectException;
-import java.net.Socket;
-import java.net.SocketAddress;
 import java.net.SocketTimeoutException;
 import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
@@ -488,7 +486,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
                     select();
-                runChanges();
+                while(isStopping())
+                    runChanges();
             }
             finally
             {

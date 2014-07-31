@@ -723,7 +723,6 @@ public class HttpConnectionTest
                                            "12345\015\012"+
                                            "0;\015\012\015\012");
             offset = checkContains(response,offset,"HTTP/1.1 200");
-            offset = checkContains(response,offset,"Allow: GET,POST,HEAD");
 
             offset=0;
             response=connector.getResponses("GET * HTTP/1.1\n"+

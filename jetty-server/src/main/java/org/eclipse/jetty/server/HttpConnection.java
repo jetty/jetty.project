@@ -426,11 +426,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onClose()
     {
-        if (_sendCallback.isInUse())
-        {
-            LOG.warn("Closed with pending write:"+this);
-            _sendCallback.failed(new EofException("Connection closed"));
-        }
+        _sendCallback.close();
         super.onClose();
     }
 
@@ -541,11 +537,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
 
         @Override
-        public void failed()
+        public void abort()
         {
-            getEndPoint().shutdownOutput();
+            super.abort();
+            _generator.setPersistent(false);
         }
-        
 
         @Override
         public boolean messageComplete()
@@ -579,6 +575,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 _callback = callback;
                 _header = null;
                 _shutdownOut = false;
+            }
+            else if (isClosed())
+            {
+                callback.failed(new EofException());
             }
             else
             {
@@ -705,7 +705,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public String toString()
         {
-            return String.format("SendCB@%x{s=%s,i=%s,cb=%s}",hashCode(),getState(),_info,_callback);
+            return String.format("%s[i=%s,cb=%s]",super.toString(),_info,_callback);
         }
     }
 

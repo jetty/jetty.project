@@ -104,7 +104,8 @@ public class JettyAnnotatedScanner extends AbstractMethodAnnotationScanner<Jetty
     @Override
     public void onMethodAnnotation(JettyAnnotatedMetadata metadata, Class<?> pojo, Method method, Annotation annotation)
     {
-        LOG.debug("onMethodAnnotation({}, {}, {}, {})",metadata,pojo,method,annotation);
+        if (LOG.isDebugEnabled())
+            LOG.debug("onMethodAnnotation({}, {}, {}, {})",metadata,pojo,method,annotation);
 
         if (isAnnotation(annotation,OnWebSocketConnect.class))
         {

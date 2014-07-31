@@ -397,10 +397,14 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                 _state.completed();
 
                 if (!_response.isCommitted() && !_request.isHandled())
+                {
                     _response.sendError(404);
+                }
                 else
+                {
                     // Complete generating the response
                     _response.closeOutput();
+                }
             }
             catch(EofException|ClosedChannelException e)
             {
@@ -795,10 +799,11 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
 
     /**
      * If a write or similar to this channel fails this method should be called. The standard implementation
-     * of {@link #failed()} is a noop. But the different implementations of HttpChannel might want to take actions.
+     * is to call {@link HttpTransport#abort()}
      */
-    public void failed()
+    public void abort()
     {
+        _transport.abort();
     }
 
     private class CommitCallback implements Callback

@@ -117,11 +117,13 @@ public class UpgradeConnection extends AbstractConnection
         EndPoint endPoint = getEndPoint();
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
-        LOG.debug("Shutting down output {}",endPoint);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Shutting down output {}",endPoint);
         endPoint.shutdownOutput();
         if (!onlyOutput)
         {
-            LOG.debug("Closing {}",endPoint);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closing {}",endPoint);
             endPoint.close();
         }
     }

@@ -136,6 +136,7 @@ public class Main
     }
 
     private BaseHome baseHome;
+    private StartArgs startupArgs;
 
     public Main() throws IOException
     {
@@ -658,19 +659,7 @@ public class Main
 
         if (args.isStopCommand())
         {
-            int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
-            String stopKey = args.getProperties().getString("STOP.KEY");
-
-            if (args.getProperties().getString("STOP.WAIT") != null)
-            {
-                int stopWait = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
-
-                stop(stopPort,stopKey,stopWait);
-            }
-            else
-            {
-                stop(stopPort,stopKey);
-            }
+          doStop(args);
         }
 
         // Initialize start.ini
@@ -758,6 +747,22 @@ public class Main
         {
             usageExit(e,ERR_INVOKE_MAIN);
         }
+    }
+
+    private void doStop(StartArgs args) {
+      int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
+      String stopKey = args.getProperties().getString("STOP.KEY");
+
+      if (args.getProperties().getString("STOP.WAIT") != null)
+      {
+          int stopWait = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
+
+          stop(stopPort,stopKey,stopWait);
+      }
+      else
+      {
+          stop(stopPort,stopKey);
+      }
     }
 
     /**
@@ -866,5 +871,38 @@ public class Main
         {
             System.exit(EXIT_USAGE);
         }
+    }
+
+    // ------------------------------------------------------------
+    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
+    public void init(String[] args) throws Exception
+    {
+      try
+      {
+        startupArgs = processCommandLine(args);
+      }
+      catch (UsageException e)
+      {
+        System.err.println(e.getMessage());
+        usageExit(e.getCause(),e.getExitCode());
+      }
+      catch (Throwable e)
+      {
+        usageExit(e,UsageException.ERR_UNKNOWN);
+      }
+    }
+
+    public void start() throws Exception
+    {
+      start(startupArgs);
+    }
+
+    public void stop() throws Exception
+    {
+      doStop(startupArgs);
+    }
+
+    public void destroy()
+    {
     }
 }

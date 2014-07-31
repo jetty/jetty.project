@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.servlet;
 
+import java.io.File;
 import java.io.IOException;
 import java.lang.reflect.Method;
 import java.util.ArrayList;
@@ -568,7 +569,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     /* ------------------------------------------------------------ */
     private void initServlet()
-    	throws ServletException
+        throws ServletException
     {
         Object old_run_as = null;
         try
@@ -595,7 +596,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             initMultiPart();
 
             if (LOG.isDebugEnabled())
-                LOG.debug("Filter.init {}",_servlet);
+                LOG.debug("Servlet.init {}",_servlet);
             _servlet.init(_config);
         }
         catch (UnavailableException e)
@@ -651,6 +652,18 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (classpath != null)
                 setInitParameter("classpath", classpath);
         }
+        
+        /* ensure scratch dir */
+        File scratch = null;
+        if (getInitParameter("scratchdir") == null)
+        {
+            File tmp = (File)getServletHandler().getServletContext().getAttribute(ServletContext.TEMPDIR);
+            scratch = new File(tmp, "jsp");
+            setInitParameter("scratchdir", scratch.getAbsolutePath());
+        }
+     
+        scratch = new File (getInitParameter("scratchdir"));
+        if (!scratch.exists()) scratch.mkdir();
     }
 
     /* ------------------------------------------------------------ */
@@ -782,7 +795,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (_servlet == null)
             return false;
 
-        Class c = _servlet.getClass();
+        Class<?> c = _servlet.getClass();
 
         boolean result = false;
         while (c != null && !result)
@@ -814,7 +827,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         jsp = jsp.substring(i);
         try
         {
-            Class jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
+            Class<?> jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
             Method makeJavaIdentifier = jspUtil.getMethod("makeJavaIdentifier", String.class);
             return (String)makeJavaIdentifier.invoke(null, jsp);
         }
@@ -840,7 +853,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             return "";
         try
         {
-            Class jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
+            Class<?> jspUtil = Loader.loadClass(Holder.class, "org.apache.jasper.compiler.JspUtil");
             Method makeJavaPackage = jspUtil.getMethod("makeJavaPackage", String.class);
             return (String)makeJavaPackage.invoke(null, jsp.substring(0,i));
         } 

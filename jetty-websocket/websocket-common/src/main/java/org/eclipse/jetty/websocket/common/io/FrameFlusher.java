@@ -29,7 +29,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -393,7 +392,8 @@ public class FrameFlusher
         }
         catch (Throwable x)
         {
-            LOG.debug("Exception while notifying failure of callback " + callback,x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while notifying failure of callback " + callback,x);
         }
     }
 
@@ -408,7 +408,8 @@ public class FrameFlusher
         }
         catch (Throwable x)
         {
-            LOG.debug("Exception while notifying success of callback " + callback,x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while notifying success of callback " + callback,x);
         }
     }
 

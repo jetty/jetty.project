@@ -138,7 +138,8 @@ public class LocalConnector extends AbstractConnector
         LocalEndPoint endp = executeRequest(requestsBuffer);
         endp.waitUntilClosedOrIdleFor(idleFor,units);
         ByteBuffer responses = endp.takeOutput();
-        endp.getConnection().close();
+        if (endp.isOutputShutdown())
+            endp.close();
         if (LOG.isDebugEnabled())
             LOG.debug("responses {}", BufferUtil.toUTF8String(responses));
         return responses;
@@ -157,6 +158,8 @@ public class LocalConnector extends AbstractConnector
 
     private LocalEndPoint executeRequest(ByteBuffer rawRequest)
     {
+        if (!isStarted())
+            throw new IllegalStateException("!STARTED");
         LocalEndPoint endp = new LocalEndPoint();
         endp.setInput(rawRequest);
         _connects.add(endp);

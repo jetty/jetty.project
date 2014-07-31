@@ -23,6 +23,7 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * @version $Rev: 4466 $ $Date: 2009-02-10 23:42:54 +0100 (Tue, 10 Feb 2009) $
+ * @deprecated
  */
 public interface CrossContextPsuedoSession<T>
 {

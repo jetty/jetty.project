@@ -199,7 +199,7 @@ public class URLEncodedTest
     /* -------------------------------------------------------------- */
     @Test
     public void testUrlEncodedStream()
-    	throws Exception
+        throws Exception
     {
         String [][] charsets = new String[][]
         {

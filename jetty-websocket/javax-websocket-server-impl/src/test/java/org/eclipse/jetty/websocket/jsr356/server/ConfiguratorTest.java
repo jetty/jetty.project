@@ -18,15 +18,12 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.*;
-
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.OnMessage;
@@ -51,6 +48,9 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 public class ConfiguratorTest
 {
@@ -191,7 +191,8 @@ public class ConfiguratorTest
         }
         int port = connector.getLocalPort();
         baseServerUri = new URI(String.format("ws://%s:%d/",host,port));
-        LOG.debug("Server started on {}",baseServerUri);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Server started on {}",baseServerUri);
     }
 
     @AfterClass

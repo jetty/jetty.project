@@ -96,15 +96,11 @@ public class PathMatchers
 
         // If the pattern starts with a root path then its assumed to
         // be a full system path
-        for (Path root : fs.getRootDirectories())
+        if (isAbsolute(pattern))
         {
-            StartLog.debug("root: " + root);
-            if (pattern.startsWith(root.toString()))
-            {
-                String pat = "glob:" + pattern;
-                StartLog.debug("Using absolute path pattern: " + pat);
-                return fs.getPathMatcher(pat);
-            }
+            String pat = "glob:" + pattern;
+            StartLog.debug("Using absolute path pattern: " + pat);
+            return fs.getPathMatcher(pat);
         }
 
         // Doesn't start with filesystem root, then assume the pattern

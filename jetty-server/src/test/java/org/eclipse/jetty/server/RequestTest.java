@@ -65,7 +65,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -486,7 +485,7 @@ public class RequestTest
         assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://[::1]/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("80",results.get(i++));
 
 
@@ -500,7 +499,7 @@ public class RequestTest
         assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("http://[::1]:8888/",results.get(i++));
         assertEquals("0.0.0.0",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("8888",results.get(i++));
 
 
@@ -516,7 +515,7 @@ public class RequestTest
         assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("https://[::1]/",results.get(i++));
         assertEquals("remote",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("443",results.get(i++));
 
 
@@ -532,7 +531,7 @@ public class RequestTest
         assertThat(response,Matchers.containsString("200 OK"));
         assertEquals("https://[::1]:8888/",results.get(i++));
         assertEquals("remote",results.get(i++));
-        assertEquals("::1",results.get(i++));
+        assertEquals("[::1]",results.get(i++));
         assertEquals("8888",results.get(i++));
     }
 

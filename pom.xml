@@ -6,7 +6,7 @@
     <version>22</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.2.2-SNAPSHOT</version>
+  <version>9.2.3-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -26,6 +26,7 @@
     <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
     <developerConnection>scm:git:ssh://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</developerConnection>
     <url>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree</url>
+    <tag>HEAD</tag>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
@@ -40,6 +41,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
+        <version>2.5</version>
         <configuration>
           <autoVersionSubmodules>true</autoVersionSubmodules>
         </configuration>
@@ -893,6 +895,19 @@
       </properties>
     </profile>
     <profile>
+      <id>7u65</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_65</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.7.v20140316</npn.version>
+        <alpn.version>7.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
       <id>8u00</id>
       <activation>
         <property>
@@ -910,6 +925,18 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_05</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u11</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_11</value>
         </property>
       </activation>
       <properties>

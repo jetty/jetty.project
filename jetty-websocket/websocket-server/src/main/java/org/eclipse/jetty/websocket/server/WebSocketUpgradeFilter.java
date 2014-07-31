@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -66,7 +65,9 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         fholder.setDisplayName("WebSocket Upgrade Filter");
         String pathSpec = "/*";
         context.addFilter(fholder,pathSpec,EnumSet.of(DispatcherType.REQUEST));
-        LOG.debug("Adding {} mapped to {} to {}",filter,pathSpec,context);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Adding {} mapped to {} to {}",filter,pathSpec,context);
 
         // Store reference to the WebSocketUpgradeFilter
         context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);

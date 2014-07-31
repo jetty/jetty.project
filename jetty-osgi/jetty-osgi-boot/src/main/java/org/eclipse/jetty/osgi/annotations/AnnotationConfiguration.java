@@ -23,6 +23,7 @@ import java.util.Set;
 
 import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.annotations.ClassNameResolver;
+import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.util.log.Log;
@@ -92,7 +93,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
         AnnotationParser oparser = (AnnotationParser)parser;
         
         Bundle webbundle = (Bundle) context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
-        Bundle[] fragAndRequiredBundles = PackageAdminServiceTracker.INSTANCE.getFragmentsAndRequiredBundles(webbundle);
+        Set<Bundle> fragAndRequiredBundles = (Set<Bundle>)context.getAttribute(OSGiWebInfConfiguration.FRAGMENT_AND_REQUIRED_BUNDLES);
         if (fragAndRequiredBundles != null)
         {
             //index and scan fragments

@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
@@ -99,7 +98,10 @@ public class DecoderFactory implements Configurable
 
     public DecoderMetadata getMetadataFor(Class<?> type)
     {
-        LOG.debug("getMetadataFor({})",type);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("getMetadataFor({})",type);
+        }
         DecoderMetadata metadata = metadatas.getMetadataByType(type);
 
         if (metadata != null)
@@ -147,7 +149,10 @@ public class DecoderFactory implements Configurable
     @Override
     public void init(EndpointConfig config)
     {
-        LOG.debug("init({})",config);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("init({})",config);
+        }
         // Instantiate all declared decoders
         for (DecoderMetadata metadata : metadatas)
         {

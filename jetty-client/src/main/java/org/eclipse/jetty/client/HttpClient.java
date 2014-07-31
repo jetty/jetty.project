@@ -24,7 +24,6 @@ import java.net.CookiePolicy;
 import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;

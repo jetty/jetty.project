@@ -51,6 +51,46 @@ import java.util.concurrent.atomic.AtomicReference;
 public abstract class IteratingCallback implements Callback
 {
     /**
+     * The internal states of this callback
+     */
+    private enum State
+    {
+        /**
+         * This callback is inactive, ready to iterate.
+         */
+        INACTIVE,
+        /**
+         * This callback is iterating and {@link #process()} has scheduled an
+         * asynchronous operation by returning {@link Action#SCHEDULED}, but
+         * the operation is still undergoing.
+         */
+        ACTIVE,
+        /**
+         * This callback is iterating and {@link #process()} has been called
+         * but not returned yet.
+         */
+        ITERATING,
+        /**
+         * While this callback was iterating, another request for iteration
+         * has been issued, so the iteration must continue even if a previous
+         * call to {@link #process()} returned {@link Action#IDLE}.
+         */
+        ITERATE_AGAIN,
+        /**
+         * The overall job has succeeded.
+         */
+        SUCCEEDED,
+        /**
+         * The overall job has failed.
+         */
+        FAILED,
+        /**
+         * This callback has been closed and cannot be reset.
+         */ 
+        CLOSED
+    }
+
+    /**
      * The indication of the overall progress of the overall job that
      * implementations of {@link #process()} must return.
      */
@@ -83,14 +123,9 @@ public abstract class IteratingCallback implements Callback
     
     protected IteratingCallback(boolean needReset)
     {
-        _state = new AtomicReference<>(needReset?State.SUCCEEDED:State.INACTIVE);
+        _state = new AtomicReference<>(needReset ? State.SUCCEEDED : State.INACTIVE);
     }
     
-    protected State getState()
-    {
-        return _state.get();
-    }
-
     /**
      * Method called by {@link #iterate()} to process the sub task.
      * <p/>
@@ -109,14 +144,31 @@ public abstract class IteratingCallback implements Callback
     protected abstract Action process() throws Exception;
 
     /**
-     * Invoked when the overall task has completed successfully.
+     * @deprecated Use {@link #onCompleteSuccess()} instead.
      */
-    protected abstract void onCompleteSuccess();
+    @Deprecated
+    protected void completed()
+    {
+    }
+
+    /**
+     * Invoked when the overall task has completed successfully.
+     *
+     * @see #onCompleteFailure(Throwable)
+     */
+    protected void onCompleteSuccess()
+    {
+        completed();
+    }
     
     /**
-     * Invoked when the overall task has completely failed.
+     * Invoked when the overall task has completed with a failure.
+     *
+     * @see #onCompleteSuccess()
      */
-    protected abstract void onCompleteFailure(Throwable x);
+    protected void onCompleteFailure(Throwable x)
+    {
+    }
 
     /**
      * This method must be invoked by applications to start the processing
@@ -211,8 +263,25 @@ public abstract class IteratingCallback implements Callback
                 case SUCCEEDED:
                 {
                     // The overall job has completed.
-                    completeSuccess();
-                    return true;
+                    while (true)
+                    {
+                        State current = _state.get();
+                        switch(current)
+                        {
+                            case SUCCEEDED:
+                            case FAILED:
+                                // Already complete!.
+                                return true;
+                            case CLOSED:
+                                throw new IllegalStateException();
+                            default:
+                                if (_state.compareAndSet(current, State.SUCCEEDED))
+                                {
+                                    onCompleteSuccess();
+                                    return true;
+                                }
+                        }
+                    }
                 }
                 default:
                 {
@@ -260,6 +329,11 @@ public abstract class IteratingCallback implements Callback
                     iterate();
                     return;
                 }
+                case CLOSED:
+                {
+                    // Too late!
+                    return;
+                }
                 default:
                 {
                     throw new IllegalStateException(toString());
@@ -274,78 +348,74 @@ public abstract class IteratingCallback implements Callback
      * {@code super.failed(Throwable)}.
      */
     @Override
-    public final void failed(Throwable x)
-    {
-        completeFailure(x);
-    }
-
-    protected void completeSuccess()
+    public void failed(Throwable x)
     {
         while (true)
         {
             State current = _state.get();
-            switch(current)
+            switch (current)
             {
                 case SUCCEEDED:
                 case FAILED:
+                case INACTIVE:
+                case CLOSED:
+                {
                     // Already complete!.
                     return;
+                }
                 default:
-                    if (_state.compareAndSet(current, State.SUCCEEDED))
-                    {
-                        onCompleteSuccess();
-                        return;
-                    }
-            }
-        }
-    }
-
-    protected void completeFailure(Throwable x)
-    {
-        while (true)
-        {
-            State current = _state.get();
-            switch(current)
-            {
-                case SUCCEEDED:
-                case FAILED:
-                    // Already complete!.
-                    return;
-                default:
+                {
                     if (_state.compareAndSet(current, State.FAILED))
                     {
                         onCompleteFailure(x);
                         return;
                     }
+                }
             }
         }
     }
 
-    /**
-     * @return whether this callback is idle and {@link #iterate()} needs to be called
-     */
-    public boolean isIdle()
+    public void close()
     {
-        return _state.get() == State.INACTIVE;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @return true if the callback is not INACTIVE, FAILED or SUCCEEDED.
-     */
-    public boolean isInUse()
-    {
-        switch(_state.get())
+        while (true)
         {
-            case INACTIVE:
-            case FAILED:
-            case SUCCEEDED:
-                return false;
-            default:
-                return true;
+            State current = _state.get();
+            switch (current)
+            {
+                case INACTIVE:
+                case SUCCEEDED:
+                case FAILED:
+                {
+                    if (_state.compareAndSet(current, State.CLOSED))
+                        return;
+                    break;
+                }
+                default:
+                {
+                    if (_state.compareAndSet(current, State.CLOSED))
+                    {
+                        onCompleteFailure(new IllegalStateException("Closed with pending callback " + this));
+                        return;
+                    }
+                }
+            }
         }
     }
 
+    /*
+     * only for testing
+     * @return whether this callback is idle and {@link #iterate()} needs to be called
+     */
+    boolean isIdle()
+    {
+        return _state.get() == State.INACTIVE;
+    }
+
+    public boolean isClosed()
+    {
+        return _state.get() == State.CLOSED;
+    }
+    
     /**
      * @return whether this callback has failed
      */
@@ -362,10 +432,13 @@ public abstract class IteratingCallback implements Callback
         return _state.get() == State.SUCCEEDED;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Reset the callback
-     * <p>A callback can only be reset to INACTIVE from the SUCCEEDED or FAILED states or if it is already INACTIVE.
-     * @return True if the reset was successful
+    /**
+     * Resets this callback.
+     * <p/>
+     * A callback can only be reset to INACTIVE from the
+     * SUCCEEDED or FAILED states or if it is already INACTIVE.
+     *
+     * @return true if the reset was successful
      */
     public boolean reset()
     {
@@ -396,41 +469,5 @@ public abstract class IteratingCallback implements Callback
     public String toString()
     {
         return String.format("%s[%s]", super.toString(), _state);
-    }
-    
-    /**
-     * The internal states of this callback
-     */
-    private enum State
-    {
-        /**
-         * This callback is inactive, ready to iterate.
-         */
-        INACTIVE,
-        /**
-         * This callback is iterating and {@link #process()} has scheduled an
-         * asynchronous operation by returning {@link Action#SCHEDULED}, but
-         * the operation is still undergoing.
-         */
-        ACTIVE,
-        /**
-         * This callback is iterating and {@link #process()} has been called
-         * but not returned yet.
-         */
-        ITERATING,
-        /**
-         * While this callback was iterating, another request for iteration
-         * has been issued, so the iteration must continue even if a previous
-         * call to {@link #process()} returned {@link Action#IDLE}.
-         */
-        ITERATE_AGAIN,
-        /**
-         * The overall job has succeeded.
-         */
-        SUCCEEDED,
-        /**
-         * The overall job has failed.
-         */
-        FAILED
     }
 }

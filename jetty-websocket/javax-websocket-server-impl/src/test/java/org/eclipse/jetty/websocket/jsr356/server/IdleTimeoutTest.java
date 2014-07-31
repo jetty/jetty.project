@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 import java.net.URI;
 import java.util.Queue;
@@ -45,6 +42,10 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class IdleTimeoutTest
 {
@@ -90,15 +91,19 @@ public class IdleTimeoutTest
         {
             client.start();
             JettyEchoSocket clientEcho = new JettyEchoSocket();
-            LOG.debug("Client Attempting to connnect");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Client Attempting to connnect");
             Future<Session> future = client.connect(clientEcho,uri);
             // wait for connect
             future.get(1,TimeUnit.SECONDS);
-            LOG.debug("Client Connected");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Client Connected");
             // wait 1 second
-            LOG.debug("Waiting 1 second");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Waiting 1 second");
             TimeUnit.SECONDS.sleep(1);
-            LOG.debug("Waited 1 second");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Waited 1 second");
             if (clientEcho.getClosed() == false)
             {
                 // Try to write

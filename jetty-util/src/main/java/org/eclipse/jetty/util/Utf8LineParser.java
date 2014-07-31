@@ -20,8 +20,6 @@ package org.eclipse.jetty.util;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
-
 /**
  * Stateful parser for lines of UTF8 formatted text, looking for <code>"\n"</code> as a line termination character.
  * <p>

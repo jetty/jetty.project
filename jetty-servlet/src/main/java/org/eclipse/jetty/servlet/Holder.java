@@ -89,7 +89,7 @@ public class Holder<T> extends BaseHolder<T>
     }
 
     /* ------------------------------------------------------------ */
-    public Enumeration getInitParameterNames()
+    public Enumeration<String> getInitParameterNames()
     {
         if (_initParams==null)
             return Collections.enumeration(Collections.EMPTY_LIST);
@@ -227,7 +227,7 @@ public class Holder<T> extends BaseHolder<T>
         }
 
         /* -------------------------------------------------------- */
-        public Enumeration getInitParameterNames()
+        public Enumeration<String> getInitParameterNames()
         {
             return Holder.this.getInitParameterNames();
         }

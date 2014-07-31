@@ -20,8 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.util.Objects;
 
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * Customizes requests that lack the {@code Host} header (for example, HTTP 1.0 requests).
  * <p />
