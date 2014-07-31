@@ -434,11 +434,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        // If we are still expecting a 100 continues when we commit
-        if (info!=null && _channel.isExpecting100Continue())
-            // then we can't be persistent
-            _generator.setPersistent(false);
-        if (info==null&&!lastContent&&BufferUtil.isEmpty(content))XXXXX else
+        if (info == null)
+        {
+            if (!lastContent && BufferUtil.isEmpty(content))
+                callback.succeeded();
+        }
+        else
+        {
+            // If we are still expecting a 100 continues when we commit
+            if (_channel.isExpecting100Continue())
+                // then we can't be persistent
+                _generator.setPersistent(false);
+        }
+            
         if(_sendCallback.reset(info,content,lastContent,callback))
             _sendCallback.iterate();
     }
