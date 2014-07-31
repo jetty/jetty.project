@@ -135,7 +135,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
     protected ServletContext _context;
     protected final Set<String> _mimeTypes=new HashSet<>();
     protected boolean _excludeMimeTypes;
-    protected int _bufferSize=8192;
+    protected int _bufferSize=32*1024;
     protected int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     protected int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
     protected boolean _deflateNoWrap = true;
