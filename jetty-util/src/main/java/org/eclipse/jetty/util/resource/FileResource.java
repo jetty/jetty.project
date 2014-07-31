@@ -154,7 +154,7 @@ public class FileResource extends Resource
                 URI alias=new File(can).toURI();
                 // Have to encode the path as File.toURI does not!
                 String uri="file://"+URIUtil.encodePath(alias.getPath());
-                return new URI(uri);  
+                return new URI(uri);
             }
         }
         catch(Exception e)

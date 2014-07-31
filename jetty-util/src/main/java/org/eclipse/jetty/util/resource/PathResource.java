@@ -52,7 +52,31 @@ public class PathResource extends Resource
     private final static LinkOption NO_FOLLOW_OPTIONS[] = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
 
     private final Path path;
+    private final URI alias;
     private final URI uri;
+    
+    private static final URI toAliasUri(final Path path)
+    {
+        Path abs = path;
+        if (!abs.isAbsolute())
+        {
+            abs = path.toAbsolutePath();
+        }
+        URI providedUri = abs.toUri();
+        try
+        {
+            URI realUri = abs.toRealPath().toUri();
+            if (!providedUri.equals(realUri))
+            {
+                return realUri;
+            }
+        }
+        catch (IOException e)
+        {
+            LOG.ignore(e);
+        }
+        return null;
+    }
 
     public PathResource(File file)
     {
@@ -61,8 +85,9 @@ public class PathResource extends Resource
 
     public PathResource(Path path)
     {
-        this.path = path;
+        this.path = path.toAbsolutePath();
         this.uri = this.path.toUri();
+        this.alias = toAliasUri(path);
     }
 
     public PathResource(URI uri) throws IOException
@@ -96,8 +121,9 @@ public class PathResource extends Resource
             throw new IOException("Unable to build Path from: " + uri,e);
         }
 
-        this.path = path;
+        this.path = path.toAbsolutePath();
         this.uri = path.toUri();
+        this.alias = toAliasUri(path);
     }
 
     public PathResource(URL url) throws IOException, URISyntaxException
@@ -109,13 +135,13 @@ public class PathResource extends Resource
     public Resource addPath(final String subpath) throws IOException, MalformedURLException
     {
         String cpath = URIUtil.canonicalPath(subpath);
-        
-        if ((cpath == null)||(cpath.length()==0))
+
+        if ((cpath == null) || (cpath.length() == 0))
             throw new MalformedURLException();
 
         if ("/".equals(cpath))
             return this;
-        
+
         // subpaths are always under PathResource
         // compensate for input subpaths like "/subdir"
         // where default java.nio.file behavior would be
@@ -279,22 +305,7 @@ public class PathResource extends Resource
     @Override
     public URI getAlias()
     {
-        if (Files.isSymbolicLink(path))
-        {
-            try
-            {
-                return path.toRealPath().toUri();
-            }
-            catch (IOException e)
-            {
-                LOG.debug(e);
-                return null;
-            }
-        }
-        else
-        {
-            return null;
-        }
+        return this.alias;
     }
 
     @Override

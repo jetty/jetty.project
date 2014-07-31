@@ -80,7 +80,6 @@ public class FileSystemResourceTest
         _class=test;
     }
     
-    
     public Resource newResource(URI uri) throws Exception
     {
         try
@@ -147,7 +146,7 @@ public class FileSystemResourceTest
             @Override
             public void describeMismatch(Object item, Description description)
             {
-                description.appendText("was").appendValue(((Resource)item).getAlias());
+                description.appendText("was ").appendValue(((Resource)item).getAlias());
             }
         };
     }
@@ -159,8 +158,16 @@ public class FileSystemResourceTest
             @Override
             public boolean matches(Object item)
             {
-                final Resource alias = (Resource)item;
-                return alias.getAlias().equals(resource.getURI());
+                final Resource ritem = (Resource)item;
+                final URI alias = ritem.getAlias();
+                if (alias == null)
+                {
+                    return ritem == null;
+                }
+                else
+                {
+                    return alias.equals(resource.getURI());
+                }
             }
 
             @Override
@@ -172,7 +179,7 @@ public class FileSystemResourceTest
             @Override
             public void describeMismatch(Object item, Description description)
             {
-                description.appendText("was").appendValue(((Resource)item).getAlias());
+                description.appendText("was ").appendValue(((Resource)item).getAlias());
             }
         };
     }
@@ -544,28 +551,122 @@ public class FileSystemResourceTest
         }
     }
 
+    /**
+     * NTFS Alternative Data / File Streams.
+     * <p>
+     * See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx
+     */
     @Test
-    public void testCaseNTParamAlias() throws Exception
+    public void testNTFSFileStreamAlias() throws Exception
     {
         File dir = testdir.getDir();
-        Path path = new File(dir, "file").toPath();
+        Path path = new File(dir, "testfile").toPath();
         Files.createFile(path);
         
         try (Resource base = newResource(testdir.getDir()))
         {
-            Resource resource = base.addPath("file");
+            Resource resource = base.addPath("testfile");
                         
             assertThat("resource.alias", resource, hasNoAlias());
             assertThat("resource.uri.alias", newResource(resource.getURI()), hasNoAlias());
             assertThat("resource.file.alias", newResource(resource.getFile()), hasNoAlias());
 
-            Resource alias = base.addPath("file::$DATA");
-            if (alias.exists())
+            try
             {
-                // If it exists, it must be an alias
-                assertThat("resource.alias", alias, isAliasFor(resource));
-                assertThat("resource.uri.alias", newResource(alias.getURI()), isAliasFor(resource));
-                assertThat("resource.file.alias", newResource(alias.getFile()), isAliasFor(resource));
+                // Attempt to reference same file, but via NTFS simple stream
+                Resource alias = base.addPath("testfile:stream");
+                if (alias.exists())
+                {
+                    // If it exists, it must be an alias
+                    assertThat("resource.alias",alias,isAliasFor(resource));
+                    assertThat("resource.uri.alias",newResource(alias.getURI()),isAliasFor(resource));
+                    assertThat("resource.file.alias",newResource(alias.getFile()),isAliasFor(resource));
+                }
+            }
+            catch (InvalidPathException e)
+            {
+                // NTFS filesystem streams are unsupported on some platforms.
+                assumeNoException(e);
+            }
+        }
+    }
+    
+    /**
+     * NTFS Alternative Data / File Streams.
+     * <p>
+     * See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx
+     */
+    @Test
+    public void testNTFSFileDataStreamAlias() throws Exception
+    {
+        File dir = testdir.getDir();
+        Path path = new File(dir, "testfile").toPath();
+        Files.createFile(path);
+        
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource resource = base.addPath("testfile");
+                        
+            assertThat("resource.alias", resource, hasNoAlias());
+            assertThat("resource.uri.alias", newResource(resource.getURI()), hasNoAlias());
+            assertThat("resource.file.alias", newResource(resource.getFile()), hasNoAlias());
+
+            try
+            {
+                // Attempt to reference same file, but via NTFS DATA stream
+                Resource alias = base.addPath("testfile::$DATA");
+                if (alias.exists())
+                {
+                    // If it exists, it must be an alias
+                    assertThat("resource.alias",alias,isAliasFor(resource));
+                    assertThat("resource.uri.alias",newResource(alias.getURI()),isAliasFor(resource));
+                    assertThat("resource.file.alias",newResource(alias.getFile()),isAliasFor(resource));
+                }
+            }
+            catch (InvalidPathException e)
+            {
+                // NTFS filesystem streams are unsupported on some platforms.
+                assumeNoException(e);
+            }
+        }
+    }
+    
+    /**
+     * NTFS Alternative Data / File Streams.
+     * <p>
+     * See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx
+     */
+    @Test
+    public void testNTFSFileEncodedDataStreamAlias() throws Exception
+    {
+        File dir = testdir.getDir();
+        Path path = new File(dir, "testfile").toPath();
+        Files.createFile(path);
+        
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource resource = base.addPath("testfile");
+                        
+            assertThat("resource.alias", resource, hasNoAlias());
+            assertThat("resource.uri.alias", newResource(resource.getURI()), hasNoAlias());
+            assertThat("resource.file.alias", newResource(resource.getFile()), hasNoAlias());
+
+            try
+            {
+                // Attempt to reference same file, but via NTFS DATA stream
+                Resource alias = base.addPath("testfile::%24DATA");
+                if (alias.exists())
+                {
+                    // If it exists, it must be an alias
+                    assertThat("resource.alias",alias,isAliasFor(resource));
+                    assertThat("resource.uri.alias",newResource(alias.getURI()),isAliasFor(resource));
+                    assertThat("resource.file.alias",newResource(alias.getFile()),isAliasFor(resource));
+                }
+            }
+            catch (InvalidPathException e)
+            {
+                // NTFS filesystem streams are unsupported on some platforms.
+                assumeNoException(e);
             }
         }
     }
