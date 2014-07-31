@@ -85,9 +85,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         HeadersFrame frame = new HeadersFrame(stream.getId(), metaData, null, endStream);
         stream.headers(frame, callback);
     }
-
-    @Override
-    public void send(ByteBuffer content, boolean lastContent, Callback callback)
+    
+    private void send(ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {
@@ -97,6 +96,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         DataFrame frame = new DataFrame(stream.getId(), content, lastContent);
         stream.data(frame, callback);
     }
+
 
     @Override
     public void completed()

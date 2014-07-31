@@ -90,12 +90,6 @@ public class ResponseTest
             {
                 callback.succeeded();
             }
-            
-            @Override
-            public void send(ByteBuffer responseBodyContent, boolean lastContent, Callback callback)
-            {
-                send(null,responseBodyContent, lastContent, callback);
-            }
 
             @Override
             public void completed()

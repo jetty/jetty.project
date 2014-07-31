@@ -443,13 +443,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _sendCallback.iterate();
     }
 
-    @Override
-    public void send(ByteBuffer content, boolean lastContent, Callback callback)
-    {
-        _sendCallback.reset(null,content,lastContent,callback);
-        _sendCallback.iterate();
-    }
-
     private class SendCallback extends IteratingCallback
     {
         private ResponseInfo _info;
