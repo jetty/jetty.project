@@ -57,7 +57,7 @@ public class ResetBodyParser extends BodyParser
                     int length = getBodyLength();
                     if (length != 4)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_rst_stream_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_rst_stream_frame");
                     }
                     state = State.ERROR;
                     break;

@@ -87,7 +87,7 @@ public class DataBodyParser extends BodyParser
                     loop = length == 0;
                     if (length < 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_data_frame_padding");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_data_frame_padding");
                     }
                     break;
                 }

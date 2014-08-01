@@ -90,7 +90,7 @@ public class PushPromiseBodyParser extends BodyParser
                     state = State.STREAM_ID;
                     if (length < 4)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_push_promise_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_push_promise_frame");
                     }
                     break;
                 }
@@ -119,7 +119,7 @@ public class PushPromiseBodyParser extends BodyParser
                     --length;
                     if (cursor > 0 && length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_push_promise_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_push_promise_frame");
                     }
                     if (cursor == 0)
                     {

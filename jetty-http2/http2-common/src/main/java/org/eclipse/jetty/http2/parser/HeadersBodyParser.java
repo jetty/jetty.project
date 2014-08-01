@@ -110,7 +110,7 @@ public class HeadersBodyParser extends BodyParser
                     loop = length == 0;
                     if (length < 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame_padding");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_headers_frame_padding");
                     }
                     break;
                 }
@@ -133,7 +133,7 @@ public class HeadersBodyParser extends BodyParser
                         state = State.WEIGHT;
                         if (length < 1)
                         {
-                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame");
+                            return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_headers_frame");
                         }
                     }
                     else
@@ -151,7 +151,7 @@ public class HeadersBodyParser extends BodyParser
                     --length;
                     if (cursor > 0 && length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_headers_frame");
                     }
                     if (cursor == 0)
                     {
@@ -159,7 +159,7 @@ public class HeadersBodyParser extends BodyParser
                         state = State.WEIGHT;
                         if (length < 1)
                         {
-                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame");
+                            return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_headers_frame");
                         }
                     }
                     break;

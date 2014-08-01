@@ -52,7 +52,7 @@ public class WindowUpdateBodyParser extends BodyParser
                     int length = getBodyLength();
                     if (length != 4)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_window_update_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_window_update_frame");
                     }
                     state = State.WINDOW_DELTA;
                     break;

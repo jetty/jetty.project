@@ -69,7 +69,7 @@ public class GoAwayBodyParser extends BodyParser
                         length -= 4;
                         if (length <= 0)
                         {
-                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_go_away_frame");
+                            return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_go_away_frame");
                         }
                     }
                     else
@@ -87,7 +87,7 @@ public class GoAwayBodyParser extends BodyParser
                     --length;
                     if (cursor > 0 && length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_go_away_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_go_away_frame");
                     }
                     if (cursor == 0)
                     {
@@ -95,7 +95,7 @@ public class GoAwayBodyParser extends BodyParser
                         state = State.ERROR;
                         if (length == 0)
                         {
-                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_go_away_frame");
+                            return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_go_away_frame");
                         }
                     }
                     break;
@@ -109,7 +109,7 @@ public class GoAwayBodyParser extends BodyParser
                         length -= 4;
                         if (length < 0)
                         {
-                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_go_away_frame");
+                            return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_go_away_frame");
                         }
                         if (length == 0)
                         {
@@ -131,7 +131,7 @@ public class GoAwayBodyParser extends BodyParser
                     --length;
                     if (cursor > 0 && length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_go_away_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_go_away_frame");
                     }
                     if (cursor == 0)
                     {

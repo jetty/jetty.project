@@ -83,7 +83,7 @@ public class SettingsBodyParser extends BodyParser
                         length -= 2;
                         if (length <= 0)
                         {
-                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_frame");
+                            return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_settings_frame");
                         }
                     }
                     else
@@ -102,7 +102,7 @@ public class SettingsBodyParser extends BodyParser
                     --length;
                     if (length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_settings_frame");
                     }
                     if (cursor == 0)
                     {
@@ -139,7 +139,7 @@ public class SettingsBodyParser extends BodyParser
                     --length;
                     if (cursor > 0 && length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_settings_frame");
                     }
                     if (cursor == 0)
                     {

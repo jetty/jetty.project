@@ -59,7 +59,7 @@ public class PriorityBodyParser extends BodyParser
                     int length = getBodyLength();
                     if (length != 5)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_priority_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_priority_frame");
                     }
                     state = State.EXCLUSIVE;
                     break;
