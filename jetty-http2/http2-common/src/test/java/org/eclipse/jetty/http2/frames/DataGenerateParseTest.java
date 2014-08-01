@@ -72,7 +72,7 @@ public class DataGenerateParseTest
     {
         ByteBuffer content = ByteBuffer.wrap(largeContent);
         List<DataFrame> frames = testGenerateParse(content);
-        Assert.assertEquals(9, frames.size());
+        Assert.assertEquals(8, frames.size());
         ByteBuffer aggregate = ByteBuffer.allocate(content.remaining());
         for (int i = 1; i <= frames.size(); ++i)
         {

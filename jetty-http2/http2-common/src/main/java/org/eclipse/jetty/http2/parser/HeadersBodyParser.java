@@ -87,13 +87,9 @@ public class HeadersBodyParser extends BodyParser
 
                     length = getBodyLength();
 
-                    if (isPaddingHigh())
+                    if (isPadding())
                     {
-                        state = State.PADDING_HIGH;
-                    }
-                    else if (isPaddingLow())
-                    {
-                        state = State.PADDING_LOW;
+                        state = State.PADDING_LENGTH;
                     }
                     else if (hasFlag(Flag.PRIORITY))
                     {
@@ -105,20 +101,9 @@ public class HeadersBodyParser extends BodyParser
                     }
                     break;
                 }
-                case PADDING_HIGH:
+                case PADDING_LENGTH:
                 {
-                    paddingLength = (buffer.get() & 0xFF) << 8;
-                    --length;
-                    state = State.PADDING_LOW;
-                    if (length < 1 + 256)
-                    {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame_padding");
-                    }
-                    break;
-                }
-                case PADDING_LOW:
-                {
-                    paddingLength += buffer.get() & 0xFF;
+                    paddingLength = buffer.get() & 0xFF;
                     --length;
                     length -= paddingLength;
                     state = hasFlag(Flag.PRIORITY) ? State.EXCLUSIVE : State.HEADERS;
@@ -235,6 +220,6 @@ public class HeadersBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, PADDING_HIGH, PADDING_LOW, EXCLUSIVE, STREAM_ID, STREAM_ID_BYTES, WEIGHT, HEADERS, PADDING
+        PREPARE, PADDING_LENGTH, EXCLUSIVE, STREAM_ID, STREAM_ID_BYTES, WEIGHT, HEADERS, PADDING
     }
 }

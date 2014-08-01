@@ -42,7 +42,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     public AbstractHTTP2ServerConnectionFactory()
     {
-        super("h2-12");
+        super("h2-14");
     }
 
     public int getMaxHeaderTableSize()

@@ -76,12 +76,37 @@ public class SettingsBodyParser extends BodyParser
                 }
                 case SETTING_ID:
                 {
-                    settingId = buffer.get() & 0xFF;
-                    state = State.SETTING_VALUE;
+                    if (buffer.remaining() >= 2)
+                    {
+                        settingId = buffer.getShort() & 0xFF_FF;
+                        state = State.SETTING_VALUE;
+                        length -= 2;
+                        if (length <= 0)
+                        {
+                            return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_frame");
+                        }
+                    }
+                    else
+                    {
+                        cursor = 2;
+                        settingId = 0;
+                        state = State.SETTING_ID_BYTES;
+                    }
+                    break;
+                }
+                case SETTING_ID_BYTES:
+                {
+                    int currByte = buffer.get() & 0xFF;
+                    --cursor;
+                    settingId += currByte << (8 * cursor);
                     --length;
                     if (length <= 0)
                     {
                         return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_frame");
+                    }
+                    if (cursor == 0)
+                    {
+                        state = State.SETTING_VALUE;
                     }
                     break;
                 }
@@ -145,6 +170,6 @@ public class SettingsBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, SETTING_ID, SETTING_VALUE, SETTING_VALUE_BYTES
+        PREPARE, SETTING_ID, SETTING_ID_BYTES, SETTING_VALUE, SETTING_VALUE_BYTES
     }
 }

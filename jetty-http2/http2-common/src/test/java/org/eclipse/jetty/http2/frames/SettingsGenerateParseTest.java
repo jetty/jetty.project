@@ -123,7 +123,7 @@ public class SettingsGenerateParseTest
         generator.generateSettings(lease, settings1, true);
         // Modify the length of the frame to make it invalid
         ByteBuffer bytes = lease.getByteBuffers().get(0);
-        bytes.putShort(0, (short)(bytes.getShort(0) - 1));
+        bytes.putShort(1, (short)(bytes.getShort(1) - 1));
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {

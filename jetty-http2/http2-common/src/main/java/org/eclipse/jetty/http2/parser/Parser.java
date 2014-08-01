@@ -62,8 +62,6 @@ public class Parser
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
         bodyParsers[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateBodyParser(headerParser, listener);
         bodyParsers[FrameType.CONTINUATION.getType()] = null; // TODO
-        bodyParsers[FrameType.ALTSVC.getType()] = null; // TODO
-        bodyParsers[FrameType.BLOCKED.getType()] = null; // TODO
     }
 
     private void reset()

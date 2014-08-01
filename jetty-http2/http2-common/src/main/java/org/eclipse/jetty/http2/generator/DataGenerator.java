@@ -48,7 +48,8 @@ public class DataGenerator
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
         int dataLength = data.remaining();
-        if (dataLength <= maxLength && dataLength <= Frame.MAX_LENGTH)
+        int maxFrameSize = headerGenerator.getMaxFrameSize();
+        if (dataLength <= maxLength && dataLength <= maxFrameSize)
         {
             // Single frame.
             generateFrame(lease, streamId, data, last);
@@ -58,16 +59,15 @@ public class DataGenerator
         // Other cases, we need to slice the original buffer into multiple frames.
 
         int length = Math.min(maxLength, dataLength);
-        int dataBytesPerFrame = Frame.MAX_LENGTH;
-        int frames = length / dataBytesPerFrame;
-        if (frames * dataBytesPerFrame != length)
+        int frames = length / maxFrameSize;
+        if (frames * maxFrameSize != length)
             ++frames;
 
         int begin = data.position();
         int end = data.limit();
         for (int i = 1; i <= frames; ++i)
         {
-            int limit = begin + Math.min(dataBytesPerFrame * i, length);
+            int limit = begin + Math.min(maxFrameSize * i, length);
             data.limit(limit);
             ByteBuffer slice = data.slice();
             data.position(limit);

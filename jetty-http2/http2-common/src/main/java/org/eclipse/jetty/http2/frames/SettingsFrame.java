@@ -26,6 +26,7 @@ public class SettingsFrame extends Frame
     public static final int ENABLE_PUSH = 2;
     public static final int MAX_CONCURRENT_STREAMS = 3;
     public static final int INITIAL_WINDOW_SIZE = 4;
+    public static final int MAX_FRAME_SIZE = 5;
 
     private final Map<Integer, Integer> settings;
     private final boolean reply;

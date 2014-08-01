@@ -51,10 +51,11 @@ public class HeadersGenerator extends FrameGenerator
         if (streamId < 0)
             throw new IllegalArgumentException("Invalid stream id: " + streamId);
 
-        encoder.encode(metaData, lease,Frame.MAX_LENGTH);
+        int maxFrameSize = getMaxFrameSize();
+        encoder.encode(metaData, lease, maxFrameSize);
 
         long length = lease.getTotalLength();
-        if (length > Frame.MAX_LENGTH)
+        if (length > maxFrameSize)
             throw new IllegalArgumentException("Invalid headers, too big");
 
         int flags = Flag.END_HEADERS;

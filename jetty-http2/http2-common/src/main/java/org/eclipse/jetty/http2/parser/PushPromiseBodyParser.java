@@ -72,13 +72,9 @@ public class PushPromiseBodyParser extends BodyParser
 
                     length = getBodyLength();
 
-                    if (isPaddingHigh())
+                    if (isPadding())
                     {
-                        state = State.PADDING_HIGH;
-                    }
-                    else if (isPaddingLow())
-                    {
-                        state = State.PADDING_LOW;
+                        state = State.PADDING_LENGTH;
                     }
                     else
                     {
@@ -86,26 +82,15 @@ public class PushPromiseBodyParser extends BodyParser
                     }
                     break;
                 }
-                case PADDING_HIGH:
+                case PADDING_LENGTH:
                 {
-                    paddingLength = (buffer.get() & 0xFF) << 8;
-                    --length;
-                    state = State.PADDING_LOW;
-                    if (length < 1 + 256)
-                    {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_push_promise_frame_padding");
-                    }
-                    break;
-                }
-                case PADDING_LOW:
-                {
-                    paddingLength += buffer.get() & 0xFF;
+                    paddingLength = buffer.get() & 0xFF;
                     --length;
                     length -= paddingLength;
                     state = State.STREAM_ID;
                     if (length < 4)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_push_promise_frame_padding");
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_push_promise_frame");
                     }
                     break;
                 }
@@ -187,6 +172,6 @@ public class PushPromiseBodyParser extends BodyParser
 
     private enum State
     {
-        PREPARE, PADDING_HIGH, PADDING_LOW, STREAM_ID, STREAM_ID_BYTES, HEADERS, PADDING
+        PREPARE, PADDING_LENGTH, STREAM_ID, STREAM_ID_BYTES, HEADERS, PADDING
     }
 }

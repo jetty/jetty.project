@@ -176,6 +176,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             return false;
 
         Map<Integer, Integer> settings = frame.getSettings();
+        // TODO: handle other settings
         if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
         {
             maxStreamCount = settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS);
@@ -187,7 +188,17 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             int windowSize = settings.get(SettingsFrame.INITIAL_WINDOW_SIZE);
             flowControl.updateInitialWindowSize(this, windowSize);
         }
-        // TODO: handle other settings
+        if (settings.containsKey(SettingsFrame.MAX_FRAME_SIZE))
+        {
+            int maxFrameSize = settings.get(SettingsFrame.MAX_FRAME_SIZE);
+            // Spec: check the max frame size is sane.
+            if (maxFrameSize < Frame.DEFAULT_MAX_LENGTH || maxFrameSize > Frame.MAX_MAX_LENGTH)
+            {
+                onConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_max_frame_size");
+                return false;
+            }
+            generator.setMaxFrameSize(maxFrameSize);
+        }
         notifySettings(this, frame);
 
         // SPEC: SETTINGS frame MUST be replied.

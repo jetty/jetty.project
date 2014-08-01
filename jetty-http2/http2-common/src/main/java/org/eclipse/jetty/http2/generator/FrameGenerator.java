@@ -39,4 +39,9 @@ public abstract class FrameGenerator
     {
         return headerGenerator.generate(lease, frameType, Frame.HEADER_LENGTH + length, length, flags, streamId);
     }
+
+    public int getMaxFrameSize()
+    {
+        return headerGenerator.getMaxFrameSize();
+    }
 }

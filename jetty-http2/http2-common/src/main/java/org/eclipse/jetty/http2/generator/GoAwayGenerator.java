@@ -50,8 +50,8 @@ public class GoAwayGenerator extends FrameGenerator
         // The last streamId + the error code.
         int fixedLength = 4 + 4;
 
-        // Make sure we don't exceed the frame max length.
-        int maxPayloadLength = Frame.MAX_LENGTH - fixedLength;
+        // Make sure we don't exceed the default frame max length.
+        int maxPayloadLength = Frame.DEFAULT_MAX_LENGTH - fixedLength;
         if (payload != null && payload.length > maxPayloadLength)
             payload = Arrays.copyOfRange(payload, 0, maxPayloadLength);
 

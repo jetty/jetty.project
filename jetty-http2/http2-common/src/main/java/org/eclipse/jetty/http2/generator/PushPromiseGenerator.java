@@ -53,13 +53,14 @@ public class PushPromiseGenerator extends FrameGenerator
         if (promisedStreamId < 0)
             throw new IllegalArgumentException("Invalid promised stream id: " + promisedStreamId);
 
-        encoder.encode(metaData, lease, Frame.MAX_LENGTH);
+        int maxFrameSize = getMaxFrameSize();
+        encoder.encode(metaData, lease, maxFrameSize);
 
         // The promised streamId.
         int fixedLength = 4;
 
         long length = lease.getTotalLength();
-        if (length > Frame.MAX_LENGTH - fixedLength)
+        if (length > maxFrameSize - fixedLength)
             throw new IllegalArgumentException("Invalid headers, too big");
 
         // Space for the promised streamId.

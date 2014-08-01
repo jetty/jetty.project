@@ -59,14 +59,9 @@ public abstract class BodyParser
         return headerParser.hasFlag(bit);
     }
 
-    protected boolean isPaddingHigh()
+    protected boolean isPadding()
     {
-        return headerParser.hasFlag(Flag.PADDING_HIGH);
-    }
-
-    protected boolean isPaddingLow()
-    {
-        return headerParser.hasFlag(Flag.PADDING_LOW);
+        return headerParser.hasFlag(Flag.PADDING);
     }
 
     protected boolean isEndStream()

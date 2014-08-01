@@ -32,9 +32,7 @@ public enum FrameType
     PING(6),
     GO_AWAY(7),
     WINDOW_UPDATE(8),
-    CONTINUATION(9),
-    ALTSVC(10),
-    BLOCKED(11);
+    CONTINUATION(9);
 
     public static FrameType from(int type)
     {

@@ -28,6 +28,7 @@ public class Generator
 {
     private final ByteBufferPool byteBufferPool;
     private final int headerTableSize;
+    private final HeaderGenerator headerGenerator;
     private final FrameGenerator[] generators;
     private final DataGenerator dataGenerator;
 
@@ -41,7 +42,7 @@ public class Generator
         this.byteBufferPool = byteBufferPool;
         this.headerTableSize = headerTableSize;
 
-        HeaderGenerator headerGenerator = new HeaderGenerator();
+        headerGenerator = new HeaderGenerator();
         HpackEncoder encoder = new HpackEncoder(headerTableSize);
 
         this.generators = new FrameGenerator[FrameType.values().length];
@@ -54,8 +55,6 @@ public class Generator
         this.generators[FrameType.GO_AWAY.getType()] = new GoAwayGenerator(headerGenerator);
         this.generators[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateGenerator(headerGenerator);
         this.generators[FrameType.CONTINUATION.getType()] = null; // TODO
-        this.generators[FrameType.ALTSVC.getType()] = null; // TODO
-        this.generators[FrameType.BLOCKED.getType()] = null; // TODO
 
         this.dataGenerator = new DataGenerator(headerGenerator);
     }
@@ -68,6 +67,11 @@ public class Generator
     public int getHeaderTableSize()
     {
         return headerTableSize;
+    }
+
+    public void setMaxFrameSize(int maxFrameSize)
+    {
+        headerGenerator.setMaxFrameSize(maxFrameSize);
     }
 
     public void control(ByteBufferPool.Lease lease, Frame frame)

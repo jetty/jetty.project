@@ -44,17 +44,17 @@ public class SettingsGenerator extends FrameGenerator
 
     public void generateSettings(ByteBufferPool.Lease lease, Map<Integer, Integer> settings, boolean reply)
     {
-        // One byte for the identifier, 4 bytes for the value.
-        int entryLength = 1 + 4;
+        // Two bytes for the identifier, four bytes for the value.
+        int entryLength = 2 + 4;
         int length = entryLength * settings.size();
-        if (length > Frame.MAX_LENGTH)
+        if (length > getMaxFrameSize())
             throw new IllegalArgumentException("Invalid settings, too big");
 
         ByteBuffer header = generateHeader(lease, FrameType.SETTINGS, length, reply ? Flag.ACK : Flag.NONE, 0);
 
         for (Map.Entry<Integer, Integer> entry : settings.entrySet())
         {
-            header.put(entry.getKey().byteValue());
+            header.putShort(entry.getKey().shortValue());
             header.putInt(entry.getValue());
         }
 

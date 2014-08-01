@@ -59,12 +59,11 @@ public class HeaderParser
             {
                 case LENGTH:
                 {
-                    int halfShort = buffer.get() & 0xFF;
-                    length = (length << 8) + halfShort;
-                    if (++cursor == 2)
+                    int octect = buffer.get() & 0xFF;
+                    length = (length << 8) + octect;
+                    if (++cursor == 3)
                     {
-                        // First 2 most significant bits MUST be ignored as per specification.
-                        length &= Frame.MAX_LENGTH;
+                        length &= Frame.MAX_MAX_LENGTH;
                         state = State.TYPE;
                     }
                     break;
