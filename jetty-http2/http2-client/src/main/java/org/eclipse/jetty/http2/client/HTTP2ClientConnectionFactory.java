@@ -1,0 +1,118 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.http2.client;
+
+import java.io.IOException;
+import java.nio.ByteBuffer;
+import java.util.Map;
+import java.util.concurrent.Executor;
+
+import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.HTTP2Connection;
+import org.eclipse.jetty.http2.HTTP2FlowControl;
+import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.generator.Generator;
+import org.eclipse.jetty.http2.parser.Parser;
+import org.eclipse.jetty.http2.parser.PrefaceParser;
+import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.Scheduler;
+
+public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
+{
+    public static final String CLIENT_CONTEXT_KEY = "http2.client";
+    public static final String BYTE_BUFFER_POOL_CONTEXT_KEY = "http2.client.byteBufferPool";
+    public static final String EXECUTOR_CONTEXT_KEY = "http2.client.executor";
+    public static final String SCHEDULER_CONTEXT_KEY = "http2.client.scheduler";
+    public static final String SESSION_LISTENER_CONTEXT_KEY = "http2.client.sessionListener";
+    public static final String SESSION_PROMISE_CONTEXT_KEY = "http2.client.sessionPromise";
+
+    @Override
+    public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+    {
+        HTTP2Client client = (HTTP2Client)context.get(CLIENT_CONTEXT_KEY);
+        ByteBufferPool byteBufferPool = (ByteBufferPool)context.get(BYTE_BUFFER_POOL_CONTEXT_KEY);
+        Executor executor = (Executor)context.get(EXECUTOR_CONTEXT_KEY);
+        Scheduler scheduler = (Scheduler)context.get(SCHEDULER_CONTEXT_KEY);
+        Session.Listener listener = (Session.Listener)context.get(SESSION_LISTENER_CONTEXT_KEY);
+        @SuppressWarnings("unchecked")
+        Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
+
+        Generator generator = new Generator(byteBufferPool, 4096);
+        HTTP2Session session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, new HTTP2FlowControl(65535));
+        Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
+        return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, promise);
+    }
+
+    private class HTTP2ClientConnection extends HTTP2Connection implements Callback
+    {
+        private final HTTP2Client client;
+        private final Promise<Session> promise;
+
+        public HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise)
+        {
+            super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
+            this.client = client;
+            this.promise = promise;
+        }
+
+        @Override
+        public void onOpen()
+        {
+            super.onOpen();
+            getEndPoint().write(this, ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES));
+        }
+
+        @Override
+        public void onClose()
+        {
+            super.onClose();
+            client.removeSession(getSession());
+        }
+
+        @Override
+        protected boolean onReadTimeout()
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
+            getSession().close(ErrorCodes.NO_ERROR, "idle_timeout", closeCallback);
+            return false;
+        }
+
+        @Override
+        public void succeeded()
+        {
+            client.addSession(getSession());
+            promise.succeeded(getSession());
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            close();
+            promise.failed(x);
+        }
+    }
+}

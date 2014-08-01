@@ -20,31 +20,30 @@ package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.HashMap;
+import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
 import org.eclipse.jetty.http2.ErrorCodes;
-import org.eclipse.jetty.http2.HTTP2Connection;
-import org.eclipse.jetty.http2.HTTP2FlowControl;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
-import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.http2.parser.PrefaceParser;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -81,13 +80,28 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
+        connect(null, address, listener, promise);
+    }
+
+    public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
+    {
         try
         {
             SocketChannel channel = SocketChannel.open();
             channel.socket().setTcpNoDelay(true);
             channel.configureBlocking(false);
             channel.connect(address);
-            selector.connect(channel, new Context(listener, promise));
+
+            Map<String, Object> context = new HashMap<>();
+            context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
+            context.put(HTTP2ClientConnectionFactory.SESSION_LISTENER_CONTEXT_KEY, listener);
+            context.put(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY, promise);
+            if (sslContextFactory != null)
+                context.put(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY, sslContextFactory);
+            context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, address.getHostString());
+            context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, address.getPort());
+
+            selector.connect(channel, context);
         }
         catch (Throwable x)
         {
@@ -112,6 +126,16 @@ public class HTTP2Client extends ContainerLifeCycle
         this.idleTimeout = idleTimeout;
     }
 
+    public boolean addSession(ISession session)
+    {
+        return sessions.offer(session);
+    }
+
+    public boolean removeSession(ISession session)
+    {
+        return sessions.remove(session);
+    }
+
     private class ClientSelectorManager extends SelectorManager
     {
         private ClientSelectorManager(Executor executor, Scheduler scheduler)
@@ -128,71 +152,22 @@ public class HTTP2Client extends ContainerLifeCycle
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            Context context = (Context)attachment;
-            Generator generator = new Generator(byteBufferPool, 4096);
-            HTTP2Session session = new HTTP2ClientSession(getScheduler(), endpoint, generator, context.listener, new HTTP2FlowControl(65535));
-            Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
-            return new HTTP2ClientConnection(byteBufferPool, getExecutor(), endpoint, parser, session, 8192, context.promise);
-        }
-    }
+            @SuppressWarnings("unchecked")
+            Map<String, Object> context = (Map<String, Object>)attachment;
+            context.put(HTTP2ClientConnectionFactory.BYTE_BUFFER_POOL_CONTEXT_KEY, byteBufferPool);
+            context.put(HTTP2ClientConnectionFactory.EXECUTOR_CONTEXT_KEY, getExecutor());
+            context.put(HTTP2ClientConnectionFactory.SCHEDULER_CONTEXT_KEY, getScheduler());
 
-    private class HTTP2ClientConnection extends HTTP2Connection implements Callback
-    {
-        private final Promise<Session> promise;
+            ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
 
-        public HTTP2ClientConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise)
-        {
-            super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
-            this.promise = promise;
-        }
+            SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
+            if (sslContextFactory != null)
+            {
+                ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), factory, "h2-14");
+                factory = new SslClientConnectionFactory(sslContextFactory, byteBufferPool, getExecutor(), alpn);
+            }
 
-        @Override
-        public void onOpen()
-        {
-            super.onOpen();
-            getEndPoint().write(this, ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES));
-        }
-
-        @Override
-        public void onClose()
-        {
-            super.onClose();
-            sessions.remove(getSession());
-        }
-
-        @Override
-        protected boolean onReadTimeout()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
-            getSession().close(ErrorCodes.NO_ERROR, "idle_timeout", closeCallback);
-            return false;
-        }
-
-        @Override
-        public void succeeded()
-        {
-            sessions.offer(getSession());
-            promise.succeeded(getSession());
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-            close();
-            promise.failed(x);
-        }
-    }
-
-    private class Context
-    {
-        private final Session.Listener listener;
-        private final Promise<Session> promise;
-
-        private Context(Session.Listener listener, Promise<Session> promise)
-        {
-            this.listener = listener;
-            this.promise = promise;
+            return factory.newConnection(endpoint, context);
         }
     }
 }
