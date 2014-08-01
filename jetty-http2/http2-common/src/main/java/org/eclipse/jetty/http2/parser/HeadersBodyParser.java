@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCodes;
-import org.eclipse.jetty.http2.frames.Flag;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.util.BufferUtil;
@@ -81,7 +81,7 @@ public class HeadersBodyParser extends BodyParser
                     }
 
                     // For now we don't support HEADERS frames that don't have END_HEADERS.
-                    if (!hasFlag(Flag.END_HEADERS))
+                    if (!hasFlag(Flags.END_HEADERS))
                     {
                         return notifyConnectionFailure(ErrorCodes.INTERNAL_ERROR, "unsupported_headers_frame");
                     }
@@ -92,7 +92,7 @@ public class HeadersBodyParser extends BodyParser
                     {
                         state = State.PADDING_LENGTH;
                     }
-                    else if (hasFlag(Flag.PRIORITY))
+                    else if (hasFlag(Flags.PRIORITY))
                     {
                         state = State.EXCLUSIVE;
                     }
@@ -107,7 +107,7 @@ public class HeadersBodyParser extends BodyParser
                     paddingLength = buffer.get() & 0xFF;
                     --length;
                     length -= paddingLength;
-                    state = hasFlag(Flag.PRIORITY) ? State.EXCLUSIVE : State.HEADERS;
+                    state = hasFlag(Flags.PRIORITY) ? State.EXCLUSIVE : State.HEADERS;
                     loop = length == 0;
                     if (length < 0)
                     {
@@ -211,7 +211,7 @@ public class HeadersBodyParser extends BodyParser
     private boolean onHeaders(int streamId, int weight, boolean exclusive, MetaData metaData)
     {
         PriorityFrame priorityFrame = null;
-        if (hasFlag(Flag.PRIORITY))
+        if (hasFlag(Flags.PRIORITY))
         {
             priorityFrame = new PriorityFrame(streamId, getStreamId(), weight, exclusive);
         }

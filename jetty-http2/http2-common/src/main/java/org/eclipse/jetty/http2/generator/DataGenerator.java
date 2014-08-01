@@ -20,8 +20,8 @@ package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -80,9 +80,9 @@ public class DataGenerator
     {
         int length = data.remaining();
 
-        int flags = Flag.NONE;
+        int flags = Flags.NONE;
         if (last)
-            flags |= Flag.END_STREAM;
+            flags |= Flags.END_STREAM;
 
         ByteBuffer header = headerGenerator.generate(lease, FrameType.DATA, Frame.HEADER_LENGTH + length, length, flags, streamId);
 

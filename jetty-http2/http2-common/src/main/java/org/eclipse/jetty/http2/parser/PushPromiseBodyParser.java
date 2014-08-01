@@ -22,7 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCodes;
-import org.eclipse.jetty.http2.frames.Flag;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 
 public class PushPromiseBodyParser extends BodyParser
@@ -66,7 +66,7 @@ public class PushPromiseBodyParser extends BodyParser
                     }
 
                     // For now we don't support PUSH_PROMISE frames that don't have END_HEADERS.
-                    if (!hasFlag(Flag.END_HEADERS))
+                    if (!hasFlag(Flags.END_HEADERS))
                     {
                         return notifyConnectionFailure(ErrorCodes.INTERNAL_ERROR, "unsupported_push_promise_frame");
                     }

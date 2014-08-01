@@ -21,8 +21,8 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
-import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
@@ -62,12 +62,12 @@ public abstract class BodyParser
 
     protected boolean isPadding()
     {
-        return headerParser.hasFlag(Flag.PADDING);
+        return headerParser.hasFlag(Flags.PADDING);
     }
 
     protected boolean isEndStream()
     {
-        return headerParser.hasFlag(Flag.END_STREAM);
+        return headerParser.hasFlag(Flags.END_STREAM);
     }
 
     protected int getStreamId()

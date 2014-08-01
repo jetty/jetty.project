@@ -21,7 +21,7 @@ package org.eclipse.jetty.http2.generator;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
-import org.eclipse.jetty.http2.frames.Flag;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -56,7 +56,7 @@ public class GoAwayGenerator extends FrameGenerator
             payload = Arrays.copyOfRange(payload, 0, maxPayloadLength);
 
         int length = fixedLength + (payload != null ? payload.length : 0);
-        ByteBuffer header = generateHeader(lease, FrameType.GO_AWAY, length, Flag.NONE, 0);
+        ByteBuffer header = generateHeader(lease, FrameType.GO_AWAY, length, Flags.NONE, 0);
 
         header.putInt(lastStreamId);
         header.putInt(error);

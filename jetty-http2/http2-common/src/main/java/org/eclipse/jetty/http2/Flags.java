@@ -16,9 +16,9 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.frames;
+package org.eclipse.jetty.http2;
 
-public interface Flag
+public interface Flags
 {
     public static final int NONE = 0x00;
     public static final int END_STREAM = 0x01;

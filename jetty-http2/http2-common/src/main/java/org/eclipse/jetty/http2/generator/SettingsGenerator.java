@@ -21,7 +21,7 @@ package org.eclipse.jetty.http2.generator;
 import java.nio.ByteBuffer;
 import java.util.Map;
 
-import org.eclipse.jetty.http2.frames.Flag;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
@@ -50,7 +50,7 @@ public class SettingsGenerator extends FrameGenerator
         if (length > getMaxFrameSize())
             throw new IllegalArgumentException("Invalid settings, too big");
 
-        ByteBuffer header = generateHeader(lease, FrameType.SETTINGS, length, reply ? Flag.ACK : Flag.NONE, 0);
+        ByteBuffer header = generateHeader(lease, FrameType.SETTINGS, length, reply ? Flags.ACK : Flags.NONE, 0);
 
         for (Map.Entry<Integer, Integer> entry : settings.entrySet())
         {

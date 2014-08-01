@@ -21,7 +21,7 @@ package org.eclipse.jetty.http2.generator;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.frames.Flag;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
@@ -66,7 +66,7 @@ public class PushPromiseGenerator extends FrameGenerator
         // Space for the promised streamId.
         length += fixedLength;
 
-        int flags = Flag.END_HEADERS;
+        int flags = Flags.END_HEADERS;
 
         ByteBuffer header = generateHeader(lease, FrameType.PUSH_PROMISE, (int)length, flags, streamId);
         header.putInt(promisedStreamId);

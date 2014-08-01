@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.frames.Flag;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
@@ -57,13 +57,13 @@ public class WindowUpdateGenerator extends FrameGenerator
 
         if (both)
         {
-            ByteBuffer header = generateHeader(lease, FrameType.WINDOW_UPDATE, 4, Flag.NONE, 0);
+            ByteBuffer header = generateHeader(lease, FrameType.WINDOW_UPDATE, 4, Flags.NONE, 0);
             header.putInt(windowUpdate);
             BufferUtil.flipToFlush(header, 0);
             lease.append(header, true);
         }
 
-        ByteBuffer header = generateHeader(lease, FrameType.WINDOW_UPDATE, 4, Flag.NONE, streamId);
+        ByteBuffer header = generateHeader(lease, FrameType.WINDOW_UPDATE, 4, Flags.NONE, streamId);
         header.putInt(windowUpdate);
         BufferUtil.flipToFlush(header, 0);
         lease.append(header, true);

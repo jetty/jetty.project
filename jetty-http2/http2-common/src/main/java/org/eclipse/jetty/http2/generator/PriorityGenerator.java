@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.generator;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.frames.Flag;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
@@ -48,7 +48,7 @@ public class PriorityGenerator extends FrameGenerator
         if (dependentStreamId < 0)
             throw new IllegalArgumentException("Invalid dependent stream id: " + dependentStreamId);
 
-        ByteBuffer header = generateHeader(lease, FrameType.PRIORITY, 5, Flag.NONE, dependentStreamId);
+        ByteBuffer header = generateHeader(lease, FrameType.PRIORITY, 5, Flags.NONE, dependentStreamId);
 
         if (exclusive)
             streamId |= 0x80_00_00_00;

@@ -23,7 +23,7 @@ import java.util.HashMap;
 import java.util.Map;
 
 import org.eclipse.jetty.http2.ErrorCodes;
-import org.eclipse.jetty.http2.frames.Flag;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 
 public class SettingsBodyParser extends BodyParser
@@ -164,7 +164,7 @@ public class SettingsBodyParser extends BodyParser
 
     private Result onSettings(Map<Integer, Integer> settings)
     {
-        SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flag.ACK));
+        SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flags.ACK));
         reset();
         return notifySettings(frame) ? Result.ASYNC : Result.COMPLETE;
     }
