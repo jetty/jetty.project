@@ -11,7 +11,6 @@
       <Arg>
           <New class="org.eclipse.jetty.server.ssl.SslSocketConnector">
             <Set name="host"><SystemProperty name="jetty.host" /></Set>
-            <Set name="port"><SystemProperty name="jetty.port" default="0"/></Set>
             <Set name="idleTimeout">300000</Set>
             <Set name="Acceptors">2</Set>
             <Set name="statsOn">false</Set>

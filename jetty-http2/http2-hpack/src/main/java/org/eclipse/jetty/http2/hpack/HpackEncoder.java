@@ -1,0 +1,299 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+
+package org.eclipse.jetty.http2.hpack;
+
+import java.nio.ByteBuffer;
+import java.util.EnumSet;
+
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
+import org.eclipse.jetty.io.ByteBufferPool.Lease;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
+public class HpackEncoder
+{   
+    public static final Logger LOG = Log.getLogger(HpackEncoder.class);
+    
+    private final static HttpField[] __status= new HttpField[599];
+    
+    
+    private final static EnumSet<HttpHeader> __DO_NOT_HUFFMAN = 
+            EnumSet.of(
+                    HttpHeader.AUTHORIZATION,
+                    HttpHeader.CONTENT_MD5,
+                    HttpHeader.PROXY_AUTHENTICATE,
+                    HttpHeader.PROXY_AUTHORIZATION);
+    
+    private final static EnumSet<HttpHeader> __DO_NOT_INDEX = 
+            EnumSet.of(
+                    HttpHeader.CONTENT_MD5,
+                    HttpHeader.CONTENT_RANGE,
+                    HttpHeader.ETAG,
+                    HttpHeader.IF_MODIFIED_SINCE,
+                    HttpHeader.IF_UNMODIFIED_SINCE,
+                    HttpHeader.IF_NONE_MATCH,
+                    HttpHeader.IF_RANGE,
+                    HttpHeader.IF_MATCH,
+                    HttpHeader.RANGE,
+                    HttpHeader.EXPIRES,
+                    HttpHeader.LAST_MODIFIED,
+                    HttpHeader.SET_COOKIE,
+                    HttpHeader.SET_COOKIE2);
+    
+
+    private final static EnumSet<HttpHeader> __NEVER_INDEX = 
+            EnumSet.of(HttpHeader.SET_COOKIE,
+                    HttpHeader.SET_COOKIE2);
+        
+    static
+    {
+        for (HttpStatus.Code code : HttpStatus.Code.values())
+            __status[code.getCode()]=new HttpField(":status",Integer.toString(code.getCode()));
+    }
+    
+    private final HpackContext _context;
+    private int _remoteMaxHeaderTableSize;
+    private int _localMaxHeaderTableSize;
+    
+    public HpackEncoder()
+    {
+        this(4096,4096);
+    }
+    
+    public HpackEncoder(int localMaxHeaderTableSize)
+    {
+        this(localMaxHeaderTableSize,4096);
+    }
+    
+    public HpackEncoder(int localMaxHeaderTableSize,int remoteMaxHeaderTableSize)
+    {
+        _context=new HpackContext(remoteMaxHeaderTableSize);
+        _remoteMaxHeaderTableSize=remoteMaxHeaderTableSize;
+        _localMaxHeaderTableSize=localMaxHeaderTableSize;
+    }
+
+    public HpackContext getContext()
+    {
+        return _context;
+    }
+    
+    public void setRemoteMaxHeaderTableSize(int remoteMaxHeaderTableSize)
+    {
+        _remoteMaxHeaderTableSize=remoteMaxHeaderTableSize;
+    }
+    
+    public void setLocalMaxHeaderTableSize(int localMaxHeaderTableSize)
+    {
+        _localMaxHeaderTableSize=localMaxHeaderTableSize;
+    }
+    
+    // TODO better handling of buffer size
+    public void encode(MetaData metadata,Lease lease,int buffersize)
+    {
+        ByteBuffer buffer = lease.acquire(buffersize,false); 
+        lease.append(buffer,true);
+        BufferUtil.clearToFill(buffer);
+        encode(buffer,metadata);
+        BufferUtil.flipToFlush(buffer,0);
+    }
+
+    
+    public void encode(ByteBuffer buffer, MetaData metadata)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("CtxTbl[%x] encoding",_context.hashCode()));
+        
+        // Check the header table sizes!
+        int maxHeaderTableSize=Math.min(_remoteMaxHeaderTableSize,_localMaxHeaderTableSize);
+        if (maxHeaderTableSize!=_context.getMaxHeaderTableSize())
+            encodeMaxHeaderTableSize(buffer,maxHeaderTableSize);
+        
+        // Add Request/response meta fields
+        if (metadata.isRequest())
+        {
+            MetaData.Request request = (MetaData.Request)metadata;
+            
+            // TODO optimise these to avoid HttpField creation
+            String scheme=request.getURI().getScheme();
+            encode(buffer,new HttpField(":scheme",scheme==null?HttpScheme.HTTP.asString():scheme));
+            encode(buffer,new HttpField(":method",request.getMethod()));
+            encode(buffer,new HttpField(":authority",request.getURI().getAuthority())); 
+            encode(buffer,new HttpField(":path",request.getURI().getPathQuery()));
+            
+        }
+        else if (metadata.isResponse())
+        {
+            MetaData.Response response = (MetaData.Response)metadata;
+            int code=response.getStatus();
+            HttpField status = code<__status.length?__status[code]:null;
+            if (status==null)
+                status=new HttpField(":status",Integer.toString(code));
+            encode(buffer,status);
+        }
+        
+        // Add all the other fields
+        for (HttpField field : metadata)
+        {
+            encode(buffer,field);
+        }
+
+    }
+
+    public void encodeMaxHeaderTableSize(ByteBuffer buffer, int maxHeaderTableSize)
+    {
+        if (maxHeaderTableSize>_remoteMaxHeaderTableSize)
+            throw new IllegalArgumentException();
+        buffer.put((byte)0x20);
+        NBitInteger.encode(buffer,5,maxHeaderTableSize);
+        _context.resize(maxHeaderTableSize);
+    }
+
+    private void encode(ByteBuffer buffer, HttpField field)
+    {
+        final int p=LOG.isDebugEnabled()?buffer.position():-1;
+        
+        String encoding=null;
+
+        // TODO currently we do not check if there is enough space, so we will always
+        // return true or fail nastily.
+
+        // Is there an entry for the field?
+        Entry entry = _context.get(field);
+
+        if (entry!=null)
+        {
+            int index=_context.index(entry);
+            if (p>=0)
+                encoding="Indexed"+index;
+            buffer.put((byte)0x80);
+            NBitInteger.encode(buffer,7,index);
+        }
+        else
+        {
+            // Must be a new entry, so we will have to send literally.
+
+            HttpHeader header = field.getHeader();
+            final boolean never_index;
+            final boolean huffman;
+            final boolean indexed;
+            final int name_bits;
+            if (header==null)
+            {
+                // unknown header.
+                never_index=false;
+                huffman=true;
+                indexed=true;
+                name_bits = 6;
+                buffer.put((byte)0x40);
+            }
+            else if (__DO_NOT_INDEX.contains(header))
+            {
+                // Non indexed field
+                indexed=false;
+                never_index=__NEVER_INDEX.contains(header);
+                huffman=!__DO_NOT_HUFFMAN.contains(header);
+                name_bits = 4;
+                buffer.put(never_index?(byte)0x10:(byte)0x00);
+            }
+            else if (header==HttpHeader.CONTENT_LENGTH && field.getValue().length()>1)
+            {
+                // Non indexed content length for non zero value
+                indexed=false;
+                never_index=false;
+                huffman=true;
+                name_bits = 4;
+                buffer.put((byte)0x00);
+            }
+            else
+            {
+                // indexed
+                indexed=true;
+                never_index=false;
+                huffman=!__DO_NOT_HUFFMAN.contains(header);
+                name_bits = 6;
+                buffer.put((byte)0x40);
+            }
+
+            // Look for a name Index
+            Entry name_entry = _context.get(field.getName());
+
+            if (p>=0)
+            {
+                encoding="Lit"+
+                        ((name_entry==null)?"HuffN":"IdxN")+
+                        (huffman?"HuffV":"LitV")+
+                        (indexed?"Idx":(never_index?"!!Idx":"!Idx"));
+            }
+            
+            if (name_entry!=null)
+                NBitInteger.encode(buffer,name_bits,_context.index(name_entry));
+            else
+            {
+                // Encode the name always with lowercase huffman
+                buffer.put((byte)0x80);
+                NBitInteger.encode(buffer,7,Huffman.octetsNeededLC(field.getName()));
+                Huffman.encodeLC(buffer,field.getName());
+            }
+
+            // Add the literal value
+            String value=field.getValue();
+            
+            if (huffman)
+            {
+                // huffman literal value
+                buffer.put((byte)0x80);
+                NBitInteger.encode(buffer,7,Huffman.octetsNeeded(value));
+                Huffman.encode(buffer,field.getValue());
+            }
+            else
+            {
+                // add literal assuming iso_8859_1
+                buffer.put((byte)0x00);
+                NBitInteger.encode(buffer,7,value.length());
+                for (int i=0;i<value.length();i++)
+                {
+                    char c=value.charAt(i);
+                    if (c<' '|| c>127)
+                        throw new IllegalArgumentException();
+                    buffer.put((byte)c);
+                }
+            }
+
+            // If we want the field referenced, then we add it to our
+            // table and reference set.
+            if (indexed)
+                _context.add(field);
+        }
+
+        if (p>=0)
+        {
+            int e=buffer.position();
+            if (LOG.isDebugEnabled())
+                LOG.debug("encoded '{}' by {} to '{}'",field,encoding,TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p));
+        }        
+    }
+}

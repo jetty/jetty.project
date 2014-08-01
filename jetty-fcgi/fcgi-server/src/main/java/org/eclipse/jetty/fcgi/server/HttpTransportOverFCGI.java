@@ -50,6 +50,36 @@ public class HttpTransportOverFCGI implements HttpTransport
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
+        if (info!=null)
+            commit(info,content,lastContent,callback);
+        else
+        {
+            if (head)
+            {
+                if (lastContent)
+                {
+                    Generator.Result result = generateResponseContent(BufferUtil.EMPTY_BUFFER, true, callback);
+                    flusher.flush(result);
+                }
+                else
+                {
+                    // Skip content generation
+                    callback.succeeded();
+                }
+            }
+            else
+            {
+                Generator.Result result = generateResponseContent(content, lastContent, callback);
+                flusher.flush(result);
+            }
+
+            if (lastContent && shutdown)
+                flusher.shutdown();
+        }
+    }
+    
+    private void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
+    {
         boolean head = this.head = info.isHead();
         boolean shutdown = this.shutdown = info.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
@@ -72,32 +102,6 @@ public class HttpTransportOverFCGI implements HttpTransport
             Generator.Result headersResult = generateResponseHeaders(info, Callback.Adapter.INSTANCE);
             Generator.Result contentResult = generateResponseContent(content, lastContent, callback);
             flusher.flush(headersResult, contentResult);
-        }
-
-        if (lastContent && shutdown)
-            flusher.shutdown();
-    }
-
-    @Override
-    public void send(ByteBuffer content, boolean lastContent, Callback callback)
-    {
-        if (head)
-        {
-            if (lastContent)
-            {
-                Generator.Result result = generateResponseContent(BufferUtil.EMPTY_BUFFER, true, callback);
-                flusher.flush(result);
-            }
-            else
-            {
-                // Skip content generation
-                callback.succeeded();
-            }
-        }
-        else
-        {
-            Generator.Result result = generateResponseContent(content, lastContent, callback);
-            flusher.flush(result);
         }
 
         if (lastContent && shutdown)

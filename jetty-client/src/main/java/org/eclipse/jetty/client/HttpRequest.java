@@ -705,7 +705,7 @@ public class HttpRequest implements Request
         if (value == null)
             return "";
 
-        String encoding = "UTF-8";
+        String encoding = "utf-8";
         try
         {
             return URLEncoder.encode(value, encoding);
@@ -736,7 +736,7 @@ public class HttpRequest implements Request
 
     private String urlDecode(String value)
     {
-        String charset = "UTF-8";
+        String charset = "utf-8";
         try
         {
             return URLDecoder.decode(value, charset);

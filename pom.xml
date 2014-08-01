@@ -6,7 +6,7 @@
     <version>22</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.2.3-SNAPSHOT</version>
+  <version>9.3.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -422,6 +422,7 @@
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
+    <module>jetty-http2</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
     <module>jetty-xml</module>
@@ -459,6 +460,7 @@
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
+    <module>jetty-npn</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>

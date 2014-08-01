@@ -1,0 +1,61 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+
+<!-- ============================================================= -->
+<!-- Configure a HTTP2 connector.                                  -->
+<!-- ============================================================= -->
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+    <Call id="http2Connector" name="addConnector">
+        <Arg>
+            <New class="org.eclipse.jetty.server.ServerConnector">
+                <Arg name="server">
+                    <Ref refid="Server"/>
+                </Arg>
+                <Arg name="factories">
+                    <Array type="org.eclipse.jetty.server.ConnectionFactory">
+
+                        <!-- SSL Connection factory with 'protonego' as next protocol -->
+                        <Item>
+                            <New class="org.eclipse.jetty.server.SslConnectionFactory">
+                                <Arg name="next"><Property name="protonego"/></Arg>
+                                <Arg name="sslContextFactory">
+                                    <Ref refid="sslContextFactory"/>
+                                </Arg>
+                            </New>
+                        </Item>
+
+                        <!-- Next Protocol Connection factory with HTTP/1.1 as default protocol -->
+                        <Item>
+                            <Ref refid="protonego"/>
+                        </Item>
+
+                        <!-- HTTP/2 Connection factory -->
+                        <Item>
+                            <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
+                                <Arg name="config">
+                                    <Ref refid="sslHttpConfig"/>
+                                </Arg>
+                                <Set name="maxConcurrentStreams"><Property name="http2.maxConcurrentStreams" default="1024"/></Set>
+                            </New>
+                        </Item>
+
+                        <!-- HTTP/1.1 Connection factory -->
+                        <Item>
+                            <New class="org.eclipse.jetty.server.HttpConnectionFactory">
+                                <Arg name="config">
+                                    <Ref refid="sslHttpConfig"/>
+                                </Arg>
+                            </New>
+                        </Item>
+                    </Array>
+                </Arg>
+
+                <Set name="host"><Property name="http2.host"/></Set>
+                <Set name="port"><Property name="http2.port" default="443"/></Set>
+                <Set name="idleTimeout"><Property name="http2.timeout" default="30000"/></Set>
+            </New>
+        </Arg>
+    </Call>
+
+</Configure>

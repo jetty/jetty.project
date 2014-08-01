@@ -84,7 +84,7 @@
 
                         <!-- NPN Connection factory with HTTP as default protocol -->
                         <Item>
-                            <New class="org.eclipse.jetty.spdy.server.NPNServerConnectionFactory">
+                            <New class="org.eclipse.jetty.npn.server.NPNServerConnectionFactory">
                                 <Arg name="protocols">
                                     <Array type="String">
                                         <Item>spdy/3</Item>

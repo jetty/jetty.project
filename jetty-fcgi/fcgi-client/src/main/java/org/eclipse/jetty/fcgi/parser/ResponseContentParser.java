@@ -71,7 +71,7 @@ public class ResponseContentParser extends StreamContentParser
         parsers.remove(request);
     }
 
-    private class ResponseParser implements HttpParser.ResponseHandler<ByteBuffer>
+    private class ResponseParser implements HttpParser.ResponseHandler
     {
         private final HttpFields fields = new HttpFields();
         private ClientParser.Listener listener;
@@ -154,7 +154,7 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
-        public boolean parsedHeader(HttpField httpField)
+        public void parsedHeader(HttpField httpField)
         {
             try
             {
@@ -190,7 +190,6 @@ public class ResponseContentParser extends StreamContentParser
                 if (LOG.isDebugEnabled())
                     LOG.debug("Exception while invoking listener " + listener, x);
             }
-            return false;
         }
 
         private void notifyBegin(int code, String reason)
@@ -299,7 +298,7 @@ public class ResponseContentParser extends StreamContentParser
     // Methods overridden to make them visible here
     private static class FCGIHttpParser extends HttpParser
     {
-        private FCGIHttpParser(ResponseHandler<ByteBuffer> handler)
+        private FCGIHttpParser(ResponseHandler handler)
         {
             super(handler, 65 * 1024, true);
             reset();

@@ -466,7 +466,7 @@ public class Server extends HandlerWrapper implements Attributes
      * or after the entire request has been received (for short requests of known length), or
      * on the dispatch of an async request.
      */
-    public void handle(HttpChannel<?> connection) throws IOException, ServletException
+    public void handle(HttpChannel connection) throws IOException, ServletException
     {
         final String target=connection.getRequest().getPathInfo();
         final Request request=connection.getRequest();
@@ -507,7 +507,7 @@ public class Server extends HandlerWrapper implements Attributes
      * or after the entire request has been received (for short requests of known length), or
      * on the dispatch of an async request.
      */
-    public void handleAsync(HttpChannel<?> connection) throws IOException, ServletException
+    public void handleAsync(HttpChannel connection) throws IOException, ServletException
     {
         final HttpChannelState state = connection.getRequest().getHttpChannelState();
         final AsyncContextEvent event = state.getAsyncContextEvent();
@@ -519,12 +519,12 @@ public class Server extends HandlerWrapper implements Attributes
         {
             // this is a dispatch with a path
             ServletContext context=event.getServletContext();
-            HttpURI uri = new HttpURI(URIUtil.addPaths(context==null?null:context.getContextPath(), path));            
-            baseRequest.setUri(uri);
-            baseRequest.setRequestURI(null);
+            String query=baseRequest.getQueryString();
+            baseRequest.setURIPathQuery(URIUtil.addPaths(context==null?null:context.getContextPath(), path));
+            HttpURI uri = baseRequest.getHttpURI();
             baseRequest.setPathInfo(uri.getDecodedPath());
             if (uri.getQuery()!=null)
-                baseRequest.mergeQueryParameters(uri.getQuery(), true); //we have to assume dispatch path and query are UTF8
+                baseRequest.mergeQueryParameters(query,uri.getQuery(), true); //we have to assume dispatch path and query are UTF8
         }
 
         final String target=baseRequest.getPathInfo();

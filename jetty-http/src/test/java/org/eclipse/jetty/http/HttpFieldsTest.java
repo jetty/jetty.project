@@ -27,6 +27,9 @@ import static org.junit.Assert.assertTrue;
 
 import java.nio.ByteBuffer;
 import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Locale;
+import java.util.Set;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -416,20 +419,22 @@ public class HttpFieldsTest
     {
         HttpFields header = new HttpFields();
 
-        header.add("0", "");
-        header.add("1", ",");
-        header.add("2", ",,");
-        header.add("3", "abc");
-        header.add("4", "def");
-        header.add("5", "abc,def,hig");
-        header.add("6", "abc");
-        header.add("6", "def");
-        header.add("6", "hig");
+        header.add("n0", "");
+        header.add("n1", ",");
+        header.add("n2", ",,");
+        header.add("N3", "abc");
+        header.add("N4", "def");
+        header.add("n5", "abc,def,hig");
+        header.add("N6", "abc");
+        header.add("n6", "def");
+        header.add("N6", "hig");
+        header.add("n7", "abc ,  def;q=0.9  ,  hig");
 
-        for (int i=0;i<7;i++)
+        for (int i=0;i<8;i++)
         {
-            assertFalse(""+i,header.contains(""+i,"xyz"));
-            assertEquals(""+i,i>=4,header.contains(""+i,"def"));
+            assertFalse(""+i,header.contains("n"+i,"xyz"));
+            assertEquals(""+i,i>=4,header.contains("n"+i,"def"));
         }
     }
+    
 }

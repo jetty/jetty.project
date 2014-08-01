@@ -517,7 +517,7 @@ public class BufferUtil
     }
 
     /* ------------------------------------------------------------ */
-    /** Convert a partial buffer to an ISO-8859-1 String
+    /** Convert a partial buffer to a String
      * @param buffer  The buffer to convert in flush mode. The buffer is unchanged
      * @param charset The {@link Charset} to use to convert the bytes
      * @return The buffer as a string.

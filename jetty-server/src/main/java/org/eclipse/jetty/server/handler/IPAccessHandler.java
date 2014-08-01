@@ -201,7 +201,7 @@ public class IPAccessHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
-        HttpChannel<?> channel = baseRequest.getHttpChannel();
+        HttpChannel channel = baseRequest.getHttpChannel();
         if (channel!=null)
         {
             EndPoint endp=channel.getEndPoint();

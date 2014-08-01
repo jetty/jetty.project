@@ -80,6 +80,7 @@ public class Generator
         return result;
     }
 
+    // TODO: rewrite this class in light of ByteBufferPool.Lease.
     public static class Result implements Callback
     {
         private final List<Callback> callbacks = new ArrayList<>(2);

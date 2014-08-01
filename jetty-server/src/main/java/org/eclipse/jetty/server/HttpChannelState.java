@@ -84,7 +84,7 @@ public class HttpChannelState
     }
 
     private final boolean DEBUG=LOG.isDebugEnabled();
-    private final HttpChannel<?> _channel;
+    private final HttpChannel _channel;
 
     private List<AsyncListener> _asyncListeners;
     private State _state;
@@ -95,7 +95,7 @@ public class HttpChannelState
     private long _timeoutMs=DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
 
-    protected HttpChannelState(HttpChannel<?> channel)
+    protected HttpChannelState(HttpChannel channel)
     {
         _channel=channel;
         _state=State.IDLE;
@@ -626,7 +626,7 @@ public class HttpChannelState
         return _channel.getRequest();
     }
 
-    public HttpChannel<?> getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }

@@ -18,32 +18,28 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
+import java.nio.ByteBuffer;
+
 import org.eclipse.jetty.server.QueuedHttpInput;
 import org.eclipse.jetty.spdy.api.DataInfo;
 
-public class HttpInputOverSPDY extends QueuedHttpInput<DataInfo>
+public class HttpInputOverSPDY extends QueuedHttpInput
 {
     @Override
-    protected int remaining(DataInfo item)
+    protected void consume(Content content, int length)
     {
-        return item.available();
+        ContentOverSPDY spdyContent = (ContentOverSPDY)content;
+        spdyContent.dataInfo.consume(length);
     }
 
-    @Override
-    protected int get(DataInfo item, byte[] buffer, int offset, int length)
+    protected static class ContentOverSPDY extends Content
     {
-        return item.readInto(buffer, offset, length);
-    }
-    
-    @Override
-    protected void consume(DataInfo item, int length)
-    {
-        item.consume(length);
-    }
+        private final DataInfo dataInfo;
 
-    @Override
-    protected void onContentConsumed(DataInfo dataInfo)
-    {
-        dataInfo.consume(dataInfo.length());
+        protected ContentOverSPDY(ByteBuffer content, DataInfo dataInfo)
+        {
+            super(content);
+            this.dataInfo = dataInfo;
+        }
     }
 }

@@ -121,7 +121,9 @@ import org.eclipse.jetty.util.log.Logger;
  *                            the normal processing is done so that the default servlet can send  the pre existing gz content.
  *  </dd>
  *  </dl>
+ *  @deprecated Use AsyncGzipFilter
  */
+@Deprecated
 public class GzipFilter extends UserAgentFilter
 {
     private static final Logger LOG = Log.getLogger(GzipFilter.class);

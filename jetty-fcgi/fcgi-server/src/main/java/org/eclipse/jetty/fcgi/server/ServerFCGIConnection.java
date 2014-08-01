@@ -29,9 +29,10 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.ByteBufferQueuedHttpInput;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.QueuedHttpInput;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -123,7 +124,7 @@ public class ServerFCGIConnection extends AbstractConnection
             // TODO: handle flags
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
                     new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200),
-                    new ByteBufferQueuedHttpInput());
+                    new QueuedHttpInput());
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
             if (existing != null)
                 throw new IllegalStateException();
@@ -149,8 +150,8 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} headers on {}", request, channel);
             if (channel != null)
             {
-                if (channel.headerComplete())
-                    channel.dispatch();
+                channel.onRequest();
+                channel.dispatch();
             }
         }
 
@@ -162,8 +163,8 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} {} content {} on {}", request, stream, buffer, channel);
             if (channel != null)
             {
-                if (channel.content(buffer))
-                    channel.dispatch();
+                // TODO avoid creating content all the time
+                channel.onContent(new HttpInput.Content(buffer));
             }
             return false;
         }
@@ -176,8 +177,8 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} end on {}", request, channel);
             if (channel != null)
             {
-                if (channel.messageComplete())
-                    channel.dispatch();
+                channel.onRequestComplete();
+                channel.dispatch();
             }
         }
 
@@ -189,7 +190,7 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} failure on {}: {}", request, channel, failure);
             if (channel != null)
             {
-                channel.badMessage(400, failure.toString());
+                channel.onBadMessage(400, failure.toString());
             }
         }
     }

@@ -25,7 +25,7 @@ public class QueuedHttpInputTest
     @Test
     public void testNoContentMessageComplete() throws Exception
     {
-        ByteBufferQueuedHttpInput input = new ByteBufferQueuedHttpInput();
+         QueuedHttpInput input = new QueuedHttpInput();
         input.messageComplete();
 
         input.getNextContent();

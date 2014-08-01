@@ -950,7 +950,7 @@ public class HttpClient extends ContainerLifeCycle
         return port > 0 ? port : HttpScheme.HTTPS.is(scheme) ? 443 : 80;
     }
 
-    protected boolean isDefaultPort(String scheme, int port)
+    public boolean isDefaultPort(String scheme, int port)
     {
         return HttpScheme.HTTPS.is(scheme) ? port == 443 : port == 80;
     }

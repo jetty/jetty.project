@@ -18,12 +18,16 @@
 
 package org.eclipse.jetty.http;
 
+import java.util.ArrayList;
+
+import org.eclipse.jetty.util.StringUtil;
 
 /* ------------------------------------------------------------ */
 /** A HTTP Field
  */
 public class HttpField
 {
+    private final static String __zeroquality="q=0";
     private final HttpHeader _header;
     private final String _name;
     private final String _value;
@@ -65,6 +69,293 @@ public class HttpField
         return _value;
     }
     
+    public long getLongValue()
+    {
+        return StringUtil.toLong(_value);
+    }
+    
+    public String[] getValues()
+    {  
+        ArrayList<String> list = new ArrayList<>(); 
+        int state = 0;
+        int start=0;
+        int end=0;
+        StringBuilder builder = new StringBuilder();
+
+        for (int i=0;i<_value.length();i++)
+        {
+            char c = _value.charAt(i);
+            switch(state)
+            {
+                case 0: // initial white space
+                    switch(c)
+                    {
+                        case '"': // open quote
+                            state=2;
+                            break;
+
+                        case ',': // ignore leading empty field
+                            break;
+
+                        case ' ': // more white space
+                        case '\t':
+                            break;
+
+                        default: // character
+                            start=i;
+                            end=i;
+                            state=1;
+                    }
+                    break;
+
+                case 1: // In token
+                    switch(c)
+                    {
+                        case ',': // next field
+                            list.add(_value.substring(start,end+1));
+                            state=0;
+                            break;
+
+                        case ' ': // more white space
+                        case '\t':
+                            break;
+
+                        default: 
+                            end=i;
+                    }
+                    break;
+
+                case 2: // In Quoted
+                    switch(c)
+                    {
+                        case '\\': // next field
+                            state=3;
+                            break;
+
+                        case '"': // end quote
+                            list.add(builder.toString());
+                            builder.setLength(0);
+                            state=4;
+                            break;
+
+                        default: 
+                            builder.append(c);
+                    }
+                    break;
+
+                case 3: // In Quoted Quoted
+                    builder.append(c);
+                    state=2;
+                    break;
+
+                case 4: // WS after end quote
+                    switch(c)
+                    {
+                        case ' ': // white space
+                        case '\t': // white space
+                            break;
+
+                        case ',': // white space
+                            state=0;
+                            break;
+
+                        default: 
+                            throw new IllegalArgumentException("c="+(int)c);
+
+                    }
+                    break;
+            }
+        }
+
+        switch(state)
+        {
+            case 0:
+                break;
+            case 1:
+                list.add(_value.substring(start,end+1));
+                break;
+            case 4:
+                break;
+
+            default:
+                throw new IllegalArgumentException("state="+state);
+        }
+
+        return list.toArray(new String[list.size()]);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Look for a value in a possible multi valued field
+     * @param search Values to search for
+     * @return True iff the value is contained in the field value entirely or
+     * as an element of a quoted comma separated list. List element parameters (eg qualities) are ignored,
+     * except if they are q=0, in which case the item itself is ignored.
+     */
+    public boolean contains(String search)
+    {
+        if (_value==null || search==null)
+            return _value==search;
+        if (search.length()==0)
+            return false;
+
+        int state=0;
+        int match=0;
+        int param=0;
+
+        for (int i=0;i<_value.length();i++)
+        {
+            char c = _value.charAt(i);
+            switch(state)
+            {
+                case 0: // initial white space
+                    switch(c)
+                    {
+                        case '"': // open quote
+                            match=0;
+                            state=2;
+                            break;
+
+                        case ',': // ignore leading empty field
+                            break;
+                            
+                        case ';': // ignore leading empty field parameter
+                            param=-1;
+                            match=-1;
+                            state=5;
+                            break;
+
+                        case ' ': // more white space
+                        case '\t':
+                            break;
+
+                        default: // character
+                            match = c==search.charAt(0)?1:-1;
+                            state=1;
+                            break;
+                    }
+                    break;
+
+                case 1: // In token
+                    switch(c)
+                    {
+                        case ',': // next field
+                            // Have we matched the token?
+                            if (match==search.length())
+                                return true;
+                            state=0;
+                            break;
+
+                        case ';':
+                            param=match>=0?0:-1;
+                            state=5; // parameter
+                            break;
+                            
+                        default: 
+                            if (match>0)
+                            {
+                                if (match<search.length())
+                                    match=c==search.charAt(match)?(match+1):-1;
+                                else if (c!=' ' && c!= '\t')
+                                    match=-1;
+                            }
+                            break;
+                            
+                    }
+                    break;
+
+                case 2: // In Quoted token
+                    switch(c)
+                    {
+                        case '\\': // quoted character
+                            state=3;
+                            break;
+
+                        case '"': // end quote
+                            state=4;
+                            break;
+
+                        default: 
+                            if (match>=0)
+                            {
+                                if (match<search.length())
+                                    match=c==search.charAt(match)?(match+1):-1;
+                                else
+                                    match=-1;
+                            }  
+                    }
+                    break;
+
+                case 3: // In Quoted character in quoted token
+                    if (match>=0)
+                    {
+                        if (match<search.length())
+                            match=c==search.charAt(match)?(match+1):-1;
+                        else
+                            match=-1;
+                    }  
+                    state=2;
+                    break;
+
+                case 4: // WS after end quote
+                    switch(c)
+                    {
+                        case ' ': // white space
+                        case '\t': // white space
+                            break;
+
+                        case ';':
+                            state=5; // parameter
+                            break;
+
+                        case ',': // end token
+                            // Have we matched the token?
+                            if (match==search.length())
+                                return true;
+                            state=0;
+                            break;
+
+                        default: 
+                            // This is an illegal token, just ignore
+                            match=-1;
+                    }
+                    break;
+                    
+                case 5:  // parameter
+                    switch(c)
+                    {
+                        case ',': // end token
+                            // Have we matched the token and not q=0?
+                            if (param!=__zeroquality.length() && match==search.length())
+                                return true;
+                            param=0;
+                            state=0;
+                            break;
+                            
+                        case ' ': // white space
+                        case '\t': // white space
+                            break;
+
+                        default: 
+                            if (param>=0)
+                            {
+                                if (param<__zeroquality.length())
+                                    param=c==__zeroquality.charAt(param)?(param+1):-1;
+                                else if (c!='0'&&c!='.'&&c!=' ')
+                                    param=-1;
+                            }
+
+                    }
+                    break;
+
+                default:
+                    throw new IllegalStateException();
+            }
+        }
+        
+        return param!=__zeroquality.length() && match==search.length();
+    }
+    
+    
     @Override
     public String toString()
     {
@@ -72,7 +363,7 @@ public class HttpField
         return getName() + ": " + (v==null?"":v);
     }
 
-    public boolean isSame(HttpField field)
+    public boolean isSameName(HttpField field)
     {
         if (field==null)
             return false;
@@ -85,5 +376,66 @@ public class HttpField
         return false;
     }
     
+    private int nameHashCode()
+    {
+        int hash=13;
+        int len = _name.length();
+        for (int i = 0; i < len; i++)
+        {
+            char c = Character.toUpperCase(_name.charAt(i));
+            hash = 31 * hash + c;
+        }
+        return hash;
+    }
+
+    @Override
+    public int hashCode()
+    {
+        if (_header==null)
+            return _value.hashCode() ^ nameHashCode();
+        return _value.hashCode() ^ _header.hashCode();
+    }
+
+    @Override
+    public boolean equals(Object o)
+    {
+        if (o==this)
+            return true;
+        if (!(o instanceof HttpField))
+            return false;
+        HttpField field=(HttpField)o;
+        if (_header!=field.getHeader())
+            return false;
+        if (!_name.equalsIgnoreCase(field.getName()))
+            return false;
+        if (_value==null && field.getValue()!=null)
+            return false;
+        if (!_value.equals(field.getValue()))
+            return false;
+        return true;
+    }
     
+    
+    public static class LongValueHttpField extends HttpField
+    {
+        final long _long;
+        
+        public LongValueHttpField(HttpHeader header, long value)
+        {
+            super(header,Long.toString(value));
+            _long=value;
+        }
+        
+        public LongValueHttpField(HttpHeader header, String value)
+        {
+            super(header,value);
+            _long=StringUtil.toLong(value);
+        }
+        
+        @Override
+        public long getLongValue()
+        {
+            return _long;
+        }
+    }
 }

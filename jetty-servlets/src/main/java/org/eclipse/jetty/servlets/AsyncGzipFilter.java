@@ -42,6 +42,7 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
@@ -126,7 +127,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
 {
-    private static final Logger LOG = Log.getLogger(GzipFilter.class);
+    private static final Logger LOG = Log.getLogger(AsyncGzipFilter.class);
     public final static String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
     public final static String ETAG = "o.e.j.s.GzipFilter.ETag";
@@ -368,7 +369,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
                 request.setAttribute(ETAG,etag.substring(0,dd)+(etag.endsWith("\"")?"\"":""));
         }
 
-        HttpChannel<?> channel = HttpChannel.getCurrentHttpChannel();
+        HttpChannel channel = HttpChannel.getCurrentHttpChannel();
         HttpOutput out = channel.getResponse().getHttpOutput();
         if (!(out instanceof GzipHttpOutput))
         {
@@ -485,34 +486,24 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
             LOG.debug("{} excluded minGzipSize {}",this,request);
             return null;
         }
-        
-        String accept = request.getHttpFields().get(HttpHeader.ACCEPT_ENCODING);
-        if (accept==null)
+
+        // If not HTTP/2, then we must check the accept encoding header
+        if (request.getHttpVersion()!=HttpVersion.HTTP_2)
         {
-            LOG.debug("{} excluded !accept {}",this,request);
-            return null;
-        }
-        
-        boolean gzip=false;
-        if (GZIP.equals(accept) || accept.startsWith("gzip,"))
-            gzip=true;
-        else
-        {
-            List<String> list=HttpFields.qualityList(request.getHttpFields().getValues(HttpHeader.ACCEPT_ENCODING.asString(),","));
-            for (String a:list)
+            HttpField accept = request.getHttpFields().getField(HttpHeader.ACCEPT_ENCODING);
+
+            if (accept==null)
             {
-                if (GZIP.equalsIgnoreCase(HttpFields.valueParameters(a,null)))
-                {
-                    gzip=true;
-                    break;
-                }
+                LOG.debug("{} excluded !accept {}",this,request);
+                return null;
             }
-        }
-        
-        if (!gzip)
-        {
-            LOG.debug("{} excluded not gzip accept {}",this,request);
-            return null;
+            boolean gzip = accept.contains("gzip");
+
+            if (!gzip)
+            {
+                LOG.debug("{} excluded not gzip accept {}",this,request);
+                return null;
+            }
         }
         
         Deflater df = _deflater.get();

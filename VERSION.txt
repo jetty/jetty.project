@@ -1,3 +1,5 @@
+jetty-9.3.0-SNAPSHOT
+
 jetty-9.2.3-SNAPSHOT
 
 jetty-9.2.2-v20140723 - 23 July 2014
@@ -56,6 +58,7 @@ jetty-9.2.2-v20140723 - 23 July 2014
  + 440038 Content decoding may fail.
  + 440114 ContextHandlerCollection does not skip context wrappers
  + 440122 Remove usages of ForkInvoker.
+>>>>>>> origin/master
 
 jetty-9.2.1.v20140609 - 09 June 2014
  + 347110 Supprt ClassFileTransormers in WebAppClassLoader

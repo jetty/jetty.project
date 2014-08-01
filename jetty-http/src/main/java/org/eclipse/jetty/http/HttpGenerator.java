@@ -585,6 +585,10 @@ public class HttpGenerator
         {
             for (HttpField field : _info.getHttpFields())
             {
+                String v = field.getValue();
+                if (v==null || v.length()==0)
+                    continue; // rfc7230 does not allow no value
+                
                 HttpHeader h = field.getHeader();
 
                 switch (h==null?HttpHeader.UNKNOWN:h)

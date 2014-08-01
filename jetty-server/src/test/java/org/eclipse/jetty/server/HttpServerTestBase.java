@@ -106,7 +106,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                     + "</nimbus>\n";
     protected static final String RESPONSE2 =
             "HTTP/1.1 200 OK\n" +
-                    "Content-Type: text/xml; charset=ISO-8859-1\n" +
+                    "Content-Type: text/xml;charset=iso-8859-1\n" +
                     "Content-Length: " + RESPONSE2_CONTENT.getBytes().length + "\n" +
                     "Server: Jetty(" + Server.getVersion() + ")\n" +
                     "\n" +

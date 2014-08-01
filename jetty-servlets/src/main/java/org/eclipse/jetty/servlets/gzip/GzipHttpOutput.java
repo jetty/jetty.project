@@ -52,7 +52,7 @@ public class GzipHttpOutput extends HttpOutput
     private GzipFactory _factory;
     private ByteBuffer _buffer;
     
-    public GzipHttpOutput(HttpChannel<?> channel)
+    public GzipHttpOutput(HttpChannel channel)
     {
         super(channel);
     }
