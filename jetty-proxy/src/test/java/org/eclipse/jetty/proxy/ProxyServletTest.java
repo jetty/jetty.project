@@ -672,6 +672,48 @@ public class ProxyServletTest
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
     }
+    
+    @Test
+    public void testTransparentProxyWithQueryWithSpaces() throws Exception
+    {
+        final String target = "/test";
+        final String query = "a=1&b=2&c=1234%205678&d=hello+world";
+        prepareServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                if (req.getHeader("Via") != null)
+                    resp.addHeader(PROXIED_HEADER, "true");
+
+                if (target.equals(req.getRequestURI()))
+                {
+                    if (query.equals(req.getQueryString()))
+                    {
+                        resp.setStatus(200);
+                        return;
+                    }
+                }
+                resp.setStatus(404);
+            }
+        });
+
+        String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
+        String prefix = "/proxy";
+        proxyServlet = new ProxyServlet.Transparent();
+        Map<String, String> params = new HashMap<>();
+        params.put("proxyTo", proxyTo);
+        params.put("prefix", prefix);
+        prepareProxy(params);
+
+        // Make the request to the proxy, it should transparently forward to the server
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+                .path(prefix + target + "?" + query)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+    }
 
     @Test
     public void testTransparentProxyWithoutPrefix() throws Exception
