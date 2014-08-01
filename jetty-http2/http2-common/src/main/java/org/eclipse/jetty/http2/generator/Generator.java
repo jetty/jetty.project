@@ -27,8 +27,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 public class Generator
 {
     private final ByteBufferPool byteBufferPool;
-    private final int headerTableSize;
     private final HeaderGenerator headerGenerator;
+    private final HpackEncoder hpackEncoder;
     private final FrameGenerator[] generators;
     private final DataGenerator dataGenerator;
 
@@ -40,17 +40,16 @@ public class Generator
     public Generator(ByteBufferPool byteBufferPool, int headerTableSize)
     {
         this.byteBufferPool = byteBufferPool;
-        this.headerTableSize = headerTableSize;
 
         headerGenerator = new HeaderGenerator();
-        HpackEncoder encoder = new HpackEncoder(headerTableSize);
+        hpackEncoder = new HpackEncoder(headerTableSize);
 
         this.generators = new FrameGenerator[FrameType.values().length];
-        this.generators[FrameType.HEADERS.getType()] = new HeadersGenerator(headerGenerator, encoder);
+        this.generators[FrameType.HEADERS.getType()] = new HeadersGenerator(headerGenerator, hpackEncoder);
         this.generators[FrameType.PRIORITY.getType()] = new PriorityGenerator(headerGenerator);
         this.generators[FrameType.RST_STREAM.getType()] = new ResetGenerator(headerGenerator);
         this.generators[FrameType.SETTINGS.getType()] = new SettingsGenerator(headerGenerator);
-        this.generators[FrameType.PUSH_PROMISE.getType()] = new PushPromiseGenerator(headerGenerator, encoder);
+        this.generators[FrameType.PUSH_PROMISE.getType()] = new PushPromiseGenerator(headerGenerator, hpackEncoder);
         this.generators[FrameType.PING.getType()] = new PingGenerator(headerGenerator);
         this.generators[FrameType.GO_AWAY.getType()] = new GoAwayGenerator(headerGenerator);
         this.generators[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateGenerator(headerGenerator);
@@ -64,9 +63,9 @@ public class Generator
         return byteBufferPool;
     }
 
-    public int getHeaderTableSize()
+    public void setHeaderTableSize(int headerTableSize)
     {
-        return headerTableSize;
+        hpackEncoder.setRemoteMaxHeaderTableSize(headerTableSize);
     }
 
     public void setMaxFrameSize(int maxFrameSize)

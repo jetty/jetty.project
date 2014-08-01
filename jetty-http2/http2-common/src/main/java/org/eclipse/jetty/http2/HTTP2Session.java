@@ -176,7 +176,13 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             return false;
 
         Map<Integer, Integer> settings = frame.getSettings();
-        // TODO: handle other settings
+        if (settings.containsKey(SettingsFrame.HEADER_TABLE_SIZE))
+        {
+            int headerTableSize = settings.get(SettingsFrame.HEADER_TABLE_SIZE);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updated HPACK header table size to {}", headerTableSize);
+            generator.setHeaderTableSize(headerTableSize);
+        }
         if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
         {
             maxStreamCount = settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS);
@@ -197,6 +203,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_max_frame_size");
                 return false;
             }
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updated max frame size to {}", maxFrameSize);
             generator.setMaxFrameSize(maxFrameSize);
         }
         notifySettings(this, frame);
