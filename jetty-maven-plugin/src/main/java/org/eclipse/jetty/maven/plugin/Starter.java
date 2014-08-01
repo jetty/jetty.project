@@ -178,7 +178,6 @@ public class Starter
 
         this.server.addWebApplication(webApp);
 
-        System.err.println("STOP PORT="+stopPort+", STOP KEY="+stopKey);
         if(stopPort>0 && stopKey!=null)
         {
             ShutdownMonitor monitor = ShutdownMonitor.getInstance();

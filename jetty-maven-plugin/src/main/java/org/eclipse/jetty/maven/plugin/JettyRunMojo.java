@@ -290,6 +290,16 @@ public class JettyRunMojo extends AbstractJettyMojo
    
 
 
+    @Override
+    public void finishConfigurationBeforeStart() throws Exception
+    {
+        server.setStopAtShutdown(true); //as we will normally be stopped with a cntrl-c, ensure server stopped 
+        super.finishConfigurationBeforeStart();
+    }
+
+
+
+
     /** 
      * @see org.eclipse.jetty.maven.plugin.AbstractJettyMojo#configureWebApplication()
      */

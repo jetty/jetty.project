@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.awt.geom.PathIterator;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
@@ -54,7 +53,6 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -145,7 +143,8 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return _stopAtShutdown;
     }
-
+   
+    
     /* ------------------------------------------------------------ */
     /**
      * Set a graceful stop time.
@@ -313,11 +312,16 @@ public class Server extends HandlerWrapper implements Attributes
     @Override
     protected void doStart() throws Exception
     {
+        //If the Server should be stopped when the jvm exits, register
+        //with the shutdown handler thread.
         if (getStopAtShutdown())
-        {
             ShutdownThread.register(this);
-        }
 
+        //Register the Server with the handler thread for receiving
+        //remote stop commands
+        ShutdownMonitor.register(this);
+        
+        //Start a thread waiting to receive "stop" commands.
         ShutdownMonitor.getInstance().start(); // initialize
 
         LOG.info("jetty-" + getVersion());
@@ -455,6 +459,11 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
+        
+        //Unregister the Server with the handler thread for receiving
+        //remote stop commands as we are stopped already
+        ShutdownMonitor.deregister(this);
+        
 
         mex.ifExceptionThrow();
 

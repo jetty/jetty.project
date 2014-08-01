@@ -120,6 +120,12 @@ public class ShutdownThread extends Thread
     }
 
     /* ------------------------------------------------------------ */
+    public static synchronized boolean isRegistered(LifeCycle lifeCycle)
+    {
+        return _thread._lifeCycles.contains(lifeCycle);
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
     public void run()
     {
@@ -132,7 +138,7 @@ public class ShutdownThread extends Thread
                     lifeCycle.stop();
                     LOG.debug("Stopped {}",lifeCycle);
                 }
-                
+
                 if (lifeCycle instanceof Destroyable)
                 {
                     ((Destroyable)lifeCycle).destroy();

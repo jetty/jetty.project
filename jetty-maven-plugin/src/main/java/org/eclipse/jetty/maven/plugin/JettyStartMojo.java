@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.maven.plugin;
 
+import org.apache.maven.plugin.MojoExecutionException;
+import org.apache.maven.plugin.MojoFailureException;
+
 
 /**
  *  <p>
@@ -37,4 +40,20 @@ package org.eclipse.jetty.maven.plugin;
  */
 public class JettyStartMojo extends JettyRunMojo
 {
+
+    @Override
+    public void execute() throws MojoExecutionException, MojoFailureException
+    {
+        nonblocking = true; //ensure that starting jetty won't hold up the thread
+        super.execute();
+    }
+    
+
+    @Override
+    public void finishConfigurationBeforeStart() throws Exception
+    {
+        super.finishConfigurationBeforeStart();
+        server.setStopAtShutdown(false); //as we will normally be stopped with a cntrl-c, ensure server stopped 
+    }
+    
 }
