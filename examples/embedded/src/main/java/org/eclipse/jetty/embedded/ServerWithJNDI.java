@@ -45,7 +45,7 @@ public class ServerWithJNDI
         //Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setWar("../../tests/test-webapps/test-jndi-webapp/target/test-jndi-webapp-9.0.4-SNAPSHOT.war");
+        webapp.setWar("../../jetty-distribution/target/distribution/demo-base/webapps/test-jndi.war");
         server.setHandler(webapp);
 
         //Register new transaction manager in JNDI
