@@ -32,6 +32,7 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
@@ -70,6 +71,10 @@ public class PathResource extends Resource
             {
                 return realUri;
             }
+        }
+        catch (NoSuchFileException e)
+        {
+            // Ignore
         }
         catch (IOException e)
         {
