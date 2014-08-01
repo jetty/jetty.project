@@ -133,7 +133,7 @@ public class SettingsGenerateParseTest
             }
         }
 
-        Assert.assertEquals(ErrorCodes.PROTOCOL_ERROR, errorRef.get());
+        Assert.assertEquals(ErrorCodes.FRAME_SIZE_ERROR, errorRef.get());
     }
 
     @Test
