@@ -50,7 +50,7 @@ public class DataBodyParser extends BodyParser
             notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_data_frame");
             return false;
         }
-        return onData(BufferUtil.EMPTY_BUFFER, false);
+        return onData(BufferUtil.EMPTY_BUFFER, false, 0);
     }
 
     @Override
@@ -107,7 +107,9 @@ public class DataBodyParser extends BodyParser
                     {
                         state = State.PADDING;
                         loop = paddingLength == 0;
-                        if (onData(slice, false))
+                        // Padding bytes include the bytes that define the
+                        // padding length plus the actual padding bytes.
+                        if (onData(slice, false, 1 + paddingLength))
                         {
                             return Result.ASYNC;
                         }
@@ -115,7 +117,9 @@ public class DataBodyParser extends BodyParser
                     else
                     {
                         // We got partial data, simulate a smaller frame, and stay in DATA state.
-                        if (onData(slice, true))
+                        // No padding for these synthetic frames (even if we have read
+                        // the padding length already), it will be accounted at the end.
+                        if (onData(slice, true, 0))
                         {
                             return Result.ASYNC;
                         }
@@ -143,9 +147,9 @@ public class DataBodyParser extends BodyParser
         return Result.PENDING;
     }
 
-    private boolean onData(ByteBuffer buffer, boolean fragment)
+    private boolean onData(ByteBuffer buffer, boolean fragment, int padding)
     {
-        DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream());
+        DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream(), padding);
         return notifyData(frame);
     }
 

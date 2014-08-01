@@ -116,14 +116,15 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (stream != null)
         {
             stream.updateClose(frame.isEndStream(), false);
-            final int length = frame.remaining();
-            flowControl.onDataReceived(this, stream, length);
+            // The flow control length includes the padding bytes.
+            final int flowControlLength = frame.remaining() + frame.padding();
+            flowControl.onDataReceived(this, stream, flowControlLength);
             boolean result = stream.process(frame, new Callback.Adapter()
             {
                 @Override
                 public void succeeded()
                 {
-                    flowControl.onDataConsumed(HTTP2Session.this, stream, length);
+                    flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
                 }
             });
             if (stream.isClosed())
@@ -405,7 +406,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             int maxStreams = maxStreamCount;
             if (maxStreams >= 0 && currentStreams >= maxStreams)
             {
-                reset(new ResetFrame(streamId, ErrorCodes.PROTOCOL_ERROR), disconnectOnFailure());
+                reset(new ResetFrame(streamId, ErrorCodes.REFUSED_STREAM_ERROR), disconnectOnFailure());
                 return null;
             }
             if (streamCount.compareAndSet(currentStreams, currentStreams + 1))
