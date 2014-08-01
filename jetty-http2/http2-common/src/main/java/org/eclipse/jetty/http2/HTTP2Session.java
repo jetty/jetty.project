@@ -588,11 +588,13 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         private final ByteBufferPool.Lease lease = new ByteBufferPool.Lease(generator.getByteBufferPool());
         private final int maxGather;
         private final List<FlusherEntry> active;
+        private final Queue<FlusherEntry> complete;
 
         private Flusher(int maxGather)
         {
             this.maxGather = maxGather;
             this.active = new ArrayList<>(maxGather);
+            this.complete = new ArrayDeque<>(maxGather);
         }
 
         private void append(FlusherEntry entry)
@@ -731,12 +733,19 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         public void succeeded()
         {
             lease.recycle();
+
+            // Transfer active items to avoid reentrancy.
             for (int i = 0; i < active.size(); ++i)
+                complete.add(active.get(i));
+            active.clear();
+
+            // Drain the queue one by one to avoid reentrancy.
+            while (!complete.isEmpty())
             {
-                FlusherEntry entry = active.get(i);
+                FlusherEntry entry = complete.poll();
                 entry.succeeded();
             }
-            active.clear();
+
             super.succeeded();
         }
 
@@ -749,31 +758,40 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         @Override
         protected void onCompleteFailure(Throwable x)
         {
-            LOG.debug(x);
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+
             lease.recycle();
+
+            // Transfer active items to avoid reentrancy.
             for (int i = 0; i < active.size(); ++i)
+                complete.add(active.get(i));
+            active.clear();
+
+            // Drain the queue one by one to avoid reentrancy.
+            while (!complete.isEmpty())
             {
-                FlusherEntry entry = active.get(i);
+                FlusherEntry entry = complete.poll();
                 entry.failed(x);
             }
-            active.clear();
         }
 
         public void close()
         {
+            super.close();
+
             Queue<FlusherEntry> queued;
             synchronized (queue)
             {
-                super.close();
                 queued = new ArrayDeque<>(queue);
+                queue.clear();
             }        
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Closing, queued={}", queued.size());
             
-            for (FlusherEntry item: queued)
+            for (FlusherEntry item : queued)
                 closed(item);
-
         }
 
         protected void closed(FlusherEntry item)
