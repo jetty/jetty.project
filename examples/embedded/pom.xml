@@ -81,6 +81,16 @@
       <artifactId>jetty-proxy</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jsp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jstl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
      <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-test-helper</artifactId>
