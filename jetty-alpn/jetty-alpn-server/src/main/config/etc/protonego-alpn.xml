@@ -12,7 +12,7 @@
 
     <Set name="defaultProtocol">http/1.1</Set>
 
-    <!-- Enables NPN debugging on System.err -->
+    <!-- Enables ALPN debugging on System.err -->
     <!--<Set class="org.eclipse.jetty.alpn.ALPN" name="debug" type="boolean">true</Set>-->
 
 </Configure>
