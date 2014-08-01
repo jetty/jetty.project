@@ -46,12 +46,12 @@ public class Client
         client.start();
 
         FuturePromise<Session> sessionPromise = new FuturePromise<>();
-        client.connect(sslContextFactory, new InetSocketAddress("testsite.webtide.com", 443), new ServerSessionListener.Adapter(), sessionPromise);
+        client.connect(sslContextFactory, new InetSocketAddress("webtide.com", 443), new ServerSessionListener.Adapter(), sessionPromise);
         Session session = sessionPromise.get(5, TimeUnit.SECONDS);
 
         HttpFields requestFields = new HttpFields();
         requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
-        MetaData.Request metaData = new MetaData.Request("GET", new HttpURI("https://testsite.webtide.com/"), HttpVersion.HTTP_2, requestFields);
+        MetaData.Request metaData = new MetaData.Request("GET", new HttpURI("https://webtide.com/"), HttpVersion.HTTP_2, requestFields);
         HeadersFrame headersFrame = new HeadersFrame(0, metaData, null, true);
         final CountDownLatch latch = new CountDownLatch(1);
         session.newStream(headersFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
