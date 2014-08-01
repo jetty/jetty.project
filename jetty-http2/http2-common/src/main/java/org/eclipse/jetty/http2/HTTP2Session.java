@@ -49,7 +49,6 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
@@ -133,7 +132,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         else
         {
-            ResetFrame resetFrame = new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR);
+            ResetFrame resetFrame = new ResetFrame(streamId, ErrorCodes.STREAM_CLOSED_ERROR);
             reset(resetFrame, disconnectOnFailure());
             return false;
         }
@@ -194,7 +193,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             // Spec: check the max frame size is sane.
             if (maxFrameSize < Frame.DEFAULT_MAX_LENGTH || maxFrameSize > Frame.MAX_MAX_LENGTH)
             {
-                onConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_max_frame_size");
+                onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_max_frame_size");
                 return false;
             }
             generator.setMaxFrameSize(maxFrameSize);
@@ -406,7 +405,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             int maxStreams = maxStreamCount;
             if (maxStreams >= 0 && currentStreams >= maxStreams)
             {
-                reset(new ResetFrame(streamId, ErrorCode.PROTOCOL_ERROR), disconnectOnFailure());
+                reset(new ResetFrame(streamId, ErrorCodes.PROTOCOL_ERROR), disconnectOnFailure());
                 return null;
             }
             if (streamCount.compareAndSet(currentStreams, currentStreams + 1))
@@ -427,7 +426,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         else
         {
-            close(ErrorCode.PROTOCOL_ERROR, "duplicate_stream", disconnectOnFailure());
+            close(ErrorCodes.PROTOCOL_ERROR, "duplicate_stream", disconnectOnFailure());
             return null;
         }
     }
@@ -836,7 +835,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             if (stream != null)
                 stream.close();
-            close(ErrorCode.INTERNAL_ERROR, "generator_error", Adapter.INSTANCE);
+            close(ErrorCodes.INTERNAL_ERROR, "generator_error", Adapter.INSTANCE);
             callback.failed(x);
         }
 

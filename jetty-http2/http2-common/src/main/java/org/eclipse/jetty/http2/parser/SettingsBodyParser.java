@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 
@@ -67,7 +68,7 @@ public class SettingsBodyParser extends BodyParser
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() != 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_settings_frame");
+                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_frame");
                     }
                     length = getBodyLength();
                     settings = new HashMap<>();
@@ -83,7 +84,7 @@ public class SettingsBodyParser extends BodyParser
                         length -= 2;
                         if (length <= 0)
                         {
-                            return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_settings_frame");
+                            return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_settings_frame");
                         }
                     }
                     else
@@ -102,7 +103,7 @@ public class SettingsBodyParser extends BodyParser
                     --length;
                     if (length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_settings_frame");
+                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_settings_frame");
                     }
                     if (cursor == 0)
                     {
@@ -139,7 +140,7 @@ public class SettingsBodyParser extends BodyParser
                     --length;
                     if (cursor > 0 && length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_settings_frame");
+                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_settings_frame");
                     }
                     if (cursor == 0)
                     {

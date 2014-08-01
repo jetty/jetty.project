@@ -28,7 +28,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -40,13 +39,13 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.PrefaceParser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -297,7 +296,7 @@ public class HTTP2ServerTest
                 @Override
                 public boolean onGoAway(GoAwayFrame frame)
                 {
-                    Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR, frame.getError());
+                    Assert.assertEquals(ErrorCodes.FRAME_SIZE_ERROR, frame.getError());
                     latch.countDown();
                     return false;
                 }
@@ -337,7 +336,7 @@ public class HTTP2ServerTest
                 @Override
                 public boolean onGoAway(GoAwayFrame frame)
                 {
-                    Assert.assertEquals(ErrorCode.PROTOCOL_ERROR, frame.getError());
+                    Assert.assertEquals(ErrorCodes.PROTOCOL_ERROR, frame.getError());
                     latch.countDown();
                     return false;
                 }

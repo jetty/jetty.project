@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2.client;
 
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.FlowControl;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
@@ -25,7 +26,6 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -48,7 +48,7 @@ public class HTTP2ClientSession extends HTTP2Session
         IStream stream = getStream(streamId);
         if (stream == null)
         {
-            ResetFrame reset = new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR);
+            ResetFrame reset = new ResetFrame(streamId, ErrorCodes.STREAM_CLOSED_ERROR);
             reset(reset, disconnectOnFailure());
         }
         else

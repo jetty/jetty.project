@@ -16,9 +16,9 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.parser;
+package org.eclipse.jetty.http2;
 
-public interface ErrorCode
+public interface ErrorCodes
 {
     public static final int NO_ERROR = 0;
     public static final int PROTOCOL_ERROR = 1;

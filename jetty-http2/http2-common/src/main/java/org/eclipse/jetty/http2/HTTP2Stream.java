@@ -29,7 +29,6 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -133,7 +132,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         // avoid that its idle timeout is rescheduled.
         close();
 
-        session.reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR), disconnectOnFailure);
+        session.reset(new ResetFrame(getId(), ErrorCodes.CANCEL_STREAM_ERROR), disconnectOnFailure);
 
         notifyFailure(this, timeout);
     }

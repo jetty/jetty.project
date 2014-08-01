@@ -27,13 +27,13 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.PrefaceParser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -98,7 +98,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private void closeConnections()
     {
         for (ISession session : sessions)
-            session.close(ErrorCode.NO_ERROR, null, Callback.Adapter.INSTANCE);
+            session.close(ErrorCodes.NO_ERROR, null, Callback.Adapter.INSTANCE);
         sessions.clear();
     }
 
@@ -165,7 +165,7 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
-            getSession().close(ErrorCode.NO_ERROR, "idle_timeout", closeCallback);
+            getSession().close(ErrorCodes.NO_ERROR, "idle_timeout", closeCallback);
             return false;
         }
 

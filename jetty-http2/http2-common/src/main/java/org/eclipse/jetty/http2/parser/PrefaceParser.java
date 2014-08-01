@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -48,7 +49,7 @@ public class PrefaceParser
             int currByte = buffer.get();
             if (currByte != PREFACE_BYTES[cursor])
             {
-                notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_preface");
+                notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_preface");
                 return false;
             }
             ++cursor;

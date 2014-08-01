@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -75,7 +76,7 @@ public class ServerParser extends Parser
         catch (Throwable x)
         {
             LOG.debug(x);
-            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "parser_error");
+            notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "parser_error");
             return false;
         }
     }

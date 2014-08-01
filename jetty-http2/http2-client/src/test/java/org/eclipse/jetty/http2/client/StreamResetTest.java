@@ -26,13 +26,13 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.Assert;
@@ -51,7 +51,7 @@ public class StreamResetTest extends AbstractTest
         FuturePromise<Stream> promise = new FuturePromise<>();
         client.newStream(requestFrame, promise, new Stream.Listener.Adapter());
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR);
+        ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCodes.CANCEL_STREAM_ERROR);
         stream.getSession().reset(resetFrame, Callback.Adapter.INSTANCE);
         // After reset the stream should be gone.
         Assert.assertEquals(0, client.getStreams().size());
@@ -81,7 +81,7 @@ public class StreamResetTest extends AbstractTest
         FuturePromise<Stream> promise = new FuturePromise<>();
         client.newStream(requestFrame, promise, new Stream.Listener.Adapter());
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR);
+        ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCodes.CANCEL_STREAM_ERROR);
         stream.getSession().reset(resetFrame, Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
@@ -167,7 +167,7 @@ public class StreamResetTest extends AbstractTest
         });
         Stream stream2 = promise2.get(5, TimeUnit.SECONDS);
 
-        ResetFrame resetFrame = new ResetFrame(stream1.getId(), ErrorCode.CANCEL_STREAM_ERROR);
+        ResetFrame resetFrame = new ResetFrame(stream1.getId(), ErrorCodes.CANCEL_STREAM_ERROR);
         stream1.getSession().reset(resetFrame, Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(serverResetLatch.await(5, TimeUnit.SECONDS));

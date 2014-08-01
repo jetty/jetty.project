@@ -26,9 +26,9 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.SettingsGenerator;
-import org.eclipse.jetty.http2.parser.ErrorCode;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
@@ -133,7 +133,7 @@ public class SettingsGenerateParseTest
             }
         }
 
-        Assert.assertEquals(ErrorCode.PROTOCOL_ERROR, errorRef.get());
+        Assert.assertEquals(ErrorCodes.PROTOCOL_ERROR, errorRef.get());
     }
 
     @Test

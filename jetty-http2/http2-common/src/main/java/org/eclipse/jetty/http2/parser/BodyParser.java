@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -50,7 +51,7 @@ public abstract class BodyParser
 
     protected boolean emptyBody()
     {
-        notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_frame");
+        notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_frame");
         return false;
     }
 

@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.frames.Flag;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
@@ -76,13 +77,13 @@ public class HeadersBodyParser extends BodyParser
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR, "invalid_headers_frame");
+                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_headers_frame");
                     }
 
                     // For now we don't support HEADERS frames that don't have END_HEADERS.
                     if (!hasFlag(Flag.END_HEADERS))
                     {
-                        return notifyConnectionFailure(ErrorCode.INTERNAL_ERROR, "unsupported_headers_frame");
+                        return notifyConnectionFailure(ErrorCodes.INTERNAL_ERROR, "unsupported_headers_frame");
                     }
 
                     length = getBodyLength();
@@ -110,7 +111,7 @@ public class HeadersBodyParser extends BodyParser
                     loop = length == 0;
                     if (length < 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_headers_frame_padding");
+                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame_padding");
                     }
                     break;
                 }
@@ -133,7 +134,7 @@ public class HeadersBodyParser extends BodyParser
                         state = State.WEIGHT;
                         if (length < 1)
                         {
-                            return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_headers_frame");
+                            return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame");
                         }
                     }
                     else
@@ -151,7 +152,7 @@ public class HeadersBodyParser extends BodyParser
                     --length;
                     if (cursor > 0 && length <= 0)
                     {
-                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_headers_frame");
+                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame");
                     }
                     if (cursor == 0)
                     {
@@ -159,7 +160,7 @@ public class HeadersBodyParser extends BodyParser
                         state = State.WEIGHT;
                         if (length < 1)
                         {
-                            return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR, "invalid_headers_frame");
+                            return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame");
                         }
                     }
                     break;
