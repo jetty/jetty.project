@@ -315,7 +315,7 @@ public class ResourceHandler extends HandlerWrapper
         {
             path=URIUtil.canonicalPath(path);
             Resource r = base.addPath(path);
-            if (r!=null && r.getAlias()!=null && !_context.checkAlias(path, r))
+            if (r!=null && r.isAlias() && !_context.checkAlias(path, r))
                 return null;
             return r;
         }

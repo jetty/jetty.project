@@ -33,6 +33,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -352,8 +353,8 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testSymlinkKnown() throws Exception
     {
-        if (!OS.IS_UNIX)
-            return;
+        Assume.assumeTrue(OS.IS_UNIX);
+        
         try
         {
             allowSymlinks.set(true);

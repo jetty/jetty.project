@@ -57,7 +57,7 @@ public class QuickStartConfiguration extends WebInfConfiguration
         Resource webApp = context.newResource(war);
 
         // Accept aliases for WAR files
-        if (webApp.getAlias() != null)
+        if (webApp.isAlias())
         {
             LOG.debug(webApp + " anti-aliased to " + webApp.getAlias());
             webApp = context.newResource(webApp.getAlias());

@@ -50,36 +50,41 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(PathResource.class);
-    private final static LinkOption NO_FOLLOW_OPTIONS[] = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
+    private final static LinkOption NO_FOLLOW_LINKS[] = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
+    private final static LinkOption FOLLOW_LINKS[] = new LinkOption[] {};
 
     private final Path path;
-    private final URI alias;
+    private final Path alias;
     private final URI uri;
     
-    private static final URI toAliasUri(final Path path)
+    private static final Path checkAliasPath(final Path path)
     {
         Path abs = path;
         if (!abs.isAbsolute())
         {
             abs = path.toAbsolutePath();
         }
-        URI providedUri = abs.toUri();
+
         try
         {
-            URI realUri = abs.toRealPath().toUri();
-            if (!providedUri.equals(realUri))
+            if (Files.isSymbolicLink(path))
+                return Files.readSymbolicLink(path);
+            if (Files.exists(path))
             {
-                return realUri;
+                Path real = abs.toRealPath(FOLLOW_LINKS);
+                if (!abs.equals(real))
+                    return real;
             }
         }
         catch (NoSuchFileException e)
         {
             // Ignore
         }
-        catch (IOException e)
+        catch (Exception e)
         {
             // TODO: reevaluate severity level
             LOG.warn("bad alias ({}) for {}", e.getClass().getName(), e.getMessage());
+            return abs;
         }
         return null;
     }
@@ -93,7 +98,7 @@ public class PathResource extends Resource
     {
         this.path = path.toAbsolutePath();
         this.uri = this.path.toUri();
-        this.alias = toAliasUri(path);
+        this.alias = checkAliasPath(path);
     }
 
     public PathResource(URI uri) throws IOException
@@ -129,7 +134,7 @@ public class PathResource extends Resource
 
         this.path = path.toAbsolutePath();
         this.uri = path.toUri();
-        this.alias = toAliasUri(path);
+        this.alias = checkAliasPath(path);
     }
 
     public PathResource(URL url) throws IOException, URISyntaxException
@@ -211,13 +216,18 @@ public class PathResource extends Resource
     @Override
     public boolean exists()
     {
-        return Files.exists(path,NO_FOLLOW_OPTIONS);
+        return Files.exists(path,NO_FOLLOW_LINKS);
     }
 
     @Override
     public File getFile() throws IOException
     {
         return path.toFile();
+    }
+
+    public Path getPath() throws IOException
+    {
+        return path;
     }
 
     @Override
@@ -276,7 +286,7 @@ public class PathResource extends Resource
     @Override
     public boolean isDirectory()
     {
-        return Files.isDirectory(path,NO_FOLLOW_OPTIONS);
+        return Files.isDirectory(path,NO_FOLLOW_LINKS);
     }
 
     @Override
@@ -284,7 +294,7 @@ public class PathResource extends Resource
     {
         try
         {
-            FileTime ft = Files.getLastModifiedTime(path,NO_FOLLOW_OPTIONS);
+            FileTime ft = Files.getLastModifiedTime(path,NO_FOLLOW_LINKS);
             return ft.toMillis();
         }
         catch (IOException e)
@@ -309,9 +319,20 @@ public class PathResource extends Resource
     }
 
     @Override
-    public URI getAlias()
+    public boolean isAlias()
+    {
+        return this.alias!=null;
+    }
+    
+    public Path getAliasPath()
     {
         return this.alias;
+    }
+    
+    @Override
+    public URI getAlias()
+    {
+        return this.alias==null?null:this.alias.toUri();
     }
 
     @Override
@@ -354,7 +375,7 @@ public class PathResource extends Resource
             try
             {
                 Path result = Files.move(path,destRes.path);
-                return Files.exists(result,NO_FOLLOW_OPTIONS);
+                return Files.exists(result,NO_FOLLOW_LINKS);
             }
             catch (IOException e)
             {

@@ -475,6 +475,12 @@ public abstract class Resource implements ResourceFactory, Closeable
     {
         _associate=o;
     }
+
+    /* ------------------------------------------------------------ */
+    public boolean isAlias()
+    {
+        return getAlias()!=null;
+    }
     
     /* ------------------------------------------------------------ */
     /**

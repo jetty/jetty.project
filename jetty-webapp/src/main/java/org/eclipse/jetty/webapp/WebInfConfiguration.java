@@ -402,7 +402,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new IllegalStateException("No resourceBase or war set for context");
 
             // Accept aliases for WAR files
-            if (web_app.getAlias() != null)
+            if (web_app.isAlias())
             {
                 LOG.debug(web_app + " anti-aliased to " + web_app.getAlias());
                 web_app = context.newResource(web_app.getAlias());
