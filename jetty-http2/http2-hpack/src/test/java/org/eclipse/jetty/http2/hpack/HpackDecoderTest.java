@@ -39,15 +39,13 @@ import org.junit.Test;
  */
 public class HpackDecoderTest
 {
-
     @Test
-    @Ignore
     public void testDecodeD_3()
     {        
         HpackDecoder decoder = new HpackDecoder(4096,8192);
            
         // First request
-        String encoded="828786440f7777772e6578616d706c652e636f6d";
+        String encoded="828684410f7777772e6578616d706c652e636f6d";
         ByteBuffer buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
         MetaData.Request request = (MetaData.Request)decoder.decode(buffer);
@@ -60,7 +58,7 @@ public class HpackDecoderTest
         
         
         // Second request
-        encoded="5c086e6f2d6361636865";
+        encoded="828684be58086e6f2d6361636865";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
         request = (MetaData.Request)decoder.decode(buffer);
@@ -76,7 +74,7 @@ public class HpackDecoderTest
         
 
         // Third request
-        encoded="30858c8b84400a637573746f6d2d6b65790c637573746f6d2d76616c7565";
+        encoded="828785bf400a637573746f6d2d6b65790c637573746f6d2d76616c7565";
         buffer = ByteBuffer.wrap(TypeUtil.fromHexString(encoded));
         
         request = (MetaData.Request)decoder.decode(buffer);

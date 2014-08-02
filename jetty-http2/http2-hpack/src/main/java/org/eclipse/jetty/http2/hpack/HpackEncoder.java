@@ -51,6 +51,7 @@ public class HpackEncoder
     private final static EnumSet<HttpHeader> __DO_NOT_INDEX = 
             EnumSet.of(
                     // TODO ??? HttpHeader.C_PATH,
+                    // TODO ??? HttpHeader.DATE,
                     HttpHeader.CONTENT_MD5,
                     HttpHeader.CONTENT_RANGE,
                     HttpHeader.ETAG,
@@ -121,7 +122,6 @@ public class HpackEncoder
         encode(buffer,metadata);
         BufferUtil.flipToFlush(buffer,0);
     }
-
     
     public void encode(ByteBuffer buffer, MetaData metadata)
     {
@@ -161,7 +161,6 @@ public class HpackEncoder
         {
             encode(buffer,field);
         }
-
     }
 
     public void encodeMaxHeaderTableSize(ByteBuffer buffer, int maxHeaderTableSize)
@@ -179,14 +178,13 @@ public class HpackEncoder
         
         String encoding=null;
 
-        // TODO currently we do not check if there is enough space, so we will always
-        // return true or fail nastily.
+        // TODO currently we do not check if there is enough space, so we may fail nastily.
 
         // Is there an entry for the field?
         Entry entry = _context.get(field);
-
         if (entry!=null)
         {
+            // Known field entry, so encode it as indexed
             int index=_context.index(entry);
             if (p>=0)
                 encoding="IdxField"+(entry.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(7,index));
@@ -195,7 +193,7 @@ public class HpackEncoder
         }
         else
         {
-            // Must be a new entry, so we will have to send literally.
+            // Unknown field entry, so we will have to send literally.
 
             final Entry name;
             final boolean indexed;
@@ -203,6 +201,7 @@ public class HpackEncoder
             final boolean huffman;
             final int bits;
             
+            // But do we know it's name?
             HttpHeader header = field.getHeader();
             if (header==null)
             {
@@ -316,7 +315,7 @@ public class HpackEncoder
         {
             int e=buffer.position();
             if (LOG.isDebugEnabled())
-                LOG.debug("encoded '{}' by {} to '{}'",field,encoding,TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p));
+                LOG.debug("encode {}:'{}' to '{}'",encoding,field,TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p));
         }        
     }
 }

@@ -382,8 +382,9 @@ public class HttpField
         int len = _name.length();
         for (int i = 0; i < len; i++)
         {
-            char c = Character.toUpperCase(_name.charAt(i));
-            hash = 31 * hash + c;
+            // simple case insensitive hash
+            char c = _name.charAt(i);
+            hash = 15 * hash + 0x0F&c;
         }
         return hash;
     }

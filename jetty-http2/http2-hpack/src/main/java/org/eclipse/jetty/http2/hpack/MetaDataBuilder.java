@@ -75,17 +75,17 @@ public class MetaDataBuilder
         if (field instanceof StaticValueHttpField)
         {
             StaticValueHttpField value = (StaticValueHttpField)field;
-            switch(field.getName())
+            switch(field.getHeader())
             {
-                case ":status":
+                case C_STATUS:
                     _status=(Integer)value.getStaticValue();
                     break;
                     
-                case ":method":
+                case C_METHOD:
                     _method=field.getValue();
                     break;
 
-                case ":scheme":
+                case C_SCHEME:
                     _scheme = (HttpScheme)value.getStaticValue();
                     break;
                     
@@ -93,27 +93,27 @@ public class MetaDataBuilder
                     throw new IllegalArgumentException(field.getName());
             }
         }
-        else
+        else if (field.getHeader()!=null)
         {
-            switch(field.getName())
+            switch(field.getHeader())
             {
-                case ":status":
+                case C_STATUS:
                     _status=Integer.parseInt(field.getValue());
                     break;
 
-                case ":method":
+                case C_METHOD:
                     _method=field.getValue();
                     break;
 
-                case ":scheme":
+                case C_SCHEME:
                     _scheme = HttpScheme.CACHE.get(field.getValue());
                     break;
 
-                case ":authority":
+                case C_AUTHORITY:
                     _authority=(field instanceof HostPortHttpField)?((HostPortHttpField)field):new AuthorityHttpField(field.getValue());
                     break;
 
-                case ":path":
+                case C_PATH:
                     _path = field.getValue();
                     break;
                     
@@ -121,6 +121,11 @@ public class MetaDataBuilder
                     if (field.getName().charAt(0)!=':')
                         _fields.add(field);
             }
+        }
+        else
+        {
+            if (field.getName().charAt(0)!=':')
+                _fields.add(field);
         }
     }
     
@@ -130,6 +135,7 @@ public class MetaDataBuilder
         {
             HttpFields fields = _fields;
             _fields = new HttpFields(Math.max(10,fields.size()+5));
+            
             if (_method!=null)
                 return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields);
             if (_status!=0)

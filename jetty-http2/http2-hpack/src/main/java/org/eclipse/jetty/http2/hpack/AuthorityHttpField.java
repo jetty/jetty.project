@@ -20,6 +20,7 @@
 package org.eclipse.jetty.http2.hpack;
 
 import org.eclipse.jetty.http.HostPortHttpField;
+import org.eclipse.jetty.http.HttpHeader;
 
 
 /* ------------------------------------------------------------ */
@@ -31,7 +32,7 @@ public class AuthorityHttpField extends HostPortHttpField
     
     public AuthorityHttpField(String authority)
     {
-        super(null,AUTHORITY,authority);
+        super(HttpHeader.C_AUTHORITY,AUTHORITY,authority);
     }
     
     @Override

@@ -27,7 +27,6 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.TypeUtil;
@@ -190,47 +189,54 @@ public class HpackDecoder
 
                 // Make the new field
                 HttpField field;
-                switch(name)
+                if (header==null)
                 {
-                    case ":method":
-                        HttpMethod method=HttpMethod.CACHE.get(value);
-                        if (method!=null)
-                            field = new StaticValueHttpField(header,name,method.asString(),method);
-                        else
-                            field = new AuthorityHttpField(value);    
-                        break;
+                    field = new HttpField(null,name,value);
+                }
+                else
+                {
+                    switch(header)
+                    {
+                        case C_METHOD:
+                            HttpMethod method=HttpMethod.CACHE.get(value);
+                            if (method!=null)
+                                field = new StaticValueHttpField(HttpHeader.C_METHOD,method.asString(),method);
+                            else
+                                field = new AuthorityHttpField(value);    
+                            break;
 
-                    case ":status":
-                        Integer code = Integer.valueOf(value);
-                        field = new StaticValueHttpField(header,name,value,code);
-                        break;
+                        case C_STATUS:
+                            Integer code = Integer.valueOf(value);
+                            field = new StaticValueHttpField(HttpHeader.C_STATUS,value,code);
+                            break;
 
-                    case ":scheme":
-                        HttpScheme scheme=HttpScheme.CACHE.get(value);
-                        if (scheme!=null)
-                            field = new StaticValueHttpField(header,name,scheme.asString(),scheme);
-                        else
+                        case C_SCHEME:
+                            HttpScheme scheme=HttpScheme.CACHE.get(value);
+                            if (scheme!=null)
+                                field = new StaticValueHttpField(HttpHeader.C_SCHEME,scheme.asString(),scheme);
+                            else
+                                field = new AuthorityHttpField(value);
+                            break;
+
+                        case C_AUTHORITY:
                             field = new AuthorityHttpField(value);
-                        break;
+                            break;
 
-                    case ":authority":
-                        field = new AuthorityHttpField(value);
-                        break;
+                        case C_PATH:
+                            field = new HttpField(HttpHeader.C_PATH,value);
+                            break;
 
-                    case ":path":
-                        field = new HttpField(header,name,value);
-                        break;
+                        case CONTENT_LENGTH:
+                            if ("0".equals(value))
+                                field = CONTENT_LENGTH_0;
+                            else
+                                field = new HttpField.LongValueHttpField(header,value);
+                            break;
 
-                    case "content-length":
-                        if ("0".equals(value))
-                            field = CONTENT_LENGTH_0;
-                        else
-                            field = new HttpField.LongValueHttpField(header,value);
-                        break;
-                        
-                    default:
-                        field = new HttpField(header,name,value);
-                        break;
+                        default:
+                            field = new HttpField(header,name,value);
+                            break;
+                    }
                 }
 
                 if (LOG.isDebugEnabled())
