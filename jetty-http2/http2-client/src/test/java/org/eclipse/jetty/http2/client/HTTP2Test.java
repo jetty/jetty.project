@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.client;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -35,8 +36,10 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class HTTP2Test extends AbstractTest
@@ -123,5 +126,49 @@ public class HTTP2Test extends AbstractTest
         });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Ignore
+    @Test
+    public void testMultipleRequests() throws Exception
+    {
+        final String downloadBytes = "X-Download";
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                int download = request.getIntHeader(downloadBytes);
+                byte[] content = new byte[download];
+                new Random().nextBytes(content);
+                response.getOutputStream().write(content);
+            }
+        });
+
+        int requests = 20;
+        Session session = newClient(new Session.Listener.Adapter());
+
+        Random random = new Random();
+        HttpFields fields = new HttpFields();
+        fields.putLongField(downloadBytes, random.nextInt(128 * 1024));
+        fields.put("User-Agent", "HTTP2Client/" + Jetty.VERSION);
+        MetaData.Request metaData = newRequest("GET", fields);
+        HeadersFrame frame = new HeadersFrame(1, metaData, null, true);
+        final CountDownLatch latch = new CountDownLatch(requests);
+        for (int i = 0; i < requests; ++i)
+        {
+            session.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+            {
+                @Override
+                public void onData(Stream stream, DataFrame frame, Callback callback)
+                {
+                    callback.succeeded();
+                    if (frame.isEndStream())
+                        latch.countDown();
+                }
+            });
+        }
+
+        Assert.assertTrue(latch.await(requests, TimeUnit.SECONDS));
     }
 }
