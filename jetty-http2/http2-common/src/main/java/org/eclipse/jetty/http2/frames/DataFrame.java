@@ -75,6 +75,6 @@ public class DataFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s{length:%d,end=%b}", super.toString(), data.remaining(), endStream);
+        return String.format("%s#%d{length:%d,end=%b}", super.toString(), streamId, data.remaining(), endStream);
     }
 }

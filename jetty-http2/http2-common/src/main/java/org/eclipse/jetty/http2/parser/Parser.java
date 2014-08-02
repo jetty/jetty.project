@@ -151,8 +151,9 @@ public class Parser
         }
         catch (Throwable x)
         {
-            LOG.debug(x);
-            notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "parser_error: "+x);
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "parser_error");
             return false;
         }
     }

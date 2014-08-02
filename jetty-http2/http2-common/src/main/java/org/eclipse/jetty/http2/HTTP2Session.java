@@ -724,7 +724,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
             List<ByteBuffer> byteBuffers = lease.getByteBuffers();
             if (LOG.isDebugEnabled())
-                LOG.debug("Writing {} buffers ({} bytes) for {}", byteBuffers.size(), lease.getTotalLength(), active);
+                LOG.debug("Writing {} buffers ({} bytes) for {} frames {}", byteBuffers.size(), lease.getTotalLength(), active.size(), active);
             endPoint.write(this, byteBuffers.toArray(new ByteBuffer[byteBuffers.size()]));
             return Action.SCHEDULED;
         }
@@ -738,6 +738,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             for (int i = 0; i < active.size(); ++i)
                 complete.add(active.get(i));
             active.clear();
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Written {} frames for {}", complete.size(), complete);
 
             // Drain the queue one by one to avoid reentrancy.
             while (!complete.isEmpty())

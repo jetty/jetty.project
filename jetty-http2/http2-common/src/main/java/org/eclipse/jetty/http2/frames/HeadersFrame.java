@@ -55,4 +55,10 @@ public class HeadersFrame extends Frame
     {
         return endStream;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s#%d", super.toString(), streamId);
+    }
 }
