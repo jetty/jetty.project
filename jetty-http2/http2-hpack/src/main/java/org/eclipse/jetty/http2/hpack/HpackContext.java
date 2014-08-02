@@ -25,8 +25,10 @@ import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.StringUtil;
@@ -106,7 +108,7 @@ public class HpackContext
     
     private static final Map<HttpField,Entry> __staticFieldMap = new HashMap<>();
     private static final Trie<Entry> __staticNameMap = new ArrayTernaryTrie<>(true,512);
-    
+    private static final Entry[] __headerEntryTable = new Entry[HttpHeader.UNKNOWN.ordinal()];
     private static final StaticEntry[] __staticTable=new StaticEntry[STATIC_TABLE.length];
     static
     {
@@ -157,6 +159,13 @@ public class HpackContext
                 if (__staticNameMap.get(entry._field.getName())==null)
                     throw new IllegalStateException("name trie too small");
             }
+        }
+        
+        for (HttpHeader h : HttpHeader.values())
+        {
+            Entry entry = __staticNameMap.get(h.asString());
+            if (entry!=null)
+                __headerEntryTable[h.ordinal()]=entry;
         }
     }
 
@@ -213,6 +222,14 @@ public class HpackContext
         if (d>=0) 
             return _headerTable.getUnsafe(d);      
         return null;
+    }
+    
+    public Entry get(HttpHeader header)
+    {
+        Entry e = __headerEntryTable[header.ordinal()];
+        if (e==null)
+            return get(header.asString());
+        return e;
     }
     
     public Entry add(HttpField field)

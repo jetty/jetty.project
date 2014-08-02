@@ -52,17 +52,17 @@ public class HpackPerfTest
     @After
     public void after()
     {        
-        System.err.printf("headertable=%d unencoded=%d encoded=%d p=%d%%%n",_maxHeaderTableSize,_unencodedSize,_encodedSize,(100*_encodedSize+49)/_unencodedSize);
+        System.err.printf("headertable=%d unencoded=%d encoded=%d p=%3.1f%%%n",_maxHeaderTableSize,_unencodedSize,_encodedSize,100.0*_encodedSize/_unencodedSize);
 
     }
     
     @Test
     public void simpleTest() throws Exception
     {
-        runStories(_maxHeaderTableSize,new HpackEncoder(_maxHeaderTableSize,_maxHeaderTableSize));
+        runStories(_maxHeaderTableSize);
     }
     
-    private void runStories(int maxHeaderTableSize, HpackEncoder encoder) throws Exception
+    private void runStories(int maxHeaderTableSize) throws Exception
     {
         // Find files
         File data = MavenTestingUtils.getTestResourceDir("data");
@@ -84,25 +84,25 @@ public class HpackPerfTest
         ByteBuffer buffer = BufferUtil.allocate(256*1024);
         
         // Encode all the requests
-        encodeStories(buffer,stories,"request",encoder);
+        encodeStories(buffer,stories,"request");
 
         // clear table
         BufferUtil.clearToFill(buffer);
-        encoder.encodeMaxHeaderTableSize(buffer,0);
-        encoder.encodeMaxHeaderTableSize(buffer,maxHeaderTableSize);
         BufferUtil.flipToFlush(buffer,0);
         
         // Encode all the responses
-        encodeStories(buffer,stories,"response",encoder);
+        encodeStories(buffer,stories,"response");
         
     }
     
-    private void encodeStories(ByteBuffer buffer,Map<String,Object>[] stories, String type, HpackEncoder encoder) throws Exception
+    private void encodeStories(ByteBuffer buffer,Map<String,Object>[] stories, String type) throws Exception
     {
         for (Map<String,Object> story : stories)
         {
             if (type.equals(story.get("context")))
             {
+                HpackEncoder encoder = new HpackEncoder(_maxHeaderTableSize,_maxHeaderTableSize);
+                
                 // System.err.println(story);
                 Object[] cases = (Object[])story.get("cases");
                 for (Object c : cases)

@@ -50,6 +50,7 @@ public class HpackEncoder
     
     private final static EnumSet<HttpHeader> __DO_NOT_INDEX = 
             EnumSet.of(
+                    // TODO ??? HttpHeader.C_PATH,
                     HttpHeader.CONTENT_MD5,
                     HttpHeader.CONTENT_RANGE,
                     HttpHeader.ETAG,
@@ -139,10 +140,10 @@ public class HpackEncoder
             
             // TODO optimise these to avoid HttpField creation
             String scheme=request.getURI().getScheme();
-            encode(buffer,new HttpField(":scheme",scheme==null?HttpScheme.HTTP.asString():scheme));
-            encode(buffer,new HttpField(":method",request.getMethod()));
-            encode(buffer,new HttpField(":authority",request.getURI().getAuthority())); 
-            encode(buffer,new HttpField(":path",request.getURI().getPathQuery()));
+            encode(buffer,new HttpField(HttpHeader.C_SCHEME,scheme==null?HttpScheme.HTTP.asString():scheme));
+            encode(buffer,new HttpField(HttpHeader.C_METHOD,request.getMethod()));
+            encode(buffer,new HttpField(HttpHeader.C_AUTHORITY,request.getURI().getAuthority())); 
+            encode(buffer,new HttpField(HttpHeader.C_PATH,request.getURI().getPathQuery()));
             
         }
         else if (metadata.isResponse())
@@ -151,7 +152,7 @@ public class HpackEncoder
             int code=response.getStatus();
             HttpField status = code<__status.length?__status[code]:null;
             if (status==null)
-                status=new HttpField(":status",Integer.toString(code));
+                status=new HttpField(HttpHeader.C_STATUS,Integer.toString(code));
             encode(buffer,status);
         }
         
@@ -188,7 +189,7 @@ public class HpackEncoder
         {
             int index=_context.index(entry);
             if (p>=0)
-                encoding="Indexed"+index;
+                encoding="IdxField"+(entry.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(7,index));
             buffer.put((byte)0x80);
             NBitInteger.encode(buffer,7,index);
         }
@@ -196,18 +197,18 @@ public class HpackEncoder
         {
             // Must be a new entry, so we will have to send literally.
 
-            // Look for a name Index
-            Entry name_entry = _context.get(field.getName());
-
-            HttpHeader header = field.getHeader();
+            final Entry name;
+            final boolean indexed;
             final boolean never_index;
             final boolean huffman;
-            final boolean indexed;
-            final int name_bits;
+            final int bits;
+            
+            HttpHeader header = field.getHeader();
             if (header==null)
             {
+                name = _context.get(field.getName());
                 // has the custom header name been seen before?
-                if (name_entry==null)
+                if (name==null)
                 {
                     // unknown name and value, so let's index this just in case it is 
                     // the first time we have seen a custom name or a custom field.
@@ -215,7 +216,7 @@ public class HpackEncoder
                     indexed=true;
                     never_index=false;
                     huffman=true;
-                    name_bits = 6;
+                    bits = 6;
                     buffer.put((byte)0x40);
                 }
                 else
@@ -225,49 +226,53 @@ public class HpackEncoder
                     indexed=false;
                     never_index=false;
                     huffman=true;
-                    name_bits = 4;
+                    bits = 4;
                     buffer.put((byte)0x00);
                 }
             }
-            else if (__DO_NOT_INDEX.contains(header))
+            else 
             {
-                // Non indexed field
-                indexed=false;
-                never_index=__NEVER_INDEX.contains(header);
-                huffman=!__DO_NOT_HUFFMAN.contains(header);
-                name_bits = 4;
-                buffer.put(never_index?(byte)0x10:(byte)0x00);
-            }
-            else if (header==HttpHeader.CONTENT_LENGTH && field.getValue().length()>1)
-            {
-                // Non indexed content length for non zero value
-                indexed=false;
-                never_index=false;
-                huffman=true;
-                name_bits = 4;
-                buffer.put((byte)0x00);
-            }
-            else
-            {
-                // indexed
-                indexed=true;
-                never_index=false;
-                huffman=!__DO_NOT_HUFFMAN.contains(header);
-                name_bits = 6;
-                buffer.put((byte)0x40);
-            }
+                name = _context.get(header);
 
+                if (__DO_NOT_INDEX.contains(header))
+                {
+                    // Non indexed field
+                    indexed=false;
+                    never_index=__NEVER_INDEX.contains(header);
+                    huffman=!__DO_NOT_HUFFMAN.contains(header);
+                    bits = 4;
+                    buffer.put(never_index?(byte)0x10:(byte)0x00);
+                }
+                else if (header==HttpHeader.CONTENT_LENGTH && field.getValue().length()>1)
+                {
+                    // Non indexed content length for non zero value
+                    indexed=false;
+                    never_index=false;
+                    huffman=true;
+                    bits = 4;
+                    buffer.put((byte)0x00);
+                }
+                else
+                {
+                    // indexed
+                    indexed=true;
+                    never_index=false;
+                    huffman=!__DO_NOT_HUFFMAN.contains(header);
+                    bits = 6;
+                    buffer.put((byte)0x40);
+                }
+            }
 
             if (p>=0)
             {
                 encoding="Lit"+
-                        ((name_entry==null)?"HuffN":"IdxN")+
+                        ((name==null)?"HuffN":("IdxN"+(name.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(bits,_context.index(name)))))+
                         (huffman?"HuffV":"LitV")+
                         (indexed?"Idx":(never_index?"!!Idx":"!Idx"));
             }
             
-            if (name_entry!=null)
-                NBitInteger.encode(buffer,name_bits,_context.index(name_entry));
+            if (name!=null)
+                NBitInteger.encode(buffer,bits,_context.index(name));
             else
             {
                 // leave name index bits as 0
