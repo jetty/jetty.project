@@ -196,6 +196,9 @@ public class HpackEncoder
         {
             // Must be a new entry, so we will have to send literally.
 
+            // Look for a name Index
+            Entry name_entry = _context.get(field.getName());
+
             HttpHeader header = field.getHeader();
             final boolean never_index;
             final boolean huffman;
@@ -203,12 +206,28 @@ public class HpackEncoder
             final int name_bits;
             if (header==null)
             {
-                // unknown header.
-                never_index=false;
-                huffman=true;
-                indexed=true;
-                name_bits = 6;
-                buffer.put((byte)0x40);
+                // has the custom header name been seen before?
+                if (name_entry==null)
+                {
+                    // unknown name and value, so let's index this just in case it is 
+                    // the first time we have seen a custom name or a custom field.
+                    // unless the name is changing, this is worthwhile
+                    indexed=true;
+                    never_index=false;
+                    huffman=true;
+                    name_bits = 6;
+                    buffer.put((byte)0x40);
+                }
+                else
+                {
+                    // known custom name, but unknown value.
+                    // This is probably a custom field with changing value, so don't index now.
+                    indexed=false;
+                    never_index=false;
+                    huffman=true;
+                    name_bits = 4;
+                    buffer.put((byte)0x00);
+                }
             }
             else if (__DO_NOT_INDEX.contains(header))
             {
@@ -238,8 +257,6 @@ public class HpackEncoder
                 buffer.put((byte)0x40);
             }
 
-            // Look for a name Index
-            Entry name_entry = _context.get(field.getName());
 
             if (p>=0)
             {
@@ -253,6 +270,7 @@ public class HpackEncoder
                 NBitInteger.encode(buffer,name_bits,_context.index(name_entry));
             else
             {
+                // leave name index bits as 0
                 // Encode the name always with lowercase huffman
                 buffer.put((byte)0x80);
                 NBitInteger.encode(buffer,7,Huffman.octetsNeededLC(field.getName()));
