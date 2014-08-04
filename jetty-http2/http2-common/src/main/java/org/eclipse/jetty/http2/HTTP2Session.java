@@ -640,6 +640,10 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             synchronized (queue)
             {
+                // The session window size may vary concurrently upon receipt of
+                // WINDOW_UPDATE or SETTINGS so we read it here and not in the loop.
+                // The stream window size is read in the loop, but it's always
+                // capped by the session window size.
                 int sessionWindow = getWindowSize();
                 int nonStalledIndex = 0;
                 int size = queue.size();
@@ -663,22 +667,21 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                                 continue;
                             }
 
-                            if (stream != null)
+                            // The stream may have a smaller window than the session.
+                            Integer streamWindow = streams.get(stream);
+                            if (streamWindow == null)
                             {
-                                Integer streamWindow = streams.get(stream);
-                                if (streamWindow == null)
-                                {
-                                    streamWindow = stream.getWindowSize();
-                                    streams.put(stream, streamWindow);
-                                }
+                                streamWindow = stream.getWindowSize();
+                                streams.put(stream, streamWindow);
+                            }
 
-                                // Is it a frame belonging to an already stalled stream ?
-                                if (streamWindow <= 0)
-                                {
-                                    flowControl.onStreamStalled(stream);
-                                    ++nonStalledIndex;
-                                    continue;
-                                }
+                            // Is it a frame belonging to an already stalled stream ?
+                            if (streamWindow <= 0)
+                            {
+                                flowControl.onStreamStalled(stream);
+                                ++nonStalledIndex;
+                                // There may be *non* flow controlled frames to send.
+                                continue;
                             }
                         }
                     }
@@ -888,12 +891,16 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         public void generate(ByteBufferPool.Lease lease)
         {
             DataFrame dataFrame = (DataFrame)frame;
-            int windowSize = stream.getWindowSize();
-            int frameLength = dataFrame.remaining();
-            this.length = Math.min(frameLength, windowSize);
-            generator.data(lease, dataFrame, length);
+            int flowControlLength = dataFrame.remaining() + dataFrame.padding();
+
+            int streamWindowSize = stream.getWindowSize();
+            int sessionWindowSize = getWindowSize();
+            int windowSize = Math.min(streamWindowSize, sessionWindowSize);
+
+            length = Math.min(flowControlLength, windowSize);
             if (LOG.isDebugEnabled())
                 LOG.debug("Generated {}, maxLength={}", dataFrame, length);
+            generator.data(lease, dataFrame, length);
         }
 
         @Override
