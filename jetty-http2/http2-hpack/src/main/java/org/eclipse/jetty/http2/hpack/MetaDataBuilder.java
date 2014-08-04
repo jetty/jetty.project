@@ -113,6 +113,12 @@ public class MetaDataBuilder
                     _authority=(field instanceof HostPortHttpField)?((HostPortHttpField)field):new AuthorityHttpField(field.getValue());
                     break;
 
+                case HOST:
+                    if (_authority==null)
+                        _authority=(field instanceof HostPortHttpField)?((HostPortHttpField)field):new AuthorityHttpField(field.getValue());
+                    _fields.add(field);
+                    break;
+
                 case C_PATH:
                     _path = field.getValue();
                     break;
