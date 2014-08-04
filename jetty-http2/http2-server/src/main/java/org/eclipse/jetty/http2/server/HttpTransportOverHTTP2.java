@@ -54,19 +54,33 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         MetaData.Request metaData = (MetaData.Request)request.getMetaData();
         boolean isHeadRequest = HttpMethod.HEAD.is(metaData.getMethod());
+
+        // info != null | content != 0 | last = true => commit + send/end
+        // info != null | content != 0 | last = false => commit + send
+        // info != null | content == 0 | last = true => commit/end
+        // info != null | content == 0 | last = false => commit
+        // info == null | content != 0 | last = true => send/end
+        // info == null | content != 0 | last = false => send
+        // info == null | content == 0 | last = true => send/end
+        // info == null | content == 0 | last = false => noop
+
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
+        boolean sendContent = hasContent || (info == null && lastContent);
 
-        if (commit.compareAndSet(false, true))
+        if (info != null)
         {
-            boolean endStream = !hasContent && lastContent;
-            commit(info, endStream, !hasContent ? callback : commitCallback);
-        }
-        else
-        {
-            callback.failed(new IllegalStateException());
+            if (commit.compareAndSet(false, true))
+            {
+                boolean endStream = !hasContent && lastContent;
+                commit(info, endStream, sendContent ? commitCallback : callback);
+            }
+            else
+            {
+                callback.failed(new IllegalStateException());
+            }
         }
 
-        if (hasContent)
+        if (sendContent)
         {
             send(content, lastContent, callback);
         }
@@ -107,7 +121,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     public void abort()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 Response #{} aborted");
+            LOG.debug("HTTP2 Response #{} aborted", stream.getId());
         stream.getSession().disconnect();
     }
 
