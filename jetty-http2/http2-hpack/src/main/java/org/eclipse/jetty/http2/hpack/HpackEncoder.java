@@ -127,24 +127,26 @@ public class HpackEncoder
     {
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] encoding",_context.hashCode()));
-        
+
+        int pos = buffer.position();
+
         // Check the header table sizes!
         int maxHeaderTableSize=Math.min(_remoteMaxHeaderTableSize,_localMaxHeaderTableSize);
         if (maxHeaderTableSize!=_context.getMaxHeaderTableSize())
             encodeMaxHeaderTableSize(buffer,maxHeaderTableSize);
-        
+
         // Add Request/response meta fields
         if (metadata.isRequest())
         {
             MetaData.Request request = (MetaData.Request)metadata;
-            
+
             // TODO optimise these to avoid HttpField creation
             String scheme=request.getURI().getScheme();
             encode(buffer,new HttpField(HttpHeader.C_SCHEME,scheme==null?HttpScheme.HTTP.asString():scheme));
             encode(buffer,new HttpField(HttpHeader.C_METHOD,request.getMethod()));
-            encode(buffer,new HttpField(HttpHeader.C_AUTHORITY,request.getURI().getAuthority())); 
+            encode(buffer,new HttpField(HttpHeader.C_AUTHORITY,request.getURI().getAuthority()));
             encode(buffer,new HttpField(HttpHeader.C_PATH,request.getURI().getPathQuery()));
-            
+
         }
         else if (metadata.isResponse())
         {
@@ -155,12 +157,15 @@ public class HpackEncoder
                 status=new HttpField(HttpHeader.C_STATUS,Integer.toString(code));
             encode(buffer,status);
         }
-        
+
         // Add all the other fields
         for (HttpField field : metadata)
         {
             encode(buffer,field);
         }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("CtxTbl[%x] encoded %d octets",_context.hashCode(), buffer.position() - pos));
     }
 
     public void encodeMaxHeaderTableSize(ByteBuffer buffer, int maxHeaderTableSize)
