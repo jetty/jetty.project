@@ -77,7 +77,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final AtomicInteger streamIds = new AtomicInteger();
     private final AtomicInteger lastStreamId = new AtomicInteger();
-    private final AtomicInteger streamCount = new AtomicInteger();
+    private final AtomicInteger localStreamCount = new AtomicInteger();
+    private final AtomicInteger remoteStreamCount = new AtomicInteger();
     private final AtomicInteger windowSize = new AtomicInteger();
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Scheduler scheduler;
@@ -86,7 +87,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final Listener listener;
     private final FlowControl flowControl;
     private final Flusher flusher;
-    private volatile int maxStreamCount;
+    private int maxLocalStreams;
+    private int maxRemoteStreams;
 
     public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int maxStreams, int initialStreamId)
     {
@@ -96,9 +98,20 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         this.listener = listener;
         this.flowControl = flowControl;
         this.flusher = new Flusher(4);
-        this.maxStreamCount = maxStreams;
+        this.maxLocalStreams = maxStreams;
+        this.maxRemoteStreams = maxStreams;
         this.streamIds.set(initialStreamId);
         this.windowSize.set(flowControl.getInitialWindowSize());
+    }
+
+    public int getMaxRemoteStreams()
+    {
+        return maxRemoteStreams;
+    }
+
+    public void setMaxRemoteStreams(int maxRemoteStreams)
+    {
+        this.maxRemoteStreams = maxRemoteStreams;
     }
 
     public Generator getGenerator()
@@ -185,9 +198,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
         {
-            maxStreamCount = settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS);
+            maxLocalStreams = settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS);
             if (LOG.isDebugEnabled())
-                LOG.debug("Updated max concurrent streams to {}", maxStreamCount);
+                LOG.debug("Updated max local concurrent streams to {}", maxLocalStreams);
         }
         if (settings.containsKey(SettingsFrame.INITIAL_WINDOW_SIZE))
         {
@@ -295,7 +308,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     }
 
     @Override
-    public void newStream(HeadersFrame frame, final Promise<Stream> promise, Stream.Listener listener)
+    public void newStream(HeadersFrame frame, Promise<Stream> promise, Stream.Listener listener)
     {
         // Synchronization is necessary to atomically create
         // the stream id and enqueue the frame to be sent.
@@ -306,12 +319,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             priority = priority == null ? null : new PriorityFrame(streamId, priority.getDependentStreamId(),
                     priority.getWeight(), priority.isExclusive());
             frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
-            final IStream stream = createLocalStream(frame);
+            final IStream stream = createLocalStream(frame, promise);
             if (stream == null)
-            {
-                promise.failed(new IllegalStateException());
                 return;
-            }
             stream.updateClose(frame.isEndStream(), true);
             stream.setListener(listener);
 
@@ -385,8 +395,21 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         flusher.iterate();
     }
 
-    protected IStream createLocalStream(HeadersFrame frame)
+    protected IStream createLocalStream(HeadersFrame frame, Promise<Stream> promise)
     {
+        while (true)
+        {
+            int localCount = localStreamCount.get();
+            int maxCount = maxLocalStreams;
+            if (maxCount >= 0 && localCount >= maxCount)
+            {
+                promise.failed(new IllegalStateException("Max local stream count " + maxCount + " exceeded"));
+                return null;
+            }
+            if (localStreamCount.compareAndSet(localCount, localCount + 1))
+                break;
+        }
+
         IStream stream = newStream(frame);
         int streamId = stream.getId();
         if (streams.putIfAbsent(streamId, stream) == null)
@@ -399,6 +422,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         else
         {
+            promise.failed(new IllegalStateException("Duplicate stream " + streamId));
             return null;
         }
     }
@@ -410,14 +434,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         // SPEC: exceeding max concurrent streams is treated as stream error.
         while (true)
         {
-            int currentStreams = streamCount.get();
-            int maxStreams = maxStreamCount;
-            if (maxStreams >= 0 && currentStreams >= maxStreams)
+            int remoteCount = remoteStreamCount.get();
+            int maxCount = getMaxRemoteStreams();
+            if (maxCount >= 0 && remoteCount >= maxCount)
             {
                 reset(new ResetFrame(streamId, ErrorCodes.REFUSED_STREAM_ERROR), disconnectOnFailure());
                 return null;
             }
-            if (streamCount.compareAndSet(currentStreams, currentStreams + 1))
+            if (remoteStreamCount.compareAndSet(remoteCount, remoteCount + 1))
                 break;
         }
 
@@ -453,7 +477,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             assert removed == stream;
 
             if (local)
-                streamCount.decrementAndGet();
+                localStreamCount.decrementAndGet();
+            else
+                remoteStreamCount.decrementAndGet();
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Removed {}", stream);
