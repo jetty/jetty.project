@@ -39,7 +39,6 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class HTTP2Test extends AbstractTest
@@ -128,7 +127,6 @@ public class HTTP2Test extends AbstractTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
-    @Ignore
     @Test
     public void testMultipleRequests() throws Exception
     {
