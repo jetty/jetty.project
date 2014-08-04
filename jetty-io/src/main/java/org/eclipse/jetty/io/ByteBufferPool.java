@@ -75,14 +75,19 @@ public interface ByteBufferPool
 
         public void prepend(ByteBuffer buffer, boolean recycle)
         {
-            buffers.add(0, buffer);
-            recycles.add(0, recycle);
+            insert(0, buffer, recycle);
         }
 
         public void append(ByteBuffer buffer, boolean recycle)
         {
             buffers.add(buffer);
             recycles.add(recycle);
+        }
+
+        public void insert(int index, ByteBuffer buffer, boolean recycle)
+        {
+            buffers.add(index, buffer);
+            recycles.add(index, recycle);
         }
 
         public List<ByteBuffer> getByteBuffers()
@@ -96,6 +101,11 @@ public interface ByteBufferPool
             for (int i = 0; i < buffers.size(); ++i)
                 length += buffers.get(i).remaining();
             return length;
+        }
+
+        public int getSize()
+        {
+            return buffers.size();
         }
 
         public void recycle()
