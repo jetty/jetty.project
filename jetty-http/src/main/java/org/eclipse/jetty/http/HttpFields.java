@@ -823,25 +823,30 @@ public class HttpFields implements Iterable<HttpField>
     private class Itr implements Iterator<HttpField> 
     {
         int _cursor;       // index of next element to return
+        int _last=-1;
 
         public boolean hasNext() 
         {
             return _cursor != _size;
         }
 
-        @SuppressWarnings("unchecked")
         public HttpField next() 
         {
             int i = _cursor;
             if (i >= _size)
                 throw new NoSuchElementException();
             _cursor = i + 1;
-            return _fields[i];
+            return _fields[_last=i];
         }
 
         public void remove() 
         {
-            throw new UnsupportedOperationException();
+            if (_last<0)
+                throw new IllegalStateException();
+
+            System.arraycopy(_fields,_last+1,_fields,_last,--_size-_last);
+            _cursor=_last;
+            _last=-1;
         }
     }
 
