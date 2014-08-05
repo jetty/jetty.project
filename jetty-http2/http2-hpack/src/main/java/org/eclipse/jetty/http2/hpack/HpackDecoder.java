@@ -41,7 +41,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class HpackDecoder
 {
     public static final Logger LOG = Log.getLogger(HpackDecoder.class);
-    public final static HttpField.LongValueHttpField CONTENT_LENGTH_0 = new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH,0L);
+    public final static HttpField.LongValueHttpField CONTENT_LENGTH_0 = 
+            new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH,0L);
     
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
@@ -191,39 +192,24 @@ public class HpackDecoder
                 HttpField field;
                 if (header==null)
                 {
+                    // just make a normal field and bypass header name lookup
                     field = new HttpField(null,name,value);
                 }
                 else
                 {
+                    // might be worthwhile to create a value HttpField if it is indexed
+                    // and/or of a type that may be looked up multiple times.
                     switch(header)
                     {
-                        case C_METHOD:
-                            HttpMethod method=HttpMethod.CACHE.get(value);
-                            if (method!=null)
-                                field = new StaticValueHttpField(HttpHeader.C_METHOD,method.asString(),method);
-                            else
-                                field = new AuthorityHttpField(value);    
-                            break;
-
                         case C_STATUS:
-                            Integer code = Integer.valueOf(value);
-                            field = new StaticValueHttpField(HttpHeader.C_STATUS,value,code);
-                            break;
-
-                        case C_SCHEME:
-                            HttpScheme scheme=HttpScheme.CACHE.get(value);
-                            if (scheme!=null)
-                                field = new StaticValueHttpField(HttpHeader.C_SCHEME,scheme.asString(),scheme);
+                            if (indexed)
+                                field = new HttpField.IntValueHttpField(header,value);
                             else
-                                field = new AuthorityHttpField(value);
+                                field = new HttpField(header,name,value);
                             break;
 
                         case C_AUTHORITY:
                             field = new AuthorityHttpField(value);
-                            break;
-
-                        case C_PATH:
-                            field = new HttpField(HttpHeader.C_PATH,value);
                             break;
 
                         case CONTENT_LENGTH:

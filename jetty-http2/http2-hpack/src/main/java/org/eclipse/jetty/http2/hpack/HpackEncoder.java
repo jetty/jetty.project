@@ -28,6 +28,7 @@ import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
+import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
 import org.eclipse.jetty.io.ByteBufferPool.Lease;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -78,6 +79,7 @@ public class HpackEncoder
     }
     
     private final HpackContext _context;
+    private final boolean _debug;
     private int _remoteMaxHeaderTableSize;
     private int _localMaxHeaderTableSize;
     
@@ -96,6 +98,7 @@ public class HpackEncoder
         _context=new HpackContext(remoteMaxHeaderTableSize);
         _remoteMaxHeaderTableSize=remoteMaxHeaderTableSize;
         _localMaxHeaderTableSize=localMaxHeaderTableSize;
+        _debug=LOG.isDebugEnabled();
     }
 
     public HpackContext getContext()
@@ -154,15 +157,13 @@ public class HpackEncoder
             int code=response.getStatus();
             HttpField status = code<__status.length?__status[code]:null;
             if (status==null)
-                status=new HttpField(HttpHeader.C_STATUS,Integer.toString(code));
+                status=new HttpField.IntValueHttpField(HttpHeader.C_STATUS,code);
             encode(buffer,status);
         }
 
         // Add all the other fields
         for (HttpField field : metadata)
-        {
             encode(buffer,field);
-        }
 
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] encoded %d octets",_context.hashCode(), buffer.position() - pos));
@@ -179,7 +180,7 @@ public class HpackEncoder
 
     private void encode(ByteBuffer buffer, HttpField field)
     {
-        final int p=LOG.isDebugEnabled()?buffer.position():-1;
+        final int p=_debug?buffer.position():-1;
         
         String encoding=null;
 
@@ -190,16 +191,24 @@ public class HpackEncoder
         if (entry!=null)
         {
             // Known field entry, so encode it as indexed
-            int index=_context.index(entry);
-            if (p>=0)
-                encoding="IdxField"+(entry.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(7,index));
-            buffer.put((byte)0x80);
-            NBitInteger.encode(buffer,7,index);
+            if (entry.isStatic())
+            {
+                buffer.put(((StaticEntry)entry).getEncodedField());
+                if (_debug)
+                    encoding="IdxFieldS1";
+            }
+            else
+            {
+                int index=_context.index(entry);
+                buffer.put((byte)0x80);
+                NBitInteger.encode(buffer,7,index);
+                if (_debug)
+                    encoding="IdxField"+(entry.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(7,index));
+            }
         }
         else
         {
             // Unknown field entry, so we will have to send literally.
-
             final Entry name;
             final boolean indexed;
             final boolean never_index;
@@ -211,6 +220,7 @@ public class HpackEncoder
             if (header==null)
             {
                 name = _context.get(field.getName());
+                
                 // has the custom header name been seen before?
                 if (name==null)
                 {
@@ -226,7 +236,7 @@ public class HpackEncoder
                 else
                 {
                     // known custom name, but unknown value.
-                    // This is probably a custom field with changing value, so don't index now.
+                    // This is probably a custom field with changing value, so don't index.
                     indexed=false;
                     never_index=false;
                     huffman=true;
@@ -267,7 +277,7 @@ public class HpackEncoder
                 }
             }
 
-            if (p>=0)
+            if (_debug)
             {
                 encoding="Lit"+
                         ((name==null)?"HuffN":("IdxN"+(name.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(bits,_context.index(name)))))+
@@ -316,7 +326,7 @@ public class HpackEncoder
                 _context.add(field);
         }
 
-        if (p>=0)
+        if (_debug)
         {
             int e=buffer.position();
             if (LOG.isDebugEnabled())

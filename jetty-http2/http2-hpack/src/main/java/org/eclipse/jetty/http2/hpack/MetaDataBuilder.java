@@ -72,9 +72,9 @@ public class MetaDataBuilder
         if (_size>_maxSize)
             throw new BadMessageException(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,"Header size "+_size+">"+_maxSize);
         
-        if (field instanceof StaticValueHttpField)
+        if (field instanceof StaticTableHttpField)
         {
-            StaticValueHttpField value = (StaticValueHttpField)field;
+            StaticTableHttpField value = (StaticTableHttpField)field;
             switch(field.getHeader())
             {
                 case C_STATUS:
@@ -98,7 +98,7 @@ public class MetaDataBuilder
             switch(field.getHeader())
             {
                 case C_STATUS:
-                    _status=Integer.parseInt(field.getValue());
+                    _status=field.getIntValue();
                     break;
 
                 case C_METHOD:
@@ -114,6 +114,7 @@ public class MetaDataBuilder
                     break;
 
                 case HOST:
+                    // :authority fields must come first.  If we have one, ignore the host header as far as authority goes.
                     if (_authority==null)
                         _authority=(field instanceof HostPortHttpField)?((HostPortHttpField)field):new AuthorityHttpField(field.getValue());
                     _fields.add(field);

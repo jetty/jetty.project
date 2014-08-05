@@ -69,9 +69,14 @@ public class HttpField
         return _value;
     }
     
+    public int getIntValue()
+    {
+        return Integer.valueOf(_value);
+    }
+    
     public long getLongValue()
     {
-        return StringUtil.toLong(_value);
+        return Long.valueOf(_value);
     }
     
     public String[] getValues()
@@ -416,21 +421,65 @@ public class HttpField
         return true;
     }
     
+
+    public static class IntValueHttpField extends HttpField
+    {
+        final int _int;
+        
+        public IntValueHttpField(HttpHeader header, String value, int intValue)
+        {
+            super(header,value);
+            _int=intValue;
+        }
+
+        public IntValueHttpField(HttpHeader header, String value)
+        {
+            this(header,value,Integer.valueOf(value));
+        }
+
+        public IntValueHttpField(HttpHeader header, int value)
+        {
+            this(header,Integer.toString(value),value);
+        }
+        
+        @Override
+        public int getIntValue()
+        {
+            return _int;
+        }
+        
+        @Override
+        public long getLongValue()
+        {
+            return _int;
+        }
+    }
     
     public static class LongValueHttpField extends HttpField
     {
         final long _long;
         
-        public LongValueHttpField(HttpHeader header, long value)
+        public LongValueHttpField(HttpHeader header, String value, long longValue)
         {
-            super(header,Long.toString(value));
-            _long=value;
+            super(header,value);
+            _long=longValue;
         }
         
         public LongValueHttpField(HttpHeader header, String value)
         {
-            super(header,value);
-            _long=StringUtil.toLong(value);
+            this(header,value,StringUtil.toLong(value));
+        }
+        
+        public LongValueHttpField(HttpHeader header,long value)
+        {
+            this(header,Long.toString(value),value);
+        }
+
+        
+        @Override
+        public int getIntValue()
+        {
+            return (int)_long;
         }
         
         @Override
