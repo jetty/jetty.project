@@ -146,7 +146,7 @@ public abstract class RFC2616BaseTest
 
         // Test formatting
         fields.putDateField("Date",expected.getTime().getTime());
-        Assert.assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.getStringField("Date"));
+        Assert.assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.get("Date"));
     }
 
     /**

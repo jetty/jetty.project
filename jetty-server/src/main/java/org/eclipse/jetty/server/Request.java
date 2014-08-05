@@ -510,7 +510,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getContentType()
     {
-        String content_type = _metadata.getFields().getStringField(HttpHeader.CONTENT_TYPE);
+        String content_type = _metadata.getFields().get(HttpHeader.CONTENT_TYPE);
         if (_characterEncoding==null && content_type!=null)
         {
             MimeTypes.Type mime = MimeTypes.CACHE.get(content_type);
@@ -603,7 +603,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getHeader(String name)
     {
-        return _metadata==null?null:_metadata.getFields().getStringField(name);
+        return _metadata==null?null:_metadata.getFields().get(name);
     }
 
     /* ------------------------------------------------------------ */

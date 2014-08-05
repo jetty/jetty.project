@@ -117,7 +117,7 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
 
                 sessionTestValue = sessionTestResponse;
 
-                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+                String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=","$1\\$Path=");
@@ -144,7 +144,7 @@ public class SessionSavingValueTest extends AbstractSessionValueSavingTest
 
                     sessionTestValue = sessionTestResponse;
 
-                    String setCookie = response2.getHeaders().getStringField("Set-Cookie");
+                    String setCookie = response2.getHeaders().get("Set-Cookie");
                     if (setCookie != null)
                         sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=","$1\\$Path=");
 

@@ -830,7 +830,7 @@ public class Response implements HttpServletResponse
     @Override
     public String getHeader(String name)
     {
-        return _fields.getStringField(name);
+        return _fields.get(name);
     }
 
     @Override

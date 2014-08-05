@@ -103,7 +103,7 @@ public class MaxInactiveMigrationTest
         ContentResponse response = request.send();
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-        sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+        sessionCookie = response.getHeaders().get("Set-Cookie");
         assertTrue( sessionCookie != null );
         // Mangle the cookie, replacing Path with $Path, etc.
         sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
