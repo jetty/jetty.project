@@ -23,7 +23,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.HTTP2Session;
@@ -90,15 +89,6 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         {
             super.onClose();
             client.removeSession(getSession());
-        }
-
-        @Override
-        protected boolean onReadTimeout()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
-            getSession().close(ErrorCodes.NO_ERROR, "idle_timeout", closeCallback);
-            return false;
         }
 
         @Override

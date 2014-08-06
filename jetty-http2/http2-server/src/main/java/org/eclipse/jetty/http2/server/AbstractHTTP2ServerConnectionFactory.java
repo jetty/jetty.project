@@ -20,7 +20,6 @@ package org.eclipse.jetty.http2.server;
 
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.ISession;
@@ -110,15 +109,6 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         {
             super.onOpen();
             notifyConnect(getSession());
-        }
-
-        @Override
-        protected boolean onReadTimeout()
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
-            getSession().close(ErrorCodes.NO_ERROR, "idle_timeout", closeCallback);
-            return false;
         }
 
         private void notifyConnect(ISession session)
