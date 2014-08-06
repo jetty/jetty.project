@@ -100,7 +100,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport, input, stream);
             stream.setAttribute(CHANNEL_ATTRIBUTE, channel);
 
-            channel.requestHeaders(frame);
+            channel.onHeadersFrame(frame);
 
             return frame.isEndStream() ? null : this;
         }

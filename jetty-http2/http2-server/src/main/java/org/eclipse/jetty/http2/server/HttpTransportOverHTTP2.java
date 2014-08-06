@@ -86,6 +86,16 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
     }
 
+    /**
+     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
+     */
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {   
+        // TODO implement push
+        LOG.warn("NOT YET IMPLEMENTED push in {}",this);
+    }
+    
     private void commit(HttpGenerator.ResponseInfo info, boolean endStream, Callback callback)
     {
         if (LOG.isDebugEnabled())

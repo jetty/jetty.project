@@ -18,11 +18,15 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -42,10 +46,10 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpChannelOverHTTP2 extends HttpChannel
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
-    private static final HttpField ACCEPT_ENCODING_GZIP = new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip");
-    private static final HttpField SERVER_VERSION=new HttpField(HttpHeader.SERVER,HttpConfiguration.SERVER_VERSION);
-    private static final HttpField POWERED_BY=new HttpField(HttpHeader.X_POWERED_BY,HttpConfiguration.SERVER_VERSION);
+    private static final HttpField SERVER_VERSION=new PreEncodedHttpField(HttpHeader.SERVER,HttpConfiguration.SERVER_VERSION);
+    private static final HttpField POWERED_BY=new PreEncodedHttpField(HttpHeader.X_POWERED_BY,HttpConfiguration.SERVER_VERSION);
     private final Stream stream; // TODO recycle channel for new Stream?
+    private boolean _expect100Continue = false;
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input, Stream stream)
     {
@@ -53,7 +57,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         this.stream = stream;
     }
 
-    public void requestHeaders(HeadersFrame frame)
+    @Override
+    public boolean isExpecting100Continue()
+    {
+        return _expect100Continue;
+    }
+    
+    public void onHeadersFrame(HeadersFrame frame)
     {
         MetaData metaData = frame.getMetaData();
         if (!metaData.isRequest())
@@ -63,26 +73,21 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
 
         MetaData.Request request = (MetaData.Request)metaData;
-
-        // The specification says user agents MUST support gzip encoding.
-        // Based on that, some browser does not send the header, but it's
-        // important that applications can find it (e.g. GzipFilter).
         HttpFields fields = request.getFields();
-        if (!fields.contains(HttpHeader.ACCEPT_ENCODING, "gzip"))
-            fields.add(ACCEPT_ENCODING_GZIP);
+        
+        _expect100Continue = fields.contains(HttpHeader.EXPECT,HttpHeaderValue.CONTINUE.asString());
 
         // TODO make this a better field for h2 hpack generation
+        HttpFields response=getResponse().getHttpFields();
         if (getHttpConfiguration().getSendServerVersion())
-            getResponse().getHttpFields().add(SERVER_VERSION);
+            response.add(SERVER_VERSION);
         if (getHttpConfiguration().getSendXPoweredBy())
-            getResponse().getHttpFields().add(POWERED_BY);
+            response.add(POWERED_BY);
         
         onRequest(request);
         
         if (frame.isEndStream())
-        {
             onRequestComplete();
-        }
 
         if (LOG.isDebugEnabled())
         {
@@ -125,6 +130,35 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         if (frame.isEndStream())
         {
             onRequestComplete();
+        }
+    }
+
+    /**
+     * If the associated response has the Expect header set to 100 Continue,
+     * then accessing the input stream indicates that the handler/servlet
+     * is ready for the request body and thus a 100 Continue response is sent.
+     *
+     * @throws IOException if the InputStream cannot be created
+     */
+    @Override
+    public void continue100(int available) throws IOException
+    {
+        // If the client is expecting 100 CONTINUE, then send it now.
+        // TODO: consider using an AtomicBoolean ?
+        if (isExpecting100Continue())
+        {
+            _expect100Continue = false;
+
+            // is content missing?
+            if (available == 0)
+            {
+                if (getResponse().isCommitted())
+                    throw new IOException("Committed before 100 Continues");
+
+                boolean committed = sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
+                if (!committed)
+                    throw new IOException("Concurrent commit while trying to send 100-Continue");
+            }
         }
     }
 }

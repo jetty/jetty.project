@@ -16,26 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
 
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
+package org.eclipse.jetty.http;
 
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.Request;
 
 /* ------------------------------------------------------------ */
-/** Closeable DoS Filter.
- * This is an extension to the {@link DoSFilter} that uses Jetty APIs to allow
- * connections to be closed cleanly.
+/** Interface to pre-encode HttpFields.  Used by {@link PreEncodedHttpField}
  */
-
-public class CloseableDoSFilter extends DoSFilter
+public interface HttpFieldPreEncoder
 {
-    @Override
-    protected void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
-    {
-        Request base_request=Request.getBaseRequest(request);
-        base_request.getHttpChannel().getEndPoint().close();
-    }
+    /* ------------------------------------------------------------ */
+    /** The major version this encoder is for.  Both HTTP/1.0 and HTTP/1.1
+     * use the same field encoding, so the {@link HttpVersion#HTTP_1_0} should
+     * be return for all HTTP/1.x encodings.
+     * @return The major version this encoder is for.
+     */
+    HttpVersion getHttpVersion();
+    byte[] getEncodedField(HttpHeader header, String headerString, String value);
 }

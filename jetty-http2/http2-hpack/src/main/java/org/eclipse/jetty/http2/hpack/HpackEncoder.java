@@ -26,8 +26,11 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
+import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
 import org.eclipse.jetty.io.ByteBufferPool.Lease;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
@@ -78,6 +81,7 @@ public class HpackEncoder
     }
     
     private final HpackContext _context;
+    private final boolean _debug;
     private int _remoteMaxHeaderTableSize;
     private int _localMaxHeaderTableSize;
     
@@ -96,6 +100,7 @@ public class HpackEncoder
         _context=new HpackContext(remoteMaxHeaderTableSize);
         _remoteMaxHeaderTableSize=remoteMaxHeaderTableSize;
         _localMaxHeaderTableSize=localMaxHeaderTableSize;
+        _debug=LOG.isDebugEnabled();
     }
 
     public HpackContext getContext()
@@ -154,15 +159,13 @@ public class HpackEncoder
             int code=response.getStatus();
             HttpField status = code<__status.length?__status[code]:null;
             if (status==null)
-                status=new HttpField(HttpHeader.C_STATUS,Integer.toString(code));
+                status=new HttpField.IntValueHttpField(HttpHeader.C_STATUS,code);
             encode(buffer,status);
         }
 
         // Add all the other fields
         for (HttpField field : metadata)
-        {
             encode(buffer,field);
-        }
 
         if (LOG.isDebugEnabled())
             LOG.debug(String.format("CtxTbl[%x] encoded %d octets",_context.hashCode(), buffer.position() - pos));
@@ -179,38 +182,45 @@ public class HpackEncoder
 
     private void encode(ByteBuffer buffer, HttpField field)
     {
-        final int p=LOG.isDebugEnabled()?buffer.position():-1;
+        final int p=_debug?buffer.position():-1;
         
         String encoding=null;
-
-        // TODO currently we do not check if there is enough space, so we may fail nastily.
 
         // Is there an entry for the field?
         Entry entry = _context.get(field);
         if (entry!=null)
         {
             // Known field entry, so encode it as indexed
-            int index=_context.index(entry);
-            if (p>=0)
-                encoding="IdxField"+(entry.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(7,index));
-            buffer.put((byte)0x80);
-            NBitInteger.encode(buffer,7,index);
+            if (entry.isStatic())
+            {
+                buffer.put(((StaticEntry)entry).getEncodedField());
+                if (_debug)
+                    encoding="IdxFieldS1";
+            }
+            else
+            {
+                int index=_context.index(entry);
+                buffer.put((byte)0x80);
+                NBitInteger.encode(buffer,7,index);
+                if (_debug)
+                    encoding="IdxField"+(entry.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(7,index));
+            }
         }
         else
         {
             // Unknown field entry, so we will have to send literally.
-
-            final Entry name;
             final boolean indexed;
-            final boolean never_index;
-            final boolean huffman;
-            final int bits;
+           
             
             // But do we know it's name?
             HttpHeader header = field.getHeader();
+            
+            // Select encoding strategy
             if (header==null)
             {
-                name = _context.get(field.getName());
+                // Select encoding strategy for unknown header names
+                Entry name = _context.get(field.getName());
+                                
                 // has the custom header name been seen before?
                 if (name==null)
                 {
@@ -218,95 +228,71 @@ public class HpackEncoder
                     // the first time we have seen a custom name or a custom field.
                     // unless the name is changing, this is worthwhile
                     indexed=true;
-                    never_index=false;
-                    huffman=true;
-                    bits = 6;
-                    buffer.put((byte)0x40);
+                    encodeName(buffer,(byte)0x40,6,field.getName(),null);
+                    encodeValue(buffer,true,field.getValue());
+                    if (_debug)
+                        encoding="LitHuffNHuffVIdx";
+                        
                 }
                 else
                 {
                     // known custom name, but unknown value.
-                    // This is probably a custom field with changing value, so don't index now.
+                    // This is probably a custom field with changing value, so don't index.
                     indexed=false;
-                    never_index=false;
-                    huffman=true;
-                    bits = 4;
-                    buffer.put((byte)0x00);
+                    encodeName(buffer,(byte)0x00,4,field.getName(),null);
+                    encodeValue(buffer,true,field.getValue());
+                    if (_debug)
+                        encoding="LitHuffNHuffV!Idx";
                 }
             }
             else 
             {
-                name = _context.get(header);
+                // Select encoding strategy for known header names
+                Entry name = _context.get(header);
 
                 if (__DO_NOT_INDEX.contains(header))
                 {
                     // Non indexed field
                     indexed=false;
-                    never_index=__NEVER_INDEX.contains(header);
-                    huffman=!__DO_NOT_HUFFMAN.contains(header);
-                    bits = 4;
-                    buffer.put(never_index?(byte)0x10:(byte)0x00);
+                    boolean never_index=__NEVER_INDEX.contains(header);
+                    boolean huffman=!__DO_NOT_HUFFMAN.contains(header);
+                    encodeName(buffer,never_index?(byte)0x10:(byte)0x00,4,header.asString(),name);
+                    encodeValue(buffer,huffman,field.getValue());
+
+                    if (_debug)
+                        encoding="Lit"+
+                                ((name==null)?"HuffN":("IdxN"+(name.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(4,_context.index(name)))))+
+                                (huffman?"HuffV":"LitV")+
+                                (indexed?"Idx":(never_index?"!!Idx":"!Idx"));
                 }
                 else if (header==HttpHeader.CONTENT_LENGTH && field.getValue().length()>1)
                 {
                     // Non indexed content length for non zero value
                     indexed=false;
-                    never_index=false;
-                    huffman=true;
-                    bits = 4;
-                    buffer.put((byte)0x00);
+                    encodeName(buffer,(byte)0x00,4,header.asString(),name);
+                    encodeValue(buffer,true,field.getValue());
+                    if (_debug)
+                        encoding="LitIdxNS"+(1+NBitInteger.octectsNeeded(4,_context.index(name)))+"HuffV!Idx";
+                }
+                else if (field instanceof PreEncodedHttpField)
+                {
+                    // Preencoded field
+                    indexed=true;
+                    ((PreEncodedHttpField)field).putTo(buffer,HttpVersion.HTTP_2);
+                    if (_debug)
+                        encoding=((name==null)?"LitHuffN":("LitIdxN"+(name.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(6,_context.index(name)))))+
+                        "HuffVIdx";
                 }
                 else
                 {
                     // indexed
                     indexed=true;
-                    never_index=false;
-                    huffman=!__DO_NOT_HUFFMAN.contains(header);
-                    bits = 6;
-                    buffer.put((byte)0x40);
-                }
-            }
-
-            if (p>=0)
-            {
-                encoding="Lit"+
-                        ((name==null)?"HuffN":("IdxN"+(name.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(bits,_context.index(name)))))+
-                        (huffman?"HuffV":"LitV")+
-                        (indexed?"Idx":(never_index?"!!Idx":"!Idx"));
-            }
-            
-            if (name!=null)
-                NBitInteger.encode(buffer,bits,_context.index(name));
-            else
-            {
-                // leave name index bits as 0
-                // Encode the name always with lowercase huffman
-                buffer.put((byte)0x80);
-                NBitInteger.encode(buffer,7,Huffman.octetsNeededLC(field.getName()));
-                Huffman.encodeLC(buffer,field.getName());
-            }
-
-            // Add the literal value
-            String value=field.getValue();
-            
-            if (huffman)
-            {
-                // huffman literal value
-                buffer.put((byte)0x80);
-                NBitInteger.encode(buffer,7,Huffman.octetsNeeded(value));
-                Huffman.encode(buffer,field.getValue());
-            }
-            else
-            {
-                // add literal assuming iso_8859_1
-                buffer.put((byte)0x00);
-                NBitInteger.encode(buffer,7,value.length());
-                for (int i=0;i<value.length();i++)
-                {
-                    char c=value.charAt(i);
-                    if (c<' '|| c>127)
-                        throw new IllegalArgumentException();
-                    buffer.put((byte)c);
+                    boolean huffman=!__DO_NOT_HUFFMAN.contains(header);
+                    encodeName(buffer,(byte)0x40,6,header.asString(),name);
+                    encodeValue(buffer,huffman,field.getValue());
+                    if (_debug)
+                        encoding=((name==null)?"LitHuffN":("LitIdxN"+(name.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(6,_context.index(name)))))+
+                                (huffman?"HuffVIdx":"LitVIdx");
                 }
             }
 
@@ -316,11 +302,52 @@ public class HpackEncoder
                 _context.add(field);
         }
 
-        if (p>=0)
+        if (_debug)
         {
             int e=buffer.position();
             if (LOG.isDebugEnabled())
                 LOG.debug("encode {}:'{}' to '{}'",encoding,field,TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p));
         }        
+    }
+    
+    private void encodeName(ByteBuffer buffer, byte mask, int bits, String name, Entry entry)
+    {
+        buffer.put(mask);
+        if (entry==null)
+        {
+            // leave name index bits as 0
+            // Encode the name always with lowercase huffman
+            buffer.put((byte)0x80);
+            NBitInteger.encode(buffer,7,Huffman.octetsNeededLC(name));
+            Huffman.encodeLC(buffer,name);
+        }
+        else
+        {
+            NBitInteger.encode(buffer,bits,_context.index(entry));
+        }
+    }
+    
+    private void encodeValue(ByteBuffer buffer, boolean huffman, String value)
+    {
+        if (huffman)
+        {
+            // huffman literal value
+            buffer.put((byte)0x80);
+            NBitInteger.encode(buffer,7,Huffman.octetsNeeded(value));
+            Huffman.encode(buffer,value);
+        }
+        else
+        {
+            // add literal assuming iso_8859_1
+            buffer.put((byte)0x00);
+            NBitInteger.encode(buffer,7,value.length());
+            for (int i=0;i<value.length();i++)
+            {
+                char c=value.charAt(i);
+                if (c<' '|| c>127)
+                    throw new IllegalArgumentException();
+                buffer.put((byte)c);
+            }
+        }
     }
 }

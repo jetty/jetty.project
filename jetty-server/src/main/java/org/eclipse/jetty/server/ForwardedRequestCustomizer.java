@@ -202,13 +202,13 @@ public class ForwardedRequestCustomizer implements Customizer
         // Do SSL first
         if (getForwardedCipherSuiteHeader()!=null)
         {
-            String cipher_suite=httpFields.getStringField(getForwardedCipherSuiteHeader());
+            String cipher_suite=httpFields.get(getForwardedCipherSuiteHeader());
             if (cipher_suite!=null)
                 request.setAttribute("javax.servlet.request.cipher_suite",cipher_suite);
         }
         if (getForwardedSslSessionIdHeader()!=null)
         {
-            String ssl_session_id=httpFields.getStringField(getForwardedSslSessionIdHeader());
+            String ssl_session_id=httpFields.get(getForwardedSslSessionIdHeader());
             if(ssl_session_id!=null)
             {
                 request.setAttribute("javax.servlet.request.ssl_session_id", ssl_session_id);
@@ -260,7 +260,7 @@ public class ForwardedRequestCustomizer implements Customizer
         if (header == null)
             return null;
 
-        String headerValue = fields.getStringField(header);
+        String headerValue = fields.get(header);
 
         if (headerValue == null)
             return null;

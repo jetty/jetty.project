@@ -24,8 +24,8 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.HttpChannel;
@@ -41,7 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class GzipHttpOutput extends HttpOutput
 {
     public static Logger LOG = Log.getLogger(GzipHttpOutput.class);
-    private final static HttpGenerator.CachedHttpField CONTENT_ENCODING_GZIP=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
+    private final static PreEncodedHttpField CONTENT_ENCODING_GZIP=new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
     private final static byte[] GZIP_HEADER = new byte[] { (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0 };
     
     private enum GZState { NOT_COMPRESSING, MIGHT_COMPRESS, COMMITTING, COMPRESSING, FINISHED};

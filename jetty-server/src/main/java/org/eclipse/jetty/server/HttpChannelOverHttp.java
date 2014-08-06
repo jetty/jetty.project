@@ -199,7 +199,6 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                 if (getResponse().isCommitted())
                     throw new IOException("Committed before 100 Continues");
 
-                // TODO: break this dependency with HttpGenerator
                 boolean committed = sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
                 if (!committed)
                     throw new IOException("Concurrent commit while trying to send 100-Continue");

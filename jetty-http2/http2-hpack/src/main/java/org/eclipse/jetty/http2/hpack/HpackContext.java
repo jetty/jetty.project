@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.StringUtil;
@@ -119,20 +118,20 @@ public class HpackContext
             switch(i)
             {
                 case 2:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.GET));
+                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.GET));
                     break;
                 case 3:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.POST));
+                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.POST));
                     break;
                 case 6:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTP));
+                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTP));
                     break;
                 case 7:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTPS));
+                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTPS));
                     break;
                 case 8:
                 case 11:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],Integer.valueOf(STATIC_TABLE[i][1])));
+                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],Integer.valueOf(STATIC_TABLE[i][1])));
                     break;
                     
                 case 9:
@@ -140,7 +139,7 @@ public class HpackContext
                 case 12:
                 case 13:
                 case 14:
-                    entry=new StaticEntry(i,new StaticValueHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],Integer.valueOf(STATIC_TABLE[i][1])));
+                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],Integer.valueOf(STATIC_TABLE[i][1])));
                     break;
                     
                 default:
@@ -230,6 +229,11 @@ public class HpackContext
         if (e==null)
             return get(header.asString());
         return e;
+    }
+
+    public static Entry getStatic(HttpHeader header)
+    {
+        return __headerEntryTable[header.ordinal()];
     }
     
     public Entry add(HttpField field)
@@ -420,6 +424,11 @@ public class HpackContext
             return null;
         }
         
+        public int getSlot()
+        {
+            return _slot;
+        }
+        
         public String toString()
         {
             return String.format("{%s,%d,%s,%x}",isStatic()?"S":"D",_slot,_field,hashCode());
@@ -429,6 +438,7 @@ public class HpackContext
     public static class StaticEntry extends Entry
     {
         private final byte[] _huffmanValue;
+        private final byte _encodedField;
         
         StaticEntry(int index,HttpField field)
         {    
@@ -450,6 +460,8 @@ public class HpackContext
             }
             else
                 _huffmanValue=null;
+            
+            _encodedField=(byte)(0x80|index);
         }
 
         @Override
@@ -462,6 +474,11 @@ public class HpackContext
         public byte[] getStaticHuffmanValue()
         {
             return _huffmanValue;
+        }
+        
+        public byte getEncodedField()
+        {
+            return _encodedField;
         }
     }
 

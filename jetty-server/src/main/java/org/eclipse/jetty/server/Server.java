@@ -38,6 +38,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -299,7 +300,7 @@ public class Server extends HandlerWrapper implements Attributes
                 df = _dateField;
                 if (df==null || df._seconds!=seconds)
                 {
-                    HttpField field=new HttpGenerator.CachedHttpField(HttpHeader.DATE,DateGenerator.formatDate(now));
+                    HttpField field=new PreEncodedHttpField(HttpHeader.DATE,DateGenerator.formatDate(now));
                     _dateField=new DateField(seconds,field);
                     return field;
                 }

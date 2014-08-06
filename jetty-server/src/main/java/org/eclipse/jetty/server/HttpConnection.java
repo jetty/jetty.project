@@ -634,4 +634,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         // response is bad either with RST or by abnormal completion of chunked response.
         getEndPoint().close();
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
+     */
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {   
+        LOG.debug("ignore push in {}",this);
+    }
 }

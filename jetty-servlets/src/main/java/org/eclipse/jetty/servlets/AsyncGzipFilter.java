@@ -37,9 +37,9 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
@@ -152,7 +152,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
     protected Set<Pattern> _excludedAgentPatterns;
     protected Set<String> _excludedPaths;
     protected Set<Pattern> _excludedPathPatterns;
-    protected HttpField _vary=new HttpGenerator.CachedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
+    protected HttpField _vary=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
 
     /* ------------------------------------------------------------ */
     /**
@@ -278,7 +278,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
         
         tmp=filterConfig.getInitParameter("vary");
         if (tmp!=null)
-            _vary=new HttpGenerator.CachedHttpField(HttpHeader.VARY,tmp);
+            _vary=new PreEncodedHttpField(HttpHeader.VARY,tmp);
         LOG.debug("{} vary={}",this,_vary);
     }
 

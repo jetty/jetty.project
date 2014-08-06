@@ -102,7 +102,7 @@ public class SessionExpiryTest extends AbstractSessionExpiryTest
             //make a request to set up a session on the server
             ContentResponse response1 = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
-            String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
+            String sessionCookie = response1.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");

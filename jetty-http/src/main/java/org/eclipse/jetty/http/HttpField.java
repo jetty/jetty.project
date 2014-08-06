@@ -69,9 +69,14 @@ public class HttpField
         return _value;
     }
     
+    public int getIntValue()
+    {
+        return Integer.valueOf(_value);
+    }
+    
     public long getLongValue()
     {
-        return StringUtil.toLong(_value);
+        return Long.valueOf(_value);
     }
     
     public String[] getValues()
@@ -416,21 +421,85 @@ public class HttpField
         return true;
     }
     
+
+    public static class IntValueHttpField extends HttpField
+    {
+        final int _int;
+        
+        public IntValueHttpField(HttpHeader header, String name, String value, int intValue)
+        {
+            super(header,name,value);
+            _int=intValue;
+        }
+
+        public IntValueHttpField(HttpHeader header, String value, int intValue)
+        {
+            this(header,header.asString(),value,Integer.valueOf(value));
+        }
+        
+        public IntValueHttpField(HttpHeader header, String name, String value)
+        {
+            this(header,name,value,Integer.valueOf(value));
+        }
+
+        public IntValueHttpField(HttpHeader header, String value)
+        {
+            this(header,header.asString(),value);
+        }
+
+        public IntValueHttpField(HttpHeader header, int value)
+        {
+            this(header,header.asString(),value);
+        }
+        
+        @Override
+        public int getIntValue()
+        {
+            return _int;
+        }
+        
+        @Override
+        public long getLongValue()
+        {
+            return _int;
+        }
+    }
     
     public static class LongValueHttpField extends HttpField
     {
         final long _long;
         
-        public LongValueHttpField(HttpHeader header, long value)
+        public LongValueHttpField(HttpHeader header, String name, String value, long longValue)
         {
-            super(header,Long.toString(value));
-            _long=value;
+            super(header,name,value);
+            _long=longValue;
+        }
+        
+        public LongValueHttpField(HttpHeader header, String name, String value)
+        {
+            this(header,name,value,Long.valueOf(value));
+        }
+        
+        public LongValueHttpField(HttpHeader header, String name, long value)
+        {
+            this(header,name,Long.toString(value),value);
         }
         
         public LongValueHttpField(HttpHeader header, String value)
         {
-            super(header,value);
-            _long=StringUtil.toLong(value);
+            this(header,header.asString(),value);
+        }
+        
+        public LongValueHttpField(HttpHeader header,long value)
+        {
+            this(header,header.asString(),value);
+        }
+
+        
+        @Override
+        public int getIntValue()
+        {
+            return (int)_long;
         }
         
         @Override

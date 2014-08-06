@@ -227,7 +227,7 @@ public class RuleContainer extends Rule
                 if (rule.isHandling())
                 {
                     LOG.debug("handling {}",rule);
-                    (request instanceof Request?(Request)request:HttpChannel.getCurrentHttpChannel().getRequest()).setHandled(true);
+                    Request.getBaseRequest(request).setHandled(true);
                 }
 
                 if (rule.isTerminating())

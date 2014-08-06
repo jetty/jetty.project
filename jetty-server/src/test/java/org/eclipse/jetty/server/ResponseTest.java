@@ -92,6 +92,11 @@ public class ResponseTest
             }
 
             @Override
+            public void push(org.eclipse.jetty.http.MetaData.Request request)
+            {   
+            }
+            
+            @Override
             public void completed()
             {
             }
@@ -607,7 +612,7 @@ public class ResponseTest
 
         response.addCookie(cookie);
 
-        String set = response.getHttpFields().getStringField("Set-Cookie");
+        String set = response.getHttpFields().get("Set-Cookie");
 
         assertEquals("name=value;Version=1;Path=/path;Domain=domain;Secure;HttpOnly;Comment=comment", set);
     }
@@ -669,23 +674,23 @@ public class ResponseTest
         HttpFields fields = response.getHttpFields();
 
         response.addSetCookie("null",null,null,null,-1,null,false,false,-1);
-        assertEquals("null=",fields.getStringField("Set-Cookie"));
+        assertEquals("null=",fields.get("Set-Cookie"));
 
         fields.clear();
         
         response.addSetCookie("minimal","value",null,null,-1,null,false,false,-1);
-        assertEquals("minimal=value",fields.getStringField("Set-Cookie"));
+        assertEquals("minimal=value",fields.get("Set-Cookie"));
 
         fields.clear();
         //test cookies with same name, domain and path, only 1 allowed
         response.addSetCookie("everything","wrong","domain","path",0,"to be replaced",true,true,0);
         response.addSetCookie("everything","value","domain","path",0,"comment",true,true,0);
-        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",fields.getStringField("Set-Cookie"));
+        assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",fields.get("Set-Cookie"));
         Enumeration<String> e =fields.getValues("Set-Cookie");
         assertTrue(e.hasMoreElements());
         assertEquals("everything=value;Version=1;Path=path;Domain=domain;Expires=Thu, 01-Jan-1970 00:00:00 GMT;Max-Age=0;Secure;HttpOnly;Comment=comment",e.nextElement());
         assertFalse(e.hasMoreElements());
-        assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.getStringField("Expires"));
+        assertEquals("Thu, 01 Jan 1970 00:00:00 GMT",fields.get("Expires"));
         assertFalse(e.hasMoreElements());
         
         //test cookies with same name, different domain
@@ -744,31 +749,31 @@ public class ResponseTest
 
         fields.clear();
         response.addSetCookie("ev erything","va lue","do main","pa th",1,"co mment",true,true,1);
-        String setCookie=fields.getStringField("Set-Cookie");
+        String setCookie=fields.get("Set-Cookie");
         assertThat(setCookie,Matchers.startsWith("\"ev erything\"=\"va lue\";Version=1;Path=\"pa th\";Domain=\"do main\";Expires="));
         assertThat(setCookie,Matchers.endsWith(" GMT;Max-Age=1;Secure;HttpOnly;Comment=\"co mment\""));
 
         fields.clear();
         response.addSetCookie("name","value",null,null,-1,null,false,false,0);
-        setCookie=fields.getStringField("Set-Cookie");
+        setCookie=fields.get("Set-Cookie");
         assertEquals(-1,setCookie.indexOf("Version="));
         fields.clear();
         response.addSetCookie("name","v a l u e",null,null,-1,null,false,false,0);
-        setCookie=fields.getStringField("Set-Cookie");
+        setCookie=fields.get("Set-Cookie");
 
         fields.clear();
         response.addSetCookie("json","{\"services\":[\"cwa\", \"aa\"]}",null,null,-1,null,false,false,-1);
-        assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\", \\\"aa\\\"]}\"",fields.getStringField("Set-Cookie"));
+        assertEquals("json=\"{\\\"services\\\":[\\\"cwa\\\", \\\"aa\\\"]}\"",fields.get("Set-Cookie"));
 
         fields.clear();
         response.addSetCookie("name","value","domain",null,-1,null,false,false,-1);
         response.addSetCookie("name","other","domain",null,-1,null,false,false,-1);
-        assertEquals("name=other;Domain=domain",fields.getStringField("Set-Cookie"));
+        assertEquals("name=other;Domain=domain",fields.get("Set-Cookie"));
         response.addSetCookie("name","more","domain",null,-1,null,false,false,-1);
-        assertEquals("name=more;Domain=domain",fields.getStringField("Set-Cookie"));
+        assertEquals("name=more;Domain=domain",fields.get("Set-Cookie"));
         response.addSetCookie("foo","bar","domain",null,-1,null,false,false,-1);
         response.addSetCookie("foo","bob","domain",null,-1,null,false,false,-1);
-        assertEquals("name=more;Domain=domain",fields.getStringField("Set-Cookie"));
+        assertEquals("name=more;Domain=domain",fields.get("Set-Cookie"));
 
         e=fields.getValues("Set-Cookie");
         assertEquals("name=more;Domain=domain",e.nextElement());
@@ -776,7 +781,7 @@ public class ResponseTest
 
         fields.clear();
         response.addSetCookie("name","value%=",null,null,-1,null,false,false,0);
-        setCookie=fields.getStringField("Set-Cookie");
+        setCookie=fields.get("Set-Cookie");
         assertEquals("name=value%=",setCookie);
 
     }

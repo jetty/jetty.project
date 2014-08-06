@@ -183,15 +183,15 @@ public class HttpParser
         // Add common Content types as fields
         for (String type : new String[]{"text/plain","text/html","text/xml","text/json","application/json","application/x-www-form-urlencoded"})
         {
-            HttpField field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type);
+            HttpField field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,type);
             CACHE.put(field);
             
             for (String charset : new String[]{"utf-8","iso-8859-1"})
             {
-                CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
-                CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+"; charset="+charset));
-                CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset.toUpperCase()));
-                CACHE.put(new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,type+"; charset="+charset.toUpperCase()));
+                CACHE.put(new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset));
+                CACHE.put(new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,type+"; charset="+charset));
+                CACHE.put(new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,type+";charset="+charset.toUpperCase()));
+                CACHE.put(new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,type+"; charset="+charset.toUpperCase()));
             }
         }
     

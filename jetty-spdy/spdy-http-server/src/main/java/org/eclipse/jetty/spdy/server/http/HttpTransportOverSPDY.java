@@ -159,6 +159,18 @@ public class HttpTransportOverSPDY implements HttpTransport
             throw new IllegalStateException("not lastContent, no content and no responseInfo!");
     }
 
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
+     */
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {   
+        LOG.warn("NOT YET IMPLEMENTED push in {}",this);
+    }
+    
+    
     private void sendReply(HttpGenerator.ResponseInfo info, Callback callback, boolean close)
     {
         Fields headers = new Fields();
