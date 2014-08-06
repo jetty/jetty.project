@@ -382,6 +382,10 @@ public abstract class IteratingCallback implements Callback
                         return;
                     break;
                 }
+                case CLOSED:
+                {
+                    return;
+                }
                 default:
                 {
                     if (_state.compareAndSet(current, State.CLOSED))
