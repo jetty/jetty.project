@@ -52,7 +52,7 @@ public class PreEncodedHttpField extends HttpField
         {
             try
             {
-                HttpFieldPreEncoder enc = iter.next();
+                encoders.add(iter.next());
             }
             catch(Error|RuntimeException e)
             {

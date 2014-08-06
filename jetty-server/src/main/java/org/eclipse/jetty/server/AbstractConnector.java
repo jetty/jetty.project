@@ -366,6 +366,19 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 _defaultProtocol=factory.getProtocol();
         }
     }
+    
+    public void addIfAbsentConnectionFactory(ConnectionFactory factory)
+    {
+        synchronized (_factories)
+        {
+            if (_factories.containsKey(factory.getProtocol()))
+                return;
+            _factories.put(factory.getProtocol().toLowerCase(Locale.ENGLISH), factory);
+            addBean(factory);
+            if (_defaultProtocol==null)
+                _defaultProtocol=factory.getProtocol();
+        }
+    }
 
     public ConnectionFactory removeConnectionFactory(String protocol)
     {
