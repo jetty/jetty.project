@@ -53,8 +53,9 @@ public class HpackEncoder
     
     private final static EnumSet<HttpHeader> __DO_NOT_INDEX = 
             EnumSet.of(
-                    // TODO ??? HttpHeader.C_PATH,
-                    // TODO ??? HttpHeader.DATE,
+                    // HttpHeader.C_PATH,  // TODO more data needed 
+                    // HttpHeader.DATE,    // TODO more data needed 
+                    HttpHeader.AUTHORIZATION,
                     HttpHeader.CONTENT_MD5,
                     HttpHeader.CONTENT_RANGE,
                     HttpHeader.ETAG,
@@ -63,7 +64,9 @@ public class HpackEncoder
                     HttpHeader.IF_NONE_MATCH,
                     HttpHeader.IF_RANGE,
                     HttpHeader.IF_MATCH,
+                    HttpHeader.LOCATION,
                     HttpHeader.RANGE,
+                    HttpHeader.RETRY_AFTER,
                     HttpHeader.EXPIRES,
                     HttpHeader.LAST_MODIFIED,
                     HttpHeader.SET_COOKIE,
@@ -71,7 +74,9 @@ public class HpackEncoder
     
 
     private final static EnumSet<HttpHeader> __NEVER_INDEX = 
-            EnumSet.of(HttpHeader.SET_COOKIE,
+            EnumSet.of(
+                    HttpHeader.AUTHORIZATION,
+                    HttpHeader.SET_COOKIE,
                     HttpHeader.SET_COOKIE2);
         
     static
