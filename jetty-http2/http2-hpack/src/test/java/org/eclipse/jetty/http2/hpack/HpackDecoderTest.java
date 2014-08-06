@@ -30,7 +30,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.TypeUtil;
-import org.junit.Ignore;
 import org.junit.Test;
 
 

@@ -23,13 +23,11 @@ package org.eclipse.jetty.http2.hpack;
 import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
-import java.util.HashSet;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.BufferUtil;
 import org.hamcrest.Matchers;
 import org.junit.Assert;

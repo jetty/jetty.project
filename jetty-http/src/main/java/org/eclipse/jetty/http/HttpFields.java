@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
-import java.util.ConcurrentModificationException;
 import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -602,10 +601,14 @@ public class HttpFields implements Iterable<HttpField>
         if (size() != that.size())
             return false;
 
-        for (HttpField field : this)
+        loop: for (HttpField fi : this)
         {
-            if (!that.contains(field))
-                return false;
+            for (HttpField fa : that)
+            {
+                if (fi.equals(fa))
+                    continue loop;
+            }
+            return false;
         }
         return true;
     }

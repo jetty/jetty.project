@@ -24,12 +24,15 @@ import static org.junit.Assert.assertEquals;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.DateGenerator;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Response;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
 import org.junit.Test;
@@ -37,6 +40,10 @@ import org.junit.Test;
 
 public class HpackTest
 {
+    final static HttpField ServerJetty = new PreEncodedHttpField(HttpHeader.SERVER,"jetty");
+    final static HttpField XPowerJetty = new PreEncodedHttpField(HttpHeader.X_POWERED_BY,"jetty");
+    final static HttpField Date = new PreEncodedHttpField(HttpHeader.DATE,DateGenerator.formatDate(System.currentTimeMillis()));
+    
     @Test
     public void encodeDecodeResponseTest()
     {
@@ -47,7 +54,9 @@ public class HpackTest
         HttpFields fields0 = new HttpFields();
         fields0.add(HttpHeader.CONTENT_TYPE,"text/html");
         fields0.add(HttpHeader.CONTENT_LENGTH,"1024");
-        fields0.add(HttpHeader.SERVER,"jetty");
+        fields0.add(ServerJetty);
+        fields0.add(XPowerJetty);
+        fields0.add(Date);
         fields0.add(HttpHeader.SET_COOKIE,"abcdefghijklmnopqrstuvwxyz");
         fields0.add("custom-key","custom-value");
         Response original0 = new MetaData.Response(HttpVersion.HTTP_2,200,fields0);
@@ -70,7 +79,9 @@ public class HpackTest
         HttpFields fields1 = new HttpFields();
         fields1.add(HttpHeader.CONTENT_TYPE,"text/plain");
         fields1.add(HttpHeader.CONTENT_LENGTH,"1234");
-        fields1.add(HttpHeader.SERVER,"jetty");
+        fields1.add(ServerJetty);
+        fields0.add(XPowerJetty);
+        fields0.add(Date);
         fields1.add("Custom-Key","Other-Value");
         Response original1 = new MetaData.Response(HttpVersion.HTTP_2,200,fields1);
 

@@ -24,8 +24,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
@@ -203,7 +201,7 @@ public class HpackDecoder
                     {
                         case C_STATUS:
                             if (indexed)
-                                field = new HttpField.IntValueHttpField(header,value);
+                                field = new HttpField.IntValueHttpField(header,name,value);
                             else
                                 field = new HttpField(header,name,value);
                             break;
@@ -216,7 +214,7 @@ public class HpackDecoder
                             if ("0".equals(value))
                                 field = CONTENT_LENGTH_0;
                             else
-                                field = new HttpField.LongValueHttpField(header,value);
+                                field = new HttpField.LongValueHttpField(header,name,value);
                             break;
 
                         default:

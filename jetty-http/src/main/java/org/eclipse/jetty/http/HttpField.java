@@ -426,20 +426,30 @@ public class HttpField
     {
         final int _int;
         
+        public IntValueHttpField(HttpHeader header, String name, String value, int intValue)
+        {
+            super(header,name,value);
+            _int=intValue;
+        }
+
         public IntValueHttpField(HttpHeader header, String value, int intValue)
         {
-            super(header,value);
-            _int=intValue;
+            this(header,header.asString(),value,Integer.valueOf(value));
+        }
+        
+        public IntValueHttpField(HttpHeader header, String name, String value)
+        {
+            this(header,name,value,Integer.valueOf(value));
         }
 
         public IntValueHttpField(HttpHeader header, String value)
         {
-            this(header,value,Integer.valueOf(value));
+            this(header,header.asString(),value);
         }
 
         public IntValueHttpField(HttpHeader header, int value)
         {
-            this(header,Integer.toString(value),value);
+            this(header,header.asString(),value);
         }
         
         @Override
@@ -459,20 +469,30 @@ public class HttpField
     {
         final long _long;
         
-        public LongValueHttpField(HttpHeader header, String value, long longValue)
+        public LongValueHttpField(HttpHeader header, String name, String value, long longValue)
         {
-            super(header,value);
+            super(header,name,value);
             _long=longValue;
+        }
+        
+        public LongValueHttpField(HttpHeader header, String name, String value)
+        {
+            this(header,name,value,Long.valueOf(value));
+        }
+        
+        public LongValueHttpField(HttpHeader header, String name, long value)
+        {
+            this(header,name,Long.toString(value),value);
         }
         
         public LongValueHttpField(HttpHeader header, String value)
         {
-            this(header,value,StringUtil.toLong(value));
+            this(header,header.asString(),value);
         }
         
         public LongValueHttpField(HttpHeader header,long value)
         {
-            this(header,Long.toString(value),value);
+            this(header,header.asString(),value);
         }
 
         

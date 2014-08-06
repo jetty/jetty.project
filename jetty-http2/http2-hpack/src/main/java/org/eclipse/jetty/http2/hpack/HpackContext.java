@@ -28,7 +28,6 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.StringUtil;
@@ -231,6 +230,11 @@ public class HpackContext
             return get(header.asString());
         return e;
     }
+
+    public static Entry getStatic(HttpHeader header)
+    {
+        return __headerEntryTable[header.ordinal()];
+    }
     
     public Entry add(HttpField field)
     {
@@ -418,6 +422,11 @@ public class HpackContext
         public byte[] getStaticHuffmanValue()
         {
             return null;
+        }
+        
+        public int getSlot()
+        {
+            return _slot;
         }
         
         public String toString()

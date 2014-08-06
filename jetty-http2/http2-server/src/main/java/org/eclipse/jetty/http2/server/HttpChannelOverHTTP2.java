@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -45,9 +46,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpChannelOverHTTP2 extends HttpChannel
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
-    private static final HttpField ACCEPT_ENCODING_GZIP = new HttpField(HttpHeader.ACCEPT_ENCODING,"gzip");
-    private static final HttpField SERVER_VERSION=new HttpField(HttpHeader.SERVER,HttpConfiguration.SERVER_VERSION);
-    private static final HttpField POWERED_BY=new HttpField(HttpHeader.X_POWERED_BY,HttpConfiguration.SERVER_VERSION);
+    private static final HttpField SERVER_VERSION=new PreEncodedHttpField(HttpHeader.SERVER,HttpConfiguration.SERVER_VERSION);
+    private static final HttpField POWERED_BY=new PreEncodedHttpField(HttpHeader.X_POWERED_BY,HttpConfiguration.SERVER_VERSION);
     private final Stream stream; // TODO recycle channel for new Stream?
     private boolean _expect100Continue = false;
 
@@ -86,11 +86,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         
         onRequest(request);
         
-        
         if (frame.isEndStream())
-        {
             onRequestComplete();
-        }
 
         if (LOG.isDebugEnabled())
         {

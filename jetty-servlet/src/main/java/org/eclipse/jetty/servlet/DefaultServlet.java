@@ -39,10 +39,10 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator.CachedHttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
@@ -144,7 +144,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     private static final long serialVersionUID = 4930458713846881193L;
     
-    private static final CachedHttpField ACCEPT_RANGES = new CachedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
+    private static final PreEncodedHttpField ACCEPT_RANGES = new PreEncodedHttpField(HttpHeader.ACCEPT_RANGES, "bytes");
     
     private ServletContext _servletContext;
     private ContextHandler _contextHandler;
@@ -241,7 +241,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
         String cc=getInitParameter("cacheControl");
         if (cc!=null)
-            _cacheControl=new CachedHttpField(HttpHeader.CACHE_CONTROL, cc);
+            _cacheControl=new PreEncodedHttpField(HttpHeader.CACHE_CONTROL, cc);
         
         String resourceCache = getInitParameter("resourceCache");
         int max_cache_size=getInitInt("maxCacheSize", -2);

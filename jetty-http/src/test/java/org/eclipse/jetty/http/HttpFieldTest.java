@@ -22,6 +22,9 @@ import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Test;
 
 /**
@@ -134,5 +137,18 @@ public class HttpFieldTest
         assertEquals("x,\"p,q\",z",values[1]);
         assertEquals("c",values[2]);
         
+    }
+    
+    @Test
+    public void testCachedField()
+    {
+        PreEncodedHttpField field = new PreEncodedHttpField(HttpHeader.ACCEPT,"something");
+        ByteBuffer buf = BufferUtil.allocate(256);
+        BufferUtil.clearToFill(buf);
+        field.putTo(buf,HttpVersion.HTTP_1_0);
+        BufferUtil.flipToFlush(buf,0);
+        String s=BufferUtil.toString(buf);
+        
+        assertEquals("Accept: something\r\n",s);
     }
 }

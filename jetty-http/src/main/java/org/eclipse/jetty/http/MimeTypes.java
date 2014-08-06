@@ -90,7 +90,7 @@ public class MimeTypes
             _charset=null;
             _charsetString=null;
             _assumedCharset=false;
-            _field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,_string);
+            _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         } 
 
         /* ------------------------------------------------------------ */
@@ -103,7 +103,7 @@ public class MimeTypes
             _charset=Charset.forName(s.substring(i+9));
             _charsetString=_charset==null?null:_charset.toString().toLowerCase();
             _assumedCharset=false;
-            _field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,_string);
+            _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         }
 
         /* ------------------------------------------------------------ */
@@ -115,7 +115,7 @@ public class MimeTypes
             _charset=cs;
             _charsetString=_charset==null?null:_charset.toString().toLowerCase();
             _assumedCharset=true;
-            _field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,_string);
+            _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         }
 
         /* ------------------------------------------------------------ */

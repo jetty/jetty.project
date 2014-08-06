@@ -21,7 +21,6 @@ package org.eclipse.jetty.http;
 import java.io.IOException;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
@@ -1058,9 +1057,9 @@ public class HttpGenerator
 
     public static void putTo(HttpField field, ByteBuffer bufferInFillMode)
     {
-        if (field instanceof CachedHttpField)
+        if (field instanceof PreEncodedHttpField)
         {
-            ((CachedHttpField)field).putTo(bufferInFillMode);
+            ((PreEncodedHttpField)field).putTo(bufferInFillMode,HttpVersion.HTTP_1_0);
         }
         else
         {
@@ -1089,24 +1088,5 @@ public class HttpGenerator
                 putTo(field,bufferInFillMode);
         }
         BufferUtil.putCRLF(bufferInFillMode);
-    }
-    
-    public static class CachedHttpField extends HttpField
-    {
-        private final byte[] _bytes;
-        public CachedHttpField(HttpHeader header,String value)
-        {
-            super(header,value);
-            int cbl=header.getBytesColonSpace().length;
-            _bytes=Arrays.copyOf(header.getBytesColonSpace(), cbl+value.length()+2);
-            System.arraycopy(value.getBytes(StandardCharsets.ISO_8859_1),0,_bytes,cbl,value.length());
-            _bytes[_bytes.length-2]=(byte)'\r';
-            _bytes[_bytes.length-1]=(byte)'\n';
-        }
-        
-        public void putTo(ByteBuffer bufferInFillMode)
-        {
-            bufferInFillMode.put(_bytes);
-        }
     }
 }
