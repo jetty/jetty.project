@@ -92,6 +92,11 @@ public class ResponseTest
             }
 
             @Override
+            public void push(org.eclipse.jetty.http.MetaData.Request request)
+            {   
+            }
+            
+            @Override
             public void completed()
             {
             }

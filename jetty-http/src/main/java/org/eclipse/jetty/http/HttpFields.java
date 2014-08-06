@@ -71,6 +71,15 @@ public class HttpFields implements Iterable<HttpField>
     {
         _fields=new HttpField[capacity];
     }
+    
+    /**
+     * Constructor.
+     */
+    public HttpFields(HttpFields fields)
+    {
+        _fields=Arrays.copyOf(fields._fields,_fields.length+10);
+        _size=fields._size;
+    }
 
     public int size()
     {

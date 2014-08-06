@@ -52,6 +52,7 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestAttributeEvent;
 import javax.servlet.ServletRequestAttributeListener;
+import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -132,6 +133,28 @@ public class Request implements HttpServletRequest
     private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
 
 
+    /* ------------------------------------------------------------ */
+    /** 
+     * Obtain the base {@link Request} instance of a {@link ServletRequest}, by
+     * coercion, unwrapping or thread local.
+     * @param request The request
+     * @return the base {@link Request} instance of a {@link ServletRequest}.
+     */
+    public static Request getBaseRequest(ServletRequest request)
+    {
+        if (request instanceof Request)
+            return (Request)request;
+        
+        while (request instanceof ServletRequestWrapper)
+            request=((ServletRequestWrapper)request).getRequest();
+
+        if (request instanceof Request)
+            return (Request)request;
+        
+        return HttpChannel.getCurrentHttpChannel().getRequest();
+    }
+    
+    
     private final HttpChannel _channel;
     private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
     private final HttpInput _input;

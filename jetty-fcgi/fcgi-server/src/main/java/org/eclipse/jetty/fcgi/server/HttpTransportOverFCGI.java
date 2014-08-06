@@ -77,6 +77,16 @@ public class HttpTransportOverFCGI implements HttpTransport
                 flusher.shutdown();
         }
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
+     */
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {   
+        // LOG.debug("ignore push in {}",this);
+    }
     
     private void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
