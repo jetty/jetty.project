@@ -462,4 +462,73 @@ public class FlowControlTest extends AbstractTest
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         Assert.assertArrayEquals(data, bytes);
     }
+
+    @Test
+    public void testServerTwoDataFramesWithStalledSession() throws Exception
+    {
+        // Frames in queue = DATA1, DATA2.
+        // Server writes part of DATA1, then stalls.
+        // A window update unstalls the session, verify that the data is correctly sent.
+
+        Random random = new Random();
+        final byte[] chunk1 = new byte[1024];
+        random.nextBytes(chunk1);
+        final byte[] chunk2 = new byte[1024];
+        random.nextBytes(chunk2);
+
+        final AtomicReference<CountDownLatch> settingsLatch = new AtomicReference<>(new CountDownLatch(1));
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        startServer(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                settingsLatch.get().countDown();
+            }
+
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(chunk1), false), Callback.Adapter.INSTANCE);
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(chunk2), true), Callback.Adapter.INSTANCE);
+                dataLatch.countDown();
+                return null;
+            }
+        });
+
+        Session session = newClient(new Session.Listener.Adapter());
+        Map<Integer, Integer> settings = new HashMap<>();
+        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, 0);
+        session.settings(new SettingsFrame(settings, false), Callback.Adapter.INSTANCE);
+        Assert.assertTrue(settingsLatch.get().await(5, TimeUnit.SECONDS));
+
+        byte[] content = new byte[chunk1.length + chunk2.length];
+        final ByteBuffer buffer = ByteBuffer.wrap(content);
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, true);
+        final CountDownLatch responseLatch = new CountDownLatch(1);
+        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                buffer.put(frame.getData());
+                callback.succeeded();
+                if (frame.isEndStream())
+                    responseLatch.countDown();
+            }
+        });
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+
+        // Now we have the 2 DATA frames queued in the server.
+
+        // Partially unstall the first DATA frame.
+        settingsLatch.set(new CountDownLatch(1));
+        settings.clear();
+        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, chunk1.length / 2);
+        session.settings(new SettingsFrame(settings, false), Callback.Adapter.INSTANCE);
+        Assert.assertTrue(settingsLatch.get().await(5, TimeUnit.SECONDS));
+
+        Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+    }
 }

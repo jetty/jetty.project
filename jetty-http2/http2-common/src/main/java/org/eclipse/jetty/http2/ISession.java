@@ -21,18 +21,21 @@ package org.eclipse.jetty.http2;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.Callback;
 
 public interface ISession extends Session
 {
     @Override
-    IStream getStream(int streamId);
+    public IStream getStream(int streamId);
 
     public void control(IStream stream, Frame frame, Callback callback);
 
     public void data(IStream stream, DataFrame frame, Callback callback);
 
     public int updateWindowSize(int delta);
+
+    public void onUpdateWindowSize(IStream stream, WindowUpdateFrame frame);
 
     public void shutdown();
 
