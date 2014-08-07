@@ -23,6 +23,7 @@ import java.lang.management.ManagementFactory;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.deploy.PropertiesConfigurationManager;
 import org.eclipse.jetty.deploy.providers.WebAppProvider;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Handler;
@@ -122,7 +123,7 @@ public class LikeJettyXml
 
         // SSL Connector
         ServerConnector sslConnector = new ServerConnector(server,
-            new SslConnectionFactory(sslContextFactory,"http/1.1"),
+            new SslConnectionFactory(sslContextFactory,HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(https_config));
         sslConnector.setPort(8443);
         server.addConnector(sslConnector);

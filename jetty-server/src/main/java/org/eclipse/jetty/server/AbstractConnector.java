@@ -37,6 +37,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -337,7 +338,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            return _factories.get(protocol);
+            return _factories.get(StringUtil.asciiToLowerCase(protocol));
         }
     }
 
@@ -357,7 +358,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            String key=factory.getProtocol();
+            String key=StringUtil.asciiToLowerCase(factory.getProtocol());
             ConnectionFactory old=_factories.remove(key);
             if (old!=null)
             {
@@ -378,7 +379,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            String key=factory.getProtocol();
+            String key=StringUtil.asciiToLowerCase(factory.getProtocol());
             if (_factories.containsKey(key))
                 LOG.info("{} addIfAbsent ignored {}",this,factory);
             else
@@ -396,7 +397,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            ConnectionFactory factory= _factories.remove(protocol);
+            ConnectionFactory factory= _factories.remove(StringUtil.asciiToLowerCase(protocol));
             removeBean(factory);
             return factory;
         }
@@ -451,7 +452,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void setDefaultProtocol(String defaultProtocol)
     {
-        _defaultProtocol = defaultProtocol;
+        _defaultProtocol = StringUtil.asciiToLowerCase(defaultProtocol);
         if (isRunning())
             _defaultConnectionFactory=getConnectionFactory(_defaultProtocol);
     }

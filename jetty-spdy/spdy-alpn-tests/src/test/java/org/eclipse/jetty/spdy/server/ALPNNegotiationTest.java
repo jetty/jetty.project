@@ -133,7 +133,7 @@ public class ALPNNegotiationTest extends AbstractALPNTest
                 @Override
                 public void selected(String protocol)
                 {
-                    Assert.assertEquals("http/1.1", protocol);
+                    Assert.assertEquals("http/1.1", protocol.toLowerCase());
                 }
             });
 

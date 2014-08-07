@@ -44,7 +44,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
 
     public HttpConnectionFactory(@Name("config") HttpConfiguration config)
     {
-        super(HttpVersion.HTTP_1_1.toString());
+        super(HttpVersion.HTTP_1_1.asString());
         _config=config;
         addBean(_config);
     }
