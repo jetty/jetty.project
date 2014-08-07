@@ -20,14 +20,17 @@ package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.Executor;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.PrefaceParser;
@@ -67,6 +70,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
     private class HTTP2ClientConnection extends HTTP2Connection implements Callback
     {
+        private final AtomicBoolean prefaceSent = new AtomicBoolean();
         private final HTTP2Client client;
         private final Promise<Session> promise;
 
@@ -94,8 +98,18 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @Override
         public void succeeded()
         {
-            client.addSession(getSession());
-            promise.succeeded(getSession());
+            if (prefaceSent.compareAndSet(false, true))
+            {
+                // SPEC: after the preface bytes, a SETTINGS frame must be sent.
+                // TODO: configure settings.
+                HashMap<Integer, Integer> settings = new HashMap<>();
+                getSession().settings(new SettingsFrame(settings, false), this);
+            }
+            else
+            {
+                client.addSession(getSession());
+                promise.succeeded(getSession());
+            }
         }
 
         @Override
