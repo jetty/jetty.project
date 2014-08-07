@@ -292,6 +292,15 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         _channelState.onReadPossible();
     }
 
+
+    public boolean isEarlyEOF()
+    {
+        synchronized (lock())
+        {
+            return _contentState==EARLY_EOF;
+        }
+    }
+    
     /**
      * This method should be called to signal that all the expected
      * content arrived.
@@ -361,6 +370,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             return _contentState.isEOF();
         }
     }
+    
 
     @Override
     public boolean isReady()
@@ -517,7 +527,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         @Override
         public int noContent() throws IOException
         {
-            throw new EofException();
+            throw new EofException("Early EOF");
         }
 
         @Override
