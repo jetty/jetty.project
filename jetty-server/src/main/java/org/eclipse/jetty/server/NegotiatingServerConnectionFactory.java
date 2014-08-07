@@ -18,9 +18,11 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Iterator;
 import java.util.List;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -58,7 +60,7 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
     public NegotiatingServerConnectionFactory(String protocol, String... protocols)
     {
         super(protocol);
-        this.protocols = Arrays.asList(protocols);
+        this.protocols = new ArrayList<String>(Arrays.asList(protocols));
     }
 
     public String getDefaultProtocol()
@@ -75,6 +77,11 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
     {
         return protocols;
     }
+    
+    public void adProtocol(String protocol)
+    {
+        protocols.add(protocol);
+    }
 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
@@ -87,8 +94,7 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
             while (i.hasNext())
             {
                 String protocol = i.next();
-                String prefix = "ssl-";
-                if (protocol.regionMatches(true, 0, prefix, 0, prefix.length()) || protocol.equalsIgnoreCase("alpn"))
+                if ("SSL".equalsIgnoreCase(protocol) || "alpn".equalsIgnoreCase("protocol"))
                 {
                     i.remove();
                 }

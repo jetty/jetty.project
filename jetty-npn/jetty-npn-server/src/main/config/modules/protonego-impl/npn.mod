@@ -27,9 +27,6 @@ protonego-impl/npn-${java.version}
 lib/jetty-npn-client-${jetty.version}.jar
 lib/jetty-npn-server-${jetty.version}.jar
 
-[xml]
-etc/protonego-npn.xml
-
 [files]
 lib/
 lib/npn/

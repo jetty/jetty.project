@@ -27,9 +27,6 @@ protonego-impl/alpn-${java.version}
 lib/jetty-alpn-client-${jetty.version}.jar
 lib/jetty-alpn-server-${jetty.version}.jar
 
-[xml]
-etc/protonego-alpn.xml
-
 [files]
 lib/
 lib/alpn/

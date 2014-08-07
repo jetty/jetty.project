@@ -337,7 +337,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            return _factories.get(protocol.toLowerCase(Locale.ENGLISH));
+            return _factories.get(protocol);
         }
     }
 
@@ -357,13 +357,20 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            ConnectionFactory old=_factories.remove(factory.getProtocol());
+            String key=factory.getProtocol();
+            ConnectionFactory old=_factories.remove(key);
             if (old!=null)
+            {
+                if (old.getProtocol().equals(_defaultProtocol))
+                    _defaultProtocol=null;
                 removeBean(old);
-            _factories.put(factory.getProtocol().toLowerCase(Locale.ENGLISH), factory);
+                LOG.info("{} removed {}",this,old);
+            }
+            _factories.put(key, factory);
             addBean(factory);
             if (_defaultProtocol==null)
                 _defaultProtocol=factory.getProtocol();
+            LOG.info("{} added {}",this,factory);
         }
     }
     
@@ -371,12 +378,17 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            if (_factories.containsKey(factory.getProtocol()))
-                return;
-            _factories.put(factory.getProtocol().toLowerCase(Locale.ENGLISH), factory);
-            addBean(factory);
-            if (_defaultProtocol==null)
-                _defaultProtocol=factory.getProtocol();
+            String key=factory.getProtocol();
+            if (_factories.containsKey(key))
+                LOG.info("{} addIfAbsent ignored {}",this,factory);
+            else
+            {
+                _factories.put(key, factory);
+                addBean(factory);
+                if (_defaultProtocol==null)
+                    _defaultProtocol=factory.getProtocol();
+                LOG.info("{} addIfAbsent added {}",this,factory);
+            }
         }
     }
 
@@ -384,7 +396,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            ConnectionFactory factory= _factories.remove(protocol.toLowerCase(Locale.ENGLISH));
+            ConnectionFactory factory= _factories.remove(protocol);
             removeBean(factory);
             return factory;
         }
@@ -439,7 +451,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void setDefaultProtocol(String defaultProtocol)
     {
-        _defaultProtocol = defaultProtocol.toLowerCase(Locale.ENGLISH);
+        _defaultProtocol = defaultProtocol;
         if (isRunning())
             _defaultConnectionFactory=getConnectionFactory(_defaultProtocol);
     }

@@ -313,9 +313,10 @@ public class Modules implements Iterable<Module>
         if (module.isEnabled())
         {
             // already enabled, skip
+            module.addSources(sources);
             return;
         }
-        
+                
         StartLog.debug("Enabling module: %s (via %s)",module.getName(),Main.join(sources,", "));
         module.setEnabled(true);
         args.parseModule(module);
@@ -348,7 +349,7 @@ public class Modules implements Iterable<Module>
             }
             if (parent != null)
             {
-                enableModule(parent,sources);
+                enableModule(parent,new ArrayList<String>());
             }
         }
     }

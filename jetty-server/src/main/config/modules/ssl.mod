@@ -16,6 +16,13 @@ http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/
 # define the port to use for secure redirection
 jetty.secure.port=8443
 
+# SSL port to listen on
+ssl.port=8443
+# SSL idle timeout in milliseconds
+ssl.timeout=30000
+# HTTPS Socket.soLingerTime in seconds. (-1 to disable)
+# ssl.soLingerTime=-1
+
 # Setup a demonstration keystore and truststore
 jetty.keystore=etc/keystore
 jetty.truststore=etc/keystore

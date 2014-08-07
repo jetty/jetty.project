@@ -34,6 +34,11 @@ public class NPNServerConnectionFactory extends NegotiatingServerConnectionFacto
 {
     private static final Logger LOG = Log.getLogger(NPNServerConnectionFactory.class);
 
+    public NPNServerConnectionFactory()
+    {
+        this(new String[]{});
+    }
+    
     public NPNServerConnectionFactory(@Name("protocols") String... protocols)
     {
         super("npn", protocols);
