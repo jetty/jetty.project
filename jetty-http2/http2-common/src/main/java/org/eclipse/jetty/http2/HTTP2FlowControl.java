@@ -99,9 +99,13 @@ public class HTTP2FlowControl implements FlowControl
 
         if (LOG.isDebugEnabled())
             LOG.debug("Data consumed, increasing window by {} for {}", length, stream);
-        // Negative streamId allow for generation of bytes for both stream and session
-        WindowUpdateFrame frame = new WindowUpdateFrame(-stream.getId(), length);
-        stream.getSession().control(stream, frame, Callback.Adapter.INSTANCE);
+
+        if (length > 0)
+        {
+            // Negative streamId allow for generation of bytes for both stream and session
+            WindowUpdateFrame frame = new WindowUpdateFrame(-stream.getId(), length);
+            stream.getSession().control(stream, frame, Callback.Adapter.INSTANCE);
+        }
     }
 
     @Override
