@@ -174,7 +174,7 @@ public class HttpContent implements Callback, Closeable
             if (iterator instanceof Closeable)
                 ((Closeable)iterator).close();
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.ignore(x);
         }

@@ -180,7 +180,7 @@ public class HttpSenderOverHTTP extends HttpSender
                 }
             }
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);

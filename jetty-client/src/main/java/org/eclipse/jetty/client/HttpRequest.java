@@ -489,7 +489,7 @@ public class HttpRequest implements Request
                     listener.onContent(response, content);
                     callback.succeeded();
                 }
-                catch (Exception x)
+                catch (Throwable x)
                 {
                     callback.failed(x);
                 }

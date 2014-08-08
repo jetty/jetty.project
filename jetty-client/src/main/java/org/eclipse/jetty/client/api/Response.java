@@ -238,7 +238,7 @@ public interface Response
                     onContent(response, content);
                     callback.succeeded();
                 }
-                catch (Exception x)
+                catch (Throwable x)
                 {
                     callback.failed(x);
                 }
