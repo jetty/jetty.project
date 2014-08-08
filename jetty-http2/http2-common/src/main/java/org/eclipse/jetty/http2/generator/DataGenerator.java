@@ -36,10 +36,9 @@ public class DataGenerator
         this.headerGenerator = headerGenerator;
     }
 
-    public void generate(ByteBufferPool.Lease lease, Frame frame, int maxLength)
+    public void generate(ByteBufferPool.Lease lease, DataFrame frame, int maxLength)
     {
-        DataFrame dataFrame = (DataFrame)frame;
-        generateData(lease, dataFrame.getStreamId(), dataFrame.getData(), dataFrame.isEndStream(), maxLength);
+        generateData(lease, frame.getStreamId(), frame.getData(), frame.isEndStream(), maxLength);
     }
 
     public void generateData(ByteBufferPool.Lease lease, int streamId, ByteBuffer data, boolean last, int maxLength)
