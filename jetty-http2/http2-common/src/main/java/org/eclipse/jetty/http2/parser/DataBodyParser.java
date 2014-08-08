@@ -27,6 +27,7 @@ import org.eclipse.jetty.util.BufferUtil;
 public class DataBodyParser extends BodyParser
 {
     private State state = State.PREPARE;
+    private int padding;
     private int paddingLength;
     private int length;
 
@@ -38,6 +39,7 @@ public class DataBodyParser extends BodyParser
     private void reset()
     {
         state = State.PREPARE;
+        padding = 0;
         paddingLength = 0;
         length = 0;
     }
@@ -81,6 +83,7 @@ public class DataBodyParser extends BodyParser
                 }
                 case PADDING_LENGTH:
                 {
+                    padding = 1; // We have seen this byte.
                     paddingLength = buffer.get() & 0xFF;
                     --length;
                     length -= paddingLength;
@@ -109,7 +112,7 @@ public class DataBodyParser extends BodyParser
                         loop = paddingLength == 0;
                         // Padding bytes include the bytes that define the
                         // padding length plus the actual padding bytes.
-                        if (onData(slice, false, 1 + paddingLength))
+                        if (onData(slice, false, padding + paddingLength))
                         {
                             return Result.ASYNC;
                         }
