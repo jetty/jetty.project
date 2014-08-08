@@ -19,21 +19,17 @@
 package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
-import java.util.HashMap;
+import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
-import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.http2.parser.PrefaceParser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.Connection;
@@ -63,29 +59,33 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(byteBufferPool, 4096);
-        HTTP2Session session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, new HTTP2FlowControl(65535));
+        HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, new HTTP2FlowControl(65535));
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
-        return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, promise);
+        return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, promise, listener);
     }
 
     private class HTTP2ClientConnection extends HTTP2Connection implements Callback
     {
-        private final AtomicBoolean prefaceSent = new AtomicBoolean();
         private final HTTP2Client client;
         private final Promise<Session> promise;
+        private final Session.Listener listener;
 
-        public HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise)
+        public HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
         {
             super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
             this.client = client;
             this.promise = promise;
+            this.listener = listener;
         }
 
         @Override
         public void onOpen()
         {
             super.onOpen();
-            getEndPoint().write(this, ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES));
+            Map<Integer, Integer> settings = listener.onPreface(getSession());
+            if (settings == null)
+                settings = Collections.emptyMap();
+            getSession().settings(new SettingsFrame(settings, false, true), this);
         }
 
         @Override
@@ -98,18 +98,8 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         @Override
         public void succeeded()
         {
-            if (prefaceSent.compareAndSet(false, true))
-            {
-                // SPEC: after the preface bytes, a SETTINGS frame must be sent.
-                // TODO: configure settings.
-                HashMap<Integer, Integer> settings = new HashMap<>();
-                getSession().settings(new SettingsFrame(settings, false), this);
-            }
-            else
-            {
-                client.addSession(getSession());
-                promise.succeeded(getSession());
-            }
+            client.addSession(getSession());
+            promise.succeeded(getSession());
         }
 
         @Override

@@ -25,6 +25,7 @@ import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.parser.PrefaceParser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -39,11 +40,14 @@ public class SettingsGenerator extends FrameGenerator
     public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
         SettingsFrame settingsFrame = (SettingsFrame)frame;
-        generateSettings(lease, settingsFrame.getSettings(), settingsFrame.isReply());
+        generateSettings(lease, settingsFrame.getSettings(), settingsFrame.isReply(), settingsFrame.isPreface());
     }
 
-    public void generateSettings(ByteBufferPool.Lease lease, Map<Integer, Integer> settings, boolean reply)
+    public void generateSettings(ByteBufferPool.Lease lease, Map<Integer, Integer> settings, boolean reply, boolean preface)
     {
+        if (preface)
+            lease.append(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
+
         // Two bytes for the identifier, four bytes for the value.
         int entryLength = 2 + 4;
         int length = entryLength * settings.size();

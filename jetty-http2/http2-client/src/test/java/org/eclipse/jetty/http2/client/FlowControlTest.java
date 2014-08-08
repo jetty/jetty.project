@@ -531,4 +531,75 @@ public class FlowControlTest extends AbstractTest
 
         Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testClientSendingInitialSmallWindow() throws Exception
+    {
+        startServer(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
+                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        // Since we echo back the data
+                        // asynchronously we must copy it.
+                        ByteBuffer data = frame.getData();
+                        ByteBuffer copy = ByteBuffer.allocateDirect(data.remaining());
+                        copy.put(data).flip();
+                        stream.data(new DataFrame(stream.getId(), copy, frame.isEndStream()), callback);
+                    }
+                };
+            }
+        });
+
+        final int initialWindow = 16;
+        Session session = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public Map<Integer, Integer> onPreface(Session session)
+            {
+                Map<Integer, Integer> settings = new HashMap<>();
+                settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, initialWindow);
+                return settings;
+            }
+        });
+
+        byte[] requestData = new byte[initialWindow * 4];
+        new Random().nextBytes(requestData);
+
+        byte[] responseData = new byte[requestData.length];
+        final ByteBuffer responseContent = ByteBuffer.wrap(responseData);
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        final CountDownLatch latch = new CountDownLatch(1);
+        session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                responseContent.put(frame.getData());
+                callback.succeeded();
+                if (frame.isEndStream())
+                    latch.countDown();
+            }
+        });
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+
+        ByteBuffer requestContent = ByteBuffer.wrap(requestData);
+        DataFrame dataFrame = new DataFrame(stream.getId(), requestContent, true);
+        stream.data(dataFrame, Callback.Adapter.INSTANCE);
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+
+        responseContent.flip();
+        Assert.assertArrayEquals(requestData, responseData);
+    }
 }

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2.api;
 
 import java.util.Collection;
+import java.util.Map;
 
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -48,6 +49,8 @@ public interface Session
 
     public interface Listener
     {
+        public Map<Integer,Integer> onPreface(Session session);
+
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame);
 
         public void onSettings(Session session, SettingsFrame frame);
@@ -62,6 +65,12 @@ public interface Session
 
         public static class Adapter implements Session.Listener
         {
+            @Override
+            public Map<Integer, Integer> onPreface(Session session)
+            {
+                return null;
+            }
+
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
