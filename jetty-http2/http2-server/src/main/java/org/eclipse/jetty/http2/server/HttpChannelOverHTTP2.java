@@ -77,7 +77,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         
         _expect100Continue = fields.contains(HttpHeader.EXPECT,HttpHeaderValue.CONTINUE.asString());
 
-        // TODO make this a better field for h2 hpack generation
         HttpFields response=getResponse().getHttpFields();
         if (getHttpConfiguration().getSendServerVersion())
             response.add(SERVER_VERSION);

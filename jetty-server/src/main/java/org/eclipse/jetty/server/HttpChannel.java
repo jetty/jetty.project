@@ -458,7 +458,6 @@ public class HttpChannel implements Runnable
         _request.setTimeStamp(System.currentTimeMillis());
         _request.setMetaData(request);
 
-        // TODO make this a better field for h2 hpack generation
         if (_configuration.getSendDateHeader())
             _response.getHttpFields().put(_connector.getServer().getDateField());
     }
