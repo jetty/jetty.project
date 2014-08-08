@@ -236,6 +236,12 @@ public class Dispatcher implements RequestDispatcher
         
         baseRequest.getHttpChannel().getHttpTransport().push(push);
     }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("Dispatcher@0x%x{%s,%s}",hashCode(),_named,_uri);
+    }
 
     private void commitResponse(ServletResponse response, Request baseRequest) throws IOException
     {
