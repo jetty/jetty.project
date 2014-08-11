@@ -54,10 +54,7 @@ public class HTTP2FlowControl implements FlowControl
         this.initialWindowSize = initialWindowSize;
         int delta = initialWindowSize - windowSize;
 
-        // Update the session's window size.
-        session.onUpdateWindowSize(null, new WindowUpdateFrame(0, delta));
-
-        // Update the streams' window size.
+        // SPEC: updates of the initial window size only affect stream windows, not session's.
         for (Stream stream : session.getStreams())
             session.onUpdateWindowSize((IStream)stream, new WindowUpdateFrame(stream.getId(), delta));
     }

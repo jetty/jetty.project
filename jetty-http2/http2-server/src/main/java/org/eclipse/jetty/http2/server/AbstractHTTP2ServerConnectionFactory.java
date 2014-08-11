@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.server;
 
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http2.FlowControl;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.ISession;
@@ -36,7 +37,7 @@ import org.eclipse.jetty.server.Connector;
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
     private int maxHeaderTableSize = 4096;
-    private int initialWindowSize = 65535;
+    private int initialWindowSize = FlowControl.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
 
     public AbstractHTTP2ServerConnectionFactory()

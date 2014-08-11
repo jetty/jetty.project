@@ -23,6 +23,7 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http2.FlowControl;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.ISession;
@@ -59,7 +60,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(byteBufferPool, 4096);
-        HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, new HTTP2FlowControl(65535));
+        HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, new HTTP2FlowControl(FlowControl.DEFAULT_WINDOW_SIZE));
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
         return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, promise, listener);
     }

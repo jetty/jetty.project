@@ -213,7 +213,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (settings.containsKey(SettingsFrame.MAX_FRAME_SIZE))
         {
             int maxFrameSize = settings.get(SettingsFrame.MAX_FRAME_SIZE);
-            // Spec: check the max frame size is sane.
+            // SPEC: check the max frame size is sane.
             if (maxFrameSize < Frame.DEFAULT_MAX_LENGTH || maxFrameSize > Frame.MAX_MAX_LENGTH)
             {
                 onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_max_frame_size");

@@ -22,6 +22,8 @@ import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 
 public interface FlowControl
 {
+    public static int DEFAULT_WINDOW_SIZE = 65535;
+
     public void onNewStream(IStream stream);
 
     public int getInitialWindowSize();
