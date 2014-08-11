@@ -16,18 +16,17 @@
   <Call name="addConnectionFactory">
     <Arg>
       <New id="protonego" class="org.eclipse.jetty.npn.server.NPNServerConnectionFactory">
-        <Arg name="protocols">
-          <Array type="String">
-          </Array>
+        <Arg type="String">
+          <Property name="protonego.protocols" default="http/1.1" />
         </Arg>
+        <Set name="defaultProtocol">
+          <Property name="protonego.defaultProtocol" default="http/1.1" />
+        </Set>
       </New>
     </Arg>
   </Call>   
 
-  <!-- =========================================================== -->
-  <!-- Enables NPN debugging on System.err                         -->
-  <!-- ===========================================================
-   <Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>
-  -->
+  <!-- Enables NPN debugging on System.err -->
+  <!--<Set class="org.eclipse.jetty.npn.NextProtoNego" name="debug" type="boolean">true</Set>-->
 
 </Configure>

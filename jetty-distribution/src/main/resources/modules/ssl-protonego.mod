@@ -1,5 +1,5 @@
 #
-# SSL Protonegotiate module
+# SSL Protocol Negotiatiation Module
 #
 
 [depend]
