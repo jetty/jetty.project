@@ -355,10 +355,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
-        if (closed.get())
-            callback.succeeded();
-        else
-            control(getStream(frame.getStreamId()), frame, callback);
+        control(getStream(frame.getStreamId()), frame, callback);
     }
 
     @Override
@@ -662,7 +659,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 }
                 case GO_AWAY:
                 {
-                    disconnect();
+                    flusher.close();
                     break;
                 }
                 default:

@@ -300,13 +300,6 @@ public class HTTP2Flusher extends IteratingCallback
         terminate(x);
     }
 
-    @Override
-    public void close()
-    {
-        super.close();
-        iterate();
-    }
-
     private void terminate(Throwable x)
     {
         Queue<Entry> queued;
