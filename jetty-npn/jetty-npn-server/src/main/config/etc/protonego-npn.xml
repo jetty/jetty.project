@@ -17,10 +17,10 @@
     <Arg>
       <New id="protonego" class="org.eclipse.jetty.npn.server.NPNServerConnectionFactory">
         <Arg type="String">
-          <Property name="protonego.protocols" default="http/1.1" />
+          <Property name="npn.protocols" default="" />
         </Arg>
         <Set name="defaultProtocol">
-          <Property name="protonego.defaultProtocol" default="http/1.1" />
+          <Property name="npn.defaultProtocol" />
         </Set>
       </New>
     </Arg>

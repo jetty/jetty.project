@@ -15,8 +15,5 @@ etc/jetty-spdy.xml
 [ini-template]
 ## SPDY Configuration
 
-# Advertised protocols
-protonego.protocols=spdy/3,http/1.1
-protonego.defaultProtocol=http/1.1
-
-# spdy.initialWindowSize=65536
+# Initial Window Size for SPDY
+#spdy.initialWindowSize=65536

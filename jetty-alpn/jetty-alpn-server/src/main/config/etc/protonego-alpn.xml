@@ -16,10 +16,10 @@
     <Arg>
       <New id="protonego" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
         <Arg type="String">
-          <Property name="protonego.protocols" default="http/1.1" />
+          <Property name="alpn.protocols" default="" />
         </Arg>
         <Set name="defaultProtocol">
-          <Property name="protonego.defaultProtocol" default="http/1.1" />
+          <Property name="alpn.defaultProtocol" />
         </Set>
       </New>
     </Arg>

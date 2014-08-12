@@ -31,3 +31,7 @@ lib/jetty-alpn-server-${jetty.version}.jar
 lib/
 lib/alpn/
 
+[ini-template]
+# alpn.protocols=h2-14,http/1.1
+# alpn.defaultProtocol=http/1.1
+

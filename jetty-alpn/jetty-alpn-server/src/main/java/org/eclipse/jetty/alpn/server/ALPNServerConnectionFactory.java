@@ -36,9 +36,9 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
 
     public ALPNServerConnectionFactory(String protocols)
     {
-        this(protocols.split(","));
+        this(protocols.trim().split(",", 0));
     }
-    
+
     public ALPNServerConnectionFactory(@Name("protocols") String... protocols)
     {
         super("alpn", protocols);

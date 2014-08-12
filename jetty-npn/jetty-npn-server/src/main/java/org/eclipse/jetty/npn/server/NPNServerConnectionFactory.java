@@ -36,7 +36,7 @@ public class NPNServerConnectionFactory extends NegotiatingServerConnectionFacto
 
     public NPNServerConnectionFactory(String protocols)
     {
-        this(protocols.split(","));
+        this(protocols.trim().split(",", 0));
     }
     
     public NPNServerConnectionFactory(@Name("protocols") String... protocols)

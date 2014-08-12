@@ -30,3 +30,7 @@ lib/jetty-npn-server-${jetty.version}.jar
 [files]
 lib/
 lib/npn/
+
+[ini-template]
+# npn.protocols=spdy/3,http/1.1
+# npn.defaultProtocol=http/1.1

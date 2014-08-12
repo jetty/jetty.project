@@ -59,9 +59,16 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
     {
         super(protocol);
         this.protocols = new ArrayList<>();
-        // Trim the values, as they may come from XML configuration.
-        for (String p : protocols)
-            this.protocols.add(p.trim());
+        if (protocols != null)
+        {
+            // Trim the values, as they may come from XML configuration.
+            for (String p : protocols)
+            {
+                p = p.trim();
+                if (!p.isEmpty())
+                    this.protocols.add(p.trim());
+            }
+        }
     }
 
     public String getDefaultProtocol()
@@ -72,7 +79,8 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
     public void setDefaultProtocol(String defaultProtocol)
     {
         // Trim the value, as it may come from XML configuration.
-        this.defaultProtocol = defaultProtocol.trim();
+        String dft = defaultProtocol == null ? "" : defaultProtocol.trim();
+        this.defaultProtocol = dft.isEmpty() ? null : dft;
     }
 
     public List<String> getProtocols()
@@ -91,7 +99,9 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
             while (i.hasNext())
             {
                 String protocol = i.next();
-                if ("SSL".equalsIgnoreCase(protocol) || "alpn".equalsIgnoreCase("protocol"))
+                if ("ssl".equalsIgnoreCase(protocol) ||
+                        "alpn".equalsIgnoreCase(protocol) ||
+                        "npn".equalsIgnoreCase(protocol))
                 {
                     i.remove();
                 }
