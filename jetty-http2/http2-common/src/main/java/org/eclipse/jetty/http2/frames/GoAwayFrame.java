@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.BufferUtil;
+
 public class GoAwayFrame extends Frame
 {
     private final int lastStreamId;
@@ -45,5 +49,26 @@ public class GoAwayFrame extends Frame
     public byte[] getPayload()
     {
         return payload;
+    }
+
+    public String tryConvertPayload()
+    {
+        if (payload == null)
+            return "";
+        ByteBuffer buffer = BufferUtil.toBuffer(payload);
+        try
+        {
+            return BufferUtil.toUTF8String(buffer);
+        }
+        catch (Throwable x)
+        {
+            return BufferUtil.toDetailString(buffer);
+        }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s,%d/%s", super.toString(), error, tryConvertPayload());
     }
 }

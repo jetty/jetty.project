@@ -39,4 +39,10 @@ public class ResetFrame extends Frame
     {
         return error;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s#%d,error=%d", super.toString(), streamId, error);
+    }
 }

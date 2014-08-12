@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2;
 
-import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -48,7 +47,6 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Atomics;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
@@ -271,7 +269,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         if (LOG.isDebugEnabled())
         {
-            String reason = tryConvertPayload(frame.getPayload());
+            String reason = frame.tryConvertPayload();
             if (LOG.isDebugEnabled())
                 LOG.debug("Received {}: {}/'{}'", frame.getType(), frame.getError(), reason);
         }
@@ -281,21 +279,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         notifyClose(this, frame);
 
         return false;
-    }
-
-    private String tryConvertPayload(byte[] payload)
-    {
-        if (payload == null)
-            return "";
-        ByteBuffer buffer = BufferUtil.toBuffer(payload);
-        try
-        {
-            return BufferUtil.toUTF8String(buffer);
-        }
-        catch (Throwable x)
-        {
-            return BufferUtil.toDetailString(buffer);
-        }
     }
 
     @Override

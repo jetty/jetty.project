@@ -47,4 +47,10 @@ public class SettingsFrame extends Frame
     {
         return reply;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s,reply=%b:%s", super.toString(), reply, settings);
+    }
 }
