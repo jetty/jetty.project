@@ -18,28 +18,17 @@
 
 package org.eclipse.jetty.http2.frames;
 
-public abstract class Frame
+public class PrefaceFrame extends Frame
 {
-    public static final int HEADER_LENGTH = 9;
-    public static final int DEFAULT_MAX_LENGTH = 0x40_00;
-    public static final int MAX_MAX_LENGTH = 0xFF_FF_FF;
-    public static final Frame[] EMPTY_ARRAY = new Frame[0];
+    public static final byte[] PREFACE_BYTES = new byte[]
+            {
+                    0x50, 0x52, 0x49, 0x20, 0x2a, 0x20, 0x48, 0x54,
+                    0x54, 0x50, 0x2f, 0x32, 0x2e, 0x30, 0x0d, 0x0a,
+                    0x0d, 0x0a, 0x53, 0x4d, 0x0d, 0x0a, 0x0d, 0x0a
+            };
 
-    private final FrameType type;
-
-    protected Frame(FrameType type)
+    public PrefaceFrame()
     {
-        this.type = type;
-    }
-
-    public FrameType getType()
-    {
-        return type;
-    }
-
-    @Override
-    public String toString()
-    {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        super(FrameType.PREFACE);
     }
 }

@@ -44,10 +44,10 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
+import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
-import org.eclipse.jetty.http2.parser.PrefaceParser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -152,7 +152,7 @@ public class HTTP2ServerTest
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, request);
-        lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
+        lease.prepend(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES), false);
 
         try (Socket client = new Socket(host, port))
         {
@@ -215,7 +215,7 @@ public class HTTP2ServerTest
         HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, request);
-        lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
+        lease.prepend(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES), false);
 
         try (Socket client = new Socket(host, port))
         {
@@ -280,7 +280,7 @@ public class HTTP2ServerTest
         generator.control(lease, frame);
         // Modify the length of the frame to a wrong one.
         lease.getByteBuffers().get(0).putShort(0, (short)7);
-        lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
+        lease.prepend(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES), false);
 
         final CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket(host, port))
@@ -320,7 +320,7 @@ public class HTTP2ServerTest
         generator.control(lease, frame);
         // Modify the streamId of the frame to non zero.
         lease.getByteBuffers().get(0).putInt(4, 1);
-        lease.prepend(ByteBuffer.wrap(PrefaceParser.PREFACE_BYTES), false);
+        lease.prepend(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES), false);
 
         final CountDownLatch latch = new CountDownLatch(1);
         try (Socket client = new Socket(host, port))

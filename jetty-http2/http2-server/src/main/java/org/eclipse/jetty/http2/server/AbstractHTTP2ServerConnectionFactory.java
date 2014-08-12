@@ -37,7 +37,7 @@ import org.eclipse.jetty.server.Connector;
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
     private int maxHeaderTableSize = 4096;
-    private int initialWindowSize = FlowControl.DEFAULT_WINDOW_SIZE;
+    private int initialStreamWindow = FlowControl.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
 
     public AbstractHTTP2ServerConnectionFactory()
@@ -55,14 +55,14 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxHeaderTableSize = maxHeaderTableSize;
     }
 
-    public int getInitialWindowSize()
+    public int getInitialStreamWindow()
     {
-        return initialWindowSize;
+        return initialStreamWindow;
     }
 
-    public void setInitialWindowSize(int initialWindowSize)
+    public void setInitialStreamWindow(int initialStreamWindow)
     {
-        this.initialWindowSize = initialWindowSize;
+        this.initialStreamWindow = initialStreamWindow;
     }
 
     public int getMaxConcurrentStreams()
@@ -82,7 +82,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         Generator generator = new Generator(connector.getByteBufferPool(), getMaxHeaderTableSize());
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener,
-                new HTTP2FlowControl(getInitialWindowSize()), getMaxConcurrentStreams());
+                new HTTP2FlowControl(getInitialStreamWindow()), getMaxConcurrentStreams());
 
         Parser parser = newServerParser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),

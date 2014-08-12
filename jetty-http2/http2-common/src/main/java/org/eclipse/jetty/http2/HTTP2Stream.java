@@ -49,7 +49,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     };
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
-    private final AtomicInteger windowSize = new AtomicInteger();
+    private final AtomicInteger sendWindow = new AtomicInteger();
+    private final AtomicInteger recvWindow = new AtomicInteger();
     private final ISession session;
     private final HeadersFrame frame;
     private volatile Listener listener;
@@ -77,13 +78,13 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     @Override
     public void headers(HeadersFrame frame, Callback callback)
     {
-        session.control(this, frame, callback);
+        session.control(this, callback, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
     public void data(DataFrame frame, Callback callback)
     {
-        session.data(this, frame, callback);
+        session.data(this, callback, frame);
     }
 
     @Override
@@ -175,6 +176,15 @@ public class HTTP2Stream extends IdleTimeout implements IStream
                 // TODO: handle cases where:
                 // TODO: A) stream already remotely close.
                 // TODO: B) DATA before HEADERS.
+
+                if (getRecvWindow() < 0)
+                {
+                    // It's a bad client, it does not deserve to be
+                    // treated gently by just resetting the stream.
+                    session.close(ErrorCodes.FLOW_CONTROL_ERROR, "stream_window_exceeded", disconnectOnFailure);
+                    return false;
+                }
+
                 notifyData(this, (DataFrame)frame, callback);
                 return false;
             }
@@ -237,15 +247,26 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     }
 
     @Override
-    public int getWindowSize()
+    public int getSendWindow()
     {
-        return windowSize.get();
+        return sendWindow.get();
+    }
+
+    protected int getRecvWindow()
+    {
+        return recvWindow.get();
     }
 
     @Override
-    public int updateWindowSize(int delta)
+    public int updateSendWindow(int delta)
     {
-        return windowSize.getAndAdd(delta);
+        return sendWindow.getAndAdd(delta);
+    }
+
+    @Override
+    public int updateRecvWindow(int delta)
+    {
+        return recvWindow.getAndAdd(delta);
     }
 
     @Override
@@ -288,8 +309,8 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     @Override
     public String toString()
     {
-        return String.format("%s@%x{id=%d,windowSize=%s,reset=%b,%s}", getClass().getSimpleName(),
-                hashCode(), getId(), windowSize, reset, closeState);
+        return String.format("%s@%x{id=%d,sendWindow=%s,recvWindow=%s,reset=%b,%s}", getClass().getSimpleName(),
+                hashCode(), getId(), sendWindow, recvWindow, reset, closeState);
     }
 
     private enum CloseState

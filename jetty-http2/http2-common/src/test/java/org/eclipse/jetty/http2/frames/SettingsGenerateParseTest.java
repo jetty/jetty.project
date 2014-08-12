@@ -87,7 +87,7 @@ public class SettingsGenerateParseTest
         for (int i = 0; i < 2; ++i)
         {
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-            generator.generateSettings(lease, settings, true, false);
+            generator.generateSettings(lease, settings, true);
 
             frames.clear();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -120,7 +120,7 @@ public class SettingsGenerateParseTest
         Map<Integer, Integer> settings1 = new HashMap<>();
         settings1.put(13, 17);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateSettings(lease, settings1, true, false);
+        generator.generateSettings(lease, settings1, true);
         // Modify the length of the frame to make it invalid
         ByteBuffer bytes = lease.getByteBuffers().get(0);
         bytes.putShort(1, (short)(bytes.getShort(1) - 1));
@@ -158,7 +158,7 @@ public class SettingsGenerateParseTest
         settings1.put(key, value);
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.generateSettings(lease, settings1, true, false);
+        generator.generateSettings(lease, settings1, true);
 
         for (ByteBuffer buffer : lease.getByteBuffers())
         {

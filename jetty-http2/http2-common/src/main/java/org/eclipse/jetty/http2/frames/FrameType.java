@@ -32,7 +32,9 @@ public enum FrameType
     PING(6),
     GO_AWAY(7),
     WINDOW_UPDATE(8),
-    CONTINUATION(9);
+    CONTINUATION(9),
+    // Synthetic frames only needed by the implementation.
+    PREFACE(10);
 
     public static FrameType from(int type)
     {

@@ -27,6 +27,7 @@ import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
@@ -57,7 +58,8 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         if (settings == null)
             settings = Collections.emptyMap();
         SettingsFrame frame = new SettingsFrame(settings, false);
-        settings(frame, disconnectOnFailure());
+        // TODO: consider sending a WINDOW_UPDATE to enlarge the session send window of the client.
+        control(null, disconnectOnFailure(), frame, Frame.EMPTY_ARRAY);
         return false;
     }
 

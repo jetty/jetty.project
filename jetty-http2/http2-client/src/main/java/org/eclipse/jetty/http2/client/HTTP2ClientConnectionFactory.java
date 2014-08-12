@@ -28,7 +28,9 @@ import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -48,6 +50,8 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public static final String SESSION_LISTENER_CONTEXT_KEY = "http2.client.sessionListener";
     public static final String SESSION_PROMISE_CONTEXT_KEY = "http2.client.sessionPromise";
 
+    private int initialSessionWindow = FlowControl.DEFAULT_WINDOW_SIZE;
+
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
@@ -63,6 +67,16 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, new HTTP2FlowControl(FlowControl.DEFAULT_WINDOW_SIZE));
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
         return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, promise, listener);
+    }
+
+    public int getInitialSessionWindow()
+    {
+        return initialSessionWindow;
+    }
+
+    public void setInitialSessionWindow(int initialSessionWindow)
+    {
+        this.initialSessionWindow = initialSessionWindow;
     }
 
     private class HTTP2ClientConnection extends HTTP2Connection implements Callback
@@ -86,7 +100,14 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             Map<Integer, Integer> settings = listener.onPreface(getSession());
             if (settings == null)
                 settings = Collections.emptyMap();
-            getSession().settings(new SettingsFrame(settings, false, true), this);
+
+            PrefaceFrame prefaceFrame = new PrefaceFrame();
+            SettingsFrame settingsFrame = new SettingsFrame(settings, false);
+            int windowDelta = getInitialSessionWindow() - FlowControl.DEFAULT_WINDOW_SIZE;
+            if (windowDelta > 0)
+                getSession().control(null, this, prefaceFrame, settingsFrame, new WindowUpdateFrame(0, windowDelta));
+            else
+                getSession().control(null, this, prefaceFrame, settingsFrame);
         }
 
         @Override

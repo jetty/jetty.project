@@ -26,9 +26,7 @@ public interface FlowControl
 
     public void onNewStream(IStream stream);
 
-    public int getInitialWindowSize();
-
-    public void updateInitialWindowSize(ISession session, int initialWindowSize);
+    public void updateInitialStreamWindow(ISession session, int initialStreamWindow);
 
     public void onWindowUpdate(ISession session, IStream stream, WindowUpdateFrame frame);
 

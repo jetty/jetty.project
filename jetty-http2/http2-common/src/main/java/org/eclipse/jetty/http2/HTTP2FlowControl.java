@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http2;
 
 import org.eclipse.jetty.http2.api.Stream;
+import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -28,35 +29,30 @@ public class HTTP2FlowControl implements FlowControl
 {
     private static final Logger LOG = Log.getLogger(HTTP2FlowControl.class);
 
-    private volatile int initialWindowSize;
+    private int initialStreamWindow;
 
-    public HTTP2FlowControl(int initialWindowSize)
+    public HTTP2FlowControl(int initialStreamWindow)
     {
-        this.initialWindowSize = initialWindowSize;
+        this.initialStreamWindow = initialStreamWindow;
     }
 
     @Override
     public void onNewStream(IStream stream)
     {
-        stream.updateWindowSize(initialWindowSize);
+        stream.updateSendWindow(initialStreamWindow);
+        stream.updateRecvWindow(FlowControl.DEFAULT_WINDOW_SIZE);
     }
 
     @Override
-    public int getInitialWindowSize()
+    public void updateInitialStreamWindow(ISession session, int initialStreamWindow)
     {
-        return initialWindowSize;
-    }
-
-    @Override
-    public void updateInitialWindowSize(ISession session, int initialWindowSize)
-    {
-        int windowSize = this.initialWindowSize;
-        this.initialWindowSize = initialWindowSize;
-        int delta = initialWindowSize - windowSize;
+        int initialWindow = this.initialStreamWindow;
+        this.initialStreamWindow = initialStreamWindow;
+        int delta = initialStreamWindow - initialWindow;
 
         // SPEC: updates of the initial window size only affect stream windows, not session's.
         for (Stream stream : session.getStreams())
-            session.onUpdateWindowSize((IStream)stream, new WindowUpdateFrame(stream.getId(), delta));
+            session.onWindowUpdate((IStream)stream, new WindowUpdateFrame(stream.getId(), delta));
     }
 
     @Override
@@ -68,22 +64,30 @@ public class HTTP2FlowControl implements FlowControl
             // The stream may have been reset concurrently.
             if (stream != null)
             {
-                int oldSize = stream.updateWindowSize(delta);
+                int oldSize = stream.updateSendWindow(delta);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Updated stream window {} -> {} for {}", oldSize, oldSize + delta, stream);
+                    LOG.debug("Updated stream send window {} -> {} for {}", oldSize, oldSize + delta, stream);
             }
         }
         else
         {
-            int oldSize = session.updateWindowSize(delta);
+            int oldSize = session.updateSendWindow(delta);
             if (LOG.isDebugEnabled())
-                LOG.debug("Updated session window {} -> {} for {}", oldSize, oldSize + delta, session);
+                LOG.debug("Updated session send window {} -> {} for {}", oldSize, oldSize + delta, session);
         }
     }
 
     @Override
     public void onDataReceived(IStream stream, int length)
     {
+        ISession session = stream.getSession();
+        int oldSize = session.updateRecvWindow(-length);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Updated session recv window {} -> {} for {}", oldSize, oldSize - length, session);
+
+        oldSize = stream.updateRecvWindow(-length);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Updated stream recv window {} -> {} for {}", oldSize, oldSize - length, stream);
     }
 
     @Override
@@ -95,13 +99,17 @@ public class HTTP2FlowControl implements FlowControl
         // Other policies may send the WindowUpdate only upon reaching a threshold.
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Data consumed, increasing window by {} for {}", length, stream);
+            LOG.debug("Data consumed, increasing windows by {} for {}", length, stream);
 
         if (length > 0)
         {
-            // Negative streamId allow for generation of bytes for both stream and session
+            ISession session = stream.getSession();
+            session.updateRecvWindow(length);
+            stream.updateRecvWindow(length);
+
+            // Negative streamId allow for generation of bytes for both stream and session.
             WindowUpdateFrame frame = new WindowUpdateFrame(-stream.getId(), length);
-            stream.getSession().control(stream, frame, Callback.Adapter.INSTANCE);
+            session.control(stream, Callback.Adapter.INSTANCE, frame, Frame.EMPTY_ARRAY);
         }
     }
 
@@ -111,17 +119,14 @@ public class HTTP2FlowControl implements FlowControl
         if (length == 0)
             return;
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("Data sending, decreasing windows by {}", length);
-
         ISession session = stream.getSession();
-        int oldSize = session.updateWindowSize(-length);
+        int oldSize = session.updateSendWindow(-length);
         if (LOG.isDebugEnabled())
-            LOG.debug("Updated session window {} -> {} for {}", oldSize, oldSize - length, session);
+            LOG.debug("Updated session send window {} -> {} for {}", oldSize, oldSize - length, session);
 
-        oldSize = stream.updateWindowSize(-length);
+        oldSize = stream.updateSendWindow(-length);
         if (LOG.isDebugEnabled())
-            LOG.debug("Updated stream window {} -> {} for {}", oldSize, oldSize - length, stream);
+            LOG.debug("Updated stream send window {} -> {} for {}", oldSize, oldSize - length, stream);
     }
 
     @Override

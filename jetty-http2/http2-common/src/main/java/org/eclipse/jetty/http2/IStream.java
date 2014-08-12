@@ -44,9 +44,11 @@ public interface IStream extends Stream
      */
     public void updateClose(boolean update, boolean local);
 
-    public int getWindowSize();
+    public int getSendWindow();
 
-    public int updateWindowSize(int delta);
+    public int updateSendWindow(int delta);
+
+    public int updateRecvWindow(int delta);
 
     public void close();
 }

@@ -21,17 +21,12 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public class PrefaceParser
 {
-    public static final byte[] PREFACE_BYTES = new byte[]
-            {
-                    0x50, 0x52, 0x49, 0x20, 0x2a, 0x20, 0x48, 0x54,
-                    0x54, 0x50, 0x2f, 0x32, 0x2e, 0x30, 0x0d, 0x0a,
-                    0x0d, 0x0a, 0x53, 0x4d, 0x0d, 0x0a, 0x0d, 0x0a
-            };
     private static final Logger LOG = Log.getLogger(PrefaceParser.class);
 
     private final Parser.Listener listener;
@@ -47,13 +42,13 @@ public class PrefaceParser
         while (buffer.hasRemaining())
         {
             int currByte = buffer.get();
-            if (currByte != PREFACE_BYTES[cursor])
+            if (currByte != PrefaceFrame.PREFACE_BYTES[cursor])
             {
                 notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_preface");
                 return false;
             }
             ++cursor;
-            if (cursor == PREFACE_BYTES.length)
+            if (cursor == PrefaceFrame.PREFACE_BYTES.length)
             {
                 cursor = 0;
                 if (LOG.isDebugEnabled())

@@ -30,19 +30,12 @@ public class SettingsFrame extends Frame
 
     private final Map<Integer, Integer> settings;
     private final boolean reply;
-    private boolean preface;
 
     public SettingsFrame(Map<Integer, Integer> settings, boolean reply)
-    {
-        this(settings, reply, false);
-    }
-
-    public SettingsFrame(Map<Integer, Integer> settings, boolean reply, boolean preface)
     {
         super(FrameType.SETTINGS);
         this.settings = settings;
         this.reply = reply;
-        this.preface = preface;
     }
 
     public Map<Integer, Integer> getSettings()
@@ -53,10 +46,5 @@ public class SettingsFrame extends Frame
     public boolean isReply()
     {
         return reply;
-    }
-
-    public boolean isPreface()
-    {
-        return preface;
     }
 }

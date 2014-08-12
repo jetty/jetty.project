@@ -54,6 +54,7 @@ public class Generator
         this.generators[FrameType.GO_AWAY.getType()] = new GoAwayGenerator(headerGenerator);
         this.generators[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateGenerator(headerGenerator);
         this.generators[FrameType.CONTINUATION.getType()] = null; // TODO
+        this.generators[FrameType.PREFACE.getType()] = new PrefaceGenerator();
 
         this.dataGenerator = new DataGenerator(headerGenerator);
     }

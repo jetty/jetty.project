@@ -16,30 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.frames;
+package org.eclipse.jetty.http2.generator;
 
-public abstract class Frame
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.http2.frames.PrefaceFrame;
+import org.eclipse.jetty.io.ByteBufferPool;
+
+public class PrefaceGenerator extends FrameGenerator
 {
-    public static final int HEADER_LENGTH = 9;
-    public static final int DEFAULT_MAX_LENGTH = 0x40_00;
-    public static final int MAX_MAX_LENGTH = 0xFF_FF_FF;
-    public static final Frame[] EMPTY_ARRAY = new Frame[0];
-
-    private final FrameType type;
-
-    protected Frame(FrameType type)
+    public PrefaceGenerator()
     {
-        this.type = type;
-    }
-
-    public FrameType getType()
-    {
-        return type;
+        super(null);
     }
 
     @Override
-    public String toString()
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        lease.append(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES), false);
     }
 }

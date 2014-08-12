@@ -139,7 +139,7 @@ public class HTTP2Flusher extends IteratingCallback
             // Now the window sizes cannot change.
             // Window updates that happen concurrently will
             // be queued and processed on the next iteration.
-            int sessionWindow = session.getWindowSize();
+            int sessionWindow = session.getSendWindow();
 
             int index = 0;
             int size = frames.size();
@@ -165,7 +165,7 @@ public class HTTP2Flusher extends IteratingCallback
                     Integer streamWindow = streams.get(stream);
                     if (streamWindow == null)
                     {
-                        streamWindow = stream.getWindowSize();
+                        streamWindow = stream.getSendWindow();
                         streams.put(stream, streamWindow);
                     }
 

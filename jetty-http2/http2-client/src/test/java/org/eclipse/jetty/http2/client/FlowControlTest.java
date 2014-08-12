@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.client;
 
 import java.nio.ByteBuffer;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
@@ -32,13 +33,18 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.FlowControl;
+import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
@@ -474,7 +480,7 @@ public class FlowControlTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(15, TimeUnit.SECONDS));
         Assert.assertArrayEquals(data, bytes);
     }
 
@@ -616,5 +622,90 @@ public class FlowControlTest extends AbstractTest
 
         responseContent.flip();
         Assert.assertArrayEquals(requestData, responseData);
+    }
+
+    @Test
+    public void testClientExceedingSessionWindow() throws Exception
+    {
+        // On server, we don't consume the data.
+        startServer(new ServerSessionListener.Adapter());
+
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onClose(Session session, GoAwayFrame frame)
+            {
+                if (frame.getError() == ErrorCodes.FLOW_CONTROL_ERROR)
+                    closeLatch.countDown();
+            }
+        });
+
+        // Consume the whole session and stream window.
+        MetaData.Request metaData = newRequest("POST", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter());
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+        ByteBuffer data = ByteBuffer.allocate(FlowControl.DEFAULT_WINDOW_SIZE);
+        stream.data(new DataFrame(stream.getId(), data, false), Callback.Adapter.INSTANCE);
+
+        // Now the client is supposed to not send more frames, but what if it does ?
+        HTTP2Session http2Session = (HTTP2Session)session;
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(connector.getByteBufferPool());
+        ByteBuffer extraData = ByteBuffer.allocate(1024);
+        http2Session.getGenerator().data(lease, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
+        List<ByteBuffer> buffers = lease.getByteBuffers();
+        http2Session.getEndPoint().write(Callback.Adapter.INSTANCE, buffers.toArray(new ByteBuffer[buffers.size()]));
+
+        // Expect the connection to be closed.
+        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testClientExceedingStreamWindow() throws Exception
+    {
+        // On server, we don't consume the data.
+        startServer(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Map<Integer, Integer> onPreface(Session session)
+            {
+                // Enlarge the session window.
+                ((ISession)session).updateRecvWindow(FlowControl.DEFAULT_WINDOW_SIZE);
+                return super.onPreface(session);
+            }
+        });
+
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+        Session session = newClient(new Session.Listener.Adapter()
+        {
+            @Override
+            public void onClose(Session session, GoAwayFrame frame)
+            {
+                if (frame.getError() == ErrorCodes.FLOW_CONTROL_ERROR)
+                    closeLatch.countDown();
+            }
+        });
+
+        // Consume the whole stream window.
+        MetaData.Request metaData = newRequest("POST", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter());
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+        ByteBuffer data = ByteBuffer.allocate(FlowControl.DEFAULT_WINDOW_SIZE);
+        stream.data(new DataFrame(stream.getId(), data, false), Callback.Adapter.INSTANCE);
+
+        // Now the client is supposed to not send more frames, but what if it does ?
+        HTTP2Session http2Session = (HTTP2Session)session;
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(connector.getByteBufferPool());
+        ByteBuffer extraData = ByteBuffer.allocate(1024);
+        http2Session.getGenerator().data(lease, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
+        List<ByteBuffer> buffers = lease.getByteBuffers();
+        http2Session.getEndPoint().write(Callback.Adapter.INSTANCE, buffers.toArray(new ByteBuffer[buffers.size()]));
+
+        // Expect the connection to be closed.
+        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 }

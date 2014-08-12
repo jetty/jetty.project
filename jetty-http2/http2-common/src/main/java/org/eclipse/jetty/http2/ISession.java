@@ -29,13 +29,15 @@ public interface ISession extends Session
     @Override
     public IStream getStream(int streamId);
 
-    public void control(IStream stream, Frame frame, Callback callback);
+    public void control(IStream stream, Callback callback, Frame frame, Frame... frames);
 
-    public void data(IStream stream, DataFrame frame, Callback callback);
+    public void data(IStream stream, Callback callback, DataFrame frame);
 
-    public int updateWindowSize(int delta);
+    public int updateSendWindow(int delta);
 
-    public void onUpdateWindowSize(IStream stream, WindowUpdateFrame frame);
+    public int updateRecvWindow(int delta);
+
+    public void onWindowUpdate(IStream stream, WindowUpdateFrame frame);
 
     public void shutdown();
 

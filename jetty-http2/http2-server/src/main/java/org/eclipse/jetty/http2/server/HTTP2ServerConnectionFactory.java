@@ -80,7 +80,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         {
             Map<Integer, Integer> settings = new HashMap<>();
             settings.put(SettingsFrame.HEADER_TABLE_SIZE, getMaxHeaderTableSize());
-            settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialWindowSize());
+            settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialStreamWindow());
             int maxConcurrentStreams = getMaxConcurrentStreams();
             if (maxConcurrentStreams >= 0)
                 settings.put(SettingsFrame.MAX_CONCURRENT_STREAMS, maxConcurrentStreams);
