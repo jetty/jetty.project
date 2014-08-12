@@ -34,6 +34,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.Assert;
 import org.junit.Test;
@@ -52,7 +53,9 @@ public class StreamResetTest extends AbstractTest
         client.newStream(requestFrame, promise, new Stream.Listener.Adapter());
         Stream stream = promise.get(5, TimeUnit.SECONDS);
         ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCodes.CANCEL_STREAM_ERROR);
-        stream.getSession().reset(resetFrame, Callback.Adapter.INSTANCE);
+        FutureCallback resetCallback = new FutureCallback();
+        stream.getSession().reset(resetFrame, resetCallback);
+        resetCallback.get(5, TimeUnit.SECONDS);
         // After reset the stream should be gone.
         Assert.assertEquals(0, client.getStreams().size());
     }
