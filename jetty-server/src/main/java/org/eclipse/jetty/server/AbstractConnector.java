@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -365,13 +364,15 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 if (old.getProtocol().equals(_defaultProtocol))
                     _defaultProtocol=null;
                 removeBean(old);
-                LOG.info("{} removed {}",this,old);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} removed {}", this, old);
             }
             _factories.put(key, factory);
             addBean(factory);
             if (_defaultProtocol==null)
                 _defaultProtocol=factory.getProtocol();
-            LOG.info("{} added {}",this,factory);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} added {}", this, factory);
         }
     }
     
@@ -381,14 +382,18 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         {
             String key=StringUtil.asciiToLowerCase(factory.getProtocol());
             if (_factories.containsKey(key))
-                LOG.info("{} addIfAbsent ignored {}",this,factory);
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} addIfAbsent ignored {}", this, factory);
+            }
             else
             {
                 _factories.put(key, factory);
                 addBean(factory);
                 if (_defaultProtocol==null)
                     _defaultProtocol=factory.getProtocol();
-                LOG.info("{} addIfAbsent added {}",this,factory);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} addIfAbsent added {}", this, factory);
             }
         }
     }
