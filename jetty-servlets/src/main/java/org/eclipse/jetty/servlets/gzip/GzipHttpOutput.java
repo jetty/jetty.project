@@ -304,6 +304,8 @@ public class GzipHttpOutput extends HttpOutput
 
                 if (!_complete)
                     return Action.SUCCEEDED;
+                
+                _deflater.finish();
             }
 
             BufferUtil.compact(_buffer);
@@ -353,6 +355,8 @@ public class GzipHttpOutput extends HttpOutput
                     {
                         return Action.SUCCEEDED;
                     }
+                    
+                    _deflater.finish();
                 }
                 else
                 {
@@ -377,15 +381,6 @@ public class GzipHttpOutput extends HttpOutput
             int off=_buffer.arrayOffset()+_buffer.limit();
             int len=_buffer.capacity()-_buffer.limit() - (_last?8:0);
             int produced=_deflater.deflate(_buffer.array(),off,len,Deflater.NO_FLUSH);
-            if (produced==0)
-            {
-                LOG.warn(String.format("AsyncGzipFilter NO PROGRESS!!!! content=%s, input=%s, last=%b, deflater=%s finished=%b",
-                    BufferUtil.toDetailString(_content),
-                    BufferUtil.toDetailString(_input),
-                    _last,
-                    _deflater,
-                    _deflater.finished()));
-            }
             
             _buffer.limit(_buffer.limit()+produced);
             boolean finished=_deflater.finished();
@@ -396,6 +391,5 @@ public class GzipHttpOutput extends HttpOutput
             superWrite(_buffer,finished,this);
             return Action.SCHEDULED;
         }
-        
     }
 }
