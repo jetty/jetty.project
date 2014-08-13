@@ -176,70 +176,62 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
     @Override
     protected boolean removeSession(String idInCluster)
     {
-        synchronized (this)
+        NoSqlSession session = _sessions.remove(idInCluster);
+
+        try
         {
-            NoSqlSession session = _sessions.remove(idInCluster);
-
-            try
+            if (session != null)
             {
-                if (session != null)
-                {
-                    return remove(session);
-                }
+                return remove(session);
             }
-            catch (Exception e)
-            {
-                __log.warn("Problem deleting session {}", idInCluster,e);
-            }
-
-            return session != null;
         }
+        catch (Exception e)
+        {
+            __log.warn("Problem deleting session {}", idInCluster,e);
+        }
+
+        return session != null;
+
     }
 
     /* ------------------------------------------------------------ */
     protected void expire( String idInCluster )
     {
-        synchronized (this)
-        {
-            //get the session from memory
-            NoSqlSession session = _sessions.get(idInCluster);
+        //get the session from memory
+        NoSqlSession session = _sessions.get(idInCluster);
 
-            try
+        try
+        {
+            if (session == null)
             {
-                if (session == null)
-                {
-                    //we need to expire the session with its listeners, so load it
-                    session = loadSession(idInCluster);
-                }
-               
-                if (session != null)
-                    session.timeout();
+                //we need to expire the session with its listeners, so load it
+                session = loadSession(idInCluster);
             }
-            catch (Exception e)
-            {
-                __log.warn("Problem expiring session {}", idInCluster,e);
-            }
+
+            if (session != null)
+                session.timeout();
+        }
+        catch (Exception e)
+        {
+            __log.warn("Problem expiring session {}", idInCluster,e);
         }
     }
-    
-    
+
+
     public void invalidateSession (String idInCluster)
     {
-        synchronized (this)
+        NoSqlSession session = _sessions.get(idInCluster);
+        try
         {
-            NoSqlSession session = _sessions.get(idInCluster);
-            try
+            __log.debug("invalidating session {}", idInCluster);
+            if (session != null)
             {
-                __log.debug("invalidating session {}", idInCluster);
-                if (session != null)
-                {
-                    session.invalidate();
-                }
+                session.invalidate();
             }
-            catch (Exception e)
-            {
-                __log.warn("Problem invalidating session {}", idInCluster,e); 
-            }
+        }
+        catch (Exception e)
+        {
+            __log.warn("Problem invalidating session {}", idInCluster,e); 
         }
     }
 
