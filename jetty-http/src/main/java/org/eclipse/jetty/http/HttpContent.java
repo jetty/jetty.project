@@ -168,5 +168,11 @@ public interface HttpContent
         {
             _resource.close();
         }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x{r=%s}",this.getClass().getSimpleName(),hashCode(),_resource);
+        }
     }
 }

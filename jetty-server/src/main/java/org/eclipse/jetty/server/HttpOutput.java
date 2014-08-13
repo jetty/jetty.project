@@ -643,6 +643,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (buffer!=null)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("sendContent({}=={},{},direct={})",httpContent,BufferUtil.toDetailString(buffer),callback,_channel.useDirectBuffers());
+            
             sendContent(buffer,callback);
             return;
         }
@@ -650,6 +653,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         ReadableByteChannel rbc=httpContent.getReadableByteChannel();
         if (rbc!=null)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("sendContent({}=={},{},direct={})",httpContent,rbc,callback,_channel.useDirectBuffers());
             // Close of the rbc is done by the async sendContent
             sendContent(rbc,callback);
             return;
@@ -658,6 +663,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         InputStream in = httpContent.getInputStream();
         if ( in!=null )
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("sendContent({}=={},{},direct={})",httpContent,in,callback,_channel.useDirectBuffers());
             sendContent(in,callback);
             return;
         }
