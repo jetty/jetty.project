@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -76,8 +77,11 @@ public class Parser
         try
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Parsing {}", buffer);
-
+            {
+                int l=Math.min(buffer.remaining(),16);
+                LOG.debug("Parsing "+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l)+(l<buffer.remaining()?"...":""));
+            }
+            
             while (true)
             {
                 switch (state)
@@ -93,7 +97,17 @@ public class Parser
                     {
                         int type = headerParser.getFrameType();
                         if (LOG.isDebugEnabled())
-                            LOG.debug("Parsing {} frame", FrameType.from(type));
+                        {
+                            int fl=headerParser.getLength();
+                            int l=Math.min(16,Math.min(buffer.remaining(),fl));
+                            
+                            LOG.debug(String.format("Parsing %s frame %s%s%s",
+                                    FrameType.from(type),
+                                    "                 ".substring(0,11-FrameType.from(type).toString().length()),
+                                    TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l),
+                                    l<fl?"...":""));
+                        }
+                        
                         if (type < 0 || type >= bodyParsers.length)
                         {
                             notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "unknown_frame_type_" + type);
@@ -124,13 +138,13 @@ public class Parser
                                     // The content will be processed asynchronously, stop parsing;
                                     // the asynchronous operation will eventually resume parsing.
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("Parsed {} frame, asynchronous processing", FrameType.from(type));
+                                        LOG.debug("Parsed  {} frame, asynchronous processing", FrameType.from(type));
                                     return true;
                                 }
                                 case COMPLETE:
                                 {
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("Parsed {} frame, synchronous processing", FrameType.from(type));
+                                        LOG.debug("Parsed  {} frame, synchronous processing", FrameType.from(type));
                                     reset();
                                     break;
                                 }

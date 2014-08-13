@@ -41,13 +41,14 @@ public class BadMessageException extends RuntimeException
     
     public BadMessageException(int code, String reason)
     {
+        super(code+": "+reason);
         _code=code;
         _reason=reason;
     }
     
     public BadMessageException(int code, String reason, Throwable cause)
     {
-        super(cause);
+        super(code+": "+reason, cause);
         _code=code;
         _reason=reason;
     }

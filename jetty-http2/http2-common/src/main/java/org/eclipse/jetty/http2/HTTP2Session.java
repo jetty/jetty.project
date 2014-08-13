@@ -194,43 +194,57 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public boolean onSettings(SettingsFrame frame)
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Received {}", frame);
-
         if (frame.isReply())
             return false;
 
-        Map<Integer, Integer> settings = frame.getSettings();
-        if (settings.containsKey(SettingsFrame.HEADER_TABLE_SIZE))
+        // Iterate over all settings
+        for (Map.Entry<Integer, Integer> entry : frame.getSettings().entrySet())
         {
-            int headerTableSize = settings.get(SettingsFrame.HEADER_TABLE_SIZE);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Updated HPACK header table size to {}", headerTableSize);
-            generator.setHeaderTableSize(headerTableSize);
-        }
-        if (settings.containsKey(SettingsFrame.MAX_CONCURRENT_STREAMS))
-        {
-            maxLocalStreams = settings.get(SettingsFrame.MAX_CONCURRENT_STREAMS);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Updated max local concurrent streams to {}", maxLocalStreams);
-        }
-        if (settings.containsKey(SettingsFrame.INITIAL_WINDOW_SIZE))
-        {
-            int initialWindow = settings.get(SettingsFrame.INITIAL_WINDOW_SIZE);
-            flowControl.updateInitialStreamWindow(this, initialWindow);
-        }
-        if (settings.containsKey(SettingsFrame.MAX_FRAME_SIZE))
-        {
-            int maxFrameSize = settings.get(SettingsFrame.MAX_FRAME_SIZE);
-            // SPEC: check the max frame size is sane.
-            if (maxFrameSize < Frame.DEFAULT_MAX_LENGTH || maxFrameSize > Frame.MAX_MAX_LENGTH)
+            int value=entry.getValue();
+            switch (entry.getKey())
             {
-                onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_max_frame_size");
-                return false;
+                case SettingsFrame.HEADER_TABLE_SIZE:
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Update HPACK header table size to {}", value);
+                    generator.setHeaderTableSize(value);
+                    break;
+                    
+                case SettingsFrame.ENABLE_PUSH:
+                    break;
+                    
+                case SettingsFrame.MAX_CONCURRENT_STREAMS:
+                    maxLocalStreams = value;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Update max local concurrent streams to {}", maxLocalStreams);
+                    break;
+                    
+                case SettingsFrame.INITIAL_WINDOW_SIZE:
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Update initial window size to {}", value);
+                    flowControl.updateInitialStreamWindow(this, value);
+                    break;
+                    
+                case SettingsFrame.MAX_FRAME_SIZE:
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Update max frame size to {}", value);
+                    // SPEC: check the max frame size is sane.
+                    if (value < Frame.DEFAULT_MAX_LENGTH || value > Frame.MAX_MAX_LENGTH)
+                    {
+                        onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_max_frame_size");
+                        return false;
+                    }
+                    generator.setMaxFrameSize(value);
+
+                    break;
+                    
+                case SettingsFrame.MAX_HEADER_LIST_SIZE:
+                    // TODO implement
+                    LOG.warn("NOT IMPLEMENTED max header list size to {}", value);
+                    break;
+                    
+                default:
+                    LOG.debug("Unknown setting {}:{}",entry.getKey(),value);
             }
-            if (LOG.isDebugEnabled())
-                LOG.debug("Updated max frame size to {}", maxFrameSize);
-            generator.setMaxFrameSize(maxFrameSize);
         }
         notifySettings(this, frame);
 

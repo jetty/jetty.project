@@ -25,9 +25,12 @@ import java.util.Map;
 import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class SettingsBodyParser extends BodyParser
 {
+    private static final Logger LOG = Log.getLogger(SettingsBodyParser.class);
     private State state = State.PREPARE;
     private int cursor;
     private int length;
@@ -116,6 +119,8 @@ public class SettingsBodyParser extends BodyParser
                     if (buffer.remaining() >= 4)
                     {
                         settingValue = buffer.getInt();
+                        if (LOG.isDebugEnabled())
+                            LOG.debug(String.format("setting %d=%d",settingId, settingValue));
                         settings.put(settingId, settingValue);
                         state = State.SETTING_ID;
                         length -= 4;
@@ -144,6 +149,8 @@ public class SettingsBodyParser extends BodyParser
                     }
                     if (cursor == 0)
                     {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug(String.format("setting %d=%d",settingId, settingValue));
                         settings.put(settingId, settingValue);
                         state = State.SETTING_ID;
                         if (length == 0)

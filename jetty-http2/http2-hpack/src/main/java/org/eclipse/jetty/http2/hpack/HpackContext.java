@@ -306,12 +306,14 @@ public class HpackContext
             if (entry==_nameMap.get(lc))
                 _nameMap.remove(lc);
         }
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("HdrTbl[%x] entries=%d, size=%d, max=%d",hashCode(),_headerTable.size(),_headerTableSizeInBytes,_maxHeaderTableSizeInBytes));
     }
     
     @Override
     public String toString()
     {
-        return String.format("HpackContext@%x{%s}",hashCode(),_headerTable);
+        return String.format("HpackContext@%x{entries=%d,size=%d,max=%d}",hashCode(),_headerTable.size(),_headerTableSizeInBytes,_maxHeaderTableSizeInBytes);
     }
     
     
