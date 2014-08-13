@@ -324,22 +324,22 @@ public class GzipHttpOutput extends HttpOutput
     {        
         private final ByteBuffer _input;
         private final ByteBuffer _content;
-        private final boolean _complete;
+        private final boolean _last;
         public GzipBufferCB(ByteBuffer content, boolean complete, Callback callback)
         {
             super(callback);
             _input=getHttpChannel().getByteBufferPool().acquire(Math.min(_factory.getBufferSize(),content.remaining()),false);
             _content=content;
-            _complete=complete;
+            _last=complete;
         }
 
         @Override
         protected Action process() throws Exception
         {
             if (_deflater.needsInput())
-            {
+            {                
                 if (BufferUtil.isEmpty(_content))
-                {
+                {                    
                     if (_deflater.finished())
                     {
                         _factory.recycle(_deflater);
@@ -349,38 +349,51 @@ public class GzipHttpOutput extends HttpOutput
                         return Action.SUCCEEDED;
                     }
                     
-                    if (!_complete)
+                    if (!_last)
+                    {
                         return Action.SUCCEEDED;
+                    }
                 }
                 else
                 {
                     BufferUtil.clearToFill(_input);
-                    BufferUtil.put(_content,_input);
+                    int took=BufferUtil.put(_content,_input);
                     BufferUtil.flipToFlush(_input,0);
-
+                    if (took==0)
+                        throw new IllegalStateException();
+                   
                     byte[] array=_input.array();
                     int off=_input.arrayOffset()+_input.position();
                     int len=_input.remaining();
 
                     _crc.update(array,off,len);
                     _deflater.setInput(array,off,len);                
-                    if (_complete && BufferUtil.isEmpty(_content))
+                    if (_last && BufferUtil.isEmpty(_content))
                         _deflater.finish();
                 }
             }
 
             BufferUtil.compact(_buffer);
             int off=_buffer.arrayOffset()+_buffer.limit();
-            int len=_buffer.capacity()-_buffer.limit() - (_complete?8:0);
+            int len=_buffer.capacity()-_buffer.limit() - (_last?8:0);
             int produced=_deflater.deflate(_buffer.array(),off,len,Deflater.NO_FLUSH);
+            if (produced==0)
+            {
+                LOG.warn(String.format("AsyncGzipFilter NO PROGRESS!!!! content=%s, input=%s, last=%b, deflater=%s finished=%b",
+                    BufferUtil.toDetailString(_content),
+                    BufferUtil.toDetailString(_input),
+                    _last,
+                    _deflater,
+                    _deflater.finished()));
+            }
             
             _buffer.limit(_buffer.limit()+produced);
-            boolean complete=_deflater.finished();
+            boolean finished=_deflater.finished();
             
-            if (complete)
+            if (finished)
                 addTrailer();
                 
-            superWrite(_buffer,complete,this);
+            superWrite(_buffer,finished,this);
             return Action.SCHEDULED;
         }
         
