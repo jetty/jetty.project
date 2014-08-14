@@ -22,7 +22,6 @@ import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
 import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 import static org.ops4j.pax.exam.CoreOptions.options;
 
-
 import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -48,10 +47,7 @@ import org.osgi.framework.BundleContext;
 public class TestJettyOSGiBootSpdy
 {
     private static final String LOG_LEVEL = "WARN";
-    
-    private static final String JETTY_SPDY_PORT = "jetty.spdy.port";
 
-    private static final int DEFAULT_JETTY_SPDY_PORT = 9877;
 
     @Inject
     private BundleContext bundleContext;
@@ -74,7 +70,8 @@ public class TestJettyOSGiBootSpdy
     public static List<Option> spdyJettyDependencies()
     {
         List<Option> res = new ArrayList<Option>();
-        res.add(CoreOptions.systemProperty(JETTY_SPDY_PORT).value(String.valueOf(DEFAULT_JETTY_SPDY_PORT)));
+        res.add(CoreOptions.systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
+        res.add(CoreOptions.systemProperty("ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
 
         String alpnBoot = System.getProperty("mortbay-alpn-boot");
         if (alpnBoot == null) { throw new IllegalStateException("Define path to alpn boot jar as system property -Dmortbay-alpn-boot"); }
@@ -114,7 +111,7 @@ public class TestJettyOSGiBootSpdy
     @Test
     public void testSpdyOnHttpService() throws Exception
     {
-        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "https", DEFAULT_JETTY_SPDY_PORT);
+        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "https", TestJettyOSGiBootCore.DEFAULT_SSL_PORT);
     }
 
 }

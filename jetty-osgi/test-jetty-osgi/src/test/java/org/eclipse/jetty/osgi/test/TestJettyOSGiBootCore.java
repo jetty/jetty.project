@@ -47,7 +47,9 @@ import org.osgi.framework.BundleContext;
 public class TestJettyOSGiBootCore
 {
     private static final String LOG_LEVEL = "WARN";
-    public static int DEFAULT_JETTY_HTTP_PORT = 9876;
+    
+    public static final int DEFAULT_HTTP_PORT = 9876;
+    public static final int DEFAULT_SSL_PORT = 9877;
 
     @Inject
     private BundleContext bundleContext;
@@ -71,7 +73,8 @@ public class TestJettyOSGiBootCore
     { 
         List<Option> res = new ArrayList<Option>();
         // get the jetty home config from the osgi boot bundle.
-        res.add(CoreOptions.systemProperty("jetty.port").value(String.valueOf(DEFAULT_JETTY_HTTP_PORT)));
+        res.add(CoreOptions.systemProperty("jetty.port").value(String.valueOf(DEFAULT_HTTP_PORT)));
+        res.add(CoreOptions.systemProperty("ssl.port").value(String.valueOf(DEFAULT_SSL_PORT)));
         res.add(CoreOptions.systemProperty("jetty.home.bundle").value("org.eclipse.jetty.osgi.boot"));
         res.addAll(coreJettyDependencies());
         return res;
@@ -147,6 +150,6 @@ public class TestJettyOSGiBootCore
     @Test
     public void testHttpService() throws Exception
     {
-        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", DEFAULT_JETTY_HTTP_PORT);
+        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", DEFAULT_HTTP_PORT);
     }
 }
