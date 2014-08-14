@@ -24,6 +24,7 @@ import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.io.EndPoint;
@@ -44,6 +45,9 @@ public class HTTP2ClientSession extends HTTP2Session
     @Override
     public boolean onHeaders(HeadersFrame frame)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {}", frame);
+
         int streamId = frame.getStreamId();
         IStream stream = getStream(streamId);
         if (stream == null)
@@ -74,6 +78,49 @@ public class HTTP2ClientSession extends HTTP2Session
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
+        }
+    }
+
+    @Override
+    public boolean onPushPromise(PushPromiseFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Received {}", frame);
+
+        int streamId = frame.getStreamId();
+        int pushStreamId = frame.getPromisedStreamId();
+        IStream stream = getStream(streamId);
+        if (stream == null)
+        {
+            ResetFrame reset = new ResetFrame(pushStreamId, ErrorCodes.STREAM_CLOSED_ERROR);
+            reset(reset, disconnectOnFailure());
+        }
+        else
+        {
+            IStream pushStream = createRemoteStream(pushStreamId);
+            pushStream.updateClose(true, true);
+            pushStream.process(frame, Callback.Adapter.INSTANCE);
+            Stream.Listener listener = notifyPush(stream, pushStream, frame);
+            pushStream.setListener(listener);
+            if (pushStream.isClosed())
+                removeStream(pushStream, false);
+        }
+        return false;
+    }
+
+    private Stream.Listener notifyPush(IStream stream, IStream pushStream, PushPromiseFrame frame)
+    {
+        Stream.Listener listener = stream.getListener();
+        if (listener == null)
+            return null;
+        try
+        {
+            return listener.onPush(pushStream, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+            return null;
         }
     }
 }

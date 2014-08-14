@@ -48,4 +48,10 @@ public class PushPromiseFrame extends Frame
     {
         return metaData;
     }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s#%d/%d", super.toString(), streamId, promisedStreamId);
+    }
 }

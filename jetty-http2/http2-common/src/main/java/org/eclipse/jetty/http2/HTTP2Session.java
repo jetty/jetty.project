@@ -255,13 +255,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     }
 
     @Override
-    public boolean onPushPromise(PushPromiseFrame frame)
-    {
-        // TODO
-        return false;
-    }
-
-    @Override
     public boolean onPing(PingFrame frame)
     {
         if (LOG.isDebugEnabled())
@@ -332,13 +325,35 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             priority = priority == null ? null : new PriorityFrame(streamId, priority.getDependentStreamId(),
                     priority.getWeight(), priority.isExclusive());
             frame = new HeadersFrame(streamId, frame.getMetaData(), priority, frame.isEndStream());
-            final IStream stream = createLocalStream(frame, promise);
+            final IStream stream = createLocalStream(streamId, promise);
             if (stream == null)
                 return;
             stream.updateClose(frame.isEndStream(), true);
             stream.setListener(listener);
 
             ControlEntry entry = new ControlEntry(frame, stream, new PromiseCallback<>(promise, stream));
+            flusher.append(entry);
+        }
+        // Iterate outside the synchronized block.
+        flusher.iterate();
+    }
+
+    @Override
+    public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame)
+    {
+        // Synchronization is necessary to atomically create
+        // the stream id and enqueue the frame to be sent.
+        synchronized (this)
+        {
+            int streamId = streamIds.getAndAdd(2);
+            frame = new PushPromiseFrame(frame.getStreamId(), streamId, frame.getMetaData());
+
+            final IStream pushStream = createLocalStream(streamId, promise);
+            if (pushStream == null)
+                return;
+            pushStream.updateClose(true, false);
+
+            ControlEntry entry = new ControlEntry(frame, pushStream, new PromiseCallback<>(promise, pushStream));
             flusher.append(entry);
         }
         // Iterate outside the synchronized block.
@@ -414,7 +429,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             flusher.iterate();
     }
 
-    protected IStream createLocalStream(HeadersFrame frame, Promise<Stream> promise)
+    protected IStream createLocalStream(int streamId, Promise<Stream> promise)
     {
         while (true)
         {
@@ -429,8 +444,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 break;
         }
 
-        IStream stream = newStream(frame);
-        int streamId = stream.getId();
+        IStream stream = newStream(streamId);
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             stream.setIdleTimeout(endPoint.getIdleTimeout());
@@ -446,10 +460,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
     }
 
-    protected IStream createRemoteStream(HeadersFrame frame)
+    protected IStream createRemoteStream(int streamId)
     {
-        int streamId = frame.getStreamId();
-
         // SPEC: exceeding max concurrent streams is treated as stream error.
         while (true)
         {
@@ -464,7 +476,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 break;
         }
 
-        IStream stream = newStream(frame);
+        IStream stream = newStream(streamId);
 
         // SPEC: duplicate stream is treated as connection error.
         if (streams.putIfAbsent(streamId, stream) == null)
@@ -483,9 +495,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
     }
 
-    protected IStream newStream(HeadersFrame frame)
+    protected IStream newStream(int streamId)
     {
-        return new HTTP2Stream(scheduler, this, frame);
+        return new HTTP2Stream(scheduler, this, streamId);
     }
 
     protected void removeStream(IStream stream, boolean local)

@@ -26,11 +26,17 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.IStream;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -40,11 +46,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
 
     private final AtomicBoolean commit = new AtomicBoolean();
     private final Callback commitCallback = new CommitCallback();
+    private final Connector connector;
+    private final HttpConfiguration httpConfiguration;
+    private final EndPoint endPoint;
     private final IStream stream;
-    private final HeadersFrame request;
+    private final MetaData.Request request;
 
-    public HttpTransportOverHTTP2(IStream stream, HeadersFrame request)
+    public HttpTransportOverHTTP2(Connector connector, HttpConfiguration httpConfiguration, EndPoint endPoint, IStream stream, MetaData.Request request)
     {
+        this.connector = connector;
+        this.httpConfiguration = httpConfiguration;
+        this.endPoint = endPoint;
         this.stream = stream;
         this.request = request;
     }
@@ -52,8 +64,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        MetaData.Request metaData = (MetaData.Request)request.getMetaData();
-        boolean isHeadRequest = HttpMethod.HEAD.is(metaData.getMethod());
+        boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
 
         // info != null | content != 0 | last = true => commit + send/end
         // info != null | content != 0 | last = false => commit + send
@@ -86,14 +97,30 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
     }
 
-    /**
-     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
-     */
     @Override
-    public void push(org.eclipse.jetty.http.MetaData.Request request)
-    {   
-        // TODO implement push
-        LOG.warn("NOT YET IMPLEMENTED push in {}",this);
+    public void push(final MetaData.Request request)
+    {
+        stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<Stream>()
+        {
+            @Override
+            public void succeeded(Stream pushStream)
+            {
+                HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, httpConfiguration, endPoint, (IStream)pushStream, request);
+                HttpInputOverHTTP2 input = new HttpInputOverHTTP2();
+                HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport, input, pushStream);
+                pushStream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
+
+                channel.onPushRequest(request);
+            }
+
+            @Override
+            public void failed(Throwable x)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not push " + request, x);
+                stream.getSession().disconnect();
+            }
+        });
     }
     
     private void commit(HttpGenerator.ResponseInfo info, boolean endStream, Callback callback)

@@ -97,17 +97,7 @@ public class Parser
                     {
                         int type = headerParser.getFrameType();
                         if (LOG.isDebugEnabled())
-                        {
-                            int fl=headerParser.getLength();
-                            int l=Math.min(16,Math.min(buffer.remaining(),fl));
-                            
-                            LOG.debug(String.format("Parsing %s frame %s%s%s",
-                                    FrameType.from(type),
-                                    "                 ".substring(0,11-FrameType.from(type).toString().length()),
-                                    TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l),
-                                    l<fl?"...":""));
-                        }
-                        
+                            LOG.debug("Parsing {} frame", FrameType.from(type));
                         if (type < 0 || type >= bodyParsers.length)
                         {
                             notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "unknown_frame_type_" + type);

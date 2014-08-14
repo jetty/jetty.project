@@ -22,7 +22,8 @@ package org.eclipse.jetty.servlets;
 import java.io.IOException;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicLong;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -30,6 +31,7 @@ import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -41,8 +43,6 @@ import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-/* ------------------------------------------------------------ */
 /**
  * A filter that builds a cache of associated resources to push
  * using the following heuristics:<ul>
@@ -53,135 +53,133 @@ import org.eclipse.jetty.util.log.Logger;
  * <li>If the time period between a request and an associated request is small,
  * that indicates a possible push resource
  * </ul>
- * 
  */
 public class PushCacheFilter implements Filter
 {
     private static final Logger LOG = Log.getLogger(PushCacheFilter.class);
-    private final ConcurrentMap<String, Target> _cache = new ConcurrentHashMap<>();
+
+    private final ConcurrentMap<String, PrimaryResource> _cache = new ConcurrentHashMap<>();
+    private long _associatePeriod = 2000L;
     
-    private long _associateDelay=2000L;
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.Filter#init(javax.servlet.FilterConfig)
-     */
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        if (config.getInitParameter("associateDelay")!=null)
-            _associateDelay=Long.valueOf(config.getInitParameter("associateDelay"));
+        if (config.getInitParameter("associateDelay") != null)
+            _associatePeriod = Long.valueOf(config.getInitParameter("associateDelay"));
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.Filter#doFilter(javax.servlet.ServletRequest, javax.servlet.ServletResponse, javax.servlet.FilterChain)
-     */
     @Override
-    public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
-    { 
-        Request baseRequest = Request.getBaseRequest(request);
-        
-        
+    public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException, ServletException
+    {
+        HttpServletRequest request = (HttpServletRequest)req;
+
         // Iterating over fields is more efficient than multiple gets
-        HttpFields fields = baseRequest.getHttpFields();
-        boolean conditional=false;
-        String referer=null;
-        loop: for (int i=0;i<fields.size();i++)
+        HttpFields fields = Request.getBaseRequest(req).getHttpFields();
+        boolean conditional = false;
+        String referrer = null;
+        loop: for (int i = 0; i < fields.size(); i++)
         {
-            HttpField field=fields.getField(i);
-            HttpHeader header=field.getHeader();
-            if (header==null)
+            HttpField field = fields.getField(i);
+            HttpHeader header = field.getHeader();
+            if (header == null)
                 continue;
-            
+
             switch (header)
             {
                 case IF_MATCH:
                 case IF_MODIFIED_SINCE:
                 case IF_NONE_MATCH:
                 case IF_UNMODIFIED_SINCE:
-                    conditional=true;
+                    conditional = true;
                     break loop;
-                    
+
                 case REFERER:
-                    referer=field.getValue();
+                    referrer = field.getValue();
                     break;
-                    
+
                 default:
                     break;
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} referer={} conditional={}%n",baseRequest.getMethod(),baseRequest.getRequestURI(),referer,conditional);
+            LOG.debug("{} {} referrer={} conditional={}", request.getMethod(), request.getRequestURI(), referrer, conditional);
 
-        HttpURI uri = null;
         if (!conditional)
         {
-            String session = baseRequest.getSession(true).getId();
-            String path = URIUtil.addPaths(baseRequest.getServletPath(),baseRequest.getPathInfo());
-            
-            if (referer!=null)
+            String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
+
+            if (referrer != null)
             {
-                uri = new HttpURI(referer);
-                if (request.getServerName().equals(uri.getHost()))
+                HttpURI referrerURI = new HttpURI(referrer);
+                if (request.getServerName().equals(referrerURI.getHost()) &&
+                        request.getServerPort() == referrerURI.getPort())
                 {
-                    String from = uri.getPath();
-                    if (from.startsWith(baseRequest.getContextPath()))
+                    String referrerPath = referrerURI.getPath();
+                    if (referrerPath.startsWith(request.getContextPath()))
                     {
-                        String from_in_ctx = from.substring(baseRequest.getContextPath().length());
-                        
-                        Target target = _cache.get(from_in_ctx);
-                        if (target!=null)
+                        String referrerPathNoContext = referrerPath.substring(request.getContextPath().length());
+                        PrimaryResource primaryResource = _cache.get(referrerPathNoContext);
+                        if (primaryResource != null)
                         {
-                            Long last = target._timestamp.get(session);
-                            if (last!=null && (System.currentTimeMillis()-last)<_associateDelay && !target._associated.containsKey(path))
+                            long primaryTimestamp = primaryResource._timestamp.get();
+                            if (primaryTimestamp != 0)
                             {
-                                RequestDispatcher dispatcher = baseRequest.getServletContext().getRequestDispatcher(path);
-                                if (target._associated.putIfAbsent(path,dispatcher)==null)
-                                    LOG.info("ASSOCIATE {}->{}",from_in_ctx,dispatcher);
+                                RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher(path);
+                                if (System.nanoTime() - primaryTimestamp < TimeUnit.MILLISECONDS.toNanos(_associatePeriod))
+                                {
+                                    if (primaryResource._associated.putIfAbsent(path, dispatcher) == null)
+                                    {
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("Associated {} -> {}", referrerPathNoContext, dispatcher);
+                                    }
+                                }
+                                else
+                                {
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("Not associated {} -> {}, outside associate period of {}ms", referrerPathNoContext, dispatcher, _associatePeriod);
+                                }
                             }
                         }
                     }
                 }
             }
 
-            // push some resources?
-            Target target = _cache.get(path);
-            if (target == null)
+            // Push some resources?
+            PrimaryResource primaryResource = _cache.get(path);
+            if (primaryResource == null)
             {
-                Target t=new Target();
-                target = _cache.putIfAbsent(path,t);
-                target = target==null?t:target;
+                PrimaryResource t = new PrimaryResource();
+                primaryResource = _cache.putIfAbsent(path, t);
+                primaryResource = primaryResource == null ? t : primaryResource;
+                primaryResource._timestamp.compareAndSet(0, System.nanoTime());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Cached {}", path);
             }
-            target._timestamp.put(session,System.currentTimeMillis());
-            if (target._associated.size()>0)
+
+            if (!primaryResource._associated.isEmpty())
             {
-                for (RequestDispatcher dispatcher : target._associated.values())
+                for (RequestDispatcher dispatcher : primaryResource._associated.values())
                 {
-                    LOG.info("PUSH {}->{}",path,dispatcher);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Pushing {} <- {}", dispatcher, path);
                     ((Dispatcher)dispatcher).push(request);
                 }
             }
         }
 
-        chain.doFilter(request,response);
-        
+        chain.doFilter(req, resp);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see javax.servlet.Filter#destroy()
-     */
     @Override
     public void destroy()
-    {        
+    {
+        _cache.clear();
     }
 
-    
-    public static class Target
+    private static class PrimaryResource
     {
-        final ConcurrentMap<String,RequestDispatcher> _associated = new ConcurrentHashMap<>();
-        final ConcurrentMap<String,Long> _timestamp = new ConcurrentHashMap<>();
+        private final ConcurrentMap<String, RequestDispatcher> _associated = new ConcurrentHashMap<>();
+        private final AtomicLong _timestamp = new AtomicLong();
     }
 }

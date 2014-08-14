@@ -24,6 +24,8 @@ import org.eclipse.jetty.util.Callback;
 
 public interface IStream extends Stream
 {
+    public static final String CHANNEL_ATTRIBUTE = IStream.class.getName() + ".channel";
+
     @Override
     public ISession getSession();
 

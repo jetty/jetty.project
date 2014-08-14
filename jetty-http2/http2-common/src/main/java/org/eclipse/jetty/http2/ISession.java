@@ -19,10 +19,13 @@
 package org.eclipse.jetty.http2;
 
 import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 
 public interface ISession extends Session
 {
@@ -30,6 +33,8 @@ public interface ISession extends Session
     public IStream getStream(int streamId);
 
     public void control(IStream stream, Callback callback, Frame frame, Frame... frames);
+
+    public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame);
 
     public void data(IStream stream, Callback callback, DataFrame frame);
 

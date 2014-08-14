@@ -21,13 +21,13 @@ package org.eclipse.jetty.http2.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -63,16 +63,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         return _expect100Continue;
     }
     
-    public void onHeadersFrame(HeadersFrame frame)
+    public void onRequest(HeadersFrame frame)
     {
-        MetaData metaData = frame.getMetaData();
-        if (!metaData.isRequest())
-        {
-            onBadMessage(400, null);
-            return;
-        }
-
-        MetaData.Request request = (MetaData.Request)metaData;
+        MetaData.Request request = (MetaData.Request)frame.getMetaData();
         HttpFields fields = request.getFields();
         
         _expect100Continue = fields.contains(HttpHeader.EXPECT,HttpHeaderValue.CONTINUE.asString());
@@ -91,7 +84,22 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Request #{}:{}{} {} {}{}{}",
-                    stream.getId(), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(), System.lineSeparator(), fields);
+                    stream.getId(), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(),
+                    System.lineSeparator(), fields);
+        }
+
+        execute(this);
+    }
+
+    public void onPushRequest(MetaData.Request request)
+    {
+        onRequest(request);
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP2 Push Request #{}:{}{} {} {}{}{}",
+                    stream.getId(), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(),
+                    System.lineSeparator(), request.getFields());
         }
 
         execute(this);

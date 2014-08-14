@@ -20,7 +20,6 @@ package org.eclipse.jetty.http2.client;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -45,7 +44,7 @@ import org.junit.After;
 public class AbstractTest
 {
     protected ServerConnector connector;
-    private String path = "/test";
+    protected String servletPath = "/test";
     protected HTTP2Client client;
     private Server server;
 
@@ -53,13 +52,18 @@ public class AbstractTest
     {
         prepareServer(new HTTP2ServerConnectionFactory(new HttpConfiguration()));
 
-        ServletContextHandler context = new ServletContextHandler(server, "/");
-        context.addServlet(new ServletHolder(servlet), path);
+        ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
+        context.addServlet(new ServletHolder(servlet), servletPath + "/*");
+        customizeContext(context);
 
         prepareClient();
 
         server.start();
         client.start();
+    }
+
+    protected void customizeContext(ServletContextHandler context)
+    {
     }
 
     protected void startServer(ServerSessionListener listener) throws Exception
@@ -96,18 +100,23 @@ public class AbstractTest
         return promise.get(5, TimeUnit.SECONDS);
     }
 
+    protected MetaData.Request newRequest(String method, HttpFields fields)
+    {
+        return newRequest(method, "", fields);
+    }
+
+    protected MetaData.Request newRequest(String method, String pathInfo, HttpFields fields)
+    {
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        String authority = host + ":" + port;
+        return new MetaData.Request(method, HttpScheme.HTTP, new HostPortHttpField(authority), servletPath + pathInfo, HttpVersion.HTTP_2, fields);
+    }
+
     @After
     public void dispose() throws Exception
     {
         client.stop();
         server.stop();
-    }
-
-    protected MetaData.Request newRequest(String method, HttpFields fields)
-    {
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        String authority = host + ":" + port;
-        return new MetaData.Request(method, HttpScheme.HTTP, new HostPortHttpField(authority), path, HttpVersion.HTTP_2, fields);
     }
 }

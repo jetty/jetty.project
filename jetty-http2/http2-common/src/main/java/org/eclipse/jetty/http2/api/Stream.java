@@ -20,7 +20,9 @@ package org.eclipse.jetty.http2.api;
 
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 
 public interface Stream
 {
@@ -29,6 +31,8 @@ public interface Stream
     public Session getSession();
 
     public void headers(HeadersFrame frame, Callback callback);
+
+    public void push(PushPromiseFrame frame, Promise<Stream> promise);
 
     public void data(DataFrame frame, Callback callback);
 
@@ -52,18 +56,23 @@ public interface Stream
     {
         public void onHeaders(Stream stream, HeadersFrame frame);
 
+        public Listener onPush(Stream stream, PushPromiseFrame frame);
+
         public void onData(Stream stream, DataFrame frame, Callback callback);
 
-        // TODO: is this method needed ?
         public void onFailure(Stream stream, Throwable x);
-
-        // TODO: See SPDY's StreamFrameListener
 
         public static class Adapter implements Listener
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
+            }
+
+            @Override
+            public Listener onPush(Stream stream, PushPromiseFrame frame)
+            {
+                return null;
             }
 
             @Override

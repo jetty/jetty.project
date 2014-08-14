@@ -28,9 +28,11 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.IdleTimeout;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -52,21 +54,21 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
     private final ISession session;
-    private final HeadersFrame frame;
+    private final int streamId;
     private volatile Listener listener;
     private volatile boolean reset;
 
-    public HTTP2Stream(Scheduler scheduler, ISession session, HeadersFrame frame)
+    public HTTP2Stream(Scheduler scheduler, ISession session, int streamId)
     {
         super(scheduler);
         this.session = session;
-        this.frame = frame;
+        this.streamId = streamId;
     }
 
     @Override
     public int getId()
     {
-        return frame.getStreamId();
+        return streamId;
     }
 
     @Override
@@ -79,6 +81,12 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     public void headers(HeadersFrame frame, Callback callback)
     {
         session.control(this, callback, frame, Frame.EMPTY_ARRAY);
+    }
+
+    @Override
+    public void push(PushPromiseFrame frame, Promise<Stream> promise)
+    {
+        session.push(this, promise, frame);
     }
 
     @Override
@@ -196,6 +204,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream
             case RST_STREAM:
             {
                 reset = true;
+                return false;
+            }
+            case PUSH_PROMISE:
+            {
                 return false;
             }
             default:

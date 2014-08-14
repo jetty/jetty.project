@@ -21,6 +21,8 @@ package org.eclipse.jetty.http2.server;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.FlowControl;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
@@ -29,6 +31,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.ServerParser;
@@ -66,17 +69,32 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
     @Override
     public boolean onHeaders(HeadersFrame frame)
     {
-        IStream stream = createRemoteStream(frame);
-        if (stream != null)
+        MetaData metaData = frame.getMetaData();
+        if (metaData.isRequest())
         {
-            stream.updateClose(frame.isEndStream(), false);
-            stream.process(frame, Callback.Adapter.INSTANCE);
-            Stream.Listener listener = notifyNewStream(stream, frame);
-            stream.setListener(listener);
-            // The listener may have sent a frame that closed the stream.
-            if (stream.isClosed())
-                removeStream(stream, false);
+            IStream stream = createRemoteStream(frame.getStreamId());
+            if (stream != null)
+            {
+                stream.updateClose(frame.isEndStream(), false);
+                stream.process(frame, Callback.Adapter.INSTANCE);
+                Stream.Listener listener = notifyNewStream(stream, frame);
+                stream.setListener(listener);
+                // The listener may have sent a frame that closed the stream.
+                if (stream.isClosed())
+                    removeStream(stream, false);
+            }
         }
+        else
+        {
+            onConnectionFailure(ErrorCodes.INTERNAL_ERROR, "invalid_request");
+        }
+        return false;
+    }
+
+    @Override
+    public boolean onPushPromise(PushPromiseFrame frame)
+    {
+        onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "push_promise");
         return false;
     }
 
