@@ -28,7 +28,7 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Export-Package>org.eclipse.jetty.spdy.server;version="9.1"</Export-Package>
+                                <Export-Package>org.eclipse.jetty.spdy.server</Export-Package>
                                 <Import-Package>org.eclipse.jetty.alpn;resolution:=optional,org.eclipse.jetty.alpn.server;resolution:=optional, org.eclipse.jetty.npn;resolution:=optional,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
                                 <_nouses>true</_nouses>
                             </instructions>

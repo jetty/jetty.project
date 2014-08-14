@@ -156,16 +156,14 @@ public class DefaultJettyAtJettyHomeHelper
         LOG.info("Configuring the default jetty server with {}",configURLs);
         String home=properties.get(OSGiServerConstants.JETTY_HOME);
         String base=properties.get(OSGiServerConstants.JETTY_BASE);
+        if (base==null)
+        	base=home;
         LOG.info("JETTY.HOME="+home);
         LOG.info("JETTY.BASE="+base);
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
         {
             Thread.currentThread().setContextClassLoader(JettyBootstrapActivator.class.getClassLoader());
-            
-            //ensure jetty.base is set
-            if (base==null)
-            	base=home;
             
             // these properties usually are the ones passed to this type of
             // configuration.
@@ -183,6 +181,11 @@ public class DefaultJettyAtJettyHomeHelper
             bundleContext.registerService(Server.class.getName(), server, properties);
             LOG.info("Default jetty server configured");
             return server;
+        }
+        catch (Exception e)
+        {
+        	LOG.warn(e);
+        	throw e;
         }
         finally
         {

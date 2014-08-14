@@ -60,10 +60,9 @@ public class TestJettyOSGiBootWithJsp
     @Configuration
     public static Option[] configure()
     {
-
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort("jetty-http.xml"));
+        options.addAll(configureJettyHomeAndPort(false,"jetty-http.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
@@ -78,23 +77,26 @@ public class TestJettyOSGiBootWithJsp
         return options.toArray(new Option[options.size()]);
     }
 
-    public static List<Option> configureJettyHomeAndPort(String jettySelectorFileName)
+    public static List<Option> configureJettyHomeAndPort(boolean ssl,String jettySelectorFileName)
     {
         File etcFolder = new File("src/test/config/etc");
         String etc = "file://" + etcFolder.getAbsolutePath();
         List<Option> options = new ArrayList<Option>();
-        String xmlConfigs = etc     + "/jetty.xml;"
-                + etc
-                + "/"
-                + jettySelectorFileName
-                + ";"
-                + etc
-                + "/jetty-ssl.xml;"
-                + etc
-                + "/jetty-https.xml;"
-                + etc
-                + "/jetty-deployer.xml;"
-                + etc
+        String xmlConfigs = etc     + "/jetty.xml";
+        if (ssl)
+        	xmlConfigs += ";" 
+        			+ etc
+        			+ "/jetty-ssl.xml;"
+        			+ etc
+        			+ "/jetty-https.xml;";
+        xmlConfigs+= ";"
+        		+ etc
+        		+ "/"
+        		+ jettySelectorFileName
+        		+ ";"
+        		+ etc
+        		+ "/jetty-deployer.xml;"
+        		+ etc
                 + "/jetty-testrealm.xml";
 
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs));

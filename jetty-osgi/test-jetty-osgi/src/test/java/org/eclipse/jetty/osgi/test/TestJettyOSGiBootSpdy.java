@@ -44,6 +44,7 @@ import org.osgi.framework.BundleContext;
  * SPDY setup.
  */
 @RunWith(PaxExam.class)
+@Ignore
 public class TestJettyOSGiBootSpdy
 {
     private static final String LOG_LEVEL = "WARN";
@@ -56,14 +57,18 @@ public class TestJettyOSGiBootSpdy
     public Option[] config()
     {
         ArrayList<Option> options = new ArrayList<Option>();
-        options.addAll(TestJettyOSGiBootWithJsp.configureJettyHomeAndPort("jetty-spdy.xml"));
+        options.addAll(TestJettyOSGiBootWithJsp.configureJettyHomeAndPort(true,"jetty-spdy.xml"));
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
         options.addAll(spdyJettyDependencies());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
+        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value("DEBUG"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value("INFO"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.osgi.LEVEL").value("DEBUG"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.util.component.LEVEL").value("DEBUG"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.server.LEVEL").value("DEBUG"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.xml.LEVEL").value("INFO"))));
         return options.toArray(new Option[options.size()]);
     }
 
@@ -78,14 +83,13 @@ public class TestJettyOSGiBootSpdy
         File checkALPNBoot = new File(alpnBoot);
         if (!checkALPNBoot.exists()) { throw new IllegalStateException("Unable to find the alpn boot jar here: " + alpnBoot); }
 
-
         res.add(CoreOptions.vmOptions("-Xbootclasspath/p:" + alpnBoot));
 
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
 
-        res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-client").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-core").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-client").versionAsInProject().start());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-server").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-http-common").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-http-server").versionAsInProject().noStart());
@@ -111,6 +115,7 @@ public class TestJettyOSGiBootSpdy
     @Test
     public void testSpdyOnHttpService() throws Exception
     {
+        TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.testHttpServiceGreetings(bundleContext, "https", TestJettyOSGiBootCore.DEFAULT_SSL_PORT);
     }
 
