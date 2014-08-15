@@ -70,8 +70,9 @@ public class PushCacheFilter implements Filter
     @Override
     public void init(FilterConfig config) throws ServletException
     {
-        if (config.getInitParameter("associateDelay") != null)
-            _associatePeriod = Long.valueOf(config.getInitParameter("associateDelay"));
+        String associatePeriod = config.getInitParameter("associatePeriod");
+        if (associatePeriod != null)
+            _associatePeriod = Long.valueOf(associatePeriod);
     }
 
     @Override
