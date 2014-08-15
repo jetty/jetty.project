@@ -81,6 +81,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final HTTP2Flusher flusher;
     private int maxLocalStreams;
     private int maxRemoteStreams;
+    private boolean pushEnabled;
 
     public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int maxStreams, int initialStreamId)
     {
@@ -95,6 +96,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         this.streamIds.set(initialStreamId);
         this.sendWindow.set(FlowControl.DEFAULT_WINDOW_SIZE);
         this.recvWindow.set(FlowControl.DEFAULT_WINDOW_SIZE);
+        this.pushEnabled = true; // SPEC: by default, push is enabled.
     }
 
     public FlowControl getFlowControl()
@@ -200,31 +202,44 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         // Iterate over all settings
         for (Map.Entry<Integer, Integer> entry : frame.getSettings().entrySet())
         {
-            int value=entry.getValue();
-            switch (entry.getKey())
+            int key = entry.getKey();
+            int value = entry.getValue();
+            switch (key)
             {
                 case SettingsFrame.HEADER_TABLE_SIZE:
+                {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Update HPACK header table size to {}", value);
                     generator.setHeaderTableSize(value);
                     break;
-                    
+                }
                 case SettingsFrame.ENABLE_PUSH:
+                {
+                    // SPEC: check the value is sane.
+                    if (value != 0 && value != 1)
+                    {
+                        onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_enable_push");
+                        return false;
+                    }
+                    pushEnabled = value == 1;
                     break;
-                    
+                }
                 case SettingsFrame.MAX_CONCURRENT_STREAMS:
+                {
                     maxLocalStreams = value;
                     if (LOG.isDebugEnabled())
                         LOG.debug("Update max local concurrent streams to {}", maxLocalStreams);
                     break;
-                    
+                }
                 case SettingsFrame.INITIAL_WINDOW_SIZE:
+                {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Update initial window size to {}", value);
                     flowControl.updateInitialStreamWindow(this, value);
                     break;
-                    
+                }
                 case SettingsFrame.MAX_FRAME_SIZE:
+                {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Update max frame size to {}", value);
                     // SPEC: check the max frame size is sane.
@@ -234,16 +249,19 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                         return false;
                     }
                     generator.setMaxFrameSize(value);
-
                     break;
-                    
+                }
                 case SettingsFrame.MAX_HEADER_LIST_SIZE:
+                {
                     // TODO implement
                     LOG.warn("NOT IMPLEMENTED max header list size to {}", value);
                     break;
-                    
+                }
                 default:
-                    LOG.debug("Unknown setting {}:{}",entry.getKey(),value);
+                {
+                    LOG.debug("Unknown setting {}:{}", key, value);
+                    break;
+                }
             }
         }
         notifySettings(this, frame);
@@ -566,6 +584,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         // be the only component responsible for window updates, for
         // both increments and reductions.
         flusher.window(stream, frame);
+    }
+
+    @Override
+    public boolean isPushEnabled()
+    {
+        return pushEnabled;
     }
 
     @Override

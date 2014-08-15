@@ -100,6 +100,13 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     @Override
     public void push(final MetaData.Request request)
     {
+        if (!stream.getSession().isPushEnabled())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("HTTP/2 Push disabled for {}", request);
+            return;
+        }
+
         stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<Stream>()
         {
             @Override

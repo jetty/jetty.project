@@ -44,6 +44,8 @@ public interface ISession extends Session
 
     public void onWindowUpdate(IStream stream, WindowUpdateFrame frame);
 
+    public boolean isPushEnabled();
+
     public void shutdown();
 
     public void disconnect();
