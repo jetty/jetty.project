@@ -20,6 +20,9 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
@@ -40,6 +43,8 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -54,6 +59,7 @@ import org.eclipse.jetty.util.log.Logger;
  * that indicates a possible push resource
  * </ul>
  */
+@ManagedObject("Push cache based on the HTTP 'Referer' header")
 public class PushCacheFilter implements Filter
 {
     private static final Logger LOG = Log.getLogger(PushCacheFilter.class);
@@ -175,6 +181,19 @@ public class PushCacheFilter implements Filter
     public void destroy()
     {
         _cache.clear();
+    }
+
+    @ManagedAttribute("The push cache contents")
+    public Map<String, String> getCache()
+    {
+        Map<String, String> result = new HashMap<>();
+        for (Map.Entry<String, PrimaryResource> entry : _cache.entrySet())
+        {
+            PrimaryResource resource = entry.getValue();
+            String value = String.format("size=%d: %s", resource._associated.size(), new TreeSet<>(resource._associated.keySet()));
+            result.put(entry.getKey(), value);
+        }
+        return result;
     }
 
     private static class PrimaryResource
