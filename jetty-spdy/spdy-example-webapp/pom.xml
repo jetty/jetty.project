@@ -9,6 +9,9 @@
     <artifactId>spdy-example-webapp</artifactId>
     <packaging>war</packaging>
     <name>Jetty :: SPDY :: HTTP Web Application</name>
+    <properties>
+      <bundle-symbolic-name>${project.groupId}.example.webapp</bundle-symbolic-name>
+    </properties>
 
     <build>
         <plugins>

@@ -9,6 +9,9 @@
   <name>Jetty Tests :: Webapps :: Spec Webapp</name>
   <artifactId>test-spec-webapp</artifactId>
   <packaging>war</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.spec</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>

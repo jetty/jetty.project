@@ -27,6 +27,9 @@
   <name>Jetty Tests :: WebApp :: RFC2616</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>war</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.rfc2616</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>

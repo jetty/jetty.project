@@ -10,6 +10,9 @@
     <artifactId>spdy-npn-tests</artifactId>
     <name>Jetty :: SPDY :: NPN Tests</name>
 
+    <properties>
+      <bundle-symbolic-name>${project.groupId}.npn.tests</bundle-symbolic-name>
+    </properties>
     <build>
         <plugins>
             <plugin>

@@ -12,6 +12,10 @@
   <artifactId>http2-server</artifactId>
   <name>Jetty :: HTTP2 :: Server</name>
 
+ <properties>
+    <bundle-symbolic-name>${project.groupId}.server</bundle-symbolic-name>
+  </properties>
+
   <build>
     <plugins>
       <plugin>
@@ -30,32 +34,6 @@
             </configuration>
           </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-            <configuration>
-              <instructions>
-                <Import-Package>javax.servlet.*;version="[2.6.0,3.2)",javax.net.*,*</Import-Package>
-              </instructions>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
       </plugin>
     </plugins>
   </build>

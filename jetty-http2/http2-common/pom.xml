@@ -23,35 +23,11 @@
     </dependency>
   </dependencies>
 
+ <properties>
+   <bundle-symbolic-name>${project.groupId}.common</bundle-symbolic-name>
+ </properties>
+
   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.felix</groupId>
-        <artifactId>maven-bundle-plugin</artifactId>
-        <extensions>true</extensions>
-        <executions>
-          <execution>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-            <configuration>
-              <instructions>
-                <Import-Package>javax.servlet.*;version="[2.6.0,3.2)",javax.net.*,*</Import-Package>
-              </instructions>
-            </configuration>
-           </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
-      </plugin>
-    </plugins>
   </build>
 
 </project>

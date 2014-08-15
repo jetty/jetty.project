@@ -27,7 +27,6 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Export-Package>org.eclipse.jetty.spdy.client.http</Export-Package>
                                 <Import-Package>!org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
                             </instructions>
                           </configuration>

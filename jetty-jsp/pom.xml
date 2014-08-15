@@ -9,6 +9,9 @@
   <name>Jetty :: JSP dependencies</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>jar</packaging>
+  <properties>
+   <bundle-symbolic-name>${project.groupId}.glassfish.jsp.parent</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>

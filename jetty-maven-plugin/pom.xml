@@ -11,6 +11,7 @@
   <properties>
     <mavenVersion>3.0.3</mavenVersion>
     <pluginToolsVersion>3.1</pluginToolsVersion>
+    <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
   </properties>
   <build>
     <plugins>

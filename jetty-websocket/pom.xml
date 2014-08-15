@@ -43,22 +43,12 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Export-Package>${bundle-symbolic-name}.*</Export-Package>
                                 <Import-Package>javax.servlet.*;version="[3.0,4.0)",org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
                                 <_nouses>true</_nouses>
                             </instructions>
                         </configuration>
                     </execution>
                 </executions>
-            </plugin>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-jar-plugin</artifactId>
-                <configuration>
-                    <archive>
-                        <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-                    </archive>
-                </configuration>
             </plugin>
             <plugin>
                 <groupId>org.codehaus.mojo</groupId>

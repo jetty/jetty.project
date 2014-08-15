@@ -9,6 +9,7 @@
   <packaging>maven-plugin</packaging>
   <name>Jetty :: Jetty JSPC Maven Plugin</name>
   <properties>
+    <bundle-symbolic-name>${project.groupId}.jspc.plugin</bundle-symbolic-name>
   </properties>
   <build>
     <plugins>

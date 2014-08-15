@@ -11,6 +11,9 @@
   <name>Example :: Jetty Quick Start</name>
   <description>Jetty Quick Start Example</description>
   <url>http://www.eclipse.org/jetty</url>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.examples.quickstart</bundle-symbolic-name>
+  </properties>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>

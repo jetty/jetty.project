@@ -14,34 +14,27 @@
   <build>
     <plugins>
       <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>build-helper-maven-plugin</artifactId>
-        <version>1.7</version>
-        <executions>
-          <execution>
-            <id>parse-version</id>
-            <goals>
-              <goal>parse-version</goal>
-            </goals>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
         <configuration>
-          <archive>
-            <manifestEntries>
-              <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
+            <instructions>
               <Bundle-SymbolicName>${bundle-symbolic-name};singleton:=true</Bundle-SymbolicName>
               <Bundle-Name>Jetty OSGi NPN Fragment</Bundle-Name>
-              <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
-              <Export-Package>org.eclipse.jetty.npn</Export-Package>
+              <Bundle-Description>${project.name}</Bundle-Description>
+              <Import-Package>!javax.*,!org.eclipse.jetty.*</Import-Package>
+              <Export-Package>org.eclipse.jetty.npn;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
               <Fragment-Host>system.bundle;extension:=framework</Fragment-Host>
-            </manifestEntries>
-          </archive>
+            </instructions>
         </configuration>
       </plugin>
     </plugins>
   </build>
+  <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty.npn</groupId>
+      <artifactId>npn-api</artifactId>
+      <version>${npn.api.version}</version>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
 </project>

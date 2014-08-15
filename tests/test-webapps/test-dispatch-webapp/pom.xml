@@ -9,6 +9,9 @@
   <name>Jetty Tests :: Webapps :: Dispatch Webapp</name>
   <artifactId>test-dispatch-webapp</artifactId>
   <packaging>war</packaging>
+   <properties>
+    <bundle-symbolic-name>${project.groupId}.dispatch</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>

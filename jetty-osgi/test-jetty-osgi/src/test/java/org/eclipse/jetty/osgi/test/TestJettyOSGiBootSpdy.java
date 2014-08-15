@@ -44,7 +44,7 @@ import org.osgi.framework.BundleContext;
  * SPDY setup.
  */
 @RunWith(PaxExam.class)
-@Ignore
+//@Ignore
 public class TestJettyOSGiBootSpdy
 {
     private static final String LOG_LEVEL = "WARN";
@@ -69,6 +69,8 @@ public class TestJettyOSGiBootSpdy
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.util.component.LEVEL").value("DEBUG"))));
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.server.LEVEL").value("DEBUG"))));
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.xml.LEVEL").value("INFO"))));
+        // options.addAll(Arrays.asList(options(systemProperty("osgi.console").value("6666"))));
+        // options.addAll(Arrays.asList(options(systemProperty("osgi.console.enable.builtin").value("true"))));
         return options.toArray(new Option[options.size()]);
     }
 
@@ -108,14 +110,15 @@ public class TestJettyOSGiBootSpdy
     @Test
     public void assertAllBundlesActiveOrResolved()
     {
-        TestOSGiUtil.debugBundles(bundleContext);
+        // TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
     @Test
     public void testSpdyOnHttpService() throws Exception
     {
-        TestOSGiUtil.debugBundles(bundleContext);
+        // TestOSGiUtil.debugBundles(bundleContext);
+        // Thread.sleep(2000000000);
         TestOSGiUtil.testHttpServiceGreetings(bundleContext, "https", TestJettyOSGiBootCore.DEFAULT_SSL_PORT);
     }
 

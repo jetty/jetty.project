@@ -34,16 +34,8 @@
         </executions>
       </plugin>
       <plugin>
-        <!--
-        Required for OSGI
-        -->
         <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
         <executions>
           <execution>
             <id>tests</id>

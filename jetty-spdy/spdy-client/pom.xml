@@ -28,8 +28,12 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Export-Package>org.eclipse.jetty.spdy.client</Export-Package>
-                                <Import-Package>!org.eclipse.jetty.npn,org.eclipse.jetty.npn.client;resolution:=optional,!org.eclipse.jetty.alpn,org.eclipse.jetty.alpn.client;resolution:=optional,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
+                                <Import-Package>
+				!org.eclipse.jetty.npn,
+				org.eclipse.jetty.npn.client;resolution:=optional;version="[9.0,10.0)",
+				!org.eclipse.jetty.alpn,
+				org.eclipse.jetty.alpn.client;resolution:=optional;version="[9.0,10.0)",
+				org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
                             </instructions>
                           </configuration>
                        </execution>

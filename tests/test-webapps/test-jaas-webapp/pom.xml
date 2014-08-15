@@ -9,6 +9,9 @@
   <artifactId>test-jaas-webapp</artifactId>
   <name>Jetty Tests :: WebApp :: JAAS</name>
   <packaging>war</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.jaas</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
