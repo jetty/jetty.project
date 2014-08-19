@@ -163,8 +163,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         else
         {
-            ResetFrame resetFrame = new ResetFrame(streamId, ErrorCodes.STREAM_CLOSED_ERROR);
-            reset(resetFrame, disconnectOnFailure());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Ignoring {}, stream #{} not found", frame, streamId);
             return false;
         }
     }
