@@ -32,11 +32,13 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlets.PushCacheFilter;
 import org.eclipse.jetty.util.Callback;
@@ -78,7 +80,7 @@ public class PushTest extends AbstractTest
         final String primaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
-        final CountDownLatch secondaryResponseLatch = new CountDownLatch(1);
+        final CountDownLatch warmupLatch = new CountDownLatch(1);
         session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
@@ -96,13 +98,13 @@ public class PushTest extends AbstractTest
                         @Override
                         public void onData(Stream stream, DataFrame frame, Callback callback)
                         {
-                            secondaryResponseLatch.countDown();
+                            warmupLatch.countDown();
                         }
                     });
                 }
             }
         });
-        Assert.assertTrue(secondaryResponseLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
 
         // Request again the primary resource, we should get the secondary resource pushed.
         primaryRequest = newRequest("GET", primaryResource, primaryFields);
@@ -135,5 +137,108 @@ public class PushTest extends AbstractTest
         });
         Assert.assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPushIsReset() throws Exception
+    {
+        final String primaryResource = "/primary.html";
+        final String secondaryResource = "/secondary.png";
+        final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                String requestURI = req.getRequestURI();
+                ServletOutputStream output = resp.getOutputStream();
+                if (requestURI.endsWith(primaryResource))
+                    output.print("<html><head></head><body>PRIMARY</body></html>");
+                else if (requestURI.endsWith(secondaryResource))
+                    output.write(secondaryData);
+            }
+        });
+
+        final Session session = newClient(new Session.Listener.Adapter());
+
+        // Request for the primary and secondary resource to build the cache.
+        final String primaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        HttpFields primaryFields = new HttpFields();
+        MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
+        final CountDownLatch warmupLatch = new CountDownLatch(1);
+        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                if (frame.isEndStream())
+                {
+                    // Request for the secondary resource.
+                    HttpFields secondaryFields = new HttpFields();
+                    secondaryFields.put(HttpHeader.REFERER, primaryURI);
+                    MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
+                    session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+                    {
+                        @Override
+                        public void onData(Stream stream, DataFrame frame, Callback callback)
+                        {
+                            warmupLatch.countDown();
+                        }
+                    });
+                }
+            }
+        });
+        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+
+        // Request again the primary resource, we should get the secondary resource pushed.
+        primaryRequest = newRequest("GET", primaryResource, primaryFields);
+        final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
+        final CountDownLatch pushLatch = new CountDownLatch(1);
+        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+            {
+                // Reset the stream as soon as we see the push.
+                ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCodes.REFUSED_STREAM_ERROR);
+                stream.reset(resetFrame, Callback.Adapter.INSTANCE);
+                return new Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        pushLatch.countDown();
+                    }
+                };
+            }
+
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                if (frame.isEndStream())
+                    primaryResponseLatch.countDown();
+            }
+        });
+        // We should not receive pushed data that we reset.
+        Assert.assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+
+        // Make sure the session is sane by requesting the secondary resource.
+        HttpFields secondaryFields = new HttpFields();
+        secondaryFields.put(HttpHeader.REFERER, primaryURI);
+        MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
+        final CountDownLatch secondaryResponseLatch = new CountDownLatch(1);
+        session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                if (frame.isEndStream())
+                    secondaryResponseLatch.countDown();
+            }
+        });
+        Assert.assertTrue(secondaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
 }

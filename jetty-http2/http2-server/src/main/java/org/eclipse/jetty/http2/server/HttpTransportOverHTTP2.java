@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.IStream;
+import org.eclipse.jetty.http2.ResetException;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -162,11 +163,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     }
 
     @Override
-    public void abort()
+    public void abort(Throwable failure)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Response #{} aborted", stream.getId());
-        stream.getSession().disconnect();
+        if (!(failure instanceof ResetException))
+            stream.getSession().disconnect();
     }
 
     private class CommitCallback implements Callback
