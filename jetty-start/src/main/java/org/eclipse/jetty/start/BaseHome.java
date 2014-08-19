@@ -130,7 +130,6 @@ public class BaseHome
 
     public BaseHome(CommandLineConfigSource cmdLineSource) throws IOException
     {
-
         sources = new ConfigSources();
         sources.add(cmdLineSource);
         this.homeDir = cmdLineSource.getHomePath();
