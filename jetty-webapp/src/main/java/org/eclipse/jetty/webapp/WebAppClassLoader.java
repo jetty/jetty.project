@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
+import java.lang.instrument.Instrumentation;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.security.CodeSource;
@@ -461,16 +462,43 @@ public class WebAppClassLoader extends URLClassLoader
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @see addTransformer
+     * @deprecated
+     */
     public void addClassFileTransformer(ClassFileTransformer transformer)
     {
         _transformers.add(transformer);
     }
     
     /* ------------------------------------------------------------ */
+    /**
+     * @see removeTransformer
+     * @deprecated
+     */
     public boolean removeClassFileTransformer(ClassFileTransformer transformer)
     {
         return _transformers.remove(transformer);
     }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see addClassFileTransformer
+     */
+    public void addTransformer(ClassFileTransformer transformer)
+    {
+        _transformers.add(transformer);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see removeClassFileTransformer
+     */
+    public boolean removeTransformer(ClassFileTransformer transformer)
+    {
+        return _transformers.remove(transformer);
+    }
+    
     
     /* ------------------------------------------------------------ */
     @Override
