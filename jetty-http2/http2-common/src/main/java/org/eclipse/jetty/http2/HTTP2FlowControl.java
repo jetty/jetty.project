@@ -78,16 +78,18 @@ public class HTTP2FlowControl implements FlowControl
     }
 
     @Override
-    public void onDataReceived(IStream stream, int length)
+    public void onDataReceived(ISession session, IStream stream, int length)
     {
-        ISession session = stream.getSession();
         int oldSize = session.updateRecvWindow(-length);
         if (LOG.isDebugEnabled())
             LOG.debug("Updated session recv window {} -> {} for {}", oldSize, oldSize - length, session);
 
-        oldSize = stream.updateRecvWindow(-length);
-        if (LOG.isDebugEnabled())
-            LOG.debug("Updated stream recv window {} -> {} for {}", oldSize, oldSize - length, stream);
+        if (stream != null)
+        {
+            oldSize = stream.updateRecvWindow(-length);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updated stream recv window {} -> {} for {}", oldSize, oldSize - length, stream);
+        }
     }
 
     @Override

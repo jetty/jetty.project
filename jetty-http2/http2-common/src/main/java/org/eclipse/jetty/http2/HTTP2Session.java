@@ -129,15 +129,18 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
+
         int streamId = frame.getStreamId();
         final IStream stream = getStream(streamId);
+
+        // SPEC: the session window must be updated even if the stream is null.
+        // The flow control length includes the padding bytes.
+        final int flowControlLength = frame.remaining() + frame.padding();
+        flowControl.onDataReceived(this, stream, flowControlLength);
+
         if (stream != null)
         {
             stream.updateClose(frame.isEndStream(), false);
-
-            // The flow control length includes the padding bytes.
-            final int flowControlLength = frame.remaining() + frame.padding();
-            flowControl.onDataReceived(stream, flowControlLength);
 
             if (getRecvWindow() < 0)
             {

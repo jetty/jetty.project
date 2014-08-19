@@ -30,7 +30,7 @@ public interface FlowControl
 
     public void onWindowUpdate(ISession session, IStream stream, WindowUpdateFrame frame);
 
-    public void onDataReceived(IStream stream, int length);
+    public void onDataReceived(ISession session, IStream stream, int length);
 
     public void onDataConsumed(IStream stream, int length);
 
