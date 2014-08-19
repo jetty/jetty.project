@@ -129,7 +129,7 @@ public class HttpTransportOverFCGI implements HttpTransport
     }
 
     @Override
-    public void abort()
+    public void abort(Throwable failure)
     {
         aborted = true;
     }

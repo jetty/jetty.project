@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.eclipse.jetty.util.QuotedStringTokenizer.isQuoted;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
@@ -30,7 +28,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -300,7 +297,9 @@ public class Response implements HttpServletResponse
         boolean quote_path = has_path && isQuoteNeededForCookie(path);
         
         // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
-        if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path || isQuoted(name) || isQuoted(value) || isQuoted(path) || isQuoted(domain)))
+        if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path ||
+                QuotedStringTokenizer.isQuoted(name) || QuotedStringTokenizer.isQuoted(value) ||
+                QuotedStringTokenizer.isQuoted(path) || QuotedStringTokenizer.isQuoted(domain)))
             version=1;
 
         // Append version
@@ -557,7 +556,7 @@ public class Response implements HttpServletResponse
         switch(code)
         {
             case -1:
-                _channel.abort();
+                _channel.abort(new IOException());
                 return;
             case 102:
                 sendProcessing();

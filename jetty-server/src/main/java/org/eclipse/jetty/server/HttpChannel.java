@@ -25,7 +25,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
@@ -45,7 +44,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
@@ -411,7 +409,7 @@ public class HttpChannel implements Runnable
             }
             else if (isCommitted())
             {
-                _transport.abort();
+                _transport.abort(x);
                 if (!(x instanceof EofException))
                     LOG.warn("Could not send response error 500: "+x);
             }
@@ -551,6 +549,13 @@ public class HttpChannel implements Runnable
             blocker.block();
             return committing;
         }
+        catch (Throwable failure)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(failure);
+            abort(failure);
+            throw failure;
+        }
     }
 
     public boolean isCommitted()
@@ -580,7 +585,6 @@ public class HttpChannel implements Runnable
         return _connector.getScheduler();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if the HttpChannel can efficiently use direct buffer (typically this means it is not over SSL or a multiplexed protocol)
      */
@@ -590,12 +594,16 @@ public class HttpChannel implements Runnable
     }
 
     /**
-     * If a write or similar to this channel fails this method should be called. The standard implementation
-     * is to call {@link HttpTransport#abort()}
+     * If a write or similar operation to this channel fails,
+     * then this method should be called.
+     * <p />
+     * The standard implementation calls {@link HttpTransport#abort(Throwable)}.
+     *
+     * @param failure the failure that caused the abort.
      */
-    public void abort()
+    public void abort(Throwable failure)
     {
-        _transport.abort();
+        _transport.abort(failure);
     }
 
     private class CommitCallback implements Callback

@@ -31,13 +31,11 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
-import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
-import org.omg.stub.java.rmi._Remote_Stub;
 
 /**
  * A HttpChannel customized to be transported over the HTTP/1 protocol
@@ -304,9 +302,9 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     }
 
     @Override
-    public void abort()
+    public void abort(Throwable failure)
     {
-        super.abort();
+        super.abort(failure);
         _httpConnection._generator.setPersistent(false);
     }
 
