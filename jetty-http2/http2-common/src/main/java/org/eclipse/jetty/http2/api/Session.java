@@ -37,8 +37,6 @@ public interface Session
 
     public void ping(PingFrame frame, Callback callback);
 
-    public void reset(ResetFrame frame, Callback callback);
-
     public void close(int error, String payload, Callback callback);
 
     public Collection<Stream> getStreams();

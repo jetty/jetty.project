@@ -96,6 +96,12 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     }
 
     @Override
+    public void reset(ResetFrame frame, Callback callback)
+    {
+        session.control(this, callback, frame, Frame.EMPTY_ARRAY);
+    }
+
+    @Override
     public Object getAttribute(String key)
     {
         return attributes().get(key);
@@ -141,7 +147,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         // avoid that its idle timeout is rescheduled.
         close();
 
-        session.reset(new ResetFrame(getId(), ErrorCodes.CANCEL_STREAM_ERROR), disconnectOnFailure);
+        reset(new ResetFrame(getId(), ErrorCodes.CANCEL_STREAM_ERROR), disconnectOnFailure);
 
         notifyFailure(this, timeout);
     }

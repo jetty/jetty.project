@@ -54,7 +54,7 @@ public class StreamResetTest extends AbstractTest
         Stream stream = promise.get(5, TimeUnit.SECONDS);
         ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCodes.CANCEL_STREAM_ERROR);
         FutureCallback resetCallback = new FutureCallback();
-        stream.getSession().reset(resetFrame, resetCallback);
+        stream.reset(resetFrame, resetCallback);
         resetCallback.get(5, TimeUnit.SECONDS);
         // After reset the stream should be gone.
         Assert.assertEquals(0, client.getStreams().size());
@@ -85,7 +85,7 @@ public class StreamResetTest extends AbstractTest
         client.newStream(requestFrame, promise, new Stream.Listener.Adapter());
         Stream stream = promise.get(5, TimeUnit.SECONDS);
         ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCodes.CANCEL_STREAM_ERROR);
-        stream.getSession().reset(resetFrame, Callback.Adapter.INSTANCE);
+        stream.reset(resetFrame, Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
         Stream serverStream = streamRef.get();
@@ -171,7 +171,7 @@ public class StreamResetTest extends AbstractTest
         Stream stream2 = promise2.get(5, TimeUnit.SECONDS);
 
         ResetFrame resetFrame = new ResetFrame(stream1.getId(), ErrorCodes.CANCEL_STREAM_ERROR);
-        stream1.getSession().reset(resetFrame, Callback.Adapter.INSTANCE);
+        stream1.reset(resetFrame, Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(serverResetLatch.await(5, TimeUnit.SECONDS));
         // Stream MUST NOT receive data sent by server after reset.

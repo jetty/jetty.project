@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.api;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 
@@ -35,6 +36,8 @@ public interface Stream
     public void push(PushPromiseFrame frame, Promise<Stream> promise);
 
     public void data(DataFrame frame, Callback callback);
+
+    public void reset(ResetFrame frame, Callback callback);
 
     public Object getAttribute(String key);
 

@@ -396,8 +396,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             control(null, callback, frame);
     }
 
-    @Override
-    public void reset(ResetFrame frame, Callback callback)
+    protected void reset(ResetFrame frame, Callback callback)
     {
         control(getStream(frame.getStreamId()), callback, frame);
     }
