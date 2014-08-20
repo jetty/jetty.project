@@ -33,7 +33,6 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -76,12 +75,6 @@ public class Parser
     {
         try
         {
-            if (LOG.isDebugEnabled())
-            {
-                int l=Math.min(buffer.remaining(),16);
-                LOG.debug("Parsing "+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l)+(l<buffer.remaining()?"...":""));
-            }
-            
             while (true)
             {
                 switch (state)
@@ -255,7 +248,7 @@ public class Parser
             @Override
             public void onConnectionFailure(int error, String reason)
             {
-                LOG.warn("onConnectionFailure {},{}",error,reason);
+                LOG.warn("Connection failure: {}/{}", error, reason);
             }
         }
     }
