@@ -420,8 +420,26 @@ public class ResponseTest
         assertEquals("/foo;jsessionid=12345", response.encodeURL("/foo"));
         assertEquals("/;jsessionid=12345", response.encodeURL("/"));
         assertEquals("/foo.html;jsessionid=12345#target", response.encodeURL("/foo.html#target"));
-        assertEquals(";jsessionid=12345", response.encodeURL(""));
-        
+        assertEquals(";jsessionid=12345", response.encodeURL("")); 
+    }
+
+    @Test
+    public void testCanonicalSendRedirect() throws Exception
+    {
+        ByteArrayEndPoint out=new ByteArrayEndPoint(new byte[]{},4096);
+        AbstractHttpConnection connection=new TestHttpConnection(connector,out, connector.getServer());
+        Response response = new Response(connection);
+        Request request = connection.getRequest();
+        request.setServerName("myhost");
+        request.setServerPort(8888);
+        request.setRequestURI("/path/test/info/");
+        request.setContextPath("/path");
+        request.setServletPath("/test");
+        request.setPathInfo("/info/");
+
+        response.sendRedirect("../other/path");
+        String location = response.getHeader("Location");
+        assertEquals("http://myhost:8888/path/test/other/path",location);
     }
 
     @Test
