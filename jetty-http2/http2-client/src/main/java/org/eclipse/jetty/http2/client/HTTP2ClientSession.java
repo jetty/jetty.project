@@ -37,7 +37,7 @@ public class HTTP2ClientSession extends HTTP2Session
 
     public HTTP2ClientSession(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl)
     {
-        super(scheduler, endPoint, generator, listener, flowControl, -1, 1);
+        super(scheduler, endPoint, generator, listener, flowControl, 1);
     }
 
     @Override

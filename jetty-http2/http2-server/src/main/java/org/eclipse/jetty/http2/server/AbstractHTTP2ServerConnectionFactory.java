@@ -82,7 +82,13 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         Generator generator = new Generator(connector.getByteBufferPool(), getMaxHeaderTableSize());
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener,
-                new HTTP2FlowControl(getInitialStreamWindow()), getMaxConcurrentStreams());
+                new HTTP2FlowControl(getInitialStreamWindow()));
+        session.setMaxLocalStreams(getMaxConcurrentStreams());
+        session.setMaxRemoteStreams(getMaxConcurrentStreams());
+        long idleTimeout = endPoint.getIdleTimeout();
+        if (idleTimeout > 0)
+            idleTimeout /= 2;
+        session.setStreamIdleTimeout(idleTimeout);
 
         Parser parser = newServerParser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),

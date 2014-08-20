@@ -47,9 +47,9 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
 
     private final ServerSessionListener listener;
 
-    public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, Generator generator, ServerSessionListener listener, FlowControl flowControl, int maxStreams)
+    public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, Generator generator, ServerSessionListener listener, FlowControl flowControl)
     {
-        super(scheduler, endPoint, generator, listener, flowControl, maxStreams, 2);
+        super(scheduler, endPoint, generator, listener, flowControl, 2);
         this.listener = listener;
     }
 

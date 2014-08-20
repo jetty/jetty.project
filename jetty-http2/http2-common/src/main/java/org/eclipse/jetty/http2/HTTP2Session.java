@@ -74,9 +74,10 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final HTTP2Flusher flusher;
     private int maxLocalStreams;
     private int maxRemoteStreams;
+    private long streamIdleTimeout;
     private boolean pushEnabled;
 
-    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int maxStreams, int initialStreamId)
+    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int initialStreamId)
     {
         this.scheduler = scheduler;
         this.endPoint = endPoint;
@@ -84,9 +85,10 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         this.listener = listener;
         this.flowControl = flowControl;
         this.flusher = new HTTP2Flusher(this);
-        this.maxLocalStreams = maxStreams;
-        this.maxRemoteStreams = maxStreams;
+        this.maxLocalStreams = -1;
+        this.maxRemoteStreams = -1;
         this.streamIds.set(initialStreamId);
+        this.streamIdleTimeout = endPoint.getIdleTimeout();
         this.sendWindow.set(FlowControl.DEFAULT_WINDOW_SIZE);
         this.recvWindow.set(FlowControl.DEFAULT_WINDOW_SIZE);
         this.pushEnabled = true; // SPEC: by default, push is enabled.
@@ -97,6 +99,16 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         return flowControl;
     }
 
+    public int getMaxLocalStreams()
+    {
+        return maxLocalStreams;
+    }
+
+    public void setMaxLocalStreams(int maxLocalStreams)
+    {
+        this.maxLocalStreams = maxLocalStreams;
+    }
+
     public int getMaxRemoteStreams()
     {
         return maxRemoteStreams;
@@ -105,6 +117,16 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     public void setMaxRemoteStreams(int maxRemoteStreams)
     {
         this.maxRemoteStreams = maxRemoteStreams;
+    }
+
+    public long getStreamIdleTimeout()
+    {
+        return streamIdleTimeout;
+    }
+
+    public void setStreamIdleTimeout(long streamIdleTimeout)
+    {
+        this.streamIdleTimeout = streamIdleTimeout;
     }
 
     public EndPoint getEndPoint()
@@ -553,7 +575,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         IStream stream = newStream(streamId);
         if (streams.putIfAbsent(streamId, stream) == null)
         {
-            stream.setIdleTimeout(endPoint.getIdleTimeout());
+            stream.setIdleTimeout(getStreamIdleTimeout());
             flowControl.onNewStream(stream);
             if (LOG.isDebugEnabled())
                 LOG.debug("Created local {}", stream);
@@ -588,7 +610,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             updateLastStreamId(streamId);
-            stream.setIdleTimeout(endPoint.getIdleTimeout());
+            stream.setIdleTimeout(getStreamIdleTimeout());
             flowControl.onNewStream(stream);
             if (LOG.isDebugEnabled())
                 LOG.debug("Created remote {}", stream);
