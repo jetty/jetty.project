@@ -211,7 +211,6 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     /* ------------------------------------------------------------- */
     public int getMaxInactiveInterval()
     {
-        checkValid();
         return (int)(_maxIdleMs/1000);
     }
 
