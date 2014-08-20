@@ -26,7 +26,6 @@ import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -34,14 +33,6 @@ public class HTTP2Connection extends AbstractConnection
 {
     protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
 
-    protected final Callback closeCallback = new Callback.Adapter()
-    {
-        @Override
-        public void failed(Throwable x)
-        {
-            close();
-        }
-    };
     private final ByteBufferPool byteBufferPool;
     private final Parser parser;
     private final ISession session;
@@ -92,7 +83,7 @@ public class HTTP2Connection extends AbstractConnection
             }
             else if (filled < 0)
             {
-                shutdown(endPoint, session);
+                session.onShutdown();
                 return -1;
             }
             else
@@ -117,18 +108,12 @@ public class HTTP2Connection extends AbstractConnection
         }
     }
 
-    private void shutdown(EndPoint endPoint, ISession session)
-    {
-        if (!endPoint.isOutputShutdown())
-            session.shutdown();
-    }
-
     @Override
     protected boolean onReadTimeout()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
-        getSession().close(ErrorCodes.NO_ERROR, "idle_timeout", closeCallback);
+        session.onIdleTimeout();
         return false;
     }
 }

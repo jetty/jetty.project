@@ -46,7 +46,19 @@ public interface ISession extends Session
 
     public boolean isPushEnabled();
 
-    public void shutdown();
+    /**
+     * Callback invoked when the connection reads -1.
+     *
+     * @see #onIdleTimeout()
+     * @see #close(int, String, Callback)
+     */
+    public void onShutdown();
 
-    public void disconnect();
+    /**
+     * Callback invoked when the idle timeout expires.
+     *
+     * @see #onShutdown()
+     * @see #close(int, String, Callback)
+     */
+    public void onIdleTimeout();
 }

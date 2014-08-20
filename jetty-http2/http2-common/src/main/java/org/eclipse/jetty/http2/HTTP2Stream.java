@@ -41,14 +41,6 @@ public class HTTP2Stream extends IdleTimeout implements IStream
 {
     private static final Logger LOG = Log.getLogger(HTTP2Stream.class);
 
-    private final Callback disconnectOnFailure = new Callback.Adapter()
-    {
-        @Override
-        public void failed(Throwable x)
-        {
-            session.disconnect();
-        }
-    };
     private final AtomicReference<ConcurrentMap<String, Object>> attributes = new AtomicReference<>();
     private final AtomicReference<CloseState> closeState = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final AtomicInteger sendWindow = new AtomicInteger();
@@ -147,8 +139,10 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         // avoid that its idle timeout is rescheduled.
         close();
 
-        reset(new ResetFrame(getId(), ErrorCodes.CANCEL_STREAM_ERROR), disconnectOnFailure);
+        // Tell the other peer that we timed out.
+        reset(new ResetFrame(getId(), ErrorCodes.CANCEL_STREAM_ERROR), Callback.Adapter.INSTANCE);
 
+        // Notify the application.
         notifyFailure(this, timeout);
     }
 
@@ -195,7 +189,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
                 {
                     // It's a bad client, it does not deserve to be
                     // treated gently by just resetting the stream.
-                    session.close(ErrorCodes.FLOW_CONTROL_ERROR, "stream_window_exceeded", disconnectOnFailure);
+                    session.close(ErrorCodes.FLOW_CONTROL_ERROR, "stream_window_exceeded", callback);
                     return false;
                 }
 
@@ -329,10 +323,5 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     {
         return String.format("%s@%x{id=%d,sendWindow=%s,recvWindow=%s,reset=%b,%s}", getClass().getSimpleName(),
                 hashCode(), getId(), sendWindow, recvWindow, reset, closeState);
-    }
-
-    private enum CloseState
-    {
-        NOT_CLOSED, LOCALLY_CLOSED, REMOTELY_CLOSED, CLOSED
     }
 }

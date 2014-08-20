@@ -16,47 +16,20 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2.frames;
+package org.eclipse.jetty.http2.generator;
 
-import java.util.HashMap;
-import java.util.Map;
+import org.eclipse.jetty.http2.frames.Frame;
+import org.eclipse.jetty.io.ByteBufferPool;
 
-public enum FrameType
+public class DisconnectGenerator extends FrameGenerator
 {
-    DATA(0),
-    HEADERS(1),
-    PRIORITY(2),
-    RST_STREAM(3),
-    SETTINGS(4),
-    PUSH_PROMISE(5),
-    PING(6),
-    GO_AWAY(7),
-    WINDOW_UPDATE(8),
-    CONTINUATION(9),
-    // Synthetic frames only needed by the implementation.
-    PREFACE(10),
-    DISCONNECT(11);
-
-    public static FrameType from(int type)
+    public DisconnectGenerator()
     {
-        return Types.types.get(type);
+        super(null);
     }
 
-    private final int type;
-
-    private FrameType(int type)
+    @Override
+    public void generate(ByteBufferPool.Lease lease, Frame frame)
     {
-        this.type = type;
-        Types.types.put(type, this);
-    }
-
-    public int getType()
-    {
-        return type;
-    }
-
-    private static class Types
-    {
-        private static final Map<Integer, FrameType> types = new HashMap<>();
     }
 }

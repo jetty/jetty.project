@@ -26,12 +26,13 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
+import org.eclipse.jetty.http2.frames.DisconnectFrame;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -57,14 +58,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 {
     private static final Logger LOG = Log.getLogger(HTTP2Session.class);
 
-    private final Callback disconnectOnFailure = new Callback.Adapter()
-    {
-        @Override
-        public void failed(Throwable x)
-        {
-            disconnect();
-        }
-    };
     private final ConcurrentMap<Integer, IStream> streams = new ConcurrentHashMap<>();
     private final AtomicInteger streamIds = new AtomicInteger();
     private final AtomicInteger lastStreamId = new AtomicInteger();
@@ -72,7 +65,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final AtomicInteger remoteStreamCount = new AtomicInteger();
     private final AtomicInteger sendWindow = new AtomicInteger();
     private final AtomicInteger recvWindow = new AtomicInteger();
-    private final AtomicBoolean closed = new AtomicBoolean();
+    private final AtomicReference<CloseState> closed = new AtomicReference<>(CloseState.NOT_CLOSED);
     private final Scheduler scheduler;
     private final EndPoint endPoint;
     private final Generator generator;
@@ -144,7 +137,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
             if (getRecvWindow() < 0)
             {
-                close(ErrorCodes.FLOW_CONTROL_ERROR, "session_window_exceeded", disconnectOnFailure);
+                close(ErrorCodes.FLOW_CONTROL_ERROR, "session_window_exceeded", Callback.Adapter.INSTANCE);
                 return false;
             }
 
@@ -271,7 +264,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
         // SPEC: SETTINGS frame MUST be replied.
         SettingsFrame reply = new SettingsFrame(Collections.<Integer, Integer>emptyMap(), true);
-        settings(reply, disconnectOnFailure());
+        settings(reply, Callback.Adapter.INSTANCE);
         return false;
     }
 
@@ -287,26 +280,72 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         else
         {
             PingFrame reply = new PingFrame(frame.getPayload(), true);
-            control(null, disconnectOnFailure(), reply);
+            control(null, Callback.Adapter.INSTANCE, reply);
         }
         return false;
     }
 
+    /**
+     * This method is called when receiving a GO_AWAY from the other peer.
+     * We check the close state to act appropriately:
+     *
+     * * NOT_CLOSED: we move to REMOTELY_CLOSED and queue a disconnect, so
+     *   that the content of the queue is written, and then the connection
+     *   closed. We notify the application after being terminated.
+     *   See {@link HTTP2Session.ControlEntry#succeeded()}
+     *
+     * * In all other cases, we do nothing since other methods are already
+     *   performing their actions.
+     *
+     * @param frame the GO_AWAY frame that has been received.
+     * @return whether the parsing will be resumed asynchronously
+     * @see #close(int, String, Callback)
+     * @see #onShutdown()
+     * @see #onIdleTimeout()
+     */
     @Override
-    public boolean onGoAway(GoAwayFrame frame)
+    public boolean onGoAway(final GoAwayFrame frame)
     {
         if (LOG.isDebugEnabled())
+            LOG.debug("Received {}", frame);
+
+        while (true)
         {
-            String reason = frame.tryConvertPayload();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Received {}: {}/'{}'", frame.getType(), frame.getError(), reason);
+            CloseState current = closed.get();
+            switch (current)
+            {
+                case NOT_CLOSED:
+                {
+                    if (closed.compareAndSet(current, CloseState.REMOTELY_CLOSED))
+                    {
+                        // We received a GO_AWAY, so try to write
+                        // what's in the queue and then disconnect.
+                        control(null, new Callback()
+                        {
+                            @Override
+                            public void succeeded()
+                            {
+                                notifyClose(HTTP2Session.this, frame);
+                            }
+
+                            @Override
+                            public void failed(Throwable x)
+                            {
+                                notifyClose(HTTP2Session.this, frame);
+                            }
+                        }, new DisconnectFrame());
+                        return false;
+                    }
+                    break;
+                }
+                default:
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Ignored {}, already closed", frame);
+                    return false;
+                }
+            }
         }
-
-        flusher.close();
-
-        notifyClose(this, frame);
-
-        return false;
     }
 
     @Override
@@ -331,7 +370,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void onConnectionFailure(int error, String reason)
     {
-        close(error, reason, disconnectOnFailure());
+        close(error, reason, Callback.Adapter.INSTANCE);
     }
 
     @Override
@@ -401,17 +440,64 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         control(getStream(frame.getStreamId()), callback, frame);
     }
 
+    /**
+     * Invoked internally and by applications to send a GO_AWAY frame to the
+     * other peer. We check the close state to act appropriately:
+     *
+     * * NOT_CLOSED: we move to LOCALLY_CLOSED and queue a GO_AWAY. When the
+     *   GO_AWAY has been written, it will only cause the output to be shut
+     *   down (not the connection closed), so that the application can still
+     *   read frames arriving from the other peer.
+     *   Ideally the other peer will notice the GO_AWAY and close the connection.
+     *   When that happen, we close the connection from {@link #onShutdown()}.
+     *   Otherwise, the idle timeout mechanism will close the connection, see
+     *   {@link #onIdleTimeout()}.
+     *
+     * * In all other cases, we do nothing since other methods are already
+     *   performing their actions.
+     *
+     * @param error the error code
+     * @param reason the reason
+     * @param callback the callback to invoke when the operation is complete
+     * @see #onGoAway(GoAwayFrame)
+     * @see #onShutdown()
+     * @see #onIdleTimeout()
+     */
     @Override
     public void close(int error, String reason, Callback callback)
     {
-        if (closed.compareAndSet(false, true))
+        while (true)
         {
-            byte[] payload = reason == null ? null : reason.getBytes(StandardCharsets.UTF_8);
-            GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Sending {}: {}", frame.getType(), reason);
-            control(null, callback, frame);
+            CloseState current = closed.get();
+            switch (current)
+            {
+                case NOT_CLOSED:
+                {
+                    if (closed.compareAndSet(current, CloseState.LOCALLY_CLOSED))
+                    {
+                        byte[] payload = reason == null ? null : reason.getBytes(StandardCharsets.UTF_8);
+                        GoAwayFrame frame = new GoAwayFrame(lastStreamId.get(), error, payload);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Sending {}", frame);
+                        control(null, callback, frame);
+                        return;
+                    }
+                    break;
+                }
+                default:
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Ignoring close {}/{}, already closed", error, reason);
+                    return;
+                }
+            }
         }
+    }
+
+    @Override
+    public boolean isClosed()
+    {
+        return closed.get() != CloseState.NOT_CLOSED;
     }
 
     private void control(IStream stream, Callback callback, Frame frame)
@@ -489,7 +575,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             int maxCount = getMaxRemoteStreams();
             if (maxCount >= 0 && remoteCount >= maxCount)
             {
-                reset(new ResetFrame(streamId, ErrorCodes.REFUSED_STREAM_ERROR), disconnectOnFailure());
+                reset(new ResetFrame(streamId, ErrorCodes.REFUSED_STREAM_ERROR), Callback.Adapter.INSTANCE);
                 return null;
             }
             if (remoteStreamCount.compareAndSet(remoteCount, remoteCount + 1))
@@ -510,7 +596,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         else
         {
-            close(ErrorCodes.PROTOCOL_ERROR, "duplicate_stream", disconnectOnFailure());
+            close(ErrorCodes.PROTOCOL_ERROR, "duplicate_stream", Callback.Adapter.INSTANCE);
             return null;
         }
     }
@@ -594,30 +680,151 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         return pushEnabled;
     }
 
+    /**
+     * A typical close by a remote peer involves a GO_AWAY frame followed by TCP FIN.
+     * This method is invoked when the TCP FIN is received, or when an exception is
+     * thrown while reading, and we check the close state to act appropriately:
+     *
+     * * NOT_CLOSED: means that the remote peer did not send a GO_AWAY (abrupt close)
+     *   or there was an exception while reading, and therefore we terminate.
+     *
+     * * LOCALLY_CLOSED: we have sent the GO_AWAY to the remote peer, which received
+     *   it and closed the connection; we queue a disconnect to close the connection
+     *   on the local side.
+     *   The GO_AWAY just shutdown the output, so we need this step to make sure the
+     *   connection is closed. See {@link #close(int, String, Callback)}.
+     *
+     * * REMOTELY_CLOSED: we received the GO_AWAY, and the TCP FIN afterwards, so we
+     *   do nothing since the handling of the GO_AWAY will take care of closing the
+     *   connection. See {@link #onGoAway(GoAwayFrame)}.
+     *
+     * @see #onGoAway(GoAwayFrame)
+     * @see #close(int, String, Callback)
+     * @see #onIdleTimeout()
+     */
     @Override
-    public void shutdown()
+    public void onShutdown()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Shutting down");
-        flusher.close();
+            LOG.debug("Shutting down {}", this);
+
+        switch (closed.get())
+        {
+            case NOT_CLOSED:
+            {
+                // The other peer did not send a GO_AWAY, no need to be gentle.
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Abrupt close for {}", this);
+                terminate();
+                break;
+            }
+            case LOCALLY_CLOSED:
+            {
+                // We have closed locally, and only shutdown
+                // the output; now queue a disconnect.
+                control(null, Callback.Adapter.INSTANCE, new DisconnectFrame());
+                break;
+            }
+            case REMOTELY_CLOSED:
+            {
+                // Nothing to do, the GO_AWAY frame we
+                // received will close the connection.
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
     }
 
+    /**
+     * This method is invoked when the idle timeout triggers. We check the close state
+     * to act appropriately:
+     *
+     * * NOT_CLOSED: it's a real idle timeout, we just initiate a close, see
+     *   {@link #close(int, String, Callback)}.
+     *
+     * * LOCALLY_CLOSED: we have sent a GO_AWAY and only shutdown the output, but the
+     *   other peer did not close the connection so we never received the TCP FIN, and
+     *   therefore we terminate.
+     *
+     * * REMOTELY_CLOSED: the other peer sent us a GO_AWAY, we should have queued a
+     *   disconnect, but for some reason it was not processed (for example, queue was
+     *   stuck because of TCP congestion), therefore we terminate.
+     *   See {@link #onGoAway(GoAwayFrame)}.
+     *
+     * @see #onGoAway(GoAwayFrame)
+     * @see #close(int, String, Callback)
+     * @see #onShutdown()
+     */
     @Override
+    public void onIdleTimeout()
+    {
+        switch (closed.get())
+        {
+            case NOT_CLOSED:
+            {
+                // Real idle timeout, just close.
+                close(ErrorCodes.NO_ERROR, "idle_timeout", Callback.Adapter.INSTANCE);
+                break;
+            }
+            case LOCALLY_CLOSED:
+            case REMOTELY_CLOSED:
+            {
+                terminate();
+                break;
+            }
+            default:
+            {
+                break;
+            }
+        }
+    }
+
     public void disconnect()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Disconnecting");
+            LOG.debug("Disconnecting {}", this);
         endPoint.close();
+    }
+
+    private void terminate()
+    {
+        while (true)
+        {
+            CloseState current = closed.get();
+            switch (current)
+            {
+                case NOT_CLOSED:
+                case LOCALLY_CLOSED:
+                case REMOTELY_CLOSED:
+                {
+                    if (closed.compareAndSet(current, CloseState.CLOSED))
+                    {
+                        // Close the flusher and disconnect.
+                        flusher.close();
+                        disconnect();
+                        return;
+                    }
+                    break;
+                }
+                default:
+                {
+                    return;
+                }
+            }
+        }
+    }
+
+    public boolean isDisconnected()
+    {
+        return !endPoint.isOpen();
     }
 
     private void updateLastStreamId(int streamId)
     {
         Atomics.updateMax(lastStreamId, streamId);
-    }
-
-    protected Callback disconnectOnFailure()
-    {
-        return disconnectOnFailure;
     }
 
     protected Stream.Listener notifyNewStream(Stream stream, HeadersFrame frame)
@@ -684,8 +891,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public String toString()
     {
-        return String.format("%s@%x{queueSize=%d,sendWindow=%s,recvWindow=%s,streams=%d}", getClass().getSimpleName(),
-                hashCode(), flusher.getQueueSize(), sendWindow, recvWindow, streams.size());
+        return String.format("%s@%x{queueSize=%d,sendWindow=%s,recvWindow=%s,streams=%d,%s}", getClass().getSimpleName(),
+                hashCode(), flusher.getQueueSize(), sendWindow, recvWindow, streams.size(), closed);
     }
 
     private class ControlEntry extends HTTP2Flusher.Entry
@@ -725,7 +932,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 }
                 case GO_AWAY:
                 {
-                    flusher.close();
+                    // We just sent a GO_AWAY, only shutdown the
+                    // output without closing yet, to allow reads.
+                    getEndPoint().shutdownOutput();
+                    break;
+                }
+                case DISCONNECT:
+                {
+                    terminate();
                     break;
                 }
                 default:

@@ -39,6 +39,8 @@ public interface Session
 
     public void close(int error, String payload, Callback callback);
 
+    public boolean isClosed();
+
     public Collection<Stream> getStreams();
 
     public Stream getStream(int streamId);

@@ -25,12 +25,13 @@ import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.IStream;
-import org.eclipse.jetty.http2.ResetException;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -126,7 +127,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Could not push " + request, x);
-                stream.getSession().disconnect();
             }
         });
     }
@@ -167,8 +167,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Response #{} aborted", stream.getId());
-        if (!(failure instanceof ResetException))
-            stream.getSession().disconnect();
+        if (!stream.isReset())
+            stream.reset(new ResetFrame(stream.getId(), ErrorCodes.INTERNAL_ERROR), Callback.Adapter.INSTANCE);
     }
 
     private class CommitCallback implements Callback
@@ -185,7 +185,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("HTTP2 Response #" + stream.getId() + " failed to commit", x);
-            stream.getSession().disconnect();
         }
     }
 }

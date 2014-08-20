@@ -16,31 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.http2;
+package org.eclipse.jetty.http2.frames;
 
-public class ResetException extends RuntimeException
+public class DisconnectFrame extends Frame
 {
-    public ResetException()
+    public DisconnectFrame()
     {
-    }
-
-    public ResetException(String message)
-    {
-        super(message);
-    }
-
-    public ResetException(String message, Throwable cause)
-    {
-        super(message, cause);
-    }
-
-    public ResetException(Throwable cause)
-    {
-        super(cause);
-    }
-
-    public ResetException(String message, Throwable cause, boolean enableSuppression, boolean writableStackTrace)
-    {
-        super(message, cause, enableSuppression, writableStackTrace);
+        super(FrameType.DISCONNECT);
     }
 }

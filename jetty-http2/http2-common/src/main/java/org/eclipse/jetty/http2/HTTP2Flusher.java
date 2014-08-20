@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
@@ -313,8 +314,6 @@ public class HTTP2Flusher extends IteratingCallback
 
         for (Entry entry : queued)
             closed(entry, x);
-
-        session.disconnect();
     }
 
     private void closed(Entry entry, Throwable failure)
@@ -347,7 +346,7 @@ public class HTTP2Flusher extends IteratingCallback
 
         public void reset()
         {
-            failed(new ResetException());
+            failed(new EOFException("reset"));
         }
 
         @Override

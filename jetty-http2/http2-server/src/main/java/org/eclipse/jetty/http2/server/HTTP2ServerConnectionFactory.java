@@ -23,7 +23,6 @@ import java.util.Map;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCodes;
-import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -142,14 +141,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         private void close(Stream stream, String reason)
         {
             final Session session = stream.getSession();
-            session.close(ErrorCodes.PROTOCOL_ERROR, reason, new Callback.Adapter()
-            {
-                @Override
-                public void failed(Throwable x)
-                {
-                    ((ISession)session).disconnect();
-                }
-            });
+            session.close(ErrorCodes.PROTOCOL_ERROR, reason, Callback.Adapter.INSTANCE);
         }
     }
 }

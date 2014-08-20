@@ -19,10 +19,8 @@
 package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
-import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
@@ -33,11 +31,7 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -46,67 +40,25 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.server.Server;
-import org.eclipse.jetty.server.ServerConnector;
-import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.BufferUtil;
-import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class HTTP2ServerTest
+public class HTTP2ServerTest extends AbstractServerTest
 {
-    private Server server;
-    private ServerConnector connector;
-    private String path;
-    private ByteBufferPool byteBufferPool;
-    private Generator generator;
-
-    private void startServer(HttpServlet servlet) throws Exception
-    {
-        server = new Server();
-        connector = new ServerConnector(server, new HTTP2ServerConnectionFactory(new HttpConfiguration()));
-        server.addConnector(connector);
-
-        ServletContextHandler context = new ServletContextHandler(server, "/");
-        path = "/test";
-        context.addServlet(new ServletHolder(servlet), path);
-
-        byteBufferPool = new MappedByteBufferPool();
-        generator = new Generator(byteBufferPool);
-
-        server.start();
-    }
-
-    @After
-    public void dispose() throws Exception
-    {
-        server.stop();
-    }
-
     @Test
     public void testNoPrefaceBytes() throws Exception
     {
         startServer(new HttpServlet(){});
 
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP, new HostPortHttpField(host + ":" + port),
-                path, HttpVersion.HTTP_2, fields);
-        HeadersFrame request = new HeadersFrame(1, metaData, null, true);
+        // No preface bytes.
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.control(lease, request);
+        generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
-        // No preface bytes
-
-        try (Socket client = new Socket(host, port))
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             OutputStream output = client.getOutputStream();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -144,17 +96,12 @@ public class HTTP2ServerTest
             }
         });
 
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(), HttpScheme.HTTP, new HostPortHttpField(host + ":" + port),
-                path, HttpVersion.HTTP_2, fields);
-        HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.control(lease, request);
-        lease.prepend(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES), false);
+        generator.control(lease, new PrefaceFrame());
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
-        try (Socket client = new Socket(host, port))
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             OutputStream output = client.getOutputStream();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -207,17 +154,12 @@ public class HTTP2ServerTest
             }
         });
 
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        HttpFields fields = new HttpFields();
-        MetaData.Request metaData = new MetaData.Request(HttpMethod.GET.asString(),HttpScheme.HTTP, new HostPortHttpField(host + ":" + port),
-                path, HttpVersion.HTTP_2, fields);
-        HeadersFrame request = new HeadersFrame(1, metaData, null, true);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.control(lease, request);
-        lease.prepend(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES), false);
+        generator.control(lease, new PrefaceFrame());
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
-        try (Socket client = new Socket(host, port))
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             OutputStream output = client.getOutputStream();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -273,17 +215,14 @@ public class HTTP2ServerTest
     {
         startServer(new HttpServlet(){});
 
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        PingFrame frame = new PingFrame(new byte[8], false);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.control(lease, frame);
+        generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new PingFrame(new byte[8], false));
         // Modify the length of the frame to a wrong one.
-        lease.getByteBuffers().get(0).putShort(0, (short)7);
-        lease.prepend(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES), false);
+        lease.getByteBuffers().get(1).putShort(0, (short)7);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        try (Socket client = new Socket(host, port))
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             OutputStream output = client.getOutputStream();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -313,17 +252,14 @@ public class HTTP2ServerTest
     {
         startServer(new HttpServlet(){});
 
-        String host = "localhost";
-        int port = connector.getLocalPort();
-        PingFrame frame = new PingFrame(new byte[8], false);
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
-        generator.control(lease, frame);
+        generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new PingFrame(new byte[8], false));
         // Modify the streamId of the frame to non zero.
-        lease.getByteBuffers().get(0).putInt(4, 1);
-        lease.prepend(ByteBuffer.wrap(PrefaceFrame.PREFACE_BYTES), false);
+        lease.getByteBuffers().get(1).putInt(4, 1);
 
         final CountDownLatch latch = new CountDownLatch(1);
-        try (Socket client = new Socket(host, port))
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
             OutputStream output = client.getOutputStream();
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -345,27 +281,6 @@ public class HTTP2ServerTest
             parseResponse(client, parser);
 
             Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        }
-    }
-
-    private boolean parseResponse(Socket client, Parser parser) throws IOException
-    {
-        byte[] buffer = new byte[2048];
-        InputStream input = client.getInputStream();
-        client.setSoTimeout(1000);
-        while (true)
-        {
-            try
-            {
-                int read = input.read(buffer);
-                if (read < 0)
-                    return true;
-                parser.parse(ByteBuffer.wrap(buffer, 0, read));
-            }
-            catch (SocketTimeoutException x)
-            {
-                return false;
-            }
         }
     }
 }

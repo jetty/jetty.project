@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -33,6 +32,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -75,7 +75,8 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
-                latch.countDown();
+                if (session.isClosed() && ((HTTP2Session)session).isDisconnected())
+                    latch.countDown();
             }
         });
 
@@ -91,6 +92,8 @@ public class IdleTimeoutTest extends AbstractTest
         }, new Stream.Listener.Adapter());
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+
+        Thread.sleep(1000);
     }
 
     @Test
@@ -113,7 +116,8 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
-                latch.countDown();
+                if (session.isClosed() && ((HTTP2Session)session).isDisconnected())
+                    latch.countDown();
             }
         });
 
@@ -133,7 +137,7 @@ public class IdleTimeoutTest extends AbstractTest
     }
 
     @Test
-    public void testServerNotEnforcingIdleTimeoutWithPendingStream() throws Exception
+    public void testServerNotEnforcingIdleTimeoutWithinCallback() throws Exception
     {
         startServer(new ServerSessionListener.Adapter()
         {
@@ -143,6 +147,7 @@ public class IdleTimeoutTest extends AbstractTest
                 try
                 {
                     stream.setIdleTimeout(10 * idleTimeout);
+                    // Stay in the callback for more than the idleTimeout.
                     Thread.sleep(2 * idleTimeout);
                     MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                     HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
@@ -212,7 +217,8 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
-                closeLatch.countDown();
+                if (session.isClosed() && ((HTTP2Session)session).isDisconnected())
+                    closeLatch.countDown();
             }
         });
         client.setIdleTimeout(idleTimeout);
@@ -230,6 +236,7 @@ public class IdleTimeoutTest extends AbstractTest
         }, new Stream.Listener.Adapter());
 
         Assert.assertTrue(closeLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(session.isClosed());
     }
 
     @Test
@@ -248,7 +255,8 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
-                closeLatch.countDown();
+                if (session.isClosed() && ((HTTP2Session)session).isDisconnected())
+                    closeLatch.countDown();
             }
         });
         client.setIdleTimeout(idleTimeout);
@@ -269,7 +277,7 @@ public class IdleTimeoutTest extends AbstractTest
     }
 
     @Test
-    public void testClientNotEnforcingIdleTimeoutWithPendingStream() throws Exception
+    public void testClientNotEnforcingIdleTimeoutWithinCallback() throws Exception
     {
         final CountDownLatch closeLatch = new CountDownLatch(1);
         startServer(new ServerSessionListener.Adapter()
@@ -311,6 +319,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 try
                 {
+                    // Stay in the callback for more than idleTimeout.
                     Thread.sleep(2 * idleTimeout);
                     replyLatch.countDown();
                 }
@@ -379,6 +388,9 @@ public class IdleTimeoutTest extends AbstractTest
         Assert.assertFalse(dataLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         // Stream must be gone.
         Assert.assertTrue(session.getStreams().isEmpty());
+        // Session must not be closed, nor disconnected.
+        Assert.assertFalse(session.isClosed());
+        Assert.assertFalse(((HTTP2Session)session).isDisconnected());
     }
 
     @Test
@@ -420,6 +432,9 @@ public class IdleTimeoutTest extends AbstractTest
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
         // Stream must be gone.
         Assert.assertTrue(session.getStreams().isEmpty());
+        // Session must not be closed, nor disconnected.
+        Assert.assertFalse(session.isClosed());
+        Assert.assertFalse(((HTTP2Session)session).isDisconnected());
     }
 
     @Test
