@@ -46,7 +46,7 @@ import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class PushTest extends AbstractTest
+public class PushCacheFilterTest extends AbstractTest
 {
     @Override
     protected void customizeContext(ServletContextHandler context)
