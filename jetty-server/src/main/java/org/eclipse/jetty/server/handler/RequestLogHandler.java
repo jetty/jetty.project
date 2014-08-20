@@ -96,7 +96,7 @@ public class RequestLogHandler extends HandlerWrapper
         }
         catch(Error|IOException|ServletException|RuntimeException e)
         {
-            if (!response.isCommitted())
+            if (!response.isCommitted() && !baseRequest.getHttpChannelState().isAsync())
                 response.setStatus(500);
             throw e;
         }
