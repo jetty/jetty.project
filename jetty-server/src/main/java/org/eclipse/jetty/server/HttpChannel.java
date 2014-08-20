@@ -315,7 +315,10 @@ public class HttpChannel implements Runnable
                     else
                     {
                         error=true;
-                        throw e;
+                        LOG.warn(String.valueOf(_uri), e);
+                        _state.error(e);
+                        _request.setHandled(true);
+                        handleException(e);
                     }
                 }
                 catch (Exception e)

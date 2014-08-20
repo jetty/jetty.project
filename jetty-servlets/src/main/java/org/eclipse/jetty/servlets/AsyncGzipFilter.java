@@ -130,6 +130,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
     private static final Logger LOG = Log.getLogger(AsyncGzipFilter.class);
     public final static String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
+    public final static String ETAG_GZIP="--gzip";
     public final static String ETAG = "o.e.j.s.GzipFilter.ETag";
     public final static int DEFAULT_MIN_GZIP_SIZE=256;
 
@@ -364,9 +365,8 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
         String etag = request.getHeader("If-None-Match"); 
         if (etag!=null)
         {
-            int dd=etag.indexOf("--");
-            if (dd>0)
-                request.setAttribute(ETAG,etag.substring(0,dd)+(etag.endsWith("\"")?"\"":""));
+            if (etag.contains(ETAG_GZIP))
+                request.setAttribute(ETAG,etag.replace(ETAG_GZIP,""));
         }
 
         HttpChannel channel = HttpChannel.getCurrentHttpChannel();

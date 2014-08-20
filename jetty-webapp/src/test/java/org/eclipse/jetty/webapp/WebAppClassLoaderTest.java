@@ -97,7 +97,7 @@ public class WebAppClassLoaderTest
     {
         final List<Object> results=new ArrayList<Object>();
         
-        _loader.addClassFileTransformer(new ClassFileTransformer()
+        _loader.addTransformer(new ClassFileTransformer()
         {
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
                     throws IllegalClassFormatException
@@ -109,7 +109,7 @@ public class WebAppClassLoaderTest
                 return b;
             }
         });
-        _loader.addClassFileTransformer(new ClassFileTransformer()
+        _loader.addTransformer(new ClassFileTransformer()
         {
             public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
                     throws IllegalClassFormatException
