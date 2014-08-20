@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -32,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -228,6 +230,13 @@ public class Dispatcher implements RequestDispatcher
             else
                 query=query+"&"+_uri.getQuery(); // TODO is this correct semantic?
         }
+        
+        int port=request.getServerPort();
+        if (port==80 && HttpScheme.HTTP.is(request.getScheme()))
+            port=0;
+        if (port==443 && HttpScheme.HTTPS.is(request.getScheme()))
+            port=0;
+        
         HttpURI uri = new HttpURI(request.getScheme(),request.getServerName(),request.getServerPort(),_uri.getPath(),baseRequest.getHttpURI().getParam(),query,null);
         
         MetaData.Request push = new MetaData.Request(HttpMethod.GET.asString(),uri,baseRequest.getHttpVersion(),fields);

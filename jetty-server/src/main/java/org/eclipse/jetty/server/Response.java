@@ -553,6 +553,13 @@ public class Response implements HttpServletResponse
         if (isIncluding())
             return;
 
+        if (isCommitted())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Aborting on sendError on committed response {} {}",code,message);
+            code=-1;
+        }
+        
         switch(code)
         {
             case -1:
