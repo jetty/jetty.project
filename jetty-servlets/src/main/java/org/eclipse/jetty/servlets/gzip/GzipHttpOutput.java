@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.servlets.AsyncGzipFilter;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -195,7 +196,7 @@ public class GzipHttpOutput extends HttpOutput
             response.setContentLength(-1);
             String etag=fields.get(HttpHeader.ETAG);
             if (etag!=null)
-                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+"--gzip\"");
+                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+AsyncGzipFilter.ETAG_GZIP+ '"');
 
             LOG.debug("{} compressing {}",this,_deflater);
             _state.set(GZState.COMPRESSING);
