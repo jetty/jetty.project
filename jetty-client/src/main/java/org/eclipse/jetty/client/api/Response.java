@@ -147,6 +147,13 @@ public interface Response
 
     public interface AsyncContentListener extends ResponseListener
     {
+        /**
+         * Callback method invoked asynchronously when the response content has been received.
+         *
+         * @param response the response containing the response line data and the headers
+         * @param content the content bytes received
+         * @param callback the callback to call when the content is consumed.
+         */
         public void onContent(Response response, ByteBuffer content, Callback callback);
     }
 

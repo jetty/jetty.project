@@ -654,7 +654,7 @@ public class Main
         if (args.isDryRun())
         {
             CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
-            System.out.println(cmd.toString());
+            System.out.println(cmd.toString(File.separatorChar=='/'?" \\\n":" "));
         }
 
         if (args.isStopCommand())

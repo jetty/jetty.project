@@ -1212,13 +1212,13 @@ public class XmlConfiguration
                     // For all arguments, load properties
                     for (String arg : args)
                     {
-                        if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
-                            properties.load(Resource.newResource(arg).getInputStream());
-                        else if (arg.indexOf('=')>=0)
+                        if (arg.indexOf('=')>=0)
                         {
                             int i=arg.indexOf('=');
                             properties.put(arg.substring(0,i),arg.substring(i+1));
                         }
+                        else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
+                            properties.load(Resource.newResource(arg).getInputStream());
                     }
 
                     // For all arguments, parse XMLs
