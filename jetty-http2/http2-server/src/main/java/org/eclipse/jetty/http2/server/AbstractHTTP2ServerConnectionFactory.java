@@ -122,7 +122,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         {
             try
             {
-                listener.onConnect(session);
+                listener.onAccept(session);
             }
             catch (Throwable x)
             {

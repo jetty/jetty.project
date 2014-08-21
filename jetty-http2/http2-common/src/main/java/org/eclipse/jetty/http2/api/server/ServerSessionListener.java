@@ -22,12 +22,12 @@ import org.eclipse.jetty.http2.api.Session;
 
 public interface ServerSessionListener extends Session.Listener
 {
-    public void onConnect(Session session);
+    public void onAccept(Session session);
 
     public static class Adapter extends Session.Listener.Adapter implements ServerSessionListener
     {
         @Override
-        public void onConnect(Session session)
+        public void onAccept(Session session)
         {
         }
     }
