@@ -4,6 +4,7 @@
 
 [depend]
 servlet
+annotations
 jsp-impl/${jsp-impl}-jsp
 
 [ini-template]
