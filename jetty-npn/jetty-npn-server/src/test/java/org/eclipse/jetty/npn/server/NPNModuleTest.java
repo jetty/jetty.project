@@ -16,10 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.spdy.server;
-
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+package org.eclipse.jetty.npn.server;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -47,6 +44,12 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 @RunWith(Parameterized.class)
 public class NPNModuleTest
 {
@@ -69,7 +72,7 @@ public class NPNModuleTest
     @Parameters(name = "{index}: mod:{0}")
     public static List<Object[]> data()
     {
-        File npnBootModDir = MavenTestingUtils.getProjectDir("../spdy-http-server/src/main/config/modules/protonego-impl");
+        File npnBootModDir = MavenTestingUtils.getProjectDir("src/main/config/modules/protonego-impl");
         List<Object[]> data = new ArrayList<>();
         for (File file : npnBootModDir.listFiles())
         {
@@ -89,7 +92,7 @@ public class NPNModuleTest
     @BeforeClass
     public static void initBaseHome() throws IOException
     {
-        File homeDir = MavenTestingUtils.getProjectDir("../spdy-http-server/src/main/config");
+        File homeDir = MavenTestingUtils.getProjectDir("src/main/config");
         File baseDir = MavenTestingUtils.getTargetTestingDir(NPNModuleTest.class.getName());
         FS.ensureEmpty(baseDir);
         
