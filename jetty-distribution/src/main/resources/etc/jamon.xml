@@ -11,6 +11,7 @@
   <Set name="handler">
     <New id="JamonHandler" class="com.jamonapi.http.JAMonJettyHandlerNew">
       <Set name="handler"><Ref refid="oldhandler" /></Set>
+      <Set name="summaryLabels"><Property name="jamon.summaryLabels" /></Set>
     </New>
   </Set>
 
