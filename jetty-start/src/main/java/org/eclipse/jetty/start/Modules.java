@@ -330,6 +330,7 @@ public class Modules implements Iterable<Module>
         parentNames.addAll(module.getParentNames());
         for(String name: parentNames)
         {
+            StartLog.debug("Enable parent '%s' of module: %s",name,module.getName());
             Module parent = modules.get(name);
             if (parent == null)
             {
@@ -468,6 +469,7 @@ public class Modules implements Iterable<Module>
     // load missing post-expanded dependent modules
     private void normalizeDependencies() throws FileNotFoundException, IOException
     {
+        Set<String> expandedModules = new HashSet<>();
         boolean done = false;
         while (!done)
         {
@@ -478,26 +480,31 @@ public class Modules implements Iterable<Module>
             {
                 for (String parent : m.getParentNames())
                 {
-                    if (modules.containsKey(parent) || missingModules.contains(parent))
+                    String expanded = args.getProperties().expand(parent);
+                    if (modules.containsKey(expanded) || missingModules.contains(parent) || expandedModules.contains(parent))
                     {
                         continue; // found. skip it.
                     }
                     done = false;
+                    StartLog.debug("Missing parent module %s == %s for %s",parent,expanded,m);
                     missingParents.add(parent);
                 }
             }
 
             for (String missingParent : missingParents)
             {
-                Path file = baseHome.getPath("modules/" + missingParent + ".mod");
+                String expanded = args.getProperties().expand(missingParent);
+                Path file = baseHome.getPath("modules/" + expanded + ".mod");
                 if (FS.canReadFile(file))
                 {
                     Module module = registerModule(file);
                     updateParentReferencesTo(module);
+                    if (!expanded.equals(missingParent))
+                        expandedModules.add(missingParent);
                 }
                 else
                 {
-                    StartLog.debug("Missing module definition: [ Mod: %s | File: %s ]",missingParent,file);
+                    StartLog.debug("Missing module definition: %s == %s",missingParent,expanded);
                     missingModules.add(missingParent);
                 }
             }

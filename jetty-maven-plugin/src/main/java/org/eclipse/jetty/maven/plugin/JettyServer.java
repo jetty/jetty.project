@@ -43,9 +43,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  * 
  */
 public class JettyServer extends org.eclipse.jetty.server.Server
-{
-    public static final JettyServer __instance = new JettyServer();
-    
+{ 
     private RequestLog requestLog;
     private ContextHandlerCollection contexts;
     
@@ -57,7 +55,6 @@ public class JettyServer extends org.eclipse.jetty.server.Server
     public JettyServer()
     {
         super();
-        setStopAtShutdown(true);
         //make sure Jetty does not use URLConnection caches with the plugin
         Resource.setDefaultUseCaches(false);
     }

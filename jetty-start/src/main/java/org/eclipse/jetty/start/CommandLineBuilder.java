@@ -177,17 +177,20 @@ public class CommandLineBuilder
     @Override
     public String toString()
     {
+        return toString(" ");
+    }
+  
+    public String toString(String delim)
+    {
         StringBuilder buf = new StringBuilder();
 
-        boolean delim = false;
         for (String arg : args)
         {
-            if (delim)
+            if (buf.length()>0)
             {
-                buf.append(' ');
+                buf.append(delim);
             }
             buf.append(quote(arg));
-            delim = true;
         }
 
         return buf.toString();

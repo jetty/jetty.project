@@ -32,16 +32,12 @@ import org.eclipse.jetty.util.Scanner;
  *  This goal is used to assemble your webapp into an exploded war and automatically deploy it to Jetty.
  *  </p>
  *  <p>
- *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the pom.xml and 
+ *  Once invoked, the plugin runs continuously, and can be configured to scan for changes in the pom.xml and 
  *  to WEB-INF/web.xml, WEB-INF/classes or WEB-INF/lib and hot redeploy when a change is detected. 
  *  </p>
  *  <p>
  *  You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
  *  This can be used, for example, to deploy a static webapp that is not part of your maven build. 
- *  </p>
- *  <p>
- *  There is a <a href="run-exploded-mojo.html">reference guide</a> to the configuration parameters for this plugin, and more detailed information
- *  with examples in the <a href="http://docs.codehaus.org/display/JETTY/Maven+Jetty+Plugin">Configuration Guide</a>.
  *  </p>
  *
  *@goal run-exploded
@@ -56,7 +52,7 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
     /**
      * The location of the war file.
      * 
-     * @parameter alias="webApp" expression="${project.build.directory}/${project.build.finalName}"
+     * @parameter expression="${project.build.directory}/${project.build.finalName}"
      * @required
      */
     private File war;
@@ -74,7 +70,14 @@ public class JettyRunWarExplodedMojo extends AbstractJettyMojo
     }
     
     
-    
+
+    @Override
+    public void finishConfigurationBeforeStart() throws Exception
+    {
+        server.setStopAtShutdown(true); //as we will normally be stopped with a cntrl-c, ensure server stopped 
+        super.finishConfigurationBeforeStart();
+    }
+
     
     /**
      * 

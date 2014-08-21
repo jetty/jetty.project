@@ -444,15 +444,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             // then we can't be persistent
             _generator.setPersistent(false);
         
-        _sendCallback.reset(info,content,lastContent,callback);
-        _sendCallback.iterate();
+        if(_sendCallback.reset(info,content,lastContent,callback))
+            _sendCallback.iterate();
     }
 
     @Override
     public void send(ByteBuffer content, boolean lastContent, Callback callback)
     {
-        _sendCallback.reset(null,content,lastContent,callback);
-        _sendCallback.iterate();
+        if (!lastContent && BufferUtil.isEmpty(content))
+            callback.succeeded();
+        else if (_sendCallback.reset(null,content,lastContent,callback))
+            _sendCallback.iterate();
     }
     
     protected class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
@@ -565,7 +567,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             super(true);
         }
 
-        private void reset(ResponseInfo info, ByteBuffer content, boolean last, Callback callback)
+        private boolean reset(ResponseInfo info, ByteBuffer content, boolean last, Callback callback)
         {
             if (reset())
             {
@@ -575,15 +577,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 _callback = callback;
                 _header = null;
                 _shutdownOut = false;
+                return true;
             }
-            else if (isClosed())
-            {
+            
+            if (isClosed())
                 callback.failed(new EofException());
-            }
             else
-            {
                 callback.failed(new WritePendingException());
-            }
+            return false;
         }
 
         @Override
@@ -651,7 +652,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             getEndPoint().write(this, _content);
                         }
                         else
-                            continue;
+                        {
+                            succeeded(); // nothing to write
+                        }
                         return Action.SCHEDULED;
                     }
                     case SHUTDOWN_OUT:
@@ -661,7 +664,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case DONE:
                     {
-                        releaseHeader();
                         return Action.SUCCEEDED;
                     }
                     case CONTINUE:

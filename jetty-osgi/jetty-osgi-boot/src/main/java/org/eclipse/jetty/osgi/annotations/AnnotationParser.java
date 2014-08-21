@@ -23,9 +23,6 @@ import java.net.URI;
 import java.net.URL;
 import java.util.Comparator;
 import java.util.Enumeration;
-import java.util.HashMap;
-import java.util.HashSet;
-import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeSet;
@@ -35,7 +32,6 @@ import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.resource.Resource;
-import org.objectweb.asm.Opcodes;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.Constants;
 
@@ -51,13 +47,6 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
     private ConcurrentHashMap<Resource, Bundle> _resourceToBundle = new ConcurrentHashMap<Resource, Bundle>();
     private ConcurrentHashMap<Bundle,URI> _bundleToUri = new ConcurrentHashMap<Bundle, URI>();
     
-    static
-    {
-        //As of jetty 9.2.0, the impl of asm visitor classes is compatible with both asm4 and asm5.
-        //We need to use asm4 with osgi, because we need to use aries spifly to support annotations,
-        //and currently this only supports asm4. Therefore, we set the asm api version to be 4 for osgi.
-        ASM_OPCODE_VERSION = Opcodes.ASM4;
-    }
     
     /**
      * Keep track of a jetty URI Resource and its associated OSGi bundle.
@@ -212,5 +201,4 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
                 scanClass(handlers, getResource(bundle), classUrl.openStream());
         }
     }
-    
 }

@@ -494,7 +494,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             }
 
             if (LOG.isDebugEnabled())
-                LOG.debug("uri="+request.getRequestURI()+" resource="+resource+(content!=null?" content":""));
+                LOG.debug(String.format("uri=%s, resource=%s, content=%s",request.getRequestURI(),resource,content));
 
             // Handle resource
             if (resource==null || !resource.exists())
@@ -863,7 +863,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     throws IOException
     {
         final long content_length = (content==null)?resource.length():content.getContentLength();
-
+        
         // Get the output stream (or writer)
         OutputStream out =null;
         boolean written;
@@ -881,6 +881,9 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
             out = new WriterOutputStream(response.getWriter());
             written=true; // there may be data in writer buffer, so assume written
         }
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug(String.format("sendData content=%s out=%s async=%b",content,out,request.isAsyncSupported()));
 
         if ( reqRanges == null || !reqRanges.hasMoreElements() || content_length<0)
         {
@@ -934,6 +937,12 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                             else
                                 LOG.warn(x);
                             context.complete();
+                        }
+                        
+                        @Override
+                        public String toString() 
+                        {
+                            return String.format("DefaultServlet@%x$CB", DefaultServlet.this.hashCode());
                         }
                     });
                 }

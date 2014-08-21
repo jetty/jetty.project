@@ -31,13 +31,12 @@ import javax.inject.Inject;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.MavenUtils;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.options.MavenUrlReference.VersionResolver;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 
@@ -64,7 +63,7 @@ public class TestJettyOSGiBootCore
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
         options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
-
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.annotations.LEVEL").value("DEBUG"))));
         return options.toArray(new Option[options.size()]);
     }
 
@@ -82,20 +81,12 @@ public class TestJettyOSGiBootCore
     public static List<Option> coreJettyDependencies()
     {
         List<Option> res = new ArrayList<Option>();
-        
-        String jdk = System.getProperty("java.version");
-        int firstdot = jdk.indexOf(".");
-        jdk = jdk.substring(0,firstdot+2);
-        double version = Double.parseDouble(jdk);
 
-        if (version < 1.8)
-        {
-            res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
-            res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
-            res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
-            res.add(mavenBundle().groupId( "org.apache.aries" ).artifactId( "org.apache.aries.util" ).version("1.0.0").start());
-            res.add(mavenBundle().groupId( "org.apache.aries.spifly" ).artifactId( "org.apache.aries.spifly.dynamic.bundle" ).version("1.0.0").start());
-        }
+        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.apache.aries" ).artifactId( "org.apache.aries.util" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.apache.aries.spifly" ).artifactId( "org.apache.aries.spifly.dynamic.bundle" ).versionAsInProject().start());
 
         res.add(mavenBundle().groupId( "javax.servlet" ).artifactId( "javax.servlet-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "javax.annotation" ).artifactId( "javax.annotation-api" ).versionAsInProject().noStart());
@@ -119,10 +110,7 @@ public class TestJettyOSGiBootCore
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-client" ).versionAsInProject().noStart());  
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-jndi" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-plus" ).versionAsInProject().noStart());
-        if (version < 1.8)
-        {
-            res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-annotations" ).versionAsInProject().start());
-        }
+        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-annotations" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-common" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-servlet" ).versionAsInProject().noStart());

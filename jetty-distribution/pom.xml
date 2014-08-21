@@ -302,7 +302,7 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
-              <excludeArtifactIds>jetty-all,jetty-jsp,apache-jsp,jetty-start,jetty-monitor,jetty-spring</excludeArtifactIds>
+              <excludeArtifactIds>jetty-all,jetty-jsp,apache-jsp,apache-jstl,jetty-start,jetty-monitor,jetty-spring</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -477,8 +477,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.toolchain,javax.servlet.jsp,org.mortbay.jasper,org.mortbay.jasper,org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>apache-jsp,javax.servlet.jsp-api,apache-el,org.eclipse.jdt.core</includeArtifactIds>
+              <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>apache-jsp,apache-el,org.eclipse.jdt.core</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <prependGroupId>true</prependGroupId>
               <outputDirectory>${assembly-directory}/lib/apache-jsp</outputDirectory>

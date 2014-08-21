@@ -59,11 +59,6 @@
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-plus</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-annotations</artifactId>
       <version>${project.version}</version>
     </dependency>
@@ -80,6 +75,20 @@
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-proxy</artifactId>
       <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jsp</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>apache-jstl</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.orbit</groupId>
+      <artifactId>javax.mail.glassfish</artifactId>
     </dependency>
      <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>

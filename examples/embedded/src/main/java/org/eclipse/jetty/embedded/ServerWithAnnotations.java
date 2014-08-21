@@ -43,7 +43,7 @@ public class ServerWithAnnotations
         //Create a WebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
-        webapp.setWar("../../tests/test-webapps/test-servlet-spec/test-spec-webapp/target/test-spec-webapp-9.1.0-SNAPSHOT.war");
+        webapp.setWar("../../jetty-distribution/target/distribution/demo-base/webapps/test-spec.war");
         webapp.setAttribute("org.eclipse.jetty.server.webapp.ContainerIncludeJarPattern",".*/javax.servlet-[^/]*\\.jar$|.*/servlet-api-[^/]*\\.jar$");
         server.setHandler(webapp);
 
