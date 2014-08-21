@@ -1,17 +1,4 @@
-jetty-9.2.3.v20140821 - 21 August 2014
- + 347110 renamed class transformer methods
- + 411163 Add embedded jetty code example with JSP enabled
- + 435322 Fix AsyncGzipFilter missing callback on empty content
- + 435533 Handle 0 sized async gzip
- + 436862 Update jetty-osgi to asm-5 and spifly-1.0.1
- + 438500 Odd NoClassDef errors when shutting down the jetty-maven-plugin via
-   the stop goal
- + 440255 ensure 500 is logged on thrown Errors
- + 441073 isEarlyEOF on HttpInput
- + 441479 Jetty hangs due to deadlocks in session manager
- + 441649 Update to jsp and el Apache Jasper 8.0.9
- + 441756 Ssl Stackoverflow on renegotiate
- + 441897 Fixed etag handling in gzipfilter
+jetty-9.2.3-SNAPSHOT
 
 jetty-9.2.2.v20140723 - 23 July 2014
  + 411323 DosFilter/QoSFilter should use AsyncContext rather than
