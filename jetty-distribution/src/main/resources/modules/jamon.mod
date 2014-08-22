@@ -1,5 +1,5 @@
 #
-# JaMON Jetty module
+# JAMon Jetty module
 #
 
 [depend]
@@ -18,6 +18,11 @@ http://central.maven.org/maven2/com/jamonapi/jamon_war/2.79/jamon_war-2.79.war|l
 
 [lib]
 lib/jamon/**.jar
+
+[license]
+JAMon is a source forge hosted project released under a BSD derived license.
+http://jamonapi.sourceforge.net
+http://jamonapi.sourceforge.net/JAMonLicense.html
 
 [ini-template]
 jamon.summaryLabels=default, request.getStatus().contextpath.value.ms

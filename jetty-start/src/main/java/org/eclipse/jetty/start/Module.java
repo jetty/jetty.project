@@ -103,6 +103,8 @@ public class Module
     private List<String> files;
     /** List of jvm Args */
     private List<String> jvmArgs;
+    /** License lines */
+    private List<String> license;
 
     /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
     private boolean enabled = false;
@@ -263,6 +265,16 @@ public class Module
         return jvmArgs;
     }
 
+    public boolean hasLicense()
+    {
+        return license!=null && license.size()>0;
+    }
+    
+    public List<String> getLicense()
+    {
+        return license;
+    }
+    
     @Override
     public int hashCode()
     {
@@ -283,6 +295,7 @@ public class Module
         libs = new ArrayList<>();
         files = new ArrayList<>();
         jvmArgs = new ArrayList<>();
+        license = new ArrayList<>();
 
         String name = basehome.toShortForm(file);
 
@@ -355,6 +368,10 @@ public class Module
                                 break;
                             case "LIB":
                                 libs.add(line);
+                                break;
+                            case "LICENSE":
+                            case "LICENCE":
+                                license.add(line);
                                 break;
                             case "NAME":
                                 logicalName = line;

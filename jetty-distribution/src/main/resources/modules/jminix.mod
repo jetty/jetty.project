@@ -30,6 +30,11 @@ http://central.maven.org/maven2/org/jasypt/jasypt/1.8/jasypt-1.8.jar|lib/jminix/
 [lib]
 lib/jminix/**.jar
 
+[license]
+JMiniX is a hosted at google code and released under the Apache License 2.0
+https://code.google.com/p/jminix/
+http://www.apache.org/licenses/LICENSE-2.0
+
 [ini-template]
 # Jminix Configuration
 jminix.port=8088

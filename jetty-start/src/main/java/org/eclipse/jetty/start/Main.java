@@ -82,6 +82,7 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 public class Main
 {
     private static final int EXIT_USAGE = 1;
+    private static BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
 
     public static String join(Collection<?> objs, String delim)
     {
@@ -372,6 +373,7 @@ public class Main
             StartLog.warn("ERROR: No known module for %s",name);
             return;
         }
+        
 
         // Find any named ini file and check it follows the convention
         Path start_ini = baseHome.getBasePath("start.ini");
@@ -393,8 +395,26 @@ public class Main
         boolean hasDefinedDefaults = module.getDefaultConfig().size() > 0;
 
         // If it is not enabled or is transitive with ini template lines or toplevel and doesn't exist
-        if (!module.isEnabled() || (transitive && hasDefinedDefaults) || (topLevel && !FS.exists(startd_ini) && !appendStartIni))
+        if (!module.isEnabled() || (transitive && (hasDefinedDefaults || module.hasLicense()) ) || (topLevel && !FS.exists(startd_ini) && !appendStartIni))
         {
+            if (module.hasLicense())
+            {
+                System.err.printf("%nModule %s LICENSE%n",module.getName());
+                System.err.printf("This module is not provided by the Eclipse Foundation!%n");
+                System.err.printf("It contains software not covered by the Eclipse Public License%n");
+                System.err.printf("The software has not been audited for compliance with its license%n");
+                System.err.printf("%n");
+                for (String l : module.getLicense())
+                    System.err.printf("    %s%n",l);
+
+                System.err.printf("%nProceed (y/N)? ");
+                String line = input.readLine();
+                
+                if (line==null || line.length()==0 || !line.toLowerCase().startsWith("y"))
+                    System.exit(1);
+            }
+            
+            
             // File BufferedWriter
             BufferedWriter writer = null;
             String source = null;
