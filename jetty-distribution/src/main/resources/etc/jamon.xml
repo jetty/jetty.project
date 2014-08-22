@@ -1,0 +1,32 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+
+<!-- =============================================================== -->
+<!-- Mixin the Jamon Handler                                         -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+
+  <Get id="oldhandler" name="handler" />
+  <Set name="handler">
+    <New id="JamonHandler" class="com.jamonapi.http.JAMonJettyHandlerNew">
+      <Set name="handler"><Ref refid="oldhandler" /></Set>
+      <Set name="summaryLabels"><Property name="jamon.summaryLabels" /></Set>
+    </New>
+  </Set>
+
+  <Ref refid="Contexts">
+    <Call name="addHandler">
+      <Arg>
+	<New class="org.eclipse.jetty.webapp.WebAppContext">
+	  <Set name="contextPath">/jamon</Set>
+	  <Set name="war"><Property name="jetty.base" default="."/>/lib/jamon/jamon.war</Set>
+	  <Set name="extractWAR">true</Set>
+	  <Set name="copyWebDir">false</Set>
+	  <Set name="defaultsDescriptor"><Property name="jetty.home" default="."/>/etc/webdefault.xml</Set>
+	</New>
+      </Arg>
+    </Call>
+  </Ref>
+
+</Configure>
