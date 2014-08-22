@@ -76,6 +76,20 @@ public class HttpURI
     String _decodedPath;
 
     /* ------------------------------------------------------------ */
+    /**
+     * Construct a normalized URI.
+     * Port is not set if it is the default port.
+     */
+    public static HttpURI createHttpURI(String scheme, String host, int port, String path, String param, String query, String fragment)
+    {
+        if (port==80 && HttpScheme.HTTP.is(scheme))
+            port=0;
+        if (port==443 && HttpScheme.HTTPS.is(scheme))
+            port=0;
+        return new HttpURI(scheme,host,port,path,param,query,fragment);
+    }
+    
+    /* ------------------------------------------------------------ */
     public HttpURI()
     {
     }

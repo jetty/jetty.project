@@ -231,13 +231,7 @@ public class Dispatcher implements RequestDispatcher
                 query=query+"&"+_uri.getQuery(); // TODO is this correct semantic?
         }
         
-        int port=request.getServerPort();
-        if (port==80 && HttpScheme.HTTP.is(request.getScheme()))
-            port=0;
-        if (port==443 && HttpScheme.HTTPS.is(request.getScheme()))
-            port=0;
-        
-        HttpURI uri = new HttpURI(request.getScheme(),request.getServerName(),request.getServerPort(),_uri.getPath(),baseRequest.getHttpURI().getParam(),query,null);
+        HttpURI uri = HttpURI.createHttpURI(request.getScheme(),request.getServerName(),request.getServerPort(),_uri.getPath(),baseRequest.getHttpURI().getParam(),query,null);
         
         MetaData.Request push = new MetaData.Request(HttpMethod.GET.asString(),uri,baseRequest.getHttpVersion(),fields);
         
