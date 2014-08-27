@@ -86,6 +86,8 @@ public class ContextHandlerGetResourceTest
         
         server = new Server();
         context =new ContextHandler("/");
+        context.clearAliasChecks();
+        context.addAliasCheck(new ContextHandler.ApproveNonExistentDirectoryAliases());
         context.setBaseResource(Resource.newResource(docroot));
         context.addAliasCheck(new ContextHandler.AliasCheck()
         {

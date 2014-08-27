@@ -41,6 +41,7 @@ import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -431,11 +432,13 @@ public class DefaultServletTest
 
         if (!OS.IS_WINDOWS)
         {
+            context.clearAliasChecks();
+            
             Files.createSymbolicLink(link.toPath(),foobar.toPath());
             response = connector.getResponses("GET /context/link.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("404", response);
             
-            context.addAliasCheck(new ContextHandler.ApproveAliases());
+            context.addAliasCheck(new AllowSymLinkAliasChecker());
             
             response = connector.getResponses("GET /context/link.txt HTTP/1.0\r\n\r\n");
             assertResponseContains("Foo Bar", response);

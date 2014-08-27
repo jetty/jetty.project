@@ -99,7 +99,9 @@ import org.eclipse.jetty.util.resource.Resource;
  * and org.eclipse.jetty.server.Request.maxFormContentSize.  These can also be configured with {@link #setMaxFormContentSize(int)} and {@link #setMaxFormKeys(int)}
  * <p>
  * This servers executore is made available via a context attributed "org.eclipse.jetty.server.Executor".
- *
+ * <p>
+ * By default, the context is created with alias checkers for {@link AllowSymLinkAliasChecker} (unix only) and {@link ApproveNonExistentDirectoryAliases}. 
+ * If these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  * @org.apache.xbean.XBean description="Creates a basic HTTP context"
  */
 @ManagedObject("URI Context")
@@ -193,11 +195,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public ContextHandler()
     {
-        super();
-        _scontext = new Context();
-        _attributes = new AttributesMap();
-        _initParams = new HashMap<String, String>();
-        addAliasCheck(new ApproveNonExistentDirectoryAliases());
+        this((Context)null);
     }
 
     /* ------------------------------------------------------------ */
@@ -207,10 +205,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     protected ContextHandler(Context context)
     {
         super();
-        _scontext = context;
+        _scontext = context==null?new Context():context;
         _attributes = new AttributesMap();
         _initParams = new HashMap<String, String>();
         addAliasCheck(new ApproveNonExistentDirectoryAliases());
+        if (File.separatorChar=='/')
+            addAliasCheck(new AllowSymLinkAliasChecker());
     }
 
     /* ------------------------------------------------------------ */
@@ -1794,6 +1794,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _aliasChecks.clear();
         _aliasChecks.addAll(checks);
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * clear the list of AliasChecks
+     */
+    public void clearAliasChecks()
+    {
+        _aliasChecks.clear();
+    }
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -2744,53 +2754,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         public boolean check(String path, Resource resource)
         {
             return true;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Approve Aliases with same suffix.
-     * Eg. a symbolic link from /foobar.html to /somewhere/wibble.html would be
-     * approved because both the resource and alias end with ".html".
-     */
-    @Deprecated
-    public static class ApproveSameSuffixAliases implements AliasCheck
-    {
-        {
-            LOG.warn("ApproveSameSuffixAlias is not safe for production");
-        }
-        
-        @Override
-        public boolean check(String path, Resource resource)
-        {
-            int dot = path.lastIndexOf('.');
-            if (dot<0)
-                return false;
-            String suffix=path.substring(dot);
-            return resource.toString().endsWith(suffix);
-        }
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /** Approve Aliases with a path prefix.
-     * Eg. a symbolic link from /dirA/foobar.html to /dirB/foobar.html would be
-     * approved because both the resource and alias end with "/foobar.html".
-     */
-    @Deprecated
-    public static class ApprovePathPrefixAliases implements AliasCheck
-    {
-        {
-            LOG.warn("ApprovePathPrefixAliases is not safe for production");
-        }
-        
-        @Override
-        public boolean check(String path, Resource resource)
-        {
-            int slash = path.lastIndexOf('/');
-            if (slash<0 || slash==path.length()-1)
-                return false;
-            String suffix=path.substring(slash);
-            return resource.toString().endsWith(suffix);
         }
     }
     
