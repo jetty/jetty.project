@@ -92,7 +92,7 @@ public class JarResource extends URLResource
     
     /* ------------------------------------------------------------ */
     /**
-     * Returns true if the respresenetd resource exists.
+     * Returns true if the represented resource exists.
      */
     @Override
     public boolean exists()
@@ -118,7 +118,7 @@ public class JarResource extends URLResource
     {     
         checkConnection();
         if (!_urlString.endsWith("!/"))
-            return new FilterInputStream(super.getInputStream()) 
+            return new FilterInputStream(getInputStream(false)) 
             {
                 @Override
                 public void close() throws IOException {this.in=IO.getClosedStream();}
@@ -128,6 +128,9 @@ public class JarResource extends URLResource
         InputStream is = url.openStream();
         return is;
     }
+    
+ 
+    
     
     /* ------------------------------------------------------------ */
     @Override
