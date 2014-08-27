@@ -437,9 +437,9 @@ public class ResponseTest
         request.setServletPath("/test");
         request.setPathInfo("/info/");
 
-        response.sendRedirect("../other/path");
+        response.sendRedirect("../other%2Fpath");
         String location = response.getHeader("Location");
-        assertEquals("http://myhost:8888/path/test/other/path",location);
+        assertEquals("http://myhost:8888/path/test/other%2Fpath",location);
     }
 
     @Test
@@ -462,7 +462,8 @@ public class ResponseTest
                 {"l%20cation","http://myhost:8888/path/l%20cation"},
                 {"./l%20cation","http://myhost:8888/path/l%20cation"},
                 {"../l%20cation","http://myhost:8888/l%20cation"},
-                {"../locati%C3%abn","http://myhost:8888/locati%C3%ABn"},
+                {"../locati%C3%abn","http://myhost:8888/locati%C3%abn"},
+                {"../other%2fplace","http://myhost:8888/other%2fplace"},
         };
         
         for (int i=0;i<tests.length;i++)
