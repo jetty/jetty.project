@@ -133,6 +133,12 @@ public class XmlParser
     }
 
     /* ------------------------------------------------------------ */
+    public boolean isValidating()
+    {
+        return _parser.isValidating();
+    }
+    
+    /* ------------------------------------------------------------ */
     /**
      * @param name
      * @param entity

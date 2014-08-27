@@ -28,24 +28,19 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
-/**
- * PreconfigureStandardTestWar
- *
- */
-public class PreconfigureStandardTestWar
+public class PreconfigureSpecWar
 {
-    
     private static final long __start=System.nanoTime();
     private static final Logger LOG = Log.getLogger(Server.class);
     
     public static void main(String[] args) throws Exception
     {
-        String target="target/test-standard-preconfigured";
+        String target="target/test-spec-preconfigured";
         File file = new File(target);
         if (file.exists())
             IO.delete(file);
         
-        File realmPropertiesDest = new File ("target/test-standard-realm.properties");
+        File realmPropertiesDest = new File ("target/test-spec-realm.properties");
         if (realmPropertiesDest.exists())
             IO.delete(realmPropertiesDest);
         
@@ -53,10 +48,11 @@ public class PreconfigureStandardTestWar
         realmPropertiesSrc.copyTo(realmPropertiesDest);
         System.setProperty("jetty.home", "target");
         
-        PreconfigureQuickStartWar.main("target/test-standard.war",target, "src/test/resources/test.xml");
+        PreconfigureQuickStartWar.main("target/test-spec.war",target, "src/test/resources/test-spec.xml");
 
         LOG.info("Preconfigured in {}ms",TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-__start));
         
-        IO.copy(new FileInputStream("target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"),System.out);
+        // IO.copy(new FileInputStream("target/test-spec-preconfigured/WEB-INF/quickstart-web.xml"),System.out);
     }
+
 }
