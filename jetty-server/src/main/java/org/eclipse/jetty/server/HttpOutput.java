@@ -52,7 +52,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 {
     private static Logger LOG = Log.getLogger(HttpOutput.class);
     private final HttpChannel<?> _channel;
-    private final SharedBlockingCallback _writeblock=new SharedBlockingCallback();
+    private final SharedBlockingCallback _writeblock=new SharedBlockingCallback()
+    {
+        @Override
+        protected long getIdleTimeout()
+        {
+            return _channel.getIdleTimeout();
+        }
+    };
     private long _written;
     private ByteBuffer _aggregate;
     private int _bufferSize;

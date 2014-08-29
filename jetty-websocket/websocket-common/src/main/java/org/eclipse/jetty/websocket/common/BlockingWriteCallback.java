@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.io.IOException;
 
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
@@ -31,26 +32,55 @@ public class BlockingWriteCallback extends SharedBlockingCallback
 {
     public BlockingWriteCallback()
     {
-        super(new WriteBlocker());
     }
         
     public WriteBlocker acquireWriteBlocker() throws IOException
     {
-        return (WriteBlocker)acquire();
+        return new WriteBlocker(acquire());
     }
     
-    public static class WriteBlocker extends Blocker implements WriteCallback
+    public static class WriteBlocker implements WriteCallback, Callback, AutoCloseable
     {
+        Blocker blocker;
+        
+        WriteBlocker(Blocker blocker)
+        {
+            this.blocker=blocker;
+        }
+        
         @Override
         public void writeFailed(Throwable x)
         {
-            failed(x);
+            blocker.failed(x);
         }
 
         @Override
         public void writeSuccess()
         {
-            succeeded();
+            blocker.succeeded();
+        }
+
+        @Override
+        public void succeeded()
+        {
+            blocker.succeeded();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            blocker.failed(x);
+        }
+        
+        @Override
+        public void close() throws IOException
+        {
+            blocker.close();
+        }
+        
+        public void block() throws IOException
+        {
+            blocker.block();
         }
     }
 }
