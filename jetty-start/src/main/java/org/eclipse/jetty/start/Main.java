@@ -86,6 +86,8 @@ public class Main
 
     public static String join(Collection<?> objs, String delim)
     {
+        if (objs==null)
+            return "";
         StringBuilder str = new StringBuilder();
         boolean needDelim = false;
         for (Object obj : objs)
@@ -392,17 +394,45 @@ public class Main
         }
 
         boolean transitive = module.isEnabled() && (module.getSources().size() == 0);
-        boolean hasDefinedDefaults = module.getDefaultConfig().size() > 0;
-
-        // If it is not enabled or is transitive with ini template lines or toplevel and doesn't exist
-        if (!module.isEnabled() || (transitive && (hasDefinedDefaults || module.hasLicense()) ) || (topLevel && !FS.exists(startd_ini) && !appendStartIni))
+        boolean buildIni=false;
+        if (module.isEnabled())
+        {
+            // is it an explicit request to create an ini file?
+            if (topLevel && !FS.exists(startd_ini) && !appendStartIni)
+                buildIni=true;
+            
+            // else is it transitive 
+            else if (transitive) 
+            {
+                // do we need an ini anyway?
+                if (module.hasDefaultConfig() || module.hasLicense()) 
+                    buildIni=true;
+                else
+                    StartLog.info("%-15s initialised transitively",name);
+            }
+            
+            // else must be initialized explicitly
+            else 
+            {
+                for (String source : module.getSources())
+                    StartLog.info("%-15s initialised in %s",name,baseHome.toShortForm(source));
+            }
+        }
+        else 
+        {
+            buildIni=true;
+        }
+        
+        
+        // If we need an ini
+        if (buildIni)
         {
             if (module.hasLicense())
             {
-                System.err.printf("%nModule %s LICENSE%n",module.getName());
-                System.err.printf("This module is not provided by the Eclipse Foundation!%n");
-                System.err.printf("It contains software not covered by the Eclipse Public License%n");
-                System.err.printf("The software has not been audited for compliance with its license%n");
+                System.err.printf("%nModule %s:%n",module.getName());
+                System.err.printf(" + contains software not provided by the Eclipse Foundation!%n");
+                System.err.printf(" + contains software not covered by the Eclipse Public License!%n");
+                System.err.printf(" + has not been audited for compliance with its license%n");
                 System.err.printf("%n");
                 for (String l : module.getLicense())
                     System.err.printf("    %s%n",l);
@@ -483,14 +513,6 @@ public class Main
                     out.close();
                 }
             }
-        }
-        else if (FS.exists(startd_ini))
-        {
-            StartLog.info("%-15s initialised in %s",name,short_startd_ini);
-        }
-        else
-        {
-            StartLog.info("%-15s initialised transitively",name);
         }
         
         // Also list other places this module is enabled

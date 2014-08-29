@@ -147,6 +147,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private String _defaultProtocol;
     private ConnectionFactory _defaultConnectionFactory;
     private String _name;
+    private int _acceptorPriorityDelta;
 
 
     /**
@@ -430,6 +431,30 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         }
     }
 
+    @ManagedAttribute("The priority delta to apply to acceptor threads")
+    public int getAcceptorPriorityDelta()
+    {
+        return _acceptorPriorityDelta;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the acceptor thread priority delta.
+     * <p>This allows the acceptor thread to run at a different priority.
+     * Typically this would be used to lower the priority to give preference 
+     * to handling previously accepted connections rather than accepting 
+     * new connections</p>
+     * @param acceptorPriorityDelta
+     */
+    public void setAcceptorPriorityDelta(int acceptorPriorityDelta)
+    {
+        int old=_acceptorPriorityDelta;
+        _acceptorPriorityDelta = acceptorPriorityDelta;
+        if (old!=acceptorPriorityDelta && isStarted())
+        {
+            for (Thread thread : _acceptors)
+                thread.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,thread.getPriority()-old+acceptorPriorityDelta)));
+        }
+    }
 
     @Override
     @ManagedAttribute("Protocols supported by this connector")
@@ -483,14 +508,18 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         @Override
         public void run()
         {
-            Thread current = Thread.currentThread();
-            String name=current.getName();
+            final Thread thread = Thread.currentThread();
+            String name=thread.getName();
             _name=String.format("%s-acceptor-%d@%x-%s",name,_acceptor,hashCode(),AbstractConnector.this.toString());
-            current.setName(_name);
+            thread.setName(_name);
+            
+            int priority=thread.getPriority();
+            if (_acceptorPriorityDelta!=0)
+                thread.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,priority+_acceptorPriorityDelta)));
 
             synchronized (AbstractConnector.this)
             {
-                _acceptors[_acceptor] = current;
+                _acceptors[_acceptor] = thread;
             }
 
             try
@@ -512,7 +541,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             }
             finally
             {
-                current.setName(name);
+                thread.setName(name);
+                if (_acceptorPriorityDelta!=0)
+                    thread.setPriority(priority);
 
                 synchronized (AbstractConnector.this)
                 {

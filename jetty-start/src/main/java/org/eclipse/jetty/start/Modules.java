@@ -265,6 +265,12 @@ public class Modules implements Iterable<Module>
         }
     }
 
+    public void enable(String name) throws IOException
+    {
+        List<String> empty = Collections.emptyList();
+        enable(name,empty);
+    }
+    
     public void enable(String name, List<String> sources) throws IOException
     {
         if (name.contains("*"))
@@ -310,21 +316,21 @@ public class Modules implements Iterable<Module>
 
     private void enableModule(Module module, List<String> sources) throws IOException
     {
+        // Always add the sources
+        if (sources != null)
+            module.addSources(sources);
+        
+        // If already enabled, nothing else to do
         if (module.isEnabled())
         {
-            // already enabled, skip
-            module.addSources(sources);
+            StartLog.debug("Enabled  module: %s (via %s)",module.getName(),Main.join(sources,", "));
             return;
         }
-                
+        
         StartLog.debug("Enabling module: %s (via %s)",module.getName(),Main.join(sources,", "));
         module.setEnabled(true);
         args.parseModule(module);
         module.expandProperties(args.getProperties());
-        if (sources != null)
-        {
-            module.addSources(sources);
-        }
         
         // enable any parents that haven't been enabled (yet)
         Set<String> parentNames = new HashSet<>();
@@ -350,7 +356,7 @@ public class Modules implements Iterable<Module>
             }
             if (parent != null)
             {
-                enableModule(parent,new ArrayList<String>());
+                enableModule(parent,null);
             }
         }
     }
