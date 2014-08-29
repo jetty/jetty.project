@@ -39,6 +39,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -65,6 +66,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     private long _selectorIndex;
+    private int _priorityDelta;
     
     protected SelectorManager(Executor executor, Scheduler scheduler)
     {
@@ -110,6 +112,33 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         _connectTimeout = milliseconds;
     }
 
+
+    @ManagedAttribute("The priority delta to apply to selector threads")
+    public int getSelectorPriorityDelta()
+    {
+        return _priorityDelta;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the selector thread priority delta.
+     * <p>This allows the selector threads to run at a different priority.
+     * Typically this would be used to lower the priority to give preference 
+     * to handling previously accepted connections rather than accepting 
+     * new connections</p>
+     * @param selectorPriorityDelta
+     */
+    public void setSelectorPriorityDelta(int selectorPriorityDelta)
+    {
+        int old=_priorityDelta;
+        _priorityDelta = selectorPriorityDelta;
+        if (old!=selectorPriorityDelta && isStarted())
+        {
+            for (ManagedSelector selector : _selectors)
+                if (selector._thread!=null)
+                    selector._thread.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,selector._thread.getPriority()-old+selectorPriorityDelta)));
+        }
+    }
+    
     /**
      * Executes the given task in a different thread.
      *
@@ -479,8 +508,12 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             _thread = Thread.currentThread();
             String name = _thread.getName();
+            int priority=_thread.getPriority();
             try
             {
+                if (_priorityDelta!=0)
+                    _thread.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,priority+_priorityDelta)));
+
                 _thread.setName(name + "-selector-" + SelectorManager.this.getClass().getSimpleName()+"@"+Integer.toHexString(SelectorManager.this.hashCode())+"/"+_id);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Starting {} on {}", _thread, this);
@@ -494,6 +527,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (LOG.isDebugEnabled())
                     LOG.debug("Stopped {} on {}", _thread, this);
                 _thread.setName(name);
+                if (_priorityDelta!=0)
+                    _thread.setPriority(priority);
             }
         }
 
