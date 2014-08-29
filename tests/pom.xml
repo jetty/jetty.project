@@ -47,5 +47,6 @@
     <module>test-continuation</module>
     <module>test-loginservice</module>
     <module>test-integration</module>
+    <module>test-quickstart</module>
   </modules>
 </project>

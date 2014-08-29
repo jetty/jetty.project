@@ -30,6 +30,8 @@ detected.
     <Set name="checkWelcomeFiles">true</Set>
   </Get>
 
+  <Set name="parentLoaderPriority">true</Set>
+
   <!-- Non standard error page mapping -->
   <!--
   <Get name="errorHandler">
