@@ -132,6 +132,26 @@ public class HttpChannel implements Runnable
     {
         return _transport;
     }
+
+    /**
+     * Get the idle timeout.
+     * <p>This is implemented as a call to {@link EndPoint#getIdleTimeout()}, but may be
+     * overridden by channels that have timeouts different from their connections.
+     */
+    public long getIdleTimeout()
+    {
+        return _endPoint.getIdleTimeout();
+    }
+
+    /**
+     * Set the idle timeout.
+     * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long), but may be
+     * overridden by channels that have timeouts different from their connections.
+     */
+    public void setIdleTimeout(long timeoutMs)
+    {
+        _endPoint.setIdleTimeout(timeoutMs);
+    }
     
     public ByteBufferPool getByteBufferPool()
     {

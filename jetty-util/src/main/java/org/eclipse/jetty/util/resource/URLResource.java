@@ -197,12 +197,32 @@ public class URLResource extends Resource
         return _url.toExternalForm();
     }
 
+    
     /* ------------------------------------------------------------ */
     /**
-     * Returns an input stream to the resource
+     * Returns an input stream to the resource. The underlying 
+     * url connection will be nulled out to prevent re-use.
      */
     @Override
     public synchronized InputStream getInputStream()
+        throws java.io.IOException
+    {
+        return getInputStream (true); //backwards compatibility
+    }
+    
+    
+ 
+    /* ------------------------------------------------------------ */
+    /**
+     * Returns an input stream to the resource, optionally nulling
+     * out the underlying url connection. If the connection is not
+     * nulled out, a subsequent call to getInputStream() may return
+     * an existing and already in-use input stream - this depends on
+     * the url protocol. Eg JarURLConnection does not reuse inputstreams.
+     * 
+     * @param resetConnection if true the connection field is set to null
+     */
+    protected synchronized InputStream getInputStream(boolean resetConnection)
         throws java.io.IOException
     {
         if (!checkConnection())
@@ -220,7 +240,11 @@ public class URLResource extends Resource
         }
         finally
         {
-            _connection=null;
+            if (resetConnection)
+            {
+                _connection=null;
+                if (LOG.isDebugEnabled()) LOG.debug("Connection nulled");
+            }
         }
     }
 

@@ -524,6 +524,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
     {
         if (_beans.remove(bean))
         {
+            boolean wasManaged = bean.isManaged();
             
             unmanage(bean);
 
@@ -534,7 +535,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 removeEventListener((Container.Listener)bean._bean);
 
             // stop managed beans
-            if (bean._managed==Managed.MANAGED && bean._bean instanceof LifeCycle)
+            if (wasManaged && bean._bean instanceof LifeCycle)
             {
                 try
                 {

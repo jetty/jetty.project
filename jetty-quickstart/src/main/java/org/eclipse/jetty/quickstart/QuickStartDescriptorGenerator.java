@@ -19,9 +19,7 @@
 
 package org.eclipse.jetty.quickstart;
 
-import java.io.File;
 import java.io.FileNotFoundException;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.Collection;
@@ -50,7 +48,6 @@ import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.Holder;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
@@ -129,7 +126,7 @@ public class QuickStartDescriptorGenerator
         out.openTag("web-app",webappAttr);
         if (_webApp.getDisplayName() != null)
             out.tag("display-name",_webApp.getDisplayName());
-
+        
         // Set some special context parameters
 
         // The location of the war file on disk
@@ -163,7 +160,7 @@ public class QuickStartDescriptorGenerator
         if (servlets.getFilters() != null)
         {
             for (FilterHolder holder : servlets.getFilters())
-                outholder(out,md,"filter",holder);
+                outholder(out,md,holder);
         }
 
         if (servlets.getFilterMappings() != null)
@@ -199,7 +196,7 @@ public class QuickStartDescriptorGenerator
         if (servlets.getServlets() != null)
         {
             for (ServletHolder holder : servlets.getServlets())
-                outholder(out,md,"servlet",holder);
+                outholder(out,md,holder);
         }
 
         if (servlets.getServletMappings() != null)
@@ -250,14 +247,35 @@ public class QuickStartDescriptorGenerator
             {
                 out.openTag("security-constraint");
 
-                if (m.getConstraint().getAuthenticate())
+                out.openTag("web-resource-collection");
                 {
-                    out.openTag("auth-constraint");
-                    if (m.getConstraint().getRoles()!=null)
-                        for (String r : m.getConstraint().getRoles())
-                            out.tag("role-name",r);
+                    if (m.getConstraint().getName()!=null)
+                        out.tag("web-resource-name",m.getConstraint().getName());
+                    if (m.getPathSpec()!=null)
+                        out.tag("url-pattern",origin(md,"constraint.url."+m.getPathSpec()),m.getPathSpec());
+                    if (m.getMethod()!=null)
+                        out.tag("http-method",m.getMethod());
+
+                    if (m.getMethodOmissions()!=null)
+                        for (String o:m.getMethodOmissions())
+                            out.tag("http-method-omission",o);
 
                     out.closeTag();
+                }
+
+                if (m.getConstraint().getAuthenticate())
+                {
+                    String[] roles = m.getConstraint().getRoles();
+                    if (roles!=null && roles.length>0)
+                    {
+                        out.openTag("auth-constraint");
+                        if (m.getConstraint().getRoles()!=null)
+                            for (String r : m.getConstraint().getRoles())
+                                out.tag("role-name",r);
+                        out.closeTag();
+                    }
+                    else
+                        out.tag("auth-constraint");
                 }
 
                 switch (m.getConstraint().getDataConstraint())
@@ -277,22 +295,6 @@ public class QuickStartDescriptorGenerator
                     default:
                         break;
 
-                }
-
-                out.openTag("web-resource-collection");
-                {
-                    if (m.getConstraint().getName()!=null)
-                        out.tag("web-resource-name",m.getConstraint().getName());
-                    if (m.getPathSpec()!=null)
-                        out.tag("url-pattern",origin(md,"constraint.url."+m.getPathSpec()),m.getPathSpec());
-                    if (m.getMethod()!=null)
-                        out.tag("http-method",m.getMethod());
-
-                    if (m.getMethodOmissions()!=null)
-                        for (String o:m.getMethodOmissions())
-                            out.tag("http-method-omission",o);
-
-                    out.closeTag();
                 }
 
                 out.closeTag();
@@ -331,12 +333,6 @@ public class QuickStartDescriptorGenerator
             int maxInactiveSec = _webApp.getSessionHandler().getSessionManager().getMaxInactiveInterval();
             out.tag("session-timeout", (maxInactiveSec==0?"0":Integer.toString(maxInactiveSec/60)));
 
-            Set<SessionTrackingMode> modes =_webApp. getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes();
-            if (modes != null)
-            {
-                for (SessionTrackingMode mode:modes)
-                    out.tag("tracking-mode", mode.toString());
-            }
 
             //cookie-config
             SessionCookieConfig cookieConfig = _webApp.getSessionHandler().getSessionManager().getSessionCookieConfig();
@@ -360,6 +356,15 @@ public class QuickStartDescriptorGenerator
                 out.tag("max-age", origin(md, "cookie-config.max-age"), Integer.toString(cookieConfig.getMaxAge()));
                 out.closeTag();
             }
+            
+            // tracking-modes
+            Set<SessionTrackingMode> modes =_webApp. getSessionHandler().getSessionManager().getEffectiveSessionTrackingModes();
+            if (modes != null)
+            {
+                for (SessionTrackingMode mode:modes)
+                    out.tag("tracking-mode", mode.toString());
+            }
+            
             out.closeTag();     
         }
 
@@ -560,29 +565,57 @@ public class QuickStartDescriptorGenerator
      * @param holder
      * @throws IOException
      */
-    private void outholder(XmlAppendable out, MetaData md, String tag, Holder<?> holder) throws IOException
+    private void outholder(XmlAppendable out, MetaData md, FilterHolder holder) throws IOException
     {
-        out.openTag(tag,Collections.singletonMap("source",holder.getSource().toString()));
+        if (LOG.isDebugEnabled())
+            out.openTag("filter",Collections.singletonMap("source",holder.getSource().toString()));
+        else
+            out.openTag("filter");
+        
         String n = holder.getName();
-        out.tag(tag + "-name",n);
+        out.tag("filter-name",n);
 
-        String ot = n + "." + tag + ".";
+        String ot = n + ".filter.";
         
         if (holder instanceof FilterHolder)
-            out.tag(tag + "-class",origin(md,ot + tag + "-class"),holder.getClassName());
-        else if (holder instanceof ServletHolder)
         {
-            ServletHolder s = (ServletHolder)holder;
-            if (s.getForcedPath() != null && s.getClassName() == null)
-                out.tag("jsp-file",s.getForcedPath());
-            else
-                out.tag(tag + "-class",origin(md,ot + tag + "-class"),s.getClassName());
-
+            out.tag("filter-class",origin(md,ot + "filter-class"),holder.getClassName());
+            out.tag("async-supported",origin(md,ot + "async-supported"),holder.isAsyncSupported()?"true":"false");
         }
+        
+        for (String p : holder.getInitParameters().keySet())
+        {
+            out.openTag("init-param",origin(md,ot + "init-param." + p))
+            .tag("param-name",p)
+            .tag("param-value",holder.getInitParameter(p))
+            .closeTag();
+        }
+
+        out.closeTag();
+    }
+
+    private void outholder(XmlAppendable out, MetaData md, ServletHolder holder) throws IOException
+    {
+        
+        if (LOG.isDebugEnabled())
+            out.openTag("servlet",Collections.singletonMap("source",holder.getSource().toString()));
+        else
+            out.openTag("servlet");
+        
+        String n = holder.getName();
+        out.tag("servlet-name",n);
+
+        String ot = n + ".servlet.";
+
+        ServletHolder s = (ServletHolder)holder;
+        if (s.getForcedPath() != null && s.getClassName() == null)
+            out.tag("jsp-file",s.getForcedPath());
+        else
+            out.tag("servlet-class",origin(md,ot + "servlet-class"),s.getClassName());
 
         for (String p : holder.getInitParameters().keySet())
         {
-            if ("scratchdir".equalsIgnoreCase(p)) //don't preconfigure the temp dir for jsp output
+            if ("jsp".equalsIgnoreCase(n) && "scratchdir".equalsIgnoreCase(p)) //don't preconfigure the temp dir for jsp output
                 continue;
             out.openTag("init-param",origin(md,ot + "init-param." + p))
             .tag("param-name",p)
@@ -590,50 +623,46 @@ public class QuickStartDescriptorGenerator
             .closeTag();
         }
 
-        if (holder instanceof ServletHolder)
+        if (s.getInitOrder() >= 0)
+            out.tag("load-on-startup",Integer.toString(s.getInitOrder()));
+
+        if (!s.isEnabled())
+            out.tag("enabled",origin(md,ot + "enabled"),"false");
+
+        out.tag("async-supported",origin(md,ot + "async-supported"),holder.isAsyncSupported()?"true":"false");
+
+        if (s.getRunAsRole() != null)
+            out.openTag("run-as",origin(md,ot + "run-as"))
+            .tag("role-name",s.getRunAsRole())
+            .closeTag();
+
+        Map<String,String> roles = s.getRoleRefMap();
+        if (roles!=null)
         {
-            ServletHolder s = (ServletHolder)holder;
-            if (s.getInitOrder() >= 0)
-                out.tag("load-on-startup",Integer.toString(s.getInitOrder()));
-
-            if (s.getRunAsRole() != null)
-                out.openTag("run-as",origin(md,ot + "run-as"))
-                .tag("role-name",s.getRunAsRole())
+            for (Map.Entry<String, String> e : roles.entrySet())
+            {
+                out.openTag("security-role-ref",origin(md,ot+"role-name."+e.getKey()))
+                .tag("role-name",e.getKey())
+                .tag("role-link",e.getValue())
                 .closeTag();
-
-            Map<String,String> roles = s.getRoleRefMap();
-            if (roles!=null)
-            {
-                for (Map.Entry<String, String> e : roles.entrySet())
-                {
-                    out.openTag("security-role-ref",origin(md,ot+"role-name."+e.getKey()))
-                    .tag("role-name",e.getKey())
-                    .tag("role-link",e.getValue())
-                    .closeTag();
-                }
-            }
-            
-            if (!s.isEnabled())
-                out.tag("enabled",origin(md,ot + "enabled"),"false");
-
-            //multipart-config
-            MultipartConfigElement multipartConfig = ((ServletHolder.Registration)s.getRegistration()).getMultipartConfig();
-            if (multipartConfig != null)
-            {
-                out.openTag("multipart-config", origin(md, s.getName()+".servlet.multipart-config"));
-                if (multipartConfig.getLocation() != null)
-                    out.tag("location", multipartConfig.getLocation());
-                out.tag("max-file-size", Long.toString(multipartConfig.getMaxFileSize()));
-                out.tag("max-request-size", Long.toString(multipartConfig.getMaxRequestSize()));
-                out.tag("file-size-threshold", Long.toString(multipartConfig.getFileSizeThreshold()));
-                out.closeTag();
             }
         }
 
-        out.tag("async-supported",origin(md,ot + "async-supported"),holder.isAsyncSupported()?"true":"false");
+        //multipart-config
+        MultipartConfigElement multipartConfig = ((ServletHolder.Registration)s.getRegistration()).getMultipartConfig();
+        if (multipartConfig != null)
+        {
+            out.openTag("multipart-config", origin(md, s.getName()+".servlet.multipart-config"));
+            if (multipartConfig.getLocation() != null)
+                out.tag("location", multipartConfig.getLocation());
+            out.tag("max-file-size", Long.toString(multipartConfig.getMaxFileSize()));
+            out.tag("max-request-size", Long.toString(multipartConfig.getMaxRequestSize()));
+            out.tag("file-size-threshold", Long.toString(multipartConfig.getFileSizeThreshold()));
+            out.closeTag();
+        }
+
         out.closeTag();
     }
-
     
     
     /**

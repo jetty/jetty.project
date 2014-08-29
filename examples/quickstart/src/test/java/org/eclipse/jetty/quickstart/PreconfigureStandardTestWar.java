@@ -26,24 +26,36 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
 
-public class PreconfigureJNDIWar
+/**
+ * PreconfigureStandardTestWar
+ *
+ */
+public class PreconfigureStandardTestWar
 {
     private static final long __start=System.nanoTime();
     private static final Logger LOG = Log.getLogger(Server.class);
     
     public static void main(String[] args) throws Exception
     {
-        String target="target/test-jndi-preconfigured";
+        String target="target/test-standard-preconfigured";
         File file = new File(target);
         if (file.exists())
             IO.delete(file);
         
-        PreconfigureQuickStartWar.main("target/test-jndi.war",target, "src/test/resources/test-jndi.xml");
+        File realmPropertiesDest = new File ("target/test-standard-realm.properties");
+        if (realmPropertiesDest.exists())
+            IO.delete(realmPropertiesDest);
+        
+        Resource realmPropertiesSrc = Resource.newResource("src/test/resources/realm.properties");
+        realmPropertiesSrc.copyTo(realmPropertiesDest);
+        System.setProperty("jetty.home", "target");
+        
+        PreconfigureQuickStartWar.main("target/test-standard.war",target, "src/test/resources/test.xml");
 
         LOG.info("Preconfigured in {}ms",TimeUnit.NANOSECONDS.toMillis(System.nanoTime()-__start));
         
-        IO.copy(new FileInputStream("target/test-jndi-preconfigured/WEB-INF/quickstart-web.xml"),System.out);
+        // IO.copy(new FileInputStream("target/test-standard-preconfigured/WEB-INF/quickstart-web.xml"),System.out);
     }
-
 }

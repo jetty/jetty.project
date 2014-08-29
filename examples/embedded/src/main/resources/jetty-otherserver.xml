@@ -36,8 +36,9 @@
         <Call id="webappprovider" name="addAppProvider">
           <Arg>
             <New class="org.eclipse.jetty.deploy.providers.WebAppProvider">
-              <Set name="monitoredDirName"><Property name="jetty.home" default="." />/other-webapps</Set>
+              <Set name="monitoredDirName"><Property name="jetty.base" default="." />/other-webapps</Set>
               <Set name="defaultsDescriptor"><Property name="jetty.home" default="." />/etc/webdefault.xml</Set>
+              <Set name="extractWars">true</Set>
               <Set name="configurationManager">
                 <New class="org.eclipse.jetty.deploy.PropertiesConfigurationManager"/>
               </Set>
