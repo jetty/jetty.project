@@ -20,6 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
@@ -124,8 +125,8 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
     @Override
     protected void doStop() throws Exception
     {
-        thread.interrupt();
         super.doStop();
+        thread.interrupt();
     }
 
     @Override
