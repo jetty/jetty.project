@@ -90,7 +90,6 @@ public class HTTP2Client extends ContainerLifeCycle
             SocketChannel channel = SocketChannel.open();
             channel.socket().setTcpNoDelay(true);
             channel.configureBlocking(false);
-            channel.connect(address);
 
             Map<String, Object> context = new HashMap<>();
             context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
@@ -101,7 +100,10 @@ public class HTTP2Client extends ContainerLifeCycle
             context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, address.getHostString());
             context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, address.getPort());
 
-            selector.connect(channel, context);
+            if (channel.connect(address))
+                selector.accept(channel, context);
+            else
+                selector.connect(channel, context);
         }
         catch (Throwable x)
         {
