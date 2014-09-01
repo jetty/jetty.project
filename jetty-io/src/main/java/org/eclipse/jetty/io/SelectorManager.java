@@ -119,23 +119,32 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         return _priorityDelta;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Set the selector thread priority delta.
+    /**
+     * Sets the selector thread priority delta to the given amount.
      * <p>This allows the selector threads to run at a different priority.
-     * Typically this would be used to lower the priority to give preference 
-     * to handling previously accepted connections rather than accepting 
-     * new connections</p>
-     * @param selectorPriorityDelta
+     * Typically this would be used to lower the priority to give preference
+     * to handling previously accepted connections rather than accepting
+     * new connections.</p>
+     *
+     * @param selectorPriorityDelta the amount to change the thread priority
+     *                              delta to (may be negative)
+     * @see Thread#getPriority()
      */
     public void setSelectorPriorityDelta(int selectorPriorityDelta)
     {
-        int old=_priorityDelta;
+        int oldDelta = _priorityDelta;
         _priorityDelta = selectorPriorityDelta;
-        if (old!=selectorPriorityDelta && isStarted())
+        if (oldDelta != selectorPriorityDelta && isStarted())
         {
             for (ManagedSelector selector : _selectors)
-                if (selector._thread!=null)
-                    selector._thread.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,selector._thread.getPriority()-old+selectorPriorityDelta)));
+            {
+                Thread thread = selector._thread;
+                if (thread != null)
+                {
+                    int deltaDiff = selectorPriorityDelta - oldDelta;
+                    thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, thread.getPriority() - deltaDiff)));
+                }
+            }
         }
     }
     
@@ -508,13 +517,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         {
             _thread = Thread.currentThread();
             String name = _thread.getName();
-            int priority=_thread.getPriority();
+            int priority = _thread.getPriority();
             try
             {
-                if (_priorityDelta!=0)
-                    _thread.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,priority+_priorityDelta)));
+                if (_priorityDelta != 0)
+                    _thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, priority + _priorityDelta)));
 
-                _thread.setName(name + "-selector-" + SelectorManager.this.getClass().getSimpleName()+"@"+Integer.toHexString(SelectorManager.this.hashCode())+"/"+_id);
+                _thread.setName(String.format("%s-selector-%s@%h/%d", name, SelectorManager.this.getClass().getSimpleName(), SelectorManager.this.hashCode(), _id));
                 if (LOG.isDebugEnabled())
                     LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
@@ -527,7 +536,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (LOG.isDebugEnabled())
                     LOG.debug("Stopped {} on {}", _thread, this);
                 _thread.setName(name);
-                if (_priorityDelta!=0)
+                if (_priorityDelta != 0)
                     _thread.setPriority(priority);
             }
         }
