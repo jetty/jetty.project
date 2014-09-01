@@ -250,15 +250,18 @@ public class ConnectHandler extends HandlerWrapper
             channel.socket().setTcpNoDelay(true);
             channel.configureBlocking(false);
             InetSocketAddress address = new InetSocketAddress(host, port);
-            channel.connect(address);
 
             AsyncContext asyncContext = request.startAsync();
             asyncContext.setTimeout(0);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Connecting to {}", address);
+
             ConnectContext connectContext = new ConnectContext(request, response, asyncContext, HttpConnection.getCurrentConnection());
-            selector.connect(channel, connectContext);
+            if (channel.connect(address))
+                selector.accept(channel, connectContext);
+            else
+                selector.connect(channel, connectContext);
         }
         catch (Exception x)
         {
