@@ -256,12 +256,16 @@ public class ServerConnector extends AbstractNetworkConnector
         return _manager.getSelectorPriorityDelta();
     }
 
-    /** Set the selector thread priority delta.
+    /**
+     * Sets the selector thread priority delta to the given amount.
      * <p>This allows the selector threads to run at a different priority.
      * Typically this would be used to lower the priority to give preference 
-     * to handling previously accepted requests rather than accepting 
-     * new requests</p>
-     * @param selectorPriorityDelta
+     * to handling previously accepted connections rather than accepting
+     * new connections.</p>
+     *
+     * @param selectorPriorityDelta the amount to set the thread priority delta to
+     *                              (may be negative)
+     * @see Thread#getPriority()
      */
     public void setSelectorPriorityDelta(int selectorPriorityDelta)
     {

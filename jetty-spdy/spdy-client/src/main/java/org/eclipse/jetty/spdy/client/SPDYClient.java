@@ -157,7 +157,6 @@ public class SPDYClient
                 channel.bind(bindAddress);
             configure(channel);
             channel.configureBlocking(false);
-            channel.connect(address);
 
             context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, ((InetSocketAddress)address).getHostString());
             context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, ((InetSocketAddress)address).getPort());
@@ -165,7 +164,10 @@ public class SPDYClient
             context.put(SPDYClientConnectionFactory.SPDY_SESSION_LISTENER_CONTEXT_KEY, listener);
             context.put(SPDYClientConnectionFactory.SPDY_SESSION_PROMISE_CONTEXT_KEY, promise);
 
-            factory.selector.connect(channel, context);
+            if (channel.connect(address))
+                factory.selector.accept(channel, context);
+            else
+                factory.selector.connect(channel, context);
         }
         catch (IOException x)
         {
