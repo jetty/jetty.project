@@ -1,3 +1,10 @@
+jetty-7.6.16.v20140902 - 02 September 2014
+ + 409788 Large POST body causes java.lang.IllegalStateException: SENDING =>
+   HEADERS.
+ + 433802 check EOF in send1xx
+ + 442839 highly fragmented websocket messages can result in corrupt binary
+   messages
+
 jetty-7.6.15.v20140411 - 11 April 2014
  + 422137 Added maxQueued to QueuedThreadPool MBean
  + 425038 WebSocketClient leaks file handles when exceptions are thrown from
