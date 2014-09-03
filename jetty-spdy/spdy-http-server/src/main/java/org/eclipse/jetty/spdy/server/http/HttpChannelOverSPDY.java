@@ -53,6 +53,12 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
     }
 
     @Override
+    public long getIdleTimeout()
+    {
+        return stream.getIdleTimeout();
+    }
+    
+    @Override
     public boolean headerComplete()
     {
         headersComplete = true;
