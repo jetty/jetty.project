@@ -48,7 +48,7 @@ import org.eclipse.jetty.util.thread.NonBlockingThread;
  */
 public class SharedBlockingCallback
 {
-    private static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
+    static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
 
     final ReentrantLock _lock = new ReentrantLock();
     final Condition _idle = _lock.newCondition();
@@ -128,6 +128,12 @@ public class SharedBlockingCallback
         return _blocker;
     }
 
+    protected void notComplete(Blocker blocker)
+    {
+        LOG.warn("Blocker not complete {}",blocker);
+        if (LOG.isDebugEnabled())
+            LOG.debug(new Throwable());
+    }
     
     /* ------------------------------------------------------------ */
     /** A Closeable Callback.
@@ -152,8 +158,8 @@ public class SharedBlockingCallback
                     _state = SUCCEEDED;
                     _complete.signalAll();
                 }
-                else if (_state == IDLE)
-                    throw new IllegalStateException("IDLE");
+                else
+                    throw new IllegalStateException(_state);
             }
             finally
             {
@@ -169,11 +175,17 @@ public class SharedBlockingCallback
             {
                 if (_state == null)
                 {
-                    _state = cause==null?FAILED:cause;
+                    if (cause==null)
+                        _state=FAILED;
+                    else if (cause instanceof BlockerTimeoutException)
+                        // Not this blockers timeout
+                        _state=new IOException(cause);
+                    else 
+                        _state=cause;
                     _complete.signalAll();
                 }
-                else if (_state == IDLE)
-                    throw new IllegalStateException("IDLE",cause);
+                else 
+                    throw new IllegalStateException(_state);
             }
             finally
             {
@@ -202,15 +214,9 @@ public class SharedBlockingCallback
                     if (idle>0)
                     {
                         if (!_complete.await(idle,TimeUnit.MILLISECONDS))
-                        {
                             // The callback has not arrived in sufficient time.
-                            // We will synthesize a TimeoutException and then
-                            // create a new Blocker, so that any late arriving callback
-                            // does not cause a problem with the next cycle.
-                            _state=new TimeoutException("No Blocker CB");
-                            LOG.warn(_state);
-                            _blocker=new Blocker();
-                        }
+                            // We will synthesize a TimeoutException 
+                            _state=new BlockerTimeoutException();
                     }
                     else
                         _complete.await();
@@ -260,17 +266,19 @@ public class SharedBlockingCallback
                 if (_state == IDLE)
                     throw new IllegalStateException("IDLE");
                 if (_state == null)
-                {
-                    LOG.warn("Blocker not complete {}",this);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug(new Throwable());
-                }
+                    notComplete(this);
             }
             finally
             {
                 try 
                 {
-                    _state = IDLE;
+                    // If the blocker timed itself out, remember the state
+                    if (_state instanceof BlockerTimeoutException)
+                        // and create a new Blocker
+                        _blocker=new Blocker();
+                    else
+                        // else reuse Blocker
+                        _state = IDLE;
                     _idle.signalAll();
                     _complete.signalAll();
                 } 
@@ -294,5 +302,9 @@ public class SharedBlockingCallback
                 _lock.unlock();
             }
         }
+    }
+    
+    private class BlockerTimeoutException extends TimeoutException
+    { 
     }
 }
