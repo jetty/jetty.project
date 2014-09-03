@@ -655,6 +655,8 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
         public void onFrame(final byte flags, final byte opcode, final Buffer buffer)
         {
             boolean lastFrame = isLastFrame(flags);
+            
+            
 
             synchronized(WebSocketConnectionRFC6455.this)
             {
@@ -702,50 +704,59 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
                 {
                     case WebSocketConnectionRFC6455.OP_CONTINUATION:
                     {
-                        if (_opcode==-1)
+                        // logic based on initial opcode (text | binary)
+                        switch (_opcode)
                         {
-                            errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Bad Continuation");
-                            return;
-                        }
-
-                        // If text, append to the message buffer
-                        if (_onTextMessage!=null && _opcode==WebSocketConnectionRFC6455.OP_TEXT)
-                        {
-                            if (_utf8.append(buffer.array(),buffer.getIndex(),buffer.length(),_connection.getMaxTextMessageSize()))
-                            {
-                                // If this is the last fragment, deliver the text buffer
+                            case WebSocketConnectionRFC6455.OP_TEXT:
                                 if (lastFrame)
                                 {
-                                    _opcode=-1;
-                                    String msg =_utf8.toString();
-                                    _utf8.reset();
-                                    _onTextMessage.onMessage(msg);
+                                    _opcode = -1;
                                 }
-                            }
-                            else
-                                textMessageTooLarge();
-                        }
-
-                        if (_opcode>=0 && _connection.getMaxBinaryMessageSize()>=0)
-                        {
-                            if (_aggregate!=null && checkBinaryMessageSize(_aggregate.length(),buffer.length()))
-                            {
-                                _aggregate.put(buffer);
-
-                                // If this is the last fragment, deliver
-                                if (lastFrame && _onBinaryMessage!=null)
+                                if (_onTextMessage != null)
                                 {
-                                    try
+                                    if (_utf8.append(buffer.array(),buffer.getIndex(),buffer.length(),_connection.getMaxTextMessageSize()))
                                     {
-                                        _onBinaryMessage.onMessage(_aggregate.array(),_aggregate.getIndex(),_aggregate.length());
+                                        // If this is the last fragment, deliver the text buffer
+                                        if (lastFrame)
+                                        {
+                                            String msg = _utf8.toString();
+                                            _utf8.reset();
+                                            _onTextMessage.onMessage(msg);
+                                        }
                                     }
-                                    finally
+                                    else
+                                        textMessageTooLarge();
+                                }
+                                break;
+                            case WebSocketConnectionRFC6455.OP_BINARY:
+                                if (lastFrame)
+                                {
+                                    _opcode = -1;
+                                }
+                                if (_onBinaryMessage != null)
+                                {
+                                    if (_aggregate != null && checkBinaryMessageSize(_aggregate.length(),buffer.length()))
                                     {
-                                        _opcode=-1;
-                                        _aggregate.clear();
+                                        _aggregate.put(buffer);
+
+                                        // If this is the last fragment, deliver
+                                        if (lastFrame)
+                                        {
+                                            try
+                                            {
+                                                _onBinaryMessage.onMessage(_aggregate.array(),_aggregate.getIndex(),_aggregate.length());
+                                            }
+                                            finally
+                                            {
+                                                _aggregate.clear();
+                                            }
+                                        }
                                     }
                                 }
-                            }
+                                break;
+                            default:
+                                errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Bad Continuation");
+                                return;
                         }
                         break;
                     }
@@ -812,13 +823,17 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
                             return;
                         }
 
+                        _opcode = lastFrame ? -1 : WebSocketConnectionRFC6455.OP_TEXT;
+
                         if(_onTextMessage!=null)
                         {
                             if (_connection.getMaxTextMessageSize()<=0)
                             {
                                 // No size limit, so handle only final frames
                                 if (lastFrame)
+                                {
                                     _onTextMessage.onMessage(buffer.toString(StringUtil.__UTF8));
+                                }
                                 else
                                 {
                                     LOG.warn("Frame discarded. Text aggregation disabled for {}",_endp);
@@ -834,10 +849,6 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
                                     _utf8.reset();
                                     _onTextMessage.onMessage(msg);
                                 }
-                                else
-                                {
-                                    _opcode=WebSocketConnectionRFC6455.OP_TEXT;
-                                }
                             }
                             else
                                 textMessageTooLarge();
@@ -852,19 +863,29 @@ public class WebSocketConnectionRFC6455 extends AbstractConnection implements We
                             errorClose(WebSocketConnectionRFC6455.CLOSE_PROTOCOL,"Expected Continuation"+Integer.toHexString(opcode));
                             return;
                         }
+                        
+                        _opcode = lastFrame ? -1 : WebSocketConnectionRFC6455.OP_BINARY;
 
-                        if (_onBinaryMessage!=null && checkBinaryMessageSize(0,buffer.length()))
+                        if (_onBinaryMessage!=null)
                         {
+                            if(!checkBinaryMessageSize(0,buffer.length()))
+                            {
+                                return;
+                            }
+                            
                             if (lastFrame)
                             {
                                 _onBinaryMessage.onMessage(array,buffer.getIndex(),buffer.length());
                             }
                             else if (_connection.getMaxBinaryMessageSize()>=0)
                             {
-                                _opcode=opcode;
                                 // TODO use a growing buffer rather than a fixed one.
-                                if (_aggregate==null)
-                                    _aggregate=new ByteArrayBuffer(_connection.getMaxBinaryMessageSize());
+                                if (_aggregate == null)
+                                {
+                                    _aggregate = new ByteArrayBuffer(_connection.getMaxBinaryMessageSize());
+                                    _aggregate.clear();
+                                }
+
                                 _aggregate.put(buffer);
                             }
                             else

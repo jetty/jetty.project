@@ -449,49 +449,25 @@ public class Response implements HttpServletResponse
         {
             StringBuilder buf = _connection.getRequest().getRootURL();
             if (location.startsWith("/"))
-                buf.append(location);
+            {
+            	// absolute in context
+                location=URIUtil.canonicalPath(location);
+            }
             else
             {
+            	// relative to request
                 String path=_connection.getRequest().getRequestURI();
                 String parent=(path.endsWith("/"))?path:URIUtil.parentPath(path);
-                location=URIUtil.addPaths(parent,location);
-                if(location==null)
-                    throw new IllegalStateException("path cannot be above root");
+                location=URIUtil.canonicalPath(URIUtil.addPaths(parent,location));
                 if (!location.startsWith("/"))
                     buf.append('/');
-                buf.append(location);
             }
-
+            
+            if(location==null)
+                throw new IllegalStateException("path cannot be above root");
+            buf.append(location);
+            
             location=buf.toString();
-            HttpURI uri = new HttpURI(location);
-            String path=uri.getDecodedPath();
-            String canonical=URIUtil.canonicalPath(path);
-            if (canonical==null)
-                throw new IllegalArgumentException();
-            if (!canonical.equals(path))
-            {
-                buf = _connection.getRequest().getRootURL();
-                buf.append(URIUtil.encodePath(canonical));
-                String param=uri.getParam();
-                if (param!=null)
-                {
-                    buf.append(';');
-                    buf.append(param);
-                }
-                String query=uri.getQuery();
-                if (query!=null)
-                {
-                    buf.append('?');
-                    buf.append(query);
-                }
-                String fragment=uri.getFragment();
-                if (fragment!=null)
-                {
-                    buf.append('#');
-                    buf.append(fragment);
-                }
-                location=buf.toString();
-            }
         }
         
         resetBuffer();

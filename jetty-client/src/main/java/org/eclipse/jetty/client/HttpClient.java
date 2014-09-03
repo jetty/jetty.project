@@ -21,11 +21,14 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.UnknownHostException;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.LinkedList;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+
 import javax.net.ssl.SSLContext;
 
 import org.eclipse.jetty.client.security.Authentication;
@@ -79,6 +82,7 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
     private int _connectorType = CONNECTOR_SELECT_CHANNEL;
     private boolean _useDirectBuffers = true;
     private boolean _connectBlocking = true;
+    private boolean _removeIdleDestinations=false;
     private int _maxConnectionsPerAddress = Integer.MAX_VALUE;
     private int _maxQueueSizePerAddress = Integer.MAX_VALUE;
     private ConcurrentMap<Address, HttpDestination> _destinations = new ConcurrentHashMap<Address, HttpDestination>();
@@ -154,6 +158,18 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
     public void setConnectBlocking(boolean connectBlocking)
     {
         _connectBlocking = connectBlocking;
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    public boolean isRemoveIdleDestinations()
+    {
+        return _removeIdleDestinations;
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    public void setRemoveIdleDestinations(boolean removeIdleDestinations)
+    {
+        _removeIdleDestinations = removeIdleDestinations;
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -262,7 +278,19 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
         }
         return destination;
     }
-
+    
+    /* ------------------------------------------------------------------------------- */
+    public Collection<Address> getDestinations()
+    {
+        return Collections.unmodifiableCollection(_destinations.keySet());
+    }
+    
+    /* ------------------------------------------------------------------------------- */
+    public void removeDestination(HttpDestination destination)
+    {
+        _destinations.remove(destination.getAddress(),destination);
+    }
+    
     /* ------------------------------------------------------------ */
     public void schedule(Timeout.Task task)
     {
@@ -908,4 +936,5 @@ public class HttpClient extends AggregateLifeCycle implements HttpBuffers, Attri
     private static class LocalQueuedThreadPool extends QueuedThreadPool
     {
     }
+
 }
