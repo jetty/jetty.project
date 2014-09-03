@@ -47,7 +47,9 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 
+@Ignore("slow release machine")
 public class WebSocketMessageD08Test
 {
     private static Server __server;
