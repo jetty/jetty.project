@@ -67,6 +67,10 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     }
     
     
+    public AnnotationConfiguration()
+    {
+        System.err.println("Constructed osgi.AnnotationConfiguration");
+    }
     /**
      * This parser scans the bundles using the OSGi APIs instead of assuming a jar.
      */

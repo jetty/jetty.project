@@ -20,9 +20,11 @@ package org.eclipse.jetty.osgi.boot.jasper;
 
 import java.io.File;
 import java.io.InputStream;
+import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.Set;
 
 import javax.servlet.Servlet;
 import javax.servlet.jsp.JspContext;
@@ -30,7 +32,6 @@ import javax.servlet.jsp.JspFactory;
 
 import org.apache.jasper.Constants;
 import org.apache.jasper.compiler.Localizer;
-import org.apache.jasper.xmlparser.ParserUtils;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
@@ -85,10 +86,12 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
      * implementation. bug #299733
      */
     private static String DEFAULT_JSP_FACTORY_IMPL_CLASS = "org.apache.jasper.runtime.JspFactoryImpl";
+    
+    private static final Set<URL> __tldBundleCache = new HashSet<URL>();
 
     public JSTLBundleDiscoverer()
     {
-        fixupDtdResolution();
+        //fixupDtdResolution();
 
         try
         {
@@ -102,6 +105,7 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
         }
         try
         {
+            Class<javax.servlet.ServletContext> servletContextClass = javax.servlet.ServletContext.class;
             // bug #299733
             JspFactory fact = JspFactory.getDefaultFactory();
             if (fact == null)
@@ -143,7 +147,7 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
     {
 
         ArrayList<URL> urls = new ArrayList<URL>();
-        HashSet<Class<?>> classesToAddToTheTldBundles = new HashSet<Class<?>>();
+        Class<?> jstlClass = null;
 
         // Look for the jstl bundle
         // We assume the jstl's tlds are defined there.
@@ -151,18 +155,21 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
         // So we can look for this class using this bundle's classloader:
         try
         {
-            Class<?> jstlClass = JSTLBundleDiscoverer.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
-
-            classesToAddToTheTldBundles.add(jstlClass);
+            jstlClass = JSTLBundleDiscoverer.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
         }
         catch (ClassNotFoundException e)
         {
             LOG.info("jstl not on classpath", e);
         }
-        for (Class<?> cl : classesToAddToTheTldBundles)
+        
+        if (jstlClass != null)
         {
-            Bundle tldBundle = FrameworkUtil.getBundle(cl);
+            //get the bundle containing jstl
+            Bundle tldBundle = FrameworkUtil.getBundle(jstlClass);
             File tldBundleLocation = locatorHelper.getBundleInstallLocation(tldBundle);
+            
+            System.err.println("jstl bundle: "+tldBundle);
+            System.err.println("jstl bundle location: "+tldBundleLocation);
             if (tldBundleLocation != null && tldBundleLocation.isDirectory())
             {
                 // try to find the jar files inside this folder
@@ -170,6 +177,7 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
                 {
                     if (f.getName().endsWith(".jar") && f.isFile())
                     {
+                        System.err.println("Tld jar in dir: "+f.toURI());
                         urls.add(f.toURI().toURL());
                     }
                     else if (f.isDirectory() && f.getName().equals("lib"))
@@ -178,6 +186,7 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
                         {
                             if (f2.getName().endsWith(".jar") && f2.isFile())
                             {
+                                System.err.println("Tld jar in lib dir: "+f2.toURI());
                                 urls.add(f2.toURI().toURL());
                             }
                         }
@@ -187,9 +196,20 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
             }
             else if (tldBundleLocation != null)
             {
+                System.err.println("Tld bundle uri: "+tldBundleLocation.toURI());
                 urls.add(tldBundleLocation.toURI().toURL());
+              
+                String pattern = (String)deployer.getContextAttribute("org.eclipse.jetty.server.webapp.containerIncludeBundlePattern");
+                pattern = (pattern==null?"":pattern);
+                if (!pattern.contains(tldBundle.getSymbolicName()))
+                {
+                    pattern += "|"+tldBundle.getSymbolicName();
+                    deployer.setContextAttribute("org.eclipse.jetty.server.webapp.containerIncludeBundlePattern", pattern);
+                }
+                System.err.println("PATTERN: "+pattern);
             }
         }
+        
         return urls.toArray(new URL[urls.size()]);
     }
 
@@ -209,11 +229,12 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
      * new value on a static friendly field :(
      * </p>
      */
-    void fixupDtdResolution()
+   void fixupDtdResolution()
     {
         try
         {
-            ParserUtils.setEntityResolver(new MyFixedupEntityResolver());
+           // ParserUtils.setEntityResolver(new MyFixedupEntityResolver());
+         
 
         }
         catch (Exception e)
@@ -227,21 +248,21 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
      * Instead of using the ParserUtil's classloader, we use a class that is
      * indeed next to the resource for sure.
      */
-    static class MyFixedupEntityResolver implements EntityResolver
-    {
+    //static class MyFixedupEntityResolver implements EntityResolver
+    //{
         /**
          * Same values than in ParserUtils...
          */
-        static final String[] CACHED_DTD_PUBLIC_IDS = { Constants.TAGLIB_DTD_PUBLIC_ID_11, Constants.TAGLIB_DTD_PUBLIC_ID_12,
+      /*  static final String[] CACHED_DTD_PUBLIC_IDS = { Constants.TAGLIB_DTD_PUBLIC_ID_11, Constants.TAGLIB_DTD_PUBLIC_ID_12,
                                                        Constants.WEBAPP_DTD_PUBLIC_ID_22, Constants.WEBAPP_DTD_PUBLIC_ID_23, };
 
         static final String[] CACHED_DTD_RESOURCE_PATHS = { Constants.TAGLIB_DTD_RESOURCE_PATH_11, Constants.TAGLIB_DTD_RESOURCE_PATH_12,
                                                            Constants.WEBAPP_DTD_RESOURCE_PATH_22, Constants.WEBAPP_DTD_RESOURCE_PATH_23, };
 
         static final String[] CACHED_SCHEMA_RESOURCE_PATHS = { Constants.TAGLIB_SCHEMA_RESOURCE_PATH_20, Constants.TAGLIB_SCHEMA_RESOURCE_PATH_21,
-                                                              Constants.WEBAPP_SCHEMA_RESOURCE_PATH_24, Constants.WEBAPP_SCHEMA_RESOURCE_PATH_25, };
+                                                              Constants.WEBAPP_SCHEMA_RESOURCE_PATH_24, Constants.WEBAPP_SCHEMA_RESOURCE_PATH_25, };*/
 
-        public InputSource resolveEntity(String publicId, String systemId) throws SAXException
+      /*  public InputSource resolveEntity(String publicId, String systemId) throws SAXException
         {
             for (int i = 0; i < CACHED_DTD_PUBLIC_IDS.length; i++)
             {
@@ -255,11 +276,11 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
                     {
                         input = JspContext.class.getResourceAsStream(resourcePath);
                         if (input == null)
-                        {
+                        {*/
                             // if that failed try again with the original code:
                             // although it is likely not changed.
-                            input = this.getClass().getResourceAsStream(resourcePath);
-                        }
+                   /*         input = this.getClass().getResourceAsStream(resourcePath);
+                      }
                     }
                     if (input == null) { throw new SAXException(Localizer.getMessage("jsp.error.internal.filenotfound", resourcePath)); }
                     InputSource isrc = new InputSource(input);
@@ -269,6 +290,6 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
 
             return null;
         }
-    }
+    }*/
 
 }
