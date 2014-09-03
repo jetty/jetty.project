@@ -1,3 +1,14 @@
+jetty-8.1.16.v20140903 - 03 September 2014
+ + 409788 Large POST body causes java.lang.IllegalStateException: SENDING =>
+   HEADERS.
+ + 433689 Evict idle HttpDestinations from client
+ + 433802 check EOF in send1xx
+ + 438996 Scavenger-Timer in HashSessionManager can die because of
+   IllegalStateException from getMaxInactiveInterval
+ + 442048 fixed sendRedirect %2F encoding
+ + 442839 highly fragmented websocket messages can result in corrupt binary
+   messages
+
 jetty-8.1.15.v20140411 - 11 April 2014
  + 397167 Remote Access documentation is wrong
  + 419799 complete after exceptions thrown from async error pages
