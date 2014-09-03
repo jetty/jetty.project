@@ -268,6 +268,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
             //Sets the location of the war file
             // converts bundleentry: protocol if necessary
+            System.err.println("WAR : "+BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(url).toString());
             _webApp.setWar(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(url).toString());
 
             // Set up what has been configured on the provider
