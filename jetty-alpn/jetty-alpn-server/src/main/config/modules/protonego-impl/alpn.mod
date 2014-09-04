@@ -34,3 +34,9 @@ etc/protonego-alpn.xml
 lib/
 lib/alpn/
 
+[license]
+ALPN is a hosted at github under the GPL v2 with ClassPath Exception.
+ALPM replaces/modified OpenJDK classes in the java.sun.security.ssl package.
+http://github.com/jetty-project/jetty-alpn
+http://openjdk.java.net/legal/gplv2+ce.html
+
