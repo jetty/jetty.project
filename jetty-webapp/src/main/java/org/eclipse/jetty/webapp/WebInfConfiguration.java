@@ -175,7 +175,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         // Look for extra resource
         @SuppressWarnings("unchecked")
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
-        if (resources!=null)
+        if (resources!=null && !resources.isEmpty())
         {
             Resource[] collection=new Resource[resources.size()+1];
             int i=0;

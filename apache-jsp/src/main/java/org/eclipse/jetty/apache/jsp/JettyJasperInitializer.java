@@ -23,14 +23,14 @@ import java.net.URL;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
-import java.util.Set;
 
 import javax.servlet.ServletContext;
-import javax.servlet.ServletException;
 
 import org.apache.jasper.servlet.JasperInitializer;
 import org.apache.jasper.servlet.TldPreScanned;
 import org.apache.jasper.servlet.TldScanner;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.xml.sax.SAXException;
 
 /**
@@ -39,6 +39,7 @@ import org.xml.sax.SAXException;
  */
 public class JettyJasperInitializer extends JasperInitializer
 {
+   private static final Logger LOG = Log.getLogger(JettyJasperInitializer.class);
     
     /**
      * NullTldScanner
@@ -99,14 +100,18 @@ public class JettyJasperInitializer extends JasperInitializer
         String tmp = context.getInitParameter("org.eclipse.jetty.jsp.precompiled");
         if (tmp!=null && !tmp.equals("") && Boolean.valueOf(tmp))
         {
+            if (LOG.isDebugEnabled()) LOG.debug("Jsp precompilation detected");
             return new NullTldScanner(context, namespaceAware, validate, blockExternal);
         }
         
         Collection<URL> tldUrls = (Collection<URL>)context.getAttribute("org.eclipse.jetty.tlds");
-        if (tldUrls != null && !tldUrls.isEmpty())
+        if (tldUrls != null)
         {
+            if (LOG.isDebugEnabled()) LOG.debug("Tld pre-scan detected");
             return new TldPreScanned(context,namespaceAware,validate,blockExternal,tldUrls);
         }
+        
+        if (LOG.isDebugEnabled()) LOG.debug("Defaulting to jasper tld scanning");
         return super.newTldScanner(context, namespaceAware, validate, blockExternal);
     }
     

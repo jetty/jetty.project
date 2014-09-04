@@ -104,7 +104,8 @@ public class SharedBlockingCallback
             {
                 if (idle>0)
                 {
-                    if (!_idle.await(idle,TimeUnit.MILLISECONDS))
+                    // Wait a little bit longer than the blocker might block
+                    if (!_idle.await(idle*2,TimeUnit.MILLISECONDS))
                         throw new IOException(new TimeoutException());
                 }
                 else
@@ -114,12 +115,7 @@ public class SharedBlockingCallback
         }
         catch (final InterruptedException e)
         {
-            throw new InterruptedIOException()
-            {
-                {
-                    initCause(e);
-                }
-            };
+            throw new InterruptedIOException();
         }
         finally
         {
@@ -213,7 +209,8 @@ public class SharedBlockingCallback
                 {
                     if (idle>0)
                     {
-                        if (!_complete.await(idle,TimeUnit.MILLISECONDS))
+                        // Wait a little bit longer than expected callback idle timeout
+                        if (!_complete.await(idle+idle/2,TimeUnit.MILLISECONDS))
                             // The callback has not arrived in sufficient time.
                             // We will synthesize a TimeoutException 
                             _state=new BlockerTimeoutException();
@@ -238,12 +235,7 @@ public class SharedBlockingCallback
             }
             catch (final InterruptedException e)
             {
-                throw new InterruptedIOException()
-                {
-                    {
-                        initCause(e);
-                    }
-                };
+                throw new InterruptedIOException();
             }
             finally
             {

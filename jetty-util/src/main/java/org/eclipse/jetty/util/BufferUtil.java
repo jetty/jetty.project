@@ -920,6 +920,11 @@ public class BufferUtil
         return builder.toString();
     }
 
+    /* ------------------------------------------------------------ */
+    /** Convert Buffer to a detail debug string of pointers and content
+     * @param buffer
+     * @return A string showing the pointers and content of the buffer
+     */
     public static String toDetailString(ByteBuffer buffer)
     {
         if (buffer == null)
@@ -942,15 +947,33 @@ public class BufferUtil
         buf.append(buffer.remaining());
         buf.append("]={");
 
+        appendDebugString(buf,buffer);
+
+        buf.append("}");
+
+        return buf.toString();
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Convert buffer to a Debug String.
+     * @param buffer
+     * @return A string showing the escaped content of the buffer around the
+     * position and limit (marked with &lt;&lt;&lt; and &gt;&gt;&gt;)
+     */
+    public static String toDebugString(ByteBuffer buffer)
+    {
+        if (buffer == null)
+            return "null";
+        StringBuilder buf = new StringBuilder();
+        appendDebugString(buf,buffer);
+        return buf.toString();
+    }
+    
+    private static void appendDebugString(StringBuilder buf,ByteBuffer buffer)
+    {
         for (int i = 0; i < buffer.position(); i++)
         {
-            char c = (char)buffer.get(i);
-            if (c >= ' ' && c <= 127)
-                buf.append(c);
-            else if (c == '\r' || c == '\n')
-                buf.append('|');
-            else
-                buf.append('\ufffd');
+            appendContentChar(buf,buffer.get(i));
             if (i == 16 && buffer.position() > 32)
             {
                 buf.append("...");
@@ -960,13 +983,7 @@ public class BufferUtil
         buf.append("<<<");
         for (int i = buffer.position(); i < buffer.limit(); i++)
         {
-            char c = (char)buffer.get(i);
-            if (c >= ' ' && c <= 127)
-                buf.append(c);
-            else if (c == '\r' || c == '\n')
-                buf.append('|');
-            else
-                buf.append('\ufffd');
+            appendContentChar(buf,buffer.get(i));
             if (i == buffer.position() + 16 && buffer.limit() > buffer.position() + 32)
             {
                 buf.append("...");
@@ -978,13 +995,7 @@ public class BufferUtil
         buffer.limit(buffer.capacity());
         for (int i = limit; i < buffer.capacity(); i++)
         {
-            char c = (char)buffer.get(i);
-            if (c >= ' ' && c <= 127)
-                buf.append(c);
-            else if (c == '\r' || c == '\n')
-                buf.append('|');
-            else
-                buf.append('\ufffd');
+            appendContentChar(buf,buffer.get(i));
             if (i == limit + 16 && buffer.capacity() > limit + 32)
             {
                 buf.append("...");
@@ -992,11 +1003,23 @@ public class BufferUtil
             }
         }
         buffer.limit(limit);
-        buf.append("}");
-
-        return buf.toString();
     }
 
+    private static void appendContentChar(StringBuilder buf, byte b)
+    {
+        if (b == '\\')
+            buf.append("\\\\");   
+        else if (b >= ' ')
+            buf.append((char)b);
+        else if (b == '\r')
+            buf.append("\\r");
+        else if (b == '\n')
+            buf.append("\\n");
+        else if (b == '\t')
+            buf.append("\\t");
+        else
+            buf.append("\\x").append(TypeUtil.toHexString(b));
+    }
 
     private final static int[] decDivisors =
             {1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1};

@@ -51,6 +51,11 @@ public class HttpChannelOverSPDY extends HttpChannel
         this.stream = stream;
     }
 
+    public long getIdleTimeout()
+    {
+        return stream.getIdleTimeout();
+    }
+    
     public void requestStart(final Fields headers, final boolean endRequest)
     {
         if (!headers.isEmpty())

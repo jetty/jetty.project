@@ -18,6 +18,11 @@
 
 package org.eclipse.jetty.http;
 
+import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
+import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
+import static org.eclipse.jetty.http.HttpTokens.SPACE;
+import static org.eclipse.jetty.http.HttpTokens.TAB;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -339,22 +344,22 @@ public class HttpParser
         
         if (_cr)
         {
-            if (ch!=HttpTokens.LINE_FEED)
+            if (ch!=LINE_FEED)
                 throw new BadMessageException("Bad EOL");
             _cr=false;
             return ch;
         }
 
-        if (ch>=0 && ch<HttpTokens.SPACE)
+        if (ch>=0 && ch<SPACE)
         {
-            if (ch==HttpTokens.CARRIAGE_RETURN)
+            if (ch==CARRIAGE_RETURN)
             {
                 if (buffer.hasRemaining())
                 {
                     if(_maxHeaderBytes>0 && _state.ordinal()<State.END.ordinal())
                         _headerBytes++;
                     ch=buffer.get();
-                    if (ch!=HttpTokens.LINE_FEED)
+                    if (ch!=LINE_FEED)
                         throw new BadMessageException("Bad EOL");
                 }
                 else
@@ -366,8 +371,8 @@ public class HttpParser
                 }
             }
             // Only LF or TAB acceptable special characters
-            else if (!(ch==HttpTokens.LINE_FEED || ch==HttpTokens.TAB))
-                throw new BadMessageException("Illegal character");
+            else if (!(ch==LINE_FEED || ch==TAB))
+                throw new IllegalCharacter(ch,buffer);
         }
         
         return ch;
@@ -407,7 +412,7 @@ public class HttpParser
         {
             int ch=next(buffer);
 
-            if (ch > HttpTokens.SPACE)
+            if (ch > SPACE)
             {
                 _string.setLength(0);
                 _string.append((char)ch);
@@ -482,7 +487,7 @@ public class HttpParser
             switch (_state)
             {
                 case METHOD:
-                    if (ch == HttpTokens.SPACE)
+                    if (ch == SPACE)
                     {
                         _length=_string.length();
                         _methodString=takeString();
@@ -491,8 +496,13 @@ public class HttpParser
                             _methodString=method.asString();
                         setState(State.SPACE1);
                     }
-                    else if (ch < HttpTokens.SPACE)
-                        throw new BadMessageException(ch<0?"Illegal character":"No URI");
+                    else if (ch < SPACE)
+                    {
+                        if (ch==LINE_FEED)
+                            throw new BadMessageException("No URI");
+                        else
+                            throw new IllegalCharacter(ch,buffer);
+                    }
                     else
                         _string.append((char)ch);
                     break;
@@ -508,7 +518,7 @@ public class HttpParser
                         setState(State.SPACE1);
                     }
                     else if (ch < HttpTokens.SPACE)
-                        throw new BadMessageException(ch<0?"Illegal character":"No Status");
+                        throw new IllegalCharacter(ch,buffer);
                     else
                         _string.append((char)ch);
                     break;
@@ -1034,10 +1044,8 @@ public class HttpParser
                             _length=_string.length();
                         break;
                     }
-                     
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Illegal character '{}' in {}",ch,BufferUtil.toDetailString(buffer));
-                    throw new BadMessageException("Illegal character");
+
+                    throw new IllegalCharacter(ch,buffer);
 
                 case HEADER_VALUE:
                     if (ch>HttpTokens.SPACE || ch<0)
@@ -1050,8 +1058,8 @@ public class HttpParser
                     
                     if (ch==HttpTokens.SPACE || ch==HttpTokens.TAB)
                         break;
-
-                    throw new BadMessageException();
+                    
+                    throw new IllegalCharacter(ch,buffer);
 
                 case HEADER_IN_VALUE:
                     if (ch>=HttpTokens.SPACE || ch<0 || ch==HttpTokens.TAB)
@@ -1080,7 +1088,8 @@ public class HttpParser
                         setState(State.HEADER);
                         break;
                     }
-                    throw new BadMessageException("Illegal character");
+
+                    throw new IllegalCharacter(ch,buffer);
                     
                 default:
                     throw new IllegalStateException(_state.toString());
@@ -1479,6 +1488,29 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
+    public Trie<HttpField> getFieldCache()
+    {
+        return _connectionFields;
+    }
+
+    /* ------------------------------------------------------------------------------- */
+    private String getProxyField(ByteBuffer buffer)
+    {
+        _string.setLength(0);
+        _length=0;
+        
+        while (buffer.hasRemaining())
+        {
+            // process each character
+            byte ch=next(buffer);
+            if (ch<=' ')
+                return _string.toString();
+            _string.append((char)ch);    
+        }
+        throw new BadMessageException();
+    }
+    
+    /* ------------------------------------------------------------------------------- */
     @Override
     public String toString()
     {
@@ -1532,13 +1564,17 @@ public class HttpParser
         public int getHeaderCacheSize();
     }
 
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
     public interface ProxyHandler 
     {
         void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort);
     }
-    
 
-    
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
     public interface RequestHandler extends HttpHandler
     {
         /**
@@ -1552,6 +1588,9 @@ public class HttpParser
 
     }
 
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
     public interface ResponseHandler extends HttpHandler
     {
         /**
@@ -1560,24 +1599,14 @@ public class HttpParser
         public boolean startResponse(HttpVersion version, int status, String reason);
     }
 
-    public Trie<HttpField> getFieldCache()
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
+    /* ------------------------------------------------------------------------------- */
+    private class IllegalCharacter extends BadMessageException
     {
-        return _connectionFields;
-    }
-
-    private String getProxyField(ByteBuffer buffer)
-    {
-        _string.setLength(0);
-        _length=0;
-        
-        while (buffer.hasRemaining())
+        IllegalCharacter(byte ch,ByteBuffer buffer)
         {
-            // process each character
-            byte ch=next(buffer);
-            if (ch<=' ')
-                return _string.toString();
-            _string.append((char)ch);    
+            super(String.format("Illegal character 0x%x in state=%s in '%s'",ch,_state,BufferUtil.toDebugString(buffer)));
         }
-        throw new BadMessageException();
     }
 }

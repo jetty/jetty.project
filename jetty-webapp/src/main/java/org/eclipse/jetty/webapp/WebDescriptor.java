@@ -251,7 +251,7 @@ public class WebDescriptor extends Descriptor
            }
         }
 
-        if (_majorVersion < 2 && _minorVersion < 5)
+        if (_majorVersion <= 2 && _minorVersion < 5)
             _metaDataComplete = MetaDataComplete.True; // does not apply before 2.5
         else
         {
