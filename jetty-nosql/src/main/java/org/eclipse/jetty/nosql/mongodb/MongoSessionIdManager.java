@@ -416,7 +416,10 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                 _scheduler = new ScheduledExecutorScheduler();
                 _ownScheduler = true;
                 _scheduler.start();
-            }
+            }   
+            else if (!_scheduler.isStarted())
+                throw new IllegalStateException("Shared scheduler not started");
+            
 
             //setup the scavenger thread
             if (_scavengePeriod > 0)
