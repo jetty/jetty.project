@@ -33,6 +33,7 @@ import javax.inject.Inject;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
+import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.osgi.boot.OSGiServerConstants;
 import org.junit.Ignore;
@@ -50,7 +51,7 @@ import org.osgi.framework.BundleContext;
  * top of this.
  */
 @RunWith(PaxExam.class)
-@Ignore
+
 public class TestJettyOSGiBootWithAnnotations
 {
     private static final String LOG_LEVEL = "WARN";
@@ -65,7 +66,7 @@ public class TestJettyOSGiBootWithAnnotations
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
         options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
-        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*", "javax.activation.*"));
+        options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
                                                "com.sun.org.apache.xpath.internal.jaxp", "com.sun.org.apache.xpath.internal.objects"));
@@ -73,10 +74,10 @@ public class TestJettyOSGiBootWithAnnotations
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
         options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.annotations.LEVEL").value(LOG_LEVEL))));
         //options.addAll(TestJettyOSGiBootCore.consoleDependencies());
         options.addAll(jspDependencies());
-       
+        options.addAll(annotationDependencies());
         return options.toArray(new Option[options.size()]);
     }
 
@@ -107,15 +108,18 @@ public class TestJettyOSGiBootWithAnnotations
 
     public static List<Option> jspDependencies()
     {
-        List<Option> res = new ArrayList<Option>();
-        res.addAll(TestJettyOSGiBootCore.jspDependencies());
-
-        //test webapp bundle
-        res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-spec-webapp").classifier("webbundle").versionAsInProject());
-
-        return res;
+        return TestJettyOSGiBootCore.jspDependencies();
     }
 
+    public static List<Option> annotationDependencies()
+    {
+        List<Option> res = new ArrayList<Option>();
+        res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-container-initializer").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-mock-resources").versionAsInProject());
+        //test webapp bundle
+        res.add(mavenBundle().groupId("org.eclipse.jetty.tests").artifactId("test-spec-webapp").classifier("webbundle").versionAsInProject());
+        return res;
+    }
     
 
     @Ignore
@@ -135,26 +139,6 @@ public class TestJettyOSGiBootWithAnnotations
     }
 
  
-    @Ignore
-    @Test
-    public void testJspDump() throws Exception
-    {
-        HttpClient client = new HttpClient();
-        try
-        {
-            client.start();
-            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/jsp/dump.jsp");
-            assertEquals(HttpStatus.OK_200, response.getStatus());
-
-            String content = new String(response.getContent());
-            assertTrue(content.contains("<tr><th>ServletPath:</th><td>/jsp/dump.jsp</td></tr>"));
-           
-        }
-        finally
-        {
-            client.stop();
-        }
-    }
 
     @Test
     public void testIndex() throws Exception
@@ -164,11 +148,15 @@ public class TestJettyOSGiBootWithAnnotations
         {
             client.start();
             ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/index.html");
-            //assertEquals(HttpStatus.OK_200, response.getStatus());
+            assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());
-            System.err.println(content);
-           
+            assertTrue(content.contains("<h1>Servlet 3.1 Test WebApp</h1>"));
+            
+            Request req = client.POST("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/test");
+            response = req.send();
+            content = new String(response.getContent());
+            assertTrue(content.contains("<p><b>Result: <span class=\"pass\">PASS</span></p>"));
         }
         finally
         {

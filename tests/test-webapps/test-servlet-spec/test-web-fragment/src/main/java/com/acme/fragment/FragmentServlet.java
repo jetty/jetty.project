@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package com.acme;
+package com.acme.fragment;
 
 import java.io.IOException;
 
