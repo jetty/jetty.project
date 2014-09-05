@@ -52,7 +52,7 @@ import org.osgi.framework.BundleContext;
 @RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithJsp
 {
-    private static final String LOG_LEVEL = "WARN";
+    private static final String LOG_LEVEL = "INFO";
 
     @Inject
     BundleContext bundleContext = null;
@@ -73,7 +73,7 @@ public class TestJettyOSGiBootWithJsp
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
         options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
-
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.annotations.LEVEL").value("DEBUG"))));
         options.addAll(jspDependencies());
         return options.toArray(new Option[options.size()]);
     }
@@ -106,26 +106,19 @@ public class TestJettyOSGiBootWithJsp
     public static List<Option> jspDependencies()
     {
         List<Option> res = new ArrayList<Option>();
-  
-        //jetty jsp bundles
-        res.add(mavenBundle().groupId("javax.servlet.jsp").artifactId("javax.servlet.jsp-api").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
-        res.add(mavenBundle().groupId("org.glassfish.web").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
-        res.add(mavenBundle().groupId("org.glassfish").artifactId("javax.el").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("org.eclipse.jdt.core").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jsp-fragment").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
-      
+        res.addAll(TestJettyOSGiBootCore.jspDependencies());
         //test webapp bundle
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("test-jetty-webapp").classifier("webbundle").versionAsInProject());
-
+        
         return res;
     }
 
-    @Ignore
+
     @Test
+    @Ignore
     public void assertAllBundlesActiveOrResolved()
     {
+        TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
@@ -142,16 +135,15 @@ public class TestJettyOSGiBootWithJsp
     @Test
     public void testJspDump() throws Exception
     {
+   
         HttpClient client = new HttpClient();
         try
         {
             client.start();
-            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/jsp/dump.jsp");
+            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/jsp/jstl.jsp");
             assertEquals(HttpStatus.OK_200, response.getStatus());
-
             String content = new String(response.getContent());
-            assertTrue(content.contains("<tr><th>ServletPath:</th><td>/jsp/dump.jsp</td></tr>"));
-           
+            assertTrue(content.contains("JSTL Example"));           
         }
         finally
         {

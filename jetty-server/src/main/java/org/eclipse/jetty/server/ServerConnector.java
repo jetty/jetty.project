@@ -113,6 +113,26 @@ public class ServerConnector extends AbstractNetworkConnector
     {
         this(server,null,null,null,acceptors,selectors,new HttpConnectionFactory());
     }
+    
+    /* ------------------------------------------------------------ */
+    /** HTTP Server Connection.
+     * <p>Construct a ServerConnector with a private instance of {@link HttpConnectionFactory} as the only factory.</p>
+     * @param server The {@link Server} this connector will accept connection for. 
+     * @param acceptors 
+     *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
+     *          the selector threads are used to accept connections.
+     * @param selectors
+     *          the number of selector threads, or -1 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
+     */
+    public ServerConnector(
+        @Name("server") Server server,
+        @Name("acceptors") int acceptors,
+        @Name("selectors") int selectors,
+        @Name("factories") ConnectionFactory... factories)
+    {
+        this(server,null,null,null,acceptors,selectors,factories);
+    }
 
     /* ------------------------------------------------------------ */
     /** Generic Server Connection with default configuration.
@@ -229,6 +249,29 @@ public class ServerConnector extends AbstractNetworkConnector
         return channel!=null && channel.isOpen();
     }
 
+
+    @ManagedAttribute("The priority delta to apply to selector threads")
+    public int getSelectorPriorityDelta()
+    {
+        return _manager.getSelectorPriorityDelta();
+    }
+
+    /**
+     * Sets the selector thread priority delta to the given amount.
+     * <p>This allows the selector threads to run at a different priority.
+     * Typically this would be used to lower the priority to give preference 
+     * to handling previously accepted connections rather than accepting
+     * new connections.</p>
+     *
+     * @param selectorPriorityDelta the amount to set the thread priority delta to
+     *                              (may be negative)
+     * @see Thread#getPriority()
+     */
+    public void setSelectorPriorityDelta(int selectorPriorityDelta)
+    {
+        _manager.setSelectorPriorityDelta(selectorPriorityDelta);
+    }
+    
     /**
      * @return whether this connector uses a channel inherited from the JVM.
      * @see System#inheritedChannel()

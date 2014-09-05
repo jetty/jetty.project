@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 
@@ -52,7 +53,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 {
     private static Logger LOG = Log.getLogger(HttpOutput.class);
     private final HttpChannel<?> _channel;
-    private final SharedBlockingCallback _writeblock=new SharedBlockingCallback();
+    private final SharedBlockingCallback _writeblock=new SharedBlockingCallback()
+    {
+        @Override
+        protected long getIdleTimeout()
+        {
+            return _channel.getIdleTimeout();
+        }
+    };
     private long _written;
     private ByteBuffer _aggregate;
     private int _bufferSize;
@@ -770,14 +778,15 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 }
                 continue;
             }
-
+            
             switch(_state.get())
             {
-                case READY:
                 case CLOSED:
                     // even though a write is not possible, because a close has 
                     // occurred, we need to call onWritePossible to tell async
                     // producer that the last write completed.
+                    // so fall through
+                case READY:
                     try
                     {
                         _writeListener.onWritePossible();
@@ -788,8 +797,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         _onError=e;
                     }
                     break;
+                    
                 default:
-
+                    _onError=new IllegalStateException("state="+_state.get());
             }
         }
     }
@@ -834,7 +844,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void onCompleteFailure(Throwable e)
         {
-            _onError=e;
+            _onError=e==null?new IOException():e;
             _channel.getState().onWritePossible();
         }
     }

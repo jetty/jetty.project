@@ -222,6 +222,7 @@ public class ProxyServletTest
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
+        Assert.assertEquals("OK", response.getReason());
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
     }

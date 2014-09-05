@@ -123,10 +123,14 @@ public class ContainerLifeCycleTest
         Assert.assertEquals(1,destroyed.get());
 
         a0.removeBean(a1);
+        Assert.assertEquals(3,started.get());
+        Assert.assertEquals(3,stopped.get());
+        Assert.assertEquals(1,destroyed.get());
+        
         a0.stop();
         a0.destroy();
         Assert.assertEquals(3,started.get());
-        Assert.assertEquals(2,stopped.get());
+        Assert.assertEquals(3,stopped.get());
         Assert.assertEquals(1,destroyed.get());
 
         a1.stop();

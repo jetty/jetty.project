@@ -71,6 +71,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
             useContainerCache = attr.booleanValue();
         
         if (LOG.isDebugEnabled()) LOG.debug("{} = {}", USE_CONTAINER_METAINF_CACHE, useContainerCache);
+        
+        //pre-emptively create empty lists for tlds, fragments and resources as context attributes
+        //this signals that this class has been called. This differentiates the case where this class
+        //has been called but finds no META-INF data from the case where this class was never called
+        if (context.getAttribute(METAINF_TLDS) == null)
+            context.setAttribute(METAINF_TLDS, new HashSet<URL>());
+        if (context.getAttribute(METAINF_RESOURCES) == null)
+            context.setAttribute(METAINF_RESOURCES, new HashSet<Resource>());
+        if (context.getAttribute(METAINF_FRAGMENTS) == null)
+            context.setAttribute(METAINF_FRAGMENTS, new HashMap<Resource, Resource>());
+       
         scanJars(context, context.getMetaData().getContainerResources(), useContainerCache);
         scanJars(context, context.getMetaData().getWebInfJars(), false);
     }

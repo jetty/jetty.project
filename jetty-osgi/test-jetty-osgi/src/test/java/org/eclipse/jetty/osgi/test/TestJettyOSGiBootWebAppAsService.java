@@ -110,15 +110,8 @@ public class TestJettyOSGiBootWebAppAsService
     public static List<Option> jspDependencies()
     {
         List<Option> res = new ArrayList<Option>();
-        
-        //jsp bundles
-        res.add(mavenBundle().groupId("javax.servlet.jsp").artifactId("javax.servlet.jsp-api").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
-        res.add(mavenBundle().groupId("org.glassfish.web").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
-        res.add(mavenBundle().groupId("org.glassfish").artifactId("javax.el").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("org.eclipse.jdt.core").versionAsInProject());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-jsp-fragment").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
+
+        res.addAll(TestJettyOSGiBootCore.jspDependencies());
 
         // a bundle that registers a webapp as a service for the jetty osgi core
         // to pick up and deploy

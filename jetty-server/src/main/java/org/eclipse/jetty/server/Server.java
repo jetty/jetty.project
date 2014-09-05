@@ -331,20 +331,23 @@ public class Server extends HandlerWrapper implements Attributes
         // check size of thread pool
         SizedThreadPool pool = getBean(SizedThreadPool.class);
         int max=pool==null?-1:pool.getMaxThreads();
-        int needed=1;
+        int selectors=0;
+        int acceptors=0;
         if (mex.size()==0)
         {
             for (Connector connector : _connectors)
             {
                 if (connector instanceof AbstractConnector)
-                    needed+=((AbstractConnector)connector).getAcceptors();
+                    acceptors+=((AbstractConnector)connector).getAcceptors();
+                    
                 if (connector instanceof ServerConnector)
-                    needed+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
+                    selectors+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
             }
         }
 
+        int needed=1+selectors+acceptors;
         if (max>0 && needed>max)
-            throw new IllegalStateException("Insufficient max threads in ThreadPool: max="+max+" < needed="+needed);
+            throw new IllegalStateException(String.format("Insufficient threads: max=%d < needed(acceptors=%d + selectors=%d + request=1)",max,acceptors,selectors));
         
         try
         {

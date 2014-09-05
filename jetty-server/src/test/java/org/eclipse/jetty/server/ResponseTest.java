@@ -476,7 +476,8 @@ public class ResponseTest
                 {"l%20cation", "http://@HOST@@PORT@/path/l%20cation"},
                 {"./l%20cation", "http://@HOST@@PORT@/path/l%20cation"},
                 {"../l%20cation","http://@HOST@@PORT@/l%20cation"},
-                {"../locati%C3%abn", "http://@HOST@@PORT@/locati%C3%ABn"},
+                {"../locati%C3%abn", "http://@HOST@@PORT@/locati%C3%abn"},
+                {"../other%2fplace", "http://@HOST@@PORT@/other%2fplace"},
                 {"http://somehost.com/other/location","http://somehost.com/other/location"},
         };
 

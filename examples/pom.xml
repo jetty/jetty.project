@@ -47,6 +47,5 @@
     -->
     <module>async-rest</module>
     <module>embedded</module>
-    <module>quickstart</module>
   </modules>
 </project>

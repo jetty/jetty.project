@@ -690,58 +690,26 @@ public class Response implements HttpServletResponse
         if (!URIUtil.hasScheme(location))
         {
             StringBuilder buf = _channel.getRequest().getRootURL();
- 
-            if (location.startsWith("//"))
+            if (location.startsWith("/"))
             {
-                buf.delete(0, buf.length());
-                buf.append(_channel.getRequest().getScheme());
-                buf.append(":");
-                buf.append(location);
+                // absolute in context
+                location=URIUtil.canonicalPath(location);
             }
-            else if (location.startsWith("/"))
-                buf.append(location);
             else
             {
-                String path = _channel.getRequest().getRequestURI();
-                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.addPaths(parent, location);
-                if (location == null)
-                    throw new IllegalStateException("path cannot be above root");
+                // relative to request
+                String path=_channel.getRequest().getRequestURI();
+                String parent=(path.endsWith("/"))?path:URIUtil.parentPath(path);
+                location=URIUtil.canonicalPath(URIUtil.addPaths(parent,location));
                 if (!location.startsWith("/"))
                     buf.append('/');
-                buf.append(location);
             }
-
-            location = buf.toString();
-            HttpURI uri = new HttpURI(location);
-            String path = uri.getDecodedPath();
-            String canonical = URIUtil.canonicalPath(path);
-            if (canonical == null)
-                throw new IllegalArgumentException();
-            if (!canonical.equals(path))
-            {
-                buf = _channel.getRequest().getRootURL();
-                buf.append(URIUtil.encodePath(canonical));
-                String param=uri.getParam();
-                if (param!=null)
-                {
-                    buf.append(';');
-                    buf.append(param);
-                }
-                String query=uri.getQuery();
-                if (query!=null)
-                {
-                    buf.append('?');
-                    buf.append(query);
-                }
-                String fragment=uri.getFragment();
-                if (fragment!=null)
-                {
-                    buf.append('#');
-                    buf.append(fragment);
-                }
-                location = buf.toString();
-            }
+            
+            if(location==null)
+                throw new IllegalStateException("path cannot be above root");
+            buf.append(location);
+            
+            location=buf.toString();
         }
 
         resetBuffer();

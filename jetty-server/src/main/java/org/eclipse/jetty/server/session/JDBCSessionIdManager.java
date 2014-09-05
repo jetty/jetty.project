@@ -992,6 +992,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
              _ownScheduler = true;
              _scheduler.start();
          }
+         else if (!_scheduler.isStarted())
+             throw new IllegalStateException("Shared scheduler not started");
   
         setScavengeInterval(getScavengeInterval());
     }

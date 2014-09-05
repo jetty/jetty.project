@@ -26,8 +26,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.toolchain.test.BenchmarkHelper;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.eclipse.jetty.util.BenchmarkHelper;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.hamcrest.Matchers;
 import org.junit.After;

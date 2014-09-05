@@ -74,8 +74,14 @@ public class ConnectionManager extends ContainerLifeCycle
 
                 InetSocketAddress address = toSocketAddress(wsUri);
 
-                channel.connect(address);
-                getSelector().connect(channel,this);
+                if (channel.connect(address))
+                {
+                    getSelector().accept(channel, this);
+                }
+                else
+                {
+                    getSelector().connect(channel, this);
+                }
             }
             catch (Throwable t)
             {
