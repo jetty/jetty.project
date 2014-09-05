@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package com.acme;
+package com.acme.initializer;
 
 import java.util.ArrayList;
 import java.util.Set;

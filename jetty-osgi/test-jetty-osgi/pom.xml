@@ -353,6 +353,20 @@
     </dependency>
 
     <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-container-initializer</artifactId>
+      <version>${project.version}</version>
+      <scope>test</scope>
+    </dependency>
+
+
+    <dependency>
+      <groupId>org.eclipse.jetty.tests</groupId>
+      <artifactId>test-mock-resources</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+
+    <dependency>
       <groupId>org.eclipse.jetty.osgi</groupId>
       <artifactId>test-jetty-osgi-context</artifactId>
       <version>${project.version}</version>

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package com.acme;
+package com.acme.test;
 
 import javax.annotation.Resource;
 import javax.servlet.ServletContextAttributeEvent;

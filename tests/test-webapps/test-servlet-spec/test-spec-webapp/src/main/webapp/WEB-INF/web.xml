@@ -9,7 +9,7 @@
   <display-name>Test Annotations WebApp</display-name>
   
   <listener>
-    <listener-class>com.acme.TestListener</listener-class>
+    <listener-class>com.acme.test.TestListener</listener-class>
   </listener>
 
 
@@ -25,7 +25,7 @@
   
   <servlet>
     <servlet-name>RoleAnnotationTest</servlet-name>
-    <servlet-class>com.acme.RoleAnnotationTest</servlet-class>
+    <servlet-class>com.acme.test.RoleAnnotationTest</servlet-class>
     <load-on-startup>1</load-on-startup>
     <security-role-ref>
       <role-name>manager</role-name>
@@ -40,7 +40,7 @@
   
   <servlet>
     <servlet-name>Multi</servlet-name>
-    <servlet-class>com.acme.MultiPartTest</servlet-class>
+    <servlet-class>com.acme.test.MultiPartTest</servlet-class>
     <load-on-startup>2</load-on-startup>
   </servlet>
 
@@ -50,7 +50,7 @@
   </servlet-mapping>
 
   <env-entry>
-    <env-entry-name>com.acme.AnnotationTest/avgAmount</env-entry-name>
+    <env-entry-name>com.acme.test.AnnotationTest/avgAmount</env-entry-name>
     <env-entry-type>java.lang.Double</env-entry-type>
     <env-entry-value>1.25</env-entry-value>
   </env-entry>

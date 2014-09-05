@@ -106,12 +106,20 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         if (bundle == null)
             return false;
 
+        //If the bundle defines a Web-ContextPath then its probably a webapp and the BundleWebAppProvider should deploy it
+        if ((String)bundle.getHeaders().get(OSGiWebappConstants.RFC66_WEB_CONTEXTPATH) != null)
+        {
+            if (LOG.isDebugEnabled()) LOG.debug("BundleContextProvider ignoring bundle {} with {} set", bundle.getSymbolicName(), OSGiWebappConstants.RFC66_WEB_CONTEXTPATH);
+            return false;
+        }
+        
         String contextFiles  = (String)bundle.getHeaders().get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
         if (contextFiles == null)
             contextFiles = (String)bundle.getHeaders().get(OSGiWebappConstants.SERVICE_PROP_CONTEXT_FILE_PATH);
         
         if (contextFiles == null)
             return false;
+        
         
         boolean added = false;
         //bundle defines JETTY_CONTEXT_FILE_PATH header,

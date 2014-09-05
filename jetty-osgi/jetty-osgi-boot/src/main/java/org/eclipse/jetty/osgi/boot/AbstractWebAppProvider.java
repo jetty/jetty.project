@@ -20,10 +20,12 @@ package org.eclipse.jetty.osgi.boot;
 
 import java.io.File;
 import java.net.URL;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
+import java.util.List;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
@@ -32,7 +34,9 @@ import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.internal.webapp.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
@@ -73,17 +77,23 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     
     public static String[] getDefaultConfigurations ()
     {
+        List<String> configs = ArrayUtil.asMutableList(__defaultConfigurations);
         if (annotationsAvailable())
         {
-            String[] configs = new String[__defaultConfigurations.length+1];
-            System.arraycopy(__defaultConfigurations, 0, configs, 0, 4);
-            configs[4] = "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration";
-            configs[5] = __defaultConfigurations[__defaultConfigurations.length-1];
-            return configs;
+            //add before JettyWebXmlConfiguration
+            int i = configs.indexOf("org.eclipse.jetty.webapp.JettyWebXmlConfiguration");
+            configs.add(i, "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration");
+        }
+        
+        if (jndiAvailable())
+        {
+            //add in EnvConfiguration and PlusConfiguration just after FragmentConfiguration
+            int i = configs.indexOf("org.eclipse.jetty.webapp.FragmentConfiguration");
+            configs.add(++i, "org.eclipse.jetty.plus.webapp.EnvConfiguration");
+            configs.add(++i, "org.eclipse.jetty.plus.webapp.PlusConfiguration");
         }
 
-
-        return Arrays.copyOf(__defaultConfigurations, __defaultConfigurations.length);
+        return configs.toArray(new String[configs.size()]);
     }
 
     private static boolean annotationsAvailable()
@@ -91,7 +101,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         boolean result = false;
         try
         {
-            Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.annotations.AnnotationConfiguration");
+            Loader.loadClass(AbstractWebAppProvider.class,"org.eclipse.jetty.annotations.AnnotationConfiguration");
             result = true;
             LOG.debug("Annotation support detected");
         }
@@ -102,6 +112,23 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         }
 
         return result;
+    }
+    
+    
+    private static boolean jndiAvailable()
+    {
+        try
+        {
+            Loader.loadClass(AbstractWebAppProvider.class, "org.eclipse.jetty.plus.jndi.Resource");
+            Loader.loadClass(AbstractWebAppProvider.class, "org.eclipse.jetty.plus.webapp.EnvConfiguration");
+            LOG.debug("JNDI support detected");
+            return true;
+        }
+        catch (ClassNotFoundException e)
+        {
+            LOG.debug("No JNDI support detected");
+            return false;
+        }
     }
     
 
@@ -268,7 +295,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
             //Sets the location of the war file
             // converts bundleentry: protocol if necessary
-            System.err.println("WAR : "+BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(url).toString());
             _webApp.setWar(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(url).toString());
 
             // Set up what has been configured on the provider
@@ -329,7 +355,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
 
             // apply any META-INF/context.xml file that is found to configure
             // the webapp first
-            applyMetaInfContextXml(rootResource);
+            applyMetaInfContextXml(rootResource, overrideBundleInstallLocation);
 
             _webApp.setAttribute(OSGiWebappConstants.REQUIRE_TLD_BUNDLE, requireTldBundles);
 
@@ -385,7 +411,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         }
         
         
-        protected void applyMetaInfContextXml(Resource rootResource)
+        protected void applyMetaInfContextXml(Resource rootResource, String overrideBundleInstallLocation)
         throws Exception
         {
             if (_bundle == null) return;
@@ -399,8 +425,31 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 Thread.currentThread().setContextClassLoader(_webApp.getClassLoader());
 
                 //TODO replace this with getting the InputStream so we don't cache in URL
-                // find if there is a META-INF/context.xml file
+                //Try looking for a context xml file in META-INF with a specific name
                 URL contextXmlUrl = _bundle.getEntry("/META-INF/jetty-webapp-context.xml");
+                
+                if (contextXmlUrl == null)
+                {
+                    //Didn't find specially named file, try looking for a property that names a context xml file to use
+                    if (_properties != null)
+                    {
+                        String tmp = (String)_properties.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
+                        if (tmp != null)
+                        {
+                            String[] filenames = tmp.split(",;");
+                            if (filenames != null && filenames.length > 0)
+                            {
+                                String filename = filenames[0]; //should only be 1 filename in this usage
+                                String jettyHome = (String)getServerInstanceWrapper().getServer().getAttribute(OSGiServerConstants.JETTY_HOME);
+                                if (jettyHome == null)
+                                    jettyHome =  System.getProperty(OSGiServerConstants.JETTY_HOME);
+                                Resource res = findFile(filename, jettyHome, overrideBundleInstallLocation, _bundle);
+                                if (res != null)
+                                    contextXmlUrl = res.getURL();
+                            }
+                        }
+                    }
+                }
                 if (contextXmlUrl == null) return;
 
                 // Apply it just as the standard jetty ContextProvider would do

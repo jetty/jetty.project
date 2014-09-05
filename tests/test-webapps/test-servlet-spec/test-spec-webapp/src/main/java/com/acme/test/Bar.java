@@ -16,12 +16,12 @@
 //  ========================================================================
 //
 
-package com.acme;
+package com.acme.test;
 
 
 public class Bar {
         
-        @Foo(2)
+        @com.acme.initializer.Foo(2)
         public void someMethod () {
         }
 
