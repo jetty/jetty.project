@@ -1,6 +1,38 @@
-jetty-9.2.3-SNAPSHOT
+jetty-9.2.4-SNAPSHOT
 
-jetty-9.2.2-v20140723 - 23 July 2014
+jetty-9.2.3.v20140905 - 05 September 2014
+ + 347110 renamed class transformer methods
+ + 411163 Add embedded jetty code example with JSP enabled
+ + 435322 Added a idleTimeout to the SharedBlockerCallback
+ + 435533 Handle 0 sized async gzip
+ + 435988 ContainerLifeCycle: beans never stopped on remove
+ + 436862 Update jetty-osgi to asm-5 and spifly-1.0.1
+ + 438500 Odd NoClassDef errors when shutting down the jetty-maven-plugin via
+   the stop goal
+ + 440255 ensure 500 is logged on thrown Errors
+ + 441073 isEarlyEOF on HttpInput
+ + 441475 org.eclipse.jetty.server.ResourceCache exceptions under high load
+ + 441479 Jetty hangs due to deadlocks in session manager
+ + 441649 Update to jsp and el Apache Jasper 8.0.9
+ + 441756 Ssl Stackoverflow on renegotiate
+ + 441897 Fixed etag handling in gzipfilter
+ + 442048 fixed sendRedirect %2F encoding
+ + 442383 Improved insufficient threads message
+ + 442628 Update example xml file for second server instance to extract wars
+ + 442642 Quickstart generates valid XML
+ + 442759 Allow specific ServletContainerInitializers to be excluded
+ + 442950 Embedded Jetty client requests to localhost hangs with high cpu usage
+   (NIO OP_CONNECT Solaris/Sparc).
+ + 443049 Improved HttpParser illegal character messages
+ + 443158 Fixed HttpOutput spin
+ + 443172 web-fragment.xml wrongly parsed for applications running in serlvet
+   2.4 mode
+ + 443231 java.lang.NullPointerException on scavenge scheduling when session id
+   manager declared before shared scheduler
+ + 443262 Distinguish situation where jetty looks for tlds in META-INF but
+   finds none vs does not look
+
+jetty-9.2.2.v20140723 - 23 July 2014
  + 411323 DosFilter/QoSFilter should use AsyncContext rather than
    Continuations.
  + 432815 Fixed selector stop race
