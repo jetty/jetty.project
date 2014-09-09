@@ -1,3 +1,5 @@
+jetty-8.1.17-SNAPSHOT
+
 jetty-8.1.16.v20140903 - 03 September 2014
  + 409788 Large POST body causes java.lang.IllegalStateException: SENDING =>
    HEADERS.
