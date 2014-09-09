@@ -1,3 +1,5 @@
+jetty-9.2.4-SNAPSHOT
+
 jetty-9.2.3.v20140905 - 05 September 2014
  + 347110 renamed class transformer methods
  + 411163 Add embedded jetty code example with JSP enabled
