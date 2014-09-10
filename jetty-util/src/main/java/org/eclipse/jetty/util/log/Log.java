@@ -20,7 +20,6 @@ package org.eclipse.jetty.util.log;
 
 import java.io.IOException;
 import java.io.InputStream;
-import java.lang.management.ManagementFactory;
 import java.lang.reflect.Method;
 import java.net.URL;
 import java.security.AccessController;
@@ -34,6 +33,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 
 /**
@@ -167,8 +167,6 @@ public class Log
                 return;
             __initialized = true;
 
-            final long uptime=ManagementFactory.getRuntimeMXBean().getUptime();
-
             try
             {
                 Class<?> log_class = Loader.loadClass(Log.class, __logClass);
@@ -185,7 +183,7 @@ public class Log
             }
 
             if (LOG!=null)
-                LOG.info(String.format("Logging initialized @%dms",uptime));
+                LOG.info(String.format("Logging initialized @%dms",Uptime.getUptime()));
         }
     }
 

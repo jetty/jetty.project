@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.lang.management.ManagementFactory;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.URI;
@@ -53,6 +52,7 @@ import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.Uptime;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -376,7 +376,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         mex.ifExceptionThrow();
 
-        LOG.info(String.format("Started @%dms",ManagementFactory.getRuntimeMXBean().getUptime()));
+        LOG.info(String.format("Started @%dms",Uptime.getUptime()));
     }
 
     @Override
