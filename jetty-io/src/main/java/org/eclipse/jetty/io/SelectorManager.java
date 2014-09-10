@@ -650,6 +650,17 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                             ((EndPoint)attachment).close();
                     }
                 }
+                
+                // Allow any dispatched tasks to run.
+                Thread.yield();
+
+                // Update the keys.
+                for (SelectionKey key : selectedKeys)
+                {
+                    if (key.isValid())
+                        updateKey(key);
+                }
+                
                 selectedKeys.clear();
             }
             catch (Throwable x)
@@ -681,6 +692,30 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 else
                 {
                     throw new IllegalStateException();
+                }
+            }
+            catch (CancelledKeyException x)
+            {
+                LOG.debug("Ignoring cancelled key for channel {}", key.channel());
+                if (attachment instanceof EndPoint)
+                    closeNoExceptions((EndPoint)attachment);
+            }
+            catch (Throwable x)
+            {
+                LOG.warn("Could not process key for channel " + key.channel(), x);
+                if (attachment instanceof EndPoint)
+                    closeNoExceptions((EndPoint)attachment);
+            }
+        }
+
+        private void updateKey(SelectionKey key)
+        {
+            Object attachment = key.attachment();
+            try
+            {
+                if (attachment instanceof SelectableEndPoint)
+                {
+                    ((SelectableEndPoint)attachment).updateKey();
                 }
             }
             catch (CancelledKeyException x)
@@ -1075,15 +1110,21 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
-     * A {@link SelectableEndPoint} is an {@link EndPoint} that wish to be notified of
-     * non-blocking events by the {@link ManagedSelector}.
+     * A {@link SelectableEndPoint} is an {@link EndPoint} that wish to be
+     * notified of non-blocking events by the {@link ManagedSelector}.
      */
     public interface SelectableEndPoint extends EndPoint
     {
         /**
-         * <p>Callback method invoked when a read or write events has been detected by the {@link ManagedSelector}
-         * for this endpoint.</p>
+         * Callback method invoked when a read or write events has been
+         * detected by the {@link ManagedSelector} for this endpoint.
          */
         void onSelected();
+
+        /**
+         * Callback method invoked when all the keys selected by the
+         * {@link ManagedSelector} for this endpoint have been processed.
+         */
+        void updateKey();
     }
 }
