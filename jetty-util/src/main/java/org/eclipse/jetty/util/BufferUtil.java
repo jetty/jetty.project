@@ -312,8 +312,7 @@ public class BufferUtil
             {
                 to.put(from);
                 put = remaining;
-                from.position(0);
-                from.limit(0);
+                from.position(from.limit());
             }
             else if (from.hasArray())
             {

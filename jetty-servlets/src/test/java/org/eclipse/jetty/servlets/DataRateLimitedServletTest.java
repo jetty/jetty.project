@@ -25,6 +25,7 @@ import static org.junit.Assert.assertThat;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.OutputStream;
+import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -85,15 +86,19 @@ public class DataRateLimitedServletTest
     public void testStream() throws Exception
     {
         File content = testdir.getFile("content.txt");
+        String[] results=new String[10];
         try(OutputStream out = new FileOutputStream(content);)
         {
             byte[] b= new byte[1024];
             
             for (int i=1024;i-->0;)
             {
-                Arrays.fill(b,(byte)('0'+(i%10)));
+                int index=i%10;
+                Arrays.fill(b,(byte)('0'+(index)));
                 out.write(b);
                 out.write('\n');
+                if (results[index]==null)
+                    results[index]=new String(b,StandardCharsets.US_ASCII);
             }
         }
         
@@ -105,5 +110,7 @@ public class DataRateLimitedServletTest
         assertThat(response,containsString("200 OK"));
         assertThat(duration,greaterThan(PAUSE*1024L*1024/BUFFER));
         
+        for (int i=0;i<10;i++)
+            assertThat(response,containsString(results[i]));
     }
 }

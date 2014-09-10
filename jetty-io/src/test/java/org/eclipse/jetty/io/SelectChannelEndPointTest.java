@@ -145,6 +145,7 @@ public class SelectChannelEndPointTest
                     progress = false;
 
                     // Fill the input buffer with everything available
+                    BufferUtil.compact(_in);
                     if (BufferUtil.isFull(_in))
                         throw new IllegalStateException("FULL " + BufferUtil.toDetailString(_in));
                     int filled = _endp.fill(_in);

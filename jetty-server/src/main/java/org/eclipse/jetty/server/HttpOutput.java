@@ -903,7 +903,13 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _buffer=buffer;
             _len=buffer.remaining();
             // Use a slice buffer for large indirect to avoid JVM pooling large direct buffers
-            _slice=_buffer.isDirect()||_len<getBufferSize()?null:_buffer.duplicate();
+            if (_buffer.isDirect()||_len<getBufferSize())
+                _slice=null;
+            else
+            {
+                _slice=_buffer.duplicate();
+                _buffer.position(_buffer.limit());
+            }                
             _complete=complete;
         }
 
