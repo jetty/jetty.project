@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package com.acme;
+package com.acme.test;
 
 import java.io.IOException;
 import java.util.Collection;

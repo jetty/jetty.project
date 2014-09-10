@@ -50,7 +50,14 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
 {
     private static final Logger LOG = Log.getLogger(WebInfConfiguration.class);
     
-    
+    /**
+     * Comma separated list of symbolic names of bundles that contain tlds that should be considered
+     * as on the container classpath
+     */
+    public static final String SYS_PROP_TLD_BUNDLES = "org.eclipse.jetty.osgi.tldbundles";
+    /**
+     * Regex of symbolic names of bundles that should be considered to be on the container classpath
+     */
     public static final String CONTAINER_BUNDLE_PATTERN = "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern";
     public static final String FRAGMENT_AND_REQUIRED_BUNDLES = "org.eclipse.jetty.osgi.fragmentAndRequiredBundles";
     public static final String FRAGMENT_AND_REQUIRED_RESOURCES = "org.eclipse.jetty.osgi.fragmentAndRequiredResources";
@@ -84,7 +91,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         String tmp = (String)context.getAttribute(CONTAINER_BUNDLE_PATTERN);
         Pattern pattern = (tmp==null?null:Pattern.compile(tmp));
         List<String> names = new ArrayList<String>();
-        tmp = System.getProperty("org.eclipse.jetty.osgi.tldbundles");
+        tmp = System.getProperty(SYS_PROP_TLD_BUNDLES);
         if (tmp != null)
         {
             StringTokenizer tokenizer = new StringTokenizer(tmp, ", \n\r\t", false);

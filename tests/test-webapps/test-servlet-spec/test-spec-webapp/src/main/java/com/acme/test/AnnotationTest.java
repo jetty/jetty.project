@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package com.acme;
+package com.acme.test;
 
 import java.io.IOException;
 import java.util.ArrayList;
@@ -110,7 +110,7 @@ public class AnnotationTest extends HttpServlet
        try
        {
            InitialContext ic = new InitialContext();
-           envLookupResult = "java:comp/env/com.acme.AnnotationTest/maxAmount="+ic.lookup("java:comp/env/com.acme.AnnotationTest/maxAmount");
+           envLookupResult = "java:comp/env/com.acme.test.AnnotationTest/maxAmount="+ic.lookup("java:comp/env/com.acme.test.AnnotationTest/maxAmount");
        }
        catch (Exception e)
        {
@@ -131,7 +131,7 @@ public class AnnotationTest extends HttpServlet
       try
       {
           InitialContext ic = new InitialContext();
-          envLookupResult3 = "java:comp/env/com.acme.AnnotationTest/avgAmount="+ic.lookup("java:comp/env/com.acme.AnnotationTest/avgAmount");
+          envLookupResult3 = "java:comp/env/com.acme.test.AnnotationTest/avgAmount="+ic.lookup("java:comp/env/com.acme.test.AnnotationTest/avgAmount");
       }
       catch (Exception e)
       {
@@ -143,7 +143,7 @@ public class AnnotationTest extends HttpServlet
        try
        {
            InitialContext ic = new InitialContext();
-           dsLookupResult = "java:comp/env/com.acme.AnnotationTest/myDatasource="+ic.lookup("java:comp/env/com.acme.AnnotationTest/myDatasource");
+           dsLookupResult = "java:comp/env/com.acme.test.AnnotationTest/myDatasource="+ic.lookup("java:comp/env/com.acme.test.AnnotationTest/myDatasource");
        }
        catch (Exception e)
        {
@@ -154,7 +154,7 @@ public class AnnotationTest extends HttpServlet
        try
        {
            InitialContext ic = new InitialContext();
-           txLookupResult = "java:comp/env/com.acme.AnnotationTest/myUserTransaction="+ic.lookup("java:comp/env/com.acme.AnnotationTest/myUserTransaction");
+           txLookupResult = "java:comp/env/com.acme.test.AnnotationTest/myUserTransaction="+ic.lookup("java:comp/env/com.acme.test.AnnotationTest/myUserTransaction");
        }
        catch (Exception e)
        {
@@ -209,14 +209,14 @@ public class AnnotationTest extends HttpServlet
 
              __HandlesTypes = Arrays.asList( "javax.servlet.GenericServlet", 
                                              "javax.servlet.http.HttpServlet", 
-                                             "com.acme.AsyncListenerServlet",
-                                             "com.acme.AnnotationTest", 
-                                             "com.acme.RoleAnnotationTest", 
-                                             "com.acme.MultiPartTest", 
-                                             "com.acme.FragmentServlet", 
-                                             "com.acme.TestListener",
-                                             "com.acme.SecuredServlet",
-                                             "com.acme.Bar");
+                                             "com.acme.test.AsyncListenerServlet",
+                                             "com.acme.test.AnnotationTest", 
+                                             "com.acme.test.RoleAnnotationTest", 
+                                             "com.acme.test.MultiPartTest", 
+                                             "com.acme.fragment.FragmentServlet", 
+                                             "com.acme.test.TestListener",
+                                             "com.acme.test.SecuredServlet",
+                                             "com.acme.test.Bar");
              out.println("<h2>@ContainerInitializer</h2>");
              out.println("<pre>");
              out.println("@HandlesTypes({javax.servlet.Servlet.class, Foo.class})");

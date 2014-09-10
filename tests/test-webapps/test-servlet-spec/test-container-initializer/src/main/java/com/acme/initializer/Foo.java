@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package com.acme;
+package com.acme.initializer;
 
 import java.lang.annotation.ElementType;
 import java.lang.annotation.Retention;

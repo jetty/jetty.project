@@ -21,6 +21,89 @@
           <skip>true</skip>
         </configuration>
       </plugin>
+       
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-assembly-plugin</artifactId>
+        <executions>
+          <execution>
+            <phase>package</phase>
+            <goals>
+              <goal>single</goal>
+            </goals>
+            <configuration>
+              <descriptors>
+                <descriptor>src/main/assembly/config.xml</descriptor>
+                <descriptor>src/main/assembly/web-bundle.xml</descriptor>
+              </descriptors>
+              <archive>
+                <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+              </archive>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <!-- also make this webapp an osgi bundle -->
+      <plugin>
+        <artifactId>maven-war-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+          <webResources>
+            <resource>
+                <directory>target</directory>
+                <includes>
+                  <include>plugin-context.xml</include>
+                </includes>
+                <targetPath>META-INF</targetPath>
+            </resource>
+          </webResources>
+        </configuration>
+      </plugin>
+
+
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <extensions>true</extensions>
+        <configuration>
+          <supportedProjectTypes>
+            <supportedProjectType>war</supportedProjectType>
+          </supportedProjectTypes>
+        </configuration>
+        <executions>
+          <execution>
+            <phase>process-classes</phase>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+            <configuration>
+              <instructions>
+                <Bundle-SymbolicName>org.eclipse.jetty.tests.test-spec-webapp</Bundle-SymbolicName>
+                <Bundle-Description>Test Webapp for Servlet 3.1 Features</Bundle-Description>
+                <Import-Package>
+                  javax.servlet.jsp.*;version="[2.2.0, 3.0)",
+                  javax.transaction.*;version="[1.1, 2.0)", 
+                  javax.servlet.*;version="3.0",
+                  javax.sql,
+                  org.eclipse.jetty.webapp;version="9.2",org.eclipse.jetty.plus.jndi;version="9.2",
+                  org.eclipse.jetty.security;version="9.2",
+                  com.acme;version="9.2",
+                  *
+                </Import-Package>
+                <Export-Package>com.acme.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+                <Web-ContextPath>/</Web-ContextPath>
+                <Bundle-ClassPath>.,WEB-INF/classes,WEB-INF/lib</Bundle-ClassPath>
+                <Jetty-ContextFilePath>./META-INF/plugin-context.xml</Jetty-ContextFilePath>
+                <_nouses>true</_nouses>
+              </instructions>
+            </configuration>
+           </execution>
+        </executions>
+      </plugin>
+
+
        <plugin>
          <artifactId>maven-antrun-plugin</artifactId>
          <executions>
@@ -68,7 +151,7 @@
           </execution>
         </executions>
        </plugin>
-       <plugin>
+       <!-- plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-assembly-plugin</artifactId>
           <version>2.2-beta-3</version>
@@ -85,7 +168,7 @@
               </configuration>
             </execution>
           </executions>
-       </plugin>
+       </plugin -->
       <plugin>
         <groupId>org.eclipse.jetty</groupId>
         <artifactId>jetty-maven-plugin</artifactId>

@@ -19,6 +19,47 @@
           <verbose>false</verbose>
         </configuration>
        </plugin>
+       <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <executions>
+            <execution>
+                <id>artifact-jar</id>
+                <goals>
+                    <goal>jar</goal>
+                </goals>
+            </execution>
+        </executions>
+        <configuration>
+            <archive>
+                <manifestFile>target/classes/META-INF/MANIFEST.MF</manifestFile>
+            </archive>
+        </configuration>
+      </plugin>
+      <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <executions>
+              <execution>
+                  <id>bundle-manifest</id>
+                  <phase>process-classes</phase>
+                  <goals>
+                      <goal>manifest</goal>
+                  </goals>
+              </execution>
+          </executions>
+          <configuration>
+              <instructions>
+                  <Bundle-SymbolicName>org.eclipse.jetty.tests.test-servlet-container-initializer;singleton:=true</Bundle-SymbolicName>
+                  <Bundle-Description>A bundle containing a ServletContainerInitializer for testing</Bundle-Description>
+                  <Require-Capability>osgi.extender; filter:="(osgi.extender=osgi.serviceloader.registrar)"</Require-Capability>
+                  <Provide-Capability>osgi.serviceloader; osgi.serviceloader=javax.servlet.ServletContainerInitializer</Provide-Capability>
+                  <Export-Package>com.acme.initializer;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+                  <_nouses>true</_nouses>
+              </instructions>
+          </configuration>
+      </plugin>
     </plugins>
   </build>
   <dependencies>
@@ -27,13 +68,5 @@
        <artifactId>javax.servlet-api</artifactId>
        <scope>provided</scope>
     </dependency>
-
-<!--
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet</artifactId>
-      <scope>provided</scope>
-    </dependency>
--->
   </dependencies>
 </project>
