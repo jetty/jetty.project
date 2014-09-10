@@ -58,18 +58,17 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public abstract class SelectorManager extends AbstractLifeCycle implements Dumpable
 {
-    public static final String SUBMIT_KEY_UPDATES = "org.eclipse.jetty.io.SelectorManager.submitKeyUpdates";
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
-    private final static boolean __submitKeyUpdates = Boolean.valueOf(System.getProperty(SUBMIT_KEY_UPDATES, "false"));
-    
+
     private final Executor executor;
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-    private long _selectorIndex;
+    private boolean _submitKeyUpdates;
     private int _priorityDelta;
-    
+    private long _selectorIndex;
+
     protected SelectorManager(Executor executor, Scheduler scheduler)
     {
         this(executor, scheduler, (Runtime.getRuntime().availableProcessors() + 1) / 2);
@@ -149,7 +148,33 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
         }
     }
-    
+
+    /**
+     * @return whether updates to {@link SelectionKey}s are submitted
+     *         to the selector thread or executed by the updater.
+     * @see #setSubmitKeyUpdates(boolean)
+     */
+    public boolean isSubmitKeyUpdates()
+    {
+        return _submitKeyUpdates;
+    }
+
+    /**
+     * Controls whether {@link SelectionKey} updates should be submitted for
+     * execution in the selector thread, or directly executed by the updating
+     * thread.
+     * Submission incur is possible queueing and wakeup of the selector, while
+     * direct execution incurs in lock contention in JDK classes.
+     *
+     * @param submitKeyUpdates whether updates to {@link SelectionKey}s are submitted
+     *                         to the selector thread or executed by the updater.
+     * @see SelectorManager.ManagedSelector#updateKey(Runnable)
+     */
+    public void setSubmitKeyUpdates(boolean submitKeyUpdates)
+    {
+        _submitKeyUpdates = submitKeyUpdates;
+    }
+
     /**
      * Executes the given task in a different thread.
      *
@@ -438,22 +463,29 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         }
 
         /**
-         * Submit a task to update a selector key.  If the System property {@link SelectorManager#SUBMIT_KEY_UPDATES}
-         * is set true (default is false), the task is passed to {@link #submit(Runnable)}.   Otherwise it is run immediately and the selector 
-         * woken up if need be.   
-         * @param update the update to a key
+         * Submits a task to update a {@link SelectionKey}.
+         * If {@link #isSubmitKeyUpdates()} is true (defaults to false), the
+         * task is passed to {@link #submit(Runnable)}, otherwise it is executed
+         * immediately and the selector woken up if need be.
+         *
+         * @param update the task that updates the key.
+         * @return true if the selector was woken up, false otherwise
          */
-        public void updateKey(Runnable update)
+        public boolean updateKey(Runnable update)
         {
-            if (__submitKeyUpdates)
+            if (isSubmitKeyUpdates())
             {
-                submit(update);
+                return submit(update);
             }
             else
             {
                 runChange(update);
                 if (_state.compareAndSet(State.SELECT, State.WAKEUP))
-                   wakeup();
+                {
+                    wakeup();
+                    return true;
+                }
+                return false;
             }
         }
         
@@ -463,8 +495,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          * (if necessary) to execute the change.</p>
          *
          * @param change the change to submit
+         * @return true if the selector was woken up, false otherwise
          */
-        public void submit(Runnable change)
+        public boolean submit(Runnable change)
         {
             // This method may be called from the selector thread, and therefore
             // we could directly run the change without queueing, but this may
@@ -484,7 +517,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         if (!_state.compareAndSet(State.SELECT, State.WAKEUP))
                             continue;
                         wakeup();
-                        break out;
+                        return true;
                     case CHANGES:
                         // Tell the selector thread that we have more changes.
                         // If we fail to CAS, we possibly need to wakeup(), so loop.
@@ -504,6 +537,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                         throw new IllegalStateException();
                 }
             }
+            
+            return false;
         }
 
         private void runChanges()
@@ -543,7 +578,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     LOG.debug("Starting {} on {}", _thread, this);
                 while (isRunning())
                     select();
-                while(isStopping())
+                while (isStopping())
                     runChanges();
             }
             finally
