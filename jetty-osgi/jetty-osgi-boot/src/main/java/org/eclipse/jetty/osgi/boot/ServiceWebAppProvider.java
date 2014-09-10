@@ -128,6 +128,8 @@ public class ServiceWebAppProvider extends AbstractWebAppProvider implements Ser
      
         String base = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
         if (base == null)
+            base = (String)serviceRef.getProperty(OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH);
+        if (base == null)
             base = (String)serviceRef.getProperty(OSGiWebappConstants.SERVICE_PROP_WAR);
         
        if (base == null)

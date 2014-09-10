@@ -22,13 +22,16 @@ import java.io.File;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.TreeMap;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
+import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -197,7 +200,7 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-        TreeMap<String, Resource> patchResourcesPath = new TreeMap<String, Resource>();
+        TreeMap<String, Resource> prependedResourcesPath = new TreeMap<String, Resource>();
         TreeMap<String, Resource> appendedResourcesPath = new TreeMap<String, Resource>();
              
         Bundle bundle = (Bundle)context.getAttribute(OSGiWebappConstants.JETTY_OSGI_BUNDLE);
@@ -221,46 +224,33 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
                 // looked up.
                 for (Bundle frag : fragments)
                 {
-                    String fragFolder = (String) frag.getHeaders().get(OSGiWebappConstants.JETTY_WAR_FRAGMENT_FOLDER_PATH);
-                    String patchFragFolder = (String) frag.getHeaders().get(OSGiWebappConstants.JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH);
-                    if (fragFolder != null)
-                    {
-                        URL fragUrl = frag.getEntry(fragFolder);
-                        if (fragUrl == null) { throw new IllegalArgumentException("Unable to locate " + fragFolder
-                                                                                  + " inside "
-                                                                                  + " the fragment '"
-                                                                                  + frag.getSymbolicName()
-                                                                                  + "'"); }
-                        fragUrl = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(fragUrl);
-                        String key = fragFolder.startsWith("/") ? fragFolder.substring(1) : fragFolder;
-                        appendedResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(fragUrl));
-                    }
-                    if (patchFragFolder != null)
-                    {
-                        URL patchFragUrl = frag.getEntry(patchFragFolder);
-                        if (patchFragUrl == null)
-                        { 
-                            throw new IllegalArgumentException("Unable to locate " + patchFragUrl
-                                                               + " inside fragment '"+frag.getSymbolicName()+ "'"); 
-                        }
-                        patchFragUrl = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(patchFragUrl);
-                        String key = patchFragFolder.startsWith("/") ? patchFragFolder.substring(1) : patchFragFolder;
-                        patchResourcesPath.put(key + ";" + frag.getSymbolicName(), Resource.newResource(patchFragUrl));
-                    }
+                    String path = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_FRAGMENT_FOLDER_PATH,OSGiWebappConstants.JETTY_WAR_FRAGMENT_RESOURCE_PATH,frag.getHeaders());
+                    convertFragmentPathToResource(path, frag, appendedResourcesPath);
+                    path = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_PATCH_FRAGMENT_FOLDER_PATH, OSGiWebappConstants.JETTY_WAR_PREPEND_FRAGMENT_RESOURCE_PATH, frag.getHeaders());
+                    convertFragmentPathToResource(path, frag, prependedResourcesPath);
                 }
                 if (!appendedResourcesPath.isEmpty())
-                    context.setAttribute(WebInfConfiguration.RESOURCE_DIRS, new HashSet<Resource>(appendedResourcesPath.values()));
+                {
+                    LinkedHashSet<Resource> resources = new LinkedHashSet<Resource>();
+                    //Add in any existing setting of extra resource dirs
+                    Set<Resource> resourceDirs = (Set<Resource>)context.getAttribute(WebInfConfiguration.RESOURCE_DIRS);
+                    if (resourceDirs != null && !resourceDirs.isEmpty())
+                        resources.addAll(resourceDirs);
+                    //Then append the values from JETTY_WAR_FRAGMENT_FOLDER_PATH
+                    resources.addAll(appendedResourcesPath.values());
+                    
+                    context.setAttribute(WebInfConfiguration.RESOURCE_DIRS, resources);
+                }
             }
         }
         
         super.configure(context);
 
-        // place the patch resources at the beginning of the contexts's resource base
-        if (!patchResourcesPath.isEmpty())
+        // place the prepended resources at the beginning of the contexts's resource base
+        if (!prependedResourcesPath.isEmpty())
         {
-            Resource[] resources = new Resource[1+patchResourcesPath.size()];
-            ResourceCollection mergedResources = new ResourceCollection (patchResourcesPath.values().toArray(new Resource[patchResourcesPath.size()]));
-            System.arraycopy(patchResourcesPath.values().toArray(new Resource[patchResourcesPath.size()]), 0, resources, 0, patchResourcesPath.size());
+            Resource[] resources = new Resource[1+prependedResourcesPath.size()];
+            System.arraycopy(prependedResourcesPath.values().toArray(new Resource[prependedResourcesPath.size()]), 0, resources, 0, prependedResourcesPath.size());
             resources[resources.length-1] = context.getBaseResource();
             context.setBaseResource(new ResourceCollection(resources));
         }
@@ -305,5 +295,33 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
         }
         
         return resources;
+    }
+    
+
+    /**
+     * Convert a path inside a fragment into a Resource
+     * @param resourcePath
+     * @param fragment
+     * @param resourceMap
+     * @throws Exception
+     */
+    private void convertFragmentPathToResource (String resourcePath, Bundle fragment, Map<String, Resource> resourceMap )
+    throws Exception
+    {
+        if (resourcePath == null)
+            return;
+
+        URL url = fragment.getEntry(resourcePath);
+        if (url == null) 
+        { 
+            throw new IllegalArgumentException("Unable to locate " + resourcePath
+                                               + " inside "
+                                               + " the fragment '"
+                                               + fragment.getSymbolicName()
+                                               + "'"); 
+        }
+        url = BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(url);
+        String key = resourcePath.startsWith("/") ? resourcePath.substring(1) : resourcePath;
+        resourceMap.put(key + ";" + fragment.getSymbolicName(), Resource.newResource(url));
     }
 }

@@ -35,6 +35,28 @@ public class Util
 {
     public static final String DEFAULT_DELIMS = ",;";
 
+    
+    /**
+     * Get the value of a manifest header.
+     * 
+     * @param name the name of the header
+     * @param altName an alternative name for the header (useful for deprecated names)
+     * @param manifest
+     * @return
+     */
+    public static String getManifestHeaderValue (String name, String altName, Dictionary manifest)
+    {
+        if (manifest == null)
+            return null;
+        if (name == null && altName == null)
+            return null;
+        if (name != null)
+            return (String)manifest.get(name);
+        return (String)manifest.get(altName);
+    }
+    
+  
+    
     /* ------------------------------------------------------------ */
     /**
      * Treating the string as a separated list of filenames,
