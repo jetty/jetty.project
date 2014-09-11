@@ -299,7 +299,7 @@ public class SslBytesServerTest extends SslBytesTest
         closeClient(client);
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testHandshakeWithResumedSessionThenClose() throws Exception
     {
         // First socket will establish the SSL session
@@ -381,7 +381,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testHandshakeWithSplitBoundary() throws Exception
     {
         final SSLSocket client = newClient();
@@ -486,7 +486,7 @@ public class SslBytesServerTest extends SslBytesTest
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testClientHelloIncompleteThenReset() throws Exception
     {
         final SSLSocket client = newClient();
@@ -519,7 +519,7 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testClientHelloThenReset() throws Exception
     {
         final SSLSocket client = newClient();
@@ -550,7 +550,7 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testHandshakeThenReset() throws Exception
     {
         final SSLSocket client = newClient();
@@ -570,7 +570,7 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestIncompleteThenReset() throws Exception
     {
         final SSLSocket client = newClient();
@@ -612,7 +612,7 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestResponse() throws Exception
     {
         final SSLSocket client = newClient();
@@ -665,7 +665,7 @@ public class SslBytesServerTest extends SslBytesTest
         closeClient(client);
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testHandshakeAndRequestOneByteAtATime() throws Exception
     {
         final SSLSocket client = newClient();
@@ -782,7 +782,7 @@ public class SslBytesServerTest extends SslBytesTest
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestWithCloseAlertAndShutdown() throws Exception
     {
         // See next test on why we only run in Linux
@@ -850,7 +850,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestWithCloseAlert() throws Exception
     {
         // Currently we are ignoring this test on anything other then linux
@@ -930,7 +930,7 @@ public class SslBytesServerTest extends SslBytesTest
         proxy.flushToServer(record);
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestWithRawClose() throws Exception
     {
         final SSLSocket client = newClient();
@@ -989,7 +989,7 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestWithImmediateRawClose() throws Exception
     {
         final SSLSocket client = newClient();
@@ -1046,7 +1046,7 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestWithBigContentWriteBlockedThenReset() throws Exception
     {
         // Don't run on Windows (buggy JVM)
@@ -1107,7 +1107,7 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestWithBigContentReadBlockedThenReset() throws Exception
     {
         // Don't run on Windows (buggy JVM)
@@ -1163,7 +1163,7 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestWithCloseAlertWithSplitBoundary() throws Exception
     {
         if (!OS.IS_LINUX)
@@ -1251,7 +1251,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertThat(httpParses.get(), Matchers.lessThan(20));
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestWithContentWithSplitBoundary() throws Exception
     {
         final SSLSocket client = newClient();
@@ -1314,7 +1314,7 @@ public class SslBytesServerTest extends SslBytesTest
         closeClient(client);
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestWithBigContentWithSplitBoundary() throws Exception
     {
         final SSLSocket client = newClient();
@@ -1485,7 +1485,7 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestWithBigContentWithRenegotiationInMiddleOfContent() throws Exception
     {
         assumeJavaVersionSupportsTLSRenegotiations();
@@ -1781,7 +1781,7 @@ public class SslBytesServerTest extends SslBytesTest
         closeClient(client);
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testServerShutdownOutputClientDoesNotCloseServerCloses() throws Exception
     {
         final SSLSocket client = newClient();
@@ -1835,7 +1835,7 @@ public class SslBytesServerTest extends SslBytesTest
         Assert.assertFalse(serverEndPoint.get().isOpen());
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testPlainText() throws Exception
     {
         final SSLSocket client = newClient();
@@ -1866,7 +1866,7 @@ public class SslBytesServerTest extends SslBytesTest
         client.close();
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testRequestConcurrentWithIdleExpiration() throws Exception
     {
         final SSLSocket client = newClient();
