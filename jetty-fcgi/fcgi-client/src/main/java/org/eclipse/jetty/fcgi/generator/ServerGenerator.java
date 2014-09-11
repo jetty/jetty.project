@@ -20,6 +20,7 @@ package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +55,7 @@ public class ServerGenerator extends Generator
     {
         request &= 0xFF_FF;
 
-        Charset utf8 = Charset.forName("UTF-8");
+        final Charset utf8 = StandardCharsets.UTF_8;
         List<byte[]> bytes = new ArrayList<>(fields.size() * 2);
         int length = 0;
 

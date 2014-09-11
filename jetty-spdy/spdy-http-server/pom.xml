@@ -3,35 +3,18 @@
     <parent>
         <groupId>org.eclipse.jetty.spdy</groupId>
         <artifactId>spdy-parent</artifactId>
-        <version>9.2.4-SNAPSHOT</version>
+        <version>9.3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spdy-http-server</artifactId>
     <name>Jetty :: SPDY :: HTTP Server</name>
 
     <properties>
-        <bundle-symbolic-name>${project.groupId}.http.server</bundle-symbolic-name>
+        <bundle-symbolic-name>${project.groupId}.server.http</bundle-symbolic-name>
     </properties>
 
     <build>
         <plugins>
-            <plugin>
-                <groupId>org.apache.maven.plugins</groupId>
-                <artifactId>maven-assembly-plugin</artifactId>
-                <executions>
-                    <execution>
-                        <phase>package</phase>
-                        <goals>
-                            <goal>single</goal>
-                        </goals>
-                        <configuration>
-                            <descriptorRefs>
-                                <descriptorRef>config</descriptorRef>
-                            </descriptorRefs>
-                        </configuration>
-                    </execution>
-                </executions>
-            </plugin>
             <plugin>
                 <groupId>org.apache.maven.plugins</groupId>
                 <artifactId>maven-jar-plugin</artifactId>
@@ -39,7 +22,6 @@
                     <execution>
                         <id>artifact-jars</id>
                         <goals>
-                            <goal>jar</goal>
                             <goal>test-jar</goal>
                         </goals>
                     </execution>
@@ -56,10 +38,13 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Export-Package>org.eclipse.jetty.spdy.server.http;version="9.1",
-                                    org.eclipse.jetty.spdy.server.proxy;version="9.1"
-                                </Export-Package>
-                                <Import-Package>!org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*
+                                <Export-Package>
+				${bundle-symbolic-name}.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}",
+				${project.groupId}.server.proxy.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+                                <Import-Package>
+				!org.eclipse.jetty.alpn.*,
+				!org.eclipse.jetty.npn.*,
+				org.eclipse.jetty.*;version="[9.0,10.0)",*
                                 </Import-Package>
                                 <_nouses>true</_nouses>
                             </instructions>
@@ -86,6 +71,12 @@
             <artifactId>jetty-client</artifactId>
             <version>${project.version}</version>
         </dependency>
+        <dependency>
+            <groupId>org.eclipse.jetty</groupId>
+            <artifactId>jetty-npn-server</artifactId>
+            <version>${project.version}</version>
+        </dependency>
+
         <dependency>
             <groupId>org.eclipse.jetty</groupId>
             <artifactId>jetty-servlet</artifactId>

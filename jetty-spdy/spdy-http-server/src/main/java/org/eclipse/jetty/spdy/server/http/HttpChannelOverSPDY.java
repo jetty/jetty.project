@@ -20,31 +20,30 @@ package org.eclipse.jetty.spdy.server.http;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
-import org.eclipse.jetty.spdy.api.ByteBufferDataInfo;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
+public class HttpChannelOverSPDY extends HttpChannel
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverSPDY.class);
 
     private final Stream stream;
-    private boolean dispatched; // Guarded by synchronization on tasks
-    private boolean redispatch; // Guarded by synchronization on tasks
-    private boolean headersComplete;
 
     public HttpChannelOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInputOverSPDY input, Stream stream)
     {
@@ -52,63 +51,11 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         this.stream = stream;
     }
 
-    @Override
     public long getIdleTimeout()
     {
         return stream.getIdleTimeout();
     }
     
-    @Override
-    public boolean headerComplete()
-    {
-        headersComplete = true;
-        return super.headerComplete();
-    }
-
-    private void dispatch()
-    {
-        synchronized (this)
-        {
-            if (dispatched)
-                redispatch=true;
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Dispatch {}", this);
-                dispatched=true;
-                execute(this);
-            }
-        }
-    }
-
-    @Override
-    public void run()
-    {
-        boolean execute=true;
-        
-        while(execute)
-        {
-            try
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Executing {}",this);
-                super.run();
-            }
-            finally
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Completing {}", this);
-                synchronized (this)
-                {
-                    dispatched = redispatch;
-                    redispatch=false;
-                    execute=dispatched;
-                }
-            }
-        }
-    }
-    
-
     public void requestStart(final Fields headers, final boolean endRequest)
     {
         if (!headers.isEmpty())
@@ -117,28 +64,18 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
 
     public void requestHeaders(Fields headers, boolean endRequest)
     {
-        boolean proceed = performBeginRequest(headers);
+        boolean proceed = performRequest(headers);
         if (!proceed)
             return;
 
-        performHeaders(headers);
-
         if (endRequest)
-        {
-            boolean dispatch = headerComplete();
-            if (messageComplete())
-                dispatch=true;
-            if (dispatch)
-                dispatch();
-        }
+            onRequestComplete();
+
+        execute(this);
     }
 
     public void requestContent(final DataInfo dataInfo, boolean endRequest)
     {
-        boolean dispatch=false;
-        if (!headersComplete && headerComplete())
-            dispatch=true;
-
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP > {} bytes of content", dataInfo.length());
 
@@ -146,36 +83,16 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
         // will be consumed. When the copy is consumed, we consume also the
         // original, so the implementation can send a window update.
         ByteBuffer copyByteBuffer = dataInfo.asByteBuffer(false);
-        ByteBufferDataInfo copyDataInfo = new ByteBufferDataInfo(copyByteBuffer, dataInfo.isClose())
-        {
-            @Override
-            public void consume(int delta)
-            {
-                super.consume(delta);
-                dataInfo.consume(delta);
-            }
-        };
-        if (LOG.isDebugEnabled())
-            LOG.debug("Queuing last={} content {}", endRequest, copyDataInfo);
 
-        if (content(copyDataInfo))
-            dispatch=true;
+        HttpInputOverSPDY.ContentOverSPDY content = new HttpInputOverSPDY.ContentOverSPDY(copyByteBuffer, dataInfo);
 
-        if (endRequest && messageComplete())
-            dispatch=true;
-        
-        if (dispatch)
-            dispatch();
+        onContent(content);
+
+        if (endRequest)
+            onRequestComplete();
     }
     
-    @Override
-    public boolean messageComplete()
-    {
-        super.messageComplete();
-        return false;
-    }
-
-    private boolean performBeginRequest(Fields headers)
+    private boolean performRequest(Fields headers)
     {
         short version = stream.getSession().getVersion();
         Fields.Field methodHeader = headers.get(HTTPSPDYHeader.METHOD.name(version));
@@ -184,29 +101,20 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
 
         if (methodHeader == null || uriHeader == null || versionHeader == null)
         {
-            badMessage(400, "Missing required request line elements");
+            onBadMessage(400, "Missing required request line elements");
             return false;
         }
 
         HttpMethod httpMethod = HttpMethod.fromString(methodHeader.getValue());
         HttpVersion httpVersion = HttpVersion.fromString(versionHeader.getValue());
 
-        // TODO should handle URI as byte buffer as some bad clients send WRONG encodings in query string
-        // that  we have to deal with
-        ByteBuffer uri = BufferUtil.toBuffer(uriHeader.getValue());
 
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP > {} {} {}", httpMethod, uriHeader.getValue(), httpVersion);
-        startRequest(httpMethod, httpMethod.asString(), uri, httpVersion);
 
-        Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
-        if (schemeHeader != null)
-            getRequest().setScheme(schemeHeader.getValue());
-        return true;
-    }
 
-    private void performHeaders(Fields headers)
-    {
+        HostPortHttpField hostPort = null;
+        HttpFields fields = new HttpFields();
         for (Fields.Field header : headers)
         {
             String name = header.getName();
@@ -215,10 +123,9 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
             HTTPSPDYHeader specialHeader = HTTPSPDYHeader.from(stream.getSession().getVersion(), name);
             if (specialHeader != null)
             {
-                if (specialHeader == HTTPSPDYHeader.HOST)
-                    name = "host";
-                else
+                if (specialHeader != HTTPSPDYHeader.HOST)
                     continue;
+                name = "host";
             }
 
             switch (name)
@@ -228,8 +135,13 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
                 case "proxy-connection":
                 case "transfer-encoding":
                 {
-                    // Spec says to ignore these headers
-                    continue;
+                    // Spec says to ignore these headers.
+                    break;
+                }
+                case "host":
+                {
+                    hostPort = new HostPortHttpField(header.getValue());
+                    break;
                 }
                 default:
                 {
@@ -237,10 +149,32 @@ public class HttpChannelOverSPDY extends HttpChannel<DataInfo>
                     String value = header.getValue();
                     if (LOG.isDebugEnabled())
                         LOG.debug("HTTP > {}: {}", name, value);
-                    parsedHeader(new HttpField(name,value));
+                    fields.add(new HttpField(name, value));
                     break;
                 }
             }
         }
+
+        if (hostPort == null)
+        {
+            onBadMessage(400, "Missing Host header");
+            return false;
+        }
+
+        // At last, add the Host header.
+        if (hostPort!=null)
+            fields.add(hostPort);
+
+        Fields.Field schemeHeader = headers.get(HTTPSPDYHeader.SCHEME.name(version));
+        
+        HttpURI uri = new HttpURI(uriHeader.getValue());
+        if (uri.getScheme()==null && schemeHeader!=null)
+            uri.setScheme(schemeHeader.getValue());
+        if (uri.getHost()==null && hostPort!=null)
+            uri.setAuthority(hostPort.getHost(),hostPort.getPort());
+        
+        MetaData.Request request = new MetaData.Request(httpMethod==null?methodHeader.getValue():httpMethod.asString(), uri, httpVersion, fields);
+        onRequest(request);
+        return true;
     }
 }

@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.embedded;
 
+import org.eclipse.jetty.npn.server.NPNServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
-import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
-import org.eclipse.jetty.spdy.server.SPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory;
 import org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -72,8 +72,8 @@ public class SpdyConnector
             new HTTPSPDYServerConnectionFactory(3,https_config,new ReferrerPushStrategy());
 
         // NPN Factory
-        SPDYServerConnectionFactory.checkProtocolNegotiationAvailable();
-        NPNServerConnectionFactory npn = 
+        NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
+        NPNServerConnectionFactory npn =
             new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getDefaultProtocol());
         npn.setDefaultProtocol(http.getDefaultProtocol());
         

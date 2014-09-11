@@ -73,7 +73,7 @@ public class HttpTester
     }
 
 
-    public abstract static class Message extends HttpFields implements HttpParser.HttpHandler<ByteBuffer>
+    public abstract static class Message extends HttpFields implements HttpParser.HttpHandler
     {
         ByteArrayOutputStream _content;
         HttpVersion _version=HttpVersion.HTTP_1_0;
@@ -132,10 +132,9 @@ public class HttpTester
             }
         }
         @Override
-        public boolean parsedHeader(HttpField field)
+        public void parsedHeader(HttpField field)
         {
             put(field.getName(),field.getValue());
-            return false;
         }
 
         @Override
@@ -250,16 +249,16 @@ public class HttpTester
 
     }
 
-    public static class Request extends Message implements HttpParser.RequestHandler<ByteBuffer>
+    public static class Request extends Message implements HttpParser.RequestHandler
     {
         private String _method;
         private String _uri;
 
         @Override
-        public boolean startRequest(HttpMethod method, String methodString, ByteBuffer uri, HttpVersion version)
+        public boolean startRequest(String method, String uri, HttpVersion version)
         {
-            _method=methodString;
-            _uri=BufferUtil.toUTF8String(uri);
+            _method=method;
+            _uri=uri.toString();
             _version=version;
             return false;
         }
@@ -300,15 +299,9 @@ public class HttpTester
         {
             put(name,value);
         }
-
-        @Override
-        public boolean parsedHostHeader(String host,int port)
-        {
-            return false;
-        }
     }
 
-    public static class Response extends Message implements HttpParser.ResponseHandler<ByteBuffer>
+    public static class Response extends Message implements HttpParser.ResponseHandler
     {
         private int _status;
         private String _reason;

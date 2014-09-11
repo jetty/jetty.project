@@ -34,6 +34,11 @@ public class ALPNServerConnectionFactory extends NegotiatingServerConnectionFact
 {
     private static final Logger LOG = Log.getLogger(ALPNServerConnectionFactory.class);
 
+    public ALPNServerConnectionFactory(String protocols)
+    {
+        this(protocols.trim().split(",", 0));
+    }
+
     public ALPNServerConnectionFactory(@Name("protocols") String... protocols)
     {
         super("alpn", protocols);

@@ -425,6 +425,7 @@ public class StartArgs
             for (String xmlRef : module.getXmls())
             {
                 // Straight Reference
+                xmlRef=properties.expand(xmlRef);
                 Path xmlfile = baseHome.getPath(xmlRef);
                 addUniqueXmlFile(xmlRef,xmlfile);
             }

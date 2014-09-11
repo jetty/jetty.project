@@ -62,10 +62,9 @@ public class TestJettyOSGiBootWithAnnotations
     @Configuration
     public static Option[] configure()
     {
-
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
+        options.addAll(configureJettyHomeAndPort("jetty-http.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.sql.*","javax.xml.*", "javax.activation.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
@@ -75,7 +74,7 @@ public class TestJettyOSGiBootWithAnnotations
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
         options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.annotations.LEVEL").value(LOG_LEVEL))));
-        //options.addAll(TestJettyOSGiBootCore.consoleDependencies());
+        // options.addAll(TestJettyOSGiBootCore.consoleDependencies());
         options.addAll(jspDependencies());
         options.addAll(annotationDependencies());
         return options.toArray(new Option[options.size()]);
@@ -101,7 +100,8 @@ public class TestJettyOSGiBootWithAnnotations
                 + "/jetty-testrealm.xml";
 
         options.add(systemProperty(OSGiServerConstants.MANAGED_JETTY_XML_CONFIG_URLS).value(xmlConfigs));
-        options.add(systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT)));
+        options.add(systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
+        options.add(systemProperty("ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
         options.add(systemProperty("jetty.home").value(etcFolder.getParentFile().getAbsolutePath()));
         return options;
     }
@@ -135,7 +135,7 @@ public class TestJettyOSGiBootWithAnnotations
     @Test
     public void testHttpService() throws Exception
     {
-        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT);
+        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", TestJettyOSGiBootCore.DEFAULT_HTTP_PORT);
     }
 
  
@@ -143,17 +143,18 @@ public class TestJettyOSGiBootWithAnnotations
     @Test
     public void testIndex() throws Exception
     {        
+        // TestOSGiUtil.debugBundles(bundleContext);
         HttpClient client = new HttpClient();
         try
         {
             client.start();
-            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/index.html");
+            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT + "/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());
             assertTrue(content.contains("<h1>Servlet 3.1 Test WebApp</h1>"));
             
-            Request req = client.POST("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/test");
+            Request req = client.POST("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT + "/test");
             response = req.send();
             content = new String(response.getContent());
             assertTrue(content.contains("<p><b>Result: <span class=\"pass\">PASS</span></p>"));

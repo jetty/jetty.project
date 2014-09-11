@@ -21,20 +21,29 @@ package org.eclipse.jetty.server;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.Callback;
 
 public interface HttpTransport
 {    
     void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback);
-
-    void send(ByteBuffer content, boolean lastContent, Callback callback);
+    
+    void push (MetaData.Request request);
     
     void completed();
     
-    /* ------------------------------------------------------------ */
-    /** Abort transport.
-     * This is called when an error response needs to be sent, but the response is already committed.
-     * Abort to should terminate the transport in a way that can indicate abnormal response to the client. 
+    /**
+     * Aborts this transport.
+     * <p />
+     * This method should terminate the transport in a way that
+     * can indicate an abnormal response to the client, for example
+     * by abruptly close the connection.
+     * <p />
+     * This method is called when an error response needs to be sent,
+     * but the response is already committed, or when a write failure
+     * is detected.
+     *
+     * @param failure the failure that caused the abort.
      */
-    void abort();
+    void abort(Throwable failure);
 }

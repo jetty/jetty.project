@@ -4,11 +4,14 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.2.4-SNAPSHOT</version>
+    <version>9.3.0-SNAPSHOT</version>
   </parent>
   <name>Jetty Tests :: Webapps :: Spec Webapp</name>
   <artifactId>test-spec-webapp</artifactId>
   <packaging>war</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.spec</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -71,7 +74,6 @@
         </configuration>
         <executions>
           <execution>
-            <id>bundle-manifest</id>
             <phase>process-classes</phase>
             <goals>
               <goal>manifest</goal>

@@ -56,20 +56,20 @@ public class MimeTypes
         TEXT_JSON("text/json",StandardCharsets.UTF_8),
         APPLICATION_JSON("application/json",StandardCharsets.UTF_8),
 
-        TEXT_HTML_8859_1("text/html; charset=ISO-8859-1",TEXT_HTML),
-        TEXT_HTML_UTF_8("text/html; charset=UTF-8",TEXT_HTML),
+        TEXT_HTML_8859_1("text/html;charset=iso-8859-1",TEXT_HTML),
+        TEXT_HTML_UTF_8("text/html;charset=utf-8",TEXT_HTML),
         
-        TEXT_PLAIN_8859_1("text/plain; charset=ISO-8859-1",TEXT_PLAIN),
-        TEXT_PLAIN_UTF_8("text/plain; charset=UTF-8",TEXT_PLAIN),
+        TEXT_PLAIN_8859_1("text/plain;charset=iso-8859-1",TEXT_PLAIN),
+        TEXT_PLAIN_UTF_8("text/plain;charset=utf-8",TEXT_PLAIN),
         
-        TEXT_XML_8859_1("text/xml; charset=ISO-8859-1",TEXT_XML),
-        TEXT_XML_UTF_8("text/xml; charset=UTF-8",TEXT_XML),
+        TEXT_XML_8859_1("text/xml;charset=iso-8859-1",TEXT_XML),
+        TEXT_XML_UTF_8("text/xml;charset=utf-8",TEXT_XML),
         
-        TEXT_JSON_8859_1("text/json; charset=ISO-8859-1",TEXT_JSON),
-        TEXT_JSON_UTF_8("text/json; charset=UTF-8",TEXT_JSON),
+        TEXT_JSON_8859_1("text/json;charset=iso-8859-1",TEXT_JSON),
+        TEXT_JSON_UTF_8("text/json;charset=utf-8",TEXT_JSON),
         
-        APPLICATION_JSON_8859_1("text/json; charset=ISO-8859-1",APPLICATION_JSON),
-        APPLICATION_JSON_UTF_8("text/json; charset=UTF-8",APPLICATION_JSON);
+        APPLICATION_JSON_8859_1("text/json;charset=iso-8859-1",APPLICATION_JSON),
+        APPLICATION_JSON_UTF_8("text/json;charset=utf-8",APPLICATION_JSON);
 
 
         /* ------------------------------------------------------------ */
@@ -77,6 +77,7 @@ public class MimeTypes
         private final Type _base;
         private final ByteBuffer _buffer;
         private final Charset _charset;
+        private final String _charsetString;
         private final boolean _assumedCharset;
         private final HttpField _field;
 
@@ -87,8 +88,9 @@ public class MimeTypes
             _buffer=BufferUtil.toBuffer(s);
             _base=this;
             _charset=null;
+            _charsetString=null;
             _assumedCharset=false;
-            _field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,_string);
+            _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         } 
 
         /* ------------------------------------------------------------ */
@@ -97,10 +99,11 @@ public class MimeTypes
             _string=s;
             _buffer=BufferUtil.toBuffer(s);
             _base=base;
-            int i=s.indexOf("; charset=");
-            _charset=Charset.forName(s.substring(i+10));
+            int i=s.indexOf(";charset=");
+            _charset=Charset.forName(s.substring(i+9));
+            _charsetString=_charset==null?null:_charset.toString().toLowerCase();
             _assumedCharset=false;
-            _field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,_string);
+            _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         }
 
         /* ------------------------------------------------------------ */
@@ -110,8 +113,9 @@ public class MimeTypes
             _base=this;
             _buffer=BufferUtil.toBuffer(s);
             _charset=cs;
+            _charsetString=_charset==null?null:_charset.toString().toLowerCase();
             _assumedCharset=true;
-            _field=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_TYPE,_string);
+            _field=new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,_string);
         }
 
         /* ------------------------------------------------------------ */
@@ -124,6 +128,12 @@ public class MimeTypes
         public Charset getCharset()
         {
             return _charset;
+        }
+        
+        /* ------------------------------------------------------------ */
+        public String getCharsetString()
+        {
+            return _charsetString;
         }
         
         /* ------------------------------------------------------------ */
@@ -181,8 +191,9 @@ public class MimeTypes
             int charset=type.toString().indexOf(";charset=");
             if (charset>0)
             {
-                CACHE.put(type.toString().replace(";charset=","; charset="),type);
-                TYPES.put(type.toString().replace(";charset=","; charset="),type.asBuffer());
+                String alt=type.toString().replace(";charset=","; charset=");
+                CACHE.put(alt,type);
+                TYPES.put(alt,type.asBuffer());
             }
         }
 

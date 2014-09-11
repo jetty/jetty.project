@@ -133,7 +133,7 @@ public class IdleSessionTest
             //make a request to set up a session on the server
             ContentResponse response = client.GET(url + "?action=init");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
-            String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+            String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
             // Mangle the cookie, replacing Path with $Path, etc.
             sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");

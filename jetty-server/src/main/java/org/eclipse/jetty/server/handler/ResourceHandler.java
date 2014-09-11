@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.FileResource;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -315,7 +315,7 @@ public class ResourceHandler extends HandlerWrapper
         {
             path=URIUtil.canonicalPath(path);
             Resource r = base.addPath(path);
-            if (r!=null && r.getAlias()!=null && !_context.checkAlias(path, r))
+            if (r!=null && r.isAlias() && !_context.checkAlias(path, r))
                 return null;
             return r;
         }
@@ -524,7 +524,7 @@ public class ResourceHandler extends HandlerWrapper
                 // Can we use a memory mapped file?
                 if (_minMemoryMappedContentLength>0 && 
                     resource.length()>_minMemoryMappedContentLength &&
-                    resource instanceof FileResource)
+                    resource instanceof PathResource)
                 {
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer,callback);
@@ -544,7 +544,7 @@ public class ResourceHandler extends HandlerWrapper
                 // Can we use a memory mapped file?
                 if (_minMemoryMappedContentLength>0 && 
                     resource.length()>_minMemoryMappedContentLength &&
-                    resource instanceof FileResource)
+                    resource instanceof PathResource)
                 {
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer);
@@ -568,7 +568,7 @@ public class ResourceHandler extends HandlerWrapper
         if (_directory)
         {
             String listing = resource.getListHTML(request.getRequestURI(),request.getPathInfo().lastIndexOf("/") > 0);
-            response.setContentType("text/html; charset=UTF-8");
+            response.setContentType("text/html;charset=utf-8");
             response.getWriter().println(listing);
         }
         else

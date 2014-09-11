@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.eclipse.jetty.util.QuotedStringTokenizer.isQuoted;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
@@ -30,7 +28,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -108,7 +105,7 @@ public class Response implements HttpServletResponse
      */
     public final static String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
 
-    private final HttpChannel<?> _channel;
+    private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
     private final AtomicInteger _include = new AtomicInteger();
     private HttpOutput _out;
@@ -124,13 +121,13 @@ public class Response implements HttpServletResponse
     private long _contentLength = -1;
     
 
-    public Response(HttpChannel<?> channel, HttpOutput out)
+    public Response(HttpChannel channel, HttpOutput out)
     {
         _channel = channel;
         _out = out;
     }
 
-    protected HttpChannel<?> getHttpChannel()
+    protected HttpChannel getHttpChannel()
     {
         return _channel;
     }
@@ -300,7 +297,9 @@ public class Response implements HttpServletResponse
         boolean quote_path = has_path && isQuoteNeededForCookie(path);
         
         // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
-        if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path || isQuoted(name) || isQuoted(value) || isQuoted(path) || isQuoted(domain)))
+        if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path ||
+                QuotedStringTokenizer.isQuoted(name) || QuotedStringTokenizer.isQuoted(value) ||
+                QuotedStringTokenizer.isQuoted(path) || QuotedStringTokenizer.isQuoted(domain)))
             version=1;
 
         // Append version
@@ -440,9 +439,13 @@ public class Response implements HttpServletResponse
             int port = uri.getPort();
             if (port < 0)
                 port = HttpScheme.HTTPS.asString().equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
-            if (!request.getServerName().equalsIgnoreCase(uri.getHost()) ||
-                    request.getServerPort() != port ||
-                    !path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
+            
+            // Is it the same server?
+            if (!request.getServerName().equalsIgnoreCase(uri.getHost()))
+                return url;
+            if (request.getServerPort() != port)
+                return url;
+            if (!path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
                 return url;
         }
 
@@ -550,10 +553,17 @@ public class Response implements HttpServletResponse
         if (isIncluding())
             return;
 
+        if (isCommitted())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Aborting on sendError on committed response {} {}",code,message);
+            code=-1;
+        }
+        
         switch(code)
         {
             case -1:
-                _channel.abort();
+                _channel.abort(new IOException());
                 return;
             case 102:
                 sendProcessing();
@@ -794,7 +804,7 @@ public class Response implements HttpServletResponse
     @Override
     public String getHeader(String name)
     {
-        return _fields.getStringField(name);
+        return _fields.get(name);
     }
 
     @Override
@@ -926,7 +936,7 @@ public class Response implements HttpServletResponse
             if (encoding == null)
             {
                 if (_mimeType!=null && _mimeType.isCharsetAssumed())
-                    encoding=_mimeType.getCharset().toString();
+                    encoding=_mimeType.getCharsetString();
                 else
                 {
                     encoding = MimeTypes.inferCharsetFromContentType(_contentType);
@@ -1085,7 +1095,7 @@ public class Response implements HttpServletResponse
                 _characterEncoding = HttpGenerator.__STRICT?encoding:StringUtil.normalizeCharset(encoding);
                 if (_mimeType!=null)
                 {
-                    _contentType=_mimeType.getBaseType().asString()+ "; charset=" + _characterEncoding;
+                    _contentType=_mimeType.getBaseType().asString()+ ";charset=" + _characterEncoding;
                     _mimeType = MimeTypes.CACHE.get(_contentType);
                     if (_mimeType==null || HttpGenerator.__STRICT)
                         _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
@@ -1094,7 +1104,7 @@ public class Response implements HttpServletResponse
                 }
                 else if (_contentType != null)
                 {
-                    _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + "; charset=" + _characterEncoding;
+                    _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
                     _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
                 }
             }
@@ -1125,7 +1135,7 @@ public class Response implements HttpServletResponse
             
             String charset;
             if (_mimeType!=null && _mimeType.getCharset()!=null && !_mimeType.isCharsetAssumed())
-                charset=_mimeType.getCharset().toString();
+                charset=_mimeType.getCharsetString();
             else
                 charset = MimeTypes.getCharsetFromContentType(contentType);
 
@@ -1133,17 +1143,17 @@ public class Response implements HttpServletResponse
             {
                 if (_characterEncoding != null)
                 {
-                    _contentType = contentType + "; charset=" + _characterEncoding;
+                    _contentType = contentType + ";charset=" + _characterEncoding;
                     _mimeType = null;
                 }
             }
-            else if (isWriting() && !charset.equals(_characterEncoding))
+            else if (isWriting() && !charset.equalsIgnoreCase(_characterEncoding))
             {
                 // too late to change the character encoding;
                 _mimeType = null;
                 _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
                 if (_characterEncoding != null)
-                    _contentType = _contentType + "; charset=" + _characterEncoding;
+                    _contentType = _contentType + ";charset=" + _characterEncoding;
             }
             else
             {
@@ -1194,7 +1204,8 @@ public class Response implements HttpServletResponse
         _contentLength = -1;
         _fields.clear();
 
-        String connection = _channel.getRequest().getHttpFields().getStringField(HttpHeader.CONNECTION);
+        String connection = _channel.getRequest().getHeader(HttpHeader.CONNECTION.asString());
+                
         if (connection != null)
         {
             String[] values = connection.split(",");

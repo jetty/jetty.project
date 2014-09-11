@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 
+import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
@@ -144,21 +145,12 @@ public abstract class IteratingCallback implements Callback
     protected abstract Action process() throws Exception;
 
     /**
-     * @deprecated Use {@link #onCompleteSuccess()} instead.
-     */
-    @Deprecated
-    protected void completed()
-    {
-    }
-
-    /**
      * Invoked when the overall task has completed successfully.
      *
      * @see #onCompleteFailure(Throwable)
      */
     protected void onCompleteSuccess()
     {
-        completed();
     }
     
     /**
@@ -390,11 +382,15 @@ public abstract class IteratingCallback implements Callback
                         return;
                     break;
                 }
+                case CLOSED:
+                {
+                    return;
+                }
                 default:
                 {
                     if (_state.compareAndSet(current, State.CLOSED))
                     {
-                        onCompleteFailure(new IllegalStateException("Closed with pending callback " + this));
+                        onCompleteFailure(new ClosedChannelException());
                         return;
                     }
                 }

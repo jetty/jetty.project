@@ -120,7 +120,7 @@ public abstract class AbstractWebAppObjectInSessionTest
 
                     ContentResponse response = request.send();
                     assertEquals( HttpServletResponse.SC_OK, response.getStatus());
-                    String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+                    String sessionCookie = response.getHeaders().get("Set-Cookie");
                     assertTrue(sessionCookie != null);
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");

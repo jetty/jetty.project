@@ -61,7 +61,7 @@ public enum HttpScheme
     /* ------------------------------------------------------------ */
     public boolean is(String s)
     {
-        return _string.equalsIgnoreCase(s);
+        return s!=null && _string.equalsIgnoreCase(s);
     }
 
     public String asString()

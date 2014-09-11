@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.spdy</groupId>
         <artifactId>spdy-parent</artifactId>
-        <version>9.2.4-SNAPSHOT</version>
+        <version>9.3.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -27,7 +27,6 @@
                         </goals>
                         <configuration>
                             <instructions>
-                                <Export-Package>org.eclipse.jetty.spdy.client.http;version="9.1"</Export-Package>
                                 <Import-Package>!org.eclipse.jetty.npn,org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
                             </instructions>
                           </configuration>

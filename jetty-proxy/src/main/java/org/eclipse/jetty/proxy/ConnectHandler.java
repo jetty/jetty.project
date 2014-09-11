@@ -195,7 +195,7 @@ public class ConnectHandler extends HandlerWrapper
             catch (Exception x)
             {
                 // TODO
-                LOG.warn("ConnectHandler " + baseRequest.getUri() + " " + x);
+                LOG.warn("ConnectHandler " + baseRequest.getHttpURI() + " " + x);
                 LOG.debug(x);
             }
         }

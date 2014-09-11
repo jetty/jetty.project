@@ -35,7 +35,7 @@ public class CloseableDoSFilter extends DoSFilter
     @Override
     protected void closeConnection(HttpServletRequest request, HttpServletResponse response, Thread thread)
     {
-        Request base_request=(request instanceof Request)?(Request)request:HttpChannel.getCurrentHttpChannel().getRequest();
+        Request base_request=Request.getBaseRequest(request);
         base_request.getHttpChannel().getEndPoint().close();
     }
 }

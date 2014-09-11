@@ -3,11 +3,14 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-servlet-spec-parent</artifactId>
-    <version>9.2.4-SNAPSHOT</version>
+    <version>9.3.0-SNAPSHOT</version>
   </parent>
   <artifactId>test-container-initializer</artifactId>
   <packaging>jar</packaging>
   <name>Jetty Tests :: WebApp :: Servlet Spec :: ServletContainerInitializer Test Jar</name>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.sci</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
        <plugin>

@@ -20,7 +20,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.2.4-SNAPSHOT</version>
+    <version>9.3.0-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -29,6 +29,9 @@
   <name>Test :: Jetty Test Webapp</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>war</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.tests.webapp</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>
@@ -70,15 +73,6 @@
           </execution>
         </executions>
       </plugin>
-      <!-- also make this webapp an osgi bundle -->
-      <plugin>
-        <artifactId>maven-war-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
-      </plugin>
       <plugin>
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
@@ -97,8 +91,7 @@
             </goals>
             <configuration>
               <instructions>
-                <Bundle-SymbolicName>org.eclipse.jetty.test-jetty-webapp</Bundle-SymbolicName>
-                <Import-Package>javax.servlet.jsp.*;version="[2.2.0, 3.0)",javax.servlet.*;version="[2.6,3.2)",org.eclipse.jetty.*;version="9.1",*</Import-Package>
+                <Import-Package>javax.servlet.jsp.*;version="[2.2.0,3.0)",javax.servlet.*;version="[2.6,3.2)",org.eclipse.jetty.*;version="[9.0,10.0)",*</Import-Package>
                 <Export-Package>!com.acme*</Export-Package>
                 <!-- the test webapp is configured via a jetty xml file
                 in order to add the security handler. -->
@@ -113,6 +106,15 @@
             </configuration>
            </execution>
         </executions>
+      </plugin>
+      <!-- also make this webapp an osgi bundle -->
+      <plugin>
+        <artifactId>maven-war-plugin</artifactId>
+        <configuration>
+          <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+          </archive>
+        </configuration>
       </plugin>
       <plugin>
         <groupId>org.eclipse.jetty</groupId>

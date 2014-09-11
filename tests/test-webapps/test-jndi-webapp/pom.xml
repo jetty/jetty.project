@@ -4,11 +4,14 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.2.4-SNAPSHOT</version>
+    <version>9.3.0-SNAPSHOT</version>
   </parent>
   <artifactId>test-jndi-webapp</artifactId>
   <name>Jetty Tests :: WebApp :: JNDI</name>
   <packaging>war</packaging>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.jndi</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>

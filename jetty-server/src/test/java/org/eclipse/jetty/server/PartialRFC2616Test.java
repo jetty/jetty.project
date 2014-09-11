@@ -102,7 +102,7 @@ public class PartialRFC2616Test
             assertEquals("3.3.1 RFC 850 ANSI C",d3,d2);
 
             fields.putDateField("Date",d1.getTime());
-            assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.getStringField("Date"));
+            assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.get("Date"));
         }
         catch (Exception e)
         {

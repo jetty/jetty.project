@@ -37,11 +37,12 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
@@ -126,7 +127,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
 {
-    private static final Logger LOG = Log.getLogger(GzipFilter.class);
+    private static final Logger LOG = Log.getLogger(AsyncGzipFilter.class);
     public final static String GZIP = "gzip";
     public static final String DEFLATE = "deflate";
     public final static String ETAG_GZIP="--gzip";
@@ -152,7 +153,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
     protected Set<Pattern> _excludedAgentPatterns;
     protected Set<String> _excludedPaths;
     protected Set<Pattern> _excludedPathPatterns;
-    protected HttpField _vary=new HttpGenerator.CachedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
+    protected HttpField _vary=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
 
     /* ------------------------------------------------------------ */
     /**
@@ -278,7 +279,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
         
         tmp=filterConfig.getInitParameter("vary");
         if (tmp!=null)
-            _vary=new HttpGenerator.CachedHttpField(HttpHeader.VARY,tmp);
+            _vary=new PreEncodedHttpField(HttpHeader.VARY,tmp);
         LOG.debug("{} vary={}",this,_vary);
     }
 
@@ -368,7 +369,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
                 request.setAttribute(ETAG,etag.replace(ETAG_GZIP,""));
         }
 
-        HttpChannel<?> channel = HttpChannel.getCurrentHttpChannel();
+        HttpChannel channel = HttpChannel.getCurrentHttpChannel();
         HttpOutput out = channel.getResponse().getHttpOutput();
         if (!(out instanceof GzipHttpOutput))
         {
@@ -485,34 +486,24 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
             LOG.debug("{} excluded minGzipSize {}",this,request);
             return null;
         }
-        
-        String accept = request.getHttpFields().get(HttpHeader.ACCEPT_ENCODING);
-        if (accept==null)
+
+        // If not HTTP/2, then we must check the accept encoding header
+        if (request.getHttpVersion()!=HttpVersion.HTTP_2)
         {
-            LOG.debug("{} excluded !accept {}",this,request);
-            return null;
-        }
-        
-        boolean gzip=false;
-        if (GZIP.equals(accept) || accept.startsWith("gzip,"))
-            gzip=true;
-        else
-        {
-            List<String> list=HttpFields.qualityList(request.getHttpFields().getValues(HttpHeader.ACCEPT_ENCODING.asString(),","));
-            for (String a:list)
+            HttpField accept = request.getHttpFields().getField(HttpHeader.ACCEPT_ENCODING);
+
+            if (accept==null)
             {
-                if (GZIP.equalsIgnoreCase(HttpFields.valueParameters(a,null)))
-                {
-                    gzip=true;
-                    break;
-                }
+                LOG.debug("{} excluded !accept {}",this,request);
+                return null;
             }
-        }
-        
-        if (!gzip)
-        {
-            LOG.debug("{} excluded not gzip accept {}",this,request);
-            return null;
+            boolean gzip = accept.contains("gzip");
+
+            if (!gzip)
+            {
+                LOG.debug("{} excluded not gzip accept {}",this,request);
+                return null;
+            }
         }
         
         Deflater df = _deflater.get();

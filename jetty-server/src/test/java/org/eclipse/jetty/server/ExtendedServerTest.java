@@ -30,7 +30,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -100,15 +99,15 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
 
         @Override
-        protected HttpChannelOverHttp newHttpChannel(HttpInput<ByteBuffer> httpInput)
+        protected HttpChannelOverHttp newHttpChannel(HttpInput httpInput)
         {
-            return new HttpChannelOverHttp(getConnector(), getHttpConfiguration(), getEndPoint(), this, httpInput)
+            return new HttpChannelOverHttp(this, getConnector(), getHttpConfiguration(), getEndPoint(), this, httpInput)
             {
                 @Override
-                public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
+                public boolean startRequest(String method, String uri, HttpVersion version)
                 {
                     getRequest().setAttribute("DispatchedAt",((ExtendedEndPoint)getEndPoint()).getLastSelected());
-                    return super.startRequest(httpMethod,method,uri,version);
+                    return super.startRequest(method,uri,version);
                 }
             };
         }

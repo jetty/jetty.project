@@ -89,14 +89,6 @@ public class HttpTransportOverSPDY implements HttpTransport
         return requestHeaders;
     }
 
-
-    @Override
-    public void send(ByteBuffer responseBodyContent, boolean lastContent, Callback callback)
-    {
-        // TODO can this be more efficient?
-        send(null, responseBodyContent, lastContent, callback);
-    }
-
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, final Callback callback)
     {
@@ -165,9 +157,20 @@ public class HttpTransportOverSPDY implements HttpTransport
         }
         else if (!lastContent && !hasContent && info == null)
             throw new IllegalStateException("not lastContent, no content and no responseInfo!");
-
     }
 
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
+     */
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {   
+        LOG.warn("NOT YET IMPLEMENTED push in {}",this);
+    }
+    
+    
     private void sendReply(HttpGenerator.ResponseInfo info, Callback callback, boolean close)
     {
         Fields headers = new Fields();
@@ -416,7 +419,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void abort()
+    public void abort(Throwable failure)
     {
         // TODO close the stream in a way to indicate an incomplete response?
     }

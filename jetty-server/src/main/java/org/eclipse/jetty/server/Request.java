@@ -40,6 +40,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
@@ -51,8 +52,7 @@ import javax.servlet.ServletInputStream;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletRequestAttributeEvent;
 import javax.servlet.ServletRequestAttributeListener;
-import javax.servlet.ServletRequestEvent;
-import javax.servlet.ServletRequestListener;
+import javax.servlet.ServletRequestWrapper;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
@@ -61,13 +61,18 @@ import javax.servlet.http.HttpSession;
 import javax.servlet.http.HttpUpgradeHandler;
 import javax.servlet.http.Part;
 
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpCookie;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
@@ -75,7 +80,6 @@ import org.eclipse.jetty.server.session.AbstractSession;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.MultiPartInputStreamParser;
 import org.eclipse.jetty.util.StringUtil;
@@ -125,48 +129,42 @@ public class Request implements HttpServletRequest
     private static final Logger LOG = Log.getLogger(Request.class);
     private static final Collection<Locale> __defaultLocale = Collections.singleton(Locale.getDefault());
     private static final int __NONE = 0, _STREAM = 1, __READER = 2;
-
-    private final HttpChannel<?> _channel;
-    private final HttpFields _fields=new HttpFields();
-    private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
-    private final HttpInput<?> _input;
     
-    public static class MultiPartCleanerListener implements ServletRequestListener
+    private static final MultiMap<String> NO_PARAMS = new MultiMap<>();
+
+
+    /* ------------------------------------------------------------ */
+    /** 
+     * Obtain the base {@link Request} instance of a {@link ServletRequest}, by
+     * coercion, unwrapping or thread local.
+     * @param request The request
+     * @return the base {@link Request} instance of a {@link ServletRequest}.
+     */
+    public static Request getBaseRequest(ServletRequest request)
     {
-        @Override
-        public void requestDestroyed(ServletRequestEvent sre)
-        {
-            //Clean up any tmp files created by MultiPartInputStream
-            MultiPartInputStreamParser mpis = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(__MULTIPART_INPUT_STREAM);
-            if (mpis != null)
-            {
-                ContextHandler.Context context = (ContextHandler.Context)sre.getServletRequest().getAttribute(__MULTIPART_CONTEXT);
-
-                //Only do the cleanup if we are exiting from the context in which a servlet parsed the multipart files
-                if (context == sre.getServletContext())
-                {
-                    try
-                    {
-                        mpis.deleteParts();
-                    }
-                    catch (MultiException e)
-                    {
-                        sre.getServletContext().log("Errors deleting multipart tmp files", e);
-                    }
-                }
-            }
-        }
-
-        @Override
-        public void requestInitialized(ServletRequestEvent sre)
-        {
-            //nothing to do, multipart config set up by ServletHolder.handle()
-        }
+        if (request instanceof Request)
+            return (Request)request;
         
+        while (request instanceof ServletRequestWrapper)
+            request=((ServletRequestWrapper)request).getRequest();
+
+        if (request instanceof Request)
+            return (Request)request;
+        
+        return HttpChannel.getCurrentHttpChannel().getRequest();
     }
     
     
+    private final HttpChannel _channel;
+    private final List<ServletRequestAttributeListener>  _requestAttributeListeners=new ArrayList<>();
+    private final HttpInput _input;
 
+    private MetaData.Request _metadata;
+
+    private String _contextPath;
+    private String _servletPath;
+    private String _pathInfo;
+    
     private boolean _secure;
     private boolean _asyncSupported = true;
     private boolean _newContext;
@@ -174,43 +172,31 @@ public class Request implements HttpServletRequest
     private boolean _handled = false;
     private boolean _paramsExtracted;
     private boolean _requestedSessionIdFromCookie = false;
-    private volatile Attributes _attributes;
+    private Attributes _attributes;
     private Authentication _authentication;
     private String _characterEncoding;
     private ContextHandler.Context _context;
-    private String _contextPath;
     private CookieCutter _cookies;
     private DispatcherType _dispatcherType;
     private int _inputState = __NONE;
-    private HttpMethod _httpMethod;
-    private String _httpMethodString;
     private MultiMap<String> _queryParameters;
     private MultiMap<String> _contentParameters;
     private MultiMap<String> _parameters;
-    private String _pathInfo;
-    private int _port;
-    private HttpVersion _httpVersion = HttpVersion.HTTP_1_1;
     private String _queryEncoding;
-    private String _queryString;
     private BufferedReader _reader;
     private String _readerEncoding;
     private InetSocketAddress _remote;
     private String _requestedSessionId;
-    private String _requestURI;
     private Map<Object, HttpSession> _savedNewSessions;
-    private String _scheme = URIUtil.HTTP;
     private UserIdentity.Scope _scope;
-    private String _serverName;
-    private String _servletPath;
     private HttpSession _session;
     private SessionManager _sessionManager;
     private long _timeStamp;
-    private HttpURI _uri;
     private MultiPartInputStreamParser _multiPartInputStream; //if the request is a multi-part mime
     private AsyncContextState _async;
     
     /* ------------------------------------------------------------ */
-    public Request(HttpChannel<?> channel, HttpInput<?> input)
+    public Request(HttpChannel channel, HttpInput input)
     {
         _channel = channel;
         _input = input;
@@ -219,11 +205,11 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public HttpFields getHttpFields()
     {
-        return _fields;
+        return _metadata.getFields();
     }
 
     /* ------------------------------------------------------------ */
-    public HttpInput<?> getHttpInput()
+    public HttpInput getHttpInput()
     {
         return _input;
     }
@@ -237,6 +223,7 @@ public class Request implements HttpServletRequest
             throw new IllegalArgumentException(listener.getClass().toString());
     }
 
+    /* ------------------------------------------------------------ */
     public void extractParameters()
     {
         if (_paramsExtracted)
@@ -247,31 +234,32 @@ public class Request implements HttpServletRequest
         // Extract query string parameters; these may be replaced by a forward()
         // and may have already been extracted by mergeQueryParameters().
         if (_queryParameters == null)
-            _queryParameters = extractQueryParameters();
+            extractQueryParameters();
 
         // Extract content parameters; these cannot be replaced by a forward()
         // once extracted and may have already been extracted by getParts() or
         // by a processing happening after a form-based authentication.
         if (_contentParameters == null)
-            _contentParameters = extractContentParameters();
+            extractContentParameters();
 
-        _parameters = restoreParameters();
+        restoreParameters();
     }
 
-    private MultiMap<String> extractQueryParameters()
+    /* ------------------------------------------------------------ */
+    private void extractQueryParameters()
     {
-        MultiMap<String> result = new MultiMap<>();
-        if (_uri != null && _uri.hasQuery())
+        if (_metadata.getURI() == null || !_metadata.getURI().hasQuery())
+            _queryParameters=NO_PARAMS;
+        else
         {
+            _queryParameters = new MultiMap<>();
             if (_queryEncoding == null)
-            {
-                _uri.decodeQueryTo(result);
-            }
+                _metadata.getURI().decodeQueryTo(_queryParameters);
             else
             {
                 try
                 {
-                    _uri.decodeQueryTo(result, _queryEncoding);
+                    _metadata.getURI().decodeQueryTo(_queryParameters, _queryEncoding);
                 }
                 catch (UnsupportedEncodingException e)
                 {
@@ -282,16 +270,17 @@ public class Request implements HttpServletRequest
                 }
             }
         }
-        return result;
     }
 
-    private MultiMap<String> extractContentParameters()
+    /* ------------------------------------------------------------ */
+    private void extractContentParameters()
     {
-        MultiMap<String> result = new MultiMap<>();
-
         String contentType = getContentType();
-        if (contentType != null && !contentType.isEmpty())
+        if (contentType == null || contentType.isEmpty())
+            _contentParameters=NO_PARAMS;
+        else
         {
+            _contentParameters=new MultiMap<>();
             contentType = HttpFields.valueParameters(contentType, null);
             int contentLength = getContentLength();
             if (contentLength != 0)
@@ -299,20 +288,20 @@ public class Request implements HttpServletRequest
                 if (MimeTypes.Type.FORM_ENCODED.is(contentType) && _inputState == __NONE &&
                         (HttpMethod.POST.is(getMethod()) || HttpMethod.PUT.is(getMethod())))
                 {
-                    extractFormParameters(result);
+                    extractFormParameters(_contentParameters);
                 }
                 else if (contentType.startsWith("multipart/form-data") &&
                         getAttribute(__MULTIPART_CONFIG_ELEMENT) != null &&
                         _multiPartInputStream == null)
                 {
-                    extractMultipartParameters(result);
+                    extractMultipartParameters(_contentParameters);
                 }
             }
         }
-
-        return result;
+        
     }
 
+    /* ------------------------------------------------------------ */
     public void extractFormParameters(MultiMap<String> params)
     {
         try
@@ -378,6 +367,7 @@ public class Request implements HttpServletRequest
         }
     }
 
+    /* ------------------------------------------------------------ */
     private void extractMultipartParameters(MultiMap<String> result)
     {
         try
@@ -496,6 +486,8 @@ public class Request implements HttpServletRequest
     @Override
     public String getCharacterEncoding()
     {
+        if (_characterEncoding==null)
+            getContentType();
         return _characterEncoding;
     }
 
@@ -503,7 +495,7 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the connection.
      */
-    public HttpChannel<?> getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }
@@ -515,7 +507,7 @@ public class Request implements HttpServletRequest
     @Override
     public int getContentLength()
     {
-        return (int)_fields.getLongField(HttpHeader.CONTENT_LENGTH.toString());
+        return (int)_metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -525,7 +517,7 @@ public class Request implements HttpServletRequest
     @Override
     public long getContentLengthLong()
     {
-        return _fields.getLongField(HttpHeader.CONTENT_LENGTH.toString());
+        return _metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 
     /* ------------------------------------------------------------ */
@@ -541,7 +533,15 @@ public class Request implements HttpServletRequest
     @Override
     public String getContentType()
     {
-        return _fields.getStringField(HttpHeader.CONTENT_TYPE);
+        String content_type = _metadata.getFields().get(HttpHeader.CONTENT_TYPE);
+        if (_characterEncoding==null && content_type!=null)
+        {
+            MimeTypes.Type mime = MimeTypes.CACHE.get(content_type);
+            String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(content_type) : mime.getCharset().toString();
+            if (charset != null)
+                _characterEncoding=charset;
+        }
+        return content_type;
     }
 
     /* ------------------------------------------------------------ */
@@ -570,7 +570,7 @@ public class Request implements HttpServletRequest
     @Override
     public Cookie[] getCookies()
     {
-        if (_cookiesExtracted)
+        if (_metadata==null || _cookiesExtracted)
         {
             if (_cookies == null || _cookies.getCookies().length == 0)
                 return null;
@@ -580,7 +580,7 @@ public class Request implements HttpServletRequest
 
         _cookiesExtracted = true;
 
-        Enumeration<?> enm = _fields.getValues(HttpHeader.COOKIE.toString());
+        Enumeration<?> enm = _metadata.getFields().getValues(HttpHeader.COOKIE.toString());
 
         // Handle no cookies
         if (enm != null)
@@ -609,7 +609,7 @@ public class Request implements HttpServletRequest
     @Override
     public long getDateHeader(String name)
     {
-        return _fields.getDateField(name);
+        return _metadata==null?-1:_metadata.getFields().getDateField(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -626,7 +626,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getHeader(String name)
     {
-        return _fields.getStringField(name);
+        return _metadata==null?null:_metadata.getFields().get(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -636,7 +636,9 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<String> getHeaderNames()
     {
-        return _fields.getFieldNames();
+        if (_metadata==null)
+            return Collections.emptyEnumeration();
+        return _metadata.getFields().getFieldNames();
     }
 
     /* ------------------------------------------------------------ */
@@ -646,7 +648,9 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<String> getHeaders(String name)
     {
-        Enumeration<String> e = _fields.getValues(name);
+        if (_metadata==null)
+            return Collections.emptyEnumeration();
+        Enumeration<String> e = _metadata.getFields().getValues(name);
         if (e == null)
             return Collections.enumeration(Collections.<String>emptyList());
         return e;
@@ -685,7 +689,7 @@ public class Request implements HttpServletRequest
     @Override
     public int getIntHeader(String name)
     {
-        return (int)_fields.getLongField(name);
+        return _metadata==null?-1:(int)_metadata.getFields().getLongField(name);
     }
 
 
@@ -696,7 +700,10 @@ public class Request implements HttpServletRequest
     @Override
     public Locale getLocale()
     {
-        Enumeration<String> enm = _fields.getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
+        if (_metadata==null)
+            return Locale.getDefault();
+            
+        Enumeration<String> enm = _metadata.getFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
 
         // handle no locale
         if (enm == null || !enm.hasMoreElements())
@@ -733,8 +740,10 @@ public class Request implements HttpServletRequest
     @Override
     public Enumeration<Locale> getLocales()
     {
-
-        Enumeration<String> enm = _fields.getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
+        if (_metadata==null)
+            return Collections.enumeration(__defaultLocale);
+        
+        Enumeration<String> enm = _metadata.getFields().getValues(HttpHeader.ACCEPT_LANGUAGE.toString(),HttpFields.__separators);
 
         // handle no locale
         if (enm == null || !enm.hasMoreElements())
@@ -775,6 +784,21 @@ public class Request implements HttpServletRequest
     @Override
     public String getLocalAddr()
     {
+        if (_channel==null)
+        {
+            try
+            {
+                String name =InetAddress.getLocalHost().getHostAddress();
+                if (StringUtil.ALL_INTERFACES.equals(name))
+                    return null;
+                return name;
+            }
+            catch (java.net.UnknownHostException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        
         InetSocketAddress local=_channel.getLocalAddress();
         if (local==null)
             return "";
@@ -791,6 +815,20 @@ public class Request implements HttpServletRequest
     @Override
     public String getLocalName()
     {
+        if (_channel==null)
+        {
+            try
+            {
+                String name =InetAddress.getLocalHost().getHostName();
+                if (StringUtil.ALL_INTERFACES.equals(name))
+                    return null;
+                return name;
+            }
+            catch (java.net.UnknownHostException e)
+            {
+                LOG.ignore(e);
+            }
+        }
         InetSocketAddress local=_channel.getLocalAddress();
         return local.getHostString();
     }
@@ -802,6 +840,8 @@ public class Request implements HttpServletRequest
     @Override
     public int getLocalPort()
     {
+        if (_channel==null)
+            return 0;
         InetSocketAddress local=_channel.getLocalAddress();
         return local.getPort();
     }
@@ -813,7 +853,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getMethod()
     {
-        return _httpMethodString;
+        return _metadata.getMethod();
     }
 
     /* ------------------------------------------------------------ */
@@ -826,7 +866,7 @@ public class Request implements HttpServletRequest
         if (!_paramsExtracted)
             extractParameters();
         if (_parameters == null)
-            _parameters = restoreParameters();
+            restoreParameters();
         return _parameters.getValue(name,0);
     }
 
@@ -840,7 +880,7 @@ public class Request implements HttpServletRequest
         if (!_paramsExtracted)
             extractParameters();
         if (_parameters == null)
-            _parameters = restoreParameters();
+            restoreParameters();
         return Collections.unmodifiableMap(_parameters.toStringArrayMap());
     }
 
@@ -854,7 +894,7 @@ public class Request implements HttpServletRequest
         if (!_paramsExtracted)
             extractParameters();
         if (_parameters == null)
-            _parameters = restoreParameters();
+            restoreParameters();
         return Collections.enumeration(_parameters.keySet());
     }
 
@@ -868,38 +908,50 @@ public class Request implements HttpServletRequest
         if (!_paramsExtracted)
             extractParameters();
         if (_parameters == null)
-            _parameters = restoreParameters();
+            restoreParameters();
         List<String> vals = _parameters.getValues(name);
         if (vals == null)
             return null;
         return vals.toArray(new String[vals.size()]);
     }
 
-    private MultiMap<String> restoreParameters()
+    /* ------------------------------------------------------------ */
+    private void restoreParameters()
     {
-        MultiMap<String> result = new MultiMap<>();
         if (_queryParameters == null)
-            _queryParameters = extractQueryParameters();
-        result.addAllValues(_queryParameters);
-        result.addAllValues(_contentParameters);
-        return result;
+            extractQueryParameters();
+        
+        if (_queryParameters==NO_PARAMS || _queryParameters.size()==0)
+            _parameters=_contentParameters;
+        else if (_contentParameters==NO_PARAMS || _contentParameters.size()==0)
+            _parameters=_queryParameters;
+        else
+        {
+            _parameters = new MultiMap<>();
+            _parameters.addAllValues(_queryParameters);
+            _parameters.addAllValues(_contentParameters);
+        }
     }
 
+    /* ------------------------------------------------------------ */
     public MultiMap<String> getQueryParameters()
     {
         return _queryParameters;
     }
 
+    /* ------------------------------------------------------------ */
     public void setQueryParameters(MultiMap<String> queryParameters)
     {
         _queryParameters = queryParameters;
     }
 
+    /* ------------------------------------------------------------ */
     public void setContentParameters(MultiMap<String> contentParameters)
     {
         _contentParameters = contentParameters;
     }
 
+    /* ------------------------------------------------------------ */
     public void resetParameters()
     {
         _parameters = null;
@@ -934,7 +986,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getProtocol()
     {
-        return _httpVersion.toString();
+        return _metadata==null?null:_metadata.getVersion().toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -943,7 +995,7 @@ public class Request implements HttpServletRequest
      */
     public HttpVersion getHttpVersion()
     {
-        return _httpVersion;
+        return _metadata==null?null:_metadata.getVersion();
     }
 
     /* ------------------------------------------------------------ */
@@ -959,14 +1011,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getQueryString()
     {
-        if (_queryString == null && _uri != null)
-        {
-            if (_queryEncoding == null)
-                _queryString = _uri.getQuery();
-            else
-                _queryString = _uri.getQuery(_queryEncoding);
-        }
-        return _queryString;
+        return _metadata.getURI().getQuery();
     }
 
     /* ------------------------------------------------------------ */
@@ -1133,9 +1178,7 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestURI()
     {
-        if (_requestURI == null && _uri != null)
-            _requestURI = _uri.getPathAndParam();
-        return _requestURI;
+        return _metadata.getURI().getPath();
     }
 
     /* ------------------------------------------------------------ */
@@ -1182,7 +1225,8 @@ public class Request implements HttpServletRequest
     @Override
     public String getScheme()
     {
-        return _scheme;
+        String scheme=_metadata.getURI().getScheme();
+        return scheme==null?HttpScheme.HTTP.asString():scheme;
     }
 
     /* ------------------------------------------------------------ */
@@ -1192,90 +1236,45 @@ public class Request implements HttpServletRequest
     @Override
     public String getServerName()
     {
-        // Return already determined host
-        if (_serverName != null)
-            return _serverName;
-
-        if (_uri == null)
-            throw new IllegalStateException("No uri");
-
-        // Return host from absolute URI
-        _serverName = _uri.getHost();
-        if (_serverName != null)
-        {
-            _port = _uri.getPort();
-            return _serverName;
-        }
-
-        // Return host from header field
-        String hostPort = _fields.getStringField(HttpHeader.HOST);
+        String name = _metadata.getURI().getHost();
         
-        _port=0;
-        if (hostPort != null)
+        // Return already determined host
+        if (name != null)
+            return name;
+
+        return findServerName();
+    }
+
+    /* ------------------------------------------------------------ */
+    private String findServerName()
+    {
+        // Return host from header field
+        HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
+        if (host!=null)
         {
-            int len=hostPort.length();
-            loop: for (int i = len; i-- > 0;)
-            {
-                char c2 = (char)(0xff & hostPort.charAt(i));
-                switch (c2)
-                {
-                    case ']':
-                        break loop;
-
-                    case ':':
-                        try
-                        {
-                            len=i;
-                            _port = StringUtil.toInt(hostPort.substring(i+1));
-                        }
-                        catch (NumberFormatException e)
-                        {
-                            LOG.warn(e);
-                            _serverName=hostPort;
-                            _port=0;
-                            return _serverName;
-                        }
-                        break loop;
-                }
-            }
-            if (hostPort.charAt(0)=='[')
-            {
-                if (hostPort.charAt(len-1)!=']') 
-                {
-                    LOG.warn("Bad IPv6 "+hostPort);
-                    _serverName=hostPort;
-                    _port=0;
-                    return _serverName;
-                }
-                _serverName = hostPort.substring(0,len);
-            }
-            else if (len==hostPort.length())
-                _serverName=hostPort;
-            else
-                _serverName = hostPort.substring(0,len);
-
-            return _serverName;
+            // TODO is this needed now?
+            HostPortHttpField authority = (host instanceof HostPortHttpField)
+                ?((HostPortHttpField)host)
+                :new HostPortHttpField(host.getValue());
+            _metadata.getURI().setAuthority(authority.getHost(),authority.getPort());
+            return authority.getHost();
         }
 
         // Return host from connection
-        if (_channel != null)
-        {
-            _serverName = getLocalName();
-            _port = getLocalPort();
-            if (_serverName != null && !StringUtil.ALL_INTERFACES.equals(_serverName))
-                return _serverName;
-        }
+        String name=getLocalName();
+        if (name != null)
+            return name;
 
         // Return the local host
         try
         {
-            _serverName = InetAddress.getLocalHost().getHostAddress();
+            return InetAddress.getLocalHost().getHostAddress();
         }
         catch (java.net.UnknownHostException e)
         {
             LOG.ignore(e);
         }
-        return _serverName;
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1285,32 +1284,43 @@ public class Request implements HttpServletRequest
     @Override
     public int getServerPort()
     {
-        if (_port <= 0)
-        {
-            if (_serverName == null)
-                getServerName();
-
-            if (_port <= 0)
-            {
-                if (_serverName != null && _uri != null)
-                    _port = _uri.getPort();
-                else
-                {
-                    InetSocketAddress local = _channel.getLocalAddress();
-                    _port = local == null?0:local.getPort();
-                }
-            }
-        }
-
-        if (_port <= 0)
+        HttpURI uri = _metadata.getURI();
+        int port = (uri.getHost()==null)?findServerPort():uri.getPort();
+            
+        // If no port specified, return the default port for the scheme
+        if (port <= 0)
         {
             if (getScheme().equalsIgnoreCase(URIUtil.HTTPS))
                 return 443;
             return 80;
         }
-        return _port;
+        
+        // return a specific port
+        return port;
     }
 
+    /* ------------------------------------------------------------ */
+    private int findServerPort()
+    {
+        // Return host from header field
+        HttpField host = _metadata.getFields().getField(HttpHeader.HOST);
+        if (host!=null)
+        {
+            // TODO is this needed now?
+            HostPortHttpField authority = (host instanceof HostPortHttpField)
+                ?((HostPortHttpField)host)
+                :new HostPortHttpField(host.getValue());
+            _metadata.getURI().setAuthority(authority.getHost(),authority.getPort());
+            return authority.getPort();
+        }
+
+        // Return host from connection
+        if (_channel != null)
+            return getLocalPort();
+        
+        return -1;
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public ServletContext getServletContext()
@@ -1435,9 +1445,18 @@ public class Request implements HttpServletRequest
     /**
      * @return Returns the uri.
      */
-    public HttpURI getUri()
+    public HttpURI getHttpURI()
     {
-        return _uri;
+        return _metadata.getURI();
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param old_uri
+     */
+    public void setHttpURI(HttpURI uri)
+    {
+        _metadata.setURI(uri);
     }
 
     /* ------------------------------------------------------------ */
@@ -1592,9 +1611,51 @@ public class Request implements HttpServletRequest
         return _savedNewSessions.get(key);
     }
 
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param request
+     */
+    public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
+    {
+        _metadata=request;
+        setMethod(request.getMethod());
+        HttpURI uri = request.getURI();
+        
+        String path = uri.getDecodedPath();
+        String info;
+        if (path==null || path.length()==0)
+        {
+            if (uri.isAbsolute())
+            {
+                path="/";
+                uri.setPath(path);
+            }
+            else
+                throw new BadMessageException(400,"Bad URI");
+            info=path;
+        }
+        else if (!path.startsWith("/"))
+        {
+            System.err.println(request);
+            if (!"*".equals(path) && !HttpMethod.CONNECT.is(getMethod()))
+                throw new BadMessageException(400,"Bad URI");
+            info=path;
+        }
+        else
+            info = URIUtil.canonicalPath(path);// TODO should this be done prior to decoding???
+        
+        if (info == null)
+            throw new BadMessageException(400,"Bad URI");
+        
+        setPathInfo(info);
+    }
+    
     /* ------------------------------------------------------------ */
     protected void recycle()
     {
+        _metadata=null;
+        
         if (_context != null)
             throw new IllegalStateException("Request in context!");
         
@@ -1630,25 +1691,16 @@ public class Request implements HttpServletRequest
         _cookiesExtracted = false;
         _context = null;
         _newContext=false;
-        _serverName = null;
-        _httpMethod=null;
-        _httpMethodString = null;
         _pathInfo = null;
-        _port = 0;
-        _httpVersion = HttpVersion.HTTP_1_1;
         _queryEncoding = null;
-        _queryString = null;
         _requestedSessionId = null;
         _requestedSessionIdFromCookie = false;
         _secure=false;
         _session = null;
         _sessionManager = null;
-        _requestURI = null;
         _scope = null;
-        _scheme = URIUtil.HTTP;
         _servletPath = null;
         _timeStamp = 0;
-        _uri = null;
         _queryParameters = null;
         _contentParameters = null;
         _parameters = null;
@@ -1660,7 +1712,6 @@ public class Request implements HttpServletRequest
         _savedNewSessions=null;
         _multiPartInputStream = null;
         _remote=null;
-        _fields.clear();
         _input.recycle();
     }
 
@@ -1803,8 +1854,7 @@ public class Request implements HttpServletRequest
      */
     public void setContentType(String contentType)
     {
-        _fields.put(HttpHeader.CONTENT_TYPE,contentType);
-
+        _metadata.getFields().put(HttpHeader.CONTENT_TYPE,contentType);
     }
 
     /* ------------------------------------------------------------ */
@@ -1872,16 +1922,15 @@ public class Request implements HttpServletRequest
      * @param method
      *            The method to set.
      */
-    public void setMethod(HttpMethod httpMethod, String method)
+    public void setMethod(String method)
     {
-        _httpMethod=httpMethod;
-        _httpMethodString = method;
+        _metadata.setMethod(method);
     }
 
     /* ------------------------------------------------------------ */
     public boolean isHead()
     {
-        return HttpMethod.HEAD==_httpMethod;
+        return _metadata!=null && HttpMethod.HEAD.is(_metadata.getMethod());
     }
 
     /* ------------------------------------------------------------ */
@@ -1896,16 +1945,6 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @param version
-     *            The protocol to set.
-     */
-    public void setHttpVersion(HttpVersion version)
-    {
-        _httpVersion = version;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
      * Set the character encoding used for the query string. This call will effect the return of getQueryString and getParamaters. It must be called before any
      * getParameter methods.
      *
@@ -1916,7 +1955,6 @@ public class Request implements HttpServletRequest
     public void setQueryEncoding(String queryEncoding)
     {
         _queryEncoding = queryEncoding;
-        _queryString = null;
     }
 
     /* ------------------------------------------------------------ */
@@ -1926,7 +1964,7 @@ public class Request implements HttpServletRequest
      */
     public void setQueryString(String queryString)
     {
-        _queryString = queryString;
+        _metadata.getURI().setQuery(queryString);
         _queryEncoding = null; //assume utf-8
     }
 
@@ -1961,13 +1999,9 @@ public class Request implements HttpServletRequest
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param requestURI
-     *            The requestURI to set.
-     */
-    public void setRequestURI(String requestURI)
+    public void setURIPathQuery(String requestURI)
     {
-        _requestURI = requestURI;
+        _metadata.getURI().setPathQuery(requestURI);
     }
 
     /* ------------------------------------------------------------ */
@@ -1977,7 +2011,7 @@ public class Request implements HttpServletRequest
      */
     public void setScheme(String scheme)
     {
-        _scheme = scheme;
+        _metadata.getURI().setScheme(scheme);
     }
 
     /* ------------------------------------------------------------ */
@@ -1985,19 +2019,9 @@ public class Request implements HttpServletRequest
      * @param host
      *            The host to set.
      */
-    public void setServerName(String host)
+    public void setAuthority(String host,int port)
     {
-        _serverName = host;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param port
-     *            The port to set.
-     */
-    public void setServerPort(int port)
-    {
-        _port = port;
+        _metadata.getURI().setAuthority(host,port);;
     }
 
     /* ------------------------------------------------------------ */
@@ -2034,16 +2058,6 @@ public class Request implements HttpServletRequest
     public void setTimeStamp(long ts)
     {
         _timeStamp = ts;
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param uri
-     *            The uri to set.
-     */
-    public void setUri(HttpURI uri)
-    {
-        _uri = uri;
     }
 
     /* ------------------------------------------------------------ */
@@ -2086,7 +2100,7 @@ public class Request implements HttpServletRequest
     @Override
     public String toString()
     {
-        return (_handled?"[":"(") + getMethod() + " " + _uri + (_handled?"]@":")@") + hashCode() + " " + super.toString();
+        return (_handled?"[":"(") + getMethod() + " " + _metadata.getURI() + (_handled?"]@":")@") + hashCode() + " " + super.toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -2193,24 +2207,35 @@ public class Request implements HttpServletRequest
         _authentication=Authentication.UNAUTHENTICATED;
     }
 
-    public void mergeQueryParameters(String newQuery, boolean updateQueryString)
+    /* ------------------------------------------------------------ */
+    public void mergeQueryParameters(String oldQuery,String newQuery, boolean updateQueryString)
     {
-        MultiMap<String> newQueryParams = new MultiMap<>();
+        // TODO  This is seriously ugly
+        
+        MultiMap<String> newQueryParams = null;
         // Have to assume ENCODING because we can't know otherwise.
-        UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING, -1);
-
-        MultiMap<String> oldQueryParams = _queryParameters;
-        if (oldQueryParams == null && _queryString != null)
+        if (newQuery!=null)
         {
-            oldQueryParams = new MultiMap<>();
-            UrlEncoded.decodeTo(_queryString, oldQueryParams, getQueryEncoding(), -1);
+            newQueryParams = new MultiMap<>();
+            UrlEncoded.decodeTo(newQuery, newQueryParams, UrlEncoded.ENCODING);
         }
 
-        MultiMap<String> mergedQueryParams = newQueryParams;
-        if (oldQueryParams != null)
+        MultiMap<String> oldQueryParams = _queryParameters;
+        if (oldQueryParams == null && oldQuery != null)
+        {
+            oldQueryParams = new MultiMap<>();
+            UrlEncoded.decodeTo(oldQuery, oldQueryParams, getQueryEncoding());
+        }
+
+        MultiMap<String> mergedQueryParams;
+        if (newQueryParams==null || newQueryParams.size()==0)
+            mergedQueryParams=oldQueryParams==null?NO_PARAMS:oldQueryParams;
+        else if (oldQueryParams==null || oldQueryParams.size()==0)
+            mergedQueryParams=newQueryParams==null?NO_PARAMS:newQueryParams;
+        else
         {
             // Parameters values are accumulated.
-            mergedQueryParams = new MultiMap<>(newQueryParams);
+            mergedQueryParams=new MultiMap<>(newQueryParams);
             mergedQueryParams.addAllValues(oldQueryParams);
         }
 
@@ -2221,13 +2246,19 @@ public class Request implements HttpServletRequest
         {
             // Build the new merged query string, parameters in the
             // new query string hide parameters in the old query string.
-            StringBuilder mergedQuery = new StringBuilder(newQuery);
+            StringBuilder mergedQuery = new StringBuilder();
+            if (newQuery!=null)
+                mergedQuery.append(newQuery);
             for (Map.Entry<String, List<String>> entry : mergedQueryParams.entrySet())
             {
-                if (newQueryParams.containsKey(entry.getKey()))
+                if (newQueryParams!=null && newQueryParams.containsKey(entry.getKey()))
                     continue;
                 for (String value : entry.getValue())
-                    mergedQuery.append("&").append(entry.getKey()).append("=").append(value);
+                {
+                    if (mergedQuery.length()>0)
+                        mergedQuery.append("&");
+                    mergedQuery.append(entry.getKey()).append("=").append(value);
+                }
             }
 
             setQueryString(mergedQuery.toString());
@@ -2259,4 +2290,6 @@ public class Request implements HttpServletRequest
             throw new ServletException(e);
         }
     }
+
+    
 }

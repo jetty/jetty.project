@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.http;
 
+import static org.hamcrest.Matchers.either;
+import static org.hamcrest.Matchers.equalTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,13 +37,6 @@ import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.hamcrest.Matchers.either;
-import static org.hamcrest.Matchers.equalTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
 
 @RunWith(Parameterized.class)
 public class HttpGeneratorServerHTTPTest
@@ -216,7 +216,7 @@ public class HttpGeneratorServerHTTPTest
         }
     }
 
-    private class Handler implements HttpParser.ResponseHandler<ByteBuffer>
+    private class Handler implements HttpParser.ResponseHandler
     {
         @Override
         public boolean content(ByteBuffer ref)
@@ -247,9 +247,8 @@ public class HttpGeneratorServerHTTPTest
         }
 
         @Override
-        public boolean parsedHeader(HttpField field)
+        public void parsedHeader(HttpField field)
         {
-            return false;
         }
 
         @Override

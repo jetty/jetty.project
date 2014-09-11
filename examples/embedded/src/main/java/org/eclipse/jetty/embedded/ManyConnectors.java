@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.embedded;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -83,7 +84,7 @@ public class ManyConnectors
         // We create a second ServerConnector, passing in the http configuration we just made along with the
         // previously created ssl context factory. Next we set the port and a longer idle timeout.
         ServerConnector https = new ServerConnector(server,
-            new SslConnectionFactory(sslContextFactory,"http/1.1"),
+            new SslConnectionFactory(sslContextFactory,HttpVersion.HTTP_1_1.asString()),
             new HttpConnectionFactory(https_config));
         https.setPort(8443);
         https.setIdleTimeout(500000);

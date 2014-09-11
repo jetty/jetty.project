@@ -375,10 +375,10 @@ public class DataConstraintsTest
         response = _connectorS.getResponses("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
         Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponses("GET /ctx/restricted/info HTTP/1.0\r\n Authorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connector.getResponses("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
-        response = _connectorS.getResponses("GET /ctx/restricted/info HTTP/1.0\r\n Authorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connectorS.getResponses("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
     }

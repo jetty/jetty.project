@@ -643,8 +643,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 content.succeeded();
                 process();
             }
-            // Catch-all for runtime exceptions
-            catch (Exception x)
+            catch (Throwable x)
             {
                 anyToFailure(x);
             }

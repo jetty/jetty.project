@@ -46,7 +46,9 @@ import org.eclipse.jetty.util.log.Logger;
  * insensitivity).  By default this is turned on, or it can be controlled 
  * by calling the static method @see FileResource#setCheckAliases(boolean)
  * 
+ * @deprecated Use {@link PathResource}
  */
+@Deprecated
 public class FileResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(FileResource.class);
@@ -117,7 +119,7 @@ public class FileResource extends Resource
     }
 
     /* -------------------------------------------------------- */
-    FileResource(File file)
+    public FileResource(File file)
     {
         _file=file;
         _uri=normalizeURI(_file,_file.toURI());
@@ -153,7 +155,8 @@ public class FileResource extends Resource
 
                 URI alias=new File(can).toURI();
                 // Have to encode the path as File.toURI does not!
-                return new URI("file://"+URIUtil.encodePath(alias.getPath()));  
+                String uri="file://"+URIUtil.encodePath(alias.getPath());
+                return new URI(uri);
             }
         }
         catch(Exception e)

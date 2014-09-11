@@ -66,15 +66,13 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
         for (String[] test : _tests)
         {
             reset();
-            _request.setRequestURI(null);
+            _request.setURIPathQuery(null);
             
             String t=test[0]+"?"+test[1]+">"+test[2]+"|"+test[3];
             _rule.setRegex(test[2]);
             _rule.setReplacement(test[3]);
 
-            _request.setUri(new HttpURI(test[0]+(test[1]==null?"":("?"+test[1]))));
-            _request.getRequestURI();
-
+            _request.setURIPathQuery(test[0]+(test[1]==null?"":("?"+test[1])));
             
             String result = _rule.matchAndApply(test[0], _request, _response);
             assertEquals(t, test[4], result);
@@ -89,7 +87,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
             if (test[5]!=null)
             {
                 MultiMap<String> params=new MultiMap<String>();
-                UrlEncoded.decodeTo(test[5],params, StandardCharsets.UTF_8,-1);
+                UrlEncoded.decodeTo(test[5],params, StandardCharsets.UTF_8);
                                
                 for (String n:params.keySet())
                     assertEquals(params.getString(n),_request.getParameter(n));
@@ -110,7 +108,7 @@ public class RewriteRegexRuleTest extends AbstractRuleTestCase
             _rule.setRegex(test[2]);
             _rule.setReplacement(test[3]);
 
-            _request.setRequestURI(test[0]);
+            _request.setURIPathQuery(test[0]);
             _request.setQueryString(test[1]);
             _request.getAttributes().clearAttributes();
             

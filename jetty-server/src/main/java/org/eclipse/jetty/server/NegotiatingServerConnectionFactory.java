@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Arrays;
+import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
@@ -27,18 +27,48 @@ import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
-import org.eclipse.jetty.server.AbstractConnectionFactory;
-import org.eclipse.jetty.server.Connector;
 
 public abstract class NegotiatingServerConnectionFactory extends AbstractConnectionFactory
 {
+    public static void checkProtocolNegotiationAvailable()
+    {
+        if (!isAvailableInBootClassPath("org.eclipse.jetty.alpn.ALPN") &&
+                !isAvailableInBootClassPath("org.eclipse.jetty.npn.NextProtoNego"))
+            throw new IllegalStateException("No ALPN nor NPN classes available");
+    }
+
+    private static boolean isAvailableInBootClassPath(String className)
+    {
+        try
+        {
+            Class<?> klass = ClassLoader.getSystemClassLoader().loadClass(className);
+            if (klass.getClassLoader() != null)
+                throw new IllegalStateException(className + " must be on JVM boot classpath");
+            return true;
+        }
+        catch (ClassNotFoundException x)
+        {
+            return false;
+        }
+    }
+
     private final List<String> protocols;
     private String defaultProtocol;
 
     public NegotiatingServerConnectionFactory(String protocol, String... protocols)
     {
         super(protocol);
-        this.protocols = Arrays.asList(protocols);
+        this.protocols = new ArrayList<>();
+        if (protocols != null)
+        {
+            // Trim the values, as they may come from XML configuration.
+            for (String p : protocols)
+            {
+                p = p.trim();
+                if (!p.isEmpty())
+                    this.protocols.add(p.trim());
+            }
+        }
     }
 
     public String getDefaultProtocol()
@@ -48,14 +78,16 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
 
     public void setDefaultProtocol(String defaultProtocol)
     {
-        this.defaultProtocol = defaultProtocol;
+        // Trim the value, as it may come from XML configuration.
+        String dft = defaultProtocol == null ? "" : defaultProtocol.trim();
+        this.defaultProtocol = dft.isEmpty() ? null : dft;
     }
 
     public List<String> getProtocols()
     {
         return protocols;
     }
-
+    
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
@@ -67,8 +99,9 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
             while (i.hasNext())
             {
                 String protocol = i.next();
-                String prefix = "ssl-";
-                if (protocol.regionMatches(true, 0, prefix, 0, prefix.length()) || protocol.equalsIgnoreCase("alpn"))
+                if ("ssl".equalsIgnoreCase(protocol) ||
+                        "alpn".equalsIgnoreCase(protocol) ||
+                        "npn".equalsIgnoreCase(protocol))
                 {
                     i.remove();
                 }

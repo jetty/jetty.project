@@ -24,7 +24,6 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.LinkedHashMap;
 import java.util.List;
-import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -338,7 +338,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            return _factories.get(protocol.toLowerCase(Locale.ENGLISH));
+            return _factories.get(StringUtil.asciiToLowerCase(protocol));
         }
     }
 
@@ -358,13 +358,44 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            ConnectionFactory old=_factories.remove(factory.getProtocol());
+            String key=StringUtil.asciiToLowerCase(factory.getProtocol());
+            ConnectionFactory old=_factories.remove(key);
             if (old!=null)
+            {
+                if (old.getProtocol().equals(_defaultProtocol))
+                    _defaultProtocol=null;
                 removeBean(old);
-            _factories.put(factory.getProtocol().toLowerCase(Locale.ENGLISH), factory);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} removed {}", this, old);
+            }
+            _factories.put(key, factory);
             addBean(factory);
             if (_defaultProtocol==null)
                 _defaultProtocol=factory.getProtocol();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} added {}", this, factory);
+        }
+    }
+    
+    public void addIfAbsentConnectionFactory(ConnectionFactory factory)
+    {
+        synchronized (_factories)
+        {
+            String key=StringUtil.asciiToLowerCase(factory.getProtocol());
+            if (_factories.containsKey(key))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} addIfAbsent ignored {}", this, factory);
+            }
+            else
+            {
+                _factories.put(key, factory);
+                addBean(factory);
+                if (_defaultProtocol==null)
+                    _defaultProtocol=factory.getProtocol();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} addIfAbsent added {}", this, factory);
+            }
         }
     }
 
@@ -372,7 +403,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            ConnectionFactory factory= _factories.remove(protocol.toLowerCase(Locale.ENGLISH));
+            ConnectionFactory factory= _factories.remove(StringUtil.asciiToLowerCase(protocol));
             removeBean(factory);
             return factory;
         }
@@ -451,7 +482,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     public void setDefaultProtocol(String defaultProtocol)
     {
-        _defaultProtocol = defaultProtocol.toLowerCase(Locale.ENGLISH);
+        _defaultProtocol = StringUtil.asciiToLowerCase(defaultProtocol);
         if (isRunning())
             _defaultConnectionFactory=getConnectionFactory(_defaultProtocol);
     }

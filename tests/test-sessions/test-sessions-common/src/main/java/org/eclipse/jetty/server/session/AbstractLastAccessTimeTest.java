@@ -87,7 +87,7 @@ public abstract class AbstractLastAccessTimeTest
                     ContentResponse response1 = client.GET("http://localhost:" + port1 + contextPath + servletMapping + "?action=init");
                     assertEquals(HttpServletResponse.SC_OK, response1.getStatus());
                     assertEquals("test", response1.getContentAsString());
-                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
+                    String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue( sessionCookie != null );
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -106,7 +106,7 @@ public abstract class AbstractLastAccessTimeTest
                         assertEquals(HttpServletResponse.SC_OK , response2.getStatus());
                         assertEquals("test", response2.getContentAsString());
 
-                        String setCookie = response2.getHeaders().getStringField("Set-Cookie");
+                        String setCookie = response2.getHeaders().get("Set-Cookie");
                         if (setCookie!=null)
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 

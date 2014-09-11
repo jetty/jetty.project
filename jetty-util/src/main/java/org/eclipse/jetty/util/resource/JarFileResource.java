@@ -269,7 +269,7 @@ class JarFileResource extends JarResource
                 //So, do one retry to drop a connection and get a fresh JarFile
                 LOG.warn("Retrying list:"+e);
                 LOG.debug(e);
-                release();
+                close();
                 list = listEntries();
             }
 

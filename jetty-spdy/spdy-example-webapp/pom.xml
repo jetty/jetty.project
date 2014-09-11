@@ -3,12 +3,15 @@
     <parent>
         <groupId>org.eclipse.jetty.spdy</groupId>
         <artifactId>spdy-parent</artifactId>
-        <version>9.2.4-SNAPSHOT</version>
+        <version>9.3.0-SNAPSHOT</version>
     </parent>
     <modelVersion>4.0.0</modelVersion>
     <artifactId>spdy-example-webapp</artifactId>
     <packaging>war</packaging>
     <name>Jetty :: SPDY :: HTTP Web Application</name>
+    <properties>
+      <bundle-symbolic-name>${project.groupId}.example.webapp</bundle-symbolic-name>
+    </properties>
 
     <build>
         <plugins>

@@ -30,6 +30,7 @@ public class OSGiServerConstants
      * configuration.
      */
     public static final String JETTY_HOME = "jetty.home";
+    public static final String JETTY_BASE = "jetty.base";
 
     /**
      * System property to point to a bundle that embeds a jetty configuration
@@ -54,7 +55,7 @@ public class OSGiServerConstants
      * Usual system property used as the port for https for a typical jetty
      * configuration.
      */
-    public static final String JETTY_PORT_SSL = "jetty.port.ssl";
+    public static final String JETTY_PORT_SSL = "ssl.port";
     
     
     //for managed jetty instances, name of the configuration parameters

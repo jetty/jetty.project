@@ -21,6 +21,7 @@ package org.eclipse.jetty.spdy.server.http;
 import java.util.Collections;
 import java.util.Map;
 
+import org.eclipse.jetty.npn.server.NPNServerConnectionFactory;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -28,7 +29,6 @@ import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class HTTPSPDYServerConnector extends ServerConnector

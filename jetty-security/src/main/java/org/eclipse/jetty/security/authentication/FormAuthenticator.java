@@ -236,8 +236,7 @@ public class FormAuthenticator extends LoginAuthenticator
         //restore the original request's method on this request
         if (LOG.isDebugEnabled()) LOG.debug("Restoring original method {} for {} with method {}", method, juri,httpRequest.getMethod());
         Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
-        HttpMethod m = HttpMethod.fromString(method);
-        base_request.setMethod(m,m.asString());
+        base_request.setMethod(method);
     }
 
     /* ------------------------------------------------------------ */
@@ -290,8 +289,8 @@ public class FormAuthenticator extends LoginAuthenticator
                     LOG.debug("authenticated {}->{}",form_auth,nuri);
 
                     response.setContentLength(0);
-                    Response base_response = HttpChannel.getCurrentHttpChannel().getResponse();
-                    Request base_request = HttpChannel.getCurrentHttpChannel().getRequest();
+                    Request base_request = Request.getBaseRequest(req);
+                    Response base_response = base_request.getResponse();
                     int redirectCode = (base_request.getHttpVersion().getVersion() < HttpVersion.HTTP_1_1.getVersion() ? HttpServletResponse.SC_MOVED_TEMPORARILY : HttpServletResponse.SC_SEE_OTHER);
                     base_response.sendRedirect(redirectCode, response.encodeRedirectURL(nuri));
                     return form_auth;

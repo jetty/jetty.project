@@ -150,7 +150,7 @@ public class XmlConfiguration
      */
     public XmlConfiguration(String configuration) throws SAXException, IOException
     {
-        configuration = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
+        configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
                 + configuration;
         InputSource source = new InputSource(new StringReader(configuration));
         synchronized (__parser)
@@ -346,7 +346,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new IllegalStateException("No suitable constructor on " + oClass, x);
+                    throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s",oClass,arguments,namedArgMap,_url));
                 }
             }
             _configuration.initializeDefaults(obj);

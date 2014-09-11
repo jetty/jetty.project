@@ -26,26 +26,27 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * {@link QueuedHttpInput} holds a queue of items passed to it by calls to {@link #content(Object)}.
+ * {@link QueuedHttpInput} holds a queue of items passed to it by calls to {@link #content(HttpInput.Content)}.
  * <p/>
  * {@link QueuedHttpInput} stores the items directly; if the items contain byte buffers, it does not copy them
  * but simply holds references to the item, thus the caller must organize for those buffers to valid while
  * held by this class.
  * <p/>
- * To assist the caller, subclasses may override methods {@link #onAsyncRead()}, {@link #onContentConsumed(Object)}
+ * To assist the caller, subclasses may override methods such as  {@link #onAsyncRead()},
+ * {@link #consume(HttpInput.Content, int)}, etc.
  * that can be implemented so that the caller will know when buffers are queued and consumed.
  */
-public abstract class QueuedHttpInput<T> extends HttpInput<T>
+public class QueuedHttpInput extends HttpInput
 {
     private final static Logger LOG = Log.getLogger(QueuedHttpInput.class);
 
-    private final ArrayQueue<T> _inputQ = new ArrayQueue<>(lock());
+    private final ArrayQueue<Content> _inputQ = new ArrayQueue<>(lock());
 
     public QueuedHttpInput()
     {
     }
 
-    public void content(T item)
+    public void content(Content item)
     {
         // The buffer is not copied here.  This relies on the caller not recycling the buffer
         // until the it is consumed.  The onContentConsumed and onAllContentConsumed() callbacks are
@@ -69,10 +70,10 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
     {
         synchronized (lock())
         {
-            T item = _inputQ.pollUnsafe();
+            Content item = _inputQ.pollUnsafe();
             while (item != null)
             {
-                onContentConsumed(item);
+                item.failed(null);
                 item = _inputQ.pollUnsafe();
             }
             super.recycle();
@@ -80,17 +81,16 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
     }
 
     @Override
-    protected T nextContent()
+    protected Content nextContent()
     {
         synchronized (lock())
         {
             // Items are removed only when they are fully consumed.
-            T item = _inputQ.peekUnsafe();
+            Content item = _inputQ.peekUnsafe();
             // Skip consumed items at the head of the queue.
             while (item != null && remaining(item) == 0)
             {
                 _inputQ.pollUnsafe();
-                onContentConsumed(item);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} consumed {}", this, item);
                 item = _inputQ.peekUnsafe();
@@ -118,13 +118,6 @@ public abstract class QueuedHttpInput<T> extends HttpInput<T>
             }
         }
     }
-
-    /**
-     * Callback that signals that the given content has been consumed.
-     *
-     * @param item the consumed content
-     */
-    protected abstract void onContentConsumed(T item);
 
     public void earlyEOF()
     {

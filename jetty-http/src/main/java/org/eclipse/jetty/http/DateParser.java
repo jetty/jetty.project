@@ -27,7 +27,7 @@ import java.util.TimeZone;
  * ThreadLocal data parsers for HTTP style dates
  *
  */
-class DateParser
+public class DateParser
 {
     private static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
     static

@@ -158,6 +158,7 @@ public class TestServer
         server.setStopAtShutdown(true);
 
         WebAppContext webapp = new WebAppContext();
+        webapp.setContextPath("/test");
         webapp.setParentLoaderPriority(true);
         webapp.setResourceBase("./src/main/webapp");
         webapp.setAttribute("testAttribute","testValue");

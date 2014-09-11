@@ -516,7 +516,7 @@ public class BufferUtil
     }
 
     /* ------------------------------------------------------------ */
-    /** Convert a partial buffer to an ISO-8859-1 String
+    /** Convert a partial buffer to a String
      * @param buffer  The buffer to convert in flush mode. The buffer is unchanged
      * @param charset The {@link Charset} to use to convert the bytes
      * @return The buffer as a string.
@@ -1019,6 +1019,33 @@ public class BufferUtil
         else
             buf.append("\\x").append(TypeUtil.toHexString(b));
     }
+    
+
+    /* ------------------------------------------------------------ */
+    /** Convert buffer to a Hex Summary String.
+     * @param buffer
+     * @return A string showing the escaped content of the buffer around the
+     * position and limit (marked with &lt;&lt;&lt; and &gt;&gt;&gt;)
+     */
+    public static String toHexSummary(ByteBuffer buffer)
+    {
+        if (buffer == null)
+            return "null";
+        StringBuilder buf = new StringBuilder();
+        
+        buf.append("b[").append(buffer.remaining()).append("]=");
+        for (int i = buffer.position(); i < buffer.limit(); i++)
+        {
+            TypeUtil.toHex(buffer.get(i),buf);
+            if (i == buffer.position() + 24 && buffer.limit() > buffer.position() + 32)
+            {
+                buf.append("...");
+                i = buffer.limit() - 8;
+            }
+        }
+        return buf.toString();
+    }
+
 
     private final static int[] decDivisors =
             {1000000000, 100000000, 10000000, 1000000, 100000, 10000, 1000, 100, 10, 1};
