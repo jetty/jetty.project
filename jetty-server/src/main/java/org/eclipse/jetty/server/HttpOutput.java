@@ -650,12 +650,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      * @param httpContent The content to send
      * @param callback The callback to use to notify success or failure
      */
-    public void sendContent(HttpContent httpContent, Callback callback) throws IOException
+    public void sendContent(HttpContent httpContent, Callback callback)
     {
         if (BufferUtil.hasContent(_aggregate))
-            throw new IOException("written");
+        {
+            callback.failed(new IOException("cannot sendContent() after write()"));
+            return;
+        }
         if (_channel.isCommitted())
-            throw new IOException("committed");
+        {
+            callback.failed(new IOException("committed"));
+            return;
+        }
 
         while (true)
         {
@@ -666,9 +672,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         continue;
                     break;
                 case ERROR:
-                    throw new EofException(_onError);
+                    callback.failed(new EofException(_onError));
+                    return;
+                    
                 case CLOSED:
-                    throw new EofException("Closed");
+                    callback.failed(new EofException("Closed"));
+                    return;
                 default:
                     throw new IllegalStateException();
             }
@@ -687,22 +696,30 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             return;
         }
 
-        ReadableByteChannel rbc=httpContent.getReadableByteChannel();
-        if (rbc!=null)
+        try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("sendContent({}=={},{},direct={})",httpContent,rbc,callback,_channel.useDirectBuffers());
-            // Close of the rbc is done by the async sendContent
-            sendContent(rbc,callback);
-            return;
-        }
+            ReadableByteChannel rbc=httpContent.getReadableByteChannel();
+            if (rbc!=null)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("sendContent({}=={},{},direct={})",httpContent,rbc,callback,_channel.useDirectBuffers());
+                // Close of the rbc is done by the async sendContent
+                sendContent(rbc,callback);
+                return;
+            }
 
-        InputStream in = httpContent.getInputStream();
-        if ( in!=null )
+            InputStream in = httpContent.getInputStream();
+            if ( in!=null )
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("sendContent({}=={},{},direct={})",httpContent,in,callback,_channel.useDirectBuffers());
+                sendContent(in,callback);
+                return;
+            }
+        }
+        catch(Throwable th)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("sendContent({}=={},{},direct={})",httpContent,in,callback,_channel.useDirectBuffers());
-            sendContent(in,callback);
+            callback.failed(th);
             return;
         }
 
