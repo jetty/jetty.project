@@ -80,7 +80,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     @Override
     protected boolean needsFill()
     {
-        return !changeInterests(SelectionKey.OP_READ, true);
+        changeInterests(SelectionKey.OP_READ, true);
+        return false;
     }
 
     @Override
@@ -166,14 +167,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         }
     }
 
-    private boolean changeInterests(int operation, boolean add)
+    private void changeInterests(int operation, boolean add)
     {
         /**
          * This method may run concurrently with {@link #updateKey()}.
          */
 
         boolean pending = false;
-        boolean changed = true;
         while (true)
         {
             State current = _interestState.get();
@@ -204,20 +204,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                     else
                         newInterestOps = oldInterestOps & ~operation;
 
-                    if (isInputShutdown())
-                    {
-                        newInterestOps &= ~SelectionKey.OP_READ;
-                        if (add && (operation & SelectionKey.OP_READ) != 0)
-                            changed = false;
-                    }
-
-                    if (isOutputShutdown())
-                    {
-                        newInterestOps &= ~SelectionKey.OP_WRITE;
-                        if (add && (operation & SelectionKey.OP_WRITE) != 0)
-                            changed = false;
-                    }
-
                     if (LOG.isDebugEnabled())
                         LOG.debug("changeInterests pending={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
 
@@ -232,8 +218,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                     // This must be done after CASing the state above, otherwise the
                     // selector may select and call onSelected() concurrently.
                     submitKeyUpdate(!pending);
-
-                    return changed;
+                    return;
                 }
                 default:
                 {
