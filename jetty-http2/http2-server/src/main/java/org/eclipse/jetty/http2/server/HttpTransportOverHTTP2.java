@@ -84,18 +84,31 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         {
             if (commit.compareAndSet(false, true))
             {
-                boolean endStream = !hasContent && lastContent;
-                commit(info, endStream, sendContent ? commitCallback : callback);
+                if (sendContent)
+                {
+                    commit(info, false, commitCallback);
+                    send(content, lastContent, callback);
+                }
+                else
+                {
+                    commit(info, lastContent, callback);
+                }
             }
             else
             {
                 callback.failed(new IllegalStateException());
             }
         }
-
-        if (sendContent)
+        else
         {
-            send(content, lastContent, callback);
+            if (sendContent)
+            {
+                send(content, lastContent, callback);
+            }
+            else
+            {
+                callback.succeeded();
+            }
         }
     }
 
