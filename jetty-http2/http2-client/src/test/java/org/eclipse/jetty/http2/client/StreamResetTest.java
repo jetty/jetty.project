@@ -88,6 +88,11 @@ public class StreamResetTest extends AbstractTest
         stream.reset(resetFrame, Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+
+        // Wait a while to let the server remove the
+        // stream after returning from onReset().
+        Thread.sleep(1000);
+
         Stream serverStream = streamRef.get();
         Assert.assertEquals(0, serverStream.getSession().getStreams().size());
     }
