@@ -79,6 +79,14 @@ public class PushCacheFilter implements Filter
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException, ServletException
     {
         HttpServletRequest request = (HttpServletRequest)req;
+        
+        if (Boolean.TRUE==req.getAttribute("org.eclipse.jetty.pushed"))
+        {
+            LOG.debug("PUSH {}", request.getRequestURI());
+            chain.doFilter(req,resp);
+            return;
+        }
+        
 
         // Iterating over fields is more efficient than multiple gets
         HttpFields fields = Request.getBaseRequest(req).getHttpFields();

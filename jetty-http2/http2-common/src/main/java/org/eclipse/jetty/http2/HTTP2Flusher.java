@@ -32,6 +32,7 @@ import java.util.Queue;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -346,7 +347,7 @@ public class HTTP2Flusher extends IteratingCallback
 
         public void reset()
         {
-            failed(new EOFException("reset"));
+            failed(new EofException("reset"));
         }
 
         @Override

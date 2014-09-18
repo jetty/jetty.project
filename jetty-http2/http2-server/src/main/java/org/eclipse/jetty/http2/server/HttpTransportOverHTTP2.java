@@ -96,7 +96,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             }
             else
             {
-                callback.failed(new IllegalStateException());
+                callback.failed(new IllegalStateException("committed"));
             }
         }
         else

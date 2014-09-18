@@ -94,6 +94,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void onPushRequest(MetaData.Request request)
     {
         onRequest(request);
+        getRequest().setAttribute("org.eclipse.jetty.pushed",Boolean.TRUE);
 
         if (LOG.isDebugEnabled())
         {
