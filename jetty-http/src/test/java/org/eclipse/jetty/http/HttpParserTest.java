@@ -1455,6 +1455,36 @@ public class HttpParserTest
     }
     
 
+    @Test
+    public void testFolded() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012" +
+                "Host: localhost\015\012" +
+                "Connection: close\015\012" +
+                "Content-Type: application/soap+xml; charset=utf-8; \015\012"+
+                "\taction=\"xxx\" \015\012" +
+                "\015\012");
+        
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Connection", _hdr[1]);
+        assertEquals("close", _val[1]);
+        assertEquals("Content-Type", _hdr[2]);
+        assertEquals("application/soap+xml; charset=utf-8; action=\"xxx\"", _val[2]);
+        assertEquals(2, _headers);
+    }
+    
+    
     @Before
     public void init()
     {
