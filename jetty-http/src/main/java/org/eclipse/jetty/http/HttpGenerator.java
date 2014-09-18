@@ -1046,7 +1046,7 @@ public class HttpGenerator
             char c=s.charAt(i);
             
             if (c<0 || c>0xff || c=='\r' || c=='\n')
-                buffer.put((byte)'?');
+                buffer.put((byte)' ');
             else
                 buffer.put((byte)(0xff&c));
         }
