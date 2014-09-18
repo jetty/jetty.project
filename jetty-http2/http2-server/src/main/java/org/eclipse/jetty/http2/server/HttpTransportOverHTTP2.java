@@ -78,13 +78,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         // info == null | content == 0 | last = false => noop
 
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        boolean sendContent = hasContent || (info == null && lastContent);
 
         if (info != null)
         {
             if (commit.compareAndSet(false, true))
             {
-                if (sendContent)
+                if (hasContent)
                 {
                     commit(info, false, commitCallback);
                     send(content, lastContent, callback);
@@ -101,7 +100,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         }
         else
         {
-            if (sendContent)
+            if (hasContent || lastContent)
             {
                 send(content, lastContent, callback);
             }
