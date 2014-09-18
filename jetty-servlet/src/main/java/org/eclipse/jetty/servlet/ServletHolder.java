@@ -786,10 +786,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             makeUnavailable(e);
             throw _unavailableEx;
         }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
         finally
         {
             baseRequest.setAsyncSupported(suspendable);
