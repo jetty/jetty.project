@@ -20,10 +20,13 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.EnumSet;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
+import javax.servlet.FilterRegistration;
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
@@ -58,16 +61,48 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context)
     {
         WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-
         WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter(policy);
-        FilterHolder fholder = new FilterHolder(filter);
-        fholder.setName("Jetty_WebSocketUpgradeFilter");
-        fholder.setDisplayName("WebSocket Upgrade Filter");
+
+        String name = "Jetty_WebSocketUpgradeFilter";
         String pathSpec = "/*";
-        context.addFilter(fholder,pathSpec,EnumSet.of(DispatcherType.REQUEST));
+        EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
+
+        FilterHolder fholder = new FilterHolder(filter);
+        fholder.setName(name);
+        context.addFilter(fholder,pathSpec,dispatcherTypes);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Adding {} mapped to {} to {}",filter,pathSpec,context);
+        {
+            LOG.debug("Adding [{}] {} mapped to {} to {}",name,filter,pathSpec,context);
+        }
+
+        // Store reference to the WebSocketUpgradeFilter
+        context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);
+
+        return filter;
+    }
+    
+    public static WebSocketUpgradeFilter configureContext(ServletContext context)
+    {
+        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
+        WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter(policy);
+
+        String name = "Jetty_Dynamic_WebSocketUpgradeFilter";
+        String pathSpec = "/*";
+        EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
+        boolean isMatchAfter = false;
+        String urlPatterns[] =
+        {
+            pathSpec
+        };
+
+        FilterRegistration.Dynamic dyn = context.addFilter(name,filter);
+        dyn.addMappingForUrlPatterns(dispatcherTypes,isMatchAfter,urlPatterns);
+
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Adding [{}] {} mapped to {} to {}",name,filter,pathSpec,context);
+        }
 
         // Store reference to the WebSocketUpgradeFilter
         context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);

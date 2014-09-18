@@ -81,6 +81,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private RunAsToken _runAsToken;
     private IdentityService _identityService;
     private ServletRegistration.Dynamic _registration;
+    private JspContainer _jspContainer;
 
 
     private transient Servlet _servlet;
@@ -89,8 +90,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private transient boolean _enabled = true;
     private transient UnavailableException _unavailableEx;
 
+    public static final String GLASSFISH_SENTINEL_CLASS = "org.glassfish.jsp.api.ResourceInjector";
+    public static final String APACHE_SENTINEL_CLASS = "org.apache.tomcat.InstanceManager";
     public static final  String JSP_GENERATED_PACKAGE_NAME = "org.eclipse.jetty.servlet.jspPackagePrefix";
     public static final Map<String,String> NO_MAPPED_ROLES = Collections.emptyMap();
+    public static enum JspContainer {GLASSFISH, APACHE, OTHER}; 
 
     /* ---------------------------------------------------------------- */
     /** Constructor .
@@ -309,7 +313,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                     if (jsp!=null)
                     {
                         if (LOG.isDebugEnabled())
-                            LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());
+                            LOG.debug("JSP file {} for {} mapped to Servlet class {}",_forcedPath, getName(),jsp.getClassName());
                         setClassName(jsp.getClassName());
                         //copy jsp init params that don't exist for this servlet
                         for (Map.Entry<String, String> entry:jsp.getInitParameters().entrySet())
@@ -317,9 +321,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
                             if (!_initParams.containsKey(entry.getKey()))
                                 setInitParameter(entry.getKey(), entry.getValue());
                         }
-                        //jsp specific: set up the jsp-file on the JspServlet so it can precompile iff load-on-startup is >=0
-                        if (_initOnStartup)
-                            setInitParameter("jspFile", _forcedPath);
+                        //jsp specific: set up the jsp-file on the JspServlet. If load-on-startup is >=0 and the jsp container supports
+                        //precompilation, the jsp will be compiled when this holder is initialized. If not load on startup, or the
+                        //container does not support startup precompilation, it will be compiled at runtime when handling a request for this jsp.
+                        //See also adaptForcedPathToJspContainer
+                        setInitParameter("jspFile", _forcedPath);
                     }                       
                 }
             }
@@ -591,12 +597,18 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (isJspServlet())
             {
                 initJspServlet();
+                detectJspContainer();
             }
 
             initMultiPart();
 
+            if (_forcedPath != null && _jspContainer == null)
+            {
+                detectJspContainer();
+            }
+
             if (LOG.isDebugEnabled())
-                LOG.debug("Servlet.init {}",_servlet);
+                LOG.debug("Servlet.init {} for {}",_servlet,getName());
             _servlet.init(_config);
         }
         catch (UnavailableException e)
@@ -752,8 +764,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         {
             // Handle aliased path
             if (_forcedPath!=null)
-                // TODO complain about poor naming to the Jasper folks
-                request.setAttribute("org.apache.catalina.jsp_file",_forcedPath);
+                adaptForcedPathToJspContainer(request);
 
             // Handle run as
             if (_identityService!=null)
@@ -815,8 +826,51 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             return false;
         return ("org.apache.jasper.servlet.JspServlet".equals(classname));
     }
-    
-    
+
+    /* ------------------------------------------------------------ */
+    private void adaptForcedPathToJspContainer (ServletRequest request)
+    {
+        if (_forcedPath != null && _jspContainer != null && JspContainer.GLASSFISH.equals(_jspContainer))
+        {
+            //if container is glassfish, set the request attribute org.apache.catalina.jsp_file to
+            //ensure the delegate jsp will be compiled
+
+            request.setAttribute("org.apache.catalina.jsp_file",_forcedPath);
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    private void detectJspContainer ()
+    {
+        if (_jspContainer == null)
+        {
+            //check for glassfish
+            try
+            {
+                //if container is glassfish, set the request attribute org.apache.catalina.jsp_file to
+                //ensure the delegate jsp will be compiled
+                Loader.loadClass(Holder.class, GLASSFISH_SENTINEL_CLASS);
+                if (LOG.isDebugEnabled())LOG.debug("Glassfish jasper detected");
+                _jspContainer = JspContainer.GLASSFISH;
+            }
+            catch (ClassNotFoundException e)
+            {
+                try
+                {
+                    //check for apache
+                    Loader.loadClass(Holder.class, APACHE_SENTINEL_CLASS);
+                    if (LOG.isDebugEnabled())LOG.debug("Apache jasper detected");
+                    _jspContainer = JspContainer.APACHE;
+                }
+                catch (ClassNotFoundException x)
+                {
+                    if (LOG.isDebugEnabled())LOG.debug("Other jasper detected");
+                    _jspContainer = JspContainer.OTHER;
+                }
+            }
+        }
+    }
+
     /* ------------------------------------------------------------ */
     private String getNameOfJspClass (String jsp)
     {
