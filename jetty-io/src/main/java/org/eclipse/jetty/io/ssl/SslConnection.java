@@ -345,12 +345,12 @@ public class SslConnection extends AbstractConnection
 
         @Override
         protected void onIncompleteFlush()
-        {
+        {            
             // This means that the decrypted endpoint write method was called and not
             // all data could be wrapped. So either we need to write some encrypted data,
             // OR if we are handshaking we need to read some encrypted data OR
             // if neither then we should just try the flush again.
-            boolean flush = false;
+            boolean try_again = false;
             synchronized (DecryptedEndPoint.this)
             {
                 if (DEBUG)
@@ -371,10 +371,17 @@ public class SslConnection extends AbstractConnection
                 }
                 else
                 {
-                    flush = true;
+                    // We can get here because the WriteFlusher might not see progress
+                    // when it has just flushed the encrypted data, but not consumed anymore
+                    // of the application buffers.  This is mostly avoided by another iteration
+                    // within DecryptedEndPoint flush(), but I cannot convince myself that
+                    // this is never ever the case.
+                    try_again = true;
                 }
             }
-            if (flush)
+            
+            
+            if (try_again)
             {
                 // If the output is closed,
                 if (isOutputShutdown())
@@ -386,7 +393,9 @@ public class SslConnection extends AbstractConnection
                 else
                 {
                     // try to flush what is pending
-                    getWriteFlusher().completeWrite();
+                    // because this is a special case (see above) we could probably
+                    // avoid the dispatch, but best to be sure
+                    getExecutor().execute(_runCompletWrite);
                 }
             }
         }
@@ -713,18 +722,12 @@ public class SslConnection extends AbstractConnection
                     if (DEBUG)
                         LOG.debug("{} wrap {}", SslConnection.this, wrapResult.toString().replace('\n',' '));
                     BufferUtil.flipToFlush(_encryptedOutput, pos);
-
-                    boolean allConsumed=true;
-                    // clear empty buffers to prevent position creeping up the buffer
-                    for (ByteBuffer b : appOuts)
-                    {
-                        if (BufferUtil.isEmpty(b))
-                            BufferUtil.clear(b);
-                        else
-                            allConsumed=false;
-                    }
-
                     Status wrapResultStatus = wrapResult.getStatus();
+                    
+                    boolean allConsumed=true;
+                    for (ByteBuffer b : appOuts)
+                        if (BufferUtil.hasContent(b))
+                            allConsumed=false;  
 
                     // and deal with the results returned from the sslEngineWrap
                     switch (wrapResultStatus)
@@ -777,13 +780,20 @@ public class SslConnection extends AbstractConnection
 
                             // if we have net bytes, let's try to flush them
                             if (BufferUtil.hasContent(_encryptedOutput))
-                                getEndPoint().flush(_encryptedOutput);
+                                if (!getEndPoint().flush(_encryptedOutput));
+                                    getEndPoint().flush(_encryptedOutput); // one retry
 
                             // But we also might have more to do for the handshaking state.
                             switch (handshakeStatus)
                             {
                                 case NOT_HANDSHAKING:
-                                    // Return with the number of bytes consumed (which may be 0)
+                                    // If we have not consumed all and had just finished handshaking, then we may
+                                    // have just flushed the last handshake in the encrypted buffers, so we should
+                                    // try again.
+                                    if (!allConsumed && wrapResult.getHandshakeStatus()==HandshakeStatus.FINISHED && BufferUtil.isEmpty(_encryptedOutput))
+                                        continue;
+                                    
+                                    // Return true if we consumed all the bytes and encrypted are all flushed
                                     return allConsumed && BufferUtil.isEmpty(_encryptedOutput);
 
                                 case NEED_TASK:
