@@ -30,10 +30,12 @@ import static org.mockito.Mockito.when;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+import java.nio.charset.StandardCharsets;
 import java.security.SecureRandom;
 import java.util.Arrays;
 import java.util.concurrent.Callable;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Exchanger;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
@@ -41,7 +43,9 @@ import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.util.BlockingCallback;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FutureCallback;
@@ -509,7 +513,7 @@ public class WriteFlusherTest
                 BufferUtil.flipToFill(byteBuffer); // pretend everything has been written
                 writeCalledLatch.countDown();
                 failedCalledLatch.await(5, TimeUnit.SECONDS);
-                return null;
+                return Boolean.TRUE;
             }
         });
     }
@@ -522,7 +526,7 @@ public class WriteFlusherTest
         final CountDownLatch writeCalledLatch = new CountDownLatch(1);
         final CountDownLatch completeWrite = new CountDownLatch(1);
 
-        final WriteFlusher writeFlusher = new WriteFlusher(new EndPointMock(writeCalledLatch, failedCalledLatch))
+        final WriteFlusher writeFlusher = new WriteFlusher(new EndPointConcurrentAccessToIncompleteWriteAndOnFailMock(writeCalledLatch, failedCalledLatch))
         {
             @Override
             protected void onIncompleteFlushed()
@@ -555,12 +559,13 @@ public class WriteFlusherTest
         assertThat("callback complete has not been called", callback.isCompleted(), is(false));
     }
 
-    private static class EndPointMock extends ByteArrayEndPoint
+    private static class EndPointConcurrentAccessToIncompleteWriteAndOnFailMock extends ByteArrayEndPoint
     {
         private final CountDownLatch writeCalledLatch;
         private final CountDownLatch failedCalledLatch;
+        private final AtomicBoolean stalled=new AtomicBoolean(false);
 
-        public EndPointMock(CountDownLatch writeCalledLatch, CountDownLatch failedCalledLatch)
+        public EndPointConcurrentAccessToIncompleteWriteAndOnFailMock(CountDownLatch writeCalledLatch, CountDownLatch failedCalledLatch)
         {
             this.writeCalledLatch = writeCalledLatch;
             this.failedCalledLatch = failedCalledLatch;
@@ -574,6 +579,13 @@ public class WriteFlusherTest
             int oldPos = byteBuffer.position();
             if (byteBuffer.remaining() == 2)
             {
+                // make sure we stall at least once
+                if (!stalled.get())
+                {
+                    stalled.set(true);
+                    return false;
+                }
+                
                 // make sure failed is called before we go on
                 try
                 {
@@ -600,6 +612,87 @@ public class WriteFlusherTest
             return true;
         }
     }
+
+    @Test
+    public void testIterationOnNonBlockedStall() throws Exception
+    {
+        final Exchanger<Integer> exchange = new Exchanger<>();
+        final AtomicInteger window = new AtomicInteger(10);
+        EndPointIterationOnNonBlockedStallMock endp=new EndPointIterationOnNonBlockedStallMock(window);
+        final WriteFlusher writeFlusher = new WriteFlusher(endp)
+        {
+            @Override
+            protected void onIncompleteFlushed()
+            {
+                executor.submit(new Runnable() 
+                { 
+                    public void run() 
+                    {
+                        try
+                        {
+                            while(window.get()==0)
+                                window.addAndGet(exchange.exchange(0));
+                            completeWrite(); 
+                        }
+                        catch(Throwable th)
+                        {
+                            th.printStackTrace();
+                        }
+                    }
+                });
+
+            }
+        };
+
+        BlockingCallback callback = new BlockingCallback();
+        writeFlusher.write(callback,BufferUtil.toBuffer("How "),BufferUtil.toBuffer("now "),BufferUtil.toBuffer("brown "),BufferUtil.toBuffer("cow."));
+        exchange.exchange(0);
+        
+        Assert.assertThat(endp.takeOutputString(StandardCharsets.US_ASCII),Matchers.equalTo("How now br"));
+        
+        exchange.exchange(1);
+        exchange.exchange(0);
+        
+        Assert.assertThat(endp.takeOutputString(StandardCharsets.US_ASCII),Matchers.equalTo("o"));
+        
+        exchange.exchange(8);
+        callback.block();
+        
+        Assert.assertThat(endp.takeOutputString(StandardCharsets.US_ASCII),Matchers.equalTo("wn cow."));
+        
+    }
+
+    private static class EndPointIterationOnNonBlockedStallMock extends ByteArrayEndPoint
+    {
+        final AtomicInteger _window;
+        
+        public EndPointIterationOnNonBlockedStallMock(AtomicInteger window)
+        {
+            _window=window;
+        }
+
+        @Override
+        public boolean flush(ByteBuffer... buffers) throws IOException
+        {
+            ByteBuffer byteBuffer = buffers[0];
+            
+            if (_window.get()>0 && byteBuffer.hasRemaining())
+            {
+                // consume 1 byte
+                byte one = byteBuffer.get(byteBuffer.position());
+                if (super.flush(ByteBuffer.wrap(new byte[]{one})))
+                {
+                    _window.decrementAndGet();
+                    byteBuffer.position(byteBuffer.position()+1);
+                }
+            }
+            for (ByteBuffer b: buffers)
+                if (BufferUtil.hasContent(b))
+                    return false;
+            return true;
+        }
+    }
+    
 
     private static class FailedCaller implements Callable<FutureCallback>
     {
