@@ -504,7 +504,7 @@ public class ResourceCache
         @Override
         public String toString()
         {
-            return String.format("CachedContent@%x{r=%s,e=%b,lm=%d,ct=%s}",hashCode(),_resource,_resource.exists(),BufferUtil.toString(_lastModifiedBytes),_contentType);
+            return String.format("CachedContent@%x{r=%s,e=%b,lm=%s,ct=%s}",hashCode(),_resource,_resource.exists(),BufferUtil.toString(_lastModifiedBytes),_contentType);
         }   
     }
 }
