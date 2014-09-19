@@ -138,7 +138,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(failure);
-            terminate(failure);
+            abort(failure);
             throw failure;
         }
     }
@@ -148,7 +148,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _channel.write(content, complete, callback);
     }
 
-    private void terminate(Throwable failure)
+    private void abort(Throwable failure)
     {
         closed();
         _channel.abort(failure);
@@ -230,7 +230,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug(x);
-                        terminate(x);
+                        abort(x);
                     }
                     finally
                     {
@@ -581,7 +581,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(failure);
-            terminate(failure);
+            abort(failure);
             throw failure;
         }
     }
@@ -603,7 +603,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(failure);
-            terminate(failure);
+            abort(failure);
             throw failure;
         }
     }
@@ -625,7 +625,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(failure);
-            terminate(failure);
+            abort(failure);
             throw failure;
         }
     }
@@ -649,7 +649,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             @Override
             public void failed(Throwable x)
             {
-                terminate(x);
+                abort(x);
                 callback.failed(x);
             }
         });
@@ -759,7 +759,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         }
         catch(Throwable th)
         {
-            terminate(th);
+            abort(th);
             callback.failed(th);
         }
     }
@@ -1134,7 +1134,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void onCompleteFailure(Throwable x)
         {
-            terminate(x);
+            abort(x);
             _channel.getByteBufferPool().release(_buffer);
             HttpOutput.this.close(_in);
             super.onCompleteFailure(x);
@@ -1191,7 +1191,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         @Override
         public void onCompleteFailure(Throwable x)
         {
-            terminate(x);
+            abort(x);
             _channel.getByteBufferPool().release(_buffer);
             HttpOutput.this.close(_in);
             super.onCompleteFailure(x);
