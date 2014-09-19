@@ -648,9 +648,20 @@ public class FlowControlTest extends AbstractTest
         session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter());
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.allocate(FlowControl.DEFAULT_WINDOW_SIZE);
-        stream.data(new DataFrame(stream.getId(), data, false), Callback.Adapter.INSTANCE);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        stream.data(new DataFrame(stream.getId(), data, false), new Callback.Adapter()
+        {
+            @Override
+            public void succeeded()
+            {
+                dataLatch.countDown();
+            }
+        });
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 
-        // Now the client is supposed to not send more frames, but what if it does ?
+
+        // Now the client is supposed to not send more frames.
+        // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(connector.getByteBufferPool());
         ByteBuffer extraData = ByteBuffer.allocate(1024);
@@ -695,9 +706,19 @@ public class FlowControlTest extends AbstractTest
         session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter());
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.allocate(FlowControl.DEFAULT_WINDOW_SIZE);
-        stream.data(new DataFrame(stream.getId(), data, false), Callback.Adapter.INSTANCE);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        stream.data(new DataFrame(stream.getId(), data, false), new Callback.Adapter()
+        {
+            @Override
+            public void succeeded()
+            {
+                dataLatch.countDown();
+            }
+        });
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 
-        // Now the client is supposed to not send more frames, but what if it does ?
+        // Now the client is supposed to not send more frames.
+        // If it does, the connection must be closed.
         HTTP2Session http2Session = (HTTP2Session)session;
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(connector.getByteBufferPool());
         ByteBuffer extraData = ByteBuffer.allocate(1024);
