@@ -65,7 +65,8 @@ public class PushCacheFilter implements Filter
     private static final Logger LOG = Log.getLogger(PushCacheFilter.class);
 
     private final ConcurrentMap<String, PrimaryResource> _cache = new ConcurrentHashMap<>();
-    private long _associatePeriod = 2000L;
+    private long _associatePeriod = 4000L;
+    private volatile long _renew = System.nanoTime();
     
     @Override
     public void init(FilterConfig config) throws ServletException
@@ -78,6 +79,7 @@ public class PushCacheFilter implements Filter
     @Override
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException, ServletException
     {
+        long now=System.nanoTime();
         HttpServletRequest request = (HttpServletRequest)req;
         
         if (Boolean.TRUE==req.getAttribute("org.eclipse.jetty.pushed"))
@@ -86,7 +88,6 @@ public class PushCacheFilter implements Filter
             chain.doFilter(req,resp);
             return;
         }
-        
 
         // Iterating over fields is more efficient than multiple gets
         HttpFields fields = Request.getBaseRequest(req).getHttpFields();
@@ -120,66 +121,80 @@ public class PushCacheFilter implements Filter
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} referrer={} conditional={}", request.getMethod(), request.getRequestURI(), referrer, conditional);
 
-        if (!conditional)
+        String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
+        if (path.endsWith("__renewPushCache__"))
         {
-            String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Renew {}", now);
+            _renew=now;
+        }
 
-            if (referrer != null)
+        if (referrer != null)
+        {
+            HttpURI referrerURI = new HttpURI(referrer);
+            if (request.getServerName().equals(referrerURI.getHost()) &&
+                    request.getServerPort() == referrerURI.getPort())
             {
-                HttpURI referrerURI = new HttpURI(referrer);
-                if (request.getServerName().equals(referrerURI.getHost()) &&
-                        request.getServerPort() == referrerURI.getPort())
+                String referrerPath = referrerURI.getPath();
+                if (referrerPath.startsWith(request.getContextPath()))
                 {
-                    String referrerPath = referrerURI.getPath();
-                    if (referrerPath.startsWith(request.getContextPath()))
+                    String referrerPathNoContext = referrerPath.substring(request.getContextPath().length());
+                    PrimaryResource primaryResource = _cache.get(referrerPathNoContext);
+                    if (primaryResource != null)
                     {
-                        String referrerPathNoContext = referrerPath.substring(request.getContextPath().length());
-                        PrimaryResource primaryResource = _cache.get(referrerPathNoContext);
-                        if (primaryResource != null)
+                        long primaryTimestamp = primaryResource._timestamp.get();
+                        if (primaryTimestamp != 0)
                         {
-                            long primaryTimestamp = primaryResource._timestamp.get();
-                            if (primaryTimestamp != 0)
+                            RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher(path);
+                            if (now - primaryTimestamp < TimeUnit.MILLISECONDS.toNanos(_associatePeriod))
                             {
-                                RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher(path);
-                                if (System.nanoTime() - primaryTimestamp < TimeUnit.MILLISECONDS.toNanos(_associatePeriod))
-                                {
-                                    if (primaryResource._associated.putIfAbsent(path, dispatcher) == null)
-                                    {
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("Associated {} -> {}", referrerPathNoContext, dispatcher);
-                                    }
-                                }
-                                else
+                                if (primaryResource._associated.putIfAbsent(path, dispatcher) == null)
                                 {
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("Not associated {} -> {}, outside associate period of {}ms", referrerPathNoContext, dispatcher, _associatePeriod);
+                                        LOG.debug("Associated {} -> {}", referrerPathNoContext, dispatcher);
                                 }
+                            }
+                            else
+                            {
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Not associated {} -> {}, outside associate period of {}ms", referrerPathNoContext, dispatcher, _associatePeriod);
                             }
                         }
                     }
                 }
             }
+        }
 
-            // Push some resources?
-            PrimaryResource primaryResource = _cache.get(path);
-            if (primaryResource == null)
+        // Push some resources?
+        PrimaryResource primaryResource = _cache.get(path);
+        if (primaryResource == null)
+        {
+            PrimaryResource t = new PrimaryResource();
+            primaryResource = _cache.putIfAbsent(path, t);
+            primaryResource = primaryResource == null ? t : primaryResource;
+            primaryResource._timestamp.compareAndSet(0, now);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Cached {}", path);
+        }
+        else 
+        {
+            long last=primaryResource._timestamp.get();
+            if (last<_renew && primaryResource._timestamp.compareAndSet(last, now))
             {
-                PrimaryResource t = new PrimaryResource();
-                primaryResource = _cache.putIfAbsent(path, t);
-                primaryResource = primaryResource == null ? t : primaryResource;
-                primaryResource._timestamp.compareAndSet(0, System.nanoTime());
+                primaryResource._associated.clear();
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Cached {}", path);
+                    LOG.debug("Clear associated {}", path);
             }
+        }
 
-            if (!primaryResource._associated.isEmpty())
+        // Push associated for non conditional
+        if (!conditional && !primaryResource._associated.isEmpty())
+        {
+            for (RequestDispatcher dispatcher : primaryResource._associated.values())
             {
-                for (RequestDispatcher dispatcher : primaryResource._associated.values())
-                {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Pushing {} <- {}", dispatcher, path);
-                    ((Dispatcher)dispatcher).push(request);
-                }
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Pushing {} <- {}", dispatcher, path);
+                ((Dispatcher)dispatcher).push(request);
             }
         }
 
