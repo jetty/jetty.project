@@ -91,10 +91,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         String pathSpec = "/*";
         EnumSet<DispatcherType> dispatcherTypes = EnumSet.of(DispatcherType.REQUEST);
         boolean isMatchAfter = false;
-        String urlPatterns[] =
-        {
-            pathSpec
-        };
+        String urlPatterns[] = { pathSpec };
 
         FilterRegistration.Dynamic dyn = context.addFilter(name,filter);
         dyn.addMappingForUrlPatterns(dispatcherTypes,isMatchAfter,urlPatterns);
