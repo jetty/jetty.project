@@ -21,12 +21,15 @@ package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
 import java.util.HashMap;
+import java.util.HashSet;
 import java.util.Map;
+import java.util.Set;
 import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -67,6 +70,9 @@ public class PushCacheFilter implements Filter
     private final ConcurrentMap<String, PrimaryResource> _cache = new ConcurrentHashMap<>();
     private long _associatePeriod = 4000L;
     private volatile long _renew = System.nanoTime();
+    private String _renewPath = "/__renewPushCache__";
+    private final Set<Integer> _ports = new HashSet<>();
+    private final Set<String> _hosts = new HashSet<>();
     
     @Override
     public void init(FilterConfig config) throws ServletException
@@ -74,6 +80,23 @@ public class PushCacheFilter implements Filter
         String associatePeriod = config.getInitParameter("associatePeriod");
         if (associatePeriod != null)
             _associatePeriod = Long.valueOf(associatePeriod);
+
+        String renew=config.getInitParameter("renewPath");
+        if (renew!=null)
+            _renewPath=renew;
+        
+        String hosts = config.getInitParameter("hosts");
+        if (hosts!=null)
+            for (String h:hosts.split(","))
+                _hosts.add(h);
+                
+        String ports = config.getInitParameter("ports");
+        if (ports!=null)
+            for (String p:ports.split(","))
+                _ports.add(Integer.parseInt(p));
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("p={} renew={} hosts={} ports={}",_associatePeriod,_renewPath,_hosts,_ports);
     }
 
     @Override
@@ -84,7 +107,8 @@ public class PushCacheFilter implements Filter
         
         if (Boolean.TRUE==req.getAttribute("org.eclipse.jetty.pushed"))
         {
-            LOG.debug("PUSH {}", request.getRequestURI());
+            if (LOG.isDebugEnabled())
+                    LOG.debug("PUSH {}", request.getRequestURI());
             chain.doFilter(req,resp);
             return;
         }
@@ -122,18 +146,28 @@ public class PushCacheFilter implements Filter
             LOG.debug("{} {} referrer={} conditional={}", request.getMethod(), request.getRequestURI(), referrer, conditional);
 
         String path = URIUtil.addPaths(request.getServletPath(), request.getPathInfo());
-        if (path.endsWith("__renewPushCache__"))
+        if (path.endsWith(_renewPath))
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Renew {}", now);
             _renew=now;
+            resp.getOutputStream().print("PUSH CACHE RESET");
+            resp.flushBuffer();
+            return;
         }
 
         if (referrer != null)
         {
             HttpURI referrerURI = new HttpURI(referrer);
-            if (request.getServerName().equals(referrerURI.getHost()) &&
-                    request.getServerPort() == referrerURI.getPort())
+            String host=referrerURI.getHost();
+            int port=referrerURI.getPort();
+            if (port<=0)
+                port=request.isSecure()?443:80;
+                        
+            boolean referred_from_here=(_hosts.size()>0 )?_hosts.contains(host):request.getServerName().equals(host);
+            referred_from_here&=(_ports.size()>0)?_ports.contains(port):port==request.getServerPort();
+            
+            if (referred_from_here)
             {
                 String referrerPath = referrerURI.getPath();
                 if (referrerPath.startsWith(request.getContextPath()))
@@ -162,6 +196,11 @@ public class PushCacheFilter implements Filter
                         }
                     }
                 }
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("External referrer {}", referrer);
             }
         }
 

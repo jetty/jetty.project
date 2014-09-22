@@ -59,7 +59,8 @@ public class Http2Server
 
         ServletContextHandler context = new ServletContextHandler(server, "/",ServletContextHandler.SESSIONS);
         context.setResourceBase("/tmp");
-        context.addFilter(PushCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(PushCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST))
+        .setInitParameter("ports","443,6443,8443");
         context.addServlet(new ServletHolder(servlet), "/test/*");
         context.addServlet(DefaultServlet.class, "/");
         server.setHandler(context);
