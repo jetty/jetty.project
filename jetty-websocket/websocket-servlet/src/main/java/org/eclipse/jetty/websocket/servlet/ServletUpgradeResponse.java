@@ -59,7 +59,12 @@ public class ServletUpgradeResponse extends UpgradeResponse
 
     public boolean isCommitted()
     {
-        return response.isCommitted();
+        if (response != null)
+        {
+            return response.isCommitted();
+        }
+        // True in all other cases
+        return true;
     }
 
     public boolean isExtensionsNegotiated()
