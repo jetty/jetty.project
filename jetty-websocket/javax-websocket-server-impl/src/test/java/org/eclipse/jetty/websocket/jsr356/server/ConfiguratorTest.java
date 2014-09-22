@@ -18,12 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.Matchers.*;
+
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.OnMessage;
@@ -48,9 +52,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.nullValue;
 
 public class ConfiguratorTest
 {
@@ -161,6 +162,48 @@ public class ConfiguratorTest
             return response.toString();
         }
     }
+    
+    public static class UniqueUserPropsConfigurator extends ServerEndpointConfig.Configurator
+    {
+        private AtomicInteger upgradeCount = new AtomicInteger(0);
+        
+        @Override
+        public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
+        {
+            int upgradeNum = upgradeCount.addAndGet(1);
+            LOG.debug("Upgrade Num: {}", upgradeNum);
+            sec.getUserProperties().put("upgradeNum",Integer.toString(upgradeNum));
+            switch(upgradeNum) {
+                case 1: sec.getUserProperties().put("apple", "fruit from tree"); break;
+                case 2: sec.getUserProperties().put("blueberry", "fruit from bush"); break;
+                case 3: sec.getUserProperties().put("strawberry", "fruit from annual"); break;
+                default: sec.getUserProperties().put("fruit"+upgradeNum, "placeholder"); break;
+            }
+            
+            super.modifyHandshake(sec,request,response);
+        }
+    }
+    
+    @ServerEndpoint(value = "/unique-user-props", configurator = UniqueUserPropsConfigurator.class)
+    public static class UniqueUserPropsSocket
+    {
+        @OnMessage
+        public String onMessage(Session session, String msg)
+        {
+            String value = (String)session.getUserProperties().get(msg);
+            StringBuilder response = new StringBuilder();
+            response.append("Requested User Property: [").append(msg).append("] = ");
+            if (value == null)
+            {
+                response.append("<null>");
+            }
+            else
+            {
+                response.append('"').append(value).append('"');
+            }
+            return response.toString();
+        }
+    }
 
     private static Server server;
     private static URI baseServerUri;
@@ -182,6 +225,7 @@ public class ConfiguratorTest
         container.addEndpoint(EmptySocket.class);
         container.addEndpoint(NoExtensionsSocket.class);
         container.addEndpoint(ProtocolsSocket.class);
+        container.addEndpoint(UniqueUserPropsSocket.class);
 
         server.start();
         String host = connector.getHost();
@@ -247,6 +291,43 @@ public class ConfiguratorTest
             EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
             WebSocketFrame frame = frames.poll();
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Request Header [X-Dummy]: \"Bogus\""));
+        }
+    }
+    
+    @Test
+    public void testUniqueUserPropsConfigurator() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/unique-user-props");
+
+        // First request
+        try (BlockheadClient client = new BlockheadClient(uri))
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            client.write(new TextFrame().setPayload("apple"));
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [apple] = \"fruit from tree\""));
+        }
+        
+        // Second request
+        try (BlockheadClient client = new BlockheadClient(uri))
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+
+            client.write(new TextFrame().setPayload("apple"));
+            client.write(new TextFrame().setPayload("blueberry"));
+            EventQueue<WebSocketFrame> frames = client.readFrames(2,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
+            // should have no value
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [apple] = <null>"));
+            
+            frame = frames.poll();
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [blueberry] = \"fruit from bush\""));
         }
     }
     

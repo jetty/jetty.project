@@ -56,8 +56,14 @@ public class JsrCreator implements WebSocketCreator
         JsrHandshakeRequest hsreq = new JsrHandshakeRequest(req);
         JsrHandshakeResponse hsresp = new JsrHandshakeResponse(resp);
 
+        // Get raw config, as defined when the endpoint was added to the container
         ServerEndpointConfig config = metadata.getConfig();
+        
+        // Establish a copy of the config, so that the UserProperties are unique
+        // per upgrade request.
+        config = new BasicServerEndpointConfig(config);
 
+        // Get Configurator from config object (not guaranteed to be unique per endpoint upgrade)
         ServerEndpointConfig.Configurator configurator = config.getConfigurator();
 
         // modify handshake
