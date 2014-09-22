@@ -450,6 +450,11 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         return destHttpURI;
     }
 
+    public InetSocketAddress getLocalSocketAddress()
+    {
+        return (InetSocketAddress)socket.getLocalSocketAddress();
+    }
+
     public IOState getIOState()
     {
         return ioState;
@@ -458,6 +463,12 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
     public String getProtocols()
     {
         return protocols;
+    }
+    
+
+    public InetSocketAddress getRemoteSocketAddress()
+    {
+        return (InetSocketAddress)socket.getRemoteSocketAddress();
     }
 
     public String getRequestHost()

@@ -20,6 +20,9 @@ package org.eclipse.jetty.websocket.jsr356.server;
 
 import static org.hamcrest.Matchers.*;
 
+import java.io.PrintWriter;
+import java.io.StringWriter;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.util.Collections;
 import java.util.List;
@@ -204,7 +207,46 @@ public class ConfiguratorTest
             return response.toString();
         }
     }
+    
+    public static class AddrConfigurator extends ServerEndpointConfig.Configurator
+    {
+        @Override
+        public void modifyHandshake(ServerEndpointConfig sec, HandshakeRequest request, HandshakeResponse response)
+        {
+            InetSocketAddress local = (InetSocketAddress)sec.getUserProperties().get(JsrCreator.PROP_LOCAL_ADDRESS);
+            InetSocketAddress remote = (InetSocketAddress)sec.getUserProperties().get(JsrCreator.PROP_REMOTE_ADDRESS);
+            
+            sec.getUserProperties().put("found.local", local);
+            sec.getUserProperties().put("found.remote", remote);
+            
+            super.modifyHandshake(sec,request,response);
+        }
+    }
+    
+    @ServerEndpoint(value = "/addr", configurator = AddrConfigurator.class)
+    public static class AddressSocket
+    {
+        @OnMessage
+        public String onMessage(Session session, String msg)
+        {
+            StringBuilder response = new StringBuilder();
+            appendPropValue(session,response,"javax.websocket.endpoint.localAddress");
+            appendPropValue(session,response,"javax.websocket.endpoint.remoteAddress");
+            appendPropValue(session,response,"found.local");
+            appendPropValue(session,response,"found.remote");
+            return response.toString();
+        }
 
+        private void appendPropValue(Session session, StringBuilder response, String key)
+        {
+            InetSocketAddress value = (InetSocketAddress)session.getUserProperties().get(key);
+
+            response.append("[").append(key).append("] = ");
+            response.append(toSafeAddr(value));
+            response.append(System.lineSeparator());
+        }
+    }
+    
     private static Server server;
     private static URI baseServerUri;
 
@@ -226,6 +268,7 @@ public class ConfiguratorTest
         container.addEndpoint(NoExtensionsSocket.class);
         container.addEndpoint(ProtocolsSocket.class);
         container.addEndpoint(UniqueUserPropsSocket.class);
+        container.addEndpoint(AddressSocket.class);
 
         server.start();
         String host = connector.getHost();
@@ -237,6 +280,15 @@ public class ConfiguratorTest
         baseServerUri = new URI(String.format("ws://%s:%d/",host,port));
         if (LOG.isDebugEnabled())
             LOG.debug("Server started on {}",baseServerUri);
+    }
+
+    public static String toSafeAddr(InetSocketAddress addr)
+    {
+        if (addr == null)
+        {
+            return "<null>";
+        }
+        return String.format("%s:%d",addr.getAddress().getHostAddress(),addr.getPort());
     }
 
     @AfterClass
@@ -328,6 +380,37 @@ public class ConfiguratorTest
             
             frame = frames.poll();
             Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is("Requested User Property: [blueberry] = \"fruit from bush\""));
+        }
+    }
+    
+    @Test
+    public void testUserPropsAddress() throws Exception
+    {
+        URI uri = baseServerUri.resolve("/addr");
+
+        // First request
+        try (BlockheadClient client = new BlockheadClient(uri))
+        {
+            client.connect();
+            client.sendStandardRequest();
+            client.expectUpgradeResponse();
+            
+            InetSocketAddress expectedLocal = client.getLocalSocketAddress();
+            InetSocketAddress expectedRemote = client.getRemoteSocketAddress();
+
+            client.write(new TextFrame().setPayload("addr"));
+            EventQueue<WebSocketFrame> frames = client.readFrames(1,1,TimeUnit.SECONDS);
+            WebSocketFrame frame = frames.poll();
+            
+            StringWriter expected = new StringWriter();
+            PrintWriter out = new PrintWriter(expected);
+            // local <-> remote are opposite on server (duh)
+            out.printf("[javax.websocket.endpoint.localAddress] = %s%n", toSafeAddr(expectedRemote));
+            out.printf("[javax.websocket.endpoint.remoteAddress] = %s%n", toSafeAddr(expectedLocal));
+            out.printf("[found.local] = %s%n",toSafeAddr(expectedRemote));
+            out.printf("[found.remote] = %s%n",toSafeAddr(expectedLocal));
+            
+            Assert.assertThat("Frame Response", frame.getPayloadAsUTF8(), is(expected.toString()));
         }
     }
     
