@@ -22,8 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
-import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ReadListener;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -38,6 +36,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 
 public class AsyncProxyServlet extends ProxyServlet
 {
@@ -114,25 +113,12 @@ public class AsyncProxyServlet extends ProxyServlet
         }
     }
 
-    /**
-     * State machine for reader
-     *                                null     PENDING      SUCCESS   FAILURE
-     *                                ---------------------------------------
-     *   onRequestContent call        null     null         null      null
-     *   onRequestContent called      PENDING  -            (iterate) -
-     *   succeeded                    SUCCESS  SUCCESS->ODA -         -
-     *   failed                       FAILED   FAILED       -         -
-     *   
-     */
-    private enum ReadState { OFFER, PENDING, SUCCESS, FAILURE };
-        
-    protected class StreamReader implements ReadListener, Callback
+    protected class StreamReader extends IteratingCallback implements ReadListener
     {
         private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
         private final Request proxyRequest;
         private final HttpServletRequest request;
         private final DeferredContentProvider provider;
-        private final AtomicReference<ReadState> state = new AtomicReference<>(null);
 
         protected StreamReader(Request proxyRequest, HttpServletRequest request, DeferredContentProvider provider)
         {
@@ -144,13 +130,28 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void onDataAvailable() throws IOException
         {
-            int requestId=0; 
-            ServletInputStream input = request.getInputStream();
+            iterate();
+        }
+
+        @Override
+        public void onAllDataRead() throws IOException
+        {
             if (_log.isDebugEnabled())
-            {   
-                requestId= getRequestId(request);
-                _log.debug("{} asynchronous read start on {}", requestId, input);
-            }
+                _log.debug("{} proxying content to upstream completed", getRequestId(request));
+            provider.close();
+        }
+
+        @Override
+        public void onError(Throwable t)
+        {
+            onClientRequestFailure(proxyRequest, request, t);
+        }
+
+        @Override
+        protected Action process() throws Exception
+        {
+            int requestId = _log.isDebugEnabled() ? getRequestId(request) : 0;
+            ServletInputStream input = request.getInputStream();
 
             // First check for isReady() because it has
             // side effects, and then for isFinished().
@@ -163,16 +164,22 @@ public class AsyncProxyServlet extends ProxyServlet
                 {
                     if (_log.isDebugEnabled())
                         _log.debug("{} proxying content to upstream: {} bytes", requestId, read);
-                    state.set(ReadState.OFFER);
                     onRequestContent(proxyRequest, request, provider, buffer, 0, read, this);
-                    if (state.compareAndSet(ReadState.OFFER,ReadState.PENDING) || state.get()!=ReadState.SUCCESS)
-                        break;
+                    return Action.SCHEDULED;
                 }
             }
-            if (!input.isFinished())
+
+            if (input.isFinished())
+            {
+                if (_log.isDebugEnabled())
+                    _log.debug("{} asynchronous read complete on {}", requestId, input);
+                return Action.SUCCEEDED;
+            }
+            else
             {
                 if (_log.isDebugEnabled())
                     _log.debug("{} asynchronous read pending on {}", requestId, input);
+                return Action.IDLE;
             }
         }
 
@@ -182,76 +189,10 @@ public class AsyncProxyServlet extends ProxyServlet
         }
 
         @Override
-        public void onAllDataRead() throws IOException
-        {
-            if (_log.isDebugEnabled())
-                _log.debug("{} proxying content to upstream completed", getRequestId(request));
-            provider.close();
-        }
-
-        @Override
-        public void onError(Throwable x)
-        {
-            failed(x);
-        }
-
-        @Override
-        public void succeeded()
-        {
-            loop: while (true)
-            {
-                switch(state.get())
-                {
-                    case OFFER:
-                        if (!state.compareAndSet(ReadState.OFFER,ReadState.SUCCESS))
-                            continue;
-                        // Nothing to do as onDataAvailable() will iterate
-                        break loop;
-                        
-                    case PENDING:
-                      if (!state.compareAndSet(ReadState.PENDING,ReadState.SUCCESS))
-                          continue;
-                      try
-                      {
-                          onDataAvailable();
-                      }
-                      catch (Throwable x)
-                      {
-                          failed(x);
-                      }
-                      break loop;
-                      
-                    default:
-                        throw new IllegalStateException("state="+state.get());
-                }
-            }
-            
-        }
-
-        @Override
         public void failed(Throwable x)
         {
-            while (true)
-            {
-                switch(state.get())
-                {
-                    case OFFER:
-                        if (!state.compareAndSet(ReadState.OFFER,ReadState.SUCCESS))
-                            continue;                
-                        onClientRequestFailure(proxyRequest, request, x);
-                        break;
-
-                    case PENDING:
-                        if (!state.compareAndSet(ReadState.PENDING,ReadState.SUCCESS))
-                            continue;                        
-
-                        onClientRequestFailure(proxyRequest, request, x);
-                        break;
-                      
-                    default:
-                        throw new IllegalStateException(x);
-                }
-            }
+            super.failed(x);
+            onError(x);
         }
     }
 
