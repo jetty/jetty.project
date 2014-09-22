@@ -155,6 +155,8 @@ public class HttpContent implements Callback, Closeable
     @Override
     public void succeeded()
     {
+        if (isConsumed())
+            return;
         if (iterator instanceof Callback)
             ((Callback)iterator).succeeded();
     }
@@ -162,6 +164,8 @@ public class HttpContent implements Callback, Closeable
     @Override
     public void failed(Throwable x)
     {
+        if (isConsumed())
+            return;
         if (iterator instanceof Callback)
             ((Callback)iterator).failed(x);
     }
