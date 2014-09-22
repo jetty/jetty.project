@@ -18,4 +18,10 @@ time it is run.
   <Set name="autoPreconfigure">true</Set>
   <Set name="contextPath">/</Set>
   <Set name="war"><Property name="jetty.webapps" default="."/>/application.war</Set>
+  <!--
+  <Call name="setInitParameter">
+    <Arg>org.eclipse.jetty.jsp.precompiled</Arg>
+    <Arg>true</Arg>
+  </Call>
+  -->
 </Configure>
