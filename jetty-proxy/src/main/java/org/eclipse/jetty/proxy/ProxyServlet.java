@@ -85,14 +85,14 @@ public class ProxyServlet extends HttpServlet
     private static final Set<String> HOP_HEADERS = new HashSet<>();
     static
     {
-        HOP_HEADERS.add("proxy-connection");
         HOP_HEADERS.add("connection");
         HOP_HEADERS.add("keep-alive");
+        HOP_HEADERS.add("proxy-authorization");
+        HOP_HEADERS.add("proxy-authenticate");
+        HOP_HEADERS.add("proxy-connection");
         HOP_HEADERS.add("transfer-encoding");
         HOP_HEADERS.add("te");
         HOP_HEADERS.add("trailer");
-        HOP_HEADERS.add("proxy-authorization");
-        HOP_HEADERS.add("proxy-authenticate");
         HOP_HEADERS.add("upgrade");
     }
 
@@ -406,7 +406,25 @@ public class ProxyServlet extends HttpServlet
                 .method(request.getMethod())
                 .version(HttpVersion.fromString(request.getProtocol()));
 
-        // Copy headers
+        // Copy headers.
+
+        // Any header listed by the Connection header must be removed:
+        // http://tools.ietf.org/html/rfc7230#section-6.1.
+        Set<String> hopHeaders = null;
+        Enumeration<String> connectionHeaders = request.getHeaders(HttpHeader.CONNECTION.asString());
+        while (connectionHeaders.hasMoreElements())
+        {
+            String value = connectionHeaders.nextElement();
+            String[] values = value.split(",");
+            for (String name : values)
+            {
+                name = name.trim().toLowerCase(Locale.ENGLISH);
+                if (hopHeaders == null)
+                    hopHeaders = new HashSet<>();
+                hopHeaders.add(name);
+            }
+        }
+
         boolean hasContent = request.getContentLength() > 0 || request.getContentType() != null;
         for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();)
         {
@@ -419,8 +437,10 @@ public class ProxyServlet extends HttpServlet
             if (_hostHeader != null && HttpHeader.HOST.is(headerName))
                 continue;
 
-            // Remove hop-by-hop headers
+            // Remove hop-by-hop headers.
             if (HOP_HEADERS.contains(lowerHeaderName))
+                continue;
+            if (hopHeaders != null && hopHeaders.contains(lowerHeaderName))
                 continue;
 
             for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
