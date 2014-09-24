@@ -66,6 +66,7 @@ public class FileSystemResourceTest
     
     private final Class<? extends Resource> _class;
 
+    @SuppressWarnings("deprecation")
     @Parameters(name="{0}")
     public static Collection<Object[]> data() 
     {
@@ -748,6 +749,168 @@ public class FileSystemResourceTest
         try (Resource base = newResource(testdir.getDir()))
         {
             Resource res = base.addPath("foo;");
+            assertThat("Alias: " + res,res.getAlias(),nullValue());
+        }
+    }
+    
+    @Test
+    public void testSingleQuote() throws Exception
+    {
+        File dir = testdir.getDir();
+        
+        try
+        {
+            // attempt to create file
+            Path foo = new File(dir, "foo' bar").toPath();
+            Files.createFile(foo);
+        }
+        catch (Exception e)
+        {
+            // if unable to create file, no point testing the rest.
+            // this is the path that Microsoft Windows takes.
+            assumeNoException(e);
+        }
+
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource res = base.addPath("foo' bar");
+            assertThat("Alias: " + res,res.getAlias(),nullValue());
+        }
+    }
+    
+    @Test
+    public void testSingleBackTick() throws Exception
+    {
+        File dir = testdir.getDir();
+        
+        try
+        {
+            // attempt to create file
+            Path foo = new File(dir, "foo` bar").toPath();
+            Files.createFile(foo);
+        }
+        catch (Exception e)
+        {
+            // if unable to create file, no point testing the rest.
+            // this is the path that Microsoft Windows takes.
+            assumeNoException(e);
+        }
+
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            // FileResource does not pass this test!
+            assumeFalse(base instanceof FileResource);
+
+            Resource res = base.addPath("foo` bar");
+            assertThat("Alias: " + res,res.getAlias(),nullValue());
+        }
+    }
+    
+    @Test
+    public void testBrackets() throws Exception
+    {
+        File dir = testdir.getDir();
+        
+        try
+        {
+            // attempt to create file
+            Path foo = new File(dir, "foo[1]").toPath();
+            Files.createFile(foo);
+        }
+        catch (Exception e)
+        {
+            // if unable to create file, no point testing the rest.
+            // this is the path that Microsoft Windows takes.
+            assumeNoException(e);
+        }
+
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource res = base.addPath("foo[1]");
+            assertThat("Alias: " + res,res.getAlias(),nullValue());
+        }
+    }
+    
+    @Test
+    public void testBraces() throws Exception
+    {
+        File dir = testdir.getDir();
+        
+        try
+        {
+            // attempt to create file
+            Path foo = new File(dir, "foo.{bar}.txt").toPath();
+            Files.createFile(foo);
+        }
+        catch (Exception e)
+        {
+            // if unable to create file, no point testing the rest.
+            // this is the path that Microsoft Windows takes.
+            assumeNoException(e);
+        }
+
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            // FileResource does not pass this test!
+            assumeFalse(base instanceof FileResource);
+
+            Resource res = base.addPath("foo.{bar}.txt");
+            assertThat("Alias: " + res,res.getAlias(),nullValue());
+        }
+    }
+    
+    @Test
+    public void testCaret() throws Exception
+    {
+        File dir = testdir.getDir();
+        
+        try
+        {
+            // attempt to create file
+            Path foo = new File(dir, "foo^3.txt").toPath();
+            Files.createFile(foo);
+        }
+        catch (Exception e)
+        {
+            // if unable to create file, no point testing the rest.
+            // this is the path that Microsoft Windows takes.
+            assumeNoException(e);
+        }
+
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            // FileResource does not pass this test!
+            assumeFalse(base instanceof FileResource);
+
+            Resource res = base.addPath("foo^3.txt");
+            assertThat("Alias: " + res,res.getAlias(),nullValue());
+        }
+    }
+    
+    @Test
+    public void testPipe() throws Exception
+    {
+        File dir = testdir.getDir();
+        
+        try
+        {
+            // attempt to create file
+            Path foo = new File(dir, "foo|bar.txt").toPath();
+            Files.createFile(foo);
+        }
+        catch (Exception e)
+        {
+            // if unable to create file, no point testing the rest.
+            // this is the path that Microsoft Windows takes.
+            assumeNoException(e);
+        }
+
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            // FileResource does not pass this test!
+            assumeFalse(base instanceof FileResource);
+
+            Resource res = base.addPath("foo|bar.txt");
             assertThat("Alias: " + res,res.getAlias(),nullValue());
         }
     }
