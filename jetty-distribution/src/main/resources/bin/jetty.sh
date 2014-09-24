@@ -1,4 +1,4 @@
-#!/usr/bin/env bash  
+#!/usr/bin/env bash
 #
 # Startup script for jetty under *nix systems (it works under NT/cygwin too).
 
@@ -278,6 +278,12 @@ if [ -z "$JETTY_STATE" ]
 then
   JETTY_STATE=$JETTY_BASE/${NAME}.state
 fi
+
+case "`uname`" in
+CYGWIN*) JETTY_STATE="`cygpath -w $JETTY_STATE`";;
+esac
+
+
 JETTY_ARGS+=("jetty.state=$JETTY_STATE")
 rm -f $JETTY_STATE
 
@@ -340,6 +346,11 @@ then
 fi
 if [ "$JETTY_LOGS" ]
 then
+
+  case "`uname`" in
+  CYGWIN*) JETTY_LOGS="`cygpath -w $JETTY_LOGS`";;
+  esac
+
   JAVA_OPTIONS+=("-Djetty.logs=$JETTY_LOGS")
 fi
 
@@ -355,6 +366,15 @@ esac
 #####################################################
 # Add jetty properties to Java VM options.
 #####################################################
+
+case "`uname`" in
+CYGWIN*) 
+JETTY_HOME="`cygpath -w $JETTY_HOME`"
+JETTY_BASE="`cygpath -w $JETTY_BASE`"
+TMPDIR="`cygpath -w $TMPDIR`"
+;;
+esac
+
 JAVA_OPTIONS+=("-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
 
 #####################################################
@@ -368,6 +388,10 @@ then
   echo "Cannot find a start.ini in your JETTY_BASE directory: $JETTY_BASE" 2>&2
   exit 1
 fi
+
+case "`uname`" in
+CYGWIN*) JETTY_START="`cygpath -w $JETTY_START`";;
+esac
 
 RUN_ARGS=(${JAVA_OPTIONS[@]} -jar "$JETTY_START" ${JETTY_ARGS[*]})
 RUN_CMD=("$JAVA" ${RUN_ARGS[@]})
