@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.0-SNAPSHOT</version>
+    <version>9.3.0.M0</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -10,6 +10,9 @@
   <artifactId>jetty-all</artifactId>
   <name>Jetty :: Aggregate :: All core Jetty</name>
   <url>http://www.eclipse.org/jetty</url>
+  <properties>
+    <bundle-symbolic-name>${project.groupId}.all</bundle-symbolic-name>
+  </properties>
   <build>
     <sourceDirectory>${project.build.directory}/sources</sourceDirectory>
     <plugins>

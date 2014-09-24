@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-npn-parent</artifactId>
-    <version>9.3.0-SNAPSHOT</version>
+    <version>9.3.0.M0</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-npn-client</artifactId>
