@@ -54,14 +54,14 @@ public class BasicServerEndpointConfig implements ServerEndpointConfig
 
     public BasicServerEndpointConfig(ServerEndpointConfig copy)
     {
+        // immutable concepts
         this.endpointClass = copy.getEndpointClass();
         this.path = copy.getPath();
 
-        this.decoders = new ArrayList<>(copy.getDecoders());
-        this.encoders = new ArrayList<>(copy.getEncoders());
-        this.subprotocols = new ArrayList<>(copy.getSubprotocols());
-        this.extensions = new ArrayList<>(copy.getExtensions());
-        this.userProperties = new HashMap<>(copy.getUserProperties());
+        this.decoders = copy.getDecoders();
+        this.encoders = copy.getEncoders();
+        this.subprotocols = copy.getSubprotocols();
+        this.extensions = copy.getExtensions();
         if (copy.getConfigurator() != null)
         {
             this.configurator = copy.getConfigurator();
@@ -70,6 +70,9 @@ public class BasicServerEndpointConfig implements ServerEndpointConfig
         {
             this.configurator = BasicServerEndpointConfigurator.INSTANCE;
         }
+
+        // mutable concepts
+        this.userProperties = new HashMap<>(copy.getUserProperties());
     }
 
     @Override

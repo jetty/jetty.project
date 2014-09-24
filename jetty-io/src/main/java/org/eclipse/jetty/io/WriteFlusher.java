@@ -334,13 +334,13 @@ abstract public class WriteFlusher
 
         try
         {
-            boolean flushed=_endPoint.flush(buffers);
-            if (DEBUG)
-                LOG.debug("flushed {}", flushed);
+            buffers=flush(buffers);
 
             // if we are incomplete?
-            if (!flushed)
+            if (buffers!=null)
             {
+                if (DEBUG)
+                    LOG.debug("flushed incomplete");
                 PendingState pending=new PendingState(buffers, callback);
                 if (updateState(__WRITING,pending))
                     onIncompleteFlushed();
@@ -379,7 +379,7 @@ abstract public class WriteFlusher
      * {@link #onFail(Throwable)} or {@link #onClose()}
      */
     public void completeWrite()
-    {
+    {         
         if (DEBUG)
             LOG.debug("completeWrite: {}", this);
 
@@ -396,13 +396,15 @@ abstract public class WriteFlusher
         {
             ByteBuffer[] buffers = pending.getBuffers();
 
-            boolean flushed=_endPoint.flush(buffers);
-            if (DEBUG)
-                LOG.debug("flushed {}", flushed);
+            buffers=flush(buffers);
 
             // if we are incomplete?
-            if (!flushed)
+            if (buffers!=null)
             {
+                if (DEBUG)
+                    LOG.debug("flushed incomplete {}",BufferUtil.toDetailString(buffers));
+                if (buffers!=pending.getBuffers())
+                    pending=new PendingState(buffers, pending._callback);
                 if (updateState(__COMPLETING,pending))
                     onIncompleteFlushed();
                 else
@@ -426,6 +428,46 @@ abstract public class WriteFlusher
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /** Flush the buffers iteratively until no progress is made
+     * @param buffers The buffers to flush
+     * @return The unflushed buffers, or null if all flushed
+     * @throws IOException
+     */
+    protected ByteBuffer[] flush(ByteBuffer[] buffers) throws IOException
+    {
+        // try the simple direct flush first, which also ensures that any null buffer
+        // flushes are passed through (for commits etc.)
+        if (_endPoint.flush(buffers))
+            return null;
+        
+        // We were not fully flushed, so let's try again iteratively while we can make
+        // some progress
+        boolean progress=true;
+        while(true)
+        {
+            // Compact buffers array?
+            int not_empty=0;
+            while(not_empty<buffers.length && BufferUtil.isEmpty(buffers[not_empty]))
+                not_empty++;
+            if (not_empty==buffers.length)
+                return null;
+            if (not_empty>0)
+                buffers=Arrays.copyOfRange(buffers,not_empty,buffers.length);
+            
+            if (!progress)
+                break;
+            
+            // try to flush the remainder
+            int r=buffers[0].remaining();
+            if (_endPoint.flush(buffers))
+                return null;
+            progress=r!=buffers[0].remaining();
+        }
+        
+        return buffers;
+    }
+    
     /* ------------------------------------------------------------ */
     /** Notify the flusher of a failure
      * @param cause The cause of the failure

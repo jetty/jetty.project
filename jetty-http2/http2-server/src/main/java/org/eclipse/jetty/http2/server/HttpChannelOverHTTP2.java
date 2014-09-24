@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
@@ -40,6 +41,8 @@ import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -83,8 +86,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Request #{}:{}{} {} {}{}{}",
-                    stream.getId(), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(),
+            LOG.debug("HTTP2 Request #{}/{}:{}{} {} {}{}{}",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(),
                     System.lineSeparator(), fields);
         }
 
@@ -94,15 +97,27 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public void onPushRequest(MetaData.Request request)
     {
         onRequest(request);
+        getRequest().setAttribute("org.eclipse.jetty.pushed",Boolean.TRUE);
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("HTTP2 Push Request #{}:{}{} {} {}{}{}",
-                    stream.getId(), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(),
+            LOG.debug("HTTP2 PUSH Request #{}/{}:{}{} {} {}{}{}",
+                    stream.getId(),Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(),
                     System.lineSeparator(), request.getFields());
         }
 
         execute(this);
+    }
+   
+    @Override
+    protected void commit(ResponseInfo info)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HTTP2 Commit Response #{}/{}:{}{} {} {}{}{}",
+                    stream.getId(),Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getHttpVersion(), info.getStatus(), info.getReason(),
+                    System.lineSeparator(), info.getHttpFields());
+        }
     }
 
     public void requestContent(DataFrame frame, final Callback callback)
@@ -115,7 +130,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         copy.put(original).flip();
 
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 Request #{}: {} bytes of content", stream.getId(), copy.remaining());
+            LOG.debug("HTTP2 Request #{}/{}: {} bytes of content", stream.getId(),Integer.toHexString(stream.getSession().hashCode()), copy.remaining());
 
         onContent(new HttpInput.Content(copy)
         {

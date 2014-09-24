@@ -544,7 +544,8 @@ public class HttpChannel implements Runnable
             // We need an info to commit
             if (info==null)
                 info = _response.newResponseInfo();
-
+            commit(info);
+            
             // wrap callback to process 100 responses
             final int status=info.getStatus();
             final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback);
@@ -579,6 +580,12 @@ public class HttpChannel implements Runnable
             abort(failure);
             throw failure;
         }
+    }
+    
+    protected void commit (ResponseInfo info)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Commit {} to {}",info,this);
     }
 
     public boolean isCommitted()

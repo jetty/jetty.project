@@ -55,8 +55,18 @@ public class HTTP2Connection extends AbstractConnection
     @Override
     public void onOpen()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 Open {} ", this);
         super.onOpen();
         fillInterested();
+    }
+
+    @Override
+    public void onClose()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 Close {} ", this);
+        super.onClose();
     }
 
     @Override
@@ -75,8 +85,6 @@ public class HTTP2Connection extends AbstractConnection
         while (true)
         {
             int filled = fill(endPoint, buffer);
-            if (LOG.isDebugEnabled()) // Avoid boxing of variable 'filled'
-                LOG.debug("Read {} bytes", filled);
             if (filled == 0)
             {
                 return 0;

@@ -32,8 +32,10 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.EnumSet;
 import java.util.HashMap;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
@@ -69,6 +71,7 @@ import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamResponseListener;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -1142,6 +1145,41 @@ public class ProxyServletTest
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertEquals(headerValue, response.getHeaders().get(headerName));
+    }
+
+    @Test
+    public void testHeadersListedByConnectionHeaderAreRemoved() throws Exception
+    {
+        prepareProxy();
+
+        final Map<String, String> hopHeaders = new LinkedHashMap<>();
+        hopHeaders.put(HttpHeader.TE.asString(), "gzip");
+        hopHeaders.put(HttpHeader.CONNECTION.asString(), "Keep-Alive, Foo, Bar");
+        hopHeaders.put("Foo", "abc");
+        hopHeaders.put("Foo", "def");
+        hopHeaders.put(HttpHeader.KEEP_ALIVE.asString(), "timeout=30");
+
+        prepareServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                List<String> names = Collections.list(request.getHeaderNames());
+                for (String name : names)
+                {
+                    if (hopHeaders.containsKey(name))
+                        throw new IOException("Hop header must not be proxied: " + name);
+                }
+            }
+        });
+
+        HttpClient client = prepareClient();
+        Request request = client.newRequest("localhost", serverConnector.getLocalPort());
+        for (Map.Entry<String, String> entry : hopHeaders.entrySet())
+            request.header(entry.getKey(), entry.getValue());
+        ContentResponse response = request.send();
+
+        Assert.assertEquals(200, response.getStatus());
     }
 
     // TODO: test proxy authentication

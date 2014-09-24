@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
@@ -40,6 +41,8 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 
 public class JsrCreator implements WebSocketCreator
 {
+    public static final String PROP_REMOTE_ADDRESS = "javax.websocket.endpoint.remoteAddress";
+    public static final String PROP_LOCAL_ADDRESS = "javax.websocket.endpoint.localAddress";
     private static final Logger LOG = Log.getLogger(JsrCreator.class);
     private final ServerEndpointMetadata metadata;
     private final ExtensionFactory extensionFactory;
@@ -56,8 +59,21 @@ public class JsrCreator implements WebSocketCreator
         JsrHandshakeRequest hsreq = new JsrHandshakeRequest(req);
         JsrHandshakeResponse hsresp = new JsrHandshakeResponse(resp);
 
+        // Get raw config, as defined when the endpoint was added to the container
         ServerEndpointConfig config = metadata.getConfig();
+        
+        // Establish a copy of the config, so that the UserProperties are unique
+        // per upgrade request.
+        config = new BasicServerEndpointConfig(config);
+        
+        // Bug 444617 - Expose localAddress and remoteAddress for jsr modify handshake to use
+        // This is being implemented as an optional set of userProperties so that
+        // it is not JSR api breaking.  A few users on #jetty and a few from cometd
+        // have asked for access to this information.
+        config.getUserProperties().put(PROP_LOCAL_ADDRESS,req.getLocalSocketAddress());
+        config.getUserProperties().put(PROP_REMOTE_ADDRESS,req.getRemoteSocketAddress());
 
+        // Get Configurator from config object (not guaranteed to be unique per endpoint upgrade)
         ServerEndpointConfig.Configurator configurator = config.getConfigurator();
 
         // modify handshake

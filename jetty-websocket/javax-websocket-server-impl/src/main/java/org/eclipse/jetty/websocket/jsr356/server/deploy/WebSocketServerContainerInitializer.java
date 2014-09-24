@@ -45,18 +45,39 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
     public static final String ENABLE_KEY = "org.eclipse.jetty.websocket.jsr356";
     private static final Logger LOG = Log.getLogger(WebSocketServerContainerInitializer.class);
 
-
+    /**
+     * Jetty Native approach.
+     * <p>
+     * Note: this will add the Upgrade filter to the existing list, with no regard for order.  It will just be tacked onto the end of the list.
+     */
     public static ServerContainer configureContext(ServletContextHandler context)
     {
         // Create Filter
         WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
 
-        // Store reference to the WebSocketUpgradeFilter
-        context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);
-
         // Create the Jetty ServerContainer implementation
         ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),context.getServer().getThreadPool());
         context.addBean(jettyContainer);
+
+        // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
+        context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
+
+        return jettyContainer;
+    }
+
+    /**
+     * Servlet 3.1 approach.
+     * <p>
+     * This will use Servlet 3.1 techniques on the {@link ServletContext} to add a filter at the start of the filter chain.
+     */
+    public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext)
+    {
+        // Create Filter
+        WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
+
+        // Create the Jetty ServerContainer implementation
+        ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),jettyContext.getServer().getThreadPool());
+        jettyContext.addBean(jettyContainer);
 
         // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
         context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
@@ -110,105 +131,113 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
         ServletContextHandler jettyContext = (ServletContextHandler)handler;
 
-        // Create the Jetty ServerContainer implementation
-        ServerContainer jettyContainer = configureContext(jettyContext);
-
-        // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
-        context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
-
-        if (LOG.isDebugEnabled())
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        try
         {
-            LOG.debug("Found {} classes",c.size());
-        }
+            Thread.currentThread().setContextClassLoader(context.getClassLoader());
 
-        // Now process the incoming classes
-        Set<Class<? extends Endpoint>> discoveredExtendedEndpoints = new HashSet<>();
-        Set<Class<?>> discoveredAnnotatedEndpoints = new HashSet<>();
-        Set<Class<? extends ServerApplicationConfig>> serverAppConfigs = new HashSet<>();
+            // Create the Jetty ServerContainer implementation
+            ServerContainer jettyContainer = configureContext(context,jettyContext);
 
-        filterClasses(c,discoveredExtendedEndpoints,discoveredAnnotatedEndpoints,serverAppConfigs);
+            // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
+            context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
 
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Discovered {} extends Endpoint classes",discoveredExtendedEndpoints.size());
-            LOG.debug("Discovered {} @ServerEndpoint classes",discoveredAnnotatedEndpoints.size());
-            LOG.debug("Discovered {} ServerApplicationConfig classes",serverAppConfigs.size());
-        }
-
-        // Process the server app configs to determine endpoint filtering
-        boolean wasFiltered = false;
-        Set<ServerEndpointConfig> deployableExtendedEndpointConfigs = new HashSet<>();
-        Set<Class<?>> deployableAnnotatedEndpoints = new HashSet<>();
-
-        for (Class<? extends ServerApplicationConfig> clazz : serverAppConfigs)
-        {
             if (LOG.isDebugEnabled())
             {
-                LOG.debug("Found ServerApplicationConfig: {}",clazz);
+                LOG.debug("Found {} classes",c.size());
             }
-            try
-            {
-                ServerApplicationConfig config = clazz.newInstance();
 
-                Set<ServerEndpointConfig> seconfigs = config.getEndpointConfigs(discoveredExtendedEndpoints);
-                if (seconfigs != null)
+            // Now process the incoming classes
+            Set<Class<? extends Endpoint>> discoveredExtendedEndpoints = new HashSet<>();
+            Set<Class<?>> discoveredAnnotatedEndpoints = new HashSet<>();
+            Set<Class<? extends ServerApplicationConfig>> serverAppConfigs = new HashSet<>();
+
+            filterClasses(c,discoveredExtendedEndpoints,discoveredAnnotatedEndpoints,serverAppConfigs);
+
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Discovered {} extends Endpoint classes",discoveredExtendedEndpoints.size());
+                LOG.debug("Discovered {} @ServerEndpoint classes",discoveredAnnotatedEndpoints.size());
+                LOG.debug("Discovered {} ServerApplicationConfig classes",serverAppConfigs.size());
+            }
+
+            // Process the server app configs to determine endpoint filtering
+            boolean wasFiltered = false;
+            Set<ServerEndpointConfig> deployableExtendedEndpointConfigs = new HashSet<>();
+            Set<Class<?>> deployableAnnotatedEndpoints = new HashSet<>();
+
+            for (Class<? extends ServerApplicationConfig> clazz : serverAppConfigs)
+            {
+                if (LOG.isDebugEnabled())
                 {
-                    wasFiltered = true;
-                    deployableExtendedEndpointConfigs.addAll(seconfigs);
+                    LOG.debug("Found ServerApplicationConfig: {}",clazz);
                 }
-
-                Set<Class<?>> annotatedClasses = config.getAnnotatedEndpointClasses(discoveredAnnotatedEndpoints);
-                if (annotatedClasses != null)
+                try
                 {
-                    wasFiltered = true;
-                    deployableAnnotatedEndpoints.addAll(annotatedClasses);
+                    ServerApplicationConfig config = clazz.newInstance();
+
+                    Set<ServerEndpointConfig> seconfigs = config.getEndpointConfigs(discoveredExtendedEndpoints);
+                    if (seconfigs != null)
+                    {
+                        wasFiltered = true;
+                        deployableExtendedEndpointConfigs.addAll(seconfigs);
+                    }
+
+                    Set<Class<?>> annotatedClasses = config.getAnnotatedEndpointClasses(discoveredAnnotatedEndpoints);
+                    if (annotatedClasses != null)
+                    {
+                        wasFiltered = true;
+                        deployableAnnotatedEndpoints.addAll(annotatedClasses);
+                    }
+                }
+                catch (InstantiationException | IllegalAccessException e)
+                {
+                    throw new ServletException("Unable to instantiate: " + clazz.getName(),e);
                 }
             }
-            catch (InstantiationException | IllegalAccessException e)
-            {
-                throw new ServletException("Unable to instantiate: " + clazz.getName(),e);
-            }
-        }
 
-        // Default behavior if nothing filtered
-        if (!wasFiltered)
-        {
-            deployableAnnotatedEndpoints.addAll(discoveredAnnotatedEndpoints);
-            // Note: it is impossible to determine path of "extends Endpoint" discovered classes
-            deployableExtendedEndpointConfigs = new HashSet<>();
-        }
+            // Default behavior if nothing filtered
+            if (!wasFiltered)
+            {
+                deployableAnnotatedEndpoints.addAll(discoveredAnnotatedEndpoints);
+                // Note: it is impossible to determine path of "extends Endpoint" discovered classes
+                deployableExtendedEndpointConfigs = new HashSet<>();
+            }
 
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Deploying {} ServerEndpointConfig(s)",deployableExtendedEndpointConfigs.size());
-        }
-        // Deploy what should be deployed.
-        for (ServerEndpointConfig config : deployableExtendedEndpointConfigs)
-        {
-            try
+            if (LOG.isDebugEnabled())
             {
-                jettyContainer.addEndpoint(config);
+                LOG.debug("Deploying {} ServerEndpointConfig(s)",deployableExtendedEndpointConfigs.size());
             }
-            catch (DeploymentException e)
+            // Deploy what should be deployed.
+            for (ServerEndpointConfig config : deployableExtendedEndpointConfigs)
             {
-                throw new ServletException(e);
+                try
+                {
+                    jettyContainer.addEndpoint(config);
+                }
+                catch (DeploymentException e)
+                {
+                    throw new ServletException(e);
+                }
             }
-        }
 
-        if (LOG.isDebugEnabled())
-        {
-            LOG.debug("Deploying {} @ServerEndpoint(s)",deployableAnnotatedEndpoints.size());
-        }
-        for (Class<?> annotatedClass : deployableAnnotatedEndpoints)
-        {
-            try
+            if (LOG.isDebugEnabled())
             {
-                jettyContainer.addEndpoint(annotatedClass);
+                LOG.debug("Deploying {} @ServerEndpoint(s)",deployableAnnotatedEndpoints.size());
             }
-            catch (DeploymentException e)
+            for (Class<?> annotatedClass : deployableAnnotatedEndpoints)
             {
-                throw new ServletException(e);
+                try
+                {
+                    jettyContainer.addEndpoint(annotatedClass);
+                }
+                catch (DeploymentException e)
+                {
+                    throw new ServletException(e);
+                }
             }
+        } finally {
+            Thread.currentThread().setContextClassLoader(old);
         }
     }
 

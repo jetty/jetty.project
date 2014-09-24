@@ -36,6 +36,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.IteratingCallback;
 
 public class AsyncProxyServlet extends ProxyServlet
 {
@@ -112,7 +113,7 @@ public class AsyncProxyServlet extends ProxyServlet
         }
     }
 
-    protected class StreamReader implements ReadListener, Callback
+    protected class StreamReader extends IteratingCallback implements ReadListener
     {
         private final byte[] buffer = new byte[getHttpClient().getRequestBufferSize()];
         private final Request proxyRequest;
@@ -129,10 +130,28 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void onDataAvailable() throws IOException
         {
-            int requestId = getRequestId(request);
-            ServletInputStream input = request.getInputStream();
+            iterate();
+        }
+
+        @Override
+        public void onAllDataRead() throws IOException
+        {
             if (_log.isDebugEnabled())
-                _log.debug("{} asynchronous read start on {}", requestId, input);
+                _log.debug("{} proxying content to upstream completed", getRequestId(request));
+            provider.close();
+        }
+
+        @Override
+        public void onError(Throwable t)
+        {
+            onClientRequestFailure(proxyRequest, request, t);
+        }
+
+        @Override
+        protected Action process() throws Exception
+        {
+            int requestId = _log.isDebugEnabled() ? getRequestId(request) : 0;
+            ServletInputStream input = request.getInputStream();
 
             // First check for isReady() because it has
             // side effects, and then for isFinished().
@@ -146,14 +165,21 @@ public class AsyncProxyServlet extends ProxyServlet
                     if (_log.isDebugEnabled())
                         _log.debug("{} proxying content to upstream: {} bytes", requestId, read);
                     onRequestContent(proxyRequest, request, provider, buffer, 0, read, this);
-                    // Do not call isReady() so that we can apply backpressure.
-                    break;
+                    return Action.SCHEDULED;
                 }
             }
-            if (!input.isFinished())
+
+            if (input.isFinished())
+            {
+                if (_log.isDebugEnabled())
+                    _log.debug("{} asynchronous read complete on {}", requestId, input);
+                return Action.SUCCEEDED;
+            }
+            else
             {
                 if (_log.isDebugEnabled())
                     _log.debug("{} asynchronous read pending on {}", requestId, input);
+                return Action.IDLE;
             }
         }
 
@@ -163,37 +189,10 @@ public class AsyncProxyServlet extends ProxyServlet
         }
 
         @Override
-        public void onAllDataRead() throws IOException
-        {
-            if (_log.isDebugEnabled())
-                _log.debug("{} proxying content to upstream completed", getRequestId(request));
-            provider.close();
-        }
-
-        @Override
-        public void onError(Throwable x)
-        {
-            failed(x);
-        }
-
-        @Override
-        public void succeeded()
-        {
-            try
-            {
-                if (request.getInputStream().isReady())
-                    onDataAvailable();
-            }
-            catch (Throwable x)
-            {
-                failed(x);
-            }
-        }
-
-        @Override
         public void failed(Throwable x)
         {
-            onClientRequestFailure(proxyRequest, request, x);
+            super.failed(x);
+            onError(x);
         }
     }
 

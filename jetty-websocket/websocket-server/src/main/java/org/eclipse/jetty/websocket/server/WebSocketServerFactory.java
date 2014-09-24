@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -70,6 +71,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
 
+    private final ClassLoader contextClassloader;
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     /**
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
@@ -106,6 +108,8 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         addBean(scheduler);
         addBean(bufferPool);
+        
+        this.contextClassloader = Thread.currentThread().getContextClassLoader();
 
         this.registeredSocketClasses = new ArrayList<>();
 
@@ -151,8 +155,10 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public boolean acceptWebSocket(WebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
         {
+            Thread.currentThread().setContextClassLoader(contextClassloader);
             ServletUpgradeRequest sockreq = new ServletUpgradeRequest(request);
             ServletUpgradeResponse sockresp = new ServletUpgradeResponse(response);
 
@@ -181,6 +187,10 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         catch (URISyntaxException e)
         {
             throw new IOException("Unable to accept websocket due to mangled URI", e);
+        } 
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
         }
     }
 

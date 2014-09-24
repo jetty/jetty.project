@@ -78,24 +78,36 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         // info == null | content == 0 | last = false => noop
 
         boolean hasContent = BufferUtil.hasContent(content) && !isHeadRequest;
-        boolean sendContent = hasContent || (info == null && lastContent);
 
         if (info != null)
         {
             if (commit.compareAndSet(false, true))
             {
-                boolean endStream = !hasContent && lastContent;
-                commit(info, endStream, sendContent ? commitCallback : callback);
+                if (hasContent)
+                {
+                    commit(info, false, commitCallback);
+                    send(content, lastContent, callback);
+                }
+                else
+                {
+                    commit(info, lastContent, callback);
+                }
             }
             else
             {
-                callback.failed(new IllegalStateException());
+                callback.failed(new IllegalStateException("committed"));
             }
         }
-
-        if (sendContent)
+        else
         {
-            send(content, lastContent, callback);
+            if (hasContent || lastContent)
+            {
+                send(content, lastContent, callback);
+            }
+            else
+            {
+                callback.succeeded();
+            }
         }
     }
 

@@ -24,10 +24,10 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Response;
@@ -71,7 +71,7 @@ public class GzipHttpOutput extends HttpOutput
         switch (_state.get())
         {
             case NOT_COMPRESSING:
-                super.write(content,complete,callback);
+                superWrite(content, complete, callback);
                 return;
 
             case MIGHT_COMPRESS:
@@ -138,7 +138,7 @@ public class GzipHttpOutput extends HttpOutput
         {
             LOG.debug("{} exclude by status {}",this,sc);
             noCompression();
-            super.write(content,complete,callback);
+            superWrite(content, complete, callback);
             return;
         }
         
@@ -151,7 +151,7 @@ public class GzipHttpOutput extends HttpOutput
             {
                 LOG.debug("{} exclude by mimeType {}",this,ct);
                 noCompression();
-                super.write(content,complete,callback);
+                superWrite(content, complete, callback);
                 return;
             }
         }
@@ -162,7 +162,7 @@ public class GzipHttpOutput extends HttpOutput
         {
             LOG.debug("{} exclude by content-encoding {}",this,ce);
             noCompression();
-            super.write(content,complete,callback);
+            superWrite(content, complete, callback);
             return;
         }
         
@@ -183,7 +183,7 @@ public class GzipHttpOutput extends HttpOutput
             {
                 LOG.debug("{} exclude no deflater",this);
                 _state.set(GZState.NOT_COMPRESSING);
-                super.write(content,complete,callback);
+                superWrite(content, complete, callback);
                 return;
             }
 
