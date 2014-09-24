@@ -499,7 +499,16 @@ case "$ACTION" in
       rm -f "$JETTY_PID"
       echo OK
     else
+      if [ ! -f "$JETTY_PID" ] ; then
+        echo "ERROR: no pid found at $JETTY_PID"
+        exit 1
+      fi
+
       PID=$(cat "$JETTY_PID" 2>/dev/null)
+      if [ -z "$PID" ] ; then
+        echo "ERROR: no pid id found in $JETTY_PID"
+        exit 1
+      fi
       kill "$PID" 2>/dev/null
       
       TIMEOUT=30
