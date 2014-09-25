@@ -467,7 +467,7 @@ public class IdleTimeoutTest extends AbstractTest
         final Stream stream = promise.get(5, TimeUnit.SECONDS);
 
         sleep(idleTimeout / 2);
-        final CountDownLatch latch = new CountDownLatch(1);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), new Callback.Adapter()
         {
             private int sends;
@@ -482,14 +482,60 @@ public class IdleTimeoutTest extends AbstractTest
                     @Override
                     public void succeeded()
                     {
-                        latch.countDown();
+                        dataLatch.countDown();
                     }
                 });
             }
         });
 
-        Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertTrue(dataLatch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
         Assert.assertFalse(timeoutLatch.await(0, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testStreamIdleTimeoutIsNotEnforcedWhenSending() throws Exception
+    {
+        final CountDownLatch resetLatch = new CountDownLatch(1);
+        startServer(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.Adapter.INSTANCE);
+                return null;
+            }
+
+            @Override
+            public void onReset(Session session, ResetFrame frame)
+            {
+                resetLatch.countDown();
+            }
+        });
+
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
+        FuturePromise<Stream> promise = new FuturePromise<Stream>()
+        {
+            @Override
+            public void succeeded(Stream stream)
+            {
+                stream.setIdleTimeout(idleTimeout);
+                super.succeeded(stream);
+            }
+        };
+        session.newStream(requestFrame, promise, new Stream.Listener.Adapter());
+        final Stream stream = promise.get(5, TimeUnit.SECONDS);
+
+        sleep(idleTimeout / 2);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.Adapter.INSTANCE);
+        sleep(idleTimeout / 2);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.Adapter.INSTANCE);
+        sleep(idleTimeout / 2);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.Adapter.INSTANCE);
+
+        Assert.assertFalse(resetLatch.await(0, TimeUnit.SECONDS));
     }
 
     private void sleep(long value)

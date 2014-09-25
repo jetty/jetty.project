@@ -72,24 +72,28 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     @Override
     public void headers(HeadersFrame frame, Callback callback)
     {
+        notIdle();
         session.control(this, callback, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
     public void push(PushPromiseFrame frame, Promise<Stream> promise)
     {
+        notIdle();
         session.push(this, promise, frame);
     }
 
     @Override
     public void data(DataFrame frame, Callback callback)
     {
+        notIdle();
         session.data(this, callback, frame);
     }
 
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
+        notIdle();
         session.control(this, callback, frame, Frame.EMPTY_ARRAY);
     }
 
@@ -176,45 +180,69 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     public boolean process(Frame frame, Callback callback)
     {
         notIdle();
-
         switch (frame.getType())
         {
-            case DATA:
-            {
-                // TODO: handle cases where:
-                // TODO: A) stream already remotely close.
-                // TODO: B) DATA before HEADERS.
-
-                if (getRecvWindow() < 0)
-                {
-                    // It's a bad client, it does not deserve to be
-                    // treated gently by just resetting the stream.
-                    session.close(ErrorCodes.FLOW_CONTROL_ERROR, "stream_window_exceeded", callback);
-                    return false;
-                }
-
-                notifyData(this, (DataFrame)frame, callback);
-                return false;
-            }
             case HEADERS:
             {
-                // TODO: handle case where HEADERS after DATA.
-                return false;
+                return onHeaders((HeadersFrame)frame, callback);
+            }
+            case DATA:
+            {
+                return onData((DataFrame)frame, callback);
             }
             case RST_STREAM:
             {
-                reset = true;
-                return false;
+                return onReset((ResetFrame)frame, callback);
             }
             case PUSH_PROMISE:
             {
-                return false;
+                return onPush((PushPromiseFrame)frame, callback);
             }
             default:
             {
                 throw new UnsupportedOperationException();
             }
         }
+    }
+
+    private boolean onHeaders(HeadersFrame frame, Callback callback)
+    {
+        // TODO: handle case where HEADERS after DATA.
+        callback.succeeded();
+        return false;
+    }
+
+    private boolean onData(DataFrame frame, Callback callback)
+    {
+        // TODO: handle cases where:
+        // TODO: A) stream already remotely close.
+        // TODO: B) DATA before HEADERS.
+
+        if (getRecvWindow() < 0)
+        {
+            // It's a bad client, it does not deserve to be
+            // treated gently by just resetting the stream.
+            session.close(ErrorCodes.FLOW_CONTROL_ERROR, "stream_window_exceeded", callback);
+            return true;
+        }
+        else
+        {
+            notifyData(this, frame, callback);
+            return false;
+        }
+    }
+
+    private boolean onReset(ResetFrame frame, Callback callback)
+    {
+        reset = true;
+        callback.succeeded();
+        return false;
+    }
+
+    private boolean onPush(PushPromiseFrame frame, Callback callback)
+    {
+        callback.succeeded();
+        return false;
     }
 
     @Override
