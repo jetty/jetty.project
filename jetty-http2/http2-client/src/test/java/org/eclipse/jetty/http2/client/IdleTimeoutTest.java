@@ -41,6 +41,7 @@ import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Test;
@@ -461,28 +462,34 @@ public class IdleTimeoutTest extends AbstractTest
         Session session = newClient(new Session.Listener.Adapter());
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>()
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        session.newStream(requestFrame, promise, new Stream.Listener.Adapter());
+        final Stream stream = promise.get(5, TimeUnit.SECONDS);
+
+        sleep(idleTimeout / 2);
+        final CountDownLatch latch = new CountDownLatch(1);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), new Callback.Adapter()
         {
+            private int sends;
+
             @Override
-            public void succeeded(final Stream stream)
+            public void succeeded()
             {
                 sleep(idleTimeout / 2);
-                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), new Callback.Adapter()
+                final boolean last = ++sends == 2;
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), last), !last ? this : new Adapter()
                 {
-                    private int sends;
-
                     @Override
                     public void succeeded()
                     {
-                        sleep(idleTimeout / 2);
-                        boolean last = ++sends == 2;
-                        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), last), last ? INSTANCE : this);
+                        latch.countDown();
                     }
                 });
             }
-        }, new Stream.Listener.Adapter());
+        });
 
-        Assert.assertFalse(timeoutLatch.await(1, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
+        Assert.assertFalse(timeoutLatch.await(0, TimeUnit.SECONDS));
     }
 
     private void sleep(long value)
