@@ -693,7 +693,6 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                 @Override
                 public void succeeded()
                 {
-                    Thread.dumpStack();
                     succeeds.incrementAndGet();
                 }
             });
