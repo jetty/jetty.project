@@ -148,9 +148,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 case UPDATING:
                 {
                     // Set the key interest as expected.
-                    setKeyInterests();
                     if (!_interestState.compareAndSet(current, State.SELECTING))
                         throw new IllegalStateException();
+                    // Set the key interests after updating the state, otherwise
+                    // the selector may select and call onSelected() concurrently.
+                    setKeyInterests();
                     return;
                 }
                 case CHANGING:
