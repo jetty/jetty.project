@@ -18,13 +18,21 @@
 
 package org.eclipse.jetty.tests;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
+import java.net.URI;
+
+import org.eclipse.jetty.toolchain.test.SimpleRequest;
 import org.junit.Test;
 
-public class ServletTest
+public class HelloIT
 {
     @Test
-    public void testHello()
+    public void testBasic() throws Exception
     {
-
+        URI serverURI = new URI("http://localhost:58080/cdi-webapp/");
+        SimpleRequest req = new SimpleRequest(serverURI);
+        assertThat( req.getString("hello"), is("hi"));
     }
 }
