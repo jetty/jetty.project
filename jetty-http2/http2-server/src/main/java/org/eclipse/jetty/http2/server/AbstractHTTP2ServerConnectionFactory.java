@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Connector;
 
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
+    private boolean dispatchIO = true;
     private int maxHeaderTableSize = 4096;
     private int initialStreamWindow = FlowControl.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
@@ -43,6 +44,16 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     public AbstractHTTP2ServerConnectionFactory()
     {
         super("h2-14");
+    }
+
+    public boolean isDispatchIO()
+    {
+        return dispatchIO;
+    }
+
+    public void setDispatchIO(boolean dispatchIO)
+    {
+        this.dispatchIO = dispatchIO;
     }
 
     public int getMaxHeaderTableSize()
@@ -92,7 +103,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
         Parser parser = newServerParser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
-                        endPoint, parser, session, getInputBufferSize(), listener);
+                        endPoint, parser, session, getInputBufferSize(), isDispatchIO(), listener);
 
         return configure(connection, connector, endPoint);
     }
@@ -101,13 +112,13 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     protected abstract ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener);
 
-    private class HTTP2ServerConnection extends HTTP2Connection
+    private static class HTTP2ServerConnection extends HTTP2Connection
     {
         private final ServerSessionListener listener;
 
-        public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
+        private HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int inputBufferSize, boolean dispatchIO, ServerSessionListener listener)
         {
-            super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
+            super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize, dispatchIO);
             this.listener = listener;
         }
 

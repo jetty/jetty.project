@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.client.ssl;
 
-import static org.hamcrest.Matchers.nullValue;
-
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
@@ -42,7 +40,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -80,6 +77,8 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.nullValue;
+
 public class SslBytesServerTest extends SslBytesTest
 {
     private final AtomicInteger sslFills = new AtomicInteger();
@@ -111,7 +110,7 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint)
+                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint, true)
                 {
                     @Override
                     protected HttpParser newHttpParser()

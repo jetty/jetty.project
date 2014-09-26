@@ -219,9 +219,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private IOState ioState;
     private Stats stats = new Stats();
 
-    public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public AbstractWebSocketConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool, boolean dispatchIO)
     {
-        super(endp,executor,EXECUTE_ONFILLABLE); // TODO review if this is best. Specifically with MUX
+        super(endp,executor,dispatchIO);
         this.policy = policy;
         this.bufferPool = bufferPool;
         this.generator = new Generator(policy,bufferPool);

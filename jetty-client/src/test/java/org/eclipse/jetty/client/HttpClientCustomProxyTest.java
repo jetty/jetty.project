@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -153,7 +152,7 @@ public class HttpClientCustomProxyTest
 
         public CAFEBABEConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, Map<String, Object> context)
         {
-            super(endPoint, executor);
+            super(endPoint, executor, true);
             this.connectionFactory = connectionFactory;
             this.context = context;
         }
@@ -212,7 +211,7 @@ public class HttpClientCustomProxyTest
 
         public CAFEBABEServerConnection(Connector connector, EndPoint endPoint, org.eclipse.jetty.server.ConnectionFactory connectionFactory)
         {
-            super(endPoint, connector.getExecutor());
+            super(endPoint, connector.getExecutor(), true);
             this.connectionFactory = connectionFactory;
         }
 

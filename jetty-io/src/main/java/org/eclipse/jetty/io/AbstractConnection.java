@@ -41,30 +41,23 @@ public abstract class AbstractConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
     
-    public static final boolean EXECUTE_ONFILLABLE=true;
-
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final AtomicReference<State> _state = new AtomicReference<>(IDLE);
     private final long _created=System.currentTimeMillis();
     private final EndPoint _endPoint;
     private final Executor _executor;
     private final Callback _readCallback;
-    private final boolean _executeOnfillable;
+    private final boolean _dispatchIO;
     private int _inputBufferSize=2048;
 
-    protected AbstractConnection(EndPoint endp, Executor executor)
-    {
-        this(endp,executor,EXECUTE_ONFILLABLE);
-    }
-    
-    protected AbstractConnection(EndPoint endp, Executor executor, final boolean executeOnfillable)
+    protected AbstractConnection(EndPoint endp, Executor executor, boolean dispatchIO)
     {
         if (executor == null)
             throw new IllegalArgumentException("Executor must not be null!");
         _endPoint = endp;
         _executor = executor;
         _readCallback = new ReadCallback();
-        _executeOnfillable=executeOnfillable;
+        _dispatchIO = dispatchIO;
         _state.set(IDLE);
     }
 
@@ -88,10 +81,16 @@ public abstract class AbstractConnection implements Connection
     {
         return _executor;
     }
-    
+
+    public boolean isDispatchIO()
+    {
+        return _dispatchIO;
+    }
+
     protected void failedCallback(final Callback callback, final Throwable x)
     {
-        if (NonBlockingThread.isNonBlockingThread())
+        boolean dispatchFailure = isDispatchIO() && NonBlockingThread.isNonBlockingThread();
+        if (dispatchFailure)
         {
             try
             {
@@ -375,7 +374,7 @@ public abstract class AbstractConnection implements Connection
         @Override
         public void onEnter(AbstractConnection connection)
         {
-            if (connection._executeOnfillable)
+            if (connection.isDispatchIO())
                 connection.getExecutor().execute(connection._runOnFillable);
             else
                 connection._runOnFillable.run();

@@ -21,11 +21,9 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
-import java.nio.ByteBuffer;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.nio.charset.StandardCharsets;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -95,7 +93,7 @@ public class ExtendedServerTest extends HttpServerTestBase
     {
         public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
         {
-            super(config,connector,endPoint);
+            super(config,connector,endPoint,true);
         }
 
         @Override

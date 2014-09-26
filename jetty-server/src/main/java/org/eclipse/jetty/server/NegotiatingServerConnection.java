@@ -42,7 +42,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
 
     protected NegotiatingServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
-        super(endPoint, connector.getExecutor());
+        super(endPoint, connector.getExecutor(), false);
         this.connector = connector;
         this.protocols = protocols;
         this.defaultProtocol = defaultProtocol;
@@ -109,9 +109,8 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
                 ConnectionFactory connectionFactory = connector.getConnectionFactory(protocol);
                 if (connectionFactory == null)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} application selected protocol '{}', but no correspondent {} has been configured",
-                            this, protocol, ConnectionFactory.class.getName());
+                    LOG.info("{} application selected protocol '{}', but no correspondent {} has been configured",
+                             this, protocol, ConnectionFactory.class.getName());
                     close();
                 }
                 else
@@ -131,7 +130,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
         {
             // Something went bad, we need to close.
             if (LOG.isDebugEnabled())
-                LOG.debug("{} closing on client close", this);
+                LOG.debug("{} detected close on client side", this);
             close();
         }
         else

@@ -60,12 +60,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private volatile ByteBuffer _chunk = null;
     private final SendCallback _sendCallback = new SendCallback();
 
-    /* ------------------------------------------------------------ */
-    /** Get the current connection that this thread is dispatched to.
-     * Note that a thread may be processing a request asynchronously and 
+    /**
+     * Get the current connection that this thread is dispatched to.
+     * Note that a thread may be processing a request asynchronously and
      * thus not be dispatched to the connection.  
-     * @see Request#getAttribute(String) for a more general way to access the HttpConnection
      * @return the current HttpConnection or null
+     * @see Request#getAttribute(String) for a more general way to access the HttpConnection
      */
     public static HttpConnection getCurrentConnection()
     {
@@ -82,17 +82,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return last;
     }
 
-    public HttpConfiguration getHttpConfiguration()
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, boolean dispatchIO)
     {
-        return _config;
-    }
-
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
-    {
-        // Tell AbstractConnector executeOnFillable==true because we want the same thread that
-        // does the HTTP parsing to handle the request so its cache is hot
-        super(endPoint, connector.getExecutor(),true);
-
+        super(endPoint, connector.getExecutor(), dispatchIO);
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
@@ -102,6 +94,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _parser = newHttpParser();
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
+    }
+
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return _config;
     }
 
     protected HttpGenerator newHttpGenerator()

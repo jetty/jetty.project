@@ -30,7 +30,6 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -514,9 +513,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         EndPoint endp = http.getEndPoint();
         Executor executor = http.getConnector().getExecutor();
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
-        
+
         // Setup websocket connection
-        WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool);
+        WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool, http.isDispatchIO());
 
         extensionStack.setPolicy(driver.getPolicy());
         extensionStack.configure(wsConnection.getParser());

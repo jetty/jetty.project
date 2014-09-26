@@ -38,9 +38,9 @@ public class HTTP2Connection extends AbstractConnection
     private final ISession session;
     private final int bufferSize;
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
+    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize, boolean dispatchIO)
     {
-        super(endPoint, executor);
+        super(endPoint, executor, dispatchIO);
         this.byteBufferPool = byteBufferPool;
         this.parser = parser;
         this.session = session;

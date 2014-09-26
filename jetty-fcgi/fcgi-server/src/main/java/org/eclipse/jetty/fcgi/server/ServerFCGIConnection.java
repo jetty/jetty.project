@@ -49,7 +49,7 @@ public class ServerFCGIConnection extends AbstractConnection
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
-        super(endPoint, connector.getExecutor());
+        super(endPoint, connector.getExecutor(), false);
         this.connector = connector;
         this.flusher = new Flusher(endPoint);
         this.configuration = configuration;
@@ -163,8 +163,9 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} {} content {} on {}", request, stream, buffer, channel);
             if (channel != null)
             {
-                // TODO avoid creating content all the time
-                channel.onContent(new HttpInput.Content(buffer));
+                ByteBuffer copy = ByteBuffer.allocate(buffer.remaining());
+                copy.put(buffer).flip();
+                channel.onContent(new HttpInput.Content(copy));
             }
             return false;
         }
