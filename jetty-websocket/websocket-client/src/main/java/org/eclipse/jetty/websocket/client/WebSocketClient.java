@@ -264,6 +264,11 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}",this);
+        
+        if (ShutdownThread.isRegistered(this))
+        {
+            ShutdownThread.deregister(this);
+        }
 
         if (cookieStore != null)
         {
@@ -435,7 +440,10 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
     private synchronized void initialiseClient() throws IOException
     {
-        ShutdownThread.register(this);
+        if (!ShutdownThread.isRegistered(this))
+        {
+            ShutdownThread.register(this);
+        }
 
         if (executor == null)
         {

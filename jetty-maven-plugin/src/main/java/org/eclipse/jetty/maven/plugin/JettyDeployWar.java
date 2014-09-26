@@ -72,9 +72,10 @@ public class JettyDeployWar extends JettyRunWarMojo
     @Override
     public void finishConfigurationBeforeStart() throws Exception
     {
+        super.finishConfigurationBeforeStart();
         //only stop the server at shutdown if we are blocking
         server.setStopAtShutdown(!nonblocking);
-        super.finishConfigurationBeforeStart();
+       
     }
 
 }
