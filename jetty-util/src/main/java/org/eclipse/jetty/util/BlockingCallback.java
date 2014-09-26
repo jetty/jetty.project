@@ -26,17 +26,14 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.NonBlockingThread;
 
-/* ------------------------------------------------------------ */
 /**
  * An implementation of Callback that blocks until success or failure.
  */
 public class BlockingCallback implements Callback
 {
     private static final Logger LOG = Log.getLogger(BlockingCallback.class);
-    
-    private static Throwable SUCCEEDED=new Throwable()
+    private static Throwable SUCCEEDED = new Throwable()
     {
         @Override
         public String toString() { return "SUCCEEDED"; }
@@ -44,9 +41,10 @@ public class BlockingCallback implements Callback
     
     private final CountDownLatch _latch = new CountDownLatch(1);
     private final AtomicReference<Throwable> _state = new AtomicReference<>();
-    
+
     public BlockingCallback()
-    {}
+    {
+    }
 
     @Override
     public void succeeded()
@@ -62,7 +60,8 @@ public class BlockingCallback implements Callback
             _latch.countDown();
     }
 
-    /** Block until the Callback has succeeded or failed and 
+    /**
+     * Blocks until the Callback has succeeded or failed and
      * after the return leave in the state to allow reuse.
      * This is useful for code that wants to repeatable use a FutureCallback to convert
      * an asynchronous API to a blocking API. 
@@ -70,9 +69,6 @@ public class BlockingCallback implements Callback
      */
     public void block() throws IOException
     {
-        if (NonBlockingThread.isNonBlockingThread())
-            LOG.warn("Blocking a NonBlockingThread: ",new Throwable());
-        
         try
         {
             _latch.await();
@@ -94,12 +90,10 @@ public class BlockingCallback implements Callback
             _state.set(null);
         }
     }
-    
-    
+
     @Override
     public String toString()
     {
         return String.format("%s@%x{%s}",BlockingCallback.class.getSimpleName(),hashCode(),_state.get());
     }
-
 }

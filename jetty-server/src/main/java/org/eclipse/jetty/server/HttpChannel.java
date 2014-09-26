@@ -51,9 +51,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 
-/* ------------------------------------------------------------ */
-/** HttpChannel.
- * Represents a single endpoint for HTTP semantic processing.
+/**
+ * HttpChannel represents a single endpoint for HTTP semantic processing.
  * The HttpChannel is both a HttpParser.RequestHandler, where it passively receives events from
  * an incoming HTTP request, and a Runnable, where it actively takes control of the request/response
  * life cycle and calls the application (perhaps suspending and resuming with multiple calls to run).
@@ -67,8 +66,8 @@ public class HttpChannel implements Runnable
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
 
-    /* ------------------------------------------------------------ */
-    /** Get the current channel that this thread is dispatched to.
+    /**
+     * Get the current channel that this thread is dispatched to.
      * @see Request#getAttribute(String) for a more general way to access the HttpChannel
      * @return the current HttpChannel or null
      */
@@ -218,7 +217,6 @@ public class HttpChannel implements Runnable
         handle();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return True if the channel is ready to continue handling (ie it is not suspended)
      */

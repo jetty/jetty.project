@@ -24,9 +24,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
-
-/* ------------------------------------------------------------ */
-/** extend a SharedlBlockingCallback to an websocket WriteCallback
+/**
+ * Extends a {@link SharedBlockingCallback} to a WebSocket {@link WriteCallback}
  */
 public class BlockingWriteCallback extends SharedBlockingCallback
 {
@@ -41,9 +40,9 @@ public class BlockingWriteCallback extends SharedBlockingCallback
     
     public static class WriteBlocker implements WriteCallback, Callback, AutoCloseable
     {
-        Blocker blocker;
+        private final Blocker blocker;
         
-        WriteBlocker(Blocker blocker)
+        protected WriteBlocker(Blocker blocker)
         {
             this.blocker=blocker;
         }
@@ -73,7 +72,7 @@ public class BlockingWriteCallback extends SharedBlockingCallback
         }
         
         @Override
-        public void close() throws IOException
+        public void close()
         {
             blocker.close();
         }

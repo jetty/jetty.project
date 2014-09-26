@@ -19,29 +19,25 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.server.HttpInput.Content;
 
 public class HttpInputOverHTTP extends HttpInput implements Callback
 {
     private static final Logger LOG = Log.getLogger(HttpInputOverHTTP.class);
-    private final SharedBlockingCallback _readBlocker = new SharedBlockingCallback();
+
     private final HttpConnection _httpConnection;
     private Content _content;
+    private final SharedBlockingCallback _readBlocker;
 
-    /**
-     * @param httpConnection
-     */
     public HttpInputOverHTTP(HttpConnection httpConnection)
     {
         _httpConnection = httpConnection;
+        _readBlocker = new SharedBlockingCallback();
     }
 
     @Override
