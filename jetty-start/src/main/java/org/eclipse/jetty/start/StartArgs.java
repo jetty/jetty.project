@@ -78,7 +78,7 @@ public class StartArgs
     private Map<String, String> propertySource = new HashMap<>();
     /** List of all active [files] sections from enabled modules */
     private List<FileArg> files = new ArrayList<>();
-    /** List of all active [lib] sectinos from enabled modules */
+    /** List of all active [lib] sections from enabled modules */
     private Classpath classpath;
     /** List of all active [xml] sections from enabled modules */
     private List<Path> xmls = new ArrayList<>();
@@ -122,6 +122,7 @@ public class StartArgs
     private boolean dryRun = false;
 
     private boolean exec = false;
+    private boolean approveAllLicenses = false;
 
     public StartArgs()
     {
@@ -583,6 +584,11 @@ public class StartArgs
         return false;
     }
 
+    public boolean isApproveAllLicenses()
+    {
+        return approveAllLicenses;
+    }
+
     public boolean isDownload()
     {
         return download;
@@ -745,6 +751,13 @@ public class StartArgs
         if ("--exec".equals(arg))
         {
             exec = true;
+            return;
+        }
+
+        // Enable forked execution of Jetty server
+        if ("--approve-all-licenses".equals(arg))
+        {
+            approveAllLicenses = true;
             return;
         }
 

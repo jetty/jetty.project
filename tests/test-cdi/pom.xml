@@ -29,7 +29,7 @@
   <url>http://www.eclipse.org/jetty</url>
   <modules>
     <module>cdi-webapp</module>
+    <module>cdi-webapp-it</module>
     <module>cdi-client</module>
-    <module>cdi-tests</module>
   </modules>
 </project>

@@ -82,7 +82,6 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 public class Main
 {
     private static final int EXIT_USAGE = 1;
-    private static BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
 
     public static String join(Collection<?> objs, String delim)
     {
@@ -435,13 +434,28 @@ public class Main
                 System.err.printf(" + has not been audited for compliance with its license%n");
                 System.err.printf("%n");
                 for (String l : module.getLicense())
+                {
                     System.err.printf("    %s%n",l);
+                }
 
-                System.err.printf("%nProceed (y/N)? ");
-                String line = input.readLine();
-                
-                if (line==null || line.length()==0 || !line.toLowerCase().startsWith("y"))
-                    System.exit(1);
+                if (args.isApproveAllLicenses())
+                {
+                    System.err.println("All licenses approved via command line");
+                }
+                else 
+                {
+                    try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in)))
+                    {
+                        System.err.printf("%nProceed (y/N)? ");
+                        String line = input.readLine();
+
+                        if (line == null || line.length() == 0 || !line.toLowerCase().startsWith("y"))
+                        {
+                            System.err.printf("Exiting: license not acknowledged%n");
+                            System.exit(1);
+                        }
+                    }
+                }
             }
             
             

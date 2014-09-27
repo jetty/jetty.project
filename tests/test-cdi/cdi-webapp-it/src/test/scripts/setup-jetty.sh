@@ -9,10 +9,11 @@ echo \${jetty.home} : $JETTY_HOME
 echo \${jetty.base} : $JETTY_BASE
 
 cd "$JETTY_BASE"
+
 "$JAVA_HOME/bin/java" -jar "$JETTY_HOME/start.jar" \
-    --add-to-start=deploy,http,annotations
+    --approve-all-licenses \
+    --add-to-start=deploy,http,annotations,cdi,logging
 
 "$JAVA_HOME/bin/java" -jar "$JETTY_HOME/start.jar" \
     --version
-
 

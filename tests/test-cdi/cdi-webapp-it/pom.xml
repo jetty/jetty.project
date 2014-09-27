@@ -135,7 +135,7 @@
                   <arg file="${jetty.base}"/>
                 </exec>
 
-                <echo>Integration Test : Start Jetty</echo>
+                <echo>Integration Test : Starting Jetty ...</echo>
                 <exec executable="${run.command}"
                       dir="${scripts-dir}"
                       spawn="true">

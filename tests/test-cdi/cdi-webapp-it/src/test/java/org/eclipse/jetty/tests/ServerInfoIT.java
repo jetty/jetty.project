@@ -26,16 +26,12 @@ import java.net.URI;
 import org.eclipse.jetty.toolchain.test.SimpleRequest;
 import org.junit.Test;
 
-/**
- * Basic tests for a simple @WebServlet with no CDI
- */
-public class HelloIT
+public class ServerInfoIT
 {
     @Test
-    public void testBasic() throws Exception
-    {
+    public void testGET() throws Exception {
         URI serverURI = new URI("http://localhost:58080/cdi-webapp/");
         SimpleRequest req = new SimpleRequest(serverURI);
-        assertThat(req.getString("hello"),is("Hello World"));
+        assertThat(req.getString("serverinfo"),is("Hello World"));
     }
 }
