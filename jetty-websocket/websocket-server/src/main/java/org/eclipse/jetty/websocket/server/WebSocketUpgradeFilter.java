@@ -43,7 +43,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketBehavior;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings;
 import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;
@@ -60,8 +59,8 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context)
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter(policy);
+        // Dynamically add filter
+        WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter();
 
         String name = "Jetty_WebSocketUpgradeFilter";
         String pathSpec = "/*";
@@ -69,6 +68,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
         FilterHolder fholder = new FilterHolder(filter);
         fholder.setName(name);
+        fholder.setInitParameter("global","true");
         context.addFilter(fholder,pathSpec,dispatcherTypes);
 
         if (LOG.isDebugEnabled())
@@ -84,8 +84,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     
     public static WebSocketUpgradeFilter configureContext(ServletContext context)
     {
-        WebSocketPolicy policy = new WebSocketPolicy(WebSocketBehavior.SERVER);
-        WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter(policy);
+        WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter();
 
         String name = "Jetty_Dynamic_WebSocketUpgradeFilter";
         String pathSpec = "/*";
@@ -94,6 +93,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         String urlPatterns[] = { pathSpec };
 
         FilterRegistration.Dynamic dyn = context.addFilter(name,filter);
+        dyn.setInitParameter("global","true");
         dyn.addMappingForUrlPatterns(dispatcherTypes,isMatchAfter,urlPatterns);
 
         if (LOG.isDebugEnabled())
@@ -101,18 +101,16 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             LOG.debug("Adding [{}] {} mapped to {} to {}",name,filter,pathSpec,context);
         }
 
-        // Store reference to the WebSocketUpgradeFilter
-        context.setAttribute(WebSocketUpgradeFilter.class.getName(),filter);
-
         return filter;
     }
 
     private final WebSocketServerFactory factory;
+    private String fname;
     private final PathMappings<WebSocketCreator> pathmap = new PathMappings<>();
 
-    public WebSocketUpgradeFilter(WebSocketPolicy policy)
+    public WebSocketUpgradeFilter()
     {
-        this(policy, new MappedByteBufferPool());
+        this(WebSocketPolicy.newServerPolicy(), new MappedByteBufferPool());
     }
     
     public WebSocketUpgradeFilter(WebSocketPolicy policy, ByteBufferPool bufferPool)
@@ -144,6 +142,11 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             LOG.debug("WebSocketUpgradeFilter is not operational - no WebSocketServletFactory configured");
             chain.doFilter(request,response);
             return;
+        }
+        
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug(".doFilter({}) - {}",fname,chain);
         }
 
         if ((request instanceof HttpServletRequest) && (response instanceof HttpServletResponse))
@@ -232,6 +235,8 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     @Override
     public void init(FilterConfig config) throws ServletException
     {
+        fname = config.getFilterName();
+        
         try
         {
             WebSocketPolicy policy = factory.getPolicy();
@@ -258,6 +263,18 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             if (max != null)
             {
                 policy.setInputBufferSize(Integer.parseInt(max));
+            }
+            
+            boolean addGlobalAttr = false;
+            String boolStr = config.getInitParameter("global");
+            if (boolStr != null)
+            {
+                addGlobalAttr = Boolean.parseBoolean(boolStr);
+            }
+
+            if (addGlobalAttr)
+            {
+                config.getServletContext().setAttribute(WebSocketUpgradeFilter.class.getName(),this);
             }
 
             factory.start();

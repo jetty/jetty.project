@@ -84,49 +84,71 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
         return jettyContainer;
     }
-
-    @Override
-    public void onStartup(Set<Class<?>> c, ServletContext context) throws ServletException
+    
+    private boolean isEnabled(Set<Class<?>> c, ServletContext context)
     {
-        Object enable = context.getAttribute(ENABLE_KEY);
-        
-        // Disable if explicitly disabled
-        if (TypeUtil.isFalse(enable))
+        // Try context parameters first
+        String cp = context.getInitParameter(ENABLE_KEY);
+        if(TypeUtil.isTrue(cp))
         {
-            if (c.isEmpty())
-            {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("JSR-356 support disabled via attribute on context {} - {}",context.getContextPath(),context);
-                }
-            }
-            else
-            {
-                LOG.warn("JSR-356 support disabled via attribute on context {} - {}",context.getContextPath(),context);
-            }
-            return;
+            // forced on
+            return true;
         }
         
-        // Disabled if not explicitly enabled and there are no discovered annotations or interfaces
-        if (!TypeUtil.isTrue(enable) && c.isEmpty())
+        if(TypeUtil.isFalse(cp))
+        {
+            // forced off
+            LOG.warn("JSR-356 support disabled via parameter on context {} - {}",context.getContextPath(),context);
+            return false;
+        }
+        
+        // Next, try attribute on context
+        Object enable = context.getAttribute(ENABLE_KEY);
+        
+        if(TypeUtil.isTrue(enable))
+        {
+            // forced on
+            return true;
+        }
+        
+        if (TypeUtil.isFalse(enable))
+        {
+            // forced off
+            LOG.warn("JSR-356 support disabled via attribute on context {} - {}",context.getContextPath(),context);
+            return false;
+        }
+        
+        // if not forced on or off, determine behavior based on annotations.
+        if (c.isEmpty())
         {
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("No JSR-356 annotations or interfaces discovered. JSR-356 support disabled",context.getContextPath(),context);
             }
+            return false;
+        }
+        
+        return true;
+    }
+
+    @Override
+    public void onStartup(Set<Class<?>> c, ServletContext context) throws ServletException
+    {
+        if(!isEnabled(c,context))
+        {
             return;
         }
-
+        
         ContextHandler handler = ContextHandler.getContextHandler(context);
 
         if (handler == null)
         {
-            throw new ServletException("Not running on Jetty, JSR-356 support disabled");
+            throw new ServletException("Not running on Jetty, JSR-356 support unavailable");
         }
 
         if (!(handler instanceof ServletContextHandler))
         {
-            throw new ServletException("Not running in Jetty ServletContextHandler, JSR-356 support disabled");
+            throw new ServletException("Not running in Jetty ServletContextHandler, JSR-356 support unavailable");
         }
 
         ServletContextHandler jettyContext = (ServletContextHandler)handler;
