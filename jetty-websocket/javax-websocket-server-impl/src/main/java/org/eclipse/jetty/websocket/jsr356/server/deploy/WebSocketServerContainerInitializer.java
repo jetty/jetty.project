@@ -50,7 +50,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * <p>
      * Note: this will add the Upgrade filter to the existing list, with no regard for order.  It will just be tacked onto the end of the list.
      */
-    public static ServerContainer configureContext(ServletContextHandler context)
+    public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
         // Create Filter
         WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
@@ -70,7 +70,7 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * <p>
      * This will use Servlet 3.1 techniques on the {@link ServletContext} to add a filter at the start of the filter chain.
      */
-    public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext)
+    public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
     {
         // Create Filter
         WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
