@@ -55,6 +55,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
 @ManagedObject("WebSocket Upgrade Filter")
 public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter, MappedWebSocketCreator, Dumpable
 {
+    private static final String CONTEXT_ATTRIBUTE_KEY = "contextAttributeKey";
     private static final Logger LOG = Log.getLogger(WebSocketUpgradeFilter.class);
 
     public static WebSocketUpgradeFilter configureContext(ServletContextHandler context)
@@ -68,7 +69,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
         FilterHolder fholder = new FilterHolder(filter);
         fholder.setName(name);
-        fholder.setInitParameter("global","true");
+        fholder.setInitParameter(CONTEXT_ATTRIBUTE_KEY,WebSocketUpgradeFilter.class.getName());
         context.addFilter(fholder,pathSpec,dispatcherTypes);
 
         if (LOG.isDebugEnabled())
@@ -81,7 +82,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
         return filter;
     }
-    
+
     public static WebSocketUpgradeFilter configureContext(ServletContext context)
     {
         WebSocketUpgradeFilter filter = new WebSocketUpgradeFilter();
@@ -93,7 +94,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         String urlPatterns[] = { pathSpec };
 
         FilterRegistration.Dynamic dyn = context.addFilter(name,filter);
-        dyn.setInitParameter("global","true");
+        dyn.setInitParameter(CONTEXT_ATTRIBUTE_KEY,WebSocketUpgradeFilter.class.getName());
         dyn.addMappingForUrlPatterns(dispatcherTypes,isMatchAfter,urlPatterns);
 
         if (LOG.isDebugEnabled())
@@ -110,9 +111,9 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
     public WebSocketUpgradeFilter()
     {
-        this(WebSocketPolicy.newServerPolicy(), new MappedByteBufferPool());
+        this(WebSocketPolicy.newServerPolicy(),new MappedByteBufferPool());
     }
-    
+
     public WebSocketUpgradeFilter(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         factory = new WebSocketServerFactory(policy,bufferPool);
@@ -143,7 +144,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             chain.doFilter(request,response);
             return;
         }
-        
+
         if (LOG.isDebugEnabled())
         {
             LOG.debug(".doFilter({}) - {}",fname,chain);
@@ -236,7 +237,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
     public void init(FilterConfig config) throws ServletException
     {
         fname = config.getFilterName();
-        
+
         try
         {
             WebSocketPolicy policy = factory.getPolicy();
@@ -264,18 +265,22 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             {
                 policy.setInputBufferSize(Integer.parseInt(max));
             }
-            
-            boolean addGlobalAttr = false;
-            String boolStr = config.getInitParameter("global");
-            if (boolStr != null)
+
+            String key = config.getInitParameter(CONTEXT_ATTRIBUTE_KEY);
+            if (key == null)
             {
-                addGlobalAttr = Boolean.parseBoolean(boolStr);
+                // assume default
+                key = WebSocketUpgradeFilter.class.getName();
             }
 
-            if (addGlobalAttr)
+            if (config.getServletContext().getAttribute(key) != null)
             {
-                config.getServletContext().setAttribute(WebSocketUpgradeFilter.class.getName(),this);
+                throw new ServletException(WebSocketUpgradeFilter.class.getName() + 
+                        " is defined twice for the same context attribute key '" + key
+                        + "'.  Make sure you have different init-param '" + 
+                        CONTEXT_ATTRIBUTE_KEY + "' values set");
             }
+            config.getServletContext().setAttribute(key,this);
 
             factory.start();
         }
