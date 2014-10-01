@@ -604,7 +604,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
            finally
            {
                if (_scheduler != null && _scheduler.isRunning())
-                   _scheduler.schedule(this, _scavengeIntervalMs, TimeUnit.MILLISECONDS);
+                   _task = _scheduler.schedule(this, _scavengeIntervalMs, TimeUnit.MILLISECONDS);
            }
         }
     }

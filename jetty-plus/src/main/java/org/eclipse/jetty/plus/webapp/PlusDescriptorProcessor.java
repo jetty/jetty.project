@@ -892,7 +892,7 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         if (defaultNE!=null)
             defaultNE.bindToENC(name);
         else
-            throw new IllegalStateException("Nothing to bind for name "+nameInEnvironment);
+            throw new IllegalStateException("Nothing to bind for name " + name);
     }
 
 
