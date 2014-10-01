@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
@@ -38,16 +39,23 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     private final String name;
     private final boolean daemon;
     private volatile ScheduledThreadPoolExecutor scheduler;
+    private ClassLoader classloader;
 
     public ScheduledExecutorScheduler()
     {
         this(null, false);
-    }
+    }  
 
     public ScheduledExecutorScheduler(String name, boolean daemon)
     {
+        this (name,daemon, Thread.currentThread().getContextClassLoader());
+    }
+    
+    public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader threadFactoryClassLoader)
+    {
         this.name = name == null ? "Scheduler-" + hashCode() : name;
         this.daemon = daemon;
+        this.classloader = threadFactoryClassLoader;
     }
 
     @Override
@@ -60,12 +68,15 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
             {
                 Thread thread = new Thread(r, name);
                 thread.setDaemon(daemon);
+                thread.setContextClassLoader(classloader);
                 return thread;
             }
         });
         scheduler.setRemoveOnCancelPolicy(true);
         super.doStart();
     }
+
+    
 
     @Override
     protected void doStop() throws Exception
@@ -81,6 +92,7 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
         ScheduledFuture<?> result = scheduler.schedule(task, delay, unit);
         return new ScheduledFutureTask(result);
     }
+ 
 
     private class ScheduledFutureTask implements Task
     {
