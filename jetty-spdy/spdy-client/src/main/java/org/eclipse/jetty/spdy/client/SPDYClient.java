@@ -41,6 +41,7 @@ import org.eclipse.jetty.io.NegotiatingClientConnectionFactory;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
+import org.eclipse.jetty.npn.client.NPNClientConnectionFactory;
 import org.eclipse.jetty.spdy.FlowControlStrategy;
 import org.eclipse.jetty.spdy.api.GoAwayInfo;
 import org.eclipse.jetty.spdy.api.Session;
@@ -156,7 +157,6 @@ public class SPDYClient
                 channel.bind(bindAddress);
             configure(channel);
             channel.configureBlocking(false);
-            channel.connect(address);
 
             context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, ((InetSocketAddress)address).getHostString());
             context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, ((InetSocketAddress)address).getPort());
@@ -164,7 +164,10 @@ public class SPDYClient
             context.put(SPDYClientConnectionFactory.SPDY_SESSION_LISTENER_CONTEXT_KEY, listener);
             context.put(SPDYClientConnectionFactory.SPDY_SESSION_PROMISE_CONTEXT_KEY, promise);
 
-            factory.selector.connect(channel, context);
+            if (channel.connect(address))
+                factory.selector.accept(channel, context);
+            else
+                factory.selector.connect(channel, context);
         }
         catch (IOException x)
         {
@@ -380,7 +383,7 @@ public class SPDYClient
         private void closeConnections()
         {
             for (Session session : sessions)
-                session.goAway(new GoAwayInfo(), new Callback.Adapter());
+                session.goAway(new GoAwayInfo(), Callback.Adapter.INSTANCE);
             sessions.clear();
         }
 

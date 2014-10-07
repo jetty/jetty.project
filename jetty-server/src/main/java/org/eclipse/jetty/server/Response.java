@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.eclipse.jetty.util.QuotedStringTokenizer.isQuoted;
-
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.nio.channels.IllegalSelectorException;
@@ -30,7 +28,6 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -108,11 +105,11 @@ public class Response implements HttpServletResponse
      */
     public final static String HTTP_ONLY_COMMENT = "__HTTP_ONLY__";
 
-    private final HttpChannel<?> _channel;
+    private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
     private final AtomicInteger _include = new AtomicInteger();
     private HttpOutput _out;
-    private int _status = HttpStatus.NOT_SET_000;
+    private int _status = HttpStatus.OK_200;
     private String _reason;
     private Locale _locale;
     private MimeTypes.Type _mimeType;
@@ -124,20 +121,20 @@ public class Response implements HttpServletResponse
     private long _contentLength = -1;
     
 
-    public Response(HttpChannel<?> channel, HttpOutput out)
+    public Response(HttpChannel channel, HttpOutput out)
     {
         _channel = channel;
         _out = out;
     }
 
-    protected HttpChannel<?> getHttpChannel()
+    protected HttpChannel getHttpChannel()
     {
         return _channel;
     }
 
     protected void recycle()
     {
-        _status = HttpStatus.NOT_SET_000;
+        _status = HttpStatus.OK_200;
         _reason = null;
         _locale = null;
         _mimeType = null;
@@ -300,7 +297,9 @@ public class Response implements HttpServletResponse
         boolean quote_path = has_path && isQuoteNeededForCookie(path);
         
         // Upgrade the version if we have a comment or we need to quote value/path/domain or if they were already quoted
-        if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path || isQuoted(name) || isQuoted(value) || isQuoted(path) || isQuoted(domain)))
+        if (version==0 && ( comment!=null || quote_name || quote_value || quote_domain || quote_path ||
+                QuotedStringTokenizer.isQuoted(name) || QuotedStringTokenizer.isQuoted(value) ||
+                QuotedStringTokenizer.isQuoted(path) || QuotedStringTokenizer.isQuoted(domain)))
             version=1;
 
         // Append version
@@ -440,9 +439,13 @@ public class Response implements HttpServletResponse
             int port = uri.getPort();
             if (port < 0)
                 port = HttpScheme.HTTPS.asString().equalsIgnoreCase(uri.getScheme()) ? 443 : 80;
-            if (!request.getServerName().equalsIgnoreCase(uri.getHost()) ||
-                    request.getServerPort() != port ||
-                    !path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
+            
+            // Is it the same server?
+            if (!request.getServerName().equalsIgnoreCase(uri.getHost()))
+                return url;
+            if (request.getServerPort() != port)
+                return url;
+            if (!path.startsWith(request.getContextPath())) //TODO the root context path is "", with which every non null string starts
                 return url;
         }
 
@@ -541,10 +544,7 @@ public class Response implements HttpServletResponse
     @Override
     public void sendError(int sc) throws IOException
     {
-        if (sc == 102)
-            sendProcessing();
-        else
-            sendError(sc, null);
+        sendError(sc, null);
     }
 
     @Override
@@ -552,6 +552,24 @@ public class Response implements HttpServletResponse
     {
         if (isIncluding())
             return;
+
+        if (isCommitted())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Aborting on sendError on committed response {} {}",code,message);
+            code=-1;
+        }
+        
+        switch(code)
+        {
+            case -1:
+                _channel.abort(new IOException());
+                return;
+            case 102:
+                sendProcessing();
+                return;
+            default:
+        }
 
         if (isCommitted())
             LOG.warn("Committed before "+code+" "+message);
@@ -682,58 +700,26 @@ public class Response implements HttpServletResponse
         if (!URIUtil.hasScheme(location))
         {
             StringBuilder buf = _channel.getRequest().getRootURL();
- 
-            if (location.startsWith("//"))
+            if (location.startsWith("/"))
             {
-                buf.delete(0, buf.length());
-                buf.append(_channel.getRequest().getScheme());
-                buf.append(":");
-                buf.append(location);
+                // absolute in context
+                location=URIUtil.canonicalPath(location);
             }
-            else if (location.startsWith("/"))
-                buf.append(location);
             else
             {
-                String path = _channel.getRequest().getRequestURI();
-                String parent = (path.endsWith("/")) ? path : URIUtil.parentPath(path);
-                location = URIUtil.addPaths(parent, location);
-                if (location == null)
-                    throw new IllegalStateException("path cannot be above root");
+                // relative to request
+                String path=_channel.getRequest().getRequestURI();
+                String parent=(path.endsWith("/"))?path:URIUtil.parentPath(path);
+                location=URIUtil.canonicalPath(URIUtil.addPaths(parent,location));
                 if (!location.startsWith("/"))
                     buf.append('/');
-                buf.append(location);
             }
-
-            location = buf.toString();
-            HttpURI uri = new HttpURI(location);
-            String path = uri.getDecodedPath();
-            String canonical = URIUtil.canonicalPath(path);
-            if (canonical == null)
-                throw new IllegalArgumentException();
-            if (!canonical.equals(path))
-            {
-                buf = _channel.getRequest().getRootURL();
-                buf.append(URIUtil.encodePath(canonical));
-                String param=uri.getParam();
-                if (param!=null)
-                {
-                    buf.append(';');
-                    buf.append(param);
-                }
-                String query=uri.getQuery();
-                if (query!=null)
-                {
-                    buf.append('?');
-                    buf.append(query);
-                }
-                String fragment=uri.getFragment();
-                if (fragment!=null)
-                {
-                    buf.append('#');
-                    buf.append(fragment);
-                }
-                location = buf.toString();
-            }
+            
+            if(location==null)
+                throw new IllegalStateException("path cannot be above root");
+            buf.append(location);
+            
+            location=buf.toString();
         }
 
         resetBuffer();
@@ -818,7 +804,7 @@ public class Response implements HttpServletResponse
     @Override
     public String getHeader(String name)
     {
-        return _fields.getStringField(name);
+        return _fields.get(name);
     }
 
     @Override
@@ -950,7 +936,7 @@ public class Response implements HttpServletResponse
             if (encoding == null)
             {
                 if (_mimeType!=null && _mimeType.isCharsetAssumed())
-                    encoding=_mimeType.getCharset().toString();
+                    encoding=_mimeType.getCharsetString();
                 else
                 {
                     encoding = MimeTypes.inferCharsetFromContentType(_contentType);
@@ -1109,7 +1095,7 @@ public class Response implements HttpServletResponse
                 _characterEncoding = HttpGenerator.__STRICT?encoding:StringUtil.normalizeCharset(encoding);
                 if (_mimeType!=null)
                 {
-                    _contentType=_mimeType.getBaseType().asString()+ "; charset=" + _characterEncoding;
+                    _contentType=_mimeType.getBaseType().asString()+ ";charset=" + _characterEncoding;
                     _mimeType = MimeTypes.CACHE.get(_contentType);
                     if (_mimeType==null || HttpGenerator.__STRICT)
                         _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
@@ -1118,7 +1104,7 @@ public class Response implements HttpServletResponse
                 }
                 else if (_contentType != null)
                 {
-                    _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + "; charset=" + _characterEncoding;
+                    _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType) + ";charset=" + _characterEncoding;
                     _fields.put(HttpHeader.CONTENT_TYPE, _contentType);
                 }
             }
@@ -1149,7 +1135,7 @@ public class Response implements HttpServletResponse
             
             String charset;
             if (_mimeType!=null && _mimeType.getCharset()!=null && !_mimeType.isCharsetAssumed())
-                charset=_mimeType.getCharset().toString();
+                charset=_mimeType.getCharsetString();
             else
                 charset = MimeTypes.getCharsetFromContentType(contentType);
 
@@ -1157,17 +1143,17 @@ public class Response implements HttpServletResponse
             {
                 if (_characterEncoding != null)
                 {
-                    _contentType = contentType + "; charset=" + _characterEncoding;
+                    _contentType = contentType + ";charset=" + _characterEncoding;
                     _mimeType = null;
                 }
             }
-            else if (isWriting() && !charset.equals(_characterEncoding))
+            else if (isWriting() && !charset.equalsIgnoreCase(_characterEncoding))
             {
                 // too late to change the character encoding;
                 _mimeType = null;
                 _contentType = MimeTypes.getContentTypeWithoutCharset(_contentType);
                 if (_characterEncoding != null)
-                    _contentType = _contentType + "; charset=" + _characterEncoding;
+                    _contentType = _contentType + ";charset=" + _characterEncoding;
             }
             else
             {
@@ -1218,7 +1204,8 @@ public class Response implements HttpServletResponse
         _contentLength = -1;
         _fields.clear();
 
-        String connection = _channel.getRequest().getHttpFields().getStringField(HttpHeader.CONNECTION);
+        String connection = _channel.getRequest().getHeader(HttpHeader.CONNECTION.asString());
+                
         if (connection != null)
         {
             String[] values = connection.split(",");
@@ -1290,8 +1277,6 @@ public class Response implements HttpServletResponse
 
     protected ResponseInfo newResponseInfo()
     {
-        if (_status == HttpStatus.NOT_SET_000)
-            _status = HttpStatus.OK_200;
         return new ResponseInfo(_channel.getRequest().getHttpVersion(), _fields, getLongContentLength(), getStatus(), getReason(), _channel.getRequest().isHead());
     }
 

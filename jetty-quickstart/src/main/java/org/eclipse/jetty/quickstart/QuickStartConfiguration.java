@@ -57,7 +57,7 @@ public class QuickStartConfiguration extends WebInfConfiguration
         Resource webApp = context.newResource(war);
 
         // Accept aliases for WAR files
-        if (webApp.getAlias() != null)
+        if (webApp.isAlias())
         {
             LOG.debug(webApp + " anti-aliased to " + webApp.getAlias());
             webApp = context.newResource(webApp.getAlias());
@@ -72,7 +72,23 @@ public class QuickStartConfiguration extends WebInfConfiguration
         LOG.debug("webapp={}",webApp);
 
         
-        //look for effective-web.xml in WEB-INF of webapp
+        //look for quickstart-web.xml in WEB-INF of webapp
+        Resource quickStartWebXml = getQuickStartWebXml(context);
+        LOG.debug("quickStartWebXml={}",quickStartWebXml);
+        
+        context.getMetaData().setWebXml(quickStartWebXml);
+    }
+
+    
+    /**
+     * Get the quickstart-web.xml file as a Resource.
+     * 
+     * @param context
+     * @return
+     * @throws Exception
+     */
+    public Resource getQuickStartWebXml (WebAppContext context) throws Exception
+    {
         Resource webInf = context.getWebInf();
         if (webInf == null || !webInf.exists())
             throw new IllegalStateException("No WEB-INF");
@@ -81,11 +97,10 @@ public class QuickStartConfiguration extends WebInfConfiguration
         Resource quickStartWebXml = webInf.addPath("quickstart-web.xml");
         if (!quickStartWebXml.exists())
             throw new IllegalStateException ("No WEB-INF/quickstart-web.xml");
-        LOG.debug("quickStartWebXml={}",quickStartWebXml);
-        
-        context.getMetaData().setWebXml(quickStartWebXml);
+        return quickStartWebXml;
     }
-
+    
+    
     
     /**
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#configure(org.eclipse.jetty.webapp.WebAppContext)

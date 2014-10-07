@@ -149,7 +149,8 @@ public class InputStreamContentProvider implements ContentProvider
 
                 byte[] bytes = new byte[bufferSize];
                 int read = stream.read(bytes);
-                LOG.debug("Read {} bytes from {}", read, stream);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Read {} bytes from {}", read, stream);
                 if (read > 0)
                 {
                     hasNext = Boolean.TRUE;
@@ -172,7 +173,8 @@ public class InputStreamContentProvider implements ContentProvider
             }
             catch (Throwable x)
             {
-                LOG.debug(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
                 if (failure == null)
                 {
                     failure = x;

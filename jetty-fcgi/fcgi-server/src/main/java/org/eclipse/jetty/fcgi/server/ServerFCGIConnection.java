@@ -29,9 +29,10 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.ByteBufferQueuedHttpInput;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpInput;
+import org.eclipse.jetty.server.QueuedHttpInput;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -41,16 +42,18 @@ public class ServerFCGIConnection extends AbstractConnection
 
     private final ConcurrentMap<Integer, HttpChannelOverFCGI> channels = new ConcurrentHashMap<>();
     private final Connector connector;
+    private final boolean sendStatus200;
     private final Flusher flusher;
     private final HttpConfiguration configuration;
     private final ServerParser parser;
 
-    public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration)
+    public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
-        super(endPoint, connector.getExecutor());
+        super(endPoint, connector.getExecutor(), false);
         this.connector = connector;
         this.flusher = new Flusher(endPoint);
         this.configuration = configuration;
+        this.sendStatus200 = sendStatus200;
         this.parser = new ServerParser(new ServerListener());
     }
 
@@ -92,7 +95,8 @@ public class ServerFCGIConnection extends AbstractConnection
         }
         catch (Exception x)
         {
-            LOG.debug(x);
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
             // TODO: fail and close ?
         }
         finally
@@ -119,7 +123,8 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             // TODO: handle flags
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
-                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request), new ByteBufferQueuedHttpInput());
+                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200),
+                    new QueuedHttpInput());
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
             if (existing != null)
                 throw new IllegalStateException();
@@ -145,8 +150,8 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} headers on {}", request, channel);
             if (channel != null)
             {
-                if (channel.headerComplete())
-                    channel.dispatch();
+                channel.onRequest();
+                channel.dispatch();
             }
         }
 
@@ -158,8 +163,9 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} {} content {} on {}", request, stream, buffer, channel);
             if (channel != null)
             {
-                if (channel.content(buffer))
-                    channel.dispatch();
+                ByteBuffer copy = ByteBuffer.allocate(buffer.remaining());
+                copy.put(buffer).flip();
+                channel.onContent(new HttpInput.Content(copy));
             }
             return false;
         }
@@ -172,8 +178,8 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} end on {}", request, channel);
             if (channel != null)
             {
-                if (channel.messageComplete())
-                    channel.dispatch();
+                channel.onRequestComplete();
+                channel.dispatch();
             }
         }
 
@@ -185,7 +191,7 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} failure on {}: {}", request, channel, failure);
             if (channel != null)
             {
-                channel.badMessage(400, failure.toString());
+                channel.onBadMessage(400, failure.toString());
             }
         }
     }

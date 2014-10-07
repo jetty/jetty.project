@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.FileResource;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -240,18 +240,18 @@ public class ResourceHandler extends HandlerWrapper
      */
     public Resource getStylesheet()
     {
-    	if(_stylesheet != null)
-    	{
-    	    return _stylesheet;
-    	}
-    	else
-    	{
-    	    if(_defaultStylesheet == null)
-    	    {
-    	        _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
-    	    }
-    	    return _defaultStylesheet;
-    	}
+        if(_stylesheet != null)
+        {
+            return _stylesheet;
+        }
+        else
+        {
+            if(_defaultStylesheet == null)
+            {
+                _defaultStylesheet =  Resource.newResource(this.getClass().getResource("/jetty-dir.css"));
+            }
+            return _defaultStylesheet;
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -269,12 +269,12 @@ public class ResourceHandler extends HandlerWrapper
                 _stylesheet = null;
             }
         }
-    	catch(Exception e)
-    	{
-    	    LOG.warn(e.toString());
-    	    LOG.debug(e);
-    	    throw new IllegalArgumentException(stylesheet);
-    	}
+        catch(Exception e)
+        {
+            LOG.warn(e.toString());
+            LOG.debug(e);
+            throw new IllegalArgumentException(stylesheet);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -308,15 +308,16 @@ public class ResourceHandler extends HandlerWrapper
         {
             if (_context==null)
                 return null;
-            base=_context.getBaseResource();
-            if (base==null)
-                return null;
+            return _context.getResource(path);
         }
 
         try
         {
             path=URIUtil.canonicalPath(path);
-            return base.addPath(path);
+            Resource r = base.addPath(path);
+            if (r!=null && r.isAlias() && !_context.checkAlias(path, r))
+                return null;
+            return r;
         }
         catch(Exception e)
         {
@@ -523,7 +524,7 @@ public class ResourceHandler extends HandlerWrapper
                 // Can we use a memory mapped file?
                 if (_minMemoryMappedContentLength>0 && 
                     resource.length()>_minMemoryMappedContentLength &&
-                    resource instanceof FileResource)
+                    resource instanceof PathResource)
                 {
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer,callback);
@@ -543,7 +544,7 @@ public class ResourceHandler extends HandlerWrapper
                 // Can we use a memory mapped file?
                 if (_minMemoryMappedContentLength>0 && 
                     resource.length()>_minMemoryMappedContentLength &&
-                    resource instanceof FileResource)
+                    resource instanceof PathResource)
                 {
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer);
@@ -567,7 +568,7 @@ public class ResourceHandler extends HandlerWrapper
         if (_directory)
         {
             String listing = resource.getListHTML(request.getRequestURI(),request.getPathInfo().lastIndexOf("/") > 0);
-            response.setContentType("text/html; charset=UTF-8");
+            response.setContentType("text/html;charset=utf-8");
             response.getWriter().println(listing);
         }
         else

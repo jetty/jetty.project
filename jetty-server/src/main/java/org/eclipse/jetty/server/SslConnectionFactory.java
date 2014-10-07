@@ -47,7 +47,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
     public SslConnectionFactory(@Name("sslContextFactory") SslContextFactory factory, @Name("next") String nextProtocol)
     {
-        super("SSL-"+nextProtocol);
+        super("SSL");
         _sslContextFactory=factory==null?new SslContextFactory():factory;
         _nextProtocol=nextProtocol;
         addBean(_sslContextFactory);
@@ -97,6 +97,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s}",this.getClass().getSimpleName(),hashCode(),getProtocol());
+        return String.format("%s@%x{%s->%s}",this.getClass().getSimpleName(),hashCode(),getProtocol(),_nextProtocol);
     }
+
 }

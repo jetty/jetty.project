@@ -20,16 +20,13 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
-import org.eclipse.jetty.http.HttpHeader;
-import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -56,19 +53,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpConfiguration _config;
     private final Connector _connector;
     private final ByteBufferPool _bufferPool;
-    private final HttpGenerator _generator;
+    final HttpGenerator _generator;
     private final HttpChannelOverHttp _channel;
     private final HttpParser _parser;
     private volatile ByteBuffer _requestBuffer = null;
     private volatile ByteBuffer _chunk = null;
+    private final SendCallback _sendCallback = new SendCallback();
 
-
-    /* ------------------------------------------------------------ */
-    /** Get the current connection that this thread is dispatched to.
-     * Note that a thread may be processing a request asynchronously and 
+    /**
+     * Get the current connection that this thread is dispatched to.
+     * Note that a thread may be processing a request asynchronously and
      * thus not be dispatched to the connection.  
-     * @see Request#getAttribute(String) for a more general way to access the HttpConnection
      * @return the current HttpConnection or null
+     * @see Request#getAttribute(String) for a more general way to access the HttpConnection
      */
     public static HttpConnection getCurrentConnection()
     {
@@ -85,25 +82,23 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return last;
     }
 
-    public HttpConfiguration getHttpConfiguration()
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, boolean dispatchIO)
     {
-        return _config;
-    }
-
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
-    {
-        // Tell AbstractConnector executeOnFillable==true because we want the same thread that
-        // does the HTTP parsing to handle the request so its cache is hot
-        super(endPoint, connector.getExecutor(),true);
-
+        super(endPoint, connector.getExecutor(), dispatchIO);
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
         _generator = newHttpGenerator();
-        HttpInput<ByteBuffer> input = newHttpInput();
+        HttpInput input = newHttpInput();
         _channel = newHttpChannel(input);
         _parser = newHttpParser();
-        LOG.debug("New HTTP Connection {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("New HTTP Connection {}", this);
+    }
+
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return _config;
     }
 
     protected HttpGenerator newHttpGenerator()
@@ -111,14 +106,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
     }
     
-    protected HttpInput<ByteBuffer> newHttpInput()
+    protected HttpInput newHttpInput()
     {
         return new HttpInputOverHTTP(this);
     }
     
-    protected HttpChannelOverHttp newHttpChannel(HttpInput<ByteBuffer> httpInput)
+    protected HttpChannelOverHttp newHttpChannel(HttpInput httpInput)
     {
-        return new HttpChannelOverHttp(_connector, _config, getEndPoint(), this, httpInput);
+        return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this, httpInput);
     }
     
     protected HttpParser newHttpParser()
@@ -126,7 +121,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return new HttpParser(newRequestHandler(), getHttpConfiguration().getRequestHeaderSize());
     }
 
-    protected HttpParser.RequestHandler<ByteBuffer> newRequestHandler()
+    protected HttpParser.RequestHandler newRequestHandler()
     {
         return _channel;
     }
@@ -141,7 +136,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return _connector;
     }
 
-    public HttpChannel<?> getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }
@@ -191,7 +186,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public void onFillable()
     {
-        LOG.debug("{} onFillable {}", this, _channel.getState());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} onFillable {}", this, _channel.getState());
 
         final HttpConnection last=setCurrentConnection(this);
         int filled=Integer.MAX_VALUE;
@@ -267,7 +263,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         finally
         {                        
             setCurrentConnection(last);
-            if (!suspended && getEndPoint().isOpen() && getEndPoint().getConnection()==this)
+            if (!suspended && getEndPoint().isOpen() && getEndPoint().getConnection() == this)
             {
                 fillInterested();
             }
@@ -328,7 +324,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
             if (connection != null)
             {
-                LOG.debug("Upgrade from {} to {}", this, connection);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Upgrade from {} to {}", this, connection);
                 onClose();
                 getEndPoint().setConnection(connection);
                 connection.onOpen();
@@ -419,149 +416,78 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
+    public void onClose()
+    {
+        _sendCallback.close();
+        super.onClose();
+    }
+
+    @Override
     public void run()
     {
         onFillable();
     }
 
-
     @Override
     public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        if (info==null)
-            new ContentCallback(content,lastContent,callback).iterate();
+        if (info == null)
+        {
+            if (!lastContent && BufferUtil.isEmpty(content))
+                callback.succeeded();
+        }
         else
         {
-            // If we are still expecting a 100 continues
+            // If we are still expecting a 100 continues when we commit
             if (_channel.isExpecting100Continue())
                 // then we can't be persistent
                 _generator.setPersistent(false);
-            new CommitCallback(info,content,lastContent,callback).iterate();
         }
+            
+        if(_sendCallback.reset(info,content,lastContent,callback))
+            _sendCallback.iterate();
     }
 
-    @Override
-    public void send(ByteBuffer content, boolean lastContent, Callback callback)
+    private class SendCallback extends IteratingCallback
     {
-        new ContentCallback(content,lastContent,callback).iterate();
-    }
+        private ResponseInfo _info;
+        private ByteBuffer _content;
+        private boolean _lastContent;
+        private Callback _callback;
+        private ByteBuffer _header;
+        private boolean _shutdownOut;
 
-    
-    protected class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
-    {
-        public HttpChannelOverHttp(Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
+        private SendCallback()
         {
-            super(connector,config,endPoint,transport,input);
-        }
-        
-        @Override
-        public void earlyEOF()
-        {
-            // If we have no request yet, just close
-            if (getRequest().getMethod()==null)
-                close();
-            else
-                super.earlyEOF();
+            super(true);
         }
 
-        @Override
-        public boolean content(ByteBuffer item)
+        private boolean reset(ResponseInfo info, ByteBuffer content, boolean last, Callback callback)
         {
-            super.content(item);
-            return true;
-        }
-
-        @Override
-        public void badMessage(int status, String reason)
-        {
-            _generator.setPersistent(false);
-            super.badMessage(status,reason);
-        }
-
-        @Override
-        public boolean headerComplete()
-        {
-            boolean persistent;
-            HttpVersion version = getHttpVersion();
-
-            switch (version)
+            if (reset())
             {
-                case HTTP_0_9:
-                {
-                    persistent = false;
-                    break;
-                }
-                case HTTP_1_0:
-                {
-                    persistent = getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
-                    if (!persistent)
-                        persistent = HttpMethod.CONNECT.is(getRequest().getMethod());
-                    if (persistent)
-                        getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
-                    break;
-                }
-                case HTTP_1_1:
-                {
-                    persistent = !getRequest().getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
-                    if (!persistent)
-                        persistent = HttpMethod.CONNECT.is(getRequest().getMethod());
-                    if (!persistent)
-                        getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                    break;
-                }
-                default:
-                {
-                    throw new IllegalStateException();
-                }
+                _info = info;
+                _content = content;
+                _lastContent = last;
+                _callback = callback;
+                _header = null;
+                _shutdownOut = false;
+                return true;
             }
-
-            if (!persistent)
-                _generator.setPersistent(false);
-
-            return super.headerComplete();
-        }
-
-        @Override
-        protected void handleException(Throwable x)
-        {
-            _generator.setPersistent(false);
-            super.handleException(x);
-        }
-
-        @Override
-        public void failed()
-        {
-            getEndPoint().shutdownOutput();
-        }
-        
-
-        @Override
-        public boolean messageComplete()
-        {
-            super.messageComplete();
+            
+            if (isClosed())
+                callback.failed(new EofException());
+            else
+                callback.failed(new WritePendingException());
             return false;
-        }
-    }
-
-    private class CommitCallback extends IteratingCallback
-    {
-        final ByteBuffer _content;
-        final boolean _lastContent;
-        final ResponseInfo _info;
-        final Callback _callback;
-        ByteBuffer _header;
-
-        CommitCallback(ResponseInfo info, ByteBuffer content, boolean last, Callback callback)
-        {
-            _info=info;
-            _content=content;
-            _lastContent=last;
-            _callback=callback;
         }
 
         @Override
         public Action process() throws Exception
         {
+            if (_callback==null)
+                throw new IllegalStateException();
+            
             ByteBuffer chunk = _chunk;
             while (true)
             {
@@ -639,114 +565,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                             getEndPoint().write(this, _content);
                         }
                         else
-                            continue;
+                        {
+                            succeeded(); // nothing to write
+                        }
                         return Action.SCHEDULED;
                     }
                     case SHUTDOWN_OUT:
                     {
-                        getEndPoint().shutdownOutput();
-                        continue;
-                    }
-                    case DONE:
-                    {
-                        if (_header!=null)
-                        {
-                            // don't release header in spare content buffer
-                            if (!_lastContent || _content==null || !_content.hasArray() || !_header.hasArray() ||  _content.array()!=_header.array())
-                                _bufferPool.release(_header);
-                        }
-                        return Action.SUCCEEDED;
-                    }
-                    case CONTINUE:
-                    {
-                        break;
-                    }
-                    default:
-                    {
-                        throw new IllegalStateException("generateResponse="+result);
-                    }
-                }
-            }
-        }
-
-        @Override
-        protected void completed()
-        {
-            _callback.succeeded();
-        }
-
-        @Override
-        public void failed(final Throwable x)
-        {
-            super.failed(x);
-            failedCallback(_callback,x);
-        }
-    }
-
-    private class ContentCallback extends IteratingCallback
-    {
-        final ByteBuffer _content;
-        final boolean _lastContent;
-        final Callback _callback;
-
-        ContentCallback(ByteBuffer content, boolean last, Callback callback)
-        {
-            _content=content;
-            _lastContent=last;
-            _callback=callback;
-        }
-
-        @Override
-        public Action process() throws Exception
-        {
-            ByteBuffer chunk = _chunk;
-            while (true)
-            {
-                HttpGenerator.Result result = _generator.generateResponse(null, null, chunk, _content, _lastContent);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} generate: {} ({},{})@{}",
-                        this,
-                        result,
-                        BufferUtil.toSummaryString(_content),
-                        _lastContent,
-                        _generator.getState());
-
-                switch (result)
-                {
-                    case NEED_HEADER:
-                        throw new IllegalStateException();
-                    case NEED_CHUNK:
-                    {
-                        chunk = _chunk = _bufferPool.acquire(HttpGenerator.CHUNK_SIZE, CHUNK_BUFFER_DIRECT);
-                        continue;
-                    }
-                    case FLUSH:
-                    {
-                        // Don't write the chunk or the content if this is a HEAD response
-                        if (_channel.getRequest().isHead())
-                        {
-                            BufferUtil.clear(chunk);
-                            BufferUtil.clear(_content);
-                            continue;
-                        }
-                        else if (BufferUtil.hasContent(chunk))
-                        {
-                            if (BufferUtil.hasContent(_content))
-                                getEndPoint().write(this, chunk, _content);
-                            else
-                                getEndPoint().write(this, chunk);
-                        }
-                        else if (BufferUtil.hasContent(_content))
-                        {
-                            getEndPoint().write(this, _content);
-                        }
-                        else
-                            continue;
-                        return Action.SCHEDULED;
-                    }
-                    case SHUTDOWN_OUT:
-                    {
-                        getEndPoint().shutdownOutput();
+                        _shutdownOut=true;
                         continue;
                     }
                     case DONE:
@@ -765,26 +591,54 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             }
         }
 
-        @Override
-        protected void completed()
+        private void releaseHeader()
         {
+            ByteBuffer h=_header;
+            _header=null;
+            if (h!=null)
+                _bufferPool.release(h);
+        }
+        
+        @Override
+        protected void onCompleteSuccess()
+        {
+            releaseHeader();
             _callback.succeeded();
+            if (_shutdownOut)
+                getEndPoint().shutdownOutput();
         }
 
         @Override
-        public void failed(final Throwable x)
+        public void onCompleteFailure(final Throwable x)
         {
-            super.failed(x);
+            releaseHeader();
             failedCallback(_callback,x);
+            if (_shutdownOut)
+                getEndPoint().shutdownOutput();
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("%s[i=%s,cb=%s]",super.toString(),_info,_callback);
         }
     }
 
     @Override
-    public void abort()
+    public void abort(Throwable failure)
     {
         // Do a direct close of the output, as this may indicate to a client that the 
         // response is bad either with RST or by abnormal completion of chunked response.
         getEndPoint().close();
     }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
+     */
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {   
+        LOG.debug("ignore push in {}",this);
+    }
 }

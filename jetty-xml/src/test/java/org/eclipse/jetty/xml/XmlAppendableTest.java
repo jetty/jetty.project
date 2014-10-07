@@ -33,7 +33,7 @@ public class XmlAppendableTest
         XmlAppendable out = new XmlAppendable(b);
         Map<String, String> attr = new LinkedHashMap<>();
 
-        out.open("test");
+        out.openTag("test");
 
         attr.put("name", "attr value");
         attr.put("noval", null);
@@ -43,13 +43,13 @@ public class XmlAppendableTest
         out.tag("tag", attr);
         out.tag("tag", attr, "content");
 
-        out.open("level1").tag("tag", "content").tag("tag", "content").close();
-        out.open("level1", attr).open("level2").tag("tag", "content").tag("tag", "content").close().close();
+        out.openTag("level1").tag("tag", "content").tag("tag", "content").closeTag();
+        out.openTag("level1", attr).openTag("level2").tag("tag", "content").tag("tag", "content").closeTag().closeTag();
 
-        out.close();
+        out.closeTag();
 
         String expected = "" +
-                "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n" +
+                "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" +
                 "<test>\n" +
                 "  <tag/>\n" +
                 "  <tag name=\"attr value\" noval=\"\" quotes=\"&apos;&quot;\"/>\n" +

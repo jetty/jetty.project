@@ -576,7 +576,8 @@ public class StandardSessionTest
             StandardSession.FrameBytes frameBytes = (StandardSession.FrameBytes)callback;
 
             int streamId = frameBytes.getStream().getId();
-            LOG.debug("last: {}, current: {}", lastStreamId, streamId);
+            if (LOG.isDebugEnabled())
+                LOG.debug("last: {}, current: {}", lastStreamId, streamId);
             if (lastStreamId < streamId)
                 lastStreamId = streamId;
             else

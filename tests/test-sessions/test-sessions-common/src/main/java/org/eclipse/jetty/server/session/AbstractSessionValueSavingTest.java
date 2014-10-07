@@ -72,7 +72,7 @@ public abstract class AbstractSessionValueSavingTest
 
                     sessionTestValue = Long.parseLong(response1.getContentAsString());
 
-                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
+                    String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue( sessionCookie != null );
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -95,7 +95,7 @@ public abstract class AbstractSessionValueSavingTest
                         assertTrue(sessionTestValue < Long.parseLong(response2.getContentAsString()));
                         sessionTestValue = Long.parseLong(response2.getContentAsString());
 
-                        String setCookie = response1.getHeaders().getStringField("Set-Cookie");
+                        String setCookie = response1.getHeaders().get("Set-Cookie");
                         if (setCookie!=null)
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
@@ -133,8 +133,8 @@ public abstract class AbstractSessionValueSavingTest
                 System.out.println("not init call " + session);
                 if (session!=null)
                 {
-                	long value = System.currentTimeMillis();
-                	System.out.println("Setting test to : " + value);
+                        long value = System.currentTimeMillis();
+                        System.out.println("Setting test to : " + value);
                     session.setAttribute("test", value);
 
                 }
@@ -148,14 +148,14 @@ public abstract class AbstractSessionValueSavingTest
 
         private void sendResult(HttpSession session, PrintWriter writer)
         {
-        	if (session != null)
-        	{
-        		writer.print(session.getAttribute("test"));
-        	}
-        	else
-        	{
-        		writer.print(0);
-        	}
+                if (session != null)
+                {
+                        writer.print(session.getAttribute("test"));
+                }
+                else
+                {
+                        writer.print(0);
+                }
         }
 
     }

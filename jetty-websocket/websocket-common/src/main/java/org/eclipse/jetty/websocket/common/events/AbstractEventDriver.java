@@ -167,7 +167,8 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
                 }
                 default:
                 {
-                    LOG.debug("Unhandled OpCode: {}",opcode);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Unhandled OpCode: {}",opcode);
                 }
             }
         }
@@ -211,7 +212,8 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     @Override
     public void openSession(WebSocketSession session)
     {
-        LOG.debug("openSession({})",session);
+        if (LOG.isDebugEnabled())
+            LOG.debug("openSession({})",session);
         this.session = session;
         try
         {
@@ -226,7 +228,8 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
 
     protected void terminateConnection(int statusCode, String rawreason)
     {
-        LOG.debug("terminateConnection({},{})",statusCode,rawreason);
+        if (LOG.isDebugEnabled())
+            LOG.debug("terminateConnection({},{})",statusCode,rawreason);
         session.close(statusCode,CloseFrame.truncate(rawreason));
     }
 

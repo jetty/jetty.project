@@ -253,7 +253,7 @@ public class Password extends Credential
     {
         if (arg.length != 1 && arg.length != 2)
         {
-            System.err.println("Usage - java org.eclipse.jetty.security.Password [<user>] <password>");
+            System.err.println("Usage - java " + Password.class.getName() + " [<user>] <password>");
             System.err.println("If the password is ?, the user will be prompted for the password");
             System.exit(1);
         }

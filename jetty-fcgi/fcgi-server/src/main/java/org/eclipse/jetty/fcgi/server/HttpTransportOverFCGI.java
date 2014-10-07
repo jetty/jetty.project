@@ -40,15 +40,55 @@ public class HttpTransportOverFCGI implements HttpTransport
     private volatile boolean shutdown;
     private volatile boolean aborted;
 
-    public HttpTransportOverFCGI(ByteBufferPool byteBufferPool, Flusher flusher, int request)
+    public HttpTransportOverFCGI(ByteBufferPool byteBufferPool, Flusher flusher, int request, boolean sendStatus200)
     {
-        this.generator = new ServerGenerator(byteBufferPool);
+        this.generator = new ServerGenerator(byteBufferPool, sendStatus200);
         this.flusher = flusher;
         this.request = request;
     }
 
     @Override
     public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
+    {
+        if (info!=null)
+            commit(info,content,lastContent,callback);
+        else
+        {
+            if (head)
+            {
+                if (lastContent)
+                {
+                    Generator.Result result = generateResponseContent(BufferUtil.EMPTY_BUFFER, true, callback);
+                    flusher.flush(result);
+                }
+                else
+                {
+                    // Skip content generation
+                    callback.succeeded();
+                }
+            }
+            else
+            {
+                Generator.Result result = generateResponseContent(content, lastContent, callback);
+                flusher.flush(result);
+            }
+
+            if (lastContent && shutdown)
+                flusher.shutdown();
+        }
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
+     */
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {   
+        // LOG.debug("ignore push in {}",this);
+    }
+    
+    private void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
     {
         boolean head = this.head = info.isHead();
         boolean shutdown = this.shutdown = info.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
@@ -57,23 +97,20 @@ public class HttpTransportOverFCGI implements HttpTransport
         {
             if (lastContent)
             {
-                Generator.Result headersResult = generator.generateResponseHeaders(request, info.getStatus(), info.getReason(),
-                        info.getHttpFields(), new Callback.Adapter());
-                Generator.Result contentResult = generator.generateResponseContent(request, BufferUtil.EMPTY_BUFFER, lastContent, aborted, callback);
+                Generator.Result headersResult = generateResponseHeaders(info, Callback.Adapter.INSTANCE);
+                Generator.Result contentResult = generateResponseContent(BufferUtil.EMPTY_BUFFER, true, callback);
                 flusher.flush(headersResult, contentResult);
             }
             else
             {
-                Generator.Result headersResult = generator.generateResponseHeaders(request, info.getStatus(), info.getReason(),
-                        info.getHttpFields(), callback);
+                Generator.Result headersResult = generateResponseHeaders(info, callback);
                 flusher.flush(headersResult);
             }
         }
         else
         {
-            Generator.Result headersResult = generator.generateResponseHeaders(request, info.getStatus(), info.getReason(),
-                    info.getHttpFields(), new Callback.Adapter());
-            Generator.Result contentResult = generator.generateResponseContent(request, content, lastContent, aborted, callback);
+            Generator.Result headersResult = generateResponseHeaders(info, Callback.Adapter.INSTANCE);
+            Generator.Result contentResult = generateResponseContent(content, lastContent, callback);
             flusher.flush(headersResult, contentResult);
         }
 
@@ -81,34 +118,18 @@ public class HttpTransportOverFCGI implements HttpTransport
             flusher.shutdown();
     }
 
-    @Override
-    public void send(ByteBuffer content, boolean lastContent, Callback callback)
+    protected Generator.Result generateResponseHeaders(HttpGenerator.ResponseInfo info, Callback callback)
     {
-        if (head)
-        {
-            if (lastContent)
-            {
-                Generator.Result result = generator.generateResponseContent(request, BufferUtil.EMPTY_BUFFER, lastContent, aborted, callback);
-                flusher.flush(result);
-            }
-            else
-            {
-                // Skip content generation
-                callback.succeeded();
-            }
-        }
-        else
-        {
-            Generator.Result result = generator.generateResponseContent(request, content, lastContent, aborted, callback);
-            flusher.flush(result);
-        }
+        return generator.generateResponseHeaders(request, info.getStatus(), info.getReason(), info.getHttpFields(), callback);
+    }
 
-        if (lastContent && shutdown)
-            flusher.shutdown();
+    protected Generator.Result generateResponseContent(ByteBuffer buffer, boolean lastContent, Callback callback)
+    {
+        return generator.generateResponseContent(request, buffer, lastContent, aborted, callback);
     }
 
     @Override
-    public void abort()
+    public void abort(Throwable failure)
     {
         aborted = true;
     }

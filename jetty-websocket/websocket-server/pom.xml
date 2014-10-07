@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.websocket</groupId>
         <artifactId>websocket-parent</artifactId>
-        <version>9.2.0-SNAPSHOT</version>
+        <version>9.3.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -21,9 +21,8 @@
               <artifactId>maven-jar-plugin</artifactId>
               <executions>
                 <execution>
-                  <id>artifact-jars</id>
+                  <id>test-jar</id>
                   <goals>
-                    <goal>jar</goal>
                     <goal>test-jar</goal>
                   </goals>
                 </execution>

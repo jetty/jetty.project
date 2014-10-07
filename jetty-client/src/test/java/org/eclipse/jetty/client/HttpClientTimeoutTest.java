@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.net.ssl.SSLEngine;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -56,6 +57,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
@@ -299,6 +301,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         }
     }
 
+    @Ignore
     @Slow
     @Test
     public void testConnectTimeoutFailsRequest() throws Exception
@@ -330,6 +333,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         Assert.assertNotNull(request.getAbortCause());
     }
 
+    @Ignore
     @Slow
     @Test
     public void testConnectTimeoutIsCancelledByShorterTimeout() throws Exception

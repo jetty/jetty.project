@@ -126,7 +126,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
         {
             try
             {
-                if (!parse(buffer))
+                if (parse(buffer))
                     return false;
 
                 int read = endPoint.fill(buffer);
@@ -134,7 +134,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
                     LOG.debug("Read {} bytes from {}", read, endPoint);
                 if (read > 0)
                 {
-                    if (!parse(buffer))
+                    if (parse(buffer))
                         return false;
                 }
                 else if (read == 0)
@@ -150,7 +150,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             }
             catch (Exception x)
             {
-                LOG.debug(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
                 close(x);
                 return false;
             }
@@ -159,7 +160,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     private boolean parse(ByteBuffer buffer)
     {
-        return !parser.parse(buffer);
+        return parser.parse(buffer);
     }
 
     private void shutdown()
@@ -199,9 +200,11 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             // from an onFailure() handler or by blocking code waiting for completion.
             getHttpDestination().close(this);
             getEndPoint().shutdownOutput();
-            LOG.debug("{} oshut", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} oshut", this);
             getEndPoint().close();
-            LOG.debug("{} closed", this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} closed", this);
 
             abort(failure);
         }
@@ -347,7 +350,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
                             @Override
                             public void resume()
                             {
-                                LOG.debug("Content consumed asynchronously, resuming processing");
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Content consumed asynchronously, resuming processing");
                                 process();
                             }
 
@@ -357,11 +361,14 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
                                 close(x);
                             }
                         };
-                        channel.content(buffer, callback);
+                        if (!channel.content(buffer, callback))
+                            return true;
                         return callback.tryComplete();
                     }
                     else
+                    {
                         noChannel(request);
+                    }
                     break;
                 }
                 case STD_ERR:
@@ -409,7 +416,8 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
         private void noChannel(int request)
         {
-            // TODO: what here ?
+            if (LOG.isDebugEnabled())
+                LOG.debug("Channel not found for request {}", request);
         }
     }
 }

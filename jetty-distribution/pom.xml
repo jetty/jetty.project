@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.2.0-SNAPSHOT</version>
+    <version>9.3.0-SNAPSHOT</version>
   </parent>
   <artifactId>jetty-distribution</artifactId>
   <name>Jetty :: Distribution Assemblies</name>
@@ -301,8 +301,8 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
-              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
-              <excludeArtifactIds>jetty-all,jetty-jsp,apache-jsp,jetty-start,jetty-monitor</excludeArtifactIds>
+              <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.spdy,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
+              <excludeArtifactIds>jetty-all,jetty-jsp,apache-jsp,apache-jstl,jetty-start,jetty-monitor,jetty-spring</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -321,6 +321,19 @@
             </configuration>
           </execution>
           <execution>
+            <id>copy-lib-http2-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty.http2</includeGroupIds>
+              <includeArtifactIds>http2-hpack,http2-common,http2-server</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/http2</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
             <id>copy-lib-fcgi-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -330,6 +343,19 @@
               <includeGroupIds>org.eclipse.jetty.fcgi</includeGroupIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/fcgi</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-spring-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.eclipse.jetty</includeGroupIds>
+              <includeArtifactIds>jetty-spring</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/spring</outputDirectory>
             </configuration>
           </execution>
           <execution>
@@ -464,8 +490,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.toolchain,javax.servlet.jsp,org.mortbay.jasper,org.mortbay.jasper,org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>apache-jsp,javax.servlet.jsp-api,apache-el,org.eclipse.jdt.core</includeArtifactIds>
+              <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.toolchain,org.mortbay.jasper,org.eclipse.jetty.orbit</includeGroupIds>
+              <includeArtifactIds>apache-jsp,apache-el,org.eclipse.jdt.core</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <prependGroupId>true</prependGroupId>
               <outputDirectory>${assembly-directory}/lib/apache-jsp</outputDirectory>
@@ -765,6 +791,11 @@
       <artifactId>fcgi-server</artifactId>
       <version>${project.version}</version>
     </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-spring</artifactId>
+      <version>${project.version}</version>
+    </dependency>
 <!--
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
@@ -785,6 +816,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-rewrite</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
@@ -811,6 +847,11 @@
     <dependency>
       <groupId>org.eclipse.jetty</groupId>
       <artifactId>jetty-alpn-server</artifactId>
+      <version>${project.version}</version>
+    </dependency>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-npn-server</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>

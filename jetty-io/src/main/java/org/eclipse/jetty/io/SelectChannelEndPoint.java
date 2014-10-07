@@ -22,7 +22,7 @@ import java.nio.channels.CancelledKeyException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.util.log.Log;
@@ -43,27 +43,21 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         {
             try
             {
-                if (getChannel().isOpen())
-                {
-                    int oldInterestOps = _key.interestOps();
-                    int newInterestOps = _interestOps.get();
-                    if (newInterestOps != oldInterestOps)
-                        setKeyInterests(oldInterestOps, newInterestOps);
-                }
+                setKeyInterests();
             }
             catch (CancelledKeyException x)
             {
                 LOG.debug("Ignoring key update for concurrently closed channel {}", this);
                 close();
             }
-            catch (Exception x)
+            catch (Throwable x)
             {
                 LOG.warn("Ignoring key update for " + this, x);
                 close();
             }
         }
     };
-
+    private final AtomicReference<State> _interestState = new AtomicReference<>(State.SELECTING);
     /**
      * true if {@link ManagedSelector#destroyEndPoint(EndPoint)} has not been called
      */
@@ -73,11 +67,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     /**
      * The desired value for {@link SelectionKey#interestOps()}
      */
-    private final AtomicInteger _interestOps = new AtomicInteger();
+    private int _interestOps;
 
     public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout)
     {
-        super(scheduler,channel);
+        super(scheduler, channel);
         _selector = selector;
         _key = key;
         setIdleTimeout(idleTimeout);
@@ -86,74 +80,170 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     @Override
     protected boolean needsFill()
     {
-        updateLocalInterests(SelectionKey.OP_READ, true);
+        changeInterests(SelectionKey.OP_READ, true);
         return false;
     }
 
     @Override
     protected void onIncompleteFlush()
     {
-        updateLocalInterests(SelectionKey.OP_WRITE, true);
+        changeInterests(SelectionKey.OP_WRITE, true);
     }
 
     @Override
     public void onSelected()
     {
+        /**
+         * This method never runs concurrently with other
+         * methods that update _interestState.
+         */
+
         assert _selector.isSelectorThread();
-        int oldInterestOps = _key.interestOps();
+
+        // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
         int readyOps = _key.readyOps();
+        int oldInterestOps = _interestOps;
         int newInterestOps = oldInterestOps & ~readyOps;
-        setKeyInterests(oldInterestOps, newInterestOps);
-        updateLocalInterests(readyOps, false);
-        if (_key.isReadable())
+        _interestOps = newInterestOps;
+
+        if (!_interestState.compareAndSet(State.SELECTING, State.PENDING))
+            throw new IllegalStateException("Invalid state: " + _interestState);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("onSelected {}->{} for {}", oldInterestOps, newInterestOps, this);
+
+        if ((readyOps & SelectionKey.OP_READ) != 0)
             getFillInterest().fillable();
-        if (_key.isWritable())
+        if ((readyOps & SelectionKey.OP_WRITE) != 0)
             getWriteFlusher().completeWrite();
     }
 
-
-    private void updateLocalInterests(int operation, boolean add)
+    @Override
+    public void updateKey()
     {
+        /**
+         * This method may run concurrently with {@link #changeInterests(int, boolean)}.
+         */
+
+        assert _selector.isSelectorThread();
+
         while (true)
         {
-            int oldInterestOps = _interestOps.get();
-            int newInterestOps;
-            if (add)
-                newInterestOps = oldInterestOps | operation;
-            else
-                newInterestOps = oldInterestOps & ~operation;
-
-            if (isInputShutdown())
-                newInterestOps &= ~SelectionKey.OP_READ;
-            if (isOutputShutdown())
-                newInterestOps &= ~SelectionKey.OP_WRITE;
-
-            if (newInterestOps != oldInterestOps)
+            State current = _interestState.get();
+            switch (current)
             {
-                if (_interestOps.compareAndSet(oldInterestOps, newInterestOps))
+                case SELECTING:
                 {
-                    LOG.debug("Local interests updated {} -> {} for {}", oldInterestOps, newInterestOps, this);
-                    _selector.updateKey(_updateTask);
+                    // When a whole cycle triggered by changeInterests()
+                    // happens, we finish the job by updating the key.
+                    setKeyInterests();
+                    return;
                 }
-                else
+                case PENDING:
                 {
-                    LOG.debug("Local interests update conflict: now {}, was {}, attempted {} for {}", _interestOps.get(), oldInterestOps, newInterestOps, this);
-                    continue;
+                    if (!_interestState.compareAndSet(current, State.UPDATING))
+                        continue;
+                    break;
+                }
+                case UPDATING:
+                {
+                    // Set the key interest as expected.
+                    if (!_interestState.compareAndSet(current, State.SELECTING))
+                        throw new IllegalStateException();
+                    // Set the key interests after updating the state, otherwise
+                    // the selector may select and call onSelected() concurrently.
+                    setKeyInterests();
+                    return;
+                }
+                case CHANGING:
+                {
+                    // We lost the race to update _interestOps,
+                    // let changeInterests() perform the update.
+                    return;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
                 }
             }
-            else
-            {
-                LOG.debug("Ignoring local interests update {} -> {} for {}", oldInterestOps, newInterestOps, this);
-            }
-            break;
         }
     }
 
-
-    private void setKeyInterests(int oldInterestOps, int newInterestOps)
+    private void changeInterests(int operation, boolean add)
     {
-        LOG.debug("Key interests updated {} -> {}", oldInterestOps, newInterestOps);
-        _key.interestOps(newInterestOps);
+        /**
+         * This method may run concurrently with {@link #updateKey()}.
+         */
+
+        boolean pending = false;
+        while (true)
+        {
+            State current = _interestState.get();
+            switch (current)
+            {
+                case SELECTING:
+                case PENDING:
+                {
+                    if (!_interestState.compareAndSet(current, State.CHANGING))
+                        continue;
+                    pending = current == State.PENDING;
+                    break;
+                }
+                case UPDATING:
+                {
+                    // We lost the race to update _interestOps, but we
+                    // must update it nonetheless, so yield and spin,
+                    // waiting for the state to be SELECTING again.
+                    Thread.yield();
+                    break;
+                }
+                case CHANGING:
+                {
+                    int oldInterestOps = _interestOps;
+                    int newInterestOps;
+                    if (add)
+                        newInterestOps = oldInterestOps | operation;
+                    else
+                        newInterestOps = oldInterestOps & ~operation;
+
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("changeInterests pending={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
+
+                    if (newInterestOps != oldInterestOps)
+                        _interestOps = newInterestOps;
+
+                    if (!_interestState.compareAndSet(current, State.SELECTING))
+                        throw new IllegalStateException("Invalid state: " + current);
+
+                    // We only update the key if updateKey() does not do it for us,
+                    // because doing it from the selector thread is less expensive.
+                    // This must be done after CASing the state above, otherwise the
+                    // selector may select and call onSelected() concurrently.
+                    submitKeyUpdate(!pending);
+                    return;
+                }
+                default:
+                {
+                    throw new IllegalStateException();
+                }
+            }
+        }
+    }
+
+    protected void submitKeyUpdate(boolean submit)
+    {
+        if (submit)
+            _selector.updateKey(_updateTask);
+    }
+
+    private void setKeyInterests()
+    {
+        int oldInterestOps = _key.interestOps();
+        int newInterestOps = _interestOps;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Key interests update {} -> {}", oldInterestOps, newInterestOps);
+        if (oldInterestOps != newInterestOps)
+            _key.interestOps(newInterestOps);
     }
 
     @Override
@@ -195,13 +285,18 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
             int keyReadiness = valid ? _key.readyOps() : -1;
             return String.format("%s{io=%d,kio=%d,kro=%d}",
                     super.toString(),
-                    _interestOps.get(),
+                    _interestOps,
                     keyInterests,
                     keyReadiness);
         }
         catch (CancelledKeyException x)
         {
-            return String.format("%s{io=%s,kio=-2,kro=-2}", super.toString(), _interestOps.get());
+            return String.format("%s{io=%s,kio=-2,kro=-2}", super.toString(), _interestOps);
         }
+    }
+
+    private enum State
+    {
+        SELECTING, PENDING, UPDATING, CHANGING
     }
 }

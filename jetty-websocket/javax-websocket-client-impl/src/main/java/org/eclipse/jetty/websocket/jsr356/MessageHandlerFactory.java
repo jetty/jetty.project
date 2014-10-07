@@ -22,7 +22,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
-
 import javax.websocket.MessageHandler;
 
 import org.eclipse.jetty.util.log.Log;
@@ -46,7 +45,10 @@ public class MessageHandlerFactory
 
     public List<MessageHandlerMetadata> getMetadata(Class<? extends MessageHandler> handler) throws IllegalStateException
     {
-        LOG.debug("getMetadata({})",handler);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("getMetadata({})",handler);
+        }
         List<MessageHandlerMetadata> ret = registered.get(handler);
         if (ret != null)
         {
@@ -64,19 +66,31 @@ public class MessageHandlerFactory
 
         if (MessageHandler.Partial.class.isAssignableFrom(handler))
         {
-            LOG.debug("supports Partial: {}",handler);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("supports Partial: {}",handler);
+            }
             partial = true;
             Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handler,MessageHandler.Partial.class);
-            LOG.debug("Partial message class: {}",onMessageClass);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Partial message class: {}",onMessageClass);
+            }
             metadatas.add(new MessageHandlerMetadata(handler,onMessageClass,partial));
         }
 
         if (MessageHandler.Whole.class.isAssignableFrom(handler))
         {
-            LOG.debug("supports Whole: {}",handler.getName());
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("supports Whole: {}",handler.getName());
+            }
             partial = false;
             Class<?> onMessageClass = ReflectUtils.findGenericClassFor(handler,MessageHandler.Whole.class);
-            LOG.debug("Whole message class: {}",onMessageClass);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Whole message class: {}",onMessageClass);
+            }
             metadatas.add(new MessageHandlerMetadata(handler,onMessageClass,partial));
         }
 

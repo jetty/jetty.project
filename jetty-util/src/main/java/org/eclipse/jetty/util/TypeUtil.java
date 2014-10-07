@@ -362,6 +362,19 @@ public class TypeUtil
      * @param c An ASCII encoded character 0-9 a-f A-F
      * @return The byte value of the character 0-16.
      */
+    public static int convertHexDigit( char c )
+    {
+        int d= ((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
+        if (d<0 || d>15)
+            throw new NumberFormatException("!hex "+c);
+        return d;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param c An ASCII encoded character 0-9 a-f A-F
+     * @return The byte value of the character 0-16.
+     */
     public static int convertHexDigit( int c )
     {
         int d= ((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
@@ -569,8 +582,9 @@ public class TypeUtil
                 
                 // target has no annotations
                 if ( parameterAnnotations == null || parameterAnnotations.length == 0 )
-                {                
-                    LOG.debug("Target has no parameter annotations");                   
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Target has no parameter annotations");
                     return constructor.newInstance(arguments);
                 }
                 else
@@ -588,19 +602,22 @@ public class TypeUtil
                                
                                if (namedArgMap.containsKey(param.value()))
                                {
-                                   LOG.debug("placing named {} in position {}", param.value(), count);
+                                   if (LOG.isDebugEnabled())
+                                       LOG.debug("placing named {} in position {}", param.value(), count);
                                    swizzled[count] = namedArgMap.get(param.value());
                                }
                                else
                                {
-                                   LOG.debug("placing {} in position {}", arguments[count], count);
+                                   if (LOG.isDebugEnabled())
+                                       LOG.debug("placing {} in position {}", arguments[count], count);
                                    swizzled[count] = arguments[count];
                                }
                                ++count;
                            }
                            else
                            {
-                               LOG.debug("passing on annotation {}", annotation);
+                               if (LOG.isDebugEnabled())
+                                   LOG.debug("passing on annotation {}", annotation);
                            }
                        }
                    }

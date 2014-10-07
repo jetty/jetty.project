@@ -43,7 +43,6 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.session.AbstractSession;
-import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -323,7 +322,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                 public void sessionCreated(HttpSessionEvent se)
                 {                    
                     //if current request is authenticated, then as we have just created the session, mark it as secure, as it has not yet been returned to a user
-                    HttpChannel<?> channel = HttpChannel.getCurrentHttpChannel();              
+                    HttpChannel channel = HttpChannel.getCurrentHttpChannel();              
                     
                     if (channel == null)
                         return;

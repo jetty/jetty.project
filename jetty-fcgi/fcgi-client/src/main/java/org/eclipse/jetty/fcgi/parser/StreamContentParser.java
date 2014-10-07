@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 public class StreamContentParser extends ContentParser
 {
-    protected static final Logger logger = Log.getLogger(StreamContentParser.class);
+    private static final Logger LOG = Log.getLogger(StreamContentParser.class);
 
     private final FCGI.StreamType streamType;
     private final Parser.Listener listener;
@@ -87,7 +87,8 @@ public class StreamContentParser extends ContentParser
         }
         catch (Throwable x)
         {
-            logger.debug("Exception while invoking listener " + listener, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while invoking listener " + listener, x);
         }
     }
 
@@ -99,7 +100,8 @@ public class StreamContentParser extends ContentParser
         }
         catch (Throwable x)
         {
-            logger.debug("Exception while invoking listener " + listener, x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Exception while invoking listener " + listener, x);
             return false;
         }
     }

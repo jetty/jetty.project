@@ -102,7 +102,7 @@ public class HttpReceiverOverSPDY extends HttpReceiver implements StreamFrameLis
     public StreamFrameListener onPush(Stream stream, PushInfo pushInfo)
     {
         // SPDY push not supported
-        getHttpChannel().getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), new Callback.Adapter());
+        getHttpChannel().getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), Callback.Adapter.INSTANCE);
         return null;
     }
 

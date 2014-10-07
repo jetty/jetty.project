@@ -211,21 +211,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected boolean dumpOnStart;
     
-    /**
-     * <p>
-     * Determines whether or not the server blocks when started. The default
-     * behavior (daemon = false) will cause the server to pause other processes
-     * while it continues to handle web requests. This is useful when starting the
-     * server with the intent to work with it interactively.
-     * </p><p>
-     * Often, it is desirable to let the server start and continue running subsequent
-     * processes in an automated build environment. This can be facilitated by setting
-     * daemon to true.
-     * </p>
-     * 
-     * @parameter expression="${jetty.daemon}" default-value="false"
-     */
-    protected boolean daemon;
+   
     
     
     /**  
@@ -319,9 +305,20 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     protected Thread consoleScanner;
     
     
-    
-    
-    
+    /**
+     * <p>
+     * Determines whether or not the server blocks when started. The default
+     * behavior (false) will cause the server to pause other processes
+     * while it continues to handle web requests. This is useful when starting the
+     * server with the intent to work with it interactively. This is the 
+     * behaviour of the jetty:run, jetty:run-war, jetty:run-war-exploded goals. 
+     * </p><p>
+     * If true, the server will not block the execution of subsequent code. This
+     * is the behaviour of the jetty:start and default behaviour of the jetty:deploy goals.
+     * </p>
+     */
+    protected boolean nonblocking = false;
+      
     
     public abstract void restartWebApp(boolean reconfigureScanner) throws Exception;
 
@@ -449,7 +446,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
 
    
    
-    
+
     /**
      * @throws Exception
      */
@@ -458,28 +455,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         if (getJettyXmlFiles() == null)
             return;
 
-        XmlConfiguration last = null;
-        for ( File xmlFile : getJettyXmlFiles() )
-        {
-            getLog().info( "Configuring Jetty from xml configuration file = " + xmlFile.getCanonicalPath() );        
-            XmlConfiguration xmlConfiguration = new XmlConfiguration(Resource.toURL(xmlFile));
-            
-            //chain ids from one config file to another
-            if (last == null)
-                xmlConfiguration.getIdMap().put("Server", this.server); 
-            else
-                xmlConfiguration.getIdMap().putAll(last.getIdMap());
-            
-            //Set the system properties each time in case the config file set a new one
-            Enumeration<?> ensysprop = System.getProperties().propertyNames();
-            while (ensysprop.hasMoreElements())
-            {
-                String name = (String)ensysprop.nextElement();
-                xmlConfiguration.getProperties().put(name,System.getProperty(name));
-            }
-            last = xmlConfiguration;
-            xmlConfiguration.configure(); 
-        }
+        this.server.applyXmlConfigurations(getJettyXmlFiles());
     }
 
 
@@ -493,14 +469,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         try
         {
             getLog().debug("Starting Jetty Server ...");
-            
-            if(stopPort>0 && stopKey!=null)
-            {
-                ShutdownMonitor monitor = ShutdownMonitor.getInstance();
-                monitor.setPort(stopPort);
-                monitor.setKey(stopKey);
-                monitor.setExitVm(!daemon);
-            }
+         
+            configureMonitor();
             
             printSystemProperties();
             
@@ -579,7 +549,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             startConsoleScanner();
 
             // keep the thread going if not in daemon mode
-            if (!daemon )
+            if (!nonblocking )
             {
                 server.join();
             }
@@ -590,7 +560,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
         finally
         {
-            if (!daemon )
+            if (!nonblocking )
             {
                 getLog().info("Jetty server exiting.");
             }            
@@ -598,6 +568,16 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     }
     
     
+    public void configureMonitor()
+    { 
+        if(stopPort>0 && stopKey!=null)
+        {
+            ShutdownMonitor monitor = ShutdownMonitor.getInstance();
+            monitor.setPort(stopPort);
+            monitor.setKey(stopKey);
+            monitor.setExitVm(!nonblocking);
+        }
+    }
 
     
     /**
@@ -704,7 +684,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * 
      */
-    private void printSystemProperties ()
+    protected void printSystemProperties ()
     {
         // print out which system properties were set up
         if (getLog().isDebugEnabled())

@@ -57,6 +57,7 @@ import java.util.ListIterator;
  *
  * @see java.util.List
  */
+@SuppressWarnings("serial")
 public class LazyList
     implements Cloneable, Serializable
 {
@@ -258,6 +259,38 @@ public class LazyList
             return (List<E>)list;
         
         return (List<E>)Collections.singletonList(list);
+    }
+    
+    /**
+     * Simple utility method to test if List has at least 1 entry.
+     * 
+     * @param list
+     *            a LazyList, {@link List} or {@link Object}
+     * @return true if not-null and is not empty
+     */
+    public static boolean hasEntry(Object list)
+    {
+        if (list == null)
+            return false;
+        if (list instanceof List)
+            return !((List<?>)list).isEmpty();
+        return true;
+    }
+    
+    /**
+     * Simple utility method to test if List is empty
+     * 
+     * @param list
+     *            a LazyList, {@link List} or {@link Object}
+     * @return true if null or is empty
+     */
+    public static boolean isEmpty(Object list)
+    {
+        if (list == null)
+            return true;
+        if (list instanceof List)
+            return ((List<?>)list).isEmpty();
+        return false;
     }
 
     

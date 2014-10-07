@@ -331,28 +331,28 @@ public class DeferredAuthentication implements Authentication.Deferred
         }
 
         @Override
-	public Collection<String> getHeaderNames()
-	{
-	    return Collections.emptyList();
-	}
-
-	@Override
-	public String getHeader(String arg0)
-	{
-	    return null;
-	}
-
-	@Override
-	public Collection<String> getHeaders(String arg0)
-	{
+        public Collection<String> getHeaderNames()
+        {
             return Collections.emptyList();
-	}
+        }
 
-	@Override
-	public int getStatus()
-	{
-	    return 0;
-	}
+        @Override
+        public String getHeader(String arg0)
+        {
+            return null;
+        }
+
+        @Override
+        public Collection<String> getHeaders(String arg0)
+        {
+            return Collections.emptyList();
+        }
+
+        @Override
+        public int getStatus()
+        {
+            return 0;
+        }
 
 
     };

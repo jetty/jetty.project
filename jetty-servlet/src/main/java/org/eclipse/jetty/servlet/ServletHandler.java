@@ -116,8 +116,6 @@ public class ServletHandler extends ScopedHandler
 
     private ServletHolder[] _servlets=new ServletHolder[0];
     private ServletMapping[] _servletMappings;
-    private Map<String,ServletMapping> _servletPathMappings = new HashMap<String,ServletMapping>();
-
     private final Map<String,FilterHolder> _filterNameMap= new HashMap<>();
     private List<FilterMapping> _filterPathMappings;
     private MultiMap<FilterMapping> _filterNameMappings;
@@ -127,9 +125,12 @@ public class ServletHandler extends ScopedHandler
     
     private ListenerHolder[] _listeners=new ListenerHolder[0];
 
-    protected final ConcurrentMap<?, ?> _chainCache[] = new ConcurrentMap[FilterMapping.ALL];
-    protected final Queue<?>[] _chainLRU = new Queue[FilterMapping.ALL];
-    
+    @SuppressWarnings("unchecked")
+    protected final ConcurrentMap<String, FilterChain> _chainCache[] = new ConcurrentMap[FilterMapping.ALL];
+
+    @SuppressWarnings("unchecked")
+    protected final Queue<String>[] _chainLRU = new Queue[FilterMapping.ALL];
+
 
 
     /* ------------------------------------------------------------ */
@@ -160,7 +161,8 @@ public class ServletHandler extends ScopedHandler
         
         if (getServletMapping("/")==null && _ensureDefaultServlet)
         {
-            LOG.debug("Adding Default404Servlet to {}",this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Adding Default404Servlet to {}",this);
             addServletWithMapping(Default404Servlet.class,"/");
             updateMappings();  
             getServletMapping("/").setDefault(true);
@@ -339,7 +341,6 @@ public class ServletHandler extends ScopedHandler
         _filterPathMappings=null;
         _filterNameMappings=null;
         _servletPathMap=null;
-        _servletPathMappings=null;
     }
 
     /* ------------------------------------------------------------ */
@@ -414,10 +415,26 @@ public class ServletHandler extends ScopedHandler
      */
     public ServletMapping getServletMapping(String pathSpec)
     {
-        if (pathSpec == null || _servletPathMappings == null)
+        if (pathSpec == null || _servletMappings == null)
             return null;
         
-        return _servletPathMappings.get(pathSpec);
+        ServletMapping mapping = null;
+        for (int i=0; i<_servletMappings.length && mapping == null; i++)
+        {
+            ServletMapping m = _servletMappings[i];
+            if (m.getPathSpecs() != null)
+            {
+                for (String p:m.getPathSpecs())
+                {
+                    if (pathSpec.equals(p))
+                    {
+                        mapping = m;
+                        break;
+                    }
+                }
+            }
+        }
+        return mapping;
     }
     
     /* ------------------------------------------------------------ */
@@ -543,7 +560,9 @@ public class ServletHandler extends ScopedHandler
             }
         }
 
-        LOG.debug("chain={}",chain);
+        if (LOG.isDebugEnabled())
+            LOG.debug("chain={}",chain);
+
         Throwable th=null;
         try
         {
@@ -729,26 +748,26 @@ public class ServletHandler extends ScopedHandler
             if (filters.size() > 0)
                 chain= new CachedChain(filters, servletHolder);
 
-            final Map<String,FilterChain> cache=(Map<String, FilterChain>)_chainCache[dispatch];
-            final Queue<String> lru=(Queue<String>)_chainLRU[dispatch];
+            final Map<String,FilterChain> cache=_chainCache[dispatch];
+            final Queue<String> lru=_chainLRU[dispatch];
 
-        	// Do we have too many cached chains?
-        	while (_maxFilterChainsCacheSize>0 && cache.size()>=_maxFilterChainsCacheSize)
-        	{
-        	    // The LRU list is not atomic with the cache map, so be prepared to invalidate if
-        	    // a key is not found to delete.
-        	    // Delete by LRU (where U==created)
-        	    String k=lru.poll();
-        	    if (k==null)
-        	    {
-        	        cache.clear();
-        	        break;
-        	    }
-        	    cache.remove(k);
-        	}
+                // Do we have too many cached chains?
+                while (_maxFilterChainsCacheSize>0 && cache.size()>=_maxFilterChainsCacheSize)
+                {
+                    // The LRU list is not atomic with the cache map, so be prepared to invalidate if
+                    // a key is not found to delete.
+                    // Delete by LRU (where U==created)
+                    String k=lru.poll();
+                    if (k==null)
+                    {
+                        cache.clear();
+                        break;
+                    }
+                    cache.remove(k);
+                }
 
-        	cache.put(key,chain);
-        	lru.add(key);
+                cache.put(key,chain);
+                lru.add(key);
         }
         else if (filters.size() > 0)
             chain = new Chain(baseRequest,filters, servletHolder);
@@ -846,18 +865,6 @@ public class ServletHandler extends ScopedHandler
             {
                 try
                 {
-                   /* if (servlet.getClassName() == null && servlet.getForcedPath() != null)
-                    {
-                        ServletHolder forced_holder = _servletPathMap.match(servlet.getForcedPath());
-                        if (forced_holder == null || forced_holder.getClassName() == null)
-                        {
-                            mx.add(new IllegalStateException("No forced path servlet for " + servlet.getForcedPath()));
-                            continue;
-                        }
-                        System.err.println("ServletHandler setting forced path classname to "+forced_holder.getClassName()+ " for "+servlet.getForcedPath());
-                        servlet.setClassName(forced_holder.getClassName());
-                    }*/
-                    
                     servlet.start();
                     servlet.initialize();
                 }
@@ -1452,9 +1459,7 @@ public class ServletHandler extends ScopedHandler
                 //for each path, look at the mappings where it is referenced
                 //if a mapping is for a servlet that is not enabled, skip it
                 Set<ServletMapping> mappings = sms.get(pathSpec);
-                
-                
-           
+
                 ServletMapping finalMapping = null;
                 for (ServletMapping mapping : mappings)
                 {
@@ -1492,7 +1497,6 @@ public class ServletHandler extends ScopedHandler
             }
      
             _servletPathMap=pm;
-            _servletPathMappings=servletPathMappings;
         }
 
         // flush filter chain cache
@@ -1528,7 +1532,8 @@ public class ServletHandler extends ScopedHandler
     /* ------------------------------------------------------------ */
     protected void notFound(Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        LOG.debug("Not Found {}",request.getRequestURI());
+        if (LOG.isDebugEnabled())
+            LOG.debug("Not Found {}",request.getRequestURI());
         if (getHandler()!=null)
             nextHandle(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()),baseRequest,request,response);
     }
@@ -1550,7 +1555,7 @@ public class ServletHandler extends ScopedHandler
     {
         updateBeans(_filterMappings,filterMappings);
         _filterMappings = filterMappings;
-        updateMappings();
+        if (isStarted()) updateMappings();
         invalidateChainsCache();
     }
 
@@ -1575,7 +1580,7 @@ public class ServletHandler extends ScopedHandler
     {
         updateBeans(_servletMappings,servletMappings);
         _servletMappings = servletMappings;
-        updateMappings();
+        if (isStarted()) updateMappings();
         invalidateChainsCache();
     }
 
@@ -1625,32 +1630,28 @@ public class ServletHandler extends ScopedHandler
         public void doFilter(ServletRequest request, ServletResponse response)
             throws IOException, ServletException
         {
-            final Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
+            final Request baseRequest=Request.getBaseRequest(request);
 
             // pass to next filter
             if (_filterHolder!=null)
             {
-                LOG.debug("call filter {}", _filterHolder);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("call filter {}", _filterHolder);
                 Filter filter= _filterHolder.getFilter();
-                if (_filterHolder.isAsyncSupported())
-                    filter.doFilter(request, response, _next);
-                else
+                
+                //if the request already does not support async, then the setting for the filter
+                //is irrelevant. However if the request supports async but this filter does not
+                //temporarily turn it off for the execution of the filter
+                boolean requestAsyncSupported = baseRequest.isAsyncSupported();
+                try
                 {
-                    final boolean suspendable=baseRequest.isAsyncSupported();
-                    if (suspendable)
-                    {
-                        try
-                        {
-                            baseRequest.setAsyncSupported(false);
-                            filter.doFilter(request, response, _next);
-                        }
-                        finally
-                        {
-                            baseRequest.setAsyncSupported(true);
-                        }
-                    }
-                    else
-                        filter.doFilter(request, response, _next);
+                    if (!_filterHolder.isAsyncSupported() && requestAsyncSupported)
+                        baseRequest.setAsyncSupported(false);
+                    filter.doFilter(request, response, _next);
+                }
+                finally
+                {
+                    baseRequest.setAsyncSupported(requestAsyncSupported);
                 }
                 return;
             }
@@ -1711,33 +1712,31 @@ public class ServletHandler extends ScopedHandler
                     LOG.debug("call filter " + holder);
                 Filter filter= holder.getFilter();
 
-                if (holder.isAsyncSupported() || !_baseRequest.isAsyncSupported())
+                //if the request already does not support async, then the setting for the filter
+                //is irrelevant. However if the request supports async but this filter does not
+                //temporarily turn it off for the execution of the filter
+                boolean requestAsyncSupported = _baseRequest.isAsyncSupported();
+                try
                 {
+                    if (!holder.isAsyncSupported() && requestAsyncSupported)
+                        _baseRequest.setAsyncSupported(false);
                     filter.doFilter(request, response, this);
                 }
-                else
+                finally
                 {
-                    try
-                    {
-                        _baseRequest.setAsyncSupported(false);
-                        filter.doFilter(request, response, this);
-                    }
-                    finally
-                    {
-                        _baseRequest.setAsyncSupported(true);
-                    }
+                    _baseRequest.setAsyncSupported(requestAsyncSupported);
                 }
-
                 return;
             }
 
             // Call servlet
             HttpServletRequest srequest = (HttpServletRequest)request;
             if (_servletHolder == null)
-                notFound((request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest(), srequest, (HttpServletResponse)response);
+                notFound(Request.getBaseRequest(request), srequest, (HttpServletResponse)response);
             else
             {
-                LOG.debug("call servlet {}", _servletHolder);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("call servlet {}", _servletHolder);
                 _servletHolder.handle(_baseRequest,request, response);
             }    
         }

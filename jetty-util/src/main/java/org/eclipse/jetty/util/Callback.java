@@ -60,6 +60,12 @@ public interface Callback
      */
     public static class Adapter implements Callback
     {
+        /**
+         * Instance of Adapter that can be used when the callback methods need an empty
+         * implementation without incurring in the cost of allocating a new Adapter object.
+         */
+        public static final Adapter INSTANCE = new Adapter();
+
         @Override
         public void succeeded()
         {

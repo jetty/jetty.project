@@ -31,13 +31,12 @@ import javax.inject.Inject;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.MavenUtils;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.junit.PaxExam;
 import org.ops4j.pax.exam.options.MavenUrlReference.VersionResolver;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 
@@ -48,7 +47,10 @@ import org.osgi.framework.BundleContext;
 public class TestJettyOSGiBootCore
 {
     private static final String LOG_LEVEL = "WARN";
-    public static int DEFAULT_JETTY_HTTP_PORT = 9876;
+    
+    // TODO these should be dynamic
+    public static final int DEFAULT_HTTP_PORT = 9876;
+    public static final int DEFAULT_SSL_PORT = 9877;
 
     @Inject
     private BundleContext bundleContext;
@@ -64,7 +66,7 @@ public class TestJettyOSGiBootCore
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
         options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
-
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.annotations.LEVEL").value("DEBUG"))));
         return options.toArray(new Option[options.size()]);
     }
 
@@ -72,7 +74,8 @@ public class TestJettyOSGiBootCore
     { 
         List<Option> res = new ArrayList<Option>();
         // get the jetty home config from the osgi boot bundle.
-        res.add(CoreOptions.systemProperty("jetty.port").value(String.valueOf(DEFAULT_JETTY_HTTP_PORT)));
+        res.add(CoreOptions.systemProperty("jetty.port").value(String.valueOf(DEFAULT_HTTP_PORT)));
+        res.add(CoreOptions.systemProperty("ssl.port").value(String.valueOf(DEFAULT_SSL_PORT)));
         res.add(CoreOptions.systemProperty("jetty.home.bundle").value("org.eclipse.jetty.osgi.boot"));
         res.addAll(coreJettyDependencies());
         return res;
@@ -82,28 +85,17 @@ public class TestJettyOSGiBootCore
     public static List<Option> coreJettyDependencies()
     {
         List<Option> res = new ArrayList<Option>();
-        
-        String jdk = System.getProperty("java.version");
-        int firstdot = jdk.indexOf(".");
-        jdk = jdk.substring(0,firstdot+2);
-        double version = Double.parseDouble(jdk);
 
-        if (version < 1.8)
-        {
-            res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
-            res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
-            res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
-            res.add(mavenBundle().groupId( "org.apache.aries" ).artifactId( "org.apache.aries.util" ).version("1.0.0").start());
-            res.add(mavenBundle().groupId( "org.apache.aries.spifly" ).artifactId( "org.apache.aries.spifly.dynamic.bundle" ).version("1.0.0").start());
-        }
+        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-commons" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.ow2.asm" ).artifactId( "asm-tree" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.apache.aries" ).artifactId( "org.apache.aries.util" ).versionAsInProject().start());
+        res.add(mavenBundle().groupId( "org.apache.aries.spifly" ).artifactId( "org.apache.aries.spifly.dynamic.bundle" ).versionAsInProject().start());
 
-        res.add(mavenBundle().groupId( "javax.servlet" ).artifactId( "javax.servlet-api" ).versionAsInProject().noStart());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-osgi-servlet-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "javax.annotation" ).artifactId( "javax.annotation-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.apache.geronimo.specs" ).artifactId( "geronimo-jta_1.1_spec" ).version("1.1.1").noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.orbit" ).artifactId( "javax.mail.glassfish" ).version( "1.4.1.v201005082020" ).noStart());
-        
-     
-        res.add(mavenBundle().groupId( "org.eclipse.jetty.toolchain" ).artifactId( "jetty-schemas" ).versionAsInProject().noStart());
 
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-deploy" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-server" ).versionAsInProject().noStart());  
@@ -118,11 +110,8 @@ public class TestJettyOSGiBootCore
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-servlets" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-client" ).versionAsInProject().noStart());  
         res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-jndi" ).versionAsInProject().noStart());
-        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-plus" ).versionAsInProject().noStart());
-        if (version < 1.8)
-        {
-            res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-annotations" ).versionAsInProject().start());
-        }
+        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-plus" ).versionAsInProject());
+        res.add(mavenBundle().groupId( "org.eclipse.jetty" ).artifactId( "jetty-annotations" ).versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-api" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-common" ).versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "websocket-servlet" ).versionAsInProject().noStart());
@@ -132,6 +121,32 @@ public class TestJettyOSGiBootCore
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "javax-websocket-client-impl").versionAsInProject().noStart());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.websocket" ).artifactId( "javax-websocket-server-impl").versionAsInProject().start());
         res.add(mavenBundle().groupId( "org.eclipse.jetty.osgi" ).artifactId( "jetty-osgi-boot" ).versionAsInProject().start());
+        return res;
+    }
+    
+    public static List<Option> consoleDependencies()
+    {
+        List<Option> res = new ArrayList<Option>();
+        res.add(systemProperty("osgi.console").value("6666"));
+        res.add(systemProperty("osgi.console.enable.builtin").value("true")); 
+        return res;
+    }
+    
+    
+    
+    public static List<Option> jspDependencies()
+    {
+        List<Option> res = new ArrayList<Option>();
+  
+        //jetty jsp bundles  
+        res.add(mavenBundle().groupId("org.eclipse.jetty.toolchain").artifactId("jetty-schemas").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
+        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-el").versionAsInProject());
+        res.add(mavenBundle().groupId("org.mortbay.jasper").artifactId("apache-jsp").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("apache-jsp").versionAsInProject());
+        res.add(mavenBundle().groupId("org.glassfish.web").artifactId("javax.servlet.jsp.jstl").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.orbit").artifactId("org.eclipse.jdt.core").versionAsInProject());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-boot-jsp").versionAsInProject().noStart());
         return res;
     }
      
@@ -159,6 +174,6 @@ public class TestJettyOSGiBootCore
     @Test
     public void testHttpService() throws Exception
     {
-        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", DEFAULT_JETTY_HTTP_PORT);
+        TestOSGiUtil.testHttpServiceGreetings(bundleContext, "http", DEFAULT_HTTP_PORT);
     }
 }

@@ -24,9 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 import org.eclipse.jetty.client.AsyncContentProvider;
-import org.eclipse.jetty.client.api.ContentProvider;
-import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.client.api.Response;
 
 /**
  * A {@link ContentProvider} that provides content asynchronously through an {@link OutputStream}

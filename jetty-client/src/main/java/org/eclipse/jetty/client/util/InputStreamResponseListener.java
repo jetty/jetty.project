@@ -32,7 +32,6 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
@@ -116,23 +115,27 @@ public class InputStreamResponseListener extends Listener.Adapter
 
                 byte[] bytes = new byte[remaining];
                 content.get(bytes);
-                LOG.debug("Queuing {}/{} bytes", bytes, remaining);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Queuing {}/{} bytes", bytes, remaining);
                 queue.offer(bytes);
 
                 long newLength = length.addAndGet(remaining);
                 while (newLength >= maxBufferSize)
                 {
-                    LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, maxBufferSize);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Queued bytes limit {}/{} exceeded, waiting", newLength, maxBufferSize);
                     // Block to avoid infinite buffering
                     if (!await())
                         break;
                     newLength = length.get();
-                    LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, maxBufferSize);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Queued bytes limit {}/{} exceeded, woken up", newLength, maxBufferSize);
                 }
             }
             else
             {
-                LOG.debug("Queuing skipped, empty content {}", content);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Queuing skipped, empty content {}", content);
             }
         }
         else
@@ -142,23 +145,38 @@ public class InputStreamResponseListener extends Listener.Adapter
     }
 
     @Override
+    public void onSuccess(Response response)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing end of content {}{}", EOF, "");
+        queue.offer(EOF);
+        signal();
+    }
+
+    @Override
+    public void onFailure(Response response, Throwable failure)
+    {
+        fail(failure);
+        signal();
+    }
+
+    @Override
     public void onComplete(Result result)
     {
+        if (result.isFailed() && failure == null)
+            fail(result.getFailure());
         this.result = result;
-        if (result.isSucceeded())
-        {
-            LOG.debug("Queuing end of content {}{}", EOF, "");
-            queue.offer(EOF);
-        }
-        else
-        {
-            LOG.debug("Queuing failure {} {}", FAILURE, failure);
-            queue.offer(FAILURE);
-            this.failure = result.getFailure();
-            responseLatch.countDown();
-        }
         resultLatch.countDown();
         signal();
+    }
+
+    private void fail(Throwable failure)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing failure {} {}", FAILURE, failure);
+        queue.offer(FAILURE);
+        this.failure = failure;
+        responseLatch.countDown();
     }
 
     protected boolean await()
@@ -288,7 +306,8 @@ public class InputStreamResponseListener extends Listener.Adapter
                 else
                 {
                     bytes = take();
-                    LOG.debug("Dequeued {}/{} bytes", bytes, bytes.length);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Dequeued {}/{} bytes", bytes, bytes.length);
                 }
             }
         }
@@ -319,7 +338,8 @@ public class InputStreamResponseListener extends Listener.Adapter
             if (!closed)
             {
                 super.close();
-                LOG.debug("Queuing close {}{}", CLOSED, "");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Queuing close {}{}", CLOSED, "");
                 queue.offer(CLOSED);
                 closed = true;
                 signal();

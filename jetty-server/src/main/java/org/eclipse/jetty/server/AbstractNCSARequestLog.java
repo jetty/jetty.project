@@ -25,7 +25,6 @@ import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -132,7 +131,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             buf.append("] \"");
             buf.append(request.getMethod());
             buf.append(' ');
-            buf.append(request.getUri().toString());
+            buf.append(request.getHttpURI().toString());
             buf.append(' ');
             buf.append(request.getProtocol());
             buf.append("\" ");

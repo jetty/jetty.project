@@ -23,8 +23,6 @@ import java.net.UnknownHostException;
 import java.util.HashSet;
 import java.util.Random;
 import java.util.Set;
-import java.util.Timer;
-import java.util.TimerTask;
 import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
@@ -418,7 +416,10 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                 _scheduler = new ScheduledExecutorScheduler();
                 _ownScheduler = true;
                 _scheduler.start();
-            }
+            }   
+            else if (!_scheduler.isStarted())
+                throw new IllegalStateException("Shared scheduler not started");
+            
 
             //setup the scavenger thread
             if (_scavengePeriod > 0)

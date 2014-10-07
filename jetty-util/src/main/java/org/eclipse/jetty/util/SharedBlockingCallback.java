@@ -22,33 +22,33 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.util.concurrent.CancellationException;
+import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.locks.Condition;
 import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.NonBlockingThread;
 
-
-/* ------------------------------------------------------------ */
-/** Provides a reusable BlockingCallback.
+/**
+ * Provides a reusable {@link Callback} that can block the thread
+ * while waiting to be completed.
+ * <p />
  * A typical usage pattern is:
  * <pre>
  * void someBlockingCall(Object... args) throws IOException
  * {
- *   try(Blocker blocker=sharedBlockingCallback.acquire())
- *   {
- *     someAsyncCall(args,blocker);
- *     blocker.block();
- *   }
+ *     try(Blocker blocker = sharedBlockingCallback.acquire())
+ *     {
+ *         someAsyncCall(args, blocker);
+ *         blocker.block();
+ *     }
  * }
  * </pre>
  */
 public class SharedBlockingCallback
 {
-    private static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
-
-    
+    static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
     private static Throwable IDLE = new Throwable()
     {
         @Override
@@ -57,7 +57,6 @@ public class SharedBlockingCallback
             return "IDLE";
         }
     };
-
     private static Throwable SUCCEEDED = new Throwable()
     {
         @Override
@@ -66,57 +65,71 @@ public class SharedBlockingCallback
             return "SUCCEEDED";
         }
     };
+    private static Throwable FAILED = new Throwable()
+    {
+        @Override
+        public String toString()
+        {
+            return "FAILED";
+        }
+    };
 
-    final Blocker _blocker;
+    private final ReentrantLock _lock = new ReentrantLock();
+    private final Condition _idle = _lock.newCondition();
+    private final Condition _complete = _lock.newCondition();
+    private Blocker _blocker = new Blocker();
     
-    public SharedBlockingCallback()
+    protected long getIdleTimeout()
     {
-        this(new Blocker());
-    }
-    
-    protected SharedBlockingCallback(Blocker blocker)
-    {
-        _blocker=blocker;
+        return -1;
     }
     
     public Blocker acquire() throws IOException
     {
-        _blocker._lock.lock();
+        _lock.lock();
+        long idle = getIdleTimeout();
         try
         {
             while (_blocker._state != IDLE)
-                _blocker._idle.await();
+            {
+                if (idle>0)
+                {
+                    // Wait a little bit longer than the blocker might block
+                    if (!_idle.await(idle*2,TimeUnit.MILLISECONDS))
+                        throw new IOException(new TimeoutException());
+                }
+                else
+                    _idle.await();
+            }
             _blocker._state = null;
         }
         catch (final InterruptedException e)
         {
-            throw new InterruptedIOException()
-            {
-                {
-                    initCause(e);
-                }
-            };
+            throw new InterruptedIOException();
         }
         finally
         {
-            _blocker._lock.unlock();
+            _lock.unlock();
         }
         return _blocker;
     }
 
+    protected void notComplete(Blocker blocker)
+    {
+        LOG.warn("Blocker not complete {}",blocker);
+        if (LOG.isDebugEnabled())
+            LOG.debug(new Throwable());
+    }
     
-    /* ------------------------------------------------------------ */
-    /** A Closeable Callback.
+    /**
+     * A Closeable Callback.
      * Uses the auto close mechanism to check block has been called OK.
      */
-    public static class Blocker implements Callback, Closeable
+    public class Blocker implements Callback, Closeable
     {
-        final ReentrantLock _lock = new ReentrantLock();
-        final Condition _idle = _lock.newCondition();
-        final Condition _complete = _lock.newCondition();
-        Throwable _state = IDLE;
-
-        public Blocker()
+        private Throwable _state = IDLE;
+        
+        protected Blocker()
         {
         }
 
@@ -131,8 +144,8 @@ public class SharedBlockingCallback
                     _state = SUCCEEDED;
                     _complete.signalAll();
                 }
-                else if (_state == IDLE)
-                    throw new IllegalStateException("IDLE");
+                else
+                    throw new IllegalStateException(_state);
             }
             finally
             {
@@ -148,11 +161,17 @@ public class SharedBlockingCallback
             {
                 if (_state == null)
                 {
-                    _state = cause;
+                    if (cause==null)
+                        _state=FAILED;
+                    else if (cause instanceof BlockerTimeoutException)
+                        // Not this blockers timeout
+                        _state=new IOException(cause);
+                    else 
+                        _state=cause;
                     _complete.signalAll();
                 }
-                else if (_state == IDLE)
-                    throw new IllegalStateException("IDLE");
+                else 
+                    throw new IllegalStateException(_state);
             }
             finally
             {
@@ -169,14 +188,25 @@ public class SharedBlockingCallback
          */
         public void block() throws IOException
         {
-            if (NonBlockingThread.isNonBlockingThread())
-                LOG.warn("Blocking a NonBlockingThread: ",new Throwable());
-            
             _lock.lock();
+            long idle = getIdleTimeout();
             try
             {
                 while (_state == null)
-                    _complete.await();
+                {
+                    if (idle>0)
+                    {
+                        // Wait a little bit longer than expected callback idle timeout
+                        if (!_complete.await(idle+idle/2,TimeUnit.MILLISECONDS))
+                            // The callback has not arrived in sufficient time.
+                            // We will synthesize a TimeoutException 
+                            _state=new BlockerTimeoutException();
+                    }
+                    else
+                    {
+                        _complete.await();
+                    }
+                }
 
                 if (_state == SUCCEEDED)
                     return;
@@ -194,12 +224,7 @@ public class SharedBlockingCallback
             }
             catch (final InterruptedException e)
             {
-                throw new InterruptedIOException()
-                {
-                    {
-                        initCause(e);
-                    }
-                };
+                throw new InterruptedIOException();
             }
             finally
             {
@@ -209,12 +234,9 @@ public class SharedBlockingCallback
         
         /**
          * Check the Callback has succeeded or failed and after the return leave in the state to allow reuse.
-         * 
-         * @throws IOException
-         *             if exception was caught during blocking, or callback was cancelled
          */
         @Override
-        public void close() throws IOException
+        public void close()
         {
             _lock.lock();
             try
@@ -222,13 +244,26 @@ public class SharedBlockingCallback
                 if (_state == IDLE)
                     throw new IllegalStateException("IDLE");
                 if (_state == null)
-                    LOG.debug("Blocker not complete",new Throwable());
+                    notComplete(this);
             }
             finally
             {
-                _state = IDLE;
-                _idle.signalAll();
-                _lock.unlock();
+                try 
+                {
+                    // If the blocker timed itself out, remember the state
+                    if (_state instanceof BlockerTimeoutException)
+                        // and create a new Blocker
+                        _blocker=new Blocker();
+                    else
+                        // else reuse Blocker
+                        _state = IDLE;
+                    _idle.signalAll();
+                    _complete.signalAll();
+                } 
+                finally 
+                {
+                    _lock.unlock();
+                }
             }
         }
 
@@ -238,12 +273,16 @@ public class SharedBlockingCallback
             _lock.lock();
             try
             {
-                return String.format("%s@%x{%s}",SharedBlockingCallback.class.getSimpleName(),hashCode(),_state);
+                return String.format("%s@%x{%s}",Blocker.class.getSimpleName(),hashCode(),_state);
             }
             finally
             {
                 _lock.unlock();
             }
         }
+    }
+    
+    private class BlockerTimeoutException extends TimeoutException
+    { 
     }
 }

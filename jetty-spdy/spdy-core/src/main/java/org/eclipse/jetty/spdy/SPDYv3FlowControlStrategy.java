@@ -84,7 +84,7 @@ public class SPDYv3FlowControlStrategy implements FlowControlStrategy
         if (dataInfo.consumed() == length && !stream.isClosed() && length > 0)
         {
             WindowUpdateFrame windowUpdateFrame = new WindowUpdateFrame(session.getVersion(), stream.getId(), length);
-            session.control(stream, windowUpdateFrame, 0, TimeUnit.MILLISECONDS, new Callback.Adapter());
+            session.control(stream, windowUpdateFrame, 0, TimeUnit.MILLISECONDS, Callback.Adapter.INSTANCE);
         }
     }
 }

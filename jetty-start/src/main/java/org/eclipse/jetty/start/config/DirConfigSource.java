@@ -33,6 +33,7 @@ import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.NaturalSort;
 import org.eclipse.jetty.start.PathMatchers;
 import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.StartIni;
@@ -71,7 +72,7 @@ public class DirConfigSource implements ConfigSource
     private final String id;
     private final Path dir;
     private final int weight;
-    private final List<String> args;
+    private final RawArgs args;
     private final Props props;
 
     /**
@@ -95,7 +96,7 @@ public class DirConfigSource implements ConfigSource
         this.weight = weight;
         this.props = new Props();
 
-        this.args = new ArrayList<>();
+        this.args = new RawArgs();
 
         if (canHaveArgs)
         {
@@ -103,7 +104,7 @@ public class DirConfigSource implements ConfigSource
             if (FS.canReadFile(iniFile))
             {
                 StartIni ini = new StartIni(iniFile);
-                args.addAll(ini.getLines());
+                args.addAll(ini.getLines(),iniFile);
                 parseAllArgs(ini.getLines(),iniFile.toString());
             }
 
@@ -138,7 +139,7 @@ public class DirConfigSource implements ConfigSource
                 {
                     StartLog.debug("Reading %s/start.d/%s - %s",id,diniFile.getFileName(),diniFile);
                     StartIni ini = new StartIni(diniFile);
-                    args.addAll(ini.getLines());
+                    args.addAll(ini.getLines(),diniFile);
                     parseAllArgs(ini.getLines(),diniFile.toString());
                 }
             }
@@ -194,7 +195,7 @@ public class DirConfigSource implements ConfigSource
     }
 
     @Override
-    public List<String> getArgs()
+    public RawArgs getArgs()
     {
         return args;
     }

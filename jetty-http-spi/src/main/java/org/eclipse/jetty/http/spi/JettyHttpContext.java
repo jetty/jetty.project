@@ -97,8 +97,8 @@ public class JettyHttpContext extends com.sun.net.httpserver.HttpContext
     @Override
     public Authenticator setAuthenticator(Authenticator auth)
     {
-    	Authenticator previous = _authenticator;
-    	_authenticator = auth;
+        Authenticator previous = _authenticator;
+        _authenticator = auth;
         return previous;
     }
 

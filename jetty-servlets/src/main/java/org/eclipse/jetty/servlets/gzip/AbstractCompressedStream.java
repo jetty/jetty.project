@@ -255,7 +255,7 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
 
                         String etag=_wrapper.getETag();
                         if (etag!=null)
-                            setHeader("ETag",etag.substring(0,etag.length()-1)+'-'+_encoding+'"');
+                            setHeader("ETag",etag.substring(0,etag.length()-1)+"--"+_encoding+'"');
                         return;
                     }
                 }
@@ -373,16 +373,14 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
     @Override
     public void setWriteListener(WriteListener writeListener)
     {
-        // TODO 3.1 Auto-generated method stub
-        
+        throw new UnsupportedOperationException("Use AsyncGzipFilter");
     }
     
 
     @Override
     public boolean isReady()
     {
-        // TODO 3.1 Auto-generated method stub
-        return false;
+        throw new UnsupportedOperationException("Use AsyncGzipFilter");
     }
 
     /**

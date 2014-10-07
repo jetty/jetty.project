@@ -23,7 +23,6 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
-import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -313,8 +312,7 @@ public class BufferUtil
             {
                 to.put(from);
                 put = remaining;
-                from.position(0);
-                from.limit(0);
+                from.position(from.limit());
             }
             else if (from.hasArray())
             {
@@ -518,7 +516,7 @@ public class BufferUtil
     }
 
     /* ------------------------------------------------------------ */
-    /** Convert a partial buffer to an ISO-8859-1 String
+    /** Convert a partial buffer to a String
      * @param buffer  The buffer to convert in flush mode. The buffer is unchanged
      * @param charset The {@link Charset} to use to convert the bytes
      * @return The buffer as a string.
@@ -921,6 +919,11 @@ public class BufferUtil
         return builder.toString();
     }
 
+    /* ------------------------------------------------------------ */
+    /** Convert Buffer to a detail debug string of pointers and content
+     * @param buffer
+     * @return A string showing the pointers and content of the buffer
+     */
     public static String toDetailString(ByteBuffer buffer)
     {
         if (buffer == null)
@@ -930,7 +933,7 @@ public class BufferUtil
         buf.append(buffer.getClass().getSimpleName());
         buf.append("@");
         if (buffer.hasArray())
-            buf.append(Integer.toHexString(((Object)buffer.array()).hashCode()));
+            buf.append(Integer.toHexString(Arrays.hashCode(buffer.array())));
         else
             buf.append(Integer.toHexString(buf.hashCode()));
         buf.append("[p=");
@@ -943,15 +946,33 @@ public class BufferUtil
         buf.append(buffer.remaining());
         buf.append("]={");
 
+        appendDebugString(buf,buffer);
+
+        buf.append("}");
+
+        return buf.toString();
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Convert buffer to a Debug String.
+     * @param buffer
+     * @return A string showing the escaped content of the buffer around the
+     * position and limit (marked with &lt;&lt;&lt; and &gt;&gt;&gt;)
+     */
+    public static String toDebugString(ByteBuffer buffer)
+    {
+        if (buffer == null)
+            return "null";
+        StringBuilder buf = new StringBuilder();
+        appendDebugString(buf,buffer);
+        return buf.toString();
+    }
+    
+    private static void appendDebugString(StringBuilder buf,ByteBuffer buffer)
+    {
         for (int i = 0; i < buffer.position(); i++)
         {
-            char c = (char)buffer.get(i);
-            if (c >= ' ' && c <= 127)
-                buf.append(c);
-            else if (c == '\r' || c == '\n')
-                buf.append('|');
-            else
-                buf.append('\ufffd');
+            appendContentChar(buf,buffer.get(i));
             if (i == 16 && buffer.position() > 32)
             {
                 buf.append("...");
@@ -961,13 +982,7 @@ public class BufferUtil
         buf.append("<<<");
         for (int i = buffer.position(); i < buffer.limit(); i++)
         {
-            char c = (char)buffer.get(i);
-            if (c >= ' ' && c <= 127)
-                buf.append(c);
-            else if (c == '\r' || c == '\n')
-                buf.append('|');
-            else
-                buf.append('\ufffd');
+            appendContentChar(buf,buffer.get(i));
             if (i == buffer.position() + 16 && buffer.limit() > buffer.position() + 32)
             {
                 buf.append("...");
@@ -979,13 +994,7 @@ public class BufferUtil
         buffer.limit(buffer.capacity());
         for (int i = limit; i < buffer.capacity(); i++)
         {
-            char c = (char)buffer.get(i);
-            if (c >= ' ' && c <= 127)
-                buf.append(c);
-            else if (c == '\r' || c == '\n')
-                buf.append('|');
-            else
-                buf.append('\ufffd');
+            appendContentChar(buf,buffer.get(i));
             if (i == limit + 16 && buffer.capacity() > limit + 32)
             {
                 buf.append("...");
@@ -993,8 +1002,47 @@ public class BufferUtil
             }
         }
         buffer.limit(limit);
-        buf.append("}");
+    }
 
+    private static void appendContentChar(StringBuilder buf, byte b)
+    {
+        if (b == '\\')
+            buf.append("\\\\");   
+        else if (b >= ' ')
+            buf.append((char)b);
+        else if (b == '\r')
+            buf.append("\\r");
+        else if (b == '\n')
+            buf.append("\\n");
+        else if (b == '\t')
+            buf.append("\\t");
+        else
+            buf.append("\\x").append(TypeUtil.toHexString(b));
+    }
+    
+
+    /* ------------------------------------------------------------ */
+    /** Convert buffer to a Hex Summary String.
+     * @param buffer
+     * @return A string showing the escaped content of the buffer around the
+     * position and limit (marked with &lt;&lt;&lt; and &gt;&gt;&gt;)
+     */
+    public static String toHexSummary(ByteBuffer buffer)
+    {
+        if (buffer == null)
+            return "null";
+        StringBuilder buf = new StringBuilder();
+        
+        buf.append("b[").append(buffer.remaining()).append("]=");
+        for (int i = buffer.position(); i < buffer.limit(); i++)
+        {
+            TypeUtil.toHex(buffer.get(i),buf);
+            if (i == buffer.position() + 24 && buffer.limit() > buffer.position() + 32)
+            {
+                buf.append("...");
+                i = buffer.limit() - 8;
+            }
+        }
         return buf.toString();
     }
 

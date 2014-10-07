@@ -19,28 +19,25 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
+public class HttpInputOverHTTP extends HttpInput implements Callback
 {
     private static final Logger LOG = Log.getLogger(HttpInputOverHTTP.class);
-    private final SharedBlockingCallback _readBlocker = new SharedBlockingCallback();
-    private final HttpConnection _httpConnection;
-    private ByteBuffer _content;
 
-    /**
-     * @param httpConnection
-     */
+    private final HttpConnection _httpConnection;
+    private Content _content;
+    private final SharedBlockingCallback _readBlocker;
+
     public HttpInputOverHTTP(HttpConnection httpConnection)
     {
         _httpConnection = httpConnection;
+        _readBlocker = new SharedBlockingCallback();
     }
 
     @Override
@@ -61,7 +58,8 @@ public class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
             try (Blocker blocker=_readBlocker.acquire())
             {            
                 _httpConnection.fillInterested(blocker);
-                LOG.debug("{} block readable on {}",this,blocker);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} block readable on {}",this,blocker);
                 blocker.block();
             }
 
@@ -78,10 +76,10 @@ public class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
     }
 
     @Override
-    protected ByteBuffer nextContent() throws IOException
+    protected Content nextContent() throws IOException
     {
         // If we have some content available, return it
-        if (BufferUtil.hasContent(_content))
+        if (_content!=null && _content.hasContent())
             return _content;
 
         // No - then we are going to need to parse some more content
@@ -89,37 +87,16 @@ public class HttpInputOverHTTP extends HttpInput<ByteBuffer> implements Callback
         _httpConnection.parseContent();
         
         // If we have some content available, return it
-        if (BufferUtil.hasContent(_content))
+        if (_content!=null && _content.hasContent())
             return _content;
 
         return null;
-
     }
 
     @Override
-    protected int remaining(ByteBuffer item)
+    public void content(Content item)
     {
-        return item.remaining();
-    }
-
-    @Override
-    protected int get(ByteBuffer item, byte[] buffer, int offset, int length)
-    {
-        int l = Math.min(item.remaining(), length);
-        item.get(buffer, offset, l);
-        return l;
-    }
-
-    @Override
-    protected void consume(ByteBuffer item, int length)
-    {
-        item.position(item.position()+length);
-    }
-
-    @Override
-    public void content(ByteBuffer item)
-    {
-        if (BufferUtil.hasContent(_content))
+        if (_content!=null && _content.hasContent())
             throw new IllegalStateException();
         _content=item;
     }

@@ -27,16 +27,23 @@ import org.eclipse.jetty.server.HttpConfiguration;
 public class ServerFCGIConnectionFactory extends AbstractConnectionFactory
 {
     private final HttpConfiguration configuration;
+    private final boolean sendStatus200;
 
     public ServerFCGIConnectionFactory(HttpConfiguration configuration)
     {
+        this(configuration, true);
+    }
+
+    public ServerFCGIConnectionFactory(HttpConfiguration configuration, boolean sendStatus200)
+    {
         super("fcgi/1.0");
         this.configuration = configuration;
+        this.sendStatus200 = sendStatus200;
     }
 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return new ServerFCGIConnection(connector, endPoint, configuration);
+        return new ServerFCGIConnection(connector, endPoint, configuration, sendStatus200);
     }
 }

@@ -66,6 +66,9 @@ public class RequestLogHandler extends HandlerWrapper
         @Override
         public void onError(AsyncEvent event) throws IOException
         {
+            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
+            if (!response.isCommitted())
+                response.setStatus(500);
             
         }
         
@@ -90,6 +93,12 @@ public class RequestLogHandler extends HandlerWrapper
         try
         {
             super.handle(target, baseRequest, request, response);
+        }
+        catch(Error|IOException|ServletException|RuntimeException e)
+        {
+            if (!response.isCommitted() && !baseRequest.getHttpChannelState().isAsync())
+                response.setStatus(500);
+            throw e;
         }
         finally
         {

@@ -47,37 +47,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("SPDY Server Connection Factory")
 public class SPDYServerConnectionFactory extends AbstractConnectionFactory
 {
-    /**
-     * @deprecated use {@link #checkProtocolNegotiationAvailable()} instead.
-     */
-    @Deprecated
-    public static void checkNPNAvailable()
-    {
-        checkProtocolNegotiationAvailable();
-    }
-
-    public static void checkProtocolNegotiationAvailable()
-    {
-        if (!isAvailableInBootClassPath("org.eclipse.jetty.alpn.ALPN") &&
-                !isAvailableInBootClassPath("org.eclipse.jetty.npn.NextProtoNego"))
-            throw new IllegalStateException("No ALPN nor NPN classes available");
-    }
-
-    private static boolean isAvailableInBootClassPath(String className)
-    {
-        try
-        {
-            Class<?> klass = ClassLoader.getSystemClassLoader().loadClass(className);
-            if (klass.getClassLoader() != null)
-                throw new IllegalStateException(className + " must be on JVM boot classpath");
-            return true;
-        }
-        catch (ClassNotFoundException x)
-        {
-            return false;
-        }
-    }
-
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final short version;
     private final ServerSessionFrameListener listener;
@@ -182,7 +151,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
     void closeSessions()
     {
         for (Session session : sessions)
-            session.goAway(new GoAwayInfo(), new Callback.Adapter());
+            session.goAway(new GoAwayInfo(), Callback.Adapter.INSTANCE);
         sessions.clear();
     }
 

@@ -129,7 +129,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
     @Override
     public void messageComplete()
     {
-        LOG.debug("Message completed");
+        if (LOG.isDebugEnabled())
+            LOG.debug("Message completed");
         buffers.offer(EOF);
     }
 
@@ -140,7 +141,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
         {
             if (closed.get())
             {
-                LOG.debug("Stream closed");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Stream closed");
                 return -1;
             }
 
@@ -166,7 +168,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
 
                 if (activeBuffer == EOF)
                 {
-                    LOG.debug("Reached EOF");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Reached EOF");
                     // Be sure that this stream cannot be reused.
                     closed.set(true);
                     // Removed buffers that may have remained in the queue.
@@ -179,7 +182,8 @@ public class MessageInputStream extends InputStream implements MessageAppender
         }
         catch (InterruptedException x)
         {
-            LOG.debug("Interrupted while waiting to read", x);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Interrupted while waiting to read", x);
             closed.set(true);
             return -1;
         }

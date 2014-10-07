@@ -33,7 +33,6 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
-import org.eclipse.jetty.http.HttpContent.ResourceAsHttpContent;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -505,7 +504,7 @@ public class ResourceCache
         @Override
         public String toString()
         {
-            return String.format("%s %s %d %s %s",_resource,_resource.exists(),_resource.lastModified(),_contentType,_lastModifiedBytes);
+            return String.format("CachedContent@%x{r=%s,e=%b,lm=%s,ct=%s}",hashCode(),_resource,_resource.exists(),BufferUtil.toString(_lastModifiedBytes),_contentType);
         }   
     }
 }

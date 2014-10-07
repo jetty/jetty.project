@@ -339,11 +339,13 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         notifyIdle(idleListener, false);
         try
         {
-            LOG.debug("Processing {}", frame);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Processing {}", frame);
 
             if (goAwaySent.get())
             {
-                LOG.debug("Skipped processing of {}", frame);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Skipped processing of {}", frame);
                 return;
             }
 
@@ -417,11 +419,13 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         notifyIdle(idleListener, false);
         try
         {
-            LOG.debug("Processing {}, {} data bytes", frame, data.remaining());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Processing {}, {} data bytes", frame, data.remaining());
 
             if (goAwaySent.get())
             {
-                LOG.debug("Skipped processing of {}", frame);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Skipped processing of {}", frame);
                 return;
             }
 
@@ -430,8 +434,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             if (stream == null)
             {
                 RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
-                LOG.debug("Unknown stream {}", rstInfo);
-                rst(rstInfo, new Callback.Adapter());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Unknown stream {}", rstInfo);
+                rst(rstInfo, Callback.Adapter.INSTANCE);
             }
             else
             {
@@ -471,7 +476,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     public void onStreamException(StreamException x)
     {
         notifyOnFailure(listener, x); // TODO: notify StreamFrameListener if exists?
-        rst(new RstInfo(x.getStreamId(), x.getStreamStatus()), new Callback.Adapter());
+        rst(new RstInfo(x.getStreamId(), x.getStreamStatus()), Callback.Adapter.INSTANCE);
     }
 
     @Override
@@ -479,7 +484,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     {
         Throwable cause = x.getCause();
         notifyOnFailure(listener, cause == null ? x : cause);
-        goAway(x.getSessionStatus(), 0, TimeUnit.SECONDS, new Callback.Adapter());
+        goAway(x.getSessionStatus(), 0, TimeUnit.SECONDS, Callback.Adapter.INSTANCE);
     }
 
     private void onSyn(final SynStreamFrame frame)
@@ -569,13 +574,15 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
                 throw duplicateIdException;
             }
             RstInfo rstInfo = new RstInfo(streamId, StreamStatus.PROTOCOL_ERROR);
-            LOG.debug("Duplicate stream, {}", rstInfo);
-            rst(rstInfo, new Callback.Adapter()); // We don't care (too much) if the reset fails.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Duplicate stream, {}", rstInfo);
+            rst(rstInfo, Callback.Adapter.INSTANCE); // We don't care (too much) if the reset fails.
             return null;
         }
         else
         {
-            LOG.debug("Created {}", stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Created {}", stream);
             notifyStreamCreated(stream);
             return stream;
         }
@@ -617,7 +624,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             if (streamIds.get() % 2 == stream.getId() % 2)
                 localStreamCount.decrementAndGet();
 
-            LOG.debug("Removed {}", stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Removed {}", stream);
             notifyStreamClosed(stream);
         }
     }
@@ -652,8 +660,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         if (stream == null)
         {
             RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
-            LOG.debug("Unknown stream {}", rstInfo);
-            rst(rstInfo, new Callback.Adapter());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unknown stream {}", rstInfo);
+            rst(rstInfo, Callback.Adapter.INSTANCE);
         }
         else
         {
@@ -689,14 +698,16 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             int windowSize = windowSizeSetting.value();
             setWindowSize(windowSize);
-            LOG.debug("Updated session window size to {}", windowSize);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updated session window size to {}", windowSize);
         }
         Settings.Setting maxConcurrentStreamsSetting = frame.getSettings().get(Settings.ID.MAX_CONCURRENT_STREAMS);
         if (maxConcurrentStreamsSetting != null)
         {
             int maxConcurrentStreamsValue = maxConcurrentStreamsSetting.value();
             maxConcurrentLocalStreams = maxConcurrentStreamsValue;
-            LOG.debug("Updated session maxConcurrentLocalStreams to {}", maxConcurrentStreamsValue);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updated session maxConcurrentLocalStreams to {}", maxConcurrentStreamsValue);
         }
         SettingsInfo settingsInfo = new SettingsInfo(frame.getSettings(), frame.isClearPersisted());
         notifyOnSettings(listener, settingsInfo);
@@ -712,7 +723,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         }
         else
         {
-            control(null, frame, 0, TimeUnit.MILLISECONDS, new Callback.Adapter());
+            control(null, frame, 0, TimeUnit.MILLISECONDS, Callback.Adapter.INSTANCE);
         }
     }
 
@@ -735,8 +746,9 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         if (stream == null)
         {
             RstInfo rstInfo = new RstInfo(streamId, StreamStatus.INVALID_STREAM);
-            LOG.debug("Unknown stream, {}", rstInfo);
-            rst(rstInfo, new Callback.Adapter());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Unknown stream, {}", rstInfo);
+            rst(rstInfo, Callback.Adapter.INSTANCE);
         }
         else
         {
@@ -777,7 +789,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}", x, listener);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invoking callback with {} on listener {}", x, listener);
                 listener.onFailure(this, x);
             }
         }
@@ -798,7 +811,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener == null)
                 return null;
-            LOG.debug("Invoking callback with {} on listener {}", pushInfo, listener);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Invoking callback with {} on listener {}", pushInfo, listener);
             return listener.onPush(stream, pushInfo);
         }
         catch (Exception x)
@@ -819,7 +833,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener == null)
                 return null;
-            LOG.debug("Invoking callback with {} on listener {}", synInfo, listener);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Invoking callback with {} on listener {}", synInfo, listener);
             return listener.onSyn(stream, synInfo);
         }
         catch (Exception x)
@@ -840,7 +855,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}", rstInfo, listener);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invoking callback with {} on listener {}", rstInfo, listener);
                 listener.onRst(this, rstInfo);
             }
         }
@@ -861,7 +877,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}", settingsInfo, listener);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invoking callback with {} on listener {}", settingsInfo, listener);
                 listener.onSettings(this, settingsInfo);
             }
         }
@@ -882,7 +899,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}", pingResultInfo, listener);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invoking callback with {} on listener {}", pingResultInfo, listener);
                 listener.onPing(this, pingResultInfo);
             }
         }
@@ -903,7 +921,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
         {
             if (listener != null)
             {
-                LOG.debug("Invoking callback with {} on listener {}", goAwayResultInfo, listener);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invoking callback with {} on listener {}", goAwayResultInfo, listener);
                 listener.onGoAway(this, goAwayResultInfo);
             }
         }
@@ -936,7 +955,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
             synchronized (this)
             {
                 ByteBuffer buffer = generator.control(frame);
-                LOG.debug("Queuing {} on {}", frame, stream);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Queuing {} on {}", frame, stream);
                 frameBytes = new ControlFrameBytes(stream, callback, frame, buffer);
                 if (timeout > 0)
                     frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
@@ -966,7 +986,8 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     @Override
     public void data(IStream stream, DataInfo dataInfo, long timeout, TimeUnit unit, Callback callback)
     {
-        LOG.debug("Queuing {} on {}", dataInfo, stream);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing {} on {}", dataInfo, stream);
         DataFrameBytes frameBytes = new DataFrameBytes(stream, callback, dataInfo);
         if (timeout > 0)
             frameBytes.task = scheduler.schedule(frameBytes, timeout, unit);
@@ -1238,7 +1259,7 @@ public class StandardSession implements ISession, Parser.Listener, Dumpable
     {
         private CloseFrameBytes()
         {
-            super(null, new Callback.Adapter());
+            super(null, Callback.Adapter.INSTANCE);
         }
 
         @Override

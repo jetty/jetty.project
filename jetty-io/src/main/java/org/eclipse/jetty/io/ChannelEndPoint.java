@@ -41,6 +41,7 @@ public class ChannelEndPoint extends AbstractEndPoint
 
     private final ByteChannel _channel;
     private final Socket _socket;
+    private final GatheringByteChannel _gathering;
     private volatile boolean _ishut;
     private volatile boolean _oshut;
 
@@ -51,6 +52,7 @@ public class ChannelEndPoint extends AbstractEndPoint
             (InetSocketAddress)channel.socket().getRemoteSocketAddress());
         _channel = channel;
         _socket=channel.socket();
+        _gathering=_channel instanceof GatheringByteChannel?((GatheringByteChannel)_channel):null;
     }
 
     @Override
@@ -61,7 +63,8 @@ public class ChannelEndPoint extends AbstractEndPoint
 
     protected void shutdownInput()
     {
-        LOG.debug("ishut {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("ishut {}", this);
         _ishut=true;
         if (_oshut)
             close();
@@ -70,7 +73,8 @@ public class ChannelEndPoint extends AbstractEndPoint
     @Override
     public void shutdownOutput()
     {
-        LOG.debug("oshut {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("oshut {}", this);
         _oshut = true;
         if (_channel.isOpen())
         {
@@ -109,7 +113,8 @@ public class ChannelEndPoint extends AbstractEndPoint
     public void close()
     {
         super.close();
-        LOG.debug("close {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("close {}", this);
         try
         {
             _channel.close();
@@ -165,8 +170,8 @@ public class ChannelEndPoint extends AbstractEndPoint
         {
             if (buffers.length==1)
                 flushed=_channel.write(buffers[0]);
-            else if (buffers.length>1 && _channel instanceof GatheringByteChannel)
-                flushed= (int)((GatheringByteChannel)_channel).write(buffers,0,buffers.length);
+            else if (_gathering!=null && buffers.length>1)
+                flushed= (int)_gathering.write(buffers,0,buffers.length);
             else
             {
                 for (ByteBuffer b : buffers)

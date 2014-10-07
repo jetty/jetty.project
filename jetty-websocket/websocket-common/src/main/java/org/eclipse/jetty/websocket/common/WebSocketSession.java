@@ -61,6 +61,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     private final LogicalConnection connection;
     private final SessionListener[] sessionListeners;
     private final Executor executor;
+    private ClassLoader classLoader;
     private ExtensionFactory extensionFactory;
     private String protocolVersion;
     private Map<String, String[]> parameterMap = new HashMap<>();
@@ -78,6 +79,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
             throw new RuntimeException("Request URI cannot be null");
         }
 
+        this.classLoader = Thread.currentThread().getContextClassLoader();
         this.requestURI = requestURI;
         this.websocket = websocket;
         this.connection = connection;
@@ -181,6 +183,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     public ByteBufferPool getBufferPool()
     {
         return this.connection.getBufferPool();
+    }
+    
+    public ClassLoader getClassLoader()
+    {
+        return this.getClass().getClassLoader();
     }
 
     public LogicalConnection getConnection()
@@ -352,7 +359,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
                 {
                     try
                     {
-                        LOG.debug("{}.onSessionClosed()",listener.getClass().getSimpleName());
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("{}.onSessionClosed()",listener.getClass().getSimpleName());
                         listener.onSessionClosed(this);
                     }
                     catch (Throwable t)
@@ -392,15 +400,17 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
             // already opened
             return;
         }
+        
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        try {
+            Thread.currentThread().setContextClassLoader(classLoader);
 
-        // Upgrade success
-        connection.getIOState().onConnected();
+            // Upgrade success
+            connection.getIOState().onConnected();
+    
+            // Connect remote
+            remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
 
-        // Connect remote
-        remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
-
-        try
-        {
             // Open WebSocket
             websocket.openSession(this);
 
@@ -423,6 +433,10 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
             }
             
             close(statusCode,t.getMessage());
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
         }
     }
 
@@ -505,4 +519,5 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         builder.append("]");
         return builder.toString();
     }
+
 }

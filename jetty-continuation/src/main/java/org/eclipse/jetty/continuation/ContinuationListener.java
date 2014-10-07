@@ -20,8 +20,6 @@ package org.eclipse.jetty.continuation;
 
 import java.util.EventListener;
 
-import javax.servlet.ServletRequestListener;
-
 
 /* ------------------------------------------------------------ */
 /** A Continuation Listener

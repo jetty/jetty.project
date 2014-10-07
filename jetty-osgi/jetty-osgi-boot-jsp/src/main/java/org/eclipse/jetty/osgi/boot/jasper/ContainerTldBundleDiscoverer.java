@@ -27,10 +27,15 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 
+import javax.servlet.jsp.JspFactory;
+
 import org.eclipse.jetty.deploy.DeploymentManager;
+import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 
@@ -39,15 +44,24 @@ import org.osgi.framework.FrameworkUtil;
 /**
  * ContainerTldBundleDiscoverer
  * 
+ * Finds bundles that are considered as on the container classpath that
+ * contain tlds.
  * 
- * Use a System property to define bundles that contain tlds that need to
- * be treated by jasper as if they were on the jetty container's classpath.
+ * The System property org.eclipse.jetty.osgi.tldbundles is a comma
+ * separated list of exact symbolic names of bundles that have container classpath
+ * tlds.
  * 
- * The value of the property is evaluated against the DeploymentManager 
- * context attribute "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern", 
- * which defines a pattern of matching bundle names.
+ * The DeploymentManager context attribute "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern"
+ * can be used to define a pattern of symbolic names of bundles that contain container 
+ * classpath tlds.
  * 
- * The bundle locations are converted to URLs for jasper's use.
+ * The matching bundles are converted to URLs that are put onto a special classloader that acts as the
+ * parent classloader for contexts deployed by the jetty Server instance (see ServerInstanceWrapper).
+ * 
+ * It also discovers the bundle that contains the jstl taglib and adds it into the 
+ * "org.eclipse.jetty.server.webapp.containerIncludeBundlePattern" (if it is not already there) so
+ * that the WebInfOSGiConfiguration class will add the jstl taglib bundle into the list of container
+ * resources.
  * 
  * Eg:
  * -Dorg.eclipse.jetty.osgi.tldbundles=org.springframework.web.servlet,com.opensymphony.module.sitemesh
@@ -55,16 +69,20 @@ import org.osgi.framework.FrameworkUtil;
  */
 public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
 {
+
+    private static final Logger LOG = Log.getLogger(ContainerTldBundleDiscoverer.class);
+    
+
+    private static String DEFAULT_JSP_FACTORY_IMPL_CLASS = "org.apache.jasper.runtime.JspFactoryImpl";
     /**
-     * Comma separated list of names of bundles that contain tld files that should be
-     * discoved by jasper as if they were on the container's classpath.
-     * Eg:
-     * -Djetty.osgi.tldbundles=org.springframework.web.servlet,com.opensymphony.module.sitemesh
+     * Default name of a class that belongs to the jstl bundle. From that class
+     * we locate the corresponding bundle and register it as a bundle that
+     * contains tld files.
      */
-    public static final String SYS_PROP_TLD_BUNDLES = "org.eclipse.jetty.osgi.tldbundles";
+    private static String DEFAULT_JSTL_BUNDLE_CLASS = "org.apache.taglibs.standard.tag.el.core.WhenTag";
 
-
-
+    private Bundle jstlBundle = null;
+    
     /**
      * Check the System property "org.eclipse.jetty.osgi.tldbundles" for names of
      * bundles that contain tlds and convert to URLs.
@@ -72,19 +90,18 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
      * @return The location of the jars that contain tld files as URLs.
      */
     public URL[] getUrlsForBundlesWithTlds(DeploymentManager deploymentManager, BundleFileLocatorHelper locatorHelper) throws Exception
-    {
-        // naive way of finding those bundles.
-        // lots of assumptions: for example we assume a single version of each
-        // bundle that would contain tld files.
-        // this is probably good enough as those tlds are loaded system-wide on
-        // jetty.
-        // to do better than this we need to do it on a per webapp basis.
-        // probably using custom properties in the ContextHandler service
-        // and mirroring those in the MANIFEST.MF
+    {        
+        if (!isJspAvailable())
+        {
+            return new URL[0];
+        }
+
+        if (jstlBundle == null)
+            jstlBundle = findJstlBundle();
 
         Bundle[] bundles = FrameworkUtil.getBundle(ContainerTldBundleDiscoverer.class).getBundleContext().getBundles();
         HashSet<URL> urls = new HashSet<URL>();
-        String tmp = System.getProperty(SYS_PROP_TLD_BUNDLES); //comma separated exact names
+        String tmp = System.getProperty(OSGiWebInfConfiguration.SYS_PROP_TLD_BUNDLES); //comma separated exact names
         List<String> sysNames =   new ArrayList<String>();
         if (tmp != null)
         {
@@ -93,13 +110,33 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
                 sysNames.add(tokenizer.nextToken());
         }
         tmp = (String) deploymentManager.getContextAttribute(OSGiWebInfConfiguration.CONTAINER_BUNDLE_PATTERN); //bundle name patterns
+    
         Pattern pattern = (tmp==null? null : Pattern.compile(tmp));
+        
+        //check that the jstl bundle is not already included in the pattern, and include it if it is not because
+        //subsequent classes such as OSGiWebInfConfiguration use this pattern to determine which jars are
+        //considered to be on the container classpath
+        if (jstlBundle != null) 
+        {
+            if (pattern == null)
+            {
+                pattern = Pattern.compile(jstlBundle.getSymbolicName());
+                deploymentManager.setContextAttribute(OSGiWebInfConfiguration.CONTAINER_BUNDLE_PATTERN, jstlBundle.getSymbolicName());
+            }
+            else if (!(pattern.matcher(jstlBundle.getSymbolicName()).matches()))
+            {
+                String s = tmp+"|"+jstlBundle.getSymbolicName();
+                pattern = Pattern.compile(s);
+                deploymentManager.setContextAttribute(OSGiWebInfConfiguration.CONTAINER_BUNDLE_PATTERN, s);
+            }
+        }
+
+        
         for (Bundle bundle : bundles)
         {
             if (sysNames.contains(bundle.getSymbolicName()))
-                convertBundleLocationToURL(locatorHelper, bundle, urls);
-           
-            if (pattern != null && pattern.matcher(bundle.getSymbolicName()).matches())
+                convertBundleLocationToURL(locatorHelper, bundle, urls);           
+            else if (pattern != null && pattern.matcher(bundle.getSymbolicName()).matches())
                 convertBundleLocationToURL(locatorHelper, bundle, urls);
         }
 
@@ -107,6 +144,79 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
 
     }
 
+    /**
+     * Check that jsp is on the classpath
+     * @return
+     */
+    public boolean isJspAvailable()
+    {
+        try
+        {
+            getClass().getClassLoader().loadClass("org.apache.jasper.servlet.JspServlet");
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to locate the JspServlet: jsp support unavailable.", e);
+            return false;
+        }
+        return true;
+    }
+    
+    
+    /**
+     * 
+     * Some versions of JspFactory do Class.forName, which probably won't work in an 
+     * OSGi environment.
+     */
+    public void fixJspFactory ()
+    {   
+        try
+        {
+            Class<javax.servlet.ServletContext> servletContextClass = javax.servlet.ServletContext.class;
+            // bug #299733
+            JspFactory fact = JspFactory.getDefaultFactory();
+            if (fact == null)
+            { // bug #299733
+              // JspFactory does a simple
+              // Class.getForName("org.apache.jasper.runtime.JspFactoryImpl")
+              // however its bundles does not import the jasper package
+              // so it fails. let's help things out:
+                fact = (JspFactory) JettyBootstrapActivator.class.getClassLoader().loadClass(DEFAULT_JSP_FACTORY_IMPL_CLASS).newInstance();
+                JspFactory.setDefaultFactory(fact);
+            }
+        }
+        catch (Exception e)
+        {
+            LOG.warn("Unable to set the JspFactory: jsp support incomplete.", e);
+        }
+    }
+    
+    
+    /**
+     * Find the bundle that contains a jstl implementation class, which assumes that
+     * the jstl taglibs will be inside the same bundle.
+     * @return
+     */
+    public Bundle findJstlBundle ()
+    {
+        Class<?> jstlClass = null;
+    
+        try
+        {
+            jstlClass = JSTLBundleDiscoverer.class.getClassLoader().loadClass(DEFAULT_JSTL_BUNDLE_CLASS);
+        }
+        catch (ClassNotFoundException e)
+        {
+            LOG.info("jstl not on classpath", e);
+        }
+        
+        if (jstlClass != null)
+            //get the bundle containing jstl
+            return FrameworkUtil.getBundle(jstlClass);
+        
+        return null;
+    }
+    
     /**
      * Resolves a bundle that contains tld files as a URL. The URLs are
      * used by jasper to discover the tld files.

@@ -113,8 +113,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         {
             try
             {
-                FileResource fileResource= new FileResource(url);
-                return fileResource;
+                return new PathResource(url);
             }
             catch(Exception e)
             {
@@ -178,7 +177,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                         resource=resource.substring(2);
                     
                     File file=new File(resource).getCanonicalFile();
-                    return new FileResource(file);
+                    return new PathResource(file.toPath());
                 }
                 catch(Exception e2)
                 {
@@ -199,7 +198,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /* ------------------------------------------------------------ */
     public static Resource newResource(File file)
     {
-        return new FileResource(file);
+        return new PathResource(file.toPath());
     }
 
     /* ------------------------------------------------------------ */
@@ -352,6 +351,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * Returns an URL representing the given resource
      */
+    // TODO: should deprecate this one and only use getURI()
     public abstract URL getURL();
 
     /* ------------------------------------------------------------ */
@@ -405,6 +405,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * Deletes the given resource
      */
+    // TODO: can throw IOException
     public abstract boolean delete()
         throws SecurityException;
     
@@ -412,6 +413,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * Rename the given resource
      */
+    // TODO: can throw IOException
     public abstract boolean renameTo( Resource dest)
         throws SecurityException;
     
@@ -420,6 +422,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Returns a list of resource names contained in the given resource
      * The resource names are not URL encoded.
      */
+    // TODO: can throw IOException
     public abstract String[] list();
 
     /* ------------------------------------------------------------ */
@@ -471,6 +474,12 @@ public abstract class Resource implements ResourceFactory, Closeable
     public void setAssociate(Object o)
     {
         _associate=o;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isAlias()
+    {
+        return getAlias()!=null;
     }
     
     /* ------------------------------------------------------------ */
@@ -545,7 +554,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             buf.append("</TD></TR>");
         }
         buf.append("</TABLE>\n");
-	buf.append("</BODY></HTML>\n");
+        buf.append("</BODY></HTML>\n");
         
         return buf.toString();
     }

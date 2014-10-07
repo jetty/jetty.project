@@ -26,8 +26,15 @@ import java.net.InetAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
+import java.util.List;
 import java.util.Properties;
+import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.CopyOnWriteArraySet;
 
+import org.eclipse.jetty.util.component.Destroyable;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 
 /**
@@ -42,6 +49,8 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
  */
 public class ShutdownMonitor 
 {
+    private final Set<LifeCycle> _lifeCycles = new CopyOnWriteArraySet<LifeCycle>();
+    
     // Implementation of safe lazy init, using Initialization on Demand Holder technique.
     static class Holder
     {
@@ -52,22 +61,40 @@ public class ShutdownMonitor
     {
         return Holder.instance;
     }
+    
+    /* ------------------------------------------------------------ */
+    public static synchronized void register(LifeCycle... lifeCycles)
+    {
+        getInstance()._lifeCycles.addAll(Arrays.asList(lifeCycles));
+    }
+
+   
+    /* ------------------------------------------------------------ */
+    public static synchronized void deregister(LifeCycle lifeCycle)
+    {
+        getInstance()._lifeCycles.remove(lifeCycle);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public static synchronized boolean isRegistered(LifeCycle lifeCycle)
+    {
+        return getInstance()._lifeCycles.contains(lifeCycle);
+    }
+    
 
     /**
-     * ShutdownMonitorThread
+     * ShutdownMonitorRunnable
      *
      * Thread for listening to STOP.PORT for command to stop Jetty.
      * If ShowndownMonitor.exitVm is true, then Sytem.exit will also be
      * called after the stop.
      *
      */
-    public class ShutdownMonitorThread extends Thread
+    private class ShutdownMonitorRunnable implements Runnable
     {
-
-        public ShutdownMonitorThread ()
+        public ShutdownMonitorRunnable()
         {
-            setDaemon(true);
-            setName("ShutdownMonitor");
+            startListenSocket();
         }
         
         @Override
@@ -97,29 +124,38 @@ public class ShutdownMonitor
 
                     String cmd = lin.readLine();
                     debug("command=%s",cmd);
-                    if ("stop".equals(cmd))
+                    if ("stop".equalsIgnoreCase(cmd)) //historic, for backward compatibility
                     {
-                        // Graceful Shutdown
-                        debug("Issuing graceful shutdown..");
-                        ShutdownThread.getInstance().run();
+                        //Stop the lifecycles, only if they are registered with the ShutdownThread, only destroying if vm is exiting
+                        debug("Issuing stop...");
                         
-                        //Stop accepting any more
-                        close(serverSocket);
-                        serverSocket = null;
-                        
-                        //Shutdown input from client
-                        shutdownInput(socket);
+                        for (LifeCycle l:_lifeCycles)
+                        {
+                            try
+                            {
+                                if (l.isStarted() && ShutdownThread.isRegistered(l))
+                                {
+                                    l.stop();
+                                }
+                                
+                                if ((l instanceof Destroyable) && exitVm)
+                                    ((Destroyable)l).destroy();
+                            }
+                            catch (Exception e)
+                            {
+                                debug(e);
+                            }
+                        }
+
+                        //Stop accepting any more commands
+                        stopInput(socket);
 
                         // Reply to client
                         debug("Informing client that we are stopped.");
-                        out.write("Stopped\r\n".getBytes(StandardCharsets.UTF_8));
-                        out.flush();
+                        informClient(out, "Stopped\r\n");
 
-                        // Shutdown Monitor
-                        socket.shutdownOutput();
-                        close(socket);
-                        socket = null;                        
-                        debug("Shutting down monitor");
+                        //Stop the output and close the monitor socket
+                        stopOutput(socket);
 
                         if (exitVm)
                         {
@@ -128,11 +164,59 @@ public class ShutdownMonitor
                             System.exit(0);
                         }
                     }
-                    else if ("status".equals(cmd))
+                    else if ("forcestop".equalsIgnoreCase(cmd))
+                    {
+                        debug("Issuing force stop...");
+                        
+                        //Ensure that objects are stopped, destroyed only if vm is forcibly exiting
+                        stopLifeCycles(exitVm);
+
+                        //Stop accepting any more commands
+                        stopInput(socket);
+
+                        // Reply to client
+                        debug("Informing client that we are stopped.");
+                        informClient(out, "Stopped\r\n");
+
+                        //Stop the output and close the monitor socket
+                        stopOutput(socket);
+                        
+                        //Honour any pre-setup config to stop the jvm when this command is given
+                        if (exitVm)
+                        {
+                            // Kill JVM
+                            debug("Killing JVM");
+                            System.exit(0);
+                        }
+                    }
+                    else if ("stopexit".equalsIgnoreCase(cmd))
+                    {
+                        debug("Issuing stop and exit...");
+                        //Make sure that objects registered with the shutdown thread will be stopped
+                        stopLifeCycles(true);
+                        
+                        //Stop accepting any more input
+                        stopInput(socket);
+
+                        // Reply to client
+                        debug("Informing client that we are stopped.");                       
+                        informClient(out, "Stopped\r\n");              
+
+                        //Stop the output and close the monitor socket
+                        stopOutput(socket);
+                        
+                        debug("Killing JVM");
+                        System.exit(0);
+                    }
+                    else if ("exit".equalsIgnoreCase(cmd))
+                    {
+                        debug("Killing JVM");
+                        System.exit(0);
+                    }
+                    else if ("status".equalsIgnoreCase(cmd))
                     {
                         // Reply to client
-                        out.write("OK\r\n".getBytes(StandardCharsets.UTF_8));
-                        out.flush();
+                        informClient(out, "OK\r\n");
                     }
                 }
                 catch (Exception e)
@@ -148,28 +232,58 @@ public class ShutdownMonitor
             }
         }
         
-        public void start()
+        public void stopInput (Socket socket)
         {
-            if (isAlive())
-            {
-                // TODO why are we reentrant here?
-                if (DEBUG)
-                    System.err.printf("ShutdownMonitorThread already started");
-                return; // cannot start it again
-            }
-
-            startListenSocket();
-            
-            if (serverSocket == null)
-            {
-                return;
-            }
-            if (DEBUG)
-                System.err.println("Starting ShutdownMonitorThread");
-            super.start();
+            //Stop accepting any more input
+            close(serverSocket);
+            serverSocket = null;
+            //Shutdown input from client
+            shutdownInput(socket);  
         }
         
-        private void startListenSocket()
+        public void stopOutput (Socket socket) throws IOException
+        {
+            socket.shutdownOutput();
+            close(socket);
+            socket = null;                        
+            debug("Shutting down monitor");
+            serverSocket = null;
+        }
+        
+        public void informClient (OutputStream out, String message) throws IOException
+        {
+            out.write(message.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+        }
+
+        /**
+         * Stop the registered lifecycles, optionally
+         * calling destroy on them.
+         * 
+         * @param destroy
+         */
+        public void stopLifeCycles (boolean destroy)
+        {
+            for (LifeCycle l:_lifeCycles)
+            {
+                try
+                {
+                    if (l.isStarted())
+                    {
+                        l.stop();
+                    }
+                    
+                    if ((l instanceof Destroyable) && destroy)
+                        ((Destroyable)l).destroy();
+                }
+                catch (Exception e)
+                {
+                    debug(e);
+                }
+            }
+        }
+
+        public void startListenSocket()
         {
             if (port < 0)
             {            
@@ -217,9 +331,7 @@ public class ShutdownMonitor
     private String key;
     private boolean exitVm;
     private ServerSocket serverSocket;
-    private ShutdownMonitorThread thread;
-    
-    
+    private Thread thread;
 
     /**
      * Create a ShutdownMonitor using configuration from the System properties.
@@ -334,6 +446,9 @@ public class ShutdownMonitor
         this.DEBUG = flag;
     }
 
+    /**
+     * @param exitVm
+     */
     public void setExitVm(boolean exitVm)
     {
         synchronized (this)
@@ -372,18 +487,20 @@ public class ShutdownMonitor
 
     protected void start() throws Exception
     {
-        ShutdownMonitorThread t = null;
+        Thread t = null;
+        
         synchronized (this)
         {
             if (thread != null && thread.isAlive())
             {
-                // TODO why are we reentrant here?
                 if (DEBUG)
                     System.err.printf("ShutdownMonitorThread already started");
                 return; // cannot start it again
             }
          
-            thread = new ShutdownMonitorThread();
+            thread = new Thread(new ShutdownMonitorRunnable());
+            thread.setDaemon(true);
+            thread.setName("ShutdownMonitor");
             t = thread;
         }
          

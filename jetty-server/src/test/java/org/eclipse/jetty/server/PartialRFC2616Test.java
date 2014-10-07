@@ -102,7 +102,7 @@ public class PartialRFC2616Test
             assertEquals("3.3.1 RFC 850 ANSI C",d3,d2);
 
             fields.putDateField("Date",d1.getTime());
-            assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.getStringField("Date"));
+            assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.get("Date"));
         }
         catch (Exception e)
         {
@@ -495,7 +495,6 @@ public class PartialRFC2616Test
              "Host: localhost\n"+
              "\n");
          offset=checkContains(response,offset, "HTTP/1.1 200","200")+1;
-         offset=checkContains(response,offset, "Allow: GET,POST,HEAD,OPTIONS","Allow")+1;
 
          offset=0;
          response=connector.getResponses("GET * HTTP/1.1\n"+

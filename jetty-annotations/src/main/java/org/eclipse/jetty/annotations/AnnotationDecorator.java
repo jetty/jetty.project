@@ -28,12 +28,17 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class AnnotationDecorator implements Decorator
 {
-    AnnotationIntrospector _introspector = new AnnotationIntrospector();
+    protected AnnotationIntrospector _introspector = new AnnotationIntrospector();
 
     /**
      * @param context
      */
     public AnnotationDecorator(WebAppContext context)
+    {
+       registerHandlers(context);
+    }
+    
+    public void registerHandlers (WebAppContext context)
     {
         _introspector.registerHandler(new ResourceAnnotationHandler(context));
         _introspector.registerHandler(new ResourcesAnnotationHandler(context));

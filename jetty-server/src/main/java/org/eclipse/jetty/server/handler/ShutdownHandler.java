@@ -133,6 +133,7 @@ public class ShutdownHandler extends HandlerWrapper
         }
     }
 
+    @SuppressWarnings("resource")
     private String getServerUrl()
     {
         NetworkConnector connector=null;
@@ -224,7 +225,8 @@ public class ShutdownHandler extends HandlerWrapper
     private boolean hasCorrectSecurityToken(HttpServletRequest request)
     {
         String tok = request.getParameter("token");
-        LOG.debug("Token: {}", tok);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Token: {}", tok);
         return _shutdownToken.equals(tok);
     }
 

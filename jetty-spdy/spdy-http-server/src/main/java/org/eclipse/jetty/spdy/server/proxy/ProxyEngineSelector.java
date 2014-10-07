@@ -57,7 +57,8 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
     @Override
     public final StreamFrameListener onSyn(final Stream clientStream, SynInfo clientSynInfo)
     {
-        LOG.debug("C -> P {} on {}", clientSynInfo, clientStream);
+        if (LOG.isDebugEnabled())
+            LOG.debug("C -> P {} on {}", clientSynInfo, clientStream);
 
         final Session clientSession = clientStream.getSession();
         short clientVersion = clientSession.getVersion();
@@ -66,7 +67,8 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         Fields.Field hostHeader = headers.get(HTTPSPDYHeader.HOST.name(clientVersion));
         if (hostHeader == null)
         {
-            LOG.debug("No host header found: " + headers);
+            if (LOG.isDebugEnabled())
+                LOG.debug("No host header found: " + headers);
             rst(clientStream);
             return null;
         }
@@ -79,7 +81,8 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         ProxyServerInfo proxyServerInfo = getProxyServerInfo(host);
         if (proxyServerInfo == null)
         {
-            LOG.debug("No matching ProxyServerInfo found for: " + host);
+            if (LOG.isDebugEnabled())
+                LOG.debug("No matching ProxyServerInfo found for: " + host);
             rst(clientStream);
             return null;
         }
@@ -88,11 +91,13 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
         ProxyEngine proxyEngine = proxyEngines.get(protocol);
         if (proxyEngine == null)
         {
-            LOG.debug("No matching ProxyEngine found for: " + protocol);
+            if (LOG.isDebugEnabled())
+                LOG.debug("No matching ProxyEngine found for: " + protocol);
             rst(clientStream);
             return null;
         }
-        LOG.debug("Forwarding request: {} -> {}", clientSynInfo, proxyServerInfo);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Forwarding request: {} -> {}", clientSynInfo, proxyServerInfo);
         return proxyEngine.proxy(clientStream, clientSynInfo, proxyServerInfo);
     }
 
@@ -154,7 +159,7 @@ public class ProxyEngineSelector extends ServerSessionFrameListener.Adapter
     private void rst(Stream stream)
     {
         RstInfo rstInfo = new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM);
-        stream.getSession().rst(rstInfo, new Callback.Adapter());
+        stream.getSession().rst(rstInfo, Callback.Adapter.INSTANCE);
     }
 
     public static class ProxyServerInfo

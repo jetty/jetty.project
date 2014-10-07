@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.ArrayList;
 import java.util.List;
-
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -33,6 +29,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class DoSFilterTest extends AbstractDoSFilterTest
 {
@@ -62,7 +61,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
     }
 
     @Test
-    public void isRateExceededTest() throws InterruptedException
+    public void testRateIsRateExceeded() throws InterruptedException
     {
         DoSFilter doSFilter = new DoSFilter();
 

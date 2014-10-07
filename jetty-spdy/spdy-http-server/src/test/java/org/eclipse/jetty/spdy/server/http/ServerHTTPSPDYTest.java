@@ -18,16 +18,6 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
-import static org.hamcrest.CoreMatchers.containsString;
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.notNullValue;
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,15 +30,15 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
-
+import javax.servlet.AsyncContext;
+import javax.servlet.AsyncEvent;
+import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.continuation.Continuation;
-import org.eclipse.jetty.continuation.ContinuationSupport;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
@@ -63,15 +53,23 @@ import org.eclipse.jetty.spdy.api.StringDataInfo;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.hamcrest.CoreMatchers.containsString;
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.notNullValue;
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
 {
-    private static final Logger LOG = Log.getLogger(ServerHTTPSPDYTest.class);
+    public static final String SUSPENDED_ATTRIBUTE = ServerHTTPSPDYTest.class.getName() + ".SUSPENDED";
 
     public ServerHTTPSPDYTest(short version)
     {
@@ -1160,10 +1158,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-
-                final Continuation continuation = ContinuationSupport.getContinuation(request);
-                continuation.suspend();
-
+                final AsyncContext asyncContext = request.startAsync();
                 new Thread()
                 {
                     @Override
@@ -1172,7 +1167,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                         try
                         {
                             readRequestData(request, data.length);
-                            continuation.complete();
+                            asyncContext.complete();
                             latch.countDown();
                         }
                         catch (IOException x)
@@ -1213,17 +1208,17 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                final Continuation continuation = ContinuationSupport.getContinuation(request);
-                if (continuation.isInitial())
-                {
-                    continuation.setTimeout(1000);
-                    continuation.suspend();
-                }
-                else
+                if (request.getAttribute(SUSPENDED_ATTRIBUTE) == Boolean.TRUE)
                 {
                     dispatchedAgainAfterExpire.countDown();
                 }
-
+                else
+                {
+                    AsyncContext asyncContext = request.startAsync();
+                    asyncContext.setTimeout(1000);
+                    asyncContext.addListener(new AsyncListenerAdapter());
+                    request.setAttribute(SUSPENDED_ATTRIBUTE, Boolean.TRUE);
+                }
             }
         }, 30000), null);
 
@@ -1257,18 +1252,18 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-                final Continuation continuation = ContinuationSupport.getContinuation(request);
-                if (continuation.isInitial())
-                {
-                    readRequestData(request, data.length);
-                    continuation.setTimeout(1000);
-                    continuation.suspend();
-                }
-                else
+                if (request.getAttribute(SUSPENDED_ATTRIBUTE) == Boolean.TRUE)
                 {
                     dispatchedAgainAfterExpire.countDown();
                 }
-
+                else
+                {
+                    readRequestData(request, data.length);
+                    AsyncContext asyncContext = request.startAsync();
+                    asyncContext.setTimeout(1000);
+                    asyncContext.addListener(new AsyncListenerAdapter());
+                    request.setAttribute(SUSPENDED_ATTRIBUTE, Boolean.TRUE);
+                }
             }
         }, 30000), null);
 
@@ -1312,10 +1307,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-
-                final Continuation continuation = ContinuationSupport.getContinuation(request);
-                continuation.suspend();
-
+                final AsyncContext asyncContext = request.startAsync();
                 new Thread()
                 {
                     @Override
@@ -1328,7 +1320,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                             int read = 0;
                             while (read < 2 * data.length)
                                 read += input.read(buffer);
-                            continuation.complete();
+                            asyncContext.complete();
                             latch.countDown();
                         }
                         catch (IOException x)
@@ -1371,17 +1363,20 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                     throws IOException, ServletException
             {
                 request.setHandled(true);
-
-                final Continuation continuation = ContinuationSupport.getContinuation(request);
-
-                if (continuation.isInitial())
+                if (request.getAttribute(SUSPENDED_ATTRIBUTE) == Boolean.TRUE)
                 {
+                    OutputStream output = httpResponse.getOutputStream();
+                    output.write(data);
+                }
+                else
+                {
+                    final AsyncContext asyncContext = request.startAsync();
+                    request.setAttribute(SUSPENDED_ATTRIBUTE, Boolean.TRUE);
                     InputStream input = request.getInputStream();
                     byte[] buffer = new byte[256];
                     int read = 0;
                     while (read < data.length)
                         read += input.read(buffer);
-                    continuation.suspend();
                     new Thread()
                     {
                         @Override
@@ -1390,7 +1385,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                             try
                             {
                                 TimeUnit.SECONDS.sleep(1);
-                                continuation.resume();
+                                asyncContext.dispatch();
                                 latch.countDown();
                             }
                             catch (InterruptedException x)
@@ -1399,11 +1394,6 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                             }
                         }
                     }.start();
-                }
-                else
-                {
-                    OutputStream output = httpResponse.getOutputStream();
-                    output.write(data);
                 }
             }
         }, 30000), null);
@@ -1532,7 +1522,7 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
         }, idleTimeout), null);
 
         Fields headers = SPDYTestUtils.createHeaders("localhost", connector.getPort(), version, "GET", "/");
-        Stream stream = session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, true, (byte)0),
+        session.syn(new SynInfo(5, TimeUnit.SECONDS, headers, true, (byte)0),
                 new StreamFrameListener.Adapter()
                 {
                     @Override
@@ -1609,4 +1599,27 @@ public class ServerHTTPSPDYTest extends AbstractHTTPSPDYTest
                 });
     }
 
+    private class AsyncListenerAdapter implements AsyncListener
+    {
+        @Override
+        public void onStartAsync(AsyncEvent event) throws IOException
+        {
+        }
+
+        @Override
+        public void onComplete(AsyncEvent event) throws IOException
+        {
+        }
+
+        @Override
+        public void onTimeout(AsyncEvent event) throws IOException
+        {
+            event.getAsyncContext().dispatch();
+        }
+
+        @Override
+        public void onError(AsyncEvent event) throws IOException
+        {
+        }
+    }
 }

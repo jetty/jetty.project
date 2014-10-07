@@ -25,7 +25,6 @@ import java.util.List;
 
 import javax.servlet.Filter;
 
-import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestStaticMimeTypeServlet;
@@ -45,53 +44,54 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class GzipFilterDefaultNoRecompressTest
 {
+    @SuppressWarnings("deprecation")
     @Parameters
     public static List<Object[]> data()
     {
         return Arrays.asList(new Object[][]
         {
                 // Some already compressed files
-                { GzipFilter.class, "test_quotes.gz", "application/gzip", GzipFilter.GZIP },
-                { GzipFilter.class, "test_quotes.bz2", "application/bzip2", GzipFilter.GZIP },
-                { GzipFilter.class, "test_quotes.zip", "application/zip", GzipFilter.GZIP },
-                { GzipFilter.class, "test_quotes.rar", "application/octet-stream", GzipFilter.GZIP },
+           /* 00 */     { GzipFilter.class, "test_quotes.gz", "application/gzip", GzipFilter.GZIP },
+           /* 01 */      { GzipFilter.class, "test_quotes.bz2", "application/bzip2", GzipFilter.GZIP },
+           /* 02 */     { GzipFilter.class, "test_quotes.zip", "application/zip", GzipFilter.GZIP },
+           /* 03 */     { GzipFilter.class, "test_quotes.rar", "application/octet-stream", GzipFilter.GZIP },
                 // Some images (common first)
-                { GzipFilter.class, "jetty_logo.png", "image/png", GzipFilter.GZIP },
-                { GzipFilter.class, "jetty_logo.gif", "image/gif", GzipFilter.GZIP },
-                { GzipFilter.class, "jetty_logo.jpeg", "image/jpeg", GzipFilter.GZIP },
-                { GzipFilter.class, "jetty_logo.jpg", "image/jpeg", GzipFilter.GZIP },
+           /* 04 */     { GzipFilter.class, "jetty_logo.png", "image/png", GzipFilter.GZIP },
+           /* 05 */     { GzipFilter.class, "jetty_logo.gif", "image/gif", GzipFilter.GZIP },
+           /* 06 */     { GzipFilter.class, "jetty_logo.jpeg", "image/jpeg", GzipFilter.GZIP },
+           /* 07 */     { GzipFilter.class, "jetty_logo.jpg", "image/jpeg", GzipFilter.GZIP },
                 // Lesser encountered images (usually found being requested from non-browser clients)
-                { GzipFilter.class, "jetty_logo.bmp", "image/bmp", GzipFilter.GZIP },
-                { GzipFilter.class, "jetty_logo.tga", "application/tga", GzipFilter.GZIP },
-                { GzipFilter.class, "jetty_logo.tif", "image/tiff", GzipFilter.GZIP },
-                { GzipFilter.class, "jetty_logo.tiff", "image/tiff", GzipFilter.GZIP },
-                { GzipFilter.class, "jetty_logo.xcf", "image/xcf", GzipFilter.GZIP },
-                { GzipFilter.class, "jetty_logo.jp2", "image/jpeg2000", GzipFilter.GZIP },
+           /* 08 */     { GzipFilter.class, "jetty_logo.bmp", "image/bmp", GzipFilter.GZIP },
+           /* 09 */     { GzipFilter.class, "jetty_logo.tga", "application/tga", GzipFilter.GZIP },
+           /* 10 */     { GzipFilter.class, "jetty_logo.tif", "image/tiff", GzipFilter.GZIP },
+           /* 11 */     { GzipFilter.class, "jetty_logo.tiff", "image/tiff", GzipFilter.GZIP },
+           /* 12 */     { GzipFilter.class, "jetty_logo.xcf", "image/xcf", GzipFilter.GZIP },
+           /* 13 */     { GzipFilter.class, "jetty_logo.jp2", "image/jpeg2000", GzipFilter.GZIP },
                 //qvalue disables compression
-                { GzipFilter.class, "test_quotes.txt", "text/plain", GzipFilter.GZIP+";q=0"},
-                { GzipFilter.class, "test_quotes.txt", "text/plain", GzipFilter.GZIP+"; q =    0 "},
+           /* 14 */     { GzipFilter.class, "test_quotes.txt", "text/plain", GzipFilter.GZIP+";q=0"},
+           /* 15 */     { GzipFilter.class, "test_quotes.txt", "text/plain", GzipFilter.GZIP+"; q =    0 "},
                 
                 
                 // Some already compressed files
-                { AsyncGzipFilter.class, "test_quotes.gz", "application/gzip", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "test_quotes.bz2", "application/bzip2", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "test_quotes.zip", "application/zip", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "test_quotes.rar", "application/octet-stream", GzipFilter.GZIP },
+           /* 16 */     { AsyncGzipFilter.class, "test_quotes.gz", "application/gzip", GzipFilter.GZIP },
+           /* 17 */     { AsyncGzipFilter.class, "test_quotes.bz2", "application/bzip2", GzipFilter.GZIP },
+           /* 18 */     { AsyncGzipFilter.class, "test_quotes.zip", "application/zip", GzipFilter.GZIP },
+           /* 19 */     { AsyncGzipFilter.class, "test_quotes.rar", "application/octet-stream", GzipFilter.GZIP },
                 // Some images (common first)
-                { AsyncGzipFilter.class, "jetty_logo.png", "image/png", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "jetty_logo.gif", "image/gif", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "jetty_logo.jpeg", "image/jpeg", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "jetty_logo.jpg", "image/jpeg", GzipFilter.GZIP },
+           /* 20 */     { AsyncGzipFilter.class, "jetty_logo.png", "image/png", GzipFilter.GZIP },
+           /* 21 */     { AsyncGzipFilter.class, "jetty_logo.gif", "image/gif", GzipFilter.GZIP },
+           /* 22 */     { AsyncGzipFilter.class, "jetty_logo.jpeg", "image/jpeg", GzipFilter.GZIP },
+           /* 23 */     { AsyncGzipFilter.class, "jetty_logo.jpg", "image/jpeg", GzipFilter.GZIP },
                 // Lesser encountered images (usually found being requested from non-browser clients)
-                { AsyncGzipFilter.class, "jetty_logo.bmp", "image/bmp", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "jetty_logo.tga", "application/tga", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "jetty_logo.tif", "image/tiff", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "jetty_logo.tiff", "image/tiff", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "jetty_logo.xcf", "image/xcf", GzipFilter.GZIP },
-                { AsyncGzipFilter.class, "jetty_logo.jp2", "image/jpeg2000", GzipFilter.GZIP },
-                //qvalue disables compression
-                { AsyncGzipFilter.class, "test_quotes.txt", "text/plain", GzipFilter.GZIP+";q=0"},
-                { AsyncGzipFilter.class, "test_quotes.txt", "text/plain", GzipFilter.GZIP+"; q =    0 "}
+           /* 24 */     { AsyncGzipFilter.class, "jetty_logo.bmp", "image/bmp", GzipFilter.GZIP },
+           /* 25 */     { AsyncGzipFilter.class, "jetty_logo.tga", "application/tga", GzipFilter.GZIP },
+           /* 26 */     { AsyncGzipFilter.class, "jetty_logo.tif", "image/tiff", GzipFilter.GZIP },
+           /* 27 */     { AsyncGzipFilter.class, "jetty_logo.tiff", "image/tiff", GzipFilter.GZIP },
+           /* 28 */     { AsyncGzipFilter.class, "jetty_logo.xcf", "image/xcf", GzipFilter.GZIP },
+           /* 29 */     { AsyncGzipFilter.class, "jetty_logo.jp2", "image/jpeg2000", GzipFilter.GZIP },
+                // qvalue disables compression
+           /* 30 */     { AsyncGzipFilter.class, "test_quotes.txt", "text/plain", GzipFilter.GZIP+";q=0"},
+           /* 31 */     { AsyncGzipFilter.class, "test_quotes.txt", "text/plain", GzipFilter.GZIP+"; q =    0 "}
         });
     }
 

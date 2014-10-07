@@ -6,7 +6,7 @@
     <version>22</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.2.0-SNAPSHOT</version>
+  <version>9.3.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -14,7 +14,7 @@
     <jetty.url>http://www.eclipse.org/jetty</jetty.url>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
     <build-support-version>1.1</build-support-version>
-    <slf4j-version>1.6.1</slf4j-version>
+    <slf4j-version>1.6.6</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
     <npn.api.version>1.1.0.v20120525</npn.api.version>
     <alpn.api.version>1.0.0</alpn.api.version>
@@ -26,6 +26,7 @@
     <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
     <developerConnection>scm:git:ssh://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</developerConnection>
     <url>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree</url>
+    <tag>HEAD</tag>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
@@ -40,6 +41,7 @@
       </plugin>
       <plugin>
         <artifactId>maven-release-plugin</artifactId>
+        <version>2.5</version>
         <configuration>
           <autoVersionSubmodules>true</autoVersionSubmodules>
         </configuration>
@@ -234,6 +236,27 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+           </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+         <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+         </archive>
+        </configuration>
+     </plugin>
+
     </plugins>
     <pluginManagement>
       <plugins>
@@ -258,15 +281,23 @@
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-surefire-plugin</artifactId>
+          <version>2.17</version>
           <configuration>
             <argLine>-showversion -Xmx1g -Xms1g -XX:+PrintGCDetails</argLine>
             <failIfNoTests>false</failIfNoTests>
-            <!--systemProperties>
+            <runMode>random</runMode>
+            <systemProperties>
+              <!--
               <property>
                 <name>org.eclipse.jetty.io.AbstractBuffer.boundsChecking</name>
                 <value>true</value>
               </property>
-            </systemProperties-->
+              -->
+              <property>
+                <name>java.io.tmpdir</name>
+                <value>${project.build.directory}</value>
+              </property>
+            </systemProperties>
           </configuration>
         </plugin>
         <plugin>
@@ -274,8 +305,13 @@
           <artifactId>maven-bundle-plugin</artifactId>
           <extensions>true</extensions>
           <configuration>
+            <supportedProjectTypes>
+              <supportedProjectType>jar</supportedProjectType>
+              <supportedProjectType>maven-plugin</supportedProjectType>
+            </supportedProjectTypes>
             <instructions>
               <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
+	      <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
               <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
@@ -412,6 +448,7 @@
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
+    <module>jetty-http2</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
     <module>jetty-xml</module>
@@ -449,6 +486,7 @@
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
+    <module>jetty-npn</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>
@@ -530,7 +568,7 @@
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-jsp</artifactId>
-        <version>8.0.3.v20140313</version>
+        <version>8.0.9.M3</version>
       </dependency>
 
       <dependency>
@@ -685,6 +723,36 @@
     > mvn -N site:sshdeploy     (for ssh users w/passphrase and ssh-agent)
    -->
   <profiles>
+    <profile>
+      <id>config</id>
+      <activation>
+        <file>
+          <exists>src/main/config</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <descriptorRefs>
+                    <descriptorRef>config</descriptorRef>
+                  </descriptorRefs>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    
     <profile>
       <id>eclipse-release</id>
       <modules>
@@ -872,6 +940,45 @@
       </properties>
     </profile>
     <profile>
+      <id>7u60</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_60</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.7.v20140316</npn.version>
+        <alpn.version>7.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u65</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_65</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.7.v20140316</npn.version>
+        <alpn.version>7.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u67</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_67</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.7.v20140316</npn.version>
+        <alpn.version>7.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
       <id>8u00</id>
       <activation>
         <property>
@@ -889,6 +996,30 @@
         <property>
           <name>java.version</name>
           <value>1.8.0_05</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u11</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_11</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.0.0.v20140317</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u20</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_20</value>
         </property>
       </activation>
       <properties>

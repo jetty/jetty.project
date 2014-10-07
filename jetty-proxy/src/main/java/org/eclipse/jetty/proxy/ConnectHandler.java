@@ -186,7 +186,8 @@ public class ConnectHandler extends HandlerWrapper
         if (HttpMethod.CONNECT.is(request.getMethod()))
         {
             String serverAddress = request.getRequestURI();
-            LOG.debug("CONNECT request for {}", serverAddress);
+            if (LOG.isDebugEnabled())
+                LOG.debug("CONNECT request for {}", serverAddress);
             try
             {
                 handleConnect(baseRequest, request, response, serverAddress);
@@ -194,7 +195,7 @@ public class ConnectHandler extends HandlerWrapper
             catch (Exception x)
             {
                 // TODO
-                LOG.warn("ConnectHandler " + baseRequest.getUri() + " " + x);
+                LOG.warn("ConnectHandler " + baseRequest.getHttpURI() + " " + x);
                 LOG.debug(x);
             }
         }
@@ -222,7 +223,8 @@ public class ConnectHandler extends HandlerWrapper
             boolean proceed = handleAuthentication(request, response, serverAddress);
             if (!proceed)
             {
-                LOG.debug("Missing proxy authentication");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Missing proxy authentication");
                 sendConnectResponse(request, response, HttpServletResponse.SC_PROXY_AUTHENTICATION_REQUIRED);
                 return;
             }
@@ -238,7 +240,8 @@ public class ConnectHandler extends HandlerWrapper
 
             if (!validateDestination(host, port))
             {
-                LOG.debug("Destination {}:{} forbidden", host, port);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Destination {}:{} forbidden", host, port);
                 sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
@@ -247,14 +250,18 @@ public class ConnectHandler extends HandlerWrapper
             channel.socket().setTcpNoDelay(true);
             channel.configureBlocking(false);
             InetSocketAddress address = new InetSocketAddress(host, port);
-            channel.connect(address);
 
             AsyncContext asyncContext = request.startAsync();
             asyncContext.setTimeout(0);
 
-            LOG.debug("Connecting to {}", address);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connecting to {}", address);
+
             ConnectContext connectContext = new ConnectContext(request, response, asyncContext, HttpConnection.getCurrentConnection());
-            selector.connect(channel, connectContext);
+            if (channel.connect(address))
+                selector.accept(channel, connectContext);
+            else
+                selector.connect(channel, connectContext);
         }
         catch (Exception x)
         {
@@ -286,7 +293,8 @@ public class ConnectHandler extends HandlerWrapper
 
         upstreamConnection.setConnection(downstreamConnection);
         downstreamConnection.setConnection(upstreamConnection);
-        LOG.debug("Connection setup completed: {}<->{}", downstreamConnection, upstreamConnection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connection setup completed: {}<->{}", downstreamConnection, upstreamConnection);
 
         HttpServletResponse response = connectContext.getResponse();
         sendConnectResponse(request, response, HttpServletResponse.SC_OK);
@@ -297,7 +305,8 @@ public class ConnectHandler extends HandlerWrapper
 
     protected void onConnectFailure(HttpServletRequest request, HttpServletResponse response, AsyncContext asyncContext, Throwable failure)
     {
-        LOG.debug("CONNECT failed", failure);
+        if (LOG.isDebugEnabled())
+            LOG.debug("CONNECT failed", failure);
         sendConnectResponse(request, response, HttpServletResponse.SC_INTERNAL_SERVER_ERROR);
         if (asyncContext != null)
             asyncContext.complete();
@@ -311,7 +320,8 @@ public class ConnectHandler extends HandlerWrapper
             if (statusCode != HttpServletResponse.SC_OK)
                 response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
             response.getOutputStream().close();
-            LOG.debug("CONNECT response sent {} {}", request.getProtocol(), response.getStatus());
+            if (LOG.isDebugEnabled())
+                LOG.debug("CONNECT response sent {} {}", request.getProtocol(), response.getStatus());
         }
         catch (IOException x)
         {
@@ -353,7 +363,8 @@ public class ConnectHandler extends HandlerWrapper
         // so that Jetty understands that it has to upgrade the connection
         request.setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, connection);
         response.setStatus(HttpServletResponse.SC_SWITCHING_PROTOCOLS);
-        LOG.debug("Upgraded connection to {}", connection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Upgraded connection to {}", connection);
     }
 
     /**
@@ -379,7 +390,8 @@ public class ConnectHandler extends HandlerWrapper
      */
     protected void write(EndPoint endPoint, ByteBuffer buffer, Callback callback)
     {
-        LOG.debug("{} writing {} bytes", this, buffer.remaining());
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} writing {} bytes", this, buffer.remaining());
         endPoint.write(callback, buffer);
     }
 
@@ -407,7 +419,8 @@ public class ConnectHandler extends HandlerWrapper
         {
             if (!whiteList.contains(hostPort))
             {
-                LOG.debug("Host {}:{} not whitelisted", host, port);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Host {}:{} not whitelisted", host, port);
                 return false;
             }
         }
@@ -415,7 +428,8 @@ public class ConnectHandler extends HandlerWrapper
         {
             if (blackList.contains(hostPort))
             {
-                LOG.debug("Host {}:{} blacklisted", host, port);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Host {}:{} blacklisted", host, port);
                 return false;
             }
         }
@@ -445,7 +459,8 @@ public class ConnectHandler extends HandlerWrapper
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            ConnectHandler.LOG.debug("Connected to {}", channel.getRemoteAddress());
+            if (ConnectHandler.LOG.isDebugEnabled())
+                ConnectHandler.LOG.debug("Connected to {}", channel.getRemoteAddress());
             ConnectContext connectContext = (ConnectContext)attachment;
             UpstreamConnection connection = newUpstreamConnection(endpoint, connectContext);
             connection.setInputBufferSize(getBufferSize());
@@ -565,14 +580,16 @@ public class ConnectHandler extends HandlerWrapper
                 @Override
                 public void succeeded()
                 {
-                    LOG.debug("{} wrote initial {} bytes to server", DownstreamConnection.this, remaining);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} wrote initial {} bytes to server", DownstreamConnection.this, remaining);
                     fillInterested();
                 }
 
                 @Override
                 public void failed(Throwable x)
                 {
-                    LOG.debug(this + " failed to write initial " + remaining + " bytes to server", x);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug(this + " failed to write initial " + remaining + " bytes to server", x);
                     close();
                     getConnection().close();
                 }

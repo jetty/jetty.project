@@ -37,10 +37,6 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
 import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpSessionEvent;
-import javax.servlet.http.HttpSessionListener;
-
-import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.JDBCSessionIdManager.SessionTableSchema;
 import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
@@ -88,7 +84,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      *
      * Session instance.
      */
-    public class Session extends AbstractSession
+    public class Session extends MemSession
     {
         private static final long serialVersionUID = 5208464051134226143L;
         
@@ -512,17 +508,20 @@ public class JDBCSessionManager extends AbstractSessionManager
             {
                 if (memSession==null)
                 {
-                    LOG.debug("getSession("+idInCluster+"): no session in session map. Reloading session data from db.");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("getSession("+idInCluster+"): no session in session map. Reloading session data from db.");
                     session = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
                 }
                 else if ((now - memSession._lastSaved) >= (_saveIntervalSec * 1000L))
                 {
-                    LOG.debug("getSession("+idInCluster+"): stale session. Reloading session data from db.");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("getSession("+idInCluster+"): stale session. Reloading session data from db.");
                     session = loadSession(idInCluster, canonicalize(_context.getContextPath()), getVirtualHost(_context));
                 }
                 else
                 {
-                    LOG.debug("getSession("+idInCluster+"): session in session map");
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("getSession("+idInCluster+"): session in session map");
                     session = memSession;
                 }
             }
@@ -562,7 +561,8 @@ public class JDBCSessionManager extends AbstractSessionManager
                     }
                     else
                     {
-                        LOG.debug("getSession ({}): Session has expired", idInCluster);  
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("getSession ({}): Session has expired", idInCluster);
                         //ensure that the session id for the expired session is deleted so that a new session with the 
                         //same id cannot be created (because the idInUse() test would succeed)
                         _jdbcSessionIdMgr.removeSession(idInCluster);
@@ -574,7 +574,8 @@ public class JDBCSessionManager extends AbstractSessionManager
                 {
                     //the session loaded from the db and the one in memory are the same, so keep using the one in memory
                     session = memSession;
-                    LOG.debug("getSession({}): Session not stale {}", idInCluster,session);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("getSession({}): Session not stale {}", idInCluster,session);
                 }
             }
             else

@@ -19,6 +19,7 @@
 package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.URI;
 import java.net.UnknownHostException;
@@ -84,14 +85,14 @@ public class ProxyServlet extends HttpServlet
     private static final Set<String> HOP_HEADERS = new HashSet<>();
     static
     {
-        HOP_HEADERS.add("proxy-connection");
         HOP_HEADERS.add("connection");
         HOP_HEADERS.add("keep-alive");
+        HOP_HEADERS.add("proxy-authorization");
+        HOP_HEADERS.add("proxy-authenticate");
+        HOP_HEADERS.add("proxy-connection");
         HOP_HEADERS.add("transfer-encoding");
         HOP_HEADERS.add("te");
         HOP_HEADERS.add("trailer");
-        HOP_HEADERS.add("proxy-authorization");
-        HOP_HEADERS.add("proxy-authenticate");
         HOP_HEADERS.add("upgrade");
     }
 
@@ -200,7 +201,8 @@ public class ProxyServlet extends HttpServlet
         }
         catch (Exception x)
         {
-            _log.debug(x);
+            if (_log.isDebugEnabled())
+                _log.debug(x);
         }
     }
 
@@ -361,7 +363,8 @@ public class ProxyServlet extends HttpServlet
         {
             if (!_whiteList.contains(hostPort))
             {
-                _log.debug("Host {}:{} not whitelisted", host, port);
+                if (_log.isDebugEnabled())
+                    _log.debug("Host {}:{} not whitelisted", host, port);
                 return false;
             }
         }
@@ -369,7 +372,8 @@ public class ProxyServlet extends HttpServlet
         {
             if (_blackList.contains(hostPort))
             {
-                _log.debug("Host {}:{} blacklisted", host, port);
+                if (_log.isDebugEnabled())
+                    _log.debug("Host {}:{} blacklisted", host, port);
                 return false;
             }
         }
@@ -388,7 +392,8 @@ public class ProxyServlet extends HttpServlet
             StringBuffer uri = request.getRequestURL();
             if (request.getQueryString() != null)
                 uri.append("?").append(request.getQueryString());
-            _log.debug("{} rewriting: {} -> {}", requestId, uri, rewrittenURI);
+            if (_log.isDebugEnabled())
+                _log.debug("{} rewriting: {} -> {}", requestId, uri, rewrittenURI);
         }
 
         if (rewrittenURI == null)
@@ -401,7 +406,25 @@ public class ProxyServlet extends HttpServlet
                 .method(request.getMethod())
                 .version(HttpVersion.fromString(request.getProtocol()));
 
-        // Copy headers
+        // Copy headers.
+
+        // Any header listed by the Connection header must be removed:
+        // http://tools.ietf.org/html/rfc7230#section-6.1.
+        Set<String> hopHeaders = null;
+        Enumeration<String> connectionHeaders = request.getHeaders(HttpHeader.CONNECTION.asString());
+        while (connectionHeaders.hasMoreElements())
+        {
+            String value = connectionHeaders.nextElement();
+            String[] values = value.split(",");
+            for (String name : values)
+            {
+                name = name.trim().toLowerCase(Locale.ENGLISH);
+                if (hopHeaders == null)
+                    hopHeaders = new HashSet<>();
+                hopHeaders.add(name);
+            }
+        }
+
         boolean hasContent = request.getContentLength() > 0 || request.getContentType() != null;
         for (Enumeration<String> headerNames = request.getHeaderNames(); headerNames.hasMoreElements();)
         {
@@ -414,8 +437,10 @@ public class ProxyServlet extends HttpServlet
             if (_hostHeader != null && HttpHeader.HOST.is(headerName))
                 continue;
 
-            // Remove hop-by-hop headers
+            // Remove hop-by-hop headers.
             if (HOP_HEADERS.contains(lowerHeaderName))
+                continue;
+            if (hopHeaders != null && hopHeaders.contains(lowerHeaderName))
                 continue;
 
             for (Enumeration<String> headerValues = request.getHeaders(headerName); headerValues.hasMoreElements();)
@@ -477,37 +502,23 @@ public class ProxyServlet extends HttpServlet
                     proxyRequest.getHeaders().toString().trim());
         }
 
-        proxyRequest.send(new ProxyResponseListener(request, response));
+        proxyRequest.send(newProxyResponseListener(request, response));
     }
 
     protected ContentProvider proxyRequestContent(final Request proxyRequest, final HttpServletRequest request) throws IOException
     {
-        return new InputStreamContentProvider(request.getInputStream())
-        {
-            @Override
-            public long getLength()
-            {
-                return request.getContentLength();
-            }
+        return new ProxyInputStreamContentProvider(proxyRequest, request, request.getInputStream());
+    }
 
-            @Override
-            protected ByteBuffer onRead(byte[] buffer, int offset, int length)
-            {
-                _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
-                return super.onRead(buffer, offset, length);
-            }
-
-            @Override
-            protected void onReadFailure(Throwable failure)
-            {
-                onClientRequestFailure(proxyRequest, request, failure);
-            }
-        };
+    protected Response.Listener newProxyResponseListener(HttpServletRequest request, HttpServletResponse response)
+    {
+        return new ProxyResponseListener(request, response);
     }
 
     protected void onClientRequestFailure(Request proxyRequest, HttpServletRequest request, Throwable failure)
     {
-        _log.debug(getRequestId(request) + " client request failure", failure);
+        if (_log.isDebugEnabled())
+            _log.debug(getRequestId(request) + " client request failure", failure);
         proxyRequest.abort(failure);
     }
 
@@ -531,10 +542,6 @@ public class ProxyServlet extends HttpServlet
 
     protected void onResponseHeaders(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
-        // Clear the response headers in case it comes with predefined ones.
-        for (String name : response.getHeaderNames())
-            response.setHeader(name, null);
-
         for (HttpField field : proxyResponse.getHeaders())
         {
             String headerName = field.getName();
@@ -554,7 +561,8 @@ public class ProxyServlet extends HttpServlet
     {
         try
         {
-            _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
+            if (_log.isDebugEnabled())
+                _log.debug("{} proxying content to downstream: {} bytes", getRequestId(request), length);
             response.getOutputStream().write(buffer, offset, length);
             callback.succeeded();
         }
@@ -566,16 +574,34 @@ public class ProxyServlet extends HttpServlet
 
     protected void onResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
     {
-        _log.debug("{} proxying successful", getRequestId(request));
+        if (_log.isDebugEnabled())
+            _log.debug("{} proxying successful", getRequestId(request));
         AsyncContext asyncContext = request.getAsyncContext();
         asyncContext.complete();
     }
 
     protected void onResponseFailure(HttpServletRequest request, HttpServletResponse response, Response proxyResponse, Throwable failure)
     {
-        _log.debug(getRequestId(request) + " proxying failed", failure);
-        if (!response.isCommitted())
+        if (_log.isDebugEnabled())
+            _log.debug(getRequestId(request) + " proxying failed", failure);
+        if (response.isCommitted())
         {
+            try
+            {
+                // Use Jetty specific behavior to close connection.
+                response.sendError(-1);
+                AsyncContext asyncContext = request.getAsyncContext();
+                asyncContext.complete();
+            }
+            catch (IOException x)
+            {
+                if (_log.isDebugEnabled())
+                    _log.debug(getRequestId(request) + " could not close the connection", failure);
+            }
+        }
+        else
+        {
+            response.resetBuffer();
             if (failure instanceof TimeoutException)
                 response.setStatus(HttpServletResponse.SC_GATEWAY_TIMEOUT);
             else
@@ -688,7 +714,8 @@ public class ProxyServlet extends HttpServlet
             String contextPath = config.getServletContext().getContextPath();
             _prefix = _prefix == null ? contextPath : (contextPath + _prefix);
 
-            proxyServlet._log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
+            if (proxyServlet._log.isDebugEnabled())
+                proxyServlet._log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
         }
 
         protected URI rewriteURI(HttpServletRequest request)
@@ -716,12 +743,12 @@ public class ProxyServlet extends HttpServlet
         }
     }
 
-    private class ProxyResponseListener extends Response.Listener.Adapter
+    protected class ProxyResponseListener extends Response.Listener.Adapter
     {
         private final HttpServletRequest request;
         private final HttpServletResponse response;
 
-        public ProxyResponseListener(HttpServletRequest request, HttpServletResponse response)
+        protected ProxyResponseListener(HttpServletRequest request, HttpServletResponse response)
         {
             this.request = request;
             this.response = response;
@@ -808,7 +835,46 @@ public class ProxyServlet extends HttpServlet
                 onResponseSuccess(request, response, result.getResponse());
             else
                 onResponseFailure(request, response, result.getResponse(), result.getFailure());
-            _log.debug("{} proxying complete", getRequestId(request));
+            if (_log.isDebugEnabled())
+                _log.debug("{} proxying complete", getRequestId(request));
+        }
+    }
+
+    protected class ProxyInputStreamContentProvider extends InputStreamContentProvider
+    {
+        private final Request proxyRequest;
+        private final HttpServletRequest request;
+
+        protected ProxyInputStreamContentProvider(Request proxyRequest, HttpServletRequest request, InputStream input)
+        {
+            super(input);
+            this.proxyRequest = proxyRequest;
+            this.request = request;
+        }
+
+        @Override
+        public long getLength()
+        {
+            return request.getContentLength();
+        }
+
+        @Override
+        protected ByteBuffer onRead(byte[] buffer, int offset, int length)
+        {
+            if (_log.isDebugEnabled())
+                _log.debug("{} proxying content to upstream: {} bytes", getRequestId(request), length);
+            return onRequestContent(proxyRequest, request, buffer, offset, length);
+        }
+
+        protected ByteBuffer onRequestContent(Request proxyRequest, final HttpServletRequest request, byte[] buffer, int offset, int length)
+        {
+            return super.onRead(buffer, offset, length);
+        }
+
+        @Override
+        protected void onReadFailure(Throwable failure)
+        {
+            onClientRequestFailure(proxyRequest, request, failure);
         }
     }
 }

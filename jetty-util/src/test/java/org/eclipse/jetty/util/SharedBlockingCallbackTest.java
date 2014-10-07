@@ -21,15 +21,39 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
+
 public class SharedBlockingCallbackTest
 {
-    final SharedBlockingCallback sbcb= new SharedBlockingCallback();
+    final AtomicInteger notComplete = new AtomicInteger();
+    final SharedBlockingCallback sbcb= new SharedBlockingCallback()
+    {
+        @Override
+        protected long getIdleTimeout()
+        {
+            return 150;
+        }
+
+        @Override
+        protected void notComplete(Blocker blocker)
+        {
+            super.notComplete(blocker);
+            notComplete.incrementAndGet();
+        }
+
+    };
     
     public SharedBlockingCallbackTest()
     {
@@ -46,7 +70,8 @@ public class SharedBlockingCallbackTest
             start=System.currentTimeMillis();
             blocker.block();
         }
-        Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(500L));     
+        Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(500L));  
+        Assert.assertEquals(0,notComplete.get());   
     }
     
     @Test
@@ -74,6 +99,7 @@ public class SharedBlockingCallbackTest
         }
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(10L)); 
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(1000L)); 
+        Assert.assertEquals(0,notComplete.get());   
     }
     
     @Test
@@ -95,7 +121,8 @@ public class SharedBlockingCallbackTest
             start=System.currentTimeMillis();
             Assert.assertEquals(ex,ee.getCause());
         }
-        Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(100L));     
+        Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(100L));    
+        Assert.assertEquals(0,notComplete.get());    
     }
     
     @Test
@@ -133,6 +160,7 @@ public class SharedBlockingCallbackTest
         }
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.greaterThan(10L)); 
         Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(1000L));
+        Assert.assertEquals(0,notComplete.get());   
     }
 
 
@@ -173,7 +201,59 @@ public class SharedBlockingCallbackTest
 
             blocker.succeeded();
             blocker.block();
-        };
-        Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(600L));   
+        }
+        Assert.assertThat(System.currentTimeMillis()-start,Matchers.lessThan(600L)); 
+        Assert.assertEquals(0,notComplete.get());     
+    }
+
+    @Test
+    public void testBlockerClose() throws Exception
+    {
+        try (Blocker blocker=sbcb.acquire())
+        {
+            SharedBlockingCallback.LOG.info("Blocker not complete "+blocker+" warning is expected...");
+        }
+        
+        Assert.assertEquals(1,notComplete.get());
+    }
+    
+    @Test
+    public void testBlockerTimeout() throws Exception
+    {
+        Blocker b0=null;
+        try
+        {
+            try (Blocker blocker=sbcb.acquire())
+            {
+                b0=blocker;
+                Thread.sleep(400);
+                blocker.block();
+            }
+            fail();
+        }
+        catch(IOException e)
+        {
+            Throwable cause = e.getCause();
+            assertThat(cause,instanceOf(TimeoutException.class));
+        }
+        
+        Assert.assertEquals(0,notComplete.get());
+        
+
+        try (Blocker blocker=sbcb.acquire())
+        {
+            assertThat(blocker,not(equalTo(b0)));
+            try
+            {
+                b0.succeeded();
+                fail();
+            }
+            catch(Exception e)
+            {
+                assertThat(e,instanceOf(IllegalStateException.class));
+                assertThat(e.getCause(),instanceOf(TimeoutException.class));
+            }
+            blocker.succeeded();
+        }
     }
 }

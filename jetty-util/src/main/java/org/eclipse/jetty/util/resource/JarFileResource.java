@@ -73,7 +73,8 @@ class JarFileResource extends JarResource
             {
                 try
                 {
-                    LOG.debug("Closing JarFile "+_jarFile.getName());
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Closing JarFile "+_jarFile.getName());
                     _jarFile.close();
                 }
                 catch ( IOException ioe )
@@ -268,7 +269,7 @@ class JarFileResource extends JarResource
                 //So, do one retry to drop a connection and get a fresh JarFile
                 LOG.warn("Retrying list:"+e);
                 LOG.debug(e);
-                release();
+                close();
                 list = listEntries();
             }
 

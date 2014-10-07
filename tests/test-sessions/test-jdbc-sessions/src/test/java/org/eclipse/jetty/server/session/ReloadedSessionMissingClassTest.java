@@ -104,7 +104,7 @@ public class ReloadedSessionMissingClassTest
                 ContentResponse response = client.GET("http://localhost:" + port1 + contextPath +"/bar?action=set");
                 
                 assertEquals( HttpServletResponse.SC_OK, response.getStatus());
-                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+                String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 String sessionId = (String)webApp.getServletContext().getAttribute("foo");
                 assertNotNull(sessionId);

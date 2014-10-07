@@ -96,13 +96,15 @@ public class Module
     /** List of xml configurations for this Module */
     private List<String> xmls;
     /** List of ini template lines */
-    private List<String> initialise;
+    private List<String> defaultConfig;
     /** List of library options for this Module */
     private List<String> libs;
     /** List of files for this Module */
     private List<String> files;
     /** List of jvm Args */
     private List<String> jvmArgs;
+    /** License lines */
+    private List<String> license;
 
     /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
     private boolean enabled = false;
@@ -213,9 +215,14 @@ public class Module
         return fileRef;
     }
 
-    public List<String> getInitialise()
+    public List<String> getDefaultConfig()
     {
-        return initialise;
+        return defaultConfig;
+    }
+
+    public boolean hasDefaultConfig()
+    {
+        return (defaultConfig != null) && (defaultConfig.size() > 0);
     }
 
     public List<String> getLibs()
@@ -258,6 +265,16 @@ public class Module
         return jvmArgs;
     }
 
+    public boolean hasLicense()
+    {
+        return license!=null && license.size()>0;
+    }
+    
+    public List<String> getLicense()
+    {
+        return license;
+    }
+    
     @Override
     public int hashCode()
     {
@@ -274,10 +291,11 @@ public class Module
         parentEdges = new HashSet<>();
         childEdges = new HashSet<>();
         xmls = new ArrayList<>();
-        initialise = new ArrayList<>();
+        defaultConfig = new ArrayList<>();
         libs = new ArrayList<>();
         files = new ArrayList<>();
         jvmArgs = new ArrayList<>();
+        license = new ArrayList<>();
 
         String name = basehome.toShortForm(file);
 
@@ -328,7 +346,7 @@ public class Module
                     {
                         if ("INI-TEMPLATE".equals(sectionType))
                         {
-                            initialise.add(line);
+                            defaultConfig.add(line);
                         }
                     }
                     else
@@ -344,11 +362,16 @@ public class Module
                             case "FILES":
                                 files.add(line);
                                 break;
+                            case "DEFAULTS":
                             case "INI-TEMPLATE":
-                                initialise.add(line);
+                                defaultConfig.add(line);
                                 break;
                             case "LIB":
                                 libs.add(line);
+                                break;
+                            case "LICENSE":
+                            case "LICENCE":
+                                license.add(line);
                                 break;
                             case "NAME":
                                 logicalName = line;
@@ -396,7 +419,10 @@ public class Module
     {
         StringBuilder str = new StringBuilder();
         str.append("Module[").append(logicalName);
-        str.append(",").append(fileRef);
+        if (!logicalName.equals(fileRef))
+        {
+            str.append(",file=").append(fileRef);
+        }
         if (enabled)
         {
             str.append(",enabled");
@@ -404,4 +430,5 @@ public class Module
         str.append(']');
         return str.toString();
     }
+
 }

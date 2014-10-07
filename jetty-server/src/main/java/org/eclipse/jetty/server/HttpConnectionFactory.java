@@ -16,17 +16,13 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.server;
-
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.Name;
 
-
-/* ------------------------------------------------------------ */
 /** A Connection Factory for HTTP Connections.
  * <p>Accepts connections either directly or via SSL and/or NPN chained connection factories.  The accepted 
  * {@link HttpConnection}s are configured by a {@link HttpConfiguration} instance that is either created by
@@ -35,16 +31,16 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;
+    private boolean _dispatchIO = true;
 
     public HttpConnectionFactory()
     {
         this(new HttpConfiguration());
-        setInputBufferSize(16384);
     }
 
     public HttpConnectionFactory(@Name("config") HttpConfiguration config)
     {
-        super(HttpVersion.HTTP_1_1.toString());
+        super(HttpVersion.HTTP_1_1.asString());
         _config=config;
         addBean(_config);
     }
@@ -55,10 +51,19 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _config;
     }
 
+    public boolean isDispatchIO()
+    {
+        return _dispatchIO;
+    }
+
+    public void setDispatchIO(boolean dispatchIO)
+    {
+        _dispatchIO = dispatchIO;
+    }
+
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return configure(new HttpConnection(_config, connector, endPoint), connector, endPoint);
+        return configure(new HttpConnection(_config, connector, endPoint, isDispatchIO()), connector, endPoint);
     }
-
 }

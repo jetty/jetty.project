@@ -31,6 +31,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.UsageException;
 
@@ -67,11 +68,11 @@ public class ConfigSources implements Iterable<ConfigSource>
         updateProps();
 
         // look for --include-jetty-dir entries
-        for (String arg : source.getArgs())
+        for (RawArgs.Entry arg : source.getArgs())
         {
             if (arg.startsWith("--include-jetty-dir"))
             {
-                String ref = getValue(arg);
+                String ref = getValue(arg.getLine());
                 String dirName = props.expand(ref);
                 Path dir = FS.toPath(dirName);
                 DirConfigSource dirsource = new DirConfigSource(ref,dir,sourceWeight.incrementAndGet(),true);

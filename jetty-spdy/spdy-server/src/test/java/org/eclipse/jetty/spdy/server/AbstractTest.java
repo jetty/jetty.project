@@ -22,6 +22,7 @@ package org.eclipse.jetty.spdy.server;
 import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.npn.server.NPNServerConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;

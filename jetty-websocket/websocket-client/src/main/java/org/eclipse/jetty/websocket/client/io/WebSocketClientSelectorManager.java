@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -54,7 +53,8 @@ public class WebSocketClientSelectorManager extends SelectorManager
     @Override
     protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
     {
-        LOG.debug("Connection Failed",ex);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Connection Failed",ex);
         ConnectPromise connect = (ConnectPromise)attachment;
         connect.failed(ex);
     }
@@ -67,7 +67,8 @@ public class WebSocketClientSelectorManager extends SelectorManager
     @Override
     public Connection newConnection(final SocketChannel channel, EndPoint endPoint, final Object attachment) throws IOException
     {
-        LOG.debug("newConnection({},{},{})",channel,endPoint,attachment);
+        if (LOG.isDebugEnabled())
+            LOG.debug("newConnection({},{},{})",channel,endPoint,attachment);
         ConnectPromise connectPromise = (ConnectPromise)attachment;
 
         try
@@ -114,7 +115,8 @@ public class WebSocketClientSelectorManager extends SelectorManager
     @Override
     protected EndPoint newEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey selectionKey) throws IOException
     {
-        LOG.debug("newEndPoint({}, {}, {})",channel,selectSet,selectionKey);
+        if (LOG.isDebugEnabled())
+            LOG.debug("newEndPoint({}, {}, {})",channel,selectSet,selectionKey);
         return new SelectChannelEndPoint(channel,selectSet,selectionKey,getScheduler(),policy.getIdleTimeout());
     }
 

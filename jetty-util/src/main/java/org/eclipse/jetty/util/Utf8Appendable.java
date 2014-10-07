@@ -98,6 +98,58 @@ public abstract class Utf8Appendable
         _state = UTF8_ACCEPT;
     }
 
+    
+    private void checkCharAppend() throws IOException
+    {
+        if (_state != UTF8_ACCEPT)
+        {
+            _appendable.append(REPLACEMENT);
+            int state=_state;
+            _state=UTF8_ACCEPT;
+            throw new NotUtf8Exception("char appended in state "+state);
+        }
+    }
+    
+    public void append(char c)
+    {
+        try
+        {
+            checkCharAppend();
+            _appendable.append(c); 
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+
+    public void append(String s)
+    {
+        try
+        {
+            checkCharAppend();
+            _appendable.append(s); 
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    public void append(String s,int offset,int length)
+    {
+        try
+        {
+            checkCharAppend();
+            _appendable.append(s,offset,offset+length); 
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException(e);
+        }
+    }
+    
+    
     public void append(byte b)
     {
         try

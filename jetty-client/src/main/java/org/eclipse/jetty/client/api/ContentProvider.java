@@ -18,13 +18,7 @@
 
 package org.eclipse.jetty.client.api;
 
-import java.io.Closeable;
-import java.io.InputStream;
 import java.nio.ByteBuffer;
-import java.util.Iterator;
-
-import org.eclipse.jetty.client.util.ByteBufferContentProvider;
-import org.eclipse.jetty.client.util.PathContentProvider;
 
 /**
  * {@link ContentProvider} provides a source of request content.

@@ -34,6 +34,7 @@ import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.Endpoint;
+import javax.websocket.EndpointConfig;
 import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
@@ -199,7 +200,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         return client;
     }
 
-    public EndpointMetadata getClientEndpointMetadata(Class<?> endpoint)
+    public EndpointMetadata getClientEndpointMetadata(Class<?> endpoint, EndpointConfig config)
     {
         EndpointMetadata metadata = null;
 
@@ -226,7 +227,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
                 // extends Endpoint
                 @SuppressWarnings("unchecked")
                 Class<? extends Endpoint> eendpoint = (Class<? extends Endpoint>)endpoint;
-                metadata = new SimpleEndpointMetadata(eendpoint);
+                metadata = new SimpleEndpointMetadata(eendpoint,config);
             }
             else
             {
@@ -313,7 +314,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     public EndpointInstance newClientEndpointInstance(Object endpoint, ClientEndpointConfig config)
     {
-        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass());
+        EndpointMetadata metadata = getClientEndpointMetadata(endpoint.getClass(),config);
         ClientEndpointConfig cec = config;
         if (config == null)
         {

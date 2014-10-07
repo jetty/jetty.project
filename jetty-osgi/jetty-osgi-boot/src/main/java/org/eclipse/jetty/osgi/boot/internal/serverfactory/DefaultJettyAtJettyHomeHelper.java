@@ -154,7 +154,12 @@ public class DefaultJettyAtJettyHomeHelper
         List<URL> configURLs = jettyHomeDir != null ? getJettyConfigurationURLs(jettyHomeDir) : getJettyConfigurationURLs(jettyHomeBundle, properties);
 
         LOG.info("Configuring the default jetty server with {}",configURLs);
-        LOG.info("JETTY.HOME="+properties.get(OSGiServerConstants.JETTY_HOME));
+        String home=properties.get(OSGiServerConstants.JETTY_HOME);
+        String base=properties.get(OSGiServerConstants.JETTY_BASE);
+        if (base==null)
+        	base=home;
+        LOG.info("JETTY.HOME="+home);
+        LOG.info("JETTY.BASE="+base);
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
         try
         {
@@ -166,16 +171,21 @@ public class DefaultJettyAtJettyHomeHelper
             Util.setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST));
             Util.setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT));
             Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL));
-
+            Util.setProperty(properties, OSGiServerConstants.JETTY_HOME, home);
+            Util.setProperty(properties, OSGiServerConstants.JETTY_BASE, base);
             Server server = ServerInstanceWrapper.configure(null, configURLs, properties);
-            //ensure jetty.home is set
-            server.setAttribute(OSGiServerConstants.JETTY_HOME, properties.get(OSGiServerConstants.JETTY_HOME));
+            
             
             //Register the default Server instance as an OSGi service.
             //The JettyServerServiceTracker will notice it and set it up to deploy bundles as wars etc
             bundleContext.registerService(Server.class.getName(), server, properties);
             LOG.info("Default jetty server configured");
             return server;
+        }
+        catch (Exception e)
+        {
+        	LOG.warn(e);
+        	throw e;
         }
         finally
         {

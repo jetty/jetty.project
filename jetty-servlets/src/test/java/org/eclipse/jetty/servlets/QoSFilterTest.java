@@ -18,16 +18,12 @@
 
 package org.eclipse.jetty.servlets;
 
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.net.URL;
 import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
-import javax.servlet.Servlet;
 import javax.servlet.ServletException;
 import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServlet;
@@ -64,14 +60,14 @@ public class QoSFilterTest
         _tester = new ServletTester();
         _tester.setContextPath("/context");
         _tester.addServlet(TestServlet.class, "/test");
-        TestServlet.__maxSleepers=0;
-        TestServlet.__sleepers=0;
+        TestServlet.__maxSleepers = 0;
+        TestServlet.__sleepers = 0;
 
         _connectors = new LocalConnector[NUM_CONNECTIONS];
-        for(int i = 0; i < _connectors.length; ++i)
+        for (int i = 0; i < _connectors.length; ++i)
             _connectors[i] = _tester.createLocalConnector();
 
-        _doneRequests = new CountDownLatch(NUM_CONNECTIONS*NUM_LOOPS);
+        _doneRequests = new CountDownLatch(NUM_CONNECTIONS * NUM_LOOPS);
 
         _tester.start();
     }
@@ -85,17 +81,17 @@ public class QoSFilterTest
     @Test
     public void testNoFilter() throws Exception
     {
-        for(int i = 0; i < NUM_CONNECTIONS; ++i )
+        for (int i = 0; i < NUM_CONNECTIONS; ++i)
         {
             new Thread(new Worker(i)).start();
         }
 
-        _doneRequests.await(10,TimeUnit.SECONDS);
+        _doneRequests.await(10, TimeUnit.SECONDS);
 
-        if (TestServlet.__maxSleepers<=MAX_QOS)
+        if (TestServlet.__maxSleepers <= MAX_QOS)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
-            Assert.assertThat(TestServlet.__maxSleepers,Matchers.lessThanOrEqualTo(NUM_CONNECTIONS));
+            Assert.assertThat(TestServlet.__maxSleepers, Matchers.lessThanOrEqualTo(NUM_CONNECTIONS));
     }
 
     @Test
@@ -103,19 +99,19 @@ public class QoSFilterTest
     {
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
-        holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, ""+MAX_QOS);
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, "" + MAX_QOS);
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
 
-        for(int i = 0; i < NUM_CONNECTIONS; ++i )
+        for (int i = 0; i < NUM_CONNECTIONS; ++i)
         {
             new Thread(new Worker(i)).start();
         }
 
-        _doneRequests.await(10,TimeUnit.SECONDS);
-        if (TestServlet.__maxSleepers<MAX_QOS)
+        _doneRequests.await(10, TimeUnit.SECONDS);
+        if (TestServlet.__maxSleepers < MAX_QOS)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
-            Assert.assertEquals(TestServlet.__maxSleepers,MAX_QOS);
+            Assert.assertEquals(TestServlet.__maxSleepers, MAX_QOS);
     }
 
     @Test
@@ -123,22 +119,25 @@ public class QoSFilterTest
     {
         FilterHolder holder = new FilterHolder(QoSFilter2.class);
         holder.setAsyncSupported(true);
-        holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, ""+MAX_QOS);
-        _tester.getContext().getServletHandler().addFilterWithMapping(holder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        for(int i = 0; i < NUM_CONNECTIONS; ++i )
+        holder.setInitParameter(QoSFilter.MAX_REQUESTS_INIT_PARAM, String.valueOf(MAX_QOS));
+        _tester.getContext().getServletHandler().addFilterWithMapping(holder, "/*", EnumSet.of(DispatcherType.REQUEST, DispatcherType.ASYNC));
+
+        for (int i = 0; i < NUM_CONNECTIONS; ++i)
         {
             new Thread(new Worker2(i)).start();
         }
 
-        _doneRequests.await(20,TimeUnit.SECONDS);
-        if (TestServlet.__maxSleepers<MAX_QOS)
+        _doneRequests.await(20, TimeUnit.SECONDS);
+        if (TestServlet.__maxSleepers < MAX_QOS)
             LOG.warn("TEST WAS NOT PARALLEL ENOUGH!");
         else
-            Assert.assertEquals(TestServlet.__maxSleepers,MAX_QOS);
+            Assert.assertEquals(TestServlet.__maxSleepers, MAX_QOS);
     }
 
-    class Worker implements Runnable {
+    class Worker implements Runnable
+    {
         private int _num;
+
         public Worker(int num)
         {
             _num = num;
@@ -147,32 +146,34 @@ public class QoSFilterTest
         @Override
         public void run()
         {
-            for (int i=0;i<NUM_LOOPS;i++)
+            for (int i = 0; i < NUM_LOOPS; i++)
             {
                 HttpTester.Request request = HttpTester.newRequest();
 
                 request.setMethod("GET");
                 request.setHeader("host", "tester");
-                request.setURI("/context/test?priority="+(_num%QoSFilter.__DEFAULT_MAX_PRIORITY));
-                request.setHeader("num", _num+"");
+                request.setURI("/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY));
+                request.setHeader("num", _num + "");
                 try
                 {
                     String responseString = _connectors[_num].getResponses(BufferUtil.toString(request.generate()));
-                    if(responseString.indexOf("HTTP")!=-1)
+                    if (responseString.contains("HTTP"))
                     {
                         _doneRequests.countDown();
                     }
                 }
                 catch (Exception x)
                 {
-                    assertTrue(false);
+                    Assert.assertTrue(false);
                 }
             }
         }
     }
 
-    class Worker2 implements Runnable {
+    class Worker2 implements Runnable
+    {
         private int _num;
+
         public Worker2(int num)
         {
             _num = num;
@@ -181,28 +182,25 @@ public class QoSFilterTest
         @Override
         public void run()
         {
-            URL url=null;
+            URL url = null;
             try
             {
                 String addr = _tester.createConnector(true);
-                for (int i=0;i<NUM_LOOPS;i++)
+                for (int i = 0; i < NUM_LOOPS; i++)
                 {
-                    url=new URL(addr+"/context/test?priority="+(_num%QoSFilter.__DEFAULT_MAX_PRIORITY)+"&n="+_num+"&l="+i);
-                    // System.err.println(_num+"-"+i+" Try "+url);
+                    url = new URL(addr + "/context/test?priority=" + (_num % QoSFilter.__DEFAULT_MAX_PRIORITY) + "&n=" + _num + "&l=" + i);
                     url.getContent();
                     _doneRequests.countDown();
-                    // System.err.println(_num+"-"+i+" Got "+IO.toString(in)+" "+_doneRequests.getCount());
                 }
             }
-            catch(Exception e)
+            catch (Exception e)
             {
-                LOG.warn(String.valueOf(url));
-                LOG.debug(e);
+                LOG.debug("Request " + url + " failed", e);
             }
         }
     }
 
-    public static class TestServlet extends HttpServlet implements Servlet
+    public static class TestServlet extends HttpServlet
     {
         private static int __sleepers;
         private static int __maxSleepers;
@@ -212,21 +210,18 @@ public class QoSFilterTest
         {
             try
             {
-                synchronized(TestServlet.class)
+                synchronized (TestServlet.class)
                 {
                     __sleepers++;
-                    if(__sleepers > __maxSleepers)
+                    if (__sleepers > __maxSleepers)
                         __maxSleepers = __sleepers;
                 }
 
                 Thread.sleep(50);
 
-                synchronized(TestServlet.class)
+                synchronized (TestServlet.class)
                 {
-                    // System.err.println(_count++);
                     __sleepers--;
-                    if(__sleepers > __maxSleepers)
-                        __maxSleepers = __sleepers;
                 }
 
                 response.setContentType("text/plain");
@@ -234,7 +229,6 @@ public class QoSFilterTest
             }
             catch (InterruptedException e)
             {
-                e.printStackTrace();
                 response.sendError(500);
             }
         }
@@ -246,7 +240,7 @@ public class QoSFilterTest
         public int getPriority(ServletRequest request)
         {
             String p = request.getParameter("priority");
-            if (p!=null)
+            if (p != null)
                 return Integer.parseInt(p);
             return 0;
         }

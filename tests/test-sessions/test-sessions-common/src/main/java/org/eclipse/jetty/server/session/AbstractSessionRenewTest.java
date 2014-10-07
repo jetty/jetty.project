@@ -70,7 +70,7 @@ public abstract class AbstractSessionRenewTest
             ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
 
-            String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+            String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
             assertFalse(testListener.isCalled());
 
@@ -79,7 +79,7 @@ public abstract class AbstractSessionRenewTest
             request.header("Cookie", sessionCookie);
             ContentResponse renewResponse = request.send();
             assertEquals(HttpServletResponse.SC_OK,renewResponse.getStatus());
-            String renewSessionCookie = renewResponse.getHeaders().getStringField("Set-Cookie");
+            String renewSessionCookie = renewResponse.getHeaders().get("Set-Cookie");
             assertNotNull(renewSessionCookie);
             assertNotSame(sessionCookie, renewSessionCookie);
             assertTrue(testListener.isCalled());

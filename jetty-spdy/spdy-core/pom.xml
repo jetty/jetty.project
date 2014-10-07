@@ -3,7 +3,7 @@
     <parent>
         <groupId>org.eclipse.jetty.spdy</groupId>
         <artifactId>spdy-parent</artifactId>
-        <version>9.2.0-SNAPSHOT</version>
+        <version>9.3.0-SNAPSHOT</version>
     </parent>
 
     <modelVersion>4.0.0</modelVersion>
@@ -13,6 +13,27 @@
     <properties>
         <bundle-symbolic-name>${project.groupId}.core</bundle-symbolic-name>
     </properties>
+    <build>
+    <plugins>
+       <plugin>
+          <groupId>org.apache.felix</groupId>
+          <artifactId>maven-bundle-plugin</artifactId>
+          <extensions>true</extensions>
+          <executions>
+              <execution>
+                  <goals>
+                      <goal>manifest</goal>
+                  </goals>
+                  <configuration>
+                      <instructions>
+                          <Export-Package>org.eclipse.jetty.spdy.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+                      </instructions>
+                    </configuration>
+                 </execution>
+            </executions>
+      </plugin>
+    </plugins>
+   </build>
 
     <dependencies>
         <dependency>

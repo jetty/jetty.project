@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 
@@ -79,17 +80,9 @@ public class IdleTimeoutHandler extends HandlerWrapper
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        HttpConnection connection = HttpConnection.getCurrentConnection();
-        final EndPoint endp = connection==null?null:connection.getEndPoint();
-        
-        final long idle_timeout;
-        if (endp==null)
-            idle_timeout=-1;
-        else
-        {
-            idle_timeout=endp.getIdleTimeout();
-            endp.setIdleTimeout(_idleTimeoutMs);
-        }
+        final HttpChannel channel = baseRequest.getHttpChannel();
+        final long idle_timeout=baseRequest.getHttpChannel().getIdleTimeout();
+        channel.setIdleTimeout(_idleTimeoutMs);
         
         try
         {
@@ -97,38 +90,35 @@ public class IdleTimeoutHandler extends HandlerWrapper
         }
         finally
         {
-            if (endp!=null)
+            if (_applyToAsync && request.isAsyncStarted())
             {
-                if (_applyToAsync && request.isAsyncStarted())
+                request.getAsyncContext().addListener(new AsyncListener()
                 {
-                    request.getAsyncContext().addListener(new AsyncListener()
+                    @Override
+                    public void onTimeout(AsyncEvent event) throws IOException
+                    {                            
+                    }
+
+                    @Override
+                    public void onStartAsync(AsyncEvent event) throws IOException
                     {
-                        @Override
-                        public void onTimeout(AsyncEvent event) throws IOException
-                        {                            
-                        }
-                        
-                        @Override
-                        public void onStartAsync(AsyncEvent event) throws IOException
-                        {
-                        }
-                        
-                        @Override
-                        public void onError(AsyncEvent event) throws IOException
-                        {
-                            endp.setIdleTimeout(idle_timeout);
-                        }
-                        
-                        @Override
-                        public void onComplete(AsyncEvent event) throws IOException
-                        {
-                            endp.setIdleTimeout(idle_timeout);
-                        }
-                    });
-                }
-                else 
-                    endp.setIdleTimeout(idle_timeout);
+                    }
+
+                    @Override
+                    public void onError(AsyncEvent event) throws IOException
+                    {
+                        channel.setIdleTimeout(idle_timeout);
+                    }
+
+                    @Override
+                    public void onComplete(AsyncEvent event) throws IOException
+                    {
+                        channel.setIdleTimeout(idle_timeout);
+                    }
+                });
             }
+            else 
+                channel.setIdleTimeout(idle_timeout);
         }
     }
 }

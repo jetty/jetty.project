@@ -1,5 +1,4 @@
-This is a source checkout of the Jetty webserver.
-
+This is a source checkout of the Eclipse Jetty webserver.
 
 To build, use:
 

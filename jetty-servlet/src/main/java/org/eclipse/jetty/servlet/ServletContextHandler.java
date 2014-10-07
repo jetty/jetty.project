@@ -35,8 +35,6 @@ import javax.servlet.Filter;
 import javax.servlet.FilterRegistration;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.Servlet;
-import javax.servlet.ServletContainerInitializer;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletContextEvent;
 import javax.servlet.ServletContextListener;
 import javax.servlet.ServletException;
@@ -290,9 +288,9 @@ public class ServletContextHandler extends ContextHandler
                         decorator.decorate(holder.getListener());
                     }
                 }
-    	    }
-    	}
-    	
+            }
+        }
+        
         super.startContext();
 
         // OK to Initialize servlet handler now that all relevant object trees have been started

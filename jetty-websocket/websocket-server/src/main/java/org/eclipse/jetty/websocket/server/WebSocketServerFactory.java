@@ -70,6 +70,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
 
+    private final ClassLoader contextClassloader;
     private final Map<Integer, WebSocketHandshake> handshakes = new HashMap<>();
     /**
      * Have the factory maintain 1 and only 1 scheduler. All connections share this scheduler.
@@ -106,6 +107,8 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         addBean(scheduler);
         addBean(bufferPool);
+        
+        this.contextClassloader = Thread.currentThread().getContextClassLoader();
 
         this.registeredSocketClasses = new ArrayList<>();
 
@@ -151,8 +154,10 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public boolean acceptWebSocket(WebSocketCreator creator, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
         try
         {
+            Thread.currentThread().setContextClassLoader(contextClassloader);
             ServletUpgradeRequest sockreq = new ServletUpgradeRequest(request);
             ServletUpgradeResponse sockresp = new ServletUpgradeResponse(response);
 
@@ -181,6 +186,10 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         catch (URISyntaxException e)
         {
             throw new IOException("Unable to accept websocket due to mangled URI", e);
+        } 
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(old);
         }
     }
 
@@ -504,16 +513,19 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         EndPoint endp = http.getEndPoint();
         Executor executor = http.getConnector().getExecutor();
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
-        
+
         // Setup websocket connection
-        WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool);
+        WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool, http.isDispatchIO());
 
         extensionStack.setPolicy(driver.getPolicy());
         extensionStack.configure(wsConnection.getParser());
         extensionStack.configure(wsConnection.getGenerator());
 
-        LOG.debug("HttpConnection: {}", http);
-        LOG.debug("WebSocketConnection: {}", wsConnection);
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("HttpConnection: {}", http);
+            LOG.debug("WebSocketConnection: {}", wsConnection);
+        }
 
         // Setup Session
         WebSocketSession session = createSession(request.getRequestURI(), driver, wsConnection);
@@ -553,11 +565,15 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         // Tell jetty about the new upgraded connection
         request.setServletAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE, wsConnection);
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("Handshake Response: {}", handshaker);
+
         // Process (version specific) handshake response
-        LOG.debug("Handshake Response: {}", handshaker);
         handshaker.doHandshakeResponse(request, response);
 
-        LOG.debug("Websocket upgrade {} {} {} {}", request.getRequestURI(), version, response.getAcceptedSubProtocol(), wsConnection);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Websocket upgrade {} {} {} {}", request.getRequestURI(), version, response.getAcceptedSubProtocol(), wsConnection);
+
         return true;
     }
 }

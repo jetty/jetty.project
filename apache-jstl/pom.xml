@@ -2,33 +2,19 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.2.0-SNAPSHOT</version>
+    <version>9.3.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>apache-jstl</artifactId>
   <name>Apache :: JSTL module</name>
   <url>http://tomcat.apache.org/taglibs/standard/</url>
   <packaging>jar</packaging>
+  <properties>
+   <bundle-symbolic-name>${project.groupId}.apache.jstl</bundle-symbolic-name>
+  </properties>
 
   <build>
     <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptorRefs>
-                <descriptorRef>config</descriptorRef>
-              </descriptorRefs>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
     </plugins>
   </build>
 

@@ -18,12 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.io.BufferedInputStream;
 import java.io.BufferedOutputStream;
 import java.io.IOException;
@@ -51,6 +45,12 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 public class SelectChannelEndPointTest
 {
@@ -122,7 +122,7 @@ public class SelectChannelEndPointTest
 
         public TestConnection(EndPoint endp)
         {
-            super(endp, _threadPool);
+            super(endp, _threadPool, true);
         }
 
         @Override
@@ -145,6 +145,7 @@ public class SelectChannelEndPointTest
                     progress = false;
 
                     // Fill the input buffer with everything available
+                    BufferUtil.compact(_in);
                     if (BufferUtil.isFull(_in))
                         throw new IllegalStateException("FULL " + BufferUtil.toDetailString(_in));
                     int filled = _endp.fill(_in);

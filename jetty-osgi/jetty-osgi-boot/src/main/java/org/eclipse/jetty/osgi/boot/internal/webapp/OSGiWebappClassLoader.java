@@ -97,6 +97,12 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
     
     
     
+    @Override
+    public Class<?> loadClass(String name) throws ClassNotFoundException
+    {
+        return super.loadClass(name);
+    }
+
     /* ------------------------------------------------------------ */
     /**
      * Returns the <code>Bundle</code> that defined this web-application.

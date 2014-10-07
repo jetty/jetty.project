@@ -60,12 +60,12 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     {
         try
         {
-            registerVisitor("env-entry", getClass().getDeclaredMethod("visitEnvEntry", __signature));
-            registerVisitor("resource-ref", getClass().getDeclaredMethod("visitResourceRef", __signature));
-            registerVisitor("resource-env-ref", getClass().getDeclaredMethod("visitResourceEnvRef", __signature));
-            registerVisitor("message-destination-ref", getClass().getDeclaredMethod("visitMessageDestinationRef", __signature));
-            registerVisitor("post-construct", getClass().getDeclaredMethod("visitPostConstruct", __signature));
-            registerVisitor("pre-destroy", getClass().getDeclaredMethod("visitPreDestroy", __signature));
+            registerVisitor("env-entry", getClass().getMethod("visitEnvEntry", __signature));
+            registerVisitor("resource-ref", getClass().getMethod("visitResourceRef", __signature));
+            registerVisitor("resource-env-ref", getClass().getMethod("visitResourceEnvRef", __signature));
+            registerVisitor("message-destination-ref", getClass().getMethod("visitMessageDestinationRef", __signature));
+            registerVisitor("post-construct", getClass().getMethod("visitPostConstruct", __signature));
+            registerVisitor("pre-destroy", getClass().getMethod("visitPreDestroy", __signature));
         }
         catch (Exception e)
         {

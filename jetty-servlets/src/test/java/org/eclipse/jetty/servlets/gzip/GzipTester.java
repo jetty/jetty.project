@@ -283,6 +283,27 @@ public class GzipTester
      */
     public void assertIsResponseNotGzipFiltered(String requestedFilename, String testResourceSha1Sum, String expectedContentType) throws Exception
     {
+        assertIsResponseNotGzipFiltered(requestedFilename, testResourceSha1Sum, expectedContentType,null);
+    }
+    
+    /**
+     * Makes sure that the response contains an unfiltered file contents.
+     * <p>
+     * This is used to test exclusions and passthroughs in the GzipFilter.
+     * <p>
+     * An example is to test that it is possible to configure GzipFilter to not recompress content that shouldn't be
+     * compressed by the GzipFilter.
+     *
+     * @param requestedFilename
+     *            the filename used to on the GET request,.
+     * @param testResourceSha1Sum
+     *            the sha1sum file that contains the SHA1SUM checksum that will be used to verify that the response
+     *            contents are what is intended.
+     * @param expectedContentType
+     * @param expectedContentEncoding can be non-null in some circumstances, eg when dealing with pre-gzipped .svgz files
+     */
+    public void assertIsResponseNotGzipFiltered(String requestedFilename, String testResourceSha1Sum, String expectedContentType, String expectedContentEncoding) throws Exception
+    {
         //System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
@@ -304,7 +325,10 @@ public class GzipTester
         String prefix = requestedFilename + " / Response";
         Assert.assertThat(prefix + ".status",response.getStatus(),is(HttpServletResponse.SC_OK));
         Assert.assertThat(prefix + ".header[Content-Length]",response.get("Content-Length"),notNullValue());
-        Assert.assertThat(prefix + ".header[Content-Encoding] (should not be recompressed by GzipFilter)",response.get("Content-Encoding"),nullValue());
+        Assert.assertThat(prefix + ".header[Content-Encoding] (should not be recompressed by GzipFilter)",response.get("Content-Encoding"),
+                          expectedContentEncoding == null? nullValue() : notNullValue());
+        if (expectedContentEncoding != null)
+            Assert.assertThat(prefix + ".header[Content-Encoding]",response.get("Content-Encoding"),is(expectedContentEncoding));
         Assert.assertThat(prefix + ".header[Content-Type] (should have a Content-Type associated with it)",response.get("Content-Type"),notNullValue());
         Assert.assertThat(prefix + ".header[Content-Type]",response.get("Content-Type"),is(expectedContentType));
 
@@ -339,7 +363,7 @@ public class GzipTester
         {
             String name = names.nextElement();
             String value = message.get(name);
-            //System.out.printf("  [%s] = %s%n",name,value);
+           //System.out.printf("  [%s] = %s%n",name,value);
         }
     }
 
@@ -371,7 +395,6 @@ public class GzipTester
         String uri = "/context/"+filename;
         HttpTester.Response response = executeRequest(method,uri);
         assertResponseHeaders(expectedFilesize,status,response);
-
         // Assert that the contents are what we expect.
         if (filename != null)
         {
@@ -611,6 +634,11 @@ public class GzipTester
     public void setUserAgent(String ua)
     {
         this.userAgent = ua;
+    }
+    
+    public void addMimeType (String extension, String mimetype)
+    {
+        this.tester.getContext().getMimeTypes().addMimeMapping(extension, mimetype);
     }
 
     public void start() throws Exception

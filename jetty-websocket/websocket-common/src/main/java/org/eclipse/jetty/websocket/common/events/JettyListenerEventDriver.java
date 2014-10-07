@@ -82,7 +82,8 @@ public class JettyListenerEventDriver extends AbstractEventDriver
     @Override
     public void onConnect()
     {
-        LOG.debug("onConnect()");
+        if (LOG.isDebugEnabled())
+            LOG.debug("onConnect()");
         listener.onWebSocketConnect(session);
     }
 

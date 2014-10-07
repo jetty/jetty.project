@@ -38,6 +38,9 @@ import java.util.regex.Pattern;
  */
 public class Modules implements Iterable<Module>
 {
+    private final BaseHome baseHome;
+    private final StartArgs args;
+    
     private Map<String, Module> modules = new HashMap<>();
     /*
      * modules that may appear in the resolved graph but are undefined in the module system
@@ -47,6 +50,12 @@ public class Modules implements Iterable<Module>
     private Set<String> missingModules = new HashSet<String>();
 
     private int maxDepth = -1;
+    
+    public Modules(BaseHome basehome, StartArgs args)
+    {
+        this.baseHome = basehome;
+        this.args = args;
+    }
 
     private Set<String> asNameSet(Set<Module> moduleSet)
     {
@@ -106,8 +115,10 @@ public class Modules implements Iterable<Module>
     /**
      * Using the provided dependencies, build the module graph
      */
-    public void buildGraph()
+    public void buildGraph() throws FileNotFoundException, IOException
     {
+        normalizeDependencies();
+        
         // Connect edges
         for (Module module : modules.values())
         {
@@ -118,9 +129,13 @@ public class Modules implements Iterable<Module>
                 if (parent == null)
                 {
                     if (parentName.contains("${"))
+                    {
                         StartLog.debug("module not found [%s]%n",parentName);
+                    }
                     else
+                    {
                         StartLog.warn("module not found [%s]%n",parentName);
+                    }
                 }
                 else
                 {
@@ -250,19 +265,42 @@ public class Modules implements Iterable<Module>
         }
     }
 
-    public void enable(String name, List<String> sources)
+    public void enable(String name) throws IOException
+    {
+        List<String> empty = Collections.emptyList();
+        enable(name,empty);
+    }
+    
+    public void enable(String name, List<String> sources) throws IOException
     {
         if (name.contains("*"))
         {
             // A regex!
             Pattern pat = Pattern.compile(name);
-            for (Map.Entry<String, Module> entry : modules.entrySet())
+            List<Module> matching = new ArrayList<>();
+            do
             {
-                if (pat.matcher(entry.getKey()).matches())
+                matching.clear();
+                
+                // find matching entries that are not enabled
+                for (Map.Entry<String, Module> entry : modules.entrySet())
                 {
-                    enableModule(entry.getValue(),sources);
+                    if (pat.matcher(entry.getKey()).matches())
+                    {
+                        if (!entry.getValue().isEnabled())
+                        {
+                            matching.add(entry.getValue());
+                        }
+                    }
+                }
+                
+                // enable them
+                for (Module module : matching)
+                {
+                    enableModule(module,sources);
                 }
             }
+            while (!matching.isEmpty());
         }
         else
         {
@@ -276,16 +314,53 @@ public class Modules implements Iterable<Module>
         }
     }
 
-    private void enableModule(Module module, List<String> sources)
+    private void enableModule(Module module, List<String> sources) throws IOException
     {
+        // Always add the sources
+        if (sources != null)
+            module.addSources(sources);
+        
+        // If already enabled, nothing else to do
+        if (module.isEnabled())
+        {
+            StartLog.debug("Enabled  module: %s (via %s)",module.getName(),Main.join(sources,", "));
+            return;
+        }
+        
         StartLog.debug("Enabling module: %s (via %s)",module.getName(),Main.join(sources,", "));
         module.setEnabled(true);
-        if (sources != null)
+        args.parseModule(module);
+        module.expandProperties(args.getProperties());
+        
+        // enable any parents that haven't been enabled (yet)
+        Set<String> parentNames = new HashSet<>();
+        parentNames.addAll(module.getParentNames());
+        for(String name: parentNames)
         {
-            module.addSources(sources);
+            StartLog.debug("Enable parent '%s' of module: %s",name,module.getName());
+            Module parent = modules.get(name);
+            if (parent == null)
+            {
+                // parent module doesn't exist, yet
+                Path file = baseHome.getPath("modules/" + name + ".mod");
+                if (FS.canReadFile(file))
+                {
+                    parent = registerModule(file);
+                    updateParentReferencesTo(parent);
+                }
+                else
+                {
+                    StartLog.debug("Missing module definition: [ Mod: %s | File: %s ]",name,file);
+                    missingModules.add(name);
+                }
+            }
+            if (parent != null)
+            {
+                enableModule(parent,null);
+            }
         }
     }
-
+    
     private void findChildren(Module module, Set<Module> ret)
     {
         ret.add(module);
@@ -372,32 +447,36 @@ public class Modules implements Iterable<Module>
         return module;
     }
 
-    public void registerParentsIfMissing(BaseHome basehome, StartArgs args, Module module) throws IOException
+    public void registerParentsIfMissing(Module module) throws IOException
     {
         Set<String> parents = new HashSet<>(module.getParentNames());
         for (String name : parents)
         {
             if (!modules.containsKey(name))
             {
-                Path file = basehome.getPath("modules/" + name + ".mod");
+                Path file = baseHome.getPath("modules/" + name + ".mod");
                 if (FS.canReadFile(file))
                 {
-                    Module parent = registerModule(basehome,args,file);
+                    Module parent = registerModule(file);
                     updateParentReferencesTo(parent);
-                    registerParentsIfMissing(basehome, args, parent);
+                    registerParentsIfMissing(parent);
                 }
             }
         }
     }
     
-    public void registerAll(BaseHome basehome, StartArgs args) throws IOException
+    public void registerAll() throws IOException
     {
-        for (Path path : basehome.getPaths("modules/*.mod"))
+        for (Path path : baseHome.getPaths("modules/*.mod"))
         {
-            registerModule(basehome,args,path);
+            registerModule(path);
         }
-
-        // load missing post-expanded dependent modules
+    }
+    
+    // load missing post-expanded dependent modules
+    private void normalizeDependencies() throws FileNotFoundException, IOException
+    {
+        Set<String> expandedModules = new HashSet<>();
         boolean done = false;
         while (!done)
         {
@@ -408,41 +487,45 @@ public class Modules implements Iterable<Module>
             {
                 for (String parent : m.getParentNames())
                 {
-                    if (modules.containsKey(parent) || missingModules.contains(parent))
+                    String expanded = args.getProperties().expand(parent);
+                    if (modules.containsKey(expanded) || missingModules.contains(parent) || expandedModules.contains(parent))
                     {
                         continue; // found. skip it.
                     }
                     done = false;
+                    StartLog.debug("Missing parent module %s == %s for %s",parent,expanded,m);
                     missingParents.add(parent);
                 }
             }
 
             for (String missingParent : missingParents)
             {
-                Path file = basehome.getPath("modules/" + missingParent + ".mod");
+                String expanded = args.getProperties().expand(missingParent);
+                Path file = baseHome.getPath("modules/" + expanded + ".mod");
                 if (FS.canReadFile(file))
                 {
-                    Module module = registerModule(basehome,args,file);
+                    Module module = registerModule(file);
                     updateParentReferencesTo(module);
+                    if (!expanded.equals(missingParent))
+                        expandedModules.add(missingParent);
                 }
                 else
                 {
-                    StartLog.debug("Missing module definition: [ Mod: %s | File: %s]",missingParent,file);
+                    StartLog.debug("Missing module definition: %s == %s",missingParent,expanded);
                     missingModules.add(missingParent);
                 }
             }
         }
     }
 
-    private Module registerModule(BaseHome basehome, StartArgs args, Path file) throws FileNotFoundException, IOException
+    private Module registerModule(Path file) throws FileNotFoundException, IOException
     {
         if (!FS.canReadFile(file))
         {
             throw new IOException("Cannot read file: " + file);
         }
-        StartLog.debug("Registering Module: %s",basehome.toShortForm(file));
-        Module module = new Module(basehome,file);
-        module.expandProperties(args.getProperties());
+        StartLog.debug("Registering Module: %s",baseHome.toShortForm(file));
+        Module module = new Module(baseHome,file);
         return register(module);
     }
 
@@ -485,7 +568,7 @@ public class Modules implements Iterable<Module>
                     StartLog.warn("** Unable to continue, required dependency missing. [%s]",missing);
                     StartLog.warn("** As configured, Jetty is unable to start due to a missing enabled module dependency.");
                     StartLog.warn("** This may be due to a transitive dependency akin to spdy on npn, which resolves based on the JDK in use.");
-                    return Collections.emptyList();
+                    throw new UsageException(UsageException.ERR_BAD_ARG, "Missing referenced dependency: " + missing);
                 }
             }
         }

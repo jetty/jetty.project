@@ -77,7 +77,6 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     protected void doStart() throws Exception
     {
         super.doStart();
-        LOG.debug("doStart");
 
         // Wire up Extensions
         if ((extensions != null) && (extensions.size() > 0))
@@ -225,7 +224,9 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
      */
     public void negotiate(List<ExtensionConfig> configs)
     {
-        LOG.debug("Extension Configs={}",configs);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Extension Configs={}",configs);
+
         this.extensions = new ArrayList<>();
 
         String rsvClaims[] = new String[3];
@@ -260,7 +261,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             extensions.add(ext);
             addBean(ext);
 
-            LOG.debug("Adding Extension: {}",config);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Adding Extension: {}",config);
 
             // Record RSV Claims
             if (ext.isRsv1User())
@@ -282,7 +284,8 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         FrameEntry entry = new FrameEntry(frame,callback,batchMode);
-        LOG.debug("Queuing {}",entry);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queuing {}",entry);
         entries.offer(entry);
         flusher.iterate();
     }
@@ -377,20 +380,30 @@ public class ExtensionStack extends ContainerLifeCycle implements IncomingFrames
             current = entries.poll();
             if (current == null)
             {
-                LOG.debug("Entering IDLE");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Entering IDLE");
                 return Action.IDLE;
             }
-            LOG.debug("Processing {}",current);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Processing {}",current);
             nextOutgoing.outgoingFrame(current.frame,this,current.batchMode);
             return Action.SCHEDULED;
         }
 
         @Override
-        protected void completed()
+        protected void onCompleteSuccess()
         {
             // This IteratingCallback never completes.
         }
-
+        
+        @Override
+        protected void onCompleteFailure(Throwable x)
+        {
+            // This IteratingCallback never fails.
+            // The callback are those provided by WriteCallback (implemented
+            // below) and even in case of writeFailed() we call succeeded().
+        }
+        
         @Override
         public void writeSuccess()
         {

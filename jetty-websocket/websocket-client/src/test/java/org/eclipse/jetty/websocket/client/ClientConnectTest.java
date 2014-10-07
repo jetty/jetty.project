@@ -18,10 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 import java.io.IOException;
 import java.net.ConnectException;
@@ -40,12 +37,11 @@ import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.UpgradeException;
 import org.eclipse.jetty.websocket.common.AcceptHash;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -71,8 +67,8 @@ public class ClientConnectTest
         Throwable cause = e.getCause();
         if(!errorClass.isInstance(cause)) 
         {
-        	cause.printStackTrace(System.err);
-        	Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
+                cause.printStackTrace(System.err);
+                Assert.assertThat("ExecutionException.cause",cause,instanceOf(errorClass));
         }
 
         // Validate websocket captured cause
@@ -311,7 +307,6 @@ public class ClientConnectTest
     }
 
     @Test
-    @Ignore("Opened bug 399525")
     public void testConnectionNotAccepted() throws Exception
     {
         JettyTrackingSocket wsocket = new JettyTrackingSocket();
@@ -329,7 +324,6 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-            // FIXME: Connect Timeout Error?
             assertExpectedError(e,wsocket,UpgradeException.class);
             // Possible Passing Path (active session wait timeout)
             wsocket.assertNotOpened();
@@ -365,15 +359,15 @@ public class ClientConnectTest
         }
         catch (ExecutionException e)
         {
-        	if(OS.IS_WINDOWS) 
-        	{
-        		// On windows, this is a SocketTimeoutException
-        		assertExpectedError(e, wsocket, SocketTimeoutException.class);
-        	} else
-        	{
-	            // Expected path - java.net.ConnectException
-	            assertExpectedError(e,wsocket,ConnectException.class);
-        	}
+                if(OS.IS_WINDOWS) 
+                {
+                        // On windows, this is a SocketTimeoutException
+                        assertExpectedError(e, wsocket, SocketTimeoutException.class);
+                } else
+                {
+                    // Expected path - java.net.ConnectException
+                    assertExpectedError(e,wsocket,ConnectException.class);
+                }
         }
     }
 

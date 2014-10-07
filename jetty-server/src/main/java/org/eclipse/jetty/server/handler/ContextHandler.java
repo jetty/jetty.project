@@ -36,7 +36,6 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
-import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -65,9 +64,9 @@ import javax.servlet.descriptor.JspConfigDescriptor;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
@@ -100,7 +99,9 @@ import org.eclipse.jetty.util.resource.Resource;
  * and org.eclipse.jetty.server.Request.maxFormContentSize.  These can also be configured with {@link #setMaxFormContentSize(int)} and {@link #setMaxFormKeys(int)}
  * <p>
  * This servers executore is made available via a context attributed "org.eclipse.jetty.server.Executor".
- *
+ * <p>
+ * By default, the context is created with alias checkers for {@link AllowSymLinkAliasChecker} (unix only) and {@link ApproveNonExistentDirectoryAliases}. 
+ * If these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
  * @org.apache.xbean.XBean description="Creates a basic HTTP context"
  */
 @ManagedObject("URI Context")
@@ -108,7 +109,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 {
     public final static int SERVLET_MAJOR_VERSION=3;
     public final static int SERVLET_MINOR_VERSION=0;
-    public static final Class[] SERVLET_LISTENER_TYPES = new Class[] {ServletContextListener.class,
+    public static final Class<?>[] SERVLET_LISTENER_TYPES = new Class[] {ServletContextListener.class,
                                                                       ServletContextAttributeListener.class,
                                                                       ServletRequestListener.class,
                                                                       ServletRequestAttributeListener.class};
@@ -194,11 +195,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      */
     public ContextHandler()
     {
-        super();
-        _scontext = new Context();
-        _attributes = new AttributesMap();
-        _initParams = new HashMap<String, String>();
-        addAliasCheck(new ApproveNonExistentDirectoryAliases());
+        this((Context)null);
     }
 
     /* ------------------------------------------------------------ */
@@ -208,10 +205,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     protected ContextHandler(Context context)
     {
         super();
-        _scontext = context;
+        _scontext = context==null?new Context():context;
         _attributes = new AttributesMap();
         _initParams = new HashMap<String, String>();
         addAliasCheck(new ApproveNonExistentDirectoryAliases());
+        if (File.separatorChar=='/')
+            addAliasCheck(new AllowSymLinkAliasChecker());
     }
 
     /* ------------------------------------------------------------ */
@@ -510,8 +509,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /*
      * @see javax.servlet.ServletContext#getInitParameterNames()
      */
-    @SuppressWarnings("rawtypes")
-    public Enumeration getInitParameterNames()
+    public Enumeration<String> getInitParameterNames()
     {
         return Collections.enumeration(_initParams.keySet());
     }
@@ -796,14 +794,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     protected void callContextInitialized (ServletContextListener l, ServletContextEvent e)
     {
-        LOG.debug("contextInitialized: {}->{}",e,l);
+        if (LOG.isDebugEnabled())
+            LOG.debug("contextInitialized: {}->{}",e,l);
         l.contextInitialized(e);
     }
 
     /* ------------------------------------------------------------ */
     protected void callContextDestroyed (ServletContextListener l, ServletContextEvent e)
     {
-        LOG.debug("contextDestroyed: {}->{}",e,l);
+        if (LOG.isDebugEnabled())
+            LOG.debug("contextDestroyed: {}->{}",e,l);
         l.contextDestroyed(e);
     }
 
@@ -871,27 +871,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _scontext.clearAttributes();
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
-     */
-    public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response) throws IOException
+    public boolean checkVirtualHost(final Request baseRequest)
     {
-        DispatcherType dispatch = baseRequest.getDispatcherType();
-
-        switch (_availability)
-        {
-            case SHUTDOWN:
-            case UNAVAILABLE:
-                baseRequest.setHandled(true);
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
-                return false;
-            default:
-                if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
-                    return false;
-        }
-
-        // Check the vhosts
         if (_vhosts != null && _vhosts.length > 0)
         {
             String vhost = normalizeHostname(baseRequest.getServerName());
@@ -927,27 +908,61 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (!match || connectorName && !connectorMatch)
                 return false;
         }
-
+        return true;
+    }
+    
+    public boolean checkContextPath(String uri)
+    {
         // Are we not the root context?
         if (_contextPath.length() > 1)
         {
             // reject requests that are not for us
-            if (!target.startsWith(_contextPath))
+            if (!uri.startsWith(_contextPath))
                 return false;
-            if (target.length() > _contextPath.length() && target.charAt(_contextPath.length()) != '/')
+            if (uri.length() > _contextPath.length() && uri.charAt(_contextPath.length()) != '/')
                 return false;
+        }
+        return true;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /*
+     * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+     */
+    public boolean checkContext(final String target, final Request baseRequest, final HttpServletResponse response) throws IOException
+    {
+        DispatcherType dispatch = baseRequest.getDispatcherType();
 
-            // redirect null path infos
-            if (!_allowNullPathInfo && _contextPath.length() == target.length())
-            {
-                // context request must end with /
+        // Check the vhosts
+        if (!checkVirtualHost(baseRequest))
+            return false;
+
+        if (!checkContextPath(target))
+            return false;
+        
+        // Are we not the root context?
+        // redirect null path infos
+        if (!_allowNullPathInfo && _contextPath.length() == target.length() && _contextPath.length()>1)
+        {
+            // context request must end with /
+            baseRequest.setHandled(true);
+            if (baseRequest.getQueryString() != null)
+                response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH) + "?" + baseRequest.getQueryString());
+            else
+                response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH));
+            return false;
+        }
+
+        switch (_availability)
+        {
+            case SHUTDOWN:
+            case UNAVAILABLE:
                 baseRequest.setHandled(true);
-                if (baseRequest.getQueryString() != null)
-                    response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH) + "?" + baseRequest.getQueryString());
-                else
-                    response.sendRedirect(URIUtil.addPaths(baseRequest.getRequestURI(),URIUtil.SLASH));
+                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
                 return false;
-            }
+            default:
+                if ((DispatcherType.REQUEST.equals(dispatch) && baseRequest.isHandled()))
+                    return false;
         }
 
         return true;
@@ -1127,7 +1142,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
                 if (!_requestAttributeListeners.isEmpty())
                 {
-                    ListIterator<ServletRequestAttributeListener> iter = _requestAttributeListeners.listIterator(_requestAttributeListeners.size());
                     for (int i=_requestAttributeListeners.size();i-->0;)
                         baseRequest.removeEventListener(_requestAttributeListeners.get(i));
                 }
@@ -1646,10 +1660,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @param path
+     * @param resource
+     * @return True if the alias is OK
+     */
     public boolean checkAlias(String path, Resource resource)
     {
         // Is the resource aliased?
-            if (resource.getAlias() != null)
+        if (resource.isAlias())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Aliased resource: " + resource + "~=" + resource.getAlias());
@@ -1775,6 +1794,16 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _aliasChecks.clear();
         _aliasChecks.addAll(checks);
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * clear the list of AliasChecks
+     */
+    public void clearAliasChecks()
+    {
+        _aliasChecks.clear();
+    }
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -1878,7 +1907,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                         matched_path = context_path;
                     }
 
-                    if (matched_path.equals(context_path))
+                    if (matched_path != null && matched_path.equals(context_path))
                         contexts.add(ch);
                 }
             }
@@ -1915,21 +1944,17 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             try
             {
-                String query = null;
-                int q = 0;
-                if ((q = uriInContext.indexOf('?')) > 0)
-                {
-                    query = uriInContext.substring(q + 1);
-                    uriInContext = uriInContext.substring(0,q);
-                }
+                HttpURI uri = new HttpURI(null,null,0,uriInContext);
+                
+                String pathInfo=URIUtil.canonicalPath(uri.getDecodedPath());
+                if (pathInfo==null)
+                    return null;
 
-                String pathInContext = URIUtil.canonicalPath(URIUtil.decodePath(uriInContext));
-                if (pathInContext!=null)
-                {
-                    String uri = URIUtil.addPaths(getContextPath(),uriInContext);
-                    ContextHandler context = ContextHandler.this;
-                    return new Dispatcher(context,uri,pathInContext,query);
-                }
+                String contextPath=getContextPath();
+                if (contextPath!=null && contextPath.length()>0)
+                    uri.setPath(URIUtil.addPaths(contextPath,uri.getPath()));
+                
+                return new Dispatcher(ContextHandler.this,uri,pathInfo);
             }
             catch (Exception e)
             {
@@ -2056,7 +2081,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         /*
          * @see javax.servlet.ServletContext#getInitParameterNames()
          */
-        @SuppressWarnings("unchecked")
         @Override
         public Enumeration<String> getInitParameterNames()
         {
@@ -2193,6 +2217,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             try
             {
+                @SuppressWarnings("unchecked")
                 Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(ContextHandler.class,className):_classLoader.loadClass(className);
                 addListener(clazz);
             }
@@ -2287,9 +2312,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                //classloader, or a parent of it
                try
                {
-                   Class reflect = Loader.loadClass(getClass(), "sun.reflect.Reflection");
+                   Class<?> reflect = Loader.loadClass(getClass(), "sun.reflect.Reflection");
                    Method getCallerClass = reflect.getMethod("getCallerClass", Integer.TYPE);
-                   Class caller = (Class)getCallerClass.invoke(null, 2);
+                   Class<?> caller = (Class<?>)getCallerClass.invoke(null, 2);
 
                    boolean ok = false;
                    ClassLoader callerLoader = caller.getClassLoader();
@@ -2729,53 +2754,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         public boolean check(String path, Resource resource)
         {
             return true;
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    /** Approve Aliases with same suffix.
-     * Eg. a symbolic link from /foobar.html to /somewhere/wibble.html would be
-     * approved because both the resource and alias end with ".html".
-     */
-    @Deprecated
-    public static class ApproveSameSuffixAliases implements AliasCheck
-    {
-        {
-            LOG.warn("ApproveSameSuffixAlias is not safe for production");
-        }
-        
-        @Override
-        public boolean check(String path, Resource resource)
-        {
-            int dot = path.lastIndexOf('.');
-            if (dot<0)
-                return false;
-            String suffix=path.substring(dot);
-            return resource.toString().endsWith(suffix);
-        }
-    }
-
-
-    /* ------------------------------------------------------------ */
-    /** Approve Aliases with a path prefix.
-     * Eg. a symbolic link from /dirA/foobar.html to /dirB/foobar.html would be
-     * approved because both the resource and alias end with "/foobar.html".
-     */
-    @Deprecated
-    public static class ApprovePathPrefixAliases implements AliasCheck
-    {
-        {
-            LOG.warn("ApprovePathPrefixAliases is not safe for production");
-        }
-        
-        @Override
-        public boolean check(String path, Resource resource)
-        {
-            int slash = path.lastIndexOf('/');
-            if (slash<0 || slash==path.length()-1)
-                return false;
-            String suffix=path.substring(slash);
-            return resource.toString().endsWith(suffix);
         }
     }
     

@@ -177,7 +177,8 @@ public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable
         }
         // TODO: warning on replacement of existing mapping?
         mappings.add(entry);
-        LOG.debug("Added {} to {}",entry,this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Added {} to {}",entry,this);
         Collections.sort(mappings);
     }
 

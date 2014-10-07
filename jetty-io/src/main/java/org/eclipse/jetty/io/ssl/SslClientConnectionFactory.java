@@ -21,7 +21,6 @@ package org.eclipse.jetty.io.ssl;
 import java.io.IOException;
 import java.util.Map;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class SslClientConnectionFactory implements ClientConnectionFactory
 {
+    public static final String SSL_CONTEXT_FACTORY_CONTEXT_KEY = "ssl.context.factory";
     public static final String SSL_PEER_HOST_CONTEXT_KEY = "ssl.peer.host";
     public static final String SSL_PEER_PORT_CONTEXT_KEY = "ssl.peer.port";
     public static final String SSL_ENGINE_CONTEXT_KEY = "ssl.engine";

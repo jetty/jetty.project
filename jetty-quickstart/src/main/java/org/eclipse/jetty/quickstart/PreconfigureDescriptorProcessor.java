@@ -45,11 +45,11 @@ public class PreconfigureDescriptorProcessor extends IterativeDescriptorProcesso
         _showOrigin=LOG.isDebugEnabled();
         try
         {
-            registerVisitor("env-entry", getClass().getDeclaredMethod("saveSnippet", __signature));
-            registerVisitor("resource-ref", getClass().getDeclaredMethod("saveSnippet", __signature));
-            registerVisitor("resource-env-ref", getClass().getDeclaredMethod("saveSnippet", __signature));
-            registerVisitor("message-destination-ref", getClass().getDeclaredMethod("saveSnippet", __signature));
-            registerVisitor("data-source", getClass().getDeclaredMethod("saveSnippet", __signature));
+            registerVisitor("env-entry", getClass().getMethod("saveSnippet", __signature));
+            registerVisitor("resource-ref", getClass().getMethod("saveSnippet", __signature));
+            registerVisitor("resource-env-ref", getClass().getMethod("saveSnippet", __signature));
+            registerVisitor("message-destination-ref", getClass().getMethod("saveSnippet", __signature));
+            registerVisitor("data-source", getClass().getMethod("saveSnippet", __signature));
         }
         catch (Exception e)
         {

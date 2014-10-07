@@ -71,7 +71,7 @@ public class ResponseContentParser extends StreamContentParser
         parsers.remove(request);
     }
 
-    private class ResponseParser implements HttpParser.ResponseHandler<ByteBuffer>
+    private class ResponseParser implements HttpParser.ResponseHandler
     {
         private final HttpFields fields = new HttpFields();
         private ClientParser.Listener listener;
@@ -89,7 +89,8 @@ public class ResponseContentParser extends StreamContentParser
 
         public boolean parse(ByteBuffer buffer)
         {
-            LOG.debug("Response {} {} content {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Response {} {} content {} {}", request, FCGI.StreamType.STD_OUT, state, buffer);
 
             int remaining = buffer.remaining();
             while (remaining > 0)
@@ -98,7 +99,7 @@ public class ResponseContentParser extends StreamContentParser
                 {
                     case HEADERS:
                     {
-                        if (httpParser.parseHeaders(buffer))
+                        if (httpParser.parseNext(buffer))
                             state = State.CONTENT_MODE;
                         remaining = buffer.remaining();
                         break;
@@ -124,7 +125,8 @@ public class ResponseContentParser extends StreamContentParser
                     }
                     case HTTP_CONTENT:
                     {
-                        httpParser.parseContent(buffer);
+                        if (httpParser.parseNext(buffer))
+                            return true;
                         remaining = buffer.remaining();
                         break;
                     }
@@ -152,7 +154,7 @@ public class ResponseContentParser extends StreamContentParser
         }
 
         @Override
-        public boolean parsedHeader(HttpField httpField)
+        public void parsedHeader(HttpField httpField)
         {
             try
             {
@@ -165,28 +167,29 @@ public class ResponseContentParser extends StreamContentParser
 
                         // Need to set the response status so the
                         // HttpParser can handle the content properly.
-                        String[] parts = httpField.getValue().split(" ");
-                        int code = Integer.parseInt(parts[0]);
+                        String value = httpField.getValue();
+                        String[] parts = value.split(" ");
+                        String status = parts[0];
+                        int code = Integer.parseInt(status);
                         httpParser.setResponseStatus(code);
-                        String reason = parts.length > 1 ? parts[1] : HttpStatus.getMessage(code);
+                        String reason = parts.length > 1 ? value.substring(status.length()) : HttpStatus.getMessage(code);
 
-                        notifyBegin(code, reason);
+                        notifyBegin(code, reason.trim());
                         notifyHeaders(fields);
                     }
                 }
                 else
                 {
+                    fields.add(httpField);
                     if (seenResponseCode)
                         notifyHeader(httpField);
-                    else
-                        fields.add(httpField);
                 }
             }
             catch (Throwable x)
             {
-                logger.debug("Exception while invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
             }
-            return false;
         }
 
         private void notifyBegin(int code, String reason)
@@ -197,7 +200,8 @@ public class ResponseContentParser extends StreamContentParser
             }
             catch (Throwable x)
             {
-                logger.debug("Exception while invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
             }
         }
 
@@ -209,7 +213,8 @@ public class ResponseContentParser extends StreamContentParser
             }
             catch (Throwable x)
             {
-                logger.debug("Exception while invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
             }
         }
 
@@ -230,7 +235,8 @@ public class ResponseContentParser extends StreamContentParser
             }
             catch (Throwable x)
             {
-                logger.debug("Exception while invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
             }
         }
 
@@ -251,8 +257,7 @@ public class ResponseContentParser extends StreamContentParser
         @Override
         public boolean content(ByteBuffer buffer)
         {
-            notifyContent(buffer);
-            return false;
+            return notifyContent(buffer);
         }
 
         private boolean notifyContent(ByteBuffer buffer)
@@ -263,7 +268,8 @@ public class ResponseContentParser extends StreamContentParser
             }
             catch (Throwable x)
             {
-                logger.debug("Exception while invoking listener " + listener, x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Exception while invoking listener " + listener, x);
                 return false;
             }
         }
@@ -292,7 +298,7 @@ public class ResponseContentParser extends StreamContentParser
     // Methods overridden to make them visible here
     private static class FCGIHttpParser extends HttpParser
     {
-        private FCGIHttpParser(ResponseHandler<ByteBuffer> handler)
+        private FCGIHttpParser(ResponseHandler handler)
         {
             super(handler, 65 * 1024, true);
             reset();
@@ -302,19 +308,8 @@ public class ResponseContentParser extends StreamContentParser
         public void reset()
         {
             super.reset();
+            setResponseStatus(200);
             setState(State.HEADER);
-        }
-
-        @Override
-        protected boolean parseHeaders(ByteBuffer buffer)
-        {
-            return super.parseHeaders(buffer);
-        }
-
-        @Override
-        protected boolean parseContent(ByteBuffer buffer)
-        {
-            return super.parseContent(buffer);
         }
 
         @Override

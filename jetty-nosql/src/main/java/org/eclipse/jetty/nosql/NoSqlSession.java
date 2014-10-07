@@ -24,13 +24,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.server.session.AbstractSession;
+import org.eclipse.jetty.server.session.MemSession;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
-public class NoSqlSession extends AbstractSession
+public class NoSqlSession extends MemSession
 {
     private final static Logger __log = Log.getLogger("org.eclipse.jetty.server.session");
 
@@ -207,7 +207,7 @@ public class NoSqlSession extends AbstractSession
     /* ------------------------------------------------------------ */
     public Object getVersion()
     {
-    	return _version;
+        return _version;
     }
 
     @Override

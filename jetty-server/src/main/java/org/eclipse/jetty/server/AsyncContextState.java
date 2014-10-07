@@ -147,7 +147,7 @@ public class AsyncContextState implements AsyncContext
     @Override
     public boolean hasOriginalRequestAndResponse()
     {
-        HttpChannel<?> channel=state().getHttpChannel();
+        HttpChannel channel=state().getHttpChannel();
         return channel.getRequest()==getRequest() && channel.getResponse()==getResponse();
     }
 

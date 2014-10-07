@@ -20,6 +20,7 @@ package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -37,27 +38,38 @@ public class ServerGenerator extends Generator
     private static final byte[] COLON = new byte[]{':', ' '};
     private static final byte[] EOL = new byte[]{'\r', '\n'};
 
+    private final boolean sendStatus200;
+
     public ServerGenerator(ByteBufferPool byteBufferPool)
     {
+        this(byteBufferPool, true);
+    }
+
+    public ServerGenerator(ByteBufferPool byteBufferPool, boolean sendStatus200)
+    {
         super(byteBufferPool);
+        this.sendStatus200 = sendStatus200;
     }
 
     public Result generateResponseHeaders(int request, int code, String reason, HttpFields fields, Callback callback)
     {
         request &= 0xFF_FF;
 
-        Charset utf8 = Charset.forName("UTF-8");
+        final Charset utf8 = StandardCharsets.UTF_8;
         List<byte[]> bytes = new ArrayList<>(fields.size() * 2);
         int length = 0;
 
-        // Special 'Status' header
-        bytes.add(STATUS);
-        length += STATUS.length + COLON.length;
-        if (reason == null)
-            reason = HttpStatus.getMessage(code);
-        byte[] responseBytes = (code + " " + reason).getBytes(utf8);
-        bytes.add(responseBytes);
-        length += responseBytes.length + EOL.length;
+        if (code != 200 || sendStatus200)
+        {
+            // Special 'Status' header
+            bytes.add(STATUS);
+            length += STATUS.length + COLON.length;
+            if (reason == null)
+                reason = HttpStatus.getMessage(code);
+            byte[] responseBytes = (code + " " + reason).getBytes(utf8);
+            bytes.add(responseBytes);
+            length += responseBytes.length + EOL.length;
+        }
 
         // Other headers
         for (HttpField field : fields)

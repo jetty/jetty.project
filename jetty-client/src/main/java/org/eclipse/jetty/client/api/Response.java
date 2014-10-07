@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.util.EventListener;
 import java.util.List;
 
-import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
@@ -148,6 +147,13 @@ public interface Response
 
     public interface AsyncContentListener extends ResponseListener
     {
+        /**
+         * Callback method invoked asynchronously when the response content has been received.
+         *
+         * @param response the response containing the response line data and the headers
+         * @param content the content bytes received
+         * @param callback the callback to call when the content is consumed.
+         */
         public void onContent(Response response, ByteBuffer content, Callback callback);
     }
 
@@ -239,7 +245,7 @@ public interface Response
                     onContent(response, content);
                     callback.succeeded();
                 }
-                catch (Exception x)
+                catch (Throwable x)
                 {
                     callback.failed(x);
                 }

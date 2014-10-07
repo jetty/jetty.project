@@ -25,12 +25,13 @@ import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.servlets.AsyncGzipFilter;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -41,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class GzipHttpOutput extends HttpOutput
 {
     public static Logger LOG = Log.getLogger(GzipHttpOutput.class);
-    private final static HttpGenerator.CachedHttpField CONTENT_ENCODING_GZIP=new HttpGenerator.CachedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
+    private final static PreEncodedHttpField CONTENT_ENCODING_GZIP=new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
     private final static byte[] GZIP_HEADER = new byte[] { (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0 };
     
     private enum GZState { NOT_COMPRESSING, MIGHT_COMPRESS, COMMITTING, COMPRESSING, FINISHED};
@@ -52,7 +53,7 @@ public class GzipHttpOutput extends HttpOutput
     private GzipFactory _factory;
     private ByteBuffer _buffer;
     
-    public GzipHttpOutput(HttpChannel<?> channel)
+    public GzipHttpOutput(HttpChannel channel)
     {
         super(channel);
     }
@@ -70,7 +71,7 @@ public class GzipHttpOutput extends HttpOutput
         switch (_state.get())
         {
             case NOT_COMPRESSING:
-                super.write(content,complete,callback);
+                superWrite(content, complete, callback);
                 return;
 
             case MIGHT_COMPRESS:
@@ -78,14 +79,16 @@ public class GzipHttpOutput extends HttpOutput
                 break;
                 
             case COMMITTING:
-                throw new WritePendingException();
+                callback.failed(new WritePendingException());
+                break;
 
             case COMPRESSING:
                 gzip(content,complete,callback);
                 break;
 
-            case FINISHED:
-                throw new IllegalStateException();
+            default:
+                callback.failed(new IllegalStateException("state="+_state.get()));
+                break;
         }
     }
 
@@ -122,6 +125,8 @@ public class GzipHttpOutput extends HttpOutput
             else
                 new GzipBufferCB(content,complete,callback).iterate();
         }
+        else
+            callback.succeeded();
     }
 
     protected void commit(ByteBuffer content, boolean complete, Callback callback)
@@ -133,7 +138,7 @@ public class GzipHttpOutput extends HttpOutput
         {
             LOG.debug("{} exclude by status {}",this,sc);
             noCompression();
-            super.write(content,complete,callback);
+            superWrite(content, complete, callback);
             return;
         }
         
@@ -146,9 +151,19 @@ public class GzipHttpOutput extends HttpOutput
             {
                 LOG.debug("{} exclude by mimeType {}",this,ct);
                 noCompression();
-                super.write(content,complete,callback);
+                superWrite(content, complete, callback);
                 return;
             }
+        }
+        
+        // Has the Content-Encoding header already been set?
+        String ce=getHttpChannel().getResponse().getHeader("Content-Encoding");
+        if (ce != null)
+        {
+            LOG.debug("{} exclude by content-encoding {}",this,ce);
+            noCompression();
+            superWrite(content, complete, callback);
+            return;
         }
         
         // Are we the thread that commits?
@@ -168,7 +183,7 @@ public class GzipHttpOutput extends HttpOutput
             {
                 LOG.debug("{} exclude no deflater",this);
                 _state.set(GZState.NOT_COMPRESSING);
-                super.write(content,complete,callback);
+                superWrite(content, complete, callback);
                 return;
             }
 
@@ -181,13 +196,15 @@ public class GzipHttpOutput extends HttpOutput
             response.setContentLength(-1);
             String etag=fields.get(HttpHeader.ETAG);
             if (etag!=null)
-                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+"--gzip\"");
+                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+AsyncGzipFilter.ETAG_GZIP+ '"');
 
             LOG.debug("{} compressing {}",this,_deflater);
             _state.set(GZState.COMPRESSING);
             
             gzip(content,complete,callback);
         }
+        else
+            callback.failed(new WritePendingException());
     }
 
     public void noCompression()
@@ -288,6 +305,8 @@ public class GzipHttpOutput extends HttpOutput
 
                 if (!_complete)
                     return Action.SUCCEEDED;
+                
+                _deflater.finish();
             }
 
             BufferUtil.compact(_buffer);
@@ -308,22 +327,22 @@ public class GzipHttpOutput extends HttpOutput
     {        
         private final ByteBuffer _input;
         private final ByteBuffer _content;
-        private final boolean _complete;
+        private final boolean _last;
         public GzipBufferCB(ByteBuffer content, boolean complete, Callback callback)
         {
             super(callback);
             _input=getHttpChannel().getByteBufferPool().acquire(Math.min(_factory.getBufferSize(),content.remaining()),false);
             _content=content;
-            _complete=complete;
+            _last=complete;
         }
 
         @Override
         protected Action process() throws Exception
         {
             if (_deflater.needsInput())
-            {
+            {                
                 if (BufferUtil.isEmpty(_content))
-                {
+                {                    
                     if (_deflater.finished())
                     {
                         _factory.recycle(_deflater);
@@ -333,40 +352,45 @@ public class GzipHttpOutput extends HttpOutput
                         return Action.SUCCEEDED;
                     }
                     
-                    if (!_complete)
+                    if (!_last)
+                    {
                         return Action.SUCCEEDED;
+                    }
+                    
+                    _deflater.finish();
                 }
                 else
                 {
                     BufferUtil.clearToFill(_input);
-                    BufferUtil.put(_content,_input);
+                    int took=BufferUtil.put(_content,_input);
                     BufferUtil.flipToFlush(_input,0);
-
+                    if (took==0)
+                        throw new IllegalStateException();
+                   
                     byte[] array=_input.array();
                     int off=_input.arrayOffset()+_input.position();
                     int len=_input.remaining();
 
                     _crc.update(array,off,len);
                     _deflater.setInput(array,off,len);                
-                    if (_complete && BufferUtil.isEmpty(_content))
+                    if (_last && BufferUtil.isEmpty(_content))
                         _deflater.finish();
                 }
             }
 
             BufferUtil.compact(_buffer);
             int off=_buffer.arrayOffset()+_buffer.limit();
-            int len=_buffer.capacity()-_buffer.limit() - (_complete?8:0);
+            int len=_buffer.capacity()-_buffer.limit() - (_last?8:0);
             int produced=_deflater.deflate(_buffer.array(),off,len,Deflater.NO_FLUSH);
             
             _buffer.limit(_buffer.limit()+produced);
-            boolean complete=_deflater.finished();
+            boolean finished=_deflater.finished();
             
-            if (complete)
+            if (finished)
                 addTrailer();
                 
-            superWrite(_buffer,complete,this);
+            superWrite(_buffer,finished,this);
             return Action.SCHEDULED;
         }
-        
     }
 }

@@ -24,7 +24,6 @@ import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.nio.ByteBuffer;
 import java.util.Map;
-
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.EndpointConfig;
@@ -110,7 +109,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onBinary.call(websocket,buf,fin);
         if (ret != null)
         {
-            LOG.debug("returning: {}",ret);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("returning: {}",ret);
+            }
             endpoint.sendObject(ret);
         }
     }
@@ -125,7 +127,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onBinaryStream.call(websocket,stream);
         if (ret != null)
         {
-            LOG.debug("returning: {}",ret);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("returning: {}",ret);
+            }
             endpoint.sendObject(ret);
         }
     }
@@ -167,7 +172,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onPong.call(websocket,pong);
         if (ret != null)
         {
-            LOG.debug("returning: {}",ret);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("returning: {}",ret);
+            }
             endpoint.sendObject(ret);
         }
     }
@@ -181,7 +189,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onText.call(websocket,text,fin);
         if (ret != null)
         {
-            LOG.debug("returning: {}",ret);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("returning: {}",ret);
+            }
             endpoint.sendObject(ret);
         }
     }
@@ -195,7 +206,10 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         Object ret = onTextStream.call(websocket,reader);
         if (ret != null)
         {
-            LOG.debug("returning: {}",ret);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("returning: {}",ret);
+            }
             endpoint.sendObject(ret);
         }
     }

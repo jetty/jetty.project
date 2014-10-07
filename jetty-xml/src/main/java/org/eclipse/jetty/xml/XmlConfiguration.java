@@ -150,7 +150,7 @@ public class XmlConfiguration
      */
     public XmlConfiguration(String configuration) throws SAXException, IOException
     {
-        configuration = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
+        configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
                 + configuration;
         InputSource source = new InputSource(new StringReader(configuration));
         synchronized (__parser)
@@ -346,7 +346,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new IllegalStateException("No suitable constructor on " + oClass, x);
+                    throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s",oClass,arguments,namedArgMap,_url));
                 }
             }
             _configuration.initializeDefaults(obj);
@@ -1212,7 +1212,12 @@ public class XmlConfiguration
                     // For all arguments, load properties
                     for (String arg : args)
                     {
-                        if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
+                        if (arg.indexOf('=')>=0)
+                        {
+                            int i=arg.indexOf('=');
+                            properties.put(arg.substring(0,i),arg.substring(i+1));
+                        }
+                        else if (arg.toLowerCase(Locale.ENGLISH).endsWith(".properties"))
                             properties.load(Resource.newResource(arg).getInputStream());
                     }
 
@@ -1221,7 +1226,7 @@ public class XmlConfiguration
                     Object[] obj = new Object[args.length];
                     for (int i = 0; i < args.length; i++)
                     {
-                        if (!args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties"))
+                        if (!args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties") && (args[i].indexOf('=')<0))
                         {
                             XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(args[i]).getURL());
                             if (last != null)

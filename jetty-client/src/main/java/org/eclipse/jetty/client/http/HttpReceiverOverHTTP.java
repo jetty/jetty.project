@@ -35,7 +35,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CompletableCallback;
 
-public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler<ByteBuffer>
+public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.ResponseHandler
 {
     private final HttpParser parser = new HttpParser(this);
     private ByteBuffer buffer;
@@ -120,7 +120,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             }
             catch (Throwable x)
             {
-                LOG.debug(x);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(x);
                 failAndClose(x);
                 return true;
             }
@@ -197,14 +198,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     @Override
-    public boolean parsedHeader(HttpField field)
+    public void parsedHeader(HttpField field)
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return false;
-
-        responseHeader(exchange, field);
-        return false;
+        if (exchange != null)
+            responseHeader(exchange, field);
     }
 
     @Override
@@ -230,7 +228,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             @Override
             public void resume()
             {
-                LOG.debug("Content consumed asynchronously, resuming processing");
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Content consumed asynchronously, resuming processing");
                 process();
             }
 

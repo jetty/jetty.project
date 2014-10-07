@@ -52,12 +52,11 @@ import org.eclipse.jetty.spdy.api.Stream;
 import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
 
-public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParser.RequestHandler<ByteBuffer>
+public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParser.RequestHandler
 {
     private final short version;
     private final Fields headers = new Fields();
@@ -68,44 +67,37 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
 
     public ProxyHTTPSPDYConnection(Connector connector, HttpConfiguration config, EndPoint endPoint, short version, ProxyEngineSelector proxyEngineSelector)
     {
-        super(config, connector, endPoint);
+        super(config, connector, endPoint, true);
         this.version = version;
         this.proxyEngineSelector = proxyEngineSelector;
         this.session = new HTTPSession(version, connector);
     }
 
     @Override
-    protected HttpParser.RequestHandler<ByteBuffer> newRequestHandler()
+    protected HttpParser.RequestHandler newRequestHandler()
     {
         return this;
     }
 
     @Override
-    public boolean startRequest(HttpMethod method, String methodString, ByteBuffer uri, HttpVersion httpVersion)
+    public boolean startRequest(String methodString, String uri, HttpVersion httpVersion)
     {
         Connector connector = getConnector();
         String scheme = connector.getConnectionFactory(SslConnectionFactory.class) != null ? "https" : "http";
         headers.put(HTTPSPDYHeader.SCHEME.name(version), scheme);
         headers.put(HTTPSPDYHeader.METHOD.name(version), methodString);
-        headers.put(HTTPSPDYHeader.URI.name(version), BufferUtil.toUTF8String(uri)); // TODO handle bad encodings
+        headers.put(HTTPSPDYHeader.URI.name(version), uri.toString()); 
         headers.put(HTTPSPDYHeader.VERSION.name(version), httpVersion.asString());
         return false;
     }
 
     @Override
-    public boolean parsedHeader(HttpField field)
+    public void parsedHeader(HttpField field)
     {
         if (field.getHeader() == HttpHeader.HOST)
             headers.put(HTTPSPDYHeader.HOST.name(version), field.getValue());
         else
             headers.put(field.getName(), field.getValue());
-        return false;
-    }
-
-    @Override
-    public boolean parsedHostHeader(String host, int port)
-    {
-        return false;
     }
 
     @Override
@@ -201,7 +193,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         {
             HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(HttpVersion.fromString(headers.get
                     ("version").getValue()), null, 0, 502, "SPDY reset received from upstream server", false);
-            send(info, null, true, new Callback.Adapter());
+            send(info, null, true, Callback.Adapter.INSTANCE);
         }
 
         @Override

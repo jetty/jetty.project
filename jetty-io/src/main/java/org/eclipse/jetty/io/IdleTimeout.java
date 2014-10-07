@@ -142,13 +142,15 @@ public abstract class IdleTimeout
             long idleElapsed = System.currentTimeMillis() - idleTimestamp;
             long idleLeft = idleTimeout - idleElapsed;
 
-            LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} idle timeout check, elapsed: {} ms, remaining: {} ms", this, idleElapsed, idleLeft);
 
             if (idleTimestamp != 0 && idleTimeout > 0)
             {
                 if (idleLeft <= 0)
                 {
-                    LOG.debug("{} idle timeout expired", this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} idle timeout expired", this);
                     try
                     {
                         onIdleExpired(new TimeoutException("Idle timeout expired: " + idleElapsed + "/" + idleTimeout + " ms"));

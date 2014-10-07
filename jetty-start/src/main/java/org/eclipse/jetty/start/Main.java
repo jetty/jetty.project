@@ -82,9 +82,12 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 public class Main
 {
     private static final int EXIT_USAGE = 1;
+    private static BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
 
     public static String join(Collection<?> objs, String delim)
     {
+        if (objs==null)
+            return "";
         StringBuilder str = new StringBuilder();
         boolean needDelim = false;
         for (Object obj : objs)
@@ -136,6 +139,7 @@ public class Main
     }
 
     private BaseHome baseHome;
+    private StartArgs startupArgs;
 
     public Main() throws IOException
     {
@@ -227,6 +231,7 @@ public class Main
 
     private void dumpClasspathWithVersions(Classpath classpath)
     {
+        StartLog.endStartLog();
         System.out.println();
         System.out.println("Jetty Server Classpath:");
         System.out.println("-----------------------");
@@ -301,11 +306,14 @@ public class Main
         Method main = invoked_class.getDeclaredMethod("main",method_param_types);
         Object[] method_params = new Object[]
         { argArray };
+        StartLog.endStartLog();
         main.invoke(null,method_params);
     }
 
     public void listConfig(StartArgs args)
     {
+        StartLog.endStartLog();
+        
         // Dump Jetty Home / Base
         args.dumpEnvironment(baseHome);
 
@@ -327,6 +335,7 @@ public class Main
 
     private void listModules(StartArgs args)
     {
+        StartLog.endStartLog();
         System.out.println();
         System.out.println("Jetty All Available Modules:");
         System.out.println("----------------------------");
@@ -366,29 +375,76 @@ public class Main
             StartLog.warn("ERROR: No known module for %s",name);
             return;
         }
+        
 
         // Find any named ini file and check it follows the convention
         Path start_ini = baseHome.getBasePath("start.ini");
         String short_start_ini = baseHome.toShortForm(start_ini);
-        Path ini = start_d.resolve(name + ".ini");
-        String short_ini = baseHome.toShortForm(ini);
+        Path startd_ini = start_d.resolve(name + ".ini");
+        String short_startd_ini = baseHome.toShortForm(startd_ini);
         StartIni module_ini = null;
-        if (FS.exists(ini))
+        if (FS.exists(startd_ini))
         {
-            module_ini = new StartIni(ini);
+            module_ini = new StartIni(startd_ini);
             if (module_ini.getLineMatches(Pattern.compile("--module=(.*, *)*" + name)).size() == 0)
             {
-                StartLog.warn("ERROR: %s is not enabled in %s!",name,short_ini);
+                StartLog.warn("ERROR: %s is not enabled in %s!",name,short_startd_ini);
                 return;
             }
         }
 
         boolean transitive = module.isEnabled() && (module.getSources().size() == 0);
-        boolean has_ini_lines = module.getInitialise().size() > 0;
-
-        // If it is not enabled or is transitive with ini template lines or toplevel and doesn't exist
-        if (!module.isEnabled() || (transitive && has_ini_lines) || (topLevel && !FS.exists(ini) && !appendStartIni))
+        boolean buildIni=false;
+        if (module.isEnabled())
         {
+            // is it an explicit request to create an ini file?
+            if (topLevel && !FS.exists(startd_ini) && !appendStartIni)
+                buildIni=true;
+            
+            // else is it transitive 
+            else if (transitive) 
+            {
+                // do we need an ini anyway?
+                if (module.hasDefaultConfig() || module.hasLicense()) 
+                    buildIni=true;
+                else
+                    StartLog.info("%-15s initialised transitively",name);
+            }
+            
+            // else must be initialized explicitly
+            else 
+            {
+                for (String source : module.getSources())
+                    StartLog.info("%-15s initialised in %s",name,baseHome.toShortForm(source));
+            }
+        }
+        else 
+        {
+            buildIni=true;
+        }
+        
+        
+        // If we need an ini
+        if (buildIni)
+        {
+            if (module.hasLicense())
+            {
+                System.err.printf("%nModule %s:%n",module.getName());
+                System.err.printf(" + contains software not provided by the Eclipse Foundation!%n");
+                System.err.printf(" + contains software not covered by the Eclipse Public License!%n");
+                System.err.printf(" + has not been audited for compliance with its license%n");
+                System.err.printf("%n");
+                for (String l : module.getLicense())
+                    System.err.printf("    %s%n",l);
+
+                System.err.printf("%nProceed (y/N)? ");
+                String line = input.readLine();
+                
+                if (line==null || line.length()==0 || !line.toLowerCase().startsWith("y"))
+                    System.exit(1);
+            }
+            
+            
             // File BufferedWriter
             BufferedWriter writer = null;
             String source = null;
@@ -407,9 +463,9 @@ public class Main
                     // Create the directory if needed
                     FS.ensureDirectoryExists(start_d);
                     FS.ensureDirectoryWritable(start_d);
-                    source = short_ini;
+                    source = short_startd_ini;
                     StartLog.info("%-15s initialised in %s (created)",name,source);
-                    writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE);
+                    writer = Files.newBufferedWriter(startd_ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE);
                     out = new PrintWriter(writer);
                 }
 
@@ -425,7 +481,7 @@ public class Main
                 out.println("--module=" + name);
                 args.parse("--module=" + name,source);
                 modules.enable(name,Collections.singletonList(source));
-                for (String line : module.getInitialise())
+                for (String line : module.getDefaultConfig())
                 {
                     out.println(line);
                     args.parse(line,source);
@@ -458,19 +514,12 @@ public class Main
                 }
             }
         }
-        else if (FS.exists(ini))
-        {
-            StartLog.info("%-15s initialised in %s",name,short_ini);
-        }
-        else
-        {
-            StartLog.info("%-15s initialised transitively",name);
-        }
         
         // Also list other places this module is enabled
         for (String source : module.getSources())
         {
-            if (!short_ini.equals(source))
+            StartLog.debug("also enabled in: %s",source);
+            if (!short_start_ini.equals(source))
             {
                 StartLog.info("%-15s enabled in     %s",name,baseHome.toShortForm(source));
             }
@@ -484,9 +533,8 @@ public class Main
 
         // Process dependencies
         module.expandProperties(args.getProperties());
-        modules.registerParentsIfMissing(baseHome,args,module);
+        modules.registerParentsIfMissing(module);
         modules.buildGraph();
-        
         
         // process new ini modules
         if (topLevel)
@@ -567,9 +615,9 @@ public class Main
 
         // ------------------------------------------------------------
         // 3) Module Registration
-        Modules modules = new Modules();
+        Modules modules = new Modules(baseHome,args);
         StartLog.debug("Registering all modules");
-        modules.registerAll(baseHome, args);
+        modules.registerAll();
 
         // ------------------------------------------------------------
         // 4) Active Module Resolution
@@ -578,7 +626,7 @@ public class Main
             List<String> msources = args.getSources(enabledModule);
             modules.enable(enabledModule,msources);
         }
-
+        
         StartLog.debug("Building Module Graph");
         modules.buildGraph();
 
@@ -594,6 +642,7 @@ public class Main
         // 6) Resolve Extra XMLs
         args.resolveExtraXmls(baseHome);
         
+        // ------------------------------------------------------------
         // 9) Resolve Property Files
         args.resolvePropertyFiles(baseHome);
 
@@ -647,24 +696,12 @@ public class Main
         if (args.isDryRun())
         {
             CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
-            System.out.println(cmd.toString());
+            System.out.println(cmd.toString(File.separatorChar=='/'?" \\\n":" "));
         }
 
         if (args.isStopCommand())
         {
-            int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
-            String stopKey = args.getProperties().getString("STOP.KEY");
-
-            if (args.getProperties().getString("STOP.WAIT") != null)
-            {
-                int stopWait = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
-
-                stop(stopPort,stopKey,stopWait);
-            }
-            else
-            {
-                stop(stopPort,stopKey);
-            }
+          doStop(args);
         }
 
         // Initialize start.ini
@@ -714,6 +751,7 @@ public class Main
             CommandLineBuilder cmd = args.getMainArgs(baseHome,true);
             cmd.debug();
             ProcessBuilder pbuilder = new ProcessBuilder(cmd.getArgs());
+            StartLog.endStartLog();
             final Process process = pbuilder.start();
             Runtime.getRuntime().addShutdownHook(new Thread()
             {
@@ -751,6 +789,22 @@ public class Main
         {
             usageExit(e,ERR_INVOKE_MAIN);
         }
+    }
+
+    private void doStop(StartArgs args) {
+      int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
+      String stopKey = args.getProperties().getString("STOP.KEY");
+
+      if (args.getProperties().getString("STOP.WAIT") != null)
+      {
+          int stopWait = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
+
+          stop(stopPort,stopKey,stopWait);
+      }
+      else
+      {
+          stop(stopPort,stopKey);
+      }
     }
 
     /**
@@ -825,6 +879,7 @@ public class Main
 
     public void usage(boolean exit)
     {
+        StartLog.endStartLog();
         String usageResource = "org/eclipse/jetty/start/usage.txt";
         boolean usagePresented = false;
         try (InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource))
@@ -858,5 +913,38 @@ public class Main
         {
             System.exit(EXIT_USAGE);
         }
+    }
+
+    // ------------------------------------------------------------
+    // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
+    public void init(String[] args) throws Exception
+    {
+      try
+      {
+        startupArgs = processCommandLine(args);
+      }
+      catch (UsageException e)
+      {
+        System.err.println(e.getMessage());
+        usageExit(e.getCause(),e.getExitCode());
+      }
+      catch (Throwable e)
+      {
+        usageExit(e,UsageException.ERR_UNKNOWN);
+      }
+    }
+
+    public void start() throws Exception
+    {
+      start(startupArgs);
+    }
+
+    public void stop() throws Exception
+    {
+      doStop(startupArgs);
+    }
+
+    public void destroy()
+    {
     }
 }

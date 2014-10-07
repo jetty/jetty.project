@@ -22,7 +22,6 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
-import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
 /** ThreadPool.

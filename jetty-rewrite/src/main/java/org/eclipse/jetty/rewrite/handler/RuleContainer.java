@@ -27,7 +27,6 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
-import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -217,7 +216,7 @@ public class RuleContainer extends Rule
                     if (rule instanceof Rule.ApplyURI)
                         ((Rule.ApplyURI)rule).applyURI((Request)request,((Request)request).getRequestURI(), encoded);
                     else
-                        ((Request)request).setRequestURI(encoded);
+                        ((Request)request).setURIPathQuery(encoded);
                 }
 
                 if (_rewritePathInfo)
@@ -228,7 +227,7 @@ public class RuleContainer extends Rule
                 if (rule.isHandling())
                 {
                     LOG.debug("handling {}",rule);
-                    (request instanceof Request?(Request)request:HttpChannel.getCurrentHttpChannel().getRequest()).setHandled(true);
+                    Request.getBaseRequest(request).setHandled(true);
                 }
 
                 if (rule.isTerminating())

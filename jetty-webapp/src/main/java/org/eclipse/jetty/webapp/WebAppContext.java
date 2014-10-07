@@ -914,7 +914,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
     /* ------------------------------------------------------------ */
     protected void loadConfigurations()
-    	throws Exception
+        throws Exception
     {
         //if the configuration instances have been set explicitly, use them
         if (_configurations.size()>0)
@@ -1210,24 +1210,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
             catch (IOException e){LOG.warn(Log.EXCEPTION,e);}
         }
 
-        if (dir!=null && !dir.exists())
-        {
-            dir.mkdir();
-            dir.deleteOnExit();
-        }
-
-        if (dir!=null && ( !dir.exists() || !dir.isDirectory() || !dir.canWrite()))
-            throw new IllegalArgumentException("Bad temp directory: "+dir);
-
-        try
-        {
-            if (dir!=null)
-                dir=dir.getCanonicalFile();
-        }
-        catch(Exception e)
-        {
-            LOG.warn(e);
-        }
         _tmpDir=dir;
         setAttribute(TEMPDIR,_tmpDir);            
     }

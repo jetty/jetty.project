@@ -141,7 +141,8 @@ public class StandardStream extends IdleTimeout implements IStream
     public void updateWindowSize(int delta)
     {
         int size = windowSize.addAndGet(delta);
-        LOG.debug("Updated window size {} -> {} for {}", size - delta, size, this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Updated window size {} -> {} for {}", size - delta, size, this);
     }
 
     @Override
@@ -183,7 +184,8 @@ public class StandardStream extends IdleTimeout implements IStream
     @Override
     public void updateCloseState(boolean close, boolean local)
     {
-        LOG.debug("{} close={} local={}", this, close, local);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} close={} local={}", this, close, local);
         if (close)
         {
             switch (closeState)
@@ -265,14 +267,16 @@ public class StandardStream extends IdleTimeout implements IStream
         // ignore data frame if this stream is remotelyClosed already
         if (isRemotelyClosed())
         {
-            LOG.debug("Stream is remotely closed, ignoring {}", dataInfo);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Stream is remotely closed, ignoring {}", dataInfo);
             return;
         }
 
         if (!canReceive())
         {
-            LOG.debug("Protocol error receiving {}, resetting", dataInfo);
-            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), new Adapter());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Protocol error receiving {}, resetting", dataInfo);
+            session.rst(new RstInfo(getId(), StreamStatus.PROTOCOL_ERROR), Callback.Adapter.INSTANCE);
             return;
         }
 
@@ -301,7 +305,8 @@ public class StandardStream extends IdleTimeout implements IStream
         {
             if (listener != null)
             {
-                LOG.debug("Invoking reply callback with {} on listener {}", replyInfo, listener);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invoking reply callback with {} on listener {}", replyInfo, listener);
                 listener.onReply(this, replyInfo);
             }
         }
@@ -323,7 +328,8 @@ public class StandardStream extends IdleTimeout implements IStream
         {
             if (listener != null)
             {
-                LOG.debug("Invoking headers callback with {} on listener {}", headersInfo, listener);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invoking headers callback with {} on listener {}", headersInfo, listener);
                 listener.onHeaders(this, headersInfo);
             }
         }
@@ -345,9 +351,11 @@ public class StandardStream extends IdleTimeout implements IStream
         {
             if (listener != null)
             {
-                LOG.debug("Invoking data callback with {} on listener {}", dataInfo, listener);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invoking data callback with {} on listener {}", dataInfo, listener);
                 listener.onData(this, dataInfo);
-                LOG.debug("Invoked data callback with {} on listener {}", dataInfo, listener);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Invoked data callback with {} on listener {}", dataInfo, listener);
             }
         }
         catch (Exception x)
@@ -547,7 +555,7 @@ public class StandardStream extends IdleTimeout implements IStream
 
         private StreamCallback()
         {
-            this(new Adapter());
+            this(Callback.Adapter.INSTANCE);
         }
 
         private StreamCallback(Callback callback)

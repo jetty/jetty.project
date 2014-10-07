@@ -79,6 +79,8 @@ public abstract class AbstractLogger implements Logger
     public void debug(String msg, long arg)
     {
         if (isDebugEnabled())
-            debug(msg,new Long(arg));
+        {
+            debug(msg,new Object[] { new Long(arg) });
+        }
     }
 }

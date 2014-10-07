@@ -175,7 +175,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         // Look for extra resource
         @SuppressWarnings("unchecked")
         Set<Resource> resources = (Set<Resource>)context.getAttribute(RESOURCE_DIRS);
-        if (resources!=null)
+        if (resources!=null && !resources.isEmpty())
         {
             Resource[] collection=new Resource[resources.size()+1];
             int i=0;
@@ -360,7 +360,7 @@ public class WebInfConfiguration extends AbstractConfiguration
         context.setTempDirectory(tmpDir);
     }
 
-    private void configureTempDirectory (File dir, WebAppContext context)
+    public void configureTempDirectory (File dir, WebAppContext context)
     {
         if (dir == null)
             throw new IllegalArgumentException("Null temp dir");
@@ -402,7 +402,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new IllegalStateException("No resourceBase or war set for context");
 
             // Accept aliases for WAR files
-            if (web_app.getAlias() != null)
+            if (web_app.isAlias())
             {
                 LOG.debug(web_app + " anti-aliased to " + web_app.getAlias());
                 web_app = context.newResource(web_app.getAlias());

@@ -20,8 +20,6 @@ package org.eclipse.jetty.server;
 
 import java.util.Objects;
 
-import javax.servlet.http.HttpServletRequest;
-
 /**
  * Customizes requests that lack the {@code Host} header (for example, HTTP 1.0 requests).
  * <p />
@@ -64,10 +62,6 @@ public class HostHeaderCustomizer implements HttpConfiguration.Customizer
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
         if (request.getHeader("Host") == null)
-        {
-            request.setServerName(serverName);
-            if (serverPort > 0)
-                request.setServerPort(serverPort);
-        }
+            request.setAuthority(serverName,serverPort);  // TODO set the field as well?
     }
 }

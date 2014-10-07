@@ -25,6 +25,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
+import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
@@ -122,9 +123,10 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
             Dictionary headers = bundle.getHeaders();
 
             //does the bundle have a OSGiWebappConstants.JETTY_WAR_FOLDER_PATH 
-            if (headers.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH) != null)
+            String resourcePath = Util.getManifestHeaderValue(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH, OSGiWebappConstants.JETTY_WAR_RESOURCE_PATH, headers);
+            if (resourcePath != null)
             {
-                String base = (String)headers.get(OSGiWebappConstants.JETTY_WAR_FOLDER_PATH);
+                String base = resourcePath;
                 contextPath = getContextPath(bundle);
                 String originId = getOriginId(bundle, base);
  

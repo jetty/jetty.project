@@ -27,10 +27,17 @@ protonego-impl/alpn-${java.version}
 lib/jetty-alpn-client-${jetty.version}.jar
 lib/jetty-alpn-server-${jetty.version}.jar
 
-[xml]
-etc/protonego-alpn.xml
-
 [files]
 lib/
 lib/alpn/
+
+[ini-template]
+# alpn.protocols=h2-14,http/1.1
+# alpn.defaultProtocol=http/1.1
+
+[license]
+ALPN is a hosted at github under the GPL v2 with ClassPath Exception.
+ALPM replaces/modifies OpenJDK classes in the java.sun.security.ssl package.
+http://github.com/jetty-project/jetty-alpn
+http://openjdk.java.net/legal/gplv2+ce.html
 

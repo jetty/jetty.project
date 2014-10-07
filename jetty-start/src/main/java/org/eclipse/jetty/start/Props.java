@@ -23,12 +23,12 @@ import static org.eclipse.jetty.start.UsageException.*;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.Properties;
 import java.util.Stack;
+import java.util.TreeMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -60,6 +60,22 @@ public final class Props implements Iterable<Prop>
         {
             this(key,value,origin);
             this.overrides = overrides;
+        }
+
+        @Override
+        public String toString()
+        {
+            StringBuilder builder = new StringBuilder();
+            builder.append("Prop [key=");
+            builder.append(key);
+            builder.append(", value=");
+            builder.append(value);
+            builder.append(", origin=");
+            builder.append(origin);
+            builder.append(", overrides=");
+            builder.append(overrides);
+            builder.append("]");
+            return builder.toString();
         }
     }
 
@@ -98,7 +114,7 @@ public final class Props implements Iterable<Prop>
         return l;
     }
 
-    private Map<String, Prop> props = new HashMap<>();
+    private Map<String, Prop> props = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
     private List<String> sysPropTracking = new ArrayList<>();
 
     public void addAll(Props other)
@@ -114,7 +130,7 @@ public final class Props implements Iterable<Prop>
      * @param arg the argument to parse for a potential property
      * @param source the source for this argument (to track origin of property from)
      */
-    public void addPossibleProperty(String arg, String source)
+    public boolean addPossibleProperty(String arg, String source)
     {
         // Start property (syntax similar to System property)
         if (arg.startsWith("-D"))
@@ -125,15 +141,14 @@ public final class Props implements Iterable<Prop>
                 case 2:
                     setSystemProperty(assign[0],assign[1]);
                     setProperty(assign[0],assign[1],source);
-                    break;
+                    return true;
                 case 1:
                     setSystemProperty(assign[0],"");
                     setProperty(assign[0],"",source);
-                    break;
+                    return true;
                 default:
-                    break;
+                    return false;
             }
-            return;
         }
 
         // Is this a raw property declaration?
@@ -144,10 +159,11 @@ public final class Props implements Iterable<Prop>
             String value = arg.substring(idx + 1);
 
             setProperty(key,value,source);
-            return;
+            return true;
         }
 
         // All other strings are ignored
+        return false;
     }
 
     public String cleanReference(String property)

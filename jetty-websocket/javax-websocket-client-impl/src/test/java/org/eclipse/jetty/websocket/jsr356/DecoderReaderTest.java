@@ -20,8 +20,6 @@ package org.eclipse.jetty.websocket.jsr356;
 
 import static org.hamcrest.Matchers.*;
 
-import org.junit.Ignore;
-
 import java.io.BufferedReader;
 import java.io.File;
 import java.io.FileReader;
@@ -56,10 +54,10 @@ import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-@Ignore
 public class DecoderReaderTest
 {
     public static class Quotes
@@ -137,13 +135,14 @@ public class DecoderReaderTest
         }
 
         @OnMessage
-        public void onMessage(Quotes msg)
+        public synchronized void onMessage(Quotes msg)
         {
+            Integer h=hashCode();
             messageQueue.add(msg);
-            System.out.printf("Quotes from: %s%n",msg.author);
+            System.out.printf("%x: Quotes from: %s%n",h,msg.author);
             for (String quote : msg.quotes)
             {
-                System.out.printf(" - %s%n",quote);
+                System.out.printf("%x: - %s%n",h,quote);
             }
         }
 
@@ -253,6 +252,8 @@ public class DecoderReaderTest
         server.stop();
     }
 
+    // TODO analyse and fix 
+    @Ignore
     @Test
     public void testSingleQuotes() throws Exception
     {
@@ -262,15 +263,17 @@ public class DecoderReaderTest
         client.connectToServer(quoter,server.getWsUri());
         qserver.awaitConnect();
         qserver.writeQuotes("quotes-ben.txt");
-        qserver.close();
         quoter.messageQueue.awaitEventCount(1,1000,TimeUnit.MILLISECONDS);
+        qserver.close();
         quoter.awaitClose();
         Quotes quotes = quoter.messageQueue.poll();
         Assert.assertThat("Quotes Author",quotes.author,is("Benjamin Franklin"));
         Assert.assertThat("Quotes Count",quotes.quotes.size(),is(3));
     }
-    
+
+    // TODO analyse and fix 
     @Test
+    @Ignore ("Quotes appear to be able to arrive in any order?")
     public void testTwoQuotes() throws Exception
     {
         QuotesSocket quoter = new QuotesSocket();
@@ -280,8 +283,8 @@ public class DecoderReaderTest
         qserver.awaitConnect();
         qserver.writeQuotes("quotes-ben.txt");
         qserver.writeQuotes("quotes-twain.txt");
-        qserver.close();
         quoter.messageQueue.awaitEventCount(2,1000,TimeUnit.MILLISECONDS);
+        qserver.close();
         quoter.awaitClose();
         Quotes quotes = quoter.messageQueue.poll();
         Assert.assertThat("Quotes Author",quotes.author,is("Benjamin Franklin"));

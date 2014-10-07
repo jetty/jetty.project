@@ -4,11 +4,14 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.2.0-SNAPSHOT</version>
+    <version>9.3.0-SNAPSHOT</version>
   </parent>
   <name>Jetty Tests :: Webapps :: Dispatch Webapp</name>
   <artifactId>test-dispatch-webapp</artifactId>
   <packaging>war</packaging>
+   <properties>
+    <bundle-symbolic-name>${project.groupId}.dispatch</bundle-symbolic-name>
+  </properties>
   <build>
     <plugins>
       <plugin>

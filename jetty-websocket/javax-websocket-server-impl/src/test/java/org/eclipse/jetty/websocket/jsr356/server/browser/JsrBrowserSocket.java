@@ -23,7 +23,6 @@ import java.text.SimpleDateFormat;
 import java.util.Calendar;
 import java.util.Locale;
 import java.util.Random;
-
 import javax.websocket.CloseReason;
 import javax.websocket.OnClose;
 import javax.websocket.OnMessage;
@@ -206,13 +205,15 @@ public class JsrBrowserSocket
     {
         if (this.session == null)
         {
-            LOG.debug("Not connected");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not connected");
             return;
         }
 
         if (session.isOpen() == false)
         {
-            LOG.debug("Not open");
+            if (LOG.isDebugEnabled())
+                LOG.debug("Not open");
             return;
         }
 
