@@ -592,7 +592,7 @@ public class RequestTest
             {
                 // Should be "testä"
                 // "test" followed by a LATIN SMALL LETTER A WITH DIAERESIS
-                request.setCharacterEncoding(StringUtil.__ISO_8859_1);
+                request.setCharacterEncoding(StandardCharsets.ISO_8859_1.name());
                 String actual = request.getParameter("name2");
                 return "test\u00e4".equals(actual);
             }
