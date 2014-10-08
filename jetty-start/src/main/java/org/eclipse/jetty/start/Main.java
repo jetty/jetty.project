@@ -797,7 +797,7 @@ public class Main
 
       if (args.getProperties().getString("STOP.WAIT") != null)
       {
-          int stopWait = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
+          int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
 
           stop(stopPort,stopKey,stopWait);
       }
