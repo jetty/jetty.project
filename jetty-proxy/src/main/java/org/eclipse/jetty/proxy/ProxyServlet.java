@@ -188,8 +188,10 @@ public class ProxyServlet extends HttpServlet
     {
         String servletName = getServletConfig().getServletName();
         servletName = servletName.replace('-', '.');
-        if (!servletName.startsWith(getClass().getPackage().getName()))
+        if ((getClass().getPackage() != null) && !servletName.startsWith(getClass().getPackage().getName()))
+        {
             servletName = getClass().getName() + "." + servletName;
+        }
         return Log.getLogger(servletName);
     }
 
