@@ -39,6 +39,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -48,6 +50,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -67,7 +70,7 @@ public class RequestLogHandlerTest
         @Override
         public void log(Request request, Response response)
         {
-            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getHttpURI().toString(),request.getProtocol(),response.getStatus()));
+            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getHttpURI().getPathQuery(),request.getProtocol(),response.getStatus()));
         }
     }
     
@@ -373,6 +376,8 @@ public class RequestLogHandlerTest
 
         try
         {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpChannelState.class)).setHideStacks(true);
             server.start();
 
             String host = connector.getHost();
@@ -411,6 +416,8 @@ public class RequestLogHandlerTest
         finally
         {
             server.stop();
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpChannelState.class)).setHideStacks(false);
         }
     }
 
