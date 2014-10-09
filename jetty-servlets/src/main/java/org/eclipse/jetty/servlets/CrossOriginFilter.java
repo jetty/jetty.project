@@ -35,6 +35,8 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -339,6 +341,9 @@ public class CrossOriginFilter implements Filter
     private void handleSimpleResponse(HttpServletRequest request, HttpServletResponse response, String origin)
     {
         response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin);
+        //W3C CORS spec http://www.w3.org/TR/cors/#resource-implementation
+        if (!anyOriginAllowed)
+            response.addHeader("Vary", ORIGIN_HEADER);
         if (allowCredentials)
             response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
         if (!exposedHeaders.isEmpty())
@@ -354,6 +359,9 @@ public class CrossOriginFilter implements Filter
         if (!headersAllowed)
             return;
         response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin);
+        //W3C CORS spec http://www.w3.org/TR/cors/#resource-implementation
+        if (!anyOriginAllowed)
+            response.addHeader("Vary", ORIGIN_HEADER);
         if (allowCredentials)
             response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
         if (preflightMaxAge > 0)
