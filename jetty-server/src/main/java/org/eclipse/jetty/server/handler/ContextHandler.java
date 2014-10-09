@@ -2446,6 +2446,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public String getServerInfo()
         {
+            // NOTE: DO NOT CHANGE
+            //   this is used by weld to detect Jetty
+            //   implementation version
+            // See: https://github.com/weld/core/blob/master/environments/servlet/core/src/main/java/org/jboss/weld/environment/jetty/JettyContainer.java
+            //   and its touch(ContainerContext) method
             return "jetty/" + Server.getVersion();
         }
 
