@@ -30,6 +30,7 @@
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <project.reporting.outputEncoding>UTF-8</project.reporting.outputEncoding>
     <bundle-symbolic-name>${project.groupId}.cdi.webapp.it</bundle-symbolic-name>
     <scripts-dir>${project.basedir}/src/test/scripts</scripts-dir>
     <test-base-dir>${project.build.directory}/test-base</test-base-dir>
