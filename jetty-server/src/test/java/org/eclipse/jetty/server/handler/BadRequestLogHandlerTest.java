@@ -74,7 +74,7 @@ public class BadRequestLogHandlerTest
         @Override
         public void log(Request request, Response response)
         {
-            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getUri().toString(),request.getProtocol(),response.getStatus()));
+            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getHttpURI(),request.getProtocol(),response.getStatus()));
         }
     }
     

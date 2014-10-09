@@ -33,6 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.nosql.NoSqlSession;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.Test;
@@ -94,7 +95,8 @@ public class AttributeNameTest
                 assertEquals("a.b.c",sessionTestResponse[0]);
  
 
-                String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+                String sessionCookie = response.getHeaders().get(HttpHeader.SET_COOKIE);
+                      
                 assertTrue(sessionCookie != null);
                 //Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=","$1\\$Path=");
