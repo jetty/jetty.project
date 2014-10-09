@@ -68,7 +68,7 @@ import org.eclipse.jetty.util.log.Logger;
  * minutes</li>
  * <li><b>allowCredentials</b>, a boolean indicating if the resource allows
  * requests with credentials. Default value is <b>false</b></li>
- * <li><b>exposeHeaders</b>, a comma separated list of HTTP headers that
+ * <li><b>exposedHeaders</b>, a comma separated list of HTTP headers that
  * are allowed to be exposed on the client. Default value is the
  * <b>empty list</b></li>
  * <li><b>chainPreflight</b>, if true preflight requests are chained to their
