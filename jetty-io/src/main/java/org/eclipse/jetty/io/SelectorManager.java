@@ -446,8 +446,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         protected void doStart() throws Exception
         {
             super.doStart();
-            _selector = Selector.open();
+            _selector = newSelector();
             _state.set(State.PROCESS);
+        }
+
+        protected Selector newSelector() throws IOException
+        {
+            return Selector.open();
         }
 
         @Override
