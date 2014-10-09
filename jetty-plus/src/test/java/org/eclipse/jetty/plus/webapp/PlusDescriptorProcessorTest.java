@@ -19,6 +19,7 @@
 package org.eclipse.jetty.plus.webapp;
 
 
+import java.lang.reflect.InvocationTargetException;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertTrue;
@@ -50,6 +51,7 @@ public class PlusDescriptorProcessorTest
     protected FragmentDescriptor fragDescriptor1;
     protected FragmentDescriptor fragDescriptor2;
     protected FragmentDescriptor fragDescriptor3;
+    protected FragmentDescriptor fragDescriptor4;
     protected WebAppContext context;
     /**
      * @throws java.lang.Exception
@@ -81,6 +83,9 @@ public class PlusDescriptorProcessorTest
         URL frag3Xml = Thread.currentThread().getContextClassLoader().getResource("web-fragment-3.xml");
         fragDescriptor3 = new FragmentDescriptor(org.eclipse.jetty.util.resource.Resource.newResource(frag3Xml));
         fragDescriptor3.parse();
+        URL frag4Xml = Thread.currentThread().getContextClassLoader().getResource("web-fragment-4.xml");
+        fragDescriptor4 = new FragmentDescriptor(org.eclipse.jetty.util.resource.Resource.newResource(frag4Xml));
+        fragDescriptor4.parse();
     }
 
     @After
@@ -92,6 +97,32 @@ public class PlusDescriptorProcessorTest
         Context compCtx =  (Context)ic.lookup ("java:comp");
         compCtx.destroySubcontext("env");
         Thread.currentThread().setContextClassLoader(oldLoader);
+    }
+
+    @Test
+    public void testMissingResourceDeclaration()
+    throws Exception
+    {
+        ClassLoader oldLoader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(context.getClassLoader());
+
+        try
+        {
+            PlusDescriptorProcessor pdp = new PlusDescriptorProcessor();
+            pdp.process(context, fragDescriptor4);
+            fail("Expected missing resource declaration");
+        }
+        catch (InvocationTargetException ex)
+        {
+            Throwable cause = ex.getCause();
+            assertNotNull(cause);
+            assertNotNull(cause.getMessage());
+            assertTrue(cause.getMessage().contains("jdbc/mymissingdatasource"));
+        }
+        finally
+        {
+            Thread.currentThread().setContextClassLoader(oldLoader);
+        }
     }
 
     @Test

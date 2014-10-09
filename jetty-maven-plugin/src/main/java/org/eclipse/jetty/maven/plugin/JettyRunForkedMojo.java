@@ -30,10 +30,12 @@ import java.io.OutputStream;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
+import java.util.Map;
 import java.util.Properties;
 import java.util.Random;
 import java.util.Set;
@@ -137,6 +139,14 @@ public class JettyRunForkedMojo extends JettyRunMojo
      * @parameter default-value="50"
      */
     private int maxStartupLines;
+    
+    
+    /**
+     * Extra environment variables to be passed to the forked process
+     * 
+     * @parameter
+     */
+    private Map<String,String> env = new HashMap<String,String>();
 
     /**
      * The forked jetty instance
@@ -344,7 +354,13 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 PluginLog.getLog().debug(Arrays.toString(cmd.toArray()));
             
             PluginLog.getLog().info("Forked process starting");
-
+            
+            //set up extra environment vars if there are any
+            if (!env.isEmpty())
+            {
+                builder.environment().putAll(env);
+            }
+            
             if (waitForChild)
             {
                 forkedProcess = builder.start();

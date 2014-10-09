@@ -399,8 +399,8 @@ public class MongoSessionManager extends NoSqlSessionManager
                 // cleanup, remove values from session, that don't exist in data anymore:
                 for (String str : session.getNames())
                 {
-                    if (!attrs.keySet().contains(str))
-                    {
+                   if (!attrs.keySet().contains(encodeName(str)))
+                   {
                         session.doPutOrRemove(str,null);
                         session.unbindValue(str,session.getAttribute(str));
                     }
