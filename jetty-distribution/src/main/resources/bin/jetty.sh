@@ -444,7 +444,7 @@ case "$ACTION" in
         exit 1
       fi
 
-      if [ "$JETTY_USER" ] 
+      if [ -n "$JETTY_USER" ] 
       then
         unset SU_SHELL
         if [ "$JETTY_SHELL" ]

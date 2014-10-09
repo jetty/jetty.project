@@ -590,8 +590,11 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
-                request.setCharacterEncoding(StringUtil.__ISO_8859_1);
-                return "test\u00e4".equals(request.getParameter("name2"));
+                // Should be "testä"
+                // "test" followed by a LATIN SMALL LETTER A WITH DIAERESIS
+                request.setCharacterEncoding(StandardCharsets.ISO_8859_1.name());
+                String actual = request.getParameter("name2");
+                return "test\u00e4".equals(actual);
             }
         };
 
@@ -604,7 +607,8 @@ public class RequestTest
             "Connection: close\r\n"+
             "\r\n"+
             content;
-        _connector.getResponses(request);
+        String response = _connector.getResponses(request);
+        assertThat(response,Matchers.containsString(" 200 OK"));
     }
     
     @Test
@@ -615,11 +619,15 @@ public class RequestTest
             @Override
             public boolean check(HttpServletRequest request,HttpServletResponse response) throws IOException
             {
-                return "test\u00e4".equals(request.getParameter("name2"));
+                // http://www.ltg.ed.ac.uk/~richard/utf-8.cgi?input=00e4&mode=hex
+                // Should be "testä"
+                // "test" followed by a LATIN SMALL LETTER A WITH DIAERESIS
+                String actual = request.getParameter("name2");
+                return "test\u00e4".equals(actual);
             }
         };
 
-        String content="name1=test&name2=test%C4%A4&name3=&name4=test";
+        String content="name1=test&name2=test%C3%A4&name3=&name4=test";
         String request="POST / HTTP/1.1\r\n"+
             "Host: whatever\r\n"+
             "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n" +
@@ -627,7 +635,8 @@ public class RequestTest
             "Connection: close\r\n"+
             "\r\n"+
             content;
-        _connector.getResponses(request);
+        String response = _connector.getResponses(request);
+        assertThat(response,Matchers.containsString(" 200 OK"));
     }
     
     
@@ -748,6 +757,8 @@ public class RequestTest
                                                 "Host: myhost\n"+
                                                 "Connection: close\n"+
                                                 "\n");
+        assertThat(response,Matchers.containsString(" 302 Found"));
+        assertThat(response,Matchers.containsString("Location: http://myhost/foo"));
     }
 
     @Test
@@ -1213,6 +1224,7 @@ public class RequestTest
     private class RequestHandler extends AbstractHandler
     {
         private RequestTester _checker;
+        @SuppressWarnings("unused")
         private String _content;
 
         @Override

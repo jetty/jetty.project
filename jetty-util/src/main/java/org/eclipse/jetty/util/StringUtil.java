@@ -43,8 +43,10 @@ public class StringUtil
     
     public static final String ALL_INTERFACES="0.0.0.0";
     public static final String CRLF="\015\012";
-    public static final String __LINE_SEPARATOR=
-        System.getProperty("line.separator","\n");
+    
+    /** @deprecated use {@link System#lineSeparator()} instead */
+    @Deprecated
+    public static final String __LINE_SEPARATOR = System.lineSeparator();
        
     public static final String __ISO_8859_1="ISO-8859-1";
     public final static String __UTF8="UTF-8";

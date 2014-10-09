@@ -98,7 +98,7 @@ public class HttpSpiContextHandler extends ContextHandler
             ex.printStackTrace(writer);
             writer.println("</pre>");
 
-            writer.println("<p><i><small><a href=\"http://jetty.mortbay.org\">Powered by jetty://</a></small></i></p>");
+            writer.println("<p><i><small><a href=\"http://eclipse.org/jetty\">Powered by jetty://</a></small></i></p>");
 
             writer.close();
         }

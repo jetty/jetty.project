@@ -76,8 +76,8 @@ public class SecuredRedirectHandlerTest
 
         server = new Server();
 
-        int port = 12080;
-        int securePort = 12443;
+        int port = 32080;
+        int securePort = 32443;
 
         // Setup HTTP Configuration
         HttpConfiguration httpConf = new HttpConfiguration();
