@@ -146,7 +146,7 @@
                   <arg file="${jetty.home}"/>
                   <arg file="${jetty.base}"/>
                 </exec>
-                <waitfor maxwait="1" maxwaitunit="minute"
+                <waitfor maxwait="5" maxwaitunit="second"
                   checkevery="100" checkeveryunit="millisecond">
                   <http url="http://localhost:58080/cdi-webapp/"/>
                 </waitfor>

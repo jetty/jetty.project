@@ -35,5 +35,10 @@
   </build>
 
   <dependencies>
+    <dependency>
+      <groupId>org.eclipse.jetty</groupId>
+      <artifactId>jetty-deploy</artifactId>
+      <version>${project.version}</version>
+    </dependency>
   </dependencies>
 </project>
