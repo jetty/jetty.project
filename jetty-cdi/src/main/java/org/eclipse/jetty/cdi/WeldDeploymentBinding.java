@@ -47,6 +47,9 @@ public class WeldDeploymentBinding implements AppLifeCycle.Binding
         {
             WebAppContext webapp = (WebAppContext)handler;
             
+            // Add context specific weld container reference.
+            // See https://issues.jboss.org/browse/WELD-1710
+            // and https://github.com/weld/core/blob/2.2.5.Final/environments/servlet/core/src/main/java/org/jboss/weld/environment/servlet/WeldServletLifecycle.java#L244-L253
             webapp.setInitParameter("org.jboss.weld.environment.container.class",
                     "org.jboss.weld.environment.jetty.JettyContainer");
             
