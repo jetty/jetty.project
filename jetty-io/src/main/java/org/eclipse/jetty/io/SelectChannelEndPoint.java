@@ -94,28 +94,57 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     public void onSelected()
     {
         /**
-         * This method never runs concurrently with other
-         * methods that update _interestState.
+         * This method may run concurrently with {@link #changeInterests(int, boolean)}.
          */
 
         assert _selector.isSelectorThread();
 
-        // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
-        int readyOps = _key.readyOps();
-        int oldInterestOps = _interestOps;
-        int newInterestOps = oldInterestOps & ~readyOps;
-        _interestOps = newInterestOps;
+        while (true)
+        {
+            State current = _interestState.get();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Processing, state {} for {}", current, this);
+            switch (current)
+            {
+                case SELECTING:
+                {
+                    if (!_interestState.compareAndSet(current, State.PROCESSING))
+                        continue;
+                    break;
+                }
+                case PROCESSING:
+                {
+                    // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
+                    int readyOps = _key.readyOps();
+                    int oldInterestOps = _interestOps;
+                    int newInterestOps = oldInterestOps & ~readyOps;
+                    _interestOps = newInterestOps;
 
-        if (!_interestState.compareAndSet(State.SELECTING, State.PENDING))
-            throw new IllegalStateException("Invalid state: " + _interestState);
+                    if (!_interestState.compareAndSet(current, State.PENDING))
+                        throw new IllegalStateException("Invalid state: " + _interestState);
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("onSelected {}->{} for {}", oldInterestOps, newInterestOps, this);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("onSelected {}->{} for {}", oldInterestOps, newInterestOps, this);
 
-        if ((readyOps & SelectionKey.OP_READ) != 0)
-            getFillInterest().fillable();
-        if ((readyOps & SelectionKey.OP_WRITE) != 0)
-            getWriteFlusher().completeWrite();
+                    if ((readyOps & SelectionKey.OP_READ) != 0)
+                        getFillInterest().fillable();
+                    if ((readyOps & SelectionKey.OP_WRITE) != 0)
+                        getWriteFlusher().completeWrite();
+
+                    return;
+                }
+                case CHANGING:
+                {
+                    // Wait until the change is finished.
+                    Thread.yield();
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException("Invalid state: " + current);
+                }
+            }
+        }
     }
 
     @Override
@@ -130,6 +159,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         while (true)
         {
             State current = _interestState.get();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updating key, state {} for {}", current, this);
             switch (current)
             {
                 case SELECTING:
@@ -147,23 +178,30 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 }
                 case UPDATING:
                 {
-                    // Set the key interest as expected.
                     if (!_interestState.compareAndSet(current, State.SELECTING))
-                        throw new IllegalStateException();
-                    // Set the key interests after updating the state, otherwise
-                    // the selector may select and call onSelected() concurrently.
+                        throw new IllegalStateException("Invalid state: " + _interestState);
+                    // Set the key interest as expected.
                     setKeyInterests();
                     return;
                 }
                 case CHANGING:
                 {
                     // We lost the race to update _interestOps,
-                    // let changeInterests() perform the update.
+                    // we must wait for changeInterests() to finish.
+                    if (_interestState.compareAndSet(current, State.CHANGING_UPDATING))
+                        break;
+                    // If we fail the CAS, then the change is finished.
                     return;
+                }
+                case CHANGING_UPDATING:
+                {
+                    // Wait for changeInterests() to finish.
+                    Thread.yield();
+                    break;
                 }
                 default:
                 {
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("Invalid state: " + current);
                 }
             }
         }
@@ -172,13 +210,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     private void changeInterests(int operation, boolean add)
     {
         /**
-         * This method may run concurrently with {@link #updateKey()}.
+         * This method may run concurrently with
+         * {@link #updateKey()} and {@link #onSelected()}.
          */
 
         boolean pending = false;
         while (true)
         {
             State current = _interestState.get();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Changing interests, state {} for {}", current, this);
             switch (current)
             {
                 case SELECTING:
@@ -189,6 +230,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                     pending = current == State.PENDING;
                     break;
                 }
+                case PROCESSING:
                 case UPDATING:
                 {
                     // We lost the race to update _interestOps, but we
@@ -213,7 +255,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                         _interestOps = newInterestOps;
 
                     if (!_interestState.compareAndSet(current, State.SELECTING))
-                        throw new IllegalStateException("Invalid state: " + current);
+                        break;
 
                     // We only update the key if updateKey() does not do it for us,
                     // because doing it from the selector thread is less expensive.
@@ -222,9 +264,17 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                     submitKeyUpdate(!pending);
                     return;
                 }
+                case CHANGING_UPDATING:
+                {
+                    if (!_interestState.compareAndSet(current, State.SELECTING))
+                        throw new IllegalStateException("Invalid state " + _interestState);
+                    // If we could CAS, we let the selector thread
+                    // update the key since it will be less expensive.
+                    return;
+                }
                 default:
                 {
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("Invalid state " + current);
                 }
             }
         }
@@ -241,7 +291,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         int oldInterestOps = _key.interestOps();
         int newInterestOps = _interestOps;
         if (LOG.isDebugEnabled())
-            LOG.debug("Key interests update {} -> {}", oldInterestOps, newInterestOps);
+            LOG.debug("Key interests update {} -> {} for {}", oldInterestOps, newInterestOps, this);
         if (oldInterestOps != newInterestOps)
             _key.interestOps(newInterestOps);
     }
@@ -297,6 +347,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
 
     private enum State
     {
-        SELECTING, PENDING, UPDATING, CHANGING
+        SELECTING, PROCESSING, PENDING, UPDATING, CHANGING, CHANGING_UPDATING
     }
 }
