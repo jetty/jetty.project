@@ -130,6 +130,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         while (true)
         {
             State current = _interestState.get();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Updating key, state {} for {}", current, this);
             switch (current)
             {
                 case SELECTING:
@@ -147,19 +149,26 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 }
                 case UPDATING:
                 {
-                    // Set the key interest as expected.
                     if (!_interestState.compareAndSet(current, State.SELECTING))
                         throw new IllegalStateException();
-                    // Set the key interests after updating the state, otherwise
-                    // the selector may select and call onSelected() concurrently.
+                    // Set the key interest as expected.
                     setKeyInterests();
                     return;
                 }
                 case CHANGING:
                 {
                     // We lost the race to update _interestOps,
-                    // let changeInterests() perform the update.
+                    // we must wait for changeInterests() to finish.
+                    if (_interestState.compareAndSet(current, State.CHANGING_UPDATING))
+                        break;
+                    // If we fail the CAS, then the change is finished.
                     return;
+                }
+                case CHANGING_UPDATING:
+                {
+                    // Wait for changeInterests() to finish.
+                    Thread.yield();
+                    break;
                 }
                 default:
                 {
@@ -179,6 +188,8 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         while (true)
         {
             State current = _interestState.get();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Changing interests, state {} for {}", current, this);
             switch (current)
             {
                 case SELECTING:
@@ -213,7 +224,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                         _interestOps = newInterestOps;
 
                     if (!_interestState.compareAndSet(current, State.SELECTING))
-                        throw new IllegalStateException("Invalid state: " + current);
+                        break;
 
                     // We only update the key if updateKey() does not do it for us,
                     // because doing it from the selector thread is less expensive.
@@ -222,9 +233,17 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                     submitKeyUpdate(!pending);
                     return;
                 }
+                case CHANGING_UPDATING:
+                {
+                    if (!_interestState.compareAndSet(current, State.SELECTING))
+                        throw new IllegalStateException("Invalid state " + current);
+                    // If we could CAS, we let the selector thread
+                    // update the key since it will be less expensive.
+                    return;
+                }
                 default:
                 {
-                    throw new IllegalStateException();
+                    throw new IllegalStateException("Invalid state " + current);
                 }
             }
         }
@@ -241,7 +260,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         int oldInterestOps = _key.interestOps();
         int newInterestOps = _interestOps;
         if (LOG.isDebugEnabled())
-            LOG.debug("Key interests update {} -> {}", oldInterestOps, newInterestOps);
+            LOG.debug("Key interests update {} -> {} for {}", oldInterestOps, newInterestOps, this);
         if (oldInterestOps != newInterestOps)
             _key.interestOps(newInterestOps);
     }
@@ -297,6 +316,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
 
     private enum State
     {
-        SELECTING, PENDING, UPDATING, CHANGING
+        SELECTING, PENDING, UPDATING, CHANGING, CHANGING_UPDATING
     }
 }
