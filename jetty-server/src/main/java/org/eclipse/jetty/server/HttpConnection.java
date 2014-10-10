@@ -620,8 +620,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     }
                     case FLUSH:
                     {
-                        // Don't write the chunk or the content if this is a HEAD response
-                        if (_channel.getRequest().isHead())
+                        // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content
+                        if (_channel.getRequest().isHead() || _generator.isNoContent())
                         {
                             BufferUtil.clear(chunk);
                             BufferUtil.clear(_content);
