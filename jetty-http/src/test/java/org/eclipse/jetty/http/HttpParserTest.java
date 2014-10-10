@@ -1030,11 +1030,15 @@ public class HttpParserTest
         assertEquals(null,_content);
         assertTrue(_headerCompleted);
         assertTrue(_messageCompleted);
-
+        
+        parser.close();
         parser.reset();
         parser.parseNext(buffer);
         assertFalse(buffer.hasRemaining());
-        assertTrue(parser.isClosed());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
     
     
@@ -1055,6 +1059,9 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("No URI",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
 
@@ -1075,6 +1082,9 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("No URI",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
 
@@ -1094,7 +1104,11 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("Unknown Version",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
+        
     }
 
     @Test
@@ -1113,6 +1127,9 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("No Status",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
 
@@ -1132,6 +1149,9 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("No Status",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
 
@@ -1151,7 +1171,10 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("Unknown Version",_bad);
         assertFalse(buffer.hasRemaining());
-        assertEquals(HttpParser.State.CLOSED,parser.getState()); 
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
+        assertEquals(HttpParser.State.CLOSED,parser.getState());
         
         buffer= BufferUtil.toBuffer(
             "GET / HTTP/1.01\015\012"
@@ -1166,6 +1189,9 @@ public class HttpParserTest
         assertEquals(null,_methodOrVersion);
         assertEquals("Unknown Version",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
     
@@ -1184,6 +1210,9 @@ public class HttpParserTest
         parser.parseNext(buffer);
         assertEquals("Bad EOL",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
 
 
@@ -1199,6 +1228,9 @@ public class HttpParserTest
         parser.parseNext(buffer);
         assertEquals("Bad EOL",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
     
@@ -1221,6 +1253,9 @@ public class HttpParserTest
         assertEquals("GET",_methodOrVersion);
         assertEquals("Bad Content-Length",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
 
@@ -1240,6 +1275,9 @@ public class HttpParserTest
         assertEquals("GET",_methodOrVersion);
         assertEquals("Bad Content-Length",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
 
@@ -1259,6 +1297,9 @@ public class HttpParserTest
         assertEquals("GET",_methodOrVersion);
         assertEquals("Bad Content-Length",_bad);
         assertFalse(buffer.hasRemaining());
+        assertEquals(HttpParser.State.CLOSE,parser.getState());
+        parser.atEOF();
+        parser.parseNext(BufferUtil.EMPTY_BUFFER);
         assertEquals(HttpParser.State.CLOSED,parser.getState());
     }
     

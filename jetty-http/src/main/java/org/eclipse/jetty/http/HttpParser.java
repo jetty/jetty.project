@@ -25,6 +25,7 @@ import static org.eclipse.jetty.http.HttpTokens.TAB;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.EnumSet;
 
 import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
@@ -123,9 +124,13 @@ public class HttpParser
         CHUNK_PARAMS,
         CHUNK,
         END,
-        CLOSED
+        CLOSE,  // The associated stream/endpoint should be closed
+        CLOSED  // The associated stream/endpoint is at EOF
     }
 
+    private final static EnumSet<State> __idleStates = EnumSet.of(State.START,State.END,State.CLOSE,State.CLOSED);
+    private final static EnumSet<State> __completeStates = EnumSet.of(State.END,State.CLOSE,State.CLOSED);
+    
     private final boolean DEBUG=LOG.isDebugEnabled(); // Cache debug to help branch prediction
     private final HttpHandler _handler;
     private final RequestHandler _requestHandler;
@@ -144,7 +149,6 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     private volatile State _state=State.START;
     private volatile boolean _eof;
-    private volatile boolean _closed;
     private HttpMethod _method;
     private String _methodString;
     private HttpVersion _version;
@@ -314,6 +318,12 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------ */
+    public boolean isClose()
+    {
+        return isState(State.CLOSE);
+    }
+
+    /* ------------------------------------------------------------ */
     public boolean isClosed()
     {
         return isState(State.CLOSED);
@@ -322,13 +332,13 @@ public class HttpParser
     /* ------------------------------------------------------------ */
     public boolean isIdle()
     {
-        return isState(State.START)||isState(State.END)||isState(State.CLOSED);
+        return __idleStates.contains(_state);
     }
 
     /* ------------------------------------------------------------ */
     public boolean isComplete()
     {
-        return isState(State.END)||isState(State.CLOSED);
+        return __completeStates.contains(_state);
     }
 
     /* ------------------------------------------------------------------------------- */
@@ -797,10 +807,8 @@ public class HttpParser
                     case CONNECTION:
                         // Don't cache if not persistent
                         if (_valueString!=null && _valueString.contains("close"))
-                        {
-                            _closed=true;
                             _connectionFields=null;
-                        }
+                        
                         break;
 
                     case AUTHORIZATION:
@@ -1161,7 +1169,7 @@ public class HttpParser
                 while (buffer.remaining()>0 && buffer.get(buffer.position())<=HttpTokens.SPACE)
                     buffer.get();
             }
-            else if (_state==State.CLOSED)
+            else if (_state==State.CLOSE || _state==State.CLOSED)
             {
                 if (BufferUtil.hasContent(buffer))
                 {
@@ -1190,6 +1198,7 @@ public class HttpParser
                         break;
                         
                     case END:
+                    case CLOSE:
                         setState(State.CLOSED);
                         break;
                         
@@ -1214,8 +1223,6 @@ public class HttpParser
                         break;
                 }
             }
-            
-            return false;
         }
         catch(BadMessageException e)
         {
@@ -1229,28 +1236,25 @@ public class HttpParser
                 LOG.warn("bad HTTP parsed: "+e._code+(e.getReason()!=null?" "+e.getReason():"")+" for "+_handler,e);
             else
                 LOG.warn("bad HTTP parsed: "+e._code+(e.getReason()!=null?" "+e.getReason():"")+" for "+_handler);
-            setState(State.CLOSED);
+            setState(State.CLOSE);
             _handler.badMessage(e.getCode(), e.getReason());
-            return false;
         }
         catch(NumberFormatException|IllegalStateException e)
         {
             BufferUtil.clear(buffer);
-            LOG.warn("parse exception: "+e.toString()+" for "+_handler);
+            LOG.warn("parse exception: {} in {} for {}",e.toString(),_state,_handler);
             if (DEBUG)
                 LOG.debug(e);
             if (_state.ordinal()<=State.END.ordinal())
             {
-                setState(State.CLOSED);
+                setState(State.CLOSE);
                 _handler.badMessage(400,null);
             }
             else
             {
                 _handler.earlyEOF();
-                setState(State.CLOSED);
+                setState(State.CLOSE);
             }
-
-            return false;
         }
         catch(Exception|Error e)
         {
@@ -1260,17 +1264,16 @@ public class HttpParser
             
             if (_state.ordinal()<=State.END.ordinal())
             {
-                setState(State.CLOSED);
+                setState(State.CLOSE);
                 _handler.badMessage(400,null);
             }
             else
             {
                 _handler.earlyEOF();
-                setState(State.CLOSED);
+                setState(State.CLOSE);
             }
-
-            return false;
         }
+        return false;
     }
 
     protected boolean parseContent(ByteBuffer buffer)
@@ -1439,8 +1442,9 @@ public class HttpParser
     }
     
     /* ------------------------------------------------------------------------------- */
+    /** Signal that the associated data source is at EOF
+     */
     public void atEOF()
-
     {        
         if (DEBUG)
             LOG.debug("atEOF {}", this);
@@ -1448,11 +1452,13 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
+    /** Request that the associated data source be closed
+     */
     public void close()
     {
         if (DEBUG)
             LOG.debug("close {}", this);
-        setState(State.CLOSED);
+        setState(State.CLOSE);
     }
     
     /* ------------------------------------------------------------------------------- */
@@ -1460,10 +1466,11 @@ public class HttpParser
     {
         if (DEBUG)
             LOG.debug("reset {}", this);
+
         // reset state
         if (_state==State.CLOSED)
             return;
-        if (_closed)
+        if (_state==State.CLOSE)
         {
             setState(State.CLOSED);
             return;

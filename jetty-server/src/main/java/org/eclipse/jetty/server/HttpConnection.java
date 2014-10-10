@@ -245,6 +245,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     // We are not in a race here for the request buffer as we have not yet received a request,
                     // so there are not an possible legal threads calling #parseContent or #completed.
                     releaseRequestBuffer();
+                    
+                    // But we may have parsed an error condition, so let's check for close
+                    if (_parser.isClose())
+                        close();
                 }
             }
         }
