@@ -1169,8 +1169,9 @@ public class HttpParser
                 while (buffer.remaining()>0 && buffer.get(buffer.position())<=HttpTokens.SPACE)
                     buffer.get();
             }
-            else if (_state==State.CLOSE || _state==State.CLOSED)
+            else if (_state==State.CLOSE)
             {
+                // Seeking EOF
                 if (BufferUtil.hasContent(buffer))
                 {
                     // Just ignore data when closed
@@ -1179,9 +1180,13 @@ public class HttpParser
                     if (_headerBytes>_maxHeaderBytes)
                     {
                         // Don't want to waste time reading data of a closed request
-                        throw new IllegalStateException("too much data when seeking close");
+                        throw new IllegalStateException("too much data seeking EOF");
                     }
                 }
+            }
+            else if (_state==State.CLOSED)
+            {
+                BufferUtil.clear(buffer);
             }
             
             // Handle EOF
@@ -1245,15 +1250,17 @@ public class HttpParser
             LOG.warn("parse exception: {} in {} for {}",e.toString(),_state,_handler);
             if (DEBUG)
                 LOG.debug(e);
-            if (_state.ordinal()<=State.END.ordinal())
+            
+            switch(_state)
             {
-                setState(State.CLOSE);
-                _handler.badMessage(400,null);
-            }
-            else
-            {
-                _handler.earlyEOF();
-                setState(State.CLOSE);
+                case CLOSED:
+                    break;
+                case CLOSE:
+                    _handler.earlyEOF();
+                    break;
+                default:
+                    setState(State.CLOSE);
+                    _handler.badMessage(400,null);
             }
         }
         catch(Exception|Error e)
@@ -1261,16 +1268,17 @@ public class HttpParser
             BufferUtil.clear(buffer);
 
             LOG.warn("parse exception: "+e.toString()+" for "+_handler,e);
-            
-            if (_state.ordinal()<=State.END.ordinal())
+
+            switch(_state)
             {
-                setState(State.CLOSE);
-                _handler.badMessage(400,null);
-            }
-            else
-            {
-                _handler.earlyEOF();
-                setState(State.CLOSE);
+                case CLOSED:
+                    break;
+                case CLOSE:
+                    _handler.earlyEOF();
+                    break;
+                default:
+                    setState(State.CLOSE);
+                    _handler.badMessage(400,null);
             }
         }
         return false;
@@ -1468,13 +1476,8 @@ public class HttpParser
             LOG.debug("reset {}", this);
 
         // reset state
-        if (_state==State.CLOSED)
+        if (_state==State.CLOSE || _state==State.CLOSED)
             return;
-        if (_state==State.CLOSE)
-        {
-            setState(State.CLOSED);
-            return;
-        }
         
         setState(State.START);
         _endOfContent=EndOfContent.UNKNOWN_CONTENT;
