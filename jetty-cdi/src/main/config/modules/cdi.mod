@@ -5,6 +5,7 @@
 [depend]
 deploy
 annotations
+plus
 # JSP (and EL) are requirements for CDI and Weld
 jsp
 
