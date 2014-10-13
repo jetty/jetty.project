@@ -260,10 +260,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public void earlyEOF()
     {
         HttpExchange exchange = getHttpExchange();
+        HttpConnectionOverHTTP connection = getHttpConnection();
         if (exchange == null)
-            getHttpConnection().close();
+            connection.close();
         else
-            failAndClose(new EOFException());
+            failAndClose(new EOFException(String.valueOf(connection)));
     }
 
     @Override
@@ -274,7 +275,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             HttpResponse response = exchange.getResponse();
             response.status(status).reason(reason);
-            failAndClose(new HttpResponseException("HTTP protocol violation: bad response", response));
+            failAndClose(new HttpResponseException("HTTP protocol violation: bad response on " + getHttpConnection(), response));
         }
     }
 
