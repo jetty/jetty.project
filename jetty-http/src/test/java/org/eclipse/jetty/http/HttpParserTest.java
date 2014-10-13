@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -34,6 +29,11 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 /**
  *
@@ -1585,7 +1585,7 @@ public class HttpParserTest
                 "Accept: unknown\r\n" + 
                 "\r\n");
 
-        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser.RequestHandler handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parser.parseNext(buffer);
 
