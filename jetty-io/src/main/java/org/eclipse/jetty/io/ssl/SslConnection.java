@@ -36,6 +36,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -552,6 +553,12 @@ public class SslConnection extends AbstractConnection
                                         // or shutting down the output.
                                         return -1;
                                     }
+                                    case NEED_UNWRAP:
+                                    {
+                                        // We expected to read more, but we got closed.
+                                        // Return -1 to indicate to the application to drive the close.
+                                        return -1;
+                                    }
                                     default:
                                     {
                                         throw new IllegalStateException();
@@ -779,7 +786,7 @@ public class SslConnection extends AbstractConnection
 
                             // if we have net bytes, let's try to flush them
                             if (BufferUtil.hasContent(_encryptedOutput))
-                                if (!getEndPoint().flush(_encryptedOutput));
+                                if (!getEndPoint().flush(_encryptedOutput))
                                     getEndPoint().flush(_encryptedOutput); // one retry
 
                             // But we also might have more to do for the handshaking state.
@@ -823,10 +830,6 @@ public class SslConnection extends AbstractConnection
                             }
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                throw e;
             }
             finally
             {
