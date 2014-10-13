@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.spdy.server;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -47,6 +44,12 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 @RunWith(Parameterized.class)
 public class NPNModuleTest
 {
@@ -55,8 +58,8 @@ public class NPNModuleTest
 
     static
     {
-        /** The main() method in this test case can be run to validate this list independantly */
-        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.7.v20140316/npn-boot-1.1.7.v20140316.jar");
+        /** The main() method in this test case can be run to validate this list independently */
+        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.8.v20141013/npn-boot-1.1.8.v20141013.jar");
         KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar");
         KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar");
         KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.4.v20130313/npn-boot-1.1.4.v20130313.jar");
