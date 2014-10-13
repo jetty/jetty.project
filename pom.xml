@@ -16,7 +16,7 @@
     <build-support-version>1.1</build-support-version>
     <slf4j-version>1.6.6</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
-    <npn.api.version>1.1.0.v20120525</npn.api.version>
+    <npn.api.version>1.1.1.v20141010</npn.api.version>
     <alpn.api.version>1.0.0</alpn.api.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
     <npn.version>undefined</npn.version>
@@ -935,7 +935,7 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.7.v20140316</npn.version>
+        <npn.version>1.1.8.v20141013</npn.version>
         <alpn.version>7.0.0.v20140317</alpn.version>
       </properties>
     </profile>
@@ -948,7 +948,7 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.7.v20140316</npn.version>
+        <npn.version>1.1.8.v20141013</npn.version>
         <alpn.version>7.0.0.v20140317</alpn.version>
       </properties>
     </profile>
@@ -961,7 +961,7 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.7.v20140316</npn.version>
+        <npn.version>1.1.8.v20141013</npn.version>
         <alpn.version>7.0.0.v20140317</alpn.version>
       </properties>
     </profile>
@@ -974,7 +974,7 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.7.v20140316</npn.version>
+        <npn.version>1.1.8.v20141013</npn.version>
         <alpn.version>7.0.0.v20140317</alpn.version>
       </properties>
     </profile>
