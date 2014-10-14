@@ -716,25 +716,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private void updateKey(SelectionKey key)
         {
             Object attachment = key.attachment();
-            try
-            {
-                if (attachment instanceof SelectableEndPoint)
-                {
-                    ((SelectableEndPoint)attachment).updateKey();
-                }
-            }
-            catch (CancelledKeyException x)
-            {
-                LOG.debug("Ignoring cancelled key for channel {}", key.channel());
-                if (attachment instanceof EndPoint)
-                    closeNoExceptions((EndPoint)attachment);
-            }
-            catch (Throwable x)
-            {
-                LOG.warn("Could not process key for channel " + key.channel(), x);
-                if (attachment instanceof EndPoint)
-                    closeNoExceptions((EndPoint)attachment);
-            }
+            if (attachment instanceof SelectableEndPoint)
+                ((SelectableEndPoint)attachment).updateKey();
         }
 
         private void processConnect(SelectionKey key, Connect connect)
