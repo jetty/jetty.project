@@ -95,6 +95,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 {
                     if (!_interestState.compareAndSet(current, State.LOCKED))
                         continue;
+
                     int readyOps;
                     try
                     {
@@ -121,9 +122,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 }
                 case LOCKED:
                 {
-                    // Wait until changeInterest is finished.
+                    // Wait for other operations to finish.
                     Thread.yield();
                     break;
+                }
+                default:
+                {
+                    throw new IllegalStateException("Invalid state: " + current);
                 }
             }
         }
@@ -149,20 +154,21 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 {
                     if (!_interestState.compareAndSet(current, State.LOCKED))
                         continue;
+
                     try
                     {
                         // Set the key interest as expected.
                         setKeyInterests();
+                        return;
                     }
                     finally
                     {
                         _interestState.set(State.SELECTING);
                     }
-                    return;
                 }
                 case LOCKED:
                 {
-                    // Wait for changeInterests() to finish.
+                    // Wait for other operations to finish.
                     Thread.yield();
                     break;
                 }
@@ -181,7 +187,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
          * {@link #updateKey()} and {@link #onSelected()}.
          */
 
-        boolean pending = false;
         while (true)
         {
             State current = _interestState.get();
@@ -194,25 +199,28 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 {
                     if (!_interestState.compareAndSet(current, State.LOCKED))
                         continue;
+
+                    boolean selecting = current == State.SELECTING;
                     try
                     {
                         int oldInterestOps = _interestOps;
                         int newInterestOps = oldInterestOps | operation;
 
                         if (LOG.isDebugEnabled())
-                            LOG.debug("changeInterests pending={} {}->{} for {}", pending, oldInterestOps, newInterestOps, this);
+                            LOG.debug("changeInterests selecting={} {}->{} for {}", selecting, oldInterestOps, newInterestOps, this);
 
                         if (newInterestOps != oldInterestOps)
                             _interestOps = newInterestOps;
 
-                        if (current==State.SELECTING)
+                        if (selecting)
                             setKeyInterests();
                     }
                     finally
                     {
                         _interestState.set(current);
                     }
-                    if (current==State.SELECTING)
+
+                    if (selecting)
                         _selector.wakeup();
                     
                     return;
@@ -221,9 +229,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                 {
                     // We lost the race to update _interestOps, but we
                     // must update it nonetheless, so yield and spin,
-                    // waiting for the state to be SELECTING again.
+                    // waiting for our chance to update _interestOps.
                     Thread.yield();
                     break;
+                }
+                default:
+                {
+                    throw new IllegalStateException("Invalid state: " + current);
                 }
             }
         }
