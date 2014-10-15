@@ -27,12 +27,17 @@ public class StaticTableHttpField extends HttpField
 {
     private final Object _value;
 
-    public StaticTableHttpField(HttpHeader header,String valueString, Object value)
+    public StaticTableHttpField(HttpHeader header, String name, String valueString, Object value)
     {
-        super(header,header.asString(),valueString);
+        super(header,name,valueString);
         if (value==null)
             throw new IllegalArgumentException();
         _value=value;
+    }
+    
+    public StaticTableHttpField(HttpHeader header,String valueString, Object value)
+    {
+        this (header,header.asString(),valueString, value);
     }
     
     public StaticTableHttpField(String name, String valueString, Object value)
