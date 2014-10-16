@@ -716,21 +716,24 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 for (int i=fields.size();i-->0;)
                 {
                     HttpField field=fields.getField(i);
-                    switch (field.getHeader())
+                    if (field.getHeader() != null)
                     {
-                        case IF_MATCH:
-                            ifm=field.getValue();
-                            break;
-                        case IF_NONE_MATCH:
-                            ifnm=field.getValue();
-                            break;
-                        case IF_MODIFIED_SINCE:
-                            ifms=field.getValue();
-                            break;
-                        case IF_UNMODIFIED_SINCE:
-                            ifums=DateParser.parseDate(field.getValue());
-                            break;
-                        default:
+                        switch (field.getHeader())
+                        {
+                            case IF_MATCH:
+                                ifm=field.getValue();
+                                break;
+                            case IF_NONE_MATCH:
+                                ifnm=field.getValue();
+                                break;
+                            case IF_MODIFIED_SINCE:
+                                ifms=field.getValue();
+                                break;
+                            case IF_UNMODIFIED_SINCE:
+                                ifums=DateParser.parseDate(field.getValue());
+                                break;
+                            default:
+                        }
                     }
                 }
             }
