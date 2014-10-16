@@ -59,6 +59,7 @@ public class NPNModuleTest
     static
     {
         /** The main() method in this test case can be run to validate this list independently */
+        KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.9.v20141016/npn-boot-1.1.9.v20141016.jar");
         KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.8.v20141013/npn-boot-1.1.8.v20141013.jar");
         KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.6.v20130911/npn-boot-1.1.6.v20130911.jar");
         KNOWN_GOOD_NPN_URLS.add("http://central.maven.org/maven2/org/mortbay/jetty/npn/npn-boot/1.1.5.v20130313/npn-boot-1.1.5.v20130313.jar");
