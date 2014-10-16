@@ -141,7 +141,7 @@ public class ResourceCacheTest
         HttpContent content;
         content=cache.lookup(names[8]);
         assertTrue(content!=null);
-        assertEquals(80,content.getContentLength());
+        assertEquals(80,content.getContentLengthValue());
 
         assertEquals(80,cache.getCachedSize());
         assertEquals(1,cache.getCachedFiles());

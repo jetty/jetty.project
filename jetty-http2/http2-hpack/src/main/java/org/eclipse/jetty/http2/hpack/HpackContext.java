@@ -177,8 +177,6 @@ public class HpackContext
                 __headerEntryTable[h.ordinal()]=entry;
         }
     }
-
-    
     
     private int _maxHeaderTableSizeInBytes;
     private int _headerTableSizeInBytes;
@@ -300,6 +298,16 @@ public class HpackContext
             return entry._slot;
 
         return _headerTable.index(entry)+__staticTable.length-1;
+    }
+    
+    public static int staticIndex(HttpHeader header)
+    {
+        if (header==null)
+            return 0;
+        Entry entry=__staticNameMap.get(header.asString());
+        if (entry==null)
+            return 0;
+        return entry.getSlot();
     }
     
     private void evict()

@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpFieldPreEncoder;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.util.BufferUtil;
 
 
@@ -50,24 +49,48 @@ public class HpackFieldPreEncoder implements HttpFieldPreEncoder
     @Override
     public byte[] getEncodedField(HttpHeader header, String name, String value)
     {
+        boolean not_indexed=HpackEncoder.__DO_NOT_INDEX.contains(header);
+        
         ByteBuffer buffer = BufferUtil.allocate(name.length()+value.length()+10);
         BufferUtil.clearToFill(buffer);
-        buffer.put((byte)0x40);
-        Entry entry = header==null?null:HpackContext.getStatic(header);
-        if (entry==null)
+        boolean huffman;
+        int bits;
+        
+        if (not_indexed)
+        {
+            // Non indexed field
+            boolean never_index=HpackEncoder.__NEVER_INDEX.contains(header);
+            huffman=!HpackEncoder.__DO_NOT_HUFFMAN.contains(header);
+            buffer.put(never_index?(byte)0x10:(byte)0x00);
+            bits=4;
+        }
+        else if (header==HttpHeader.CONTENT_LENGTH && value.length()>1)
+        {
+            // Non indexed content length for 2 digits or more
+            buffer.put((byte)0x00);
+            huffman=true;
+            bits=4;
+        }
+        else
+        {
+            // indexed
+            buffer.put((byte)0x40);
+            huffman=!HpackEncoder.__DO_NOT_HUFFMAN.contains(header);
+            bits=6;
+        }
+        
+        int name_idx=HpackContext.staticIndex(header);
+        if (name_idx>0)
+            NBitInteger.encode(buffer,bits,name_idx);
+        else
         {
             buffer.put((byte)0x80);
             NBitInteger.encode(buffer,7,Huffman.octetsNeededLC(name));
             Huffman.encodeLC(buffer,name);
         }
-        else
-        {
-            NBitInteger.encode(buffer,6,entry.getSlot());
-        }
 
-        buffer.put((byte)0x80);
-        NBitInteger.encode(buffer,7,Huffman.octetsNeeded(value));
-        Huffman.encode(buffer,value);
+        HpackEncoder.encodeValue(buffer,huffman,value);
+        
         BufferUtil.flipToFlush(buffer,0);
         return BufferUtil.toArray(buffer);
     }

@@ -662,16 +662,21 @@ public class DefaultServletTest
         assertResponseContains("Content-Length: 12", response);
         assertResponseNotContains("Extra Info", response);
 
+        server.stop();
         context.addFilter(OutputFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        server.start();
+        
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);
         assertResponseNotContains("Content-Length: 12", response);
 
+        server.stop();
         context.getServletHandler().setFilterMappings(new FilterMapping[]{});
         context.getServletHandler().setFilters(new FilterHolder[]{});
-
         context.addFilter(WriterFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        server.start();
+        
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\n\r\n");
         assertResponseContains("Content-Length: 2", response); // 20 something long
         assertResponseContains("Extra Info", response);

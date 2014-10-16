@@ -53,7 +53,7 @@ public class GzipFilterDefaultTest
     {
         return Arrays.asList(new Object[][]
         { 
-            { AsyncGzipFilter.class, GzipFilter.GZIP },
+            { AsyncGzipFilter.class, AsyncGzipFilter.GZIP },
             { GzipFilter.class, GzipFilter.GZIP },
             { GzipFilter.class, GzipFilter.DEFLATE },
         });

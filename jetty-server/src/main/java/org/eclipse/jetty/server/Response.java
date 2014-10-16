@@ -28,6 +28,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -48,6 +49,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
@@ -66,6 +68,7 @@ public class Response implements HttpServletResponse
     private static final String __COOKIE_DELIM="\",;\\ \t";
     private final static String __01Jan1970_COOKIE = DateGenerator.formatCookieDate(0).trim();
     private final static int __MIN_BUFFER_SIZE = 1;
+    private final static HttpField __EXPIRES_01JAN1970 = new PreEncodedHttpField(HttpHeader.EXPIRES,DateGenerator.__01Jan1970);
     
 
     // Cookie building buffer. Reduce garbage for cookie using applications
@@ -145,31 +148,6 @@ public class Response implements HttpServletResponse
         _out.reset();
         _fields.clear();
         _explicitEncoding=false;
-    }
-
-    public void setHeaders(HttpContent httpContent)
-    {
-        Response response = _channel.getResponse();
-        String contentType = httpContent.getContentType();
-        if (contentType != null && !response.getHttpFields().containsKey(HttpHeader.CONTENT_TYPE.asString()))
-            setContentType(contentType);
-        
-        if (httpContent.getContentLength() > 0)
-            setLongContentLength(httpContent.getContentLength());
-
-        String lm = httpContent.getLastModified();
-        if (lm != null)
-            response.getHttpFields().put(HttpHeader.LAST_MODIFIED, lm);
-        else if (httpContent.getResource() != null)
-        {
-            long lml = httpContent.getResource().lastModified();
-            if (lml != -1)
-                response.getHttpFields().putDateField(HttpHeader.LAST_MODIFIED, lml);
-        }
-
-        String etag=httpContent.getETag();
-        if (etag!=null)
-            response.getHttpFields().put(HttpHeader.ETAG,etag);
     }
     
     public HttpOutput getHttpOutput()
@@ -376,7 +354,7 @@ public class Response implements HttpServletResponse
         _fields.add(HttpHeader.SET_COOKIE.toString(), buf.toString());
 
         // Expire responses with set-cookie headers so they do not get cached.
-        _fields.put(HttpHeader.EXPIRES.toString(), DateGenerator.__01Jan1970);
+        _fields.put(__EXPIRES_01JAN1970);
     }
 
 
@@ -1110,7 +1088,7 @@ public class Response implements HttpServletResponse
             }
         }
     }
-
+    
     @Override
     public void setContentType(String contentType)
     {
@@ -1364,6 +1342,69 @@ public class Response implements HttpServletResponse
         {
             super.clearError();
             out=_httpWriter;
+        }
+    }
+
+    public void putHeaders(HttpContent content,long contentLength, boolean etag)
+    {
+        
+        HttpField lm = content.getLastModified();
+        if (lm!=null)
+            _fields.put(lm);
+
+        if (contentLength==0)
+        {
+            _fields.put(content.getContentLength());
+            _contentLength=content.getContentLengthValue();
+        }
+        else if (contentLength>0)
+        {
+            _fields.putLongField(HttpHeader.CONTENT_LENGTH,contentLength);
+            _contentLength=contentLength;
+        }
+
+        HttpField ct=content.getContentType();
+        if (ct!=null)
+        {
+            _fields.put(ct);
+            _contentType=ct.getValue();
+            _characterEncoding=content.getCharacterEncoding();
+            _mimeType=content.getMimeType();
+        }
+        
+        if (etag)
+        {
+            HttpField et = content.getETag();
+            if (et!=null)
+                _fields.put(et);
+        }
+    }
+    
+    public static void putHeaders(HttpServletResponse response, HttpContent content, long contentLength, boolean etag)
+    {   
+        long lml=content.getResource().lastModified();
+        if (lml>=0)
+            response.setDateHeader(HttpHeader.LAST_MODIFIED.asString(),lml);
+
+        if (contentLength==0)
+            contentLength=content.getContentLengthValue();
+        if (contentLength >=0)
+        {
+            if (contentLength<Integer.MAX_VALUE)
+                response.setContentLength((int)contentLength);
+            else
+                response.setHeader(HttpHeader.CONTENT_LENGTH.asString(),Long.toString(contentLength));
+        }
+
+        String ct=content.getContentTypeValue();
+        if (ct!=null && response.getContentType()==null)
+            response.setContentType(content.getContentTypeValue());
+        
+        if (etag)
+        {
+            String et=content.getETagValue();
+            if (et!=null)
+                response.setHeader(HttpHeader.ETAG.asString(),et);
         }
     }
 }

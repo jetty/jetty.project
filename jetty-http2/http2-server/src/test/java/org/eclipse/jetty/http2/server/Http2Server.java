@@ -62,7 +62,7 @@ public class Http2Server
         context.addFilter(PushCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST))
         .setInitParameter("ports","443,6443,8443");
         context.addServlet(new ServletHolder(servlet), "/test/*");
-        context.addServlet(DefaultServlet.class, "/");
+        context.addServlet(DefaultServlet.class, "/").setInitParameter("maxCacheSize","81920");
         server.setHandler(context);
 
 
@@ -122,6 +122,10 @@ public class Http2Server
         @Override
         protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
         {
+            String code=request.getParameter("code");
+            if (code!=null)
+                response.setStatus(Integer.parseInt(code));
+            
             HttpSession session = request.getSession(true);
             if (session.isNew())
                 response.addCookie(new Cookie("bigcookie",
