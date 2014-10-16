@@ -223,7 +223,7 @@ public class SslContextFactory extends AbstractLifeCycle
     public SslContextFactory(boolean trustAll)
     {
         setTrustAll(trustAll);
-        addExcludeProtocols("SSL", "SSLv2", "SSLv3");
+        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
     }
 
     /**
