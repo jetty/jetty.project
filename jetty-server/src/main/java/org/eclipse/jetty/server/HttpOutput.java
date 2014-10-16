@@ -54,10 +54,16 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpOutput extends ServletOutputStream implements Runnable
 {
+    public interface Interceptor
+    {
+        void write(ByteBuffer content, boolean complete, Callback callback);
+    }
+    
     private static Logger LOG = Log.getLogger(HttpOutput.class);
 
     private final HttpChannel _channel;
     private final SharedBlockingCallback _writeBlock;
+    private Interceptor _filter;
     private long _written;
     private ByteBuffer _aggregate;
     private int _bufferSize;
@@ -80,6 +86,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public HttpOutput(HttpChannel channel)
     {
         _channel = channel;
+        _filter = channel;
         _writeBlock = new SharedBlockingCallback()
         {
             @Override
@@ -96,6 +103,16 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         return _channel;
     }
+
+    public Interceptor getFilter()
+    {
+        return _filter;
+    }
+
+    public void setFilter(Interceptor filter)
+    {
+        _filter=filter;
+    }
     
     public boolean isWritten()
     {
@@ -105,12 +122,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public long getWritten()
     {
         return _written;
-    }
-
-    public void reset()
-    {
-        _written = 0;
-        reopen();
     }
 
     public void reopen()
@@ -146,7 +157,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     protected void write(ByteBuffer content, boolean complete, Callback callback)
     {
-        _channel.write(content, complete, callback);
+        _filter.write(content, complete, callback);
     }
 
     private void abort(Throwable failure)
@@ -776,10 +787,18 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         _commitSize = size;
     }
 
+    public void recycle()
+    {
+        resetBuffer();
+        _filter=_channel;
+    }
+    
     public void resetBuffer()
     {
+        _written = 0;
         if (BufferUtil.hasContent(_aggregate))
             BufferUtil.clear(_aggregate);
+        reopen();
     }
 
     @Override

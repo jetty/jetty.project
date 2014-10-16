@@ -118,6 +118,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.util.log.",      // webapp should use server log 
         "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
         "org.eclipse.jetty.servlets.AsyncGzipFilter", // special case for AsyncGzipFilter
+        "org.eclipse.jetty.servlets.GzipFilter", // special case for GzipFilter
         "org.eclipse.jetty.servlets.PushCacheFilter" //must be loaded by container classpath
     } ;
 

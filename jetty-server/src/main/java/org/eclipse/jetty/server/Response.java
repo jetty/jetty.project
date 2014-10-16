@@ -111,7 +111,7 @@ public class Response implements HttpServletResponse
     private final HttpChannel _channel;
     private final HttpFields _fields = new HttpFields();
     private final AtomicInteger _include = new AtomicInteger();
-    private HttpOutput _out;
+    private final HttpOutput _out;
     private int _status = HttpStatus.OK_200;
     private String _reason;
     private Locale _locale;
@@ -145,7 +145,7 @@ public class Response implements HttpServletResponse
         _contentType = null;
         _outputType = OutputType.NONE;
         _contentLength = -1;
-        _out.reset();
+        _out.recycle();
         _fields.clear();
         _explicitEncoding=false;
     }
@@ -153,11 +153,6 @@ public class Response implements HttpServletResponse
     public HttpOutput getHttpOutput()
     {
         return _out;
-    }
-    
-    public void setHttpOutput(HttpOutput out)
-    {
-        _out=out;
     }
 
     public boolean isIncluding()
@@ -1240,15 +1235,6 @@ public class Response implements HttpServletResponse
     {
         if (isCommitted())
             throw new IllegalStateException("Committed");
-
-        switch (_outputType)
-        {
-            case STREAM:
-            case WRITER:
-                _out.reset();
-                break;
-            default:
-        }
 
         _out.resetBuffer();
     }

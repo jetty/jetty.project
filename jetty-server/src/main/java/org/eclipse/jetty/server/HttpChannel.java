@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * HttpTransport.completed().
  *
  */
-public class HttpChannel implements Runnable
+public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
     private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
@@ -593,12 +593,13 @@ public class HttpChannel implements Runnable
 
     /**
      * <p>Non-Blocking write, committing the response if needed.</p>
-     *
+     * Called as last link in HttpOutput.Filter chain
      * @param content  the content buffer to write
      * @param complete whether the content is complete for the response
      * @param callback Callback when complete or failed
      */
-    protected void write(ByteBuffer content, boolean complete, Callback callback)
+    @Override
+    public void write(ByteBuffer content, boolean complete, Callback callback)
     {
         sendResponse(null,content,complete,callback);
     }

@@ -20,7 +20,6 @@ package org.eclipse.jetty.servlets;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -28,8 +27,6 @@ import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
@@ -39,19 +36,26 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.servlets.gzip.AbstractCompressedStream;
-import org.eclipse.jetty.servlets.gzip.CompressedResponseWrapper;
-import org.eclipse.jetty.servlets.gzip.DeflatedOutputStream;
-import org.eclipse.jetty.servlets.gzip.GzipOutputStream;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpOutput;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.servlets.gzip.GzipFactory;
+import org.eclipse.jetty.servlets.gzip.GzipHttpOutputInterceptor;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
-/** GZIP Filter
- * This filter will gzip or deflate the content of a response if: <ul>
+/** Async GZIP Filter
+ * This filter is a gzip filter using jetty internal mechanism to apply gzip compression
+ * to output that is compatible with async IO and does not need to wrap the response nor output stream.
+ * The filter will gzip the content of a response if: <ul>
  * <li>The filter is mapped to a matching path</li>
  * <li>accept-encoding header is set to either gzip, deflate or a combination of those</li>
  * <li>The response status code is >=200 and <300
@@ -61,9 +65,6 @@ import org.eclipse.jetty.util.log.Logger;
  * <li>No content-encoding is specified by the resource</li>
  * </ul>
  *
- * <p>
- * If both gzip and deflate are specified in the accept-encoding header, then gzip will be used.
- * </p>
  * <p>
  * Compressing the content can greatly improve the network bandwidth usage, but at a cost of memory and
  * CPU cycles. If this filter is mapped for static content, then use of efficient direct NIO may be
@@ -85,9 +86,6 @@ import org.eclipse.jetty.util.log.Logger;
  *                            than <code>minGzipSize</code>.
  * </dd>
  * <dt>deflateCompressionLevel</dt>       <dd>The compression level used for deflate compression. (0-9).
- *                            See: {@link java.util.zip.Deflater#Deflater(int, boolean)}
- * </dd>
- * <dt>deflateNoWrap</dt>       <dd>The noWrap setting for deflate compression. Defaults to true. (true/false)
  *                            See: {@link java.util.zip.Deflater#Deflater(int, boolean)}
  * </dd>
  * <dt>methods</dt>       <dd>Comma separated list of HTTP methods to compress. If not set, only GET requests are compressed.
@@ -121,25 +119,22 @@ import org.eclipse.jetty.util.log.Logger;
  *                            the normal processing is done so that the default servlet can send  the pre existing gz content.
  *  </dd>
  *  </dl>
- *  @deprecated Use AsyncGzipFilter
  */
-@Deprecated
-public class GzipFilter extends UserAgentFilter
+public class GzipFilter extends UserAgentFilter implements GzipFactory
 {
     private static final Logger LOG = Log.getLogger(GzipFilter.class);
-    public final static String GZIP="gzip";
-    public final static String ETAG_GZIP="--gzip\"";
-    public final static String DEFLATE="deflate";
-    public final static String ETAG_DEFLATE="--deflate\"";
-    public final static String ETAG="o.e.j.s.GzipFilter.ETag";
+    public final static String GZIP = "gzip";
+    public static final String DEFLATE = "deflate";
+    public final static String ETAG_GZIP="--gzip";
+    public final static String ETAG = "o.e.j.s.GzipFilter.ETag";
+    public final static int DEFAULT_MIN_GZIP_SIZE=256;
 
     protected ServletContext _context;
     protected final Set<String> _mimeTypes=new HashSet<>();
     protected boolean _excludeMimeTypes;
-    protected int _bufferSize=8192;
-    protected int _minGzipSize=256;
+    protected int _bufferSize=32*1024;
+    protected int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     protected int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
-    protected boolean _deflateNoWrap = true;
     protected boolean _checkGzExists = true;
     
     // non-static, as other GzipFilter instances may have different configurations
@@ -152,13 +147,7 @@ public class GzipFilter extends UserAgentFilter
     protected Set<Pattern> _excludedAgentPatterns;
     protected Set<String> _excludedPaths;
     protected Set<Pattern> _excludedPathPatterns;
-    protected String _vary="Accept-Encoding, User-Agent";
-    
-    private static final int STATE_SEPARATOR = 0;
-    private static final int STATE_Q = 1;
-    private static final int STATE_QVALUE = 2;
-    private static final int STATE_DEFAULT = 3;
-
+    protected HttpField _vary=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
 
     /* ------------------------------------------------------------ */
     /**
@@ -174,22 +163,22 @@ public class GzipFilter extends UserAgentFilter
         String tmp=filterConfig.getInitParameter("bufferSize");
         if (tmp!=null)
             _bufferSize=Integer.parseInt(tmp);
+        LOG.debug("{} bufferSize={}",this,_bufferSize);
 
         tmp=filterConfig.getInitParameter("minGzipSize");
         if (tmp!=null)
             _minGzipSize=Integer.parseInt(tmp);
+        LOG.debug("{} minGzipSize={}",this,_minGzipSize);
 
         tmp=filterConfig.getInitParameter("deflateCompressionLevel");
         if (tmp!=null)
             _deflateCompressionLevel=Integer.parseInt(tmp);
-
-        tmp=filterConfig.getInitParameter("deflateNoWrap");
-        if (tmp!=null)
-            _deflateNoWrap=Boolean.parseBoolean(tmp);
+        LOG.debug("{} deflateCompressionLevel={}",this,_deflateCompressionLevel);
 
         tmp=filterConfig.getInitParameter("checkGzExists");
         if (tmp!=null)
             _checkGzExists=Boolean.parseBoolean(tmp);
+        LOG.debug("{} checkGzExists={}",this,_checkGzExists);
         
         tmp=filterConfig.getInitParameter("methods");
         if (tmp!=null)
@@ -200,6 +189,7 @@ public class GzipFilter extends UserAgentFilter
         }
         else
             _methods.add(HttpMethod.GET.asString());
+        LOG.debug("{} methods={}",this,_methods);
         
         tmp=filterConfig.getInitParameter("mimeTypes");
         if (tmp==null)
@@ -234,6 +224,8 @@ public class GzipFilter extends UserAgentFilter
             while (tok.hasMoreTokens())
                 _mimeTypes.add(tok.nextToken().trim());
         }
+        LOG.debug("{} mimeTypes={}",this,_mimeTypes);
+        LOG.debug("{} excludeMimeTypes={}",this,_excludeMimeTypes);
         tmp=filterConfig.getInitParameter("excludedAgents");
         if (tmp!=null)
         {
@@ -242,6 +234,7 @@ public class GzipFilter extends UserAgentFilter
             while (tok.hasMoreTokens())
                _excludedAgents.add(tok.nextToken().trim());
         }
+        LOG.debug("{} excludedAgents={}",this,_excludedAgents);
 
         tmp=filterConfig.getInitParameter("excludeAgentPatterns");
         if (tmp!=null)
@@ -251,6 +244,7 @@ public class GzipFilter extends UserAgentFilter
             while (tok.hasMoreTokens())
                 _excludedAgentPatterns.add(Pattern.compile(tok.nextToken().trim()));
         }
+        LOG.debug("{} excludedAgentPatterns={}",this,_excludedAgentPatterns);
 
         tmp=filterConfig.getInitParameter("excludePaths");
         if (tmp!=null)
@@ -260,6 +254,7 @@ public class GzipFilter extends UserAgentFilter
             while (tok.hasMoreTokens())
                 _excludedPaths.add(tok.nextToken().trim());
         }
+        LOG.debug("{} excludedPaths={}",this,_excludedPaths);
 
         tmp=filterConfig.getInitParameter("excludePathPatterns");
         if (tmp!=null)
@@ -269,10 +264,12 @@ public class GzipFilter extends UserAgentFilter
             while (tok.hasMoreTokens())
                 _excludedPathPatterns.add(Pattern.compile(tok.nextToken().trim()));
         }
+        LOG.debug("{} excludedPathPatterns={}",this,_excludedPathPatterns);
         
         tmp=filterConfig.getInitParameter("vary");
         if (tmp!=null)
-            _vary=tmp;
+            _vary=new PreEncodedHttpField(HttpHeader.VARY,tmp);
+        LOG.debug("{} vary={}",this,_vary);
     }
 
     /* ------------------------------------------------------------ */
@@ -292,13 +289,22 @@ public class GzipFilter extends UserAgentFilter
     public void doFilter(ServletRequest req, ServletResponse res, FilterChain chain)
         throws IOException, ServletException
     {
+        LOG.debug("{} doFilter {}",this,req);
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
 
-        // If not a supported method or it is an Excluded URI - no Vary because no matter what client, this URI is always excluded
+        // If not a supported method or it is an Excluded URI or an excluded UA - no Vary because no matter what client, this URI is always excluded
         String requestURI = request.getRequestURI();
-        if (!_methods.contains(request.getMethod()) || isExcludedPath(requestURI))
+        if (!_methods.contains(request.getMethod()))
         {
+            LOG.debug("{} excluded by method {}",this,request);
+            super.doFilter(request,response,chain);
+            return;
+        }
+        
+        if (isExcludedPath(requestURI))
+        {
+            LOG.debug("{} excluded by path {}",this,request);
             super.doFilter(request,response,chain);
             return;
         }
@@ -313,20 +319,21 @@ public class GzipFilter extends UserAgentFilter
                 mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
                 if (_mimeTypes.contains(mimeType))
                 {
+                    LOG.debug("{} excluded by path suffix {}",this,request);
                     // handle normally without setting vary header
                     super.doFilter(request,response,chain);
                     return;
                 }
             }
         }
-        
+
         //If the Content-Encoding is already set, then we won't compress
         if (response.getHeader("Content-Encoding") != null)
         {
             super.doFilter(request,response,chain);
             return;
         }
-
+        
         if (_checkGzExists && request.getServletContext()!=null)
         {
             String path=request.getServletContext().getRealPath(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()));
@@ -335,6 +342,7 @@ public class GzipFilter extends UserAgentFilter
                 File gz=new File(path+".gz");
                 if (gz.exists())
                 {
+                    LOG.debug("{} gzip exists {}",this,request);
                     // allow default servlet to handle
                     super.doFilter(request,response,chain);
                     return;
@@ -342,249 +350,23 @@ public class GzipFilter extends UserAgentFilter
             }
         }
         
-        // Excluded User-Agents
-        String ua = getUserAgent(request);
-        boolean ua_excluded=ua!=null&&isExcludedAgent(ua);
-        
-        // Acceptable compression type
-        String compressionType = ua_excluded?null:selectCompression(request.getHeader("accept-encoding"));
-
         // Special handling for etags
         String etag = request.getHeader("If-None-Match"); 
         if (etag!=null)
         {
-            int dd=etag.indexOf("--");
-            if (dd>0)
-                request.setAttribute(ETAG,etag.substring(0,dd)+(etag.endsWith("\"")?"\"":""));
+            if (etag.contains(ETAG_GZIP))
+                request.setAttribute(ETAG,etag.replace(ETAG_GZIP,""));
         }
 
-        CompressedResponseWrapper wrappedResponse = createWrappedResponse(request,response,compressionType);
+        HttpChannel channel = HttpChannel.getCurrentHttpChannel();
+        HttpOutput out = channel.getResponse().getHttpOutput();
+        // TODO recycle the GzipHttpOutputFilter
+        out.setFilter(new GzipHttpOutputInterceptor(this,channel,out.getFilter()));
 
-        boolean exceptional=true;
-        try
-        {
-            super.doFilter(request,wrappedResponse,chain);
-            exceptional=false;
-        }
-        finally
-        {
-            if (request.isAsyncStarted())
-            {
-                request.getAsyncContext().addListener(new FinishOnCompleteListener(wrappedResponse));
-            }
-            else if (exceptional && !response.isCommitted())
-            {
-                wrappedResponse.resetBuffer();
-                wrappedResponse.noCompression();
-            }
-            else
-                wrappedResponse.finish();
-        }
-    }
-
-    /* ------------------------------------------------------------ */
-    private String selectCompression(String encodingHeader)
-    {
-        // TODO, this could be a little more robust.
-        // prefer gzip over deflate
-        String compression = null;
-        if (encodingHeader!=null)
-        {
-            
-            String[] encodings = getEncodings(encodingHeader);
-            if (encodings != null)
-            {
-                for (int i=0; i< encodings.length; i++)
-                {
-                    if (encodings[i].toLowerCase(Locale.ENGLISH).contains(GZIP))
-                    {
-                        if (isEncodingAcceptable(encodings[i]))
-                        {
-                            compression = GZIP;
-                            break; //prefer Gzip over deflate
-                        }
-                    }
-
-                    if (encodings[i].toLowerCase(Locale.ENGLISH).contains(DEFLATE))
-                    {
-                        if (isEncodingAcceptable(encodings[i]))
-                        {
-                            compression = DEFLATE; //Keep checking in case gzip is acceptable
-                        }
-                    }
-                }
-            }
-        }
-        return compression;
-    }
-    
-    
-    private String[] getEncodings (String encodingHeader)
-    {
-        if (encodingHeader == null)
-            return null;
-        return encodingHeader.split(",");
-    }
-    
-    private boolean isEncodingAcceptable(String encoding)
-    {    
-        int state = STATE_DEFAULT;
-        int qvalueIdx = -1;
-        for (int i=0;i<encoding.length();i++)
-        {
-            char c = encoding.charAt(i);
-            switch (state)
-            {
-                case STATE_DEFAULT:
-                {
-                    if (';' == c)
-                        state = STATE_SEPARATOR;
-                    break;
-                }
-                case STATE_SEPARATOR:
-                {
-                    if ('q' == c || 'Q' == c)
-                        state = STATE_Q;
-                    break;
-                }
-                case STATE_Q:
-                {
-                    if ('=' == c)
-                        state = STATE_QVALUE;
-                    break;
-                }
-                case STATE_QVALUE:
-                {
-                    if (qvalueIdx < 0 && '0' == c || '1' == c)
-                        qvalueIdx = i;
-                    break;
-                }
-            }
-        }
+        super.doFilter(request,response,chain);
         
-        if (qvalueIdx < 0)
-            return true;
-               
-        if ("0".equals(encoding.substring(qvalueIdx).trim()))
-            return false;
-        return true;
-    }
-    
-
-    protected CompressedResponseWrapper createWrappedResponse(HttpServletRequest request, HttpServletResponse response, final String compressionType)
-    {
-        CompressedResponseWrapper wrappedResponse = null;
-        wrappedResponse = new CompressedResponseWrapper(request,response)
-        {
-            @Override
-            protected AbstractCompressedStream newCompressedStream(HttpServletRequest request, HttpServletResponse response) throws IOException
-            {
-                return new AbstractCompressedStream(compressionType,request,this,_vary)
-                {
-                    private Deflater _allocatedDeflater;
-                    private byte[] _allocatedBuffer;
-
-                    @Override
-                    protected OutputStream createStream() throws IOException
-                    {
-                        if (compressionType == null)
-                        {
-                            return null;
-                        }
-                        
-                        // acquire deflater instance
-                        _allocatedDeflater = _deflater.get();   
-                        if (_allocatedDeflater==null)
-                            _allocatedDeflater = new Deflater(_deflateCompressionLevel,_deflateNoWrap);
-                        else
-                        {
-                            _deflater.remove();
-                            _allocatedDeflater.reset();
-                        }
-                        
-                        // acquire buffer
-                        _allocatedBuffer = _buffer.get();
-                        if (_allocatedBuffer==null)
-                            _allocatedBuffer = new byte[_bufferSize];
-                        else
-                        {
-                            _buffer.remove();
-                        }
-                        
-                        switch (compressionType)
-                        {
-                            case GZIP:
-                                return new GzipOutputStream(_response.getOutputStream(),_allocatedDeflater,_allocatedBuffer);
-                            case DEFLATE:
-                                return new DeflatedOutputStream(_response.getOutputStream(),_allocatedDeflater,_allocatedBuffer);
-                        }
-                        throw new IllegalStateException(compressionType + " not supported");
-                    }
-
-                    @Override
-                    public void finish() throws IOException
-                    {
-                        super.finish();
-                        if (_allocatedDeflater != null && _deflater.get() == null)
-                        {
-                            _deflater.set(_allocatedDeflater);
-                        }
-                        if (_allocatedBuffer != null && _buffer.get() == null)
-                        {
-                            _buffer.set(_allocatedBuffer);
-                        }
-                    }
-                };
-            }
-        };
-        configureWrappedResponse(wrappedResponse);
-        return wrappedResponse;
     }
 
-    protected void configureWrappedResponse(CompressedResponseWrapper wrappedResponse)
-    {
-        wrappedResponse.setMimeTypes(_mimeTypes,_excludeMimeTypes);
-        wrappedResponse.setBufferSize(_bufferSize);
-        wrappedResponse.setMinCompressSize(_minGzipSize);
-    }
-
-    private class FinishOnCompleteListener implements AsyncListener
-    {    
-        private CompressedResponseWrapper wrappedResponse;
-
-        public FinishOnCompleteListener(CompressedResponseWrapper wrappedResponse)
-        {
-            this.wrappedResponse = wrappedResponse;
-        }
-
-        @Override
-        public void onComplete(AsyncEvent event) throws IOException
-        {          
-            try
-            {
-                wrappedResponse.finish();
-            }
-            catch (IOException e)
-            {
-                LOG.warn(e);
-            }
-        }
-
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-        }
-
-        @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
-        }
-
-        @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
-        }
-    }
 
     /**
      * Checks to see if the userAgent is excluded
@@ -652,4 +434,77 @@ public class GzipFilter extends UserAgentFilter
         }
         return false;
     }
+
+    @Override
+    public HttpField getVaryField()
+    {
+        return _vary;
+    }
+
+    @Override
+    public Deflater getDeflater(Request request, long content_length)
+    {
+        String ua = getUserAgent(request);
+        if (ua!=null && isExcludedAgent(ua))
+        {
+            LOG.debug("{} excluded user agent {}",this,request);
+            return null;
+        }
+        
+        if (content_length>=0 && content_length<_minGzipSize)
+        {
+            LOG.debug("{} excluded minGzipSize {}",this,request);
+            return null;
+        }
+
+        // If not HTTP/2, then we must check the accept encoding header
+        if (request.getHttpVersion()!=HttpVersion.HTTP_2)
+        {
+            HttpField accept = request.getHttpFields().getField(HttpHeader.ACCEPT_ENCODING);
+
+            if (accept==null)
+            {
+                LOG.debug("{} excluded !accept {}",this,request);
+                return null;
+            }
+            boolean gzip = accept.contains("gzip");
+
+            if (!gzip)
+            {
+                LOG.debug("{} excluded not gzip accept {}",this,request);
+                return null;
+            }
+        }
+        
+        Deflater df = _deflater.get();
+        if (df==null)
+            df=new Deflater(_deflateCompressionLevel,true);        
+        else
+            _deflater.set(null);
+        
+        return df;
+    }
+
+    @Override
+    public void recycle(Deflater deflater)
+    {
+        deflater.reset();
+        if (_deflater.get()==null)
+            _deflater.set(deflater);
+        
+    }
+    
+    @Override
+    public boolean isExcludedMimeType(String mimetype)
+    {
+        return _mimeTypes.contains(mimetype) == _excludeMimeTypes;
+    }
+
+    @Override
+    public int getBufferSize()
+    {
+        return _bufferSize;
+    }
+    
+    
 }
