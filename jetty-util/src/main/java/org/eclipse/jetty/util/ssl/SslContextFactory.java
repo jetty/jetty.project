@@ -224,7 +224,7 @@ public class SslContextFactory extends AbstractLifeCycle
     public SslContextFactory(boolean trustAll)
     {
         setTrustAll(trustAll);
-        addExcludeProtocols("SSL", "SSLv2", "SSLv3");
+        addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
         setExcludeCipherSuites(
                 "SSL_RSA_WITH_DES_CBC_SHA",
                 "SSL_DHE_RSA_WITH_DES_CBC_SHA",
