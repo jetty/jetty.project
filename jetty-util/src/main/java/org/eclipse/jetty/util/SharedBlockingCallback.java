@@ -92,7 +92,7 @@ public class SharedBlockingCallback
         {
             while (_blocker._state != IDLE)
             {
-                if (idle>0)
+                if (idle>0 && (idle < Long.MAX_VALUE/2))
                 {
                     // Wait a little bit longer than the blocker might block
                     if (!_idle.await(idle*2,TimeUnit.MILLISECONDS))
@@ -194,7 +194,7 @@ public class SharedBlockingCallback
             {
                 while (_state == null)
                 {
-                    if (idle>0)
+                    if (idle>0 && (idle < Long.MAX_VALUE/2))
                     {
                         // Wait a little bit longer than expected callback idle timeout
                         if (!_complete.await(idle+idle/2,TimeUnit.MILLISECONDS))
@@ -282,7 +282,7 @@ public class SharedBlockingCallback
         }
     }
     
-    private class BlockerTimeoutException extends TimeoutException
+    private static class BlockerTimeoutException extends TimeoutException
     { 
     }
 }

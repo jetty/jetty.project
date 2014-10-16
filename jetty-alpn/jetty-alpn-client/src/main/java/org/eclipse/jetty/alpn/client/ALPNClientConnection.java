@@ -45,12 +45,6 @@ public class ALPNClientConnection extends NegotiatingClientConnection implements
     }
 
     @Override
-    public boolean supports()
-    {
-        return true;
-    }
-
-    @Override
     public void unsupported()
     {
         ALPN.remove(getSSLEngine());
