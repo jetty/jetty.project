@@ -55,12 +55,6 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             ALPN.put(client, new ALPN.ClientProvider()
             {
                 @Override
-                public boolean supports()
-                {
-                    return true;
-                }
-
-                @Override
                 public void unsupported()
                 {
                 }
@@ -114,12 +108,6 @@ public class ALPNNegotiationTest extends AbstractALPNTest
             ALPN.put(client, new ALPN.ClientProvider()
             {
                 @Override
-                public boolean supports()
-                {
-                    return true;
-                }
-
-                @Override
                 public void unsupported()
                 {
                 }
@@ -172,12 +160,6 @@ public class ALPNNegotiationTest extends AbstractALPNTest
 
             ALPN.put(client, new ALPN.ClientProvider()
             {
-                @Override
-                public boolean supports()
-                {
-                    return false;
-                }
-
                 @Override
                 public void unsupported()
                 {
