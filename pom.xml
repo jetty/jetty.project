@@ -3,7 +3,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-parent</artifactId>
-    <version>20</version>
+    <version>23</version>
   </parent>
   <artifactId>jetty-project</artifactId>
   <version>8.8.0-SNAPSHOT</version>
@@ -29,8 +29,8 @@
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
         <configuration>
-          <source>1.6</source>
-          <target>1.6</target>
+          <source>1.8</source>
+          <target>1.8</target>
           <verbose>false</verbose>
         </configuration>
       </plugin>
@@ -124,10 +124,10 @@
             <configuration>
               <rules>
                 <requireMavenVersion>
-                  <version>[2.0.6,)</version>
+                  <version>[3,)</version>
                 </requireMavenVersion>
                 <requireJavaVersion>
-                  <version>[1.5,)</version>
+                  <version>[1.8,)</version>
                 </requireJavaVersion>
                 <versionTxtRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.VersionTxtRule" />
                 <versionOsgiRule implementation="org.eclipse.jetty.toolchain.enforcer.rules.RequireOsgiCompatibleVersionRule" />
@@ -165,35 +165,6 @@
              <artifactId>jetty-build-support</artifactId>
              <version>${build-support-version}</version>
            </dependency>
-        </dependencies>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pmd-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>named-logging-enforcement</id>
-            <phase>compile</phase>
-            <goals>
-              <goal>check</goal>
-            </goals>
-            <configuration>
-              <verbose>true</verbose>
-            </configuration>
-          </execution>
-        </executions>
-        <configuration>
-          <targetJdk>1.6</targetJdk>
-          <rulesets>
-            <ruleset>jetty/pmd_logging_ruleset.xml</ruleset>
-          </rulesets>
-        </configuration>
-        <dependencies>
-          <dependency>
-            <groupId>org.eclipse.jetty.toolchain</groupId>
-            <artifactId>jetty-build-support</artifactId>
-            <version>${build-support-version}</version>
-          </dependency>
         </dependencies>
       </plugin>
       <plugin>
@@ -314,6 +285,7 @@
           <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-javadoc-plugin</artifactId>
           <configuration>
+            <additionalparam>-Xdoclint:none</additionalparam>
             <docfilessubdirs>true</docfilessubdirs>
             <detectLinks>false</detectLinks>
             <detectJavaApiLink>true</detectJavaApiLink>
@@ -330,10 +302,6 @@
             </tags>
             </configuration>
         </plugin>
-        <plugin>
-          <groupId>org.apache.maven.plugins</groupId>
-          <artifactId>maven-pmd-plugin</artifactId>
-        </plugin>
       </plugins>
     </pluginManagement>
   </build>
@@ -349,21 +317,10 @@
         <artifactId>maven-javadoc-plugin</artifactId>
         <version>2.8</version>
         <configuration>
-          <maxmemory>512m</maxmemory>
+          <additionalparam>-Xdoclint:none</additionalparam>
           <docfilessubdirs>true</docfilessubdirs>
           <detectLinks>true</detectLinks>
           <detectJavaApiLink>true</detectJavaApiLink>
-        </configuration>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-pmd-plugin</artifactId>
-        <version>2.7.1</version>
-        <configuration>
-          <targetJdk>1.5</targetJdk>
-          <rulesets>
-            <ruleset>jetty/pmd_ruleset.xml</ruleset>
-          </rulesets>
         </configuration>
       </plugin>
       <plugin>
@@ -373,18 +330,7 @@
       </plugin>
     </plugins>
   </reporting>
-<!--
-  <repositories>
-    <repository>
-      <snapshots>
-        <enabled>true</enabled>
-      </snapshots>
-      <id>sonatype-snapshots</id>
-      <name>Sonatype Jetty Snapshots</name>
-      <url>http://oss.sonatype.org/content/groups/jetty</url>
-    </repository>
-  </repositories>
--->
+
   <modules>
     <module>jetty-util</module>
     <module>jetty-jmx</module>
@@ -425,6 +371,7 @@
     <module>example-async-rest</module>
     <module>tests</module>
   </modules>
+
   <dependencyManagement>
     <dependencies>
       <!-- Orbit Deps -->
@@ -570,29 +517,29 @@
     </profile>
     <profile>
       <id>eclipse-release</id>
-   <build>
-    <plugins>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-enforcer-plugin</artifactId>
-        <executions>
-          <execution>
-            <id>enforce-java</id>
-            <goals>
-              <goal>enforce</goal>
-            </goals>
-            <configuration>
-              <rules>
-                <requireJavaVersion>
-                  <version>[1.7,)</version>
-                </requireJavaVersion>
-              </rules>    
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-    </plugins>
-  </build>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-enforcer-plugin</artifactId>
+            <executions>
+              <execution>
+                <id>enforce-java</id>
+                <goals>
+                  <goal>enforce</goal>
+                </goals>
+                <configuration>
+                  <rules>
+                    <requireJavaVersion>
+                      <version>[1.8,)</version>
+                    </requireJavaVersion>
+                  </rules>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
     </profile>
     <profile>
       <!--
