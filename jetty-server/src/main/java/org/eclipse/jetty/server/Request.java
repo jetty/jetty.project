@@ -38,9 +38,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Map.Entry;
-
 import javax.servlet.AsyncContext;
-import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
@@ -2185,7 +2183,8 @@ public class Request implements HttpServletRequest
                         Object values = entry.getValue();
                         for (int i = 0; i < LazyList.size(values); i++)
                         {
-                            overridden_query_string.append("&").append(name).append("=").append(LazyList.get(values,i));
+                            Object o = LazyList.get(values, i);
+                            overridden_query_string.append("&").append(name).append("=").append(String.valueOf(o));
                         }
                     }
                 }
