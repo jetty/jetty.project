@@ -158,7 +158,20 @@
             </goals>
             <configuration>
               <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
-              <includeArtifactIds>javax.annotation,org.objectweb.asm</includeArtifactIds>
+              <includeArtifactIds>javax.annotation,org.ow2.asm</includeArtifactIds>
+              <includeTypes>jar</includeTypes>
+              <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
+            </configuration>
+          </execution>
+          <execution>
+            <id>copy-lib-asm-deps</id>
+            <phase>generate-resources</phase>
+            <goals>
+              <goal>copy-dependencies</goal>
+            </goals>
+            <configuration>
+              <includeGroupIds>org.ow2.asm</includeGroupIds>
+              <includeArtifactIds>asm,asm-commons</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/annotations</outputDirectory>
             </configuration>
@@ -289,10 +302,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
       <artifactId>javax.annotation</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>org.objectweb.asm</artifactId>
     </dependency>
     <dependency>
       <groupId>org.eclipse.jetty.orbit</groupId>
