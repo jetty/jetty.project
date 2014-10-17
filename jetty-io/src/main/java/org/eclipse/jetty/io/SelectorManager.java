@@ -492,12 +492,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             
             return false;
         }
-        
-        public void wakeup()
-        {
-            if (_state.compareAndSet(State.SELECT, State.WAKEUP))
-                _selector.wakeup();
-        }
 
         private void runChanges()
         {
