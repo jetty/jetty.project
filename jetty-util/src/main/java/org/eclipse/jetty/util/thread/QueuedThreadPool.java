@@ -522,6 +522,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         public void run()
         {
             boolean shrink = false;
+            boolean ignore = false;
             try
             {
                 Runnable job = _jobs.poll();
@@ -538,7 +539,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     {
                         runJob(job);
                         if (Thread.interrupted())
+                        {
+                            ignore=true;
                             break loop;
+                        }
                         job = _jobs.poll();
                     }
 
@@ -575,12 +579,15 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     finally
                     {
                         if (_threadsIdle.decrementAndGet() == 0)
+                        {
                             startThreads(1);
+                        }
                     }
                 }
             }
             catch (InterruptedException e)
             {
+                ignore=true;
                 LOG.ignore(e);
             }
             catch (Throwable e)
@@ -591,7 +598,8 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             {
                 if (!shrink && isRunning())
                 {
-                    LOG.warn("Unexpected thread death: {} in {}",this,QueuedThreadPool.this);
+                    if (!ignore)
+                        LOG.warn("Unexpected thread death: {} in {}",this,QueuedThreadPool.this);
                     // This is an unexpected thread death!
                     if (_threadsStarted.decrementAndGet()<getMaxThreads())
                         startThreads(1);
