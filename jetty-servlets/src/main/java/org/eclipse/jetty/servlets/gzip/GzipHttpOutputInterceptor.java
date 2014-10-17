@@ -24,6 +24,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
@@ -43,23 +44,39 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
     public static Logger LOG = Log.getLogger(GzipHttpOutputInterceptor.class);
     private final static PreEncodedHttpField CONTENT_ENCODING_GZIP=new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
     private final static byte[] GZIP_HEADER = new byte[] { (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0 };
+
+    public final static HttpField VARY=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
     
     private enum GZState {  MIGHT_COMPRESS, NOT_COMPRESSING, COMMITTING, COMPRESSING, FINISHED};
     private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
     private final CRC32 _crc = new CRC32();
 
     private final GzipFactory _factory;
-    private final HttpOutput.Interceptor _filter;
+    private final HttpOutput.Interceptor _interceptor;
     private final HttpChannel _channel;
+    private final HttpField _vary;
+    private final int _bufferSize;
     
     private Deflater _deflater;
     private ByteBuffer _buffer;
+
+    public GzipHttpOutputInterceptor(GzipFactory factory, HttpChannel channel, HttpOutput.Interceptor next)
+    {
+        this(factory,VARY,channel.getHttpConfiguration().getOutputBufferSize(),channel,next);
+    }
     
-    public GzipHttpOutputInterceptor(GzipFactory factory, HttpChannel channel, HttpOutput.Interceptor filter)
+    public GzipHttpOutputInterceptor(GzipFactory factory, HttpField vary, HttpChannel channel, HttpOutput.Interceptor next)
+    {
+        this(factory,vary,channel.getHttpConfiguration().getOutputBufferSize(),channel,next);
+    }
+    
+    public GzipHttpOutputInterceptor(GzipFactory factory, HttpField vary, int bufferSize, HttpChannel channel, HttpOutput.Interceptor next)
     {
         _factory=factory;
         _channel=channel;
-        _filter=filter;
+        _interceptor=next;
+        _vary=vary;
+        _bufferSize=bufferSize;
     }
 
     @Override
@@ -72,7 +89,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                 break;
                 
             case NOT_COMPRESSING:
-                _filter.write(content, complete, callback);
+                _interceptor.write(content, complete, callback);
                 return;
                 
             case COMMITTING:
@@ -129,7 +146,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         {
             LOG.debug("{} exclude by status {}",this,sc);
             noCompression();
-            _filter.write(content, complete, callback);
+            _interceptor.write(content, complete, callback);
             return;
         }
         
@@ -142,7 +159,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             {
                 LOG.debug("{} exclude by mimeType {}",this,ct);
                 noCompression();
-                _filter.write(content, complete, callback);
+                _interceptor.write(content, complete, callback);
                 return;
             }
         }
@@ -153,7 +170,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         {
             LOG.debug("{} exclude by content-encoding {}",this,ce);
             noCompression();
-            _filter.write(content, complete, callback);
+            _interceptor.write(content, complete, callback);
             return;
         }
         
@@ -162,7 +179,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         {
             // We are varying the response due to accept encoding header.
             HttpFields fields = _channel.getResponse().getHttpFields();
-            fields.add(_factory.getVaryField());
+            fields.add(_vary);
 
             long content_length = _channel.getResponse().getContentLength();
             if (content_length<0 && complete)
@@ -174,13 +191,13 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             {
                 LOG.debug("{} exclude no deflater",this);
                 _state.set(GZState.NOT_COMPRESSING);
-                _filter.write(content, complete, callback);
+                _interceptor.write(content, complete, callback);
                 return;
             }
 
             fields.put(CONTENT_ENCODING_GZIP);
             _crc.reset();
-            _buffer=_channel.getByteBufferPool().acquire(_factory.getBufferSize(),false);
+            _buffer=_channel.getByteBufferPool().acquire(_bufferSize,false);
             BufferUtil.fill(_buffer,GZIP_HEADER,0,GZIP_HEADER.length);
 
             // Adjust headers
@@ -286,7 +303,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             if (complete)
                 addTrailer();
             
-            _filter.write(_buffer,complete,this);
+            _interceptor.write(_buffer,complete,this);
             return Action.SCHEDULED;
         }
     }
@@ -299,7 +316,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         public GzipBufferCB(ByteBuffer content, boolean complete, Callback callback)
         {
             super(callback);
-            _input=_channel.getByteBufferPool().acquire(Math.min(_factory.getBufferSize(),content.remaining()),false);
+            _input=_channel.getByteBufferPool().acquire(Math.min(_bufferSize,content.remaining()),false);
             _content=content;
             _last=complete;
         }
@@ -357,7 +374,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             if (finished)
                 addTrailer();
                 
-            _filter.write(_buffer,finished,this);
+            _interceptor.write(_buffer,finished,this);
             return Action.SCHEDULED;
         }
     }

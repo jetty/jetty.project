@@ -36,12 +36,12 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
@@ -120,6 +120,7 @@ import org.eclipse.jetty.util.log.Logger;
  *  </dd>
  *  </dl>
  */
+@Deprecated
 public class GzipFilter extends UserAgentFilter implements GzipFactory
 {
     private static final Logger LOG = Log.getLogger(GzipFilter.class);
@@ -147,7 +148,7 @@ public class GzipFilter extends UserAgentFilter implements GzipFactory
     protected Set<Pattern> _excludedAgentPatterns;
     protected Set<String> _excludedPaths;
     protected Set<Pattern> _excludedPathPatterns;
-    protected HttpField _vary=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
+    protected HttpField _vary=GzipHttpOutputInterceptor.VARY;
 
     /* ------------------------------------------------------------ */
     /**
@@ -361,7 +362,7 @@ public class GzipFilter extends UserAgentFilter implements GzipFactory
         HttpChannel channel = HttpChannel.getCurrentHttpChannel();
         HttpOutput out = channel.getResponse().getHttpOutput();
         // TODO recycle the GzipHttpOutputFilter
-        out.setFilter(new GzipHttpOutputInterceptor(this,channel,out.getFilter()));
+        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,channel,out.getFilter()));
 
         super.doFilter(request,response,chain);
         
@@ -436,12 +437,6 @@ public class GzipFilter extends UserAgentFilter implements GzipFactory
     }
 
     @Override
-    public HttpField getVaryField()
-    {
-        return _vary;
-    }
-
-    @Override
     public Deflater getDeflater(Request request, long content_length)
     {
         String ua = getUserAgent(request);
@@ -500,11 +495,6 @@ public class GzipFilter extends UserAgentFilter implements GzipFactory
         return _mimeTypes.contains(mimetype) == _excludeMimeTypes;
     }
 
-    @Override
-    public int getBufferSize()
-    {
-        return _bufferSize;
-    }
     
     
 }

@@ -20,28 +20,15 @@ package org.eclipse.jetty.servlets.gzip;
 
 import java.io.File;
 import java.io.IOException;
-import java.io.OutputStream;
-import java.io.OutputStreamWriter;
-import java.io.PrintWriter;
-import java.io.UnsupportedEncodingException;
 import java.util.Arrays;
 import java.util.HashSet;
-import java.util.Locale;
 import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
-import java.util.zip.DeflaterOutputStream;
-import java.util.zip.GZIPOutputStream;
 
-import javax.servlet.AsyncEvent;
-import javax.servlet.AsyncListener;
-import javax.servlet.FilterChain;
-import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
-import javax.servlet.ServletRequest;
-import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -55,7 +42,7 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.servlets.GzipFilter;
+import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -71,28 +58,24 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public final static String ETAG = "o.e.j.s.GzipFilter.ETag";
     public final static int DEFAULT_MIN_GZIP_SIZE=16;
 
-    protected final Set<String> _mimeTypes=new HashSet<>();
-    protected boolean _excludeMimeTypes;
-    protected int _bufferSize=32*1024;
-    protected int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
-    protected int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
-    protected boolean _checkGzExists = true;
+    private final Set<String> _mimeTypes=new HashSet<>();
+    private boolean _excludeMimeTypes;
+    private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
+    private int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
+    private boolean _checkGzExists = true;
     
     // non-static, as other GzipFilter instances may have different configurations
-    protected final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
+    private final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
 
-    protected final static ThreadLocal<byte[]> _buffer= new ThreadLocal<byte[]>();
+    private final MimeTypes _knownMimeTypes= new MimeTypes();
+    private final Set<String> _methods=new HashSet<>();
+    private final Set<Pattern> _excludedAgentPatterns=new HashSet<>();
+    private final Set<Pattern> _excludedPathPatterns=new HashSet<>();
+    private HttpField _vary=GzipHttpOutputInterceptor.VARY;
+    
+    private final Set<String> _uaCache = new ConcurrentHashSet<>();
+    private int _uaCacheSize = 1024;
 
-    protected final MimeTypes _knownMimeTypes= new MimeTypes();
-    protected final Set<String> _methods=new HashSet<>();
-    protected final Set<String> _excludedAgents=new HashSet<>();
-    protected final Set<Pattern> _excludedAgentPatterns=new HashSet<>();
-    protected final Set<String> _excludedPaths=new HashSet<>();
-    protected final Set<Pattern> _excludedPathPatterns=new HashSet<>();
-    protected HttpField _vary=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
-
-
-   
     /* ------------------------------------------------------------ */
     /**
      * Instantiates a new gzip handler.
@@ -112,13 +95,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
             _mimeTypes.add("application/gzip");
         }
     }
-
-    @Override
-    public int getBufferSize()
-    {
-        return _bufferSize;
-    }
-
 
     @Override
     public Deflater getDeflater(Request request, long content_length)
@@ -175,13 +151,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return _minGzipSize;
     }
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public HttpField getVaryField()
-    {
-        return _vary;
-    }
-    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
@@ -259,9 +228,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         HttpChannel channel = HttpChannel.getCurrentHttpChannel();
-        HttpOutput out = channel.getResponse().getHttpOutput();
-        // TODO recycle the GzipHttpOutputFilter
-        out.setFilter(new GzipHttpOutputInterceptor(this,channel,out.getFilter()));
+        HttpOutput out = channel.getResponse().getHttpOutput();        
+        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,channel,out.getFilter()));
 
         _handler.handle(target,baseRequest, request, response);
         
@@ -313,19 +281,20 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (ua == null)
             return false;
 
-        if (_excludedAgents != null)
-        {
-            if (_excludedAgents.contains(ua))
-            {
-                return true;
-            }
-        }
+        
         if (_excludedAgentPatterns != null)
         {
+            
+            if (_uaCache.contains(ua))
+                return true;
+            
             for (Pattern pattern : _excludedAgentPatterns)
             {
                 if (pattern.matcher(ua).matches())
                 {
+                    if (_uaCache.size()>_uaCacheSize)
+                        _uaCache.clear();
+                    _uaCache.add(ua);
                     return true;
                 }
             }
@@ -351,16 +320,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         if (requestURI == null)
             return false;
-        if (_excludedPaths != null)
-        {
-            for (String excludedPath : _excludedPaths)
-            {
-                if (requestURI.startsWith(excludedPath))
-                {
-                    return true;
-                }
-            }
-        }
+        
         if (_excludedPathPatterns != null)
         {
             for (Pattern pattern : _excludedPathPatterns)
@@ -381,18 +341,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (_deflater.get()==null)
             _deflater.set(deflater);
         
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the buffer size.
-     *
-     * @param bufferSize
-     *            buffer size to set
-     */
-    public void setBufferSize(int bufferSize)
-    {
-        _bufferSize = bufferSize;
     }
 
     /* ------------------------------------------------------------ */
@@ -420,17 +368,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return _excludeMimeTypes;
     }
 
-    public String[] getExcludedPaths()
-    {
-        return _excludedPaths.toArray(new String[_excludedPaths.size()]);
-    }
-    
-    public void setExcludedPaths(String[] paths)
-    {
-        _excludedPaths.clear();
-        _excludedPaths.addAll(Arrays.asList(paths));
-    }
-
     public String[] getExcludedPathPatterns()
     {
         Pattern[] ps =  _excludedPathPatterns.toArray(new Pattern[_excludedPathPatterns.size()]);
@@ -447,17 +384,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _excludedPathPatterns.clear();
         for (String s : patterns)
             _excludedPathPatterns.add(Pattern.compile(s));
-    }
-
-    public String[] getExcludedAgents()
-    {
-        return _excludedAgents.toArray(new String[_excludedAgents.size()]);
-    }
-    
-    public void setExcludedAgents(String[] paths)
-    {
-        _excludedAgents.clear();
-        _excludedAgents.addAll(Arrays.asList(paths));
     }
 
     public String[] getExcludedAgentPatterns()

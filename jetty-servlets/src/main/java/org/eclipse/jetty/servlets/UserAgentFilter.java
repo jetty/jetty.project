@@ -53,6 +53,7 @@ import javax.servlet.http.HttpServletRequest;
  *
  *
  */
+@Deprecated
 public class UserAgentFilter implements Filter
 {
     private static final String __defaultPattern = "(?:Mozilla[^\\(]*\\(compatible;\\s*+([^;]*);.*)|(?:.*?([^\\s]+/[^\\s]+).*)";

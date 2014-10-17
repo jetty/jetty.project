@@ -109,7 +109,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _filter;
     }
 
-    public void setFilter(Interceptor filter)
+    public void setInterceptor(Interceptor filter)
     {
         _filter=filter;
     }
