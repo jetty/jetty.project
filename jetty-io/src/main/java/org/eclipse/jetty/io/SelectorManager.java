@@ -393,7 +393,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     private enum State
     {
-        CHANGING, SELECTING, PROCESSING, LOCKED
+        PROCESSING, SELECTING, LOCKED
     }
 
     /**
@@ -466,30 +466,32 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 switch (state)
                 {
                     case PROCESSING:
+                        // If we are processing
                         if (!_state.compareAndSet(State.PROCESSING, State.LOCKED))
                             continue;
+                        // we can just lock and add the change
                         _addChanges.add(change);
                         _state.set(State.PROCESSING);
                         break out;
                         
-                    case CHANGING:
-                        if (!_state.compareAndSet(State.CHANGING, State.LOCKED))
-                            continue;
-                        _addChanges.add(change);
-                        _state.set(State.CHANGING);
-                        break out;
-                        
                     case SELECTING:
+                        // If we are processing
                         if (!_state.compareAndSet(State.SELECTING, State.LOCKED))
                             continue;
+                        // we must lock, add the change and wakeup the selector
                         _addChanges.add(change);
                         _selector.wakeup();
+                        // we move to processing state now, because the selector will
+                        // not block and this avoids extra calls to wakeup()
                         _state.set(State.PROCESSING);
                         break out;
                         
                     case LOCKED:
                         Thread.yield();
                         continue;
+                        
+                    default:
+                        throw new IllegalStateException();    
                 }
             }
         }
@@ -554,27 +556,31 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                     State state=_state.get();
                     switch (state)
                     {
-                        case CHANGING:
-                        case PROCESSING:
+                        case PROCESSING:    
+                            // We can loop on _runChanges list without lock, because only access here.
                             int size = _runChanges.size();
                             for (int i=0;i<size;i++)
                                 runChange(_runChanges.get(i));
                             _runChanges.clear();
                             
+
+                            // Do we have new changes?
                             if (!_state.compareAndSet(state, State.LOCKED))
                                 continue;
-
                             if (_addChanges.isEmpty())
                             {
+                                // No, so lets go selecting
                                 _state.set(State.SELECTING);
                                 break loop;
                             }
                                 
+                            // We have changes, so switch add/run lists and go keep processing
                             List<Runnable> tmp=_runChanges;
                             _runChanges=_addChanges;
                             _addChanges=tmp;
-                            _state.set(State.CHANGING);
+                            _state.set(State.PROCESSING);
                             continue;
+
                             
                         case LOCKED:
                             Thread.yield();
@@ -596,25 +602,36 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 else
                     selected = _selector.select();
 
-                // Run the changes, and only exit if we ran all changes
+                // We have finished selecting.  This while loop could probably be replaced with just 
+                // _state.compareAndSet(State.SELECTING, State.PROCESSING)
+                // since if state is locked by submit, the resulting state will be processing anyway.
+                // but let's be thorough and do the full loop.
                 out: while(true)
                 {
                     switch (_state.get())
                     {
                         case SELECTING:
+                            // we were still in selecting state, so probably have
+                            // selected a key, so goto processing state to handle
                             if (_state.compareAndSet(State.SELECTING, State.PROCESSING))
                                 continue;
                             break out;
                         case PROCESSING:
+                            // we were already in processing, so were woken up by a change being
+                            // submitted, so no state change needed - lets just process
                             break out;
                         case LOCKED:
+                            // A change is currently being submitted.  This does not matter
+                            // here so much, but we will spin anyway so we don't race it later nor
+                            // overwrite it's state change.
                             Thread.yield();
                             continue;
-                        case CHANGING:
-                            throw new IllegalStateException();
+                        default:
+                            throw new IllegalStateException();    
                     }
                 }
 
+                // Process any selected keys
                 Set<SelectionKey> selectedKeys = _selector.selectedKeys();
                 for (SelectionKey key : selectedKeys)
                 {
@@ -635,7 +652,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 // Allow any dispatched tasks to run.
                 Thread.yield();
 
-                // Update the keys.
+                // Update the keys.  This is done separately to calling processKey, so that any momentary changes
+                // to the key state do not have to be submitted, as they are frequently reverted by the dispatched
+                // handling threads.
                 for (SelectionKey key : selectedKeys)
                 {
                     if (key.isValid())
