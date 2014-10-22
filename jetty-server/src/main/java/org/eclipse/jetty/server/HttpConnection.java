@@ -438,7 +438,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         if (info == null)
         {
             if (!lastContent && BufferUtil.isEmpty(content))
+            {
                 callback.succeeded();
+                return;
+            }
         }
         else
         {
