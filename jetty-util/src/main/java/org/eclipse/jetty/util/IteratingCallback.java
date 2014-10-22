@@ -331,11 +331,11 @@ public abstract class IteratingCallback implements Callback
                                 break processing;
                                 
                             case PROCESSING:
-                                if (_state.compareAndSet(State.PROCESSING, State.SUCCEEDED))
-                                {
-                                    onCompleteSuccess();
-                                    break processing;
-                                }
+                                if (!_state.compareAndSet(State.PROCESSING, State.SUCCEEDED))
+                                    continue acting;
+                                _iterate=false;
+                                onCompleteSuccess();
+                                break processing;
                                 
                             default:
                                 throw new IllegalStateException("state="+state);
@@ -359,8 +359,8 @@ public abstract class IteratingCallback implements Callback
     {
         loop: while (true)
         {
-            State current = _state.get();
-            switch (current)
+            State state = _state.get();
+            switch (state)
             {
                 case PROCESSING:
                 {
@@ -399,7 +399,7 @@ public abstract class IteratingCallback implements Callback
     @Override
     public void failed(Throwable x)
     {
-        while (true)
+        loop: while (true)
         {
             State state = _state.get();
             switch (state)
@@ -410,15 +410,21 @@ public abstract class IteratingCallback implements Callback
                 case CLOSED:
                 {
                     // Already complete!.
-                    return;
+                    break loop;
                 }
+                case LOCKED:
+                {
+                    Thread.yield();
+                    continue loop;
+                }    
                 default:
                 {
-                    if (_state.compareAndSet(state, State.FAILED))
-                    {
-                        onCompleteFailure(x);
-                        return;
-                    }
+                    if (!_state.compareAndSet(state, State.FAILED))
+                        continue loop;
+
+                    onCompleteFailure(x);
+                    break loop;
+                    
                 }
             }
         }
@@ -426,7 +432,7 @@ public abstract class IteratingCallback implements Callback
 
     public void close()
     {
-        while (true)
+        loop: while (true)
         {
             State state = _state.get();
             switch (state)
@@ -435,21 +441,29 @@ public abstract class IteratingCallback implements Callback
                 case SUCCEEDED:
                 case FAILED:
                 {
-                    if (_state.compareAndSet(state, State.CLOSED))
-                        return;
-                    break;
+                    if (!_state.compareAndSet(state, State.CLOSED))
+                        continue loop;
+                    break loop;
                 }
                 case CLOSED:
                 {
                     return;
                 }
+                {
+                    break loop;
+                }
+                case LOCKED:
+                {
+                    Thread.yield();
+                    continue loop;
+                }    
+
                 default:
                 {
-                    if (_state.compareAndSet(state, State.CLOSED))
-                    {
-                        onCompleteFailure(new ClosedChannelException());
-                        return;
-                    }
+                    if (!_state.compareAndSet(state, State.CLOSED))
+                        continue loop;
+                    onCompleteFailure(new ClosedChannelException());
+                    break loop;
                 }
             }
         }
@@ -503,14 +517,20 @@ public abstract class IteratingCallback implements Callback
                     return true;
                     
                 case SUCCEEDED:
-                    if (_state.compareAndSet(State.SUCCEEDED, State.IDLE))
-                        return true;
-                    break;
+                    if (!_state.compareAndSet(State.SUCCEEDED, State.IDLE))
+                        continue;
+                    _iterate=false;
+                    return true;
                     
                 case FAILED:
-                    if (_state.compareAndSet(State.FAILED, State.IDLE))
-                        return true;
-                    break;
+                    if (!_state.compareAndSet(State.FAILED, State.IDLE))
+                        continue;
+                    _iterate=false;
+                    return true;
+
+                case LOCKED:
+                    Thread.yield();
+                    continue;
                     
                 default:
                     return false;
