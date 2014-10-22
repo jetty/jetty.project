@@ -447,9 +447,6 @@ public abstract class IteratingCallback implements Callback
                 }
                 case CLOSED:
                 {
-                    return;
-                }
-                {
                     break loop;
                 }
                 case LOCKED:
