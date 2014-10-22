@@ -22,6 +22,7 @@ package org.eclipse.jetty.spdy.server;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.List;
 import javax.net.ssl.SSLEngine;
 
@@ -44,12 +45,6 @@ public class ALPNSynReplyTest extends AbstractALPNTest
         ALPN.put(sslEngine, new ALPN.ClientProvider()
         {
             @Override
-            public boolean supports()
-            {
-                return true;
-            }
-
-            @Override
             public void unsupported()
             {
             }
@@ -57,7 +52,7 @@ public class ALPNSynReplyTest extends AbstractALPNTest
             @Override
             public List<String> protocols()
             {
-                return null;
+                return Arrays.asList("test");
             }
 
             @Override
@@ -109,12 +104,6 @@ public class ALPNSynReplyTest extends AbstractALPNTest
         ALPN.put(sslEngine, new ALPN.ClientProvider()
         {
             @Override
-            public boolean supports()
-            {
-                return true;
-            }
-
-            @Override
             public void unsupported()
             {
             }
@@ -122,7 +111,7 @@ public class ALPNSynReplyTest extends AbstractALPNTest
             @Override
             public List<String> protocols()
             {
-                return null;
+                return Arrays.asList("test");
             }
 
             @Override

@@ -114,37 +114,47 @@ public class HpackContext
         Set<String> added = new HashSet<>();
         for (int i=1;i<STATIC_TABLE.length;i++)
         {
-            StaticEntry entry;
-            switch(i)
+            StaticEntry entry=null;
+
+            String name  = STATIC_TABLE[i][0];
+            String value = STATIC_TABLE[i][1];
+            HttpHeader header = HttpHeader.CACHE.get(name);
+            if (header!=null && value!=null)
             {
-                case 2:
-                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.GET));
-                    break;
-                case 3:
-                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpMethod.POST));
-                    break;
-                case 6:
-                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTP));
-                    break;
-                case 7:
-                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],HttpScheme.HTTPS));
-                    break;
-                case 8:
-                case 11:
-                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],Integer.valueOf(STATIC_TABLE[i][1])));
-                    break;
+                switch (header)
+                {
+                    case C_METHOD:
+                    {
+                        
+                        HttpMethod method = HttpMethod.CACHE.get(value);
+                        if (method!=null)
+                            entry=new StaticEntry(i,new StaticTableHttpField(header,name,value,method));
+                        break;
+                    }
                     
-                case 9:
-                case 10:
-                case 12:
-                case 13:
-                case 14:
-                    entry=new StaticEntry(i,new StaticTableHttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1],Integer.valueOf(STATIC_TABLE[i][1])));
-                    break;
+                    case C_SCHEME:
+                    {
+                        
+                        HttpScheme scheme = HttpScheme.CACHE.get(value);
+                        if (scheme!=null)
+                            entry=new StaticEntry(i,new StaticTableHttpField(header,name,value,scheme));
+                        break;
+                    }
                     
-                default:
-                    entry=new StaticEntry(i,new HttpField(STATIC_TABLE[i][0],STATIC_TABLE[i][1]));
+                    case C_STATUS:
+                    {
+                        entry=new StaticEntry(i,new StaticTableHttpField(header,name,value,Integer.valueOf(value)));
+                        break;
+                    }
+                    
+                    default:
+                        break;
+                }
             }
+            
+            if (entry==null)
+                entry=new StaticEntry(i,header==null?new HttpField(STATIC_TABLE[i][0],value):new HttpField(header,name,value));
+            
                         
             __staticTable[i]=entry;
             
@@ -167,8 +177,6 @@ public class HpackContext
                 __headerEntryTable[h.ordinal()]=entry;
         }
     }
-
-    
     
     private int _maxHeaderTableSizeInBytes;
     private int _headerTableSizeInBytes;
@@ -290,6 +298,16 @@ public class HpackContext
             return entry._slot;
 
         return _headerTable.index(entry)+__staticTable.length-1;
+    }
+    
+    public static int staticIndex(HttpHeader header)
+    {
+        if (header==null)
+            return 0;
+        Entry entry=__staticNameMap.get(header.asString());
+        if (entry==null)
+            return 0;
+        return entry.getSlot();
     }
     
     private void evict()

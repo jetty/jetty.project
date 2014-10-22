@@ -85,8 +85,9 @@ public class HashSessionManager extends AbstractSessionManager
             }
             finally
             {
-                if (_timer != null && _timer.isRunning())
-                    _timer.schedule(this, _scavengePeriodMs, TimeUnit.MILLISECONDS);
+                if (_timer != null && _timer.isRunning()) {
+                    _task = _timer.schedule(this, _scavengePeriodMs, TimeUnit.MILLISECONDS);
+                }
             }
         }
     }
@@ -111,7 +112,7 @@ public class HashSessionManager extends AbstractSessionManager
             finally
             {
                 if (_timer != null && _timer.isRunning())
-                    _timer.schedule(this, _savePeriodMs, TimeUnit.MILLISECONDS);
+                    _saveTask = _timer.schedule(this, _savePeriodMs, TimeUnit.MILLISECONDS);
             }
         }        
     }
@@ -138,7 +139,7 @@ public class HashSessionManager extends AbstractSessionManager
             ServletContext context = ContextHandler.getCurrentContext();
             if (context!=null)
                 _timer = (Scheduler)context.getAttribute("org.eclipse.jetty.server.session.timer");   
-        }         
+        }    
       
         if (_timer == null)
         {
@@ -148,7 +149,7 @@ public class HashSessionManager extends AbstractSessionManager
         }
         else
             addBean(_timer,false);
-            
+        
         super.doStart();
 
         setScavengePeriod(getScavengePeriod());
@@ -177,12 +178,15 @@ public class HashSessionManager extends AbstractSessionManager
         {
             if (_saveTask!=null)
                 _saveTask.cancel();
+
             _saveTask=null;
             if (_task!=null)
                 _task.cancel();
+
             _task=null;
             _timer=null;
         }
+       
 
         // This will callback invalidate sessions - where we decide if we will save
         super.doStop();
@@ -314,6 +318,7 @@ public class HashSessionManager extends AbstractSessionManager
                     _task.cancel();
                     _task = null;
                 }
+
                 _task = _timer.schedule(new Scavenger(),_scavengePeriodMs, TimeUnit.MILLISECONDS);
             }
         }

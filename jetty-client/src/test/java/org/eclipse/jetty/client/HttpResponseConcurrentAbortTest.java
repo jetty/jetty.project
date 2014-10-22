@@ -33,8 +33,6 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -148,8 +146,6 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
 
     private void abort(final Response response)
     {
-        Logger logger = Log.getLogger(getClass());
-
         new Thread("abort")
         {
             @Override
@@ -164,13 +160,11 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
             // The failure callback must be executed asynchronously.
             boolean latched = failureLatch.await(4, TimeUnit.SECONDS);
             success.set(latched);
-            logger.info("SIMON - STEP 1");
 
             // The complete callback must not be executed
             // until we return from this callback.
             latched = completeLatch.await(1, TimeUnit.SECONDS);
             success.set(!latched);
-            logger.info("SIMON - STEP 2");
 
             callbackLatch.countDown();
         }

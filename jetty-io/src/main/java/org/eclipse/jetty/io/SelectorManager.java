@@ -39,6 +39,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -65,7 +66,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-    private boolean _submitKeyUpdates;
     private int _priorityDelta;
     private long _selectorIndex;
 
@@ -147,32 +147,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 }
             }
         }
-    }
-
-    /**
-     * @return whether updates to {@link SelectionKey}s are submitted
-     *         to the selector thread or executed by the updater.
-     * @see #setSubmitKeyUpdates(boolean)
-     */
-    public boolean isSubmitKeyUpdates()
-    {
-        return _submitKeyUpdates;
-    }
-
-    /**
-     * Controls whether {@link SelectionKey} updates should be submitted for
-     * execution in the selector thread, or directly executed by the updating
-     * thread.
-     * Submission incur is possible queueing and wakeup of the selector, while
-     * direct execution incurs in lock contention in JDK classes.
-     *
-     * @param submitKeyUpdates whether updates to {@link SelectionKey}s are submitted
-     *                         to the selector thread or executed by the updater.
-     * @see SelectorManager.ManagedSelector#updateKey(Runnable)
-     */
-    public void setSubmitKeyUpdates(boolean submitKeyUpdates)
-    {
-        _submitKeyUpdates = submitKeyUpdates;
     }
 
     /**
@@ -419,7 +393,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     private enum State
     {
-        CHANGES, MORE_CHANGES, SELECT, WAKEUP, PROCESS
+        PROCESSING, SELECTING, LOCKED
     }
 
     /**
@@ -430,8 +404,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
     {
-        private final AtomicReference<State> _state= new AtomicReference<>(State.PROCESS);
-        private final Queue<Runnable> _changes = new ConcurrentArrayQueue<>();
+        private final AtomicReference<State> _state= new AtomicReference<>(State.PROCESSING);
+        private List<Runnable> _runChanges = new ArrayList<>();
+        private List<Runnable> _addChanges = new ArrayList<>();
         private final int _id;
         private Selector _selector;
         private volatile Thread _thread;
@@ -446,8 +421,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         protected void doStart() throws Exception
         {
             super.doStart();
-            _selector = Selector.open();
-            _state.set(State.PROCESS);
+            _selector = newSelector();
+            _state.set(State.PROCESSING);
+        }
+
+        protected Selector newSelector() throws IOException
+        {
+            return Selector.open();
         }
 
         @Override
@@ -462,32 +442,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 LOG.debug("Stopped {}", this);
         }
 
-        /**
-         * Submits a task to update a {@link SelectionKey}.
-         * If {@link #isSubmitKeyUpdates()} is true (defaults to false), the
-         * task is passed to {@link #submit(Runnable)}, otherwise it is executed
-         * immediately and the selector woken up if need be.
-         *
-         * @param update the task that updates the key.
-         * @return true if the selector was woken up, false otherwise
-         */
-        public boolean updateKey(Runnable update)
-        {
-            if (isSubmitKeyUpdates())
-            {
-                return submit(update);
-            }
-            else
-            {
-                runChange(update);
-                if (_state.compareAndSet(State.SELECT, State.WAKEUP))
-                {
-                    wakeup();
-                    return true;
-                }
-                return false;
-            }
-        }
         
         /**
          * <p>Submits a change to be executed in the selector thread.</p>
@@ -495,57 +449,51 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          * (if necessary) to execute the change.</p>
          *
          * @param change the change to submit
-         * @return true if the selector was woken up, false otherwise
          */
-        public boolean submit(Runnable change)
+        public void submit(Runnable change)
         {
             // This method may be called from the selector thread, and therefore
             // we could directly run the change without queueing, but this may
             // lead to stack overflows on a busy server, so we always offer the
             // change to the queue and process the state.
 
-            _changes.offer(change);
             if (LOG.isDebugEnabled())
                 LOG.debug("Queued change {}", change);
 
             out: while (true)
             {
-                switch (_state.get())
+                State state=_state.get();
+                switch (state)
                 {
-                    case SELECT:
-                        // Avoid multiple wakeup() calls if we the CAS fails
-                        if (!_state.compareAndSet(State.SELECT, State.WAKEUP))
+                    case PROCESSING:
+                        // If we are processing
+                        if (!_state.compareAndSet(State.PROCESSING, State.LOCKED))
                             continue;
-                        wakeup();
-                        return true;
-                    case CHANGES:
-                        // Tell the selector thread that we have more changes.
-                        // If we fail to CAS, we possibly need to wakeup(), so loop.
-                        if (_state.compareAndSet(State.CHANGES, State.MORE_CHANGES))
-                            break out;
+                        // we can just lock and add the change
+                        _addChanges.add(change);
+                        _state.set(State.PROCESSING);
+                        break out;
+                        
+                    case SELECTING:
+                        // If we are processing
+                        if (!_state.compareAndSet(State.SELECTING, State.LOCKED))
+                            continue;
+                        // we must lock, add the change and wakeup the selector
+                        _addChanges.add(change);
+                        _selector.wakeup();
+                        // we move to processing state now, because the selector will
+                        // not block and this avoids extra calls to wakeup()
+                        _state.set(State.PROCESSING);
+                        break out;
+                        
+                    case LOCKED:
+                        Thread.yield();
                         continue;
-                    case WAKEUP:
-                        // Do nothing, we have already a wakeup scheduled
-                        break out;
-                    case MORE_CHANGES:
-                        // Do nothing, we already notified the selector thread of more changes
-                        break out;
-                    case PROCESS:
-                        // Do nothing, the changes will be run after the processing
-                        break out;
+                        
                     default:
-                        throw new IllegalStateException();
+                        throw new IllegalStateException();    
                 }
             }
-            
-            return false;
-        }
-
-        private void runChanges()
-        {
-            Runnable change;
-            while ((change = _changes.poll()) != null)
-                runChange(change);
         }
 
         protected void runChange(Runnable change)
@@ -579,7 +527,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 while (isRunning())
                     select();
                 while (isStopping())
-                    runChanges();
+                    select();
             }
             finally
             {
@@ -601,39 +549,89 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             boolean debug = LOG.isDebugEnabled();
             try
             {
-                _state.set(State.CHANGES);
 
                 // Run the changes, and only exit if we ran all changes
+                loop: while(true)
+                {
+                    State state=_state.get();
+                    switch (state)
+                    {
+                        case PROCESSING:    
+                            // We can loop on _runChanges list without lock, because only access here.
+                            int size = _runChanges.size();
+                            for (int i=0;i<size;i++)
+                                runChange(_runChanges.get(i));
+                            _runChanges.clear();
+                            
+
+                            // Do we have new changes?
+                            if (!_state.compareAndSet(state, State.LOCKED))
+                                continue;
+                            if (_addChanges.isEmpty())
+                            {
+                                // No, so lets go selecting
+                                _state.set(State.SELECTING);
+                                break loop;
+                            }
+                                
+                            // We have changes, so switch add/run lists and go keep processing
+                            List<Runnable> tmp=_runChanges;
+                            _runChanges=_addChanges;
+                            _addChanges=tmp;
+                            _state.set(State.PROCESSING);
+                            continue;
+
+                            
+                        case LOCKED:
+                            Thread.yield();
+                            continue;
+                            
+                        default:
+                            throw new IllegalStateException();    
+                    }
+                }
+            
+                // Do the selecting!
+                int selected;
+                if (debug)
+                {
+                    LOG.debug("Selector loop waiting on select");
+                    selected = _selector.select();
+                    LOG.debug("Selector loop woken up from select, {}/{} selected", selected, _selector.keys().size());
+                }
+                else
+                    selected = _selector.select();
+
+                // We have finished selecting.  This while loop could probably be replaced with just 
+                // _state.compareAndSet(State.SELECTING, State.PROCESSING)
+                // since if state is locked by submit, the resulting state will be processing anyway.
+                // but let's be thorough and do the full loop.
                 out: while(true)
                 {
                     switch (_state.get())
                     {
-                        case CHANGES:
-                            runChanges();
-                            if (_state.compareAndSet(State.CHANGES, State.SELECT))
-                                break out;
-                            continue;
-                        case MORE_CHANGES:
-                            runChanges();
-                            _state.set(State.CHANGES);
+                        case SELECTING:
+                            // we were still in selecting state, so probably have
+                            // selected a key, so goto processing state to handle
+                            if (_state.compareAndSet(State.SELECTING, State.PROCESSING))
+                                continue;
+                            break out;
+                        case PROCESSING:
+                            // we were already in processing, so were woken up by a change being
+                            // submitted, so no state change needed - lets just process
+                            break out;
+                        case LOCKED:
+                            // A change is currently being submitted.  This does not matter
+                            // here so much, but we will spin anyway so we don't race it later nor
+                            // overwrite it's state change.
+                            Thread.yield();
                             continue;
                         default:
                             throw new IllegalStateException();    
                     }
                 }
-                // Must check first for SELECT and *then* for WAKEUP
-                // because we read the state twice in the assert, and
-                // it could change from SELECT to WAKEUP in between.
-                assert _state.get() == State.SELECT || _state.get() == State.WAKEUP;
 
-                if (debug)
-                    LOG.debug("Selector loop waiting on select");
-                int selected = _selector.select();
-                if (debug)
-                    LOG.debug("Selector loop woken up from select, {}/{} selected", selected, _selector.keys().size());
-
-                _state.set(State.PROCESS);
-
+                // Process any selected keys
                 Set<SelectionKey> selectedKeys = _selector.selectedKeys();
                 for (SelectionKey key : selectedKeys)
                 {
@@ -654,7 +652,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 // Allow any dispatched tasks to run.
                 Thread.yield();
 
-                // Update the keys.
+                // Update the keys.  This is done separately to calling processKey, so that any momentary changes
+                // to the key state do not have to be submitted, as they are frequently reverted by the dispatched
+                // handling threads.
                 for (SelectionKey key : selectedKeys)
                 {
                     if (key.isValid())
@@ -711,25 +711,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         private void updateKey(SelectionKey key)
         {
             Object attachment = key.attachment();
-            try
-            {
-                if (attachment instanceof SelectableEndPoint)
-                {
-                    ((SelectableEndPoint)attachment).updateKey();
-                }
-            }
-            catch (CancelledKeyException x)
-            {
-                LOG.debug("Ignoring cancelled key for channel {}", key.channel());
-                if (attachment instanceof EndPoint)
-                    closeNoExceptions((EndPoint)attachment);
-            }
-            catch (Throwable x)
-            {
-                LOG.warn("Could not process key for channel " + key.channel(), x);
-                if (attachment instanceof EndPoint)
-                    closeNoExceptions((EndPoint)attachment);
-            }
+            if (attachment instanceof SelectableEndPoint)
+                ((SelectableEndPoint)attachment).updateKey();
         }
 
         private void processConnect(SelectionKey key, Connect connect)
@@ -786,11 +769,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             {
                 LOG.ignore(x);
             }
-        }
-
-        public void wakeup()
-        {
-            _selector.wakeup();
         }
 
         public boolean isSelectorThread()

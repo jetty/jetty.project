@@ -85,7 +85,7 @@ public class Socks4Proxy extends ProxyConfiguration.Proxy
 
         public Socks4ProxyConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, Map<String, Object> context)
         {
-            super(endPoint, executor);
+            super(endPoint, executor, false);
             this.connectionFactory = connectionFactory;
             this.context = context;
         }

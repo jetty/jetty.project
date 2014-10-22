@@ -20,19 +20,13 @@ package org.eclipse.jetty.servlets.gzip;
 
 import java.util.zip.Deflater;
 
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.server.Request;
 
 public interface GzipFactory
 {
-    int getBufferSize();
-    
-    HttpField getVaryField();
-
     Deflater getDeflater(Request request, long content_length);
 
-    boolean isExcludedMimeType(String asciiToLowerCase);
+    boolean isExcludedMimeType(String mimetype);
 
     void recycle(Deflater deflater);
-
 }

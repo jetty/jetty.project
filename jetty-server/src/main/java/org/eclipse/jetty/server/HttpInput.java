@@ -21,7 +21,6 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
-
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
@@ -187,8 +186,8 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
      * Access the next content to be consumed from.   Returning the next item does not consume it
      * and it may be returned multiple times until it is consumed.
      * <p/>
-     * Calls to {@link #get(Object, byte[], int, int)}
-     * or {@link #consume(Object, int)} are required to consume data from the content.
+     * Calls to {@link #get(Content, byte[], int, int)}
+     * or {@link #consume(Content, int)} are required to consume data from the content.
      *
      * @return the content or null if none available.
      * @throws IOException if retrieving the content fails
@@ -246,7 +245,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
     /**
      * Adds some content to this input stream.
      *
-     * @param item the content to add
+     * @param content the content to add
      */
     public abstract void content(Content content);
 
@@ -291,7 +290,6 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         }
         _channelState.onReadPossible();
     }
-
 
     public boolean isEarlyEOF()
     {

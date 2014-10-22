@@ -583,6 +583,17 @@ public class AsyncServletTest
         @Override
         public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
+            // this should always fail at this point
+            try
+            {
+                request.getAsyncContext();
+                throw new IllegalStateException();
+            }
+            catch(IllegalStateException e)
+            {
+                // ignored
+            }
+            
             // System.err.println(request.getDispatcherType()+" "+request.getRequestURI());
             response.addHeader("history",request.getDispatcherType()+" "+request.getRequestURI());
             if (request instanceof ServletRequestWrapper || response instanceof ServletResponseWrapper)

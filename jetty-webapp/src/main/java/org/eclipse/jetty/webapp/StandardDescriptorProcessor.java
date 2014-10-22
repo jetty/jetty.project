@@ -27,6 +27,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.ListIterator;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
@@ -1249,10 +1250,49 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         {
             String p = iter.next().toString(false, true);
             p = normalizePattern(p);
+            
+            //check if there is already a mapping for this path, and if there is && it is from a defaultdescriptor
+            //remove it in favour of the new one      
+            ListIterator<ServletMapping> listItor = _servletMappings.listIterator();
+            boolean found = false;
+            while (listItor.hasNext() && !found)
+            {
+                ServletMapping sm = listItor.next();
+                if (sm.getPathSpecs() != null)
+                {
+                    for (String ps:sm.getPathSpecs())
+                    {
+                        if (p.equals(ps) && sm.isDefault())
+                        {
+                            if (LOG.isDebugEnabled()) LOG.debug("{} in mapping {} from defaults descriptor is overridden by ",ps,sm,servletName);
+                            //remove ps from the path specs on the existing mapping
+                            //if the mapping now has no pathspecs, remove it
+                            String[] updatedPaths = ArrayUtil.removeFromArray(sm.getPathSpecs(), ps);
+                            if (updatedPaths == null || updatedPaths.length == 0)
+                            { 
+                                if (LOG.isDebugEnabled()) LOG.debug("Removed mapping {} from defaults descriptor",sm);
+                                listItor.remove();
+                            }
+                            else 
+                            {
+                                sm.setPathSpecs(updatedPaths);
+                                if (LOG.isDebugEnabled()) LOG.debug("Removed path {} from mapping {} from defaults descriptor ", p,sm);
+                            }
+                            found = true;
+                            break;
+                        }
+                    }
+                }
+            }
+            
             paths.add(p);
             context.getMetaData().setOrigin(servletName+".servlet.mapping."+p, descriptor);
         }
         mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
+        if (LOG.isDebugEnabled()) LOG.debug("Added mapping {} ",mapping);
+        
+      
+      
         _servletMappings.add(mapping);
         return mapping;
     }

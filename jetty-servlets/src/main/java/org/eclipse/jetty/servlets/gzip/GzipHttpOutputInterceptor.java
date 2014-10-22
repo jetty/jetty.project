@@ -24,14 +24,14 @@ import java.util.concurrent.atomic.AtomicReference;
 import java.util.zip.CRC32;
 import java.util.zip.Deflater;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
-import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.servlets.AsyncGzipFilter;
+import org.eclipse.jetty.servlets.GzipFilter;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -39,44 +39,58 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class GzipHttpOutput extends HttpOutput
+public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 {
-    public static Logger LOG = Log.getLogger(GzipHttpOutput.class);
+    public static Logger LOG = Log.getLogger(GzipHttpOutputInterceptor.class);
     private final static PreEncodedHttpField CONTENT_ENCODING_GZIP=new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
     private final static byte[] GZIP_HEADER = new byte[] { (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0 };
+
+    public final static HttpField VARY=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
     
-    private enum GZState { NOT_COMPRESSING, MIGHT_COMPRESS, COMMITTING, COMPRESSING, FINISHED};
-    private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.NOT_COMPRESSING);
+    private enum GZState {  MIGHT_COMPRESS, NOT_COMPRESSING, COMMITTING, COMPRESSING, FINISHED};
+    private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
     private final CRC32 _crc = new CRC32();
+
+    private final GzipFactory _factory;
+    private final HttpOutput.Interceptor _interceptor;
+    private final HttpChannel _channel;
+    private final HttpField _vary;
+    private final int _bufferSize;
     
     private Deflater _deflater;
-    private GzipFactory _factory;
     private ByteBuffer _buffer;
+
+    public GzipHttpOutputInterceptor(GzipFactory factory, HttpChannel channel, HttpOutput.Interceptor next)
+    {
+        this(factory,VARY,channel.getHttpConfiguration().getOutputBufferSize(),channel,next);
+    }
     
-    public GzipHttpOutput(HttpChannel channel)
+    public GzipHttpOutputInterceptor(GzipFactory factory, HttpField vary, HttpChannel channel, HttpOutput.Interceptor next)
     {
-        super(channel);
+        this(factory,vary,channel.getHttpConfiguration().getOutputBufferSize(),channel,next);
+    }
+    
+    public GzipHttpOutputInterceptor(GzipFactory factory, HttpField vary, int bufferSize, HttpChannel channel, HttpOutput.Interceptor next)
+    {
+        _factory=factory;
+        _channel=channel;
+        _interceptor=next;
+        _vary=vary;
+        _bufferSize=bufferSize;
     }
 
     @Override
-    public void reset()
-    {
-        _state.set(GZState.NOT_COMPRESSING);
-        super.reset();
-    }
-
-    @Override
-    protected void write(ByteBuffer content, boolean complete, Callback callback)
+    public void write(ByteBuffer content, boolean complete, Callback callback)
     {
         switch (_state.get())
         {
-            case NOT_COMPRESSING:
-                superWrite(content, complete, callback);
-                return;
-
             case MIGHT_COMPRESS:
                 commit(content,complete,callback);
                 break;
+                
+            case NOT_COMPRESSING:
+                _interceptor.write(content, complete, callback);
+                return;
                 
             case COMMITTING:
                 callback.failed(new WritePendingException());
@@ -92,11 +106,6 @@ public class GzipHttpOutput extends HttpOutput
         }
     }
 
-    private void superWrite(ByteBuffer content, boolean complete, Callback callback)
-    {
-        super.write(content,complete,callback);
-    }
-    
     private void addTrailer()
     {
         int i=_buffer.limit();
@@ -132,18 +141,17 @@ public class GzipHttpOutput extends HttpOutput
     protected void commit(ByteBuffer content, boolean complete, Callback callback)
     {
         // Are we excluding because of status?
-        Response response=getHttpChannel().getResponse();
-        int sc = response.getStatus();
+        int sc = _channel.getResponse().getStatus();
         if (sc>0 && (sc<200 || sc==204 || sc==205 || sc>=300))
         {
             LOG.debug("{} exclude by status {}",this,sc);
             noCompression();
-            superWrite(content, complete, callback);
+            _interceptor.write(content, complete, callback);
             return;
         }
         
         // Are we excluding because of mime-type?
-        String ct = getHttpChannel().getResponse().getContentType();
+        String ct = _channel.getResponse().getContentType();
         if (ct!=null)
         {
             ct=MimeTypes.getContentTypeWithoutCharset(ct);
@@ -151,18 +159,18 @@ public class GzipHttpOutput extends HttpOutput
             {
                 LOG.debug("{} exclude by mimeType {}",this,ct);
                 noCompression();
-                superWrite(content, complete, callback);
+                _interceptor.write(content, complete, callback);
                 return;
             }
         }
         
         // Has the Content-Encoding header already been set?
-        String ce=getHttpChannel().getResponse().getHeader("Content-Encoding");
+        String ce=_channel.getResponse().getHeader("Content-Encoding");
         if (ce != null)
         {
             LOG.debug("{} exclude by content-encoding {}",this,ce);
             noCompression();
-            superWrite(content, complete, callback);
+            _interceptor.write(content, complete, callback);
             return;
         }
         
@@ -170,33 +178,33 @@ public class GzipHttpOutput extends HttpOutput
         if (_state.compareAndSet(GZState.MIGHT_COMPRESS,GZState.COMMITTING))
         {
             // We are varying the response due to accept encoding header.
-            HttpFields fields = response.getHttpFields();
-            fields.add(_factory.getVaryField());
+            HttpFields fields = _channel.getResponse().getHttpFields();
+            fields.add(_vary);
 
-            long content_length = response.getContentLength();
+            long content_length = _channel.getResponse().getContentLength();
             if (content_length<0 && complete)
                 content_length=content.remaining();
             
-            _deflater = _factory.getDeflater(getHttpChannel().getRequest(),content_length);
+            _deflater = _factory.getDeflater(_channel.getRequest(),content_length);
             
             if (_deflater==null)
             {
                 LOG.debug("{} exclude no deflater",this);
                 _state.set(GZState.NOT_COMPRESSING);
-                superWrite(content, complete, callback);
+                _interceptor.write(content, complete, callback);
                 return;
             }
 
             fields.put(CONTENT_ENCODING_GZIP);
             _crc.reset();
-            _buffer=getHttpChannel().getByteBufferPool().acquire(_factory.getBufferSize(),false);
+            _buffer=_channel.getByteBufferPool().acquire(_bufferSize,false);
             BufferUtil.fill(_buffer,GZIP_HEADER,0,GZIP_HEADER.length);
 
             // Adjust headers
-            response.setContentLength(-1);
+            _channel.getResponse().setContentLength(-1);
             String etag=fields.get(HttpHeader.ETAG);
             if (etag!=null)
-                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+AsyncGzipFilter.ETAG_GZIP+ '"');
+                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+GzipFilter.ETAG_GZIP+ '"');
 
             LOG.debug("{} compressing {}",this,_deflater);
             _state.set(GZState.COMPRESSING);
@@ -247,29 +255,6 @@ public class GzipHttpOutput extends HttpOutput
             }
         }
     }
-
-
-    public void mightCompress(GzipFactory factory)
-    {
-        while (true)
-        {
-            switch (_state.get())
-            {
-                case NOT_COMPRESSING:
-                    _factory=factory;
-                    if (_state.compareAndSet(GZState.NOT_COMPRESSING,GZState.MIGHT_COMPRESS))
-                    {
-                        LOG.debug("{} might compress",this);
-                        return;
-                    }
-                    _factory=null;
-                    break;
-                    
-                default:
-                    throw new IllegalStateException(_state.get().toString());
-            }
-        }
-    }
     
     private class GzipArrayCB extends IteratingNestedCallback
     {        
@@ -298,7 +283,7 @@ public class GzipHttpOutput extends HttpOutput
                 {
                     _factory.recycle(_deflater);
                     _deflater=null;
-                    getHttpChannel().getByteBufferPool().release(_buffer);
+                    _channel.getByteBufferPool().release(_buffer);
                     _buffer=null;
                     return Action.SUCCEEDED;
                 }
@@ -318,7 +303,7 @@ public class GzipHttpOutput extends HttpOutput
             if (complete)
                 addTrailer();
             
-            superWrite(_buffer,complete,this);
+            _interceptor.write(_buffer,complete,this);
             return Action.SCHEDULED;
         }
     }
@@ -331,7 +316,7 @@ public class GzipHttpOutput extends HttpOutput
         public GzipBufferCB(ByteBuffer content, boolean complete, Callback callback)
         {
             super(callback);
-            _input=getHttpChannel().getByteBufferPool().acquire(Math.min(_factory.getBufferSize(),content.remaining()),false);
+            _input=_channel.getByteBufferPool().acquire(Math.min(_bufferSize,content.remaining()),false);
             _content=content;
             _last=complete;
         }
@@ -347,7 +332,7 @@ public class GzipHttpOutput extends HttpOutput
                     {
                         _factory.recycle(_deflater);
                         _deflater=null;
-                        getHttpChannel().getByteBufferPool().release(_buffer);
+                        _channel.getByteBufferPool().release(_buffer);
                         _buffer=null;
                         return Action.SUCCEEDED;
                     }
@@ -389,7 +374,7 @@ public class GzipHttpOutput extends HttpOutput
             if (finished)
                 addTrailer();
                 
-            superWrite(_buffer,finished,this);
+            _interceptor.write(_buffer,finished,this);
             return Action.SCHEDULED;
         }
     }

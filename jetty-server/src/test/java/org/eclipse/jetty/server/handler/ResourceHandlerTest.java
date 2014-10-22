@@ -26,6 +26,7 @@ import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.URI;
+import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 
@@ -36,6 +37,8 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.SimpleRequest;
+import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
@@ -62,9 +65,9 @@ public class ResourceHandlerTest
     public static void setUp() throws Exception
     {
         File dir = MavenTestingUtils.getTargetFile("test-classes/simple");
-        File huge = new File(dir,"huge.txt");
+        File bigger = new File(dir,"bigger.txt");
         File big = new File(dir,"big.txt");
-        try (OutputStream out = new FileOutputStream(huge))
+        try (OutputStream out = new FileOutputStream(bigger))
         {
             for (int i = 0; i < 100; i++)
             {
@@ -74,7 +77,8 @@ public class ResourceHandlerTest
                 }
             }
         }
-        huge.deleteOnExit();
+        
+        bigger.deleteOnExit();
 
         // determine how the SCM of choice checked out the big.txt EOL
         // we can't just use whatever is the OS default.
@@ -178,16 +182,62 @@ public class ResourceHandlerTest
     }
 
     @Test
-    public void testHuge() throws Exception
+    public void testBigger() throws Exception
     {
         try (Socket socket = new Socket("localhost",_connector.getLocalPort());)
         {
-            socket.getOutputStream().write("GET /resource/huge.txt HTTP/1.0\n\n".getBytes());
+            socket.getOutputStream().write("GET /resource/bigger.txt HTTP/1.0\n\n".getBytes());
             Thread.sleep(1000);
             String response = IO.toString(socket.getInputStream());
             Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
             Assert.assertThat(response,Matchers.containsString("   400\tThis is a big file" + LN + "     1\tThis is a big file"));
             Assert.assertThat(response,Matchers.endsWith("   400\tThis is a big file" + LN));
+        }
+    }
+    
+    @Test
+    @Slow
+    public void testSlowBiggest() throws Exception
+    {
+        _connector.setIdleTimeout(10000);
+        
+        File dir = MavenTestingUtils.getTargetFile("test-classes/simple");
+        File biggest = new File(dir,"biggest.txt");
+        try (OutputStream out = new FileOutputStream(biggest))
+        {
+            for (int i = 0; i < 10; i++)
+            {
+                try (InputStream in = new FileInputStream(new File(dir,"bigger.txt")))
+                {
+                    IO.copy(in,out);
+                }
+            }
+            out.write("\nTHE END\n".getBytes(StandardCharsets.ISO_8859_1));
+        }
+        biggest.deleteOnExit();
+        
+        try (Socket socket = new Socket("localhost",_connector.getLocalPort());OutputStream out=socket.getOutputStream();InputStream in=socket.getInputStream())
+        {
+
+            socket.getOutputStream().write("GET /resource/biggest.txt HTTP/1.0\n\n".getBytes());
+            
+            byte[] array = new byte[102400];
+            ByteBuffer buffer=null;
+            int i=0;
+            while(true)
+            {
+                Thread.sleep(100);
+                int len=in.read(array);
+                if (len<0)
+                    break;
+                buffer=BufferUtil.toBuffer(array,0,len);
+                // System.err.println(++i+": "+BufferUtil.toDetailString(buffer));
+            }
+
+            Assert.assertEquals('E',buffer.get(buffer.limit()-4));
+            Assert.assertEquals('N',buffer.get(buffer.limit()-3));
+            Assert.assertEquals('D',buffer.get(buffer.limit()-2));
+            
         }
     }
 }

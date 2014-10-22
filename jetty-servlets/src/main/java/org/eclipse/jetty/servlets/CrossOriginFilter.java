@@ -21,6 +21,7 @@ package org.eclipse.jetty.servlets;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collections;
 import java.util.Enumeration;
 import java.util.List;
 import java.util.regex.Matcher;
@@ -62,13 +63,14 @@ import org.eclipse.jetty.util.log.Logger;
  * <b>GET,POST,HEAD</b></li>
  * <li><b>allowedHeaders</b>, a comma separated list of HTTP headers that
  * are allowed to be specified when accessing the resources. Default value
- * is <b>X-Requested-With,Content-Type,Accept,Origin</b></li>
+ * is <b>X-Requested-With,Content-Type,Accept,Origin</b>. If the value is a single "*",
+ * this means that any headers will be accepted.</li>
  * <li><b>preflightMaxAge</b>, the number of seconds that preflight requests
  * can be cached by the client. Default value is <b>1800</b> seconds, or 30
  * minutes</li>
  * <li><b>allowCredentials</b>, a boolean indicating if the resource allows
  * requests with credentials. Default value is <b>false</b></li>
- * <li><b>exposeHeaders</b>, a comma separated list of HTTP headers that
+ * <li><b>exposedHeaders</b>, a comma separated list of HTTP headers that
  * are allowed to be exposed on the client. Default value is the
  * <b>empty list</b></li>
  * <li><b>chainPreflight</b>, if true preflight requests are chained to their
@@ -117,8 +119,11 @@ public class CrossOriginFilter implements Filter
     public static final String CHAIN_PREFLIGHT_PARAM = "chainPreflight";
     private static final String ANY_ORIGIN = "*";
     private static final List<String> SIMPLE_HTTP_METHODS = Arrays.asList("GET", "POST", "HEAD");
+    private static final List<String> DEFAULT_ALLOWED_METHODS = Arrays.asList("GET", "POST", "HEAD");
+    private static final List<String> DEFAULT_ALLOWED_HEADERS = Arrays.asList("X-Requested-With", "Content-Type", "Accept", "Origin");
 
     private boolean anyOriginAllowed;
+    private boolean anyHeadersAllowed;
     private List<String> allowedOrigins = new ArrayList<String>();
     private List<String> allowedMethods = new ArrayList<String>();
     private List<String> allowedHeaders = new ArrayList<String>();
@@ -153,13 +158,17 @@ public class CrossOriginFilter implements Filter
 
         String allowedMethodsConfig = config.getInitParameter(ALLOWED_METHODS_PARAM);
         if (allowedMethodsConfig == null)
-            allowedMethodsConfig = "GET,POST,HEAD";
-        allowedMethods.addAll(Arrays.asList(allowedMethodsConfig.split(",")));
+            allowedMethods.addAll(DEFAULT_ALLOWED_METHODS);
+        else
+            allowedMethods.addAll(Arrays.asList(allowedMethodsConfig.split(",")));
 
         String allowedHeadersConfig = config.getInitParameter(ALLOWED_HEADERS_PARAM);
         if (allowedHeadersConfig == null)
-            allowedHeadersConfig = "X-Requested-With,Content-Type,Accept,Origin";
-        allowedHeaders.addAll(Arrays.asList(allowedHeadersConfig.split(",")));
+            allowedHeaders.addAll(DEFAULT_ALLOWED_HEADERS);
+        else if ("*".equals(allowedHeadersConfig))
+            anyHeadersAllowed = true;
+        else
+            allowedHeaders.addAll(Arrays.asList(allowedHeadersConfig.split(",")));
 
         String preflightMaxAgeConfig = config.getInitParameter(PREFLIGHT_MAX_AGE_PARAM);
         if (preflightMaxAgeConfig == null)
@@ -339,6 +348,9 @@ public class CrossOriginFilter implements Filter
     private void handleSimpleResponse(HttpServletRequest request, HttpServletResponse response, String origin)
     {
         response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin);
+        //W3C CORS spec http://www.w3.org/TR/cors/#resource-implementation
+        if (!anyOriginAllowed)
+            response.addHeader("Vary", ORIGIN_HEADER);
         if (allowCredentials)
             response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
         if (!exposedHeaders.isEmpty())
@@ -348,18 +360,26 @@ public class CrossOriginFilter implements Filter
     private void handlePreflightResponse(HttpServletRequest request, HttpServletResponse response, String origin)
     {
         boolean methodAllowed = isMethodAllowed(request);
+      
         if (!methodAllowed)
             return;
-        boolean headersAllowed = areHeadersAllowed(request);
+        List<String> headersRequested = getAccessControlRequestHeaders(request);
+        boolean headersAllowed = areHeadersAllowed(headersRequested);
         if (!headersAllowed)
             return;
         response.setHeader(ACCESS_CONTROL_ALLOW_ORIGIN_HEADER, origin);
+        //W3C CORS spec http://www.w3.org/TR/cors/#resource-implementation
+        if (!anyOriginAllowed)
+            response.addHeader("Vary", ORIGIN_HEADER);
         if (allowCredentials)
             response.setHeader(ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER, "true");
         if (preflightMaxAge > 0)
             response.setHeader(ACCESS_CONTROL_MAX_AGE_HEADER, String.valueOf(preflightMaxAge));
         response.setHeader(ACCESS_CONTROL_ALLOW_METHODS_HEADER, commify(allowedMethods));
-        response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS_HEADER, commify(allowedHeaders));
+        if (anyHeadersAllowed)
+            response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS_HEADER, commify(headersRequested));
+        else
+            response.setHeader(ACCESS_CONTROL_ALLOW_HEADERS_HEADER, commify(allowedHeaders));
     }
 
     private boolean isMethodAllowed(HttpServletRequest request)
@@ -373,33 +393,52 @@ public class CrossOriginFilter implements Filter
         return result;
     }
 
-    private boolean areHeadersAllowed(HttpServletRequest request)
+    List<String> getAccessControlRequestHeaders (HttpServletRequest request)
     {
         String accessControlRequestHeaders = request.getHeader(ACCESS_CONTROL_REQUEST_HEADERS_HEADER);
         LOG.debug("{} is {}", ACCESS_CONTROL_REQUEST_HEADERS_HEADER, accessControlRequestHeaders);
-        boolean result = true;
-        if (accessControlRequestHeaders != null)
+        if (accessControlRequestHeaders == null)
+            return Collections.emptyList();
+
+        List<String> requestedHeaders = new ArrayList<String>();
+        String[] headers = accessControlRequestHeaders.split(",");
+        for (String header : headers)
         {
-            String[] headers = accessControlRequestHeaders.split(",");
-            for (String header : headers)
-            {
-                boolean headerAllowed = false;
-                for (String allowedHeader : allowedHeaders)
+            String h = header.trim();
+            if (h.length() > 0)
+                requestedHeaders.add(h);
+        }
+        return requestedHeaders;
+    }
+    
+    
+    private boolean areHeadersAllowed(List<String> requestedHeaders)
+    {
+        if (anyHeadersAllowed)
+        {
+            LOG.debug("Any header is allowed");
+            return true;
+        }
+        
+        boolean result = true;
+        for (String requestedHeader:requestedHeaders)
+        {
+            boolean headerAllowed = false;
+            for (String allowedHeader:allowedHeaders)
+            { 
+                if (requestedHeader.equalsIgnoreCase(allowedHeader.trim()))
                 {
-                    if (header.trim().equalsIgnoreCase(allowedHeader.trim()))
-                    {
-                        headerAllowed = true;
-                        break;
-                    }
-                }
-                if (!headerAllowed)
-                {
-                    result = false;
+                    headerAllowed = true;
                     break;
                 }
             }
+            if (!headerAllowed)
+            {
+                result = false;
+                break;
+            }
         }
-        LOG.debug("Headers [{}] are" + (result ? "" : " not") + " among allowed headers {}", accessControlRequestHeaders, allowedHeaders);
+        LOG.debug("Headers [{}] are" + (result ? "" : " not") + " among allowed headers {}", requestedHeaders, allowedHeaders);
         return result;
     }
 

@@ -90,14 +90,14 @@ public class GzipFilterContentLengthTest
     {
         return Arrays.asList(new Object[][]
         {
-        { AsyncGzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
-        { AsyncGzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
-        { AsyncGzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.GZIP },
-        { AsyncGzipFilter.class, TestServletStreamLengthTypeWriteWithFlush.class, GzipFilter.GZIP },
-        { AsyncGzipFilter.class, TestServletStreamTypeLengthWrite.class, GzipFilter.GZIP },
-        { AsyncGzipFilter.class, TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
-        { AsyncGzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
-        { AsyncGzipFilter.class, TestServletBufferTypeLengthWrite.class, GzipFilter.GZIP },
+        { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
+        { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
+        { GzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.GZIP },
+        { GzipFilter.class, TestServletStreamLengthTypeWriteWithFlush.class, GzipFilter.GZIP },
+        { GzipFilter.class, TestServletStreamTypeLengthWrite.class, GzipFilter.GZIP },
+        { GzipFilter.class, TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
+        { GzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
+        { GzipFilter.class, TestServletBufferTypeLengthWrite.class, GzipFilter.GZIP },
 
         { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
@@ -107,14 +107,6 @@ public class GzipFilterContentLengthTest
         { GzipFilter.class, TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
         
-        { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.DEFLATE },
-        { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.DEFLATE },
-        { GzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.DEFLATE },
-        { GzipFilter.class, TestServletStreamLengthTypeWriteWithFlush.class, GzipFilter.DEFLATE },
-        { GzipFilter.class, TestServletStreamTypeLengthWrite.class, GzipFilter.DEFLATE },
-        { GzipFilter.class, TestServletTypeLengthStreamWrite.class, GzipFilter.DEFLATE },
-        { GzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.DEFLATE },
-        
         });
     }
 
@@ -122,7 +114,7 @@ public class GzipFilterContentLengthTest
     private static final int LARGE = defaultHttp.getOutputBufferSize() * 8;
     private static final int MEDIUM = defaultHttp.getOutputBufferSize();
     private static final int SMALL = defaultHttp.getOutputBufferSize() / 4;
-    private static final int TINY = AsyncGzipFilter.DEFAULT_MIN_GZIP_SIZE / 2;
+    private static final int TINY = GzipFilter.DEFAULT_MIN_GZIP_SIZE / 2;
 
     private String compressionType;
 

@@ -31,10 +31,6 @@ import org.eclipse.jetty.util.log.Logger;
  * {@link QueuedHttpInput} stores the items directly; if the items contain byte buffers, it does not copy them
  * but simply holds references to the item, thus the caller must organize for those buffers to valid while
  * held by this class.
- * <p/>
- * To assist the caller, subclasses may override methods such as  {@link #onAsyncRead()},
- * {@link #consume(HttpInput.Content, int)}, etc.
- * that can be implemented so that the caller will know when buffers are queued and consumed.
  */
 public class QueuedHttpInput extends HttpInput
 {
@@ -48,10 +44,6 @@ public class QueuedHttpInput extends HttpInput
 
     public void content(Content item)
     {
-        // The buffer is not copied here.  This relies on the caller not recycling the buffer
-        // until the it is consumed.  The onContentConsumed and onAllContentConsumed() callbacks are
-        // the signals to the caller that the buffers can be recycled.
-
         synchronized (lock())
         {
             boolean wasEmpty = _inputQ.isEmpty();

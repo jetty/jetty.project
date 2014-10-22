@@ -221,7 +221,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         assertThat("Main request reply and/or data received", mainStreamLatch.await(5, TimeUnit.SECONDS), is(true));
         assertThat("Not more than one push is received", pushDataLatch.await(1, TimeUnit.SECONDS), is(false));
         assertThat("Push push headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
-        assertThat("Push response headers are valid", pushResponseHeaders.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("Push response headers are valid", pushResponseHeaders.await(500, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -441,6 +441,8 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                     output.print("body { background: #FFF; }");
                 else if (url.endsWith(".js"))
                     output.print("function(){}();");
+                else
+                    output.print("DATA");
                 baseRequest.setHandled(true);
             }
         });
@@ -475,9 +477,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
                 assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
                 assertThat("URI header ends with css", pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
-                        .getValue().endsWith
-                                ("" +
-                                        ".css"),
+                        .getValue().endsWith(".css"),
                         is(true));
                 if (resetPush)
                     stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), new Callback.Adapter());
@@ -1093,7 +1093,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         Fields.Field header = headers.get(name);
         if (header != null && expectedValue.equals(header.getValue()))
             return true;
-        System.out.println(name + " not valid! Expected: " + expectedValue + " headers received:" + headers);
+        System.out.println(name + " not valid! Expected: " + expectedValue + ", headers received:" + headers);
         return false;
     }
 

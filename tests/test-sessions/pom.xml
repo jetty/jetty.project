@@ -34,6 +34,6 @@
     <module>test-hash-sessions</module>
     <module>test-jdbc-sessions</module>
     <!-- Requires mongodb server running -->
-    <!-- module>test-mongodb-sessions</module -->
+    <module>test-mongodb-sessions</module>
   </modules>
 </project>

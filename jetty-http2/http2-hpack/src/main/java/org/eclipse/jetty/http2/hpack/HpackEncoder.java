@@ -44,14 +44,14 @@ public class HpackEncoder
     private final static HttpField[] __status= new HttpField[599];
     
     
-    private final static EnumSet<HttpHeader> __DO_NOT_HUFFMAN = 
+    final static EnumSet<HttpHeader> __DO_NOT_HUFFMAN = 
             EnumSet.of(
                     HttpHeader.AUTHORIZATION,
                     HttpHeader.CONTENT_MD5,
                     HttpHeader.PROXY_AUTHENTICATE,
                     HttpHeader.PROXY_AUTHORIZATION);
     
-    private final static EnumSet<HttpHeader> __DO_NOT_INDEX = 
+    final static EnumSet<HttpHeader> __DO_NOT_INDEX = 
             EnumSet.of(
                     // HttpHeader.C_PATH,  // TODO more data needed 
                     // HttpHeader.DATE,    // TODO more data needed 
@@ -67,13 +67,13 @@ public class HpackEncoder
                     HttpHeader.LOCATION,
                     HttpHeader.RANGE,
                     HttpHeader.RETRY_AFTER,
-                    HttpHeader.EXPIRES,
+                    // HttpHeader.EXPIRES,
                     HttpHeader.LAST_MODIFIED,
                     HttpHeader.SET_COOKIE,
                     HttpHeader.SET_COOKIE2);
     
 
-    private final static EnumSet<HttpHeader> __NEVER_INDEX = 
+    final static EnumSet<HttpHeader> __NEVER_INDEX = 
             EnumSet.of(
                     HttpHeader.AUTHORIZATION,
                     HttpHeader.SET_COOKIE,
@@ -82,7 +82,7 @@ public class HpackEncoder
     static
     {
         for (HttpStatus.Code code : HttpStatus.Code.values())
-            __status[code.getCode()]=new HttpField(":status",Integer.toString(code.getCode()));
+            __status[code.getCode()]=new PreEncodedHttpField(HttpHeader.C_STATUS,Integer.toString(code.getCode()));
     }
     
     private final HpackContext _context;
@@ -185,7 +185,7 @@ public class HpackEncoder
         _context.resize(maxHeaderTableSize);
     }
 
-    private void encode(ByteBuffer buffer, HttpField field)
+    public void encode(ByteBuffer buffer, HttpField field)
     {
         final int p=_debug?buffer.position():-1;
         
@@ -216,7 +216,6 @@ public class HpackEncoder
             // Unknown field entry, so we will have to send literally.
             final boolean indexed;
            
-            
             // But do we know it's name?
             HttpHeader header = field.getHeader();
             
@@ -225,9 +224,18 @@ public class HpackEncoder
             {
                 // Select encoding strategy for unknown header names
                 Entry name = _context.get(field.getName());
-                                
+                     
+                if (field instanceof PreEncodedHttpField)
+                {        
+                    int i=buffer.position();
+                    ((PreEncodedHttpField)field).putTo(buffer,HttpVersion.HTTP_2);
+                    byte b=buffer.get(i);
+                    indexed=b<0||b>=0x40;
+                    if (_debug)
+                        encoding=indexed?"PreEncodedIdx":"PreEncoded";
+                }
                 // has the custom header name been seen before?
-                if (name==null)
+                else if (name==null)
                 {
                     // unknown name and value, so let's index this just in case it is 
                     // the first time we have seen a custom name or a custom field.
@@ -237,7 +245,6 @@ public class HpackEncoder
                     encodeValue(buffer,true,field.getValue());
                     if (_debug)
                         encoding="LitHuffNHuffVIdx";
-                        
                 }
                 else
                 {
@@ -255,7 +262,17 @@ public class HpackEncoder
                 // Select encoding strategy for known header names
                 Entry name = _context.get(header);
 
-                if (__DO_NOT_INDEX.contains(header))
+                if (field instanceof PreEncodedHttpField)
+                {                   
+                    // Preencoded field
+                    int i=buffer.position();
+                    ((PreEncodedHttpField)field).putTo(buffer,HttpVersion.HTTP_2);
+                    byte b=buffer.get(i);
+                    indexed=b<0||b>=0x40;
+                    if (_debug)
+                        encoding=indexed?"PreEncodedIdx":"PreEncoded";
+                }
+                else if (__DO_NOT_INDEX.contains(header))
                 {
                     // Non indexed field
                     indexed=false;
@@ -272,21 +289,12 @@ public class HpackEncoder
                 }
                 else if (header==HttpHeader.CONTENT_LENGTH && field.getValue().length()>1)
                 {
-                    // Non indexed content length for non zero value
+                    // Non indexed content length for 2 digits or more
                     indexed=false;
                     encodeName(buffer,(byte)0x00,4,header.asString(),name);
                     encodeValue(buffer,true,field.getValue());
                     if (_debug)
                         encoding="LitIdxNS"+(1+NBitInteger.octectsNeeded(4,_context.index(name)))+"HuffV!Idx";
-                }
-                else if (field instanceof PreEncodedHttpField)
-                {
-                    // Preencoded field
-                    indexed=true;
-                    ((PreEncodedHttpField)field).putTo(buffer,HttpVersion.HTTP_2);
-                    if (_debug)
-                        encoding=((name==null)?"LitHuffN":("LitIdxN"+(name.isStatic()?"S":"")+(1+NBitInteger.octectsNeeded(6,_context.index(name)))))+
-                        "HuffVIdx";
                 }
                 else
                 {
@@ -332,7 +340,7 @@ public class HpackEncoder
         }
     }
     
-    private void encodeValue(ByteBuffer buffer, boolean huffman, String value)
+    static void encodeValue(ByteBuffer buffer, boolean huffman, String value)
     {
         if (huffman)
         {

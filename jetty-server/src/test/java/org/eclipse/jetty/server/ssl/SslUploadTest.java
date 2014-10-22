@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.ssl;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
 
+import java.io.File;
 import java.io.FileInputStream;
 import java.io.IOException;
 import java.io.InputStream;
@@ -40,6 +41,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.AfterClass;
@@ -58,12 +60,13 @@ public class SslUploadTest
     @BeforeClass
     public static void startServer() throws Exception
     {
-        String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
+        File keystore = MavenTestingUtils.getTestResourceFile("keystore");
+
         SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(keystorePath);
+        sslContextFactory.setKeyStorePath(keystore.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setKeyManagerPassword("keypwd");
-        sslContextFactory.setTrustStorePath(keystorePath);
+        sslContextFactory.setTrustStorePath(keystore.getAbsolutePath());
         sslContextFactory.setTrustStorePassword("storepwd");
 
         server = new Server();

@@ -297,7 +297,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
             if (_dbAdaptor == null)
                 throw new IllegalStateException ("No DBAdaptor");
             String longType = _dbAdaptor.getLongType();
-            return "alter table "+getTableName()+" add "+getMaxIntervalColumn()+" "+longType+" not null default "+MAX_INTERVAL_NOT_SET;
+            String stem = "alter table "+getTableName()+" add "+getMaxIntervalColumn()+" "+longType;
+            if (_dbAdaptor.getDBName().contains("oracle"))
+                return stem + " default "+ MAX_INTERVAL_NOT_SET + " not null";
+            else
+                return stem +" not null default "+ MAX_INTERVAL_NOT_SET;
         }
         
         private void checkNotNull(String s)
@@ -604,7 +608,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
            finally
            {
                if (_scheduler != null && _scheduler.isRunning())
-                   _scheduler.schedule(this, _scavengeIntervalMs, TimeUnit.MILLISECONDS);
+                   _task = _scheduler.schedule(this, _scavengeIntervalMs, TimeUnit.MILLISECONDS);
            }
         }
     }

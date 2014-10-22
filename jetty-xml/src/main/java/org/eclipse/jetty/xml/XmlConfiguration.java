@@ -1199,14 +1199,9 @@ public class XmlConfiguration
                     // If no start.config properties, use clean slate
                     if (properties == null)
                     {
-                        properties = new Properties();
                         // Add System Properties
-                        Enumeration<?> ensysprop = System.getProperties().propertyNames();
-                        while (ensysprop.hasMoreElements())
-                        {
-                            String name = (String)ensysprop.nextElement();
-                            properties.put(name,System.getProperty(name));
-                        }
+                        properties = new Properties();
+                        properties.putAll(System.getProperties());
                     }
 
                     // For all arguments, load properties

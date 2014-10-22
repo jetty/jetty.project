@@ -231,6 +231,8 @@ public class ServerConnector extends AbstractNetworkConnector
         _manager = newSelectorManager(getExecutor(), getScheduler(),
             selectors>0?selectors:Math.max(1,Math.min(4,Runtime.getRuntime().availableProcessors()/2)));
         addBean(_manager, true);
+        setSelectorPriorityDelta(-1);
+        setAcceptorPriorityDelta(-2);
     }
 
     protected SelectorManager newSelectorManager(Executor executor, Scheduler scheduler, int selectors)

@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 
+import org.eclipse.jetty.http.MimeTypes.Type;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 
@@ -33,13 +34,23 @@ import org.eclipse.jetty.util.resource.Resource;
  */
 public interface HttpContent
 {
-    String getContentType();
-    String getLastModified();
+    HttpField getContentType();
+    String getContentTypeValue();
+    String getCharacterEncoding();
+    Type getMimeType();
+
+    HttpField getContentLength();
+    long getContentLengthValue();
+    
+    HttpField getLastModified();
+    String getLastModifiedValue();
+    
+    HttpField getETag();
+    String getETagValue();
+    
     ByteBuffer getIndirectBuffer();
     ByteBuffer getDirectBuffer();
-    String getETag();
     Resource getResource();
-    long getContentLength();
     InputStream getInputStream() throws IOException;
     ReadableByteChannel getReadableByteChannel() throws IOException;
     void release();
@@ -50,49 +61,79 @@ public interface HttpContent
     public class ResourceAsHttpContent implements HttpContent
     {
         final Resource _resource;
-        final String _mimeType;
+        final String _contentType;
         final int _maxBuffer;
         final String _etag;
 
         /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType)
+        public ResourceAsHttpContent(final Resource resource, final String contentType)
         {
-            this(resource,mimeType,-1,false);
+            this(resource,contentType,-1,false);
         }
 
         /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType, int maxBuffer)
+        public ResourceAsHttpContent(final Resource resource, final String contentType, int maxBuffer)
         {
-            this(resource,mimeType,maxBuffer,false);
+            this(resource,contentType,maxBuffer,false);
         }
 
         /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType, boolean etag)
+        public ResourceAsHttpContent(final Resource resource, final String contentType, boolean etag)
         {
-            this(resource,mimeType,-1,etag);
+            this(resource,contentType,-1,etag);
         }
 
         /* ------------------------------------------------------------ */
-        public ResourceAsHttpContent(final Resource resource, final String mimeType, int maxBuffer, boolean etag)
+        public ResourceAsHttpContent(final Resource resource, final String contentType, int maxBuffer, boolean etag)
         {
             _resource=resource;
-            _mimeType=mimeType;
+            _contentType=contentType;
             _maxBuffer=maxBuffer;
             _etag=etag?resource.getWeakETag():null;
         }
 
         /* ------------------------------------------------------------ */
         @Override
-        public String getContentType()
+        public String getContentTypeValue()
         {
-            return _mimeType;
+            return _contentType;
+        }
+        
+        /* ------------------------------------------------------------ */
+        @Override
+        public HttpField getContentType()
+        {
+            return _contentType==null?null:new HttpField(HttpHeader.CONTENT_TYPE,_contentType);
         }
 
         /* ------------------------------------------------------------ */
         @Override
-        public String getLastModified()
+        public String getCharacterEncoding()
         {
-            return null;
+            return _contentType==null?null:MimeTypes.getCharsetFromContentType(_contentType);
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public Type getMimeType()
+        {
+            return _contentType==null?null:MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(_contentType));
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public HttpField getLastModified()
+        {
+            long lm = _resource.lastModified();
+            return lm>=0?new HttpField(HttpHeader.LAST_MODIFIED,DateGenerator.formatDate(lm)):null;
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public String getLastModifiedValue()
+        {
+            long lm = _resource.lastModified();
+            return lm>=0?DateGenerator.formatDate(lm):null;
         }
 
         /* ------------------------------------------------------------ */
@@ -113,7 +154,14 @@ public interface HttpContent
         
         /* ------------------------------------------------------------ */
         @Override
-        public String getETag()
+        public HttpField getETag()
+        {
+            return _etag==null?null:new HttpField(HttpHeader.ETAG,_etag);
+        }
+        
+        /* ------------------------------------------------------------ */
+        @Override
+        public String getETagValue()
         {
             return _etag;
         }
@@ -136,7 +184,15 @@ public interface HttpContent
 
         /* ------------------------------------------------------------ */
         @Override
-        public long getContentLength()
+        public HttpField getContentLength()
+        {
+            long l=_resource.length();
+            return l==-1?null:new HttpField.LongValueHttpField(HttpHeader.CONTENT_LENGTH,_resource.length());
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public long getContentLengthValue()
         {
             return _resource.length();
         }
@@ -169,10 +225,12 @@ public interface HttpContent
             _resource.close();
         }
         
+        /* ------------------------------------------------------------ */
         @Override
         public String toString()
         {
             return String.format("%s@%x{r=%s}",this.getClass().getSimpleName(),hashCode(),_resource);
         }
     }
+
 }

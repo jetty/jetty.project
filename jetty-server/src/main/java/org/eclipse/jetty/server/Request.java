@@ -388,7 +388,7 @@ public class Request implements HttpServletRequest
     public AsyncContext getAsyncContext()
     {
         HttpChannelState state = getHttpChannelState();
-        if (_async==null || state.isInitial() && !state.isAsync())
+        if (_async==null || !state.isAsyncStarted())
             throw new IllegalStateException(state.getStatusString());
         
         return _async;

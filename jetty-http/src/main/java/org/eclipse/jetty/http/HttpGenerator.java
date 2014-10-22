@@ -158,6 +158,12 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
+    public boolean isNoContent()
+    {
+        return _noContent;
+    }
+    
+    /* ------------------------------------------------------------ */
     public void setPersistent(boolean persistent)
     {
         _persistent=persistent;
@@ -763,16 +769,29 @@ public class HttpGenerator
                 break;
 
             case CONTENT_LENGTH:
+            {
                 long content_length = _info.getContentLength();
                 if ((response!=null || content_length>0 || content_type ) && !_noContent)
                 {
-                    // known length but not actually set.
                     header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
                     BufferUtil.putDecLong(header, content_length);
                     header.put(HttpTokens.CRLF);
                 }
                 break;
+            }
 
+            case SELF_DEFINING_CONTENT:
+            {
+                // TODO - Should we do this? Why was it not required before?
+                long content_length = _info.getContentLength();
+                if (content_length>0)
+                {
+                    header.put(HttpHeader.CONTENT_LENGTH.getBytesColonSpace());
+                    BufferUtil.putDecLong(header, content_length);
+                    header.put(HttpTokens.CRLF);
+                }
+                break;
+            }
             case NO_CONTENT:
                 if (response!=null && status >= 200 && status != 204 && status != 304)
                     header.put(CONTENT_LENGTH_0);

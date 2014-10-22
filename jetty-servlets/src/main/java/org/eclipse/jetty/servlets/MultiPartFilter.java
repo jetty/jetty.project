@@ -60,25 +60,40 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Multipart Form Data Filter.
  * <p>
- * This class decodes the multipart/form-data stream sent by a HTML form that uses a file input
+ * This class is ONLY needed if you cannot use the Servlet 3.0 APIs for 
+ * configuring and handling multipart requests. See javax.servlet.http.HttpServletRequest.getParts(). If
+ * you use the new servlet apis then you should REMOVE this filter from your webapp.
+ * <p>
+ * This class decodes the <code>multipart/form-data</code> stream sent by a HTML form that uses a file input
  * item.  Any files sent are stored to a temporary file and a File object added to the request
  * as an attribute.  All other values are made available via the normal getParameter API and
  * the setCharacterEncoding mechanism is respected when converting bytes to Strings.
  * <p>
- * If the init parameter "delete" is set to "true", any files created will be deleted when the
- * current request returns.
- * <p>
- * The init parameter maxFormKeys sets the maximum number of keys that may be present in a
- * form (default set by system property org.eclipse.jetty.server.Request.maxFormKeys or 1000) to protect
+ * Init Parameters:
+ * <dl>
+ * <dt>delete</dt>
+ * <dd>(boolean)
+ * If set to "true", any files created will be deleted when the current request returns.</dd>
+ * <dt>maxFormKeys</dt>
+ * <dd>(number)
+ * Sets the maximum number of keys that may be present in a
+ * form (default set by system property <code>org.eclipse.jetty.server.Request.maxFormKeys</code> or 1000) to protect
  * against DOS attacks by bad hash keys.
- * <p>
- * The init parameter deleteFiles controls if uploaded files are automatically deleted after the request
- * completes.
- *
- * Use init parameter "maxFileSize" to set the max size file that can be uploaded.
- *
- * Use init parameter "maxRequestSize" to limit the size of the multipart request.
- *
+ * </dd>
+ * <dt>deleteFiles</dt>
+ * <dd>(boolean)
+ * Controls if uploaded files are automatically deleted after the request completes.
+ * </dd>
+ * <dt>maxFileSize</dt>
+ * <dd>(size in bytes)
+ * Set the max size file that can be uploaded.
+ * </dd>
+ * <dt>maxRequestSize</dt>
+ * <dd>(size in bytes)
+ * To limit the size of the multipart request.
+ * </dd>
+ * </dl>
+ * @deprecated See servlet 3.0 apis like javax.servlet.http.HttpServletRequest.getParts()
  */
 public class MultiPartFilter implements Filter
 {

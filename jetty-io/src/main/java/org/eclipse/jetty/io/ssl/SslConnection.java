@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.concurrent.Executor;
-
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 import javax.net.ssl.SSLEngineResult.HandshakeStatus;
@@ -37,6 +36,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -100,9 +100,9 @@ public class SslConnection extends AbstractConnection
 
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
-        // This connection does not execute calls to onfillable, so they will be called by the selector thread.
-        // onfillable does not block and will only wakeup another thread to do the actual reading and handling.
-        super(endPoint, executor, !EXECUTE_ONFILLABLE);
+        // This connection does not execute calls to onFillable(), so they will be called by the selector thread.
+        // onFillable() does not block and will only wakeup another thread to do the actual reading and handling.
+        super(endPoint, executor, false);
         this._bufferPool = byteBufferPool;
         this._sslEngine = sslEngine;
         this._decryptedEndPoint = newDecryptedEndPoint();
@@ -553,6 +553,12 @@ public class SslConnection extends AbstractConnection
                                         // or shutting down the output.
                                         return -1;
                                     }
+                                    case NEED_UNWRAP:
+                                    {
+                                        // We expected to read more, but we got closed.
+                                        // Return -1 to indicate to the application to drive the close.
+                                        return -1;
+                                    }
                                     default:
                                     {
                                         throw new IllegalStateException();
@@ -780,7 +786,7 @@ public class SslConnection extends AbstractConnection
 
                             // if we have net bytes, let's try to flush them
                             if (BufferUtil.hasContent(_encryptedOutput))
-                                if (!getEndPoint().flush(_encryptedOutput));
+                                if (!getEndPoint().flush(_encryptedOutput))
                                     getEndPoint().flush(_encryptedOutput); // one retry
 
                             // But we also might have more to do for the handshaking state.
@@ -824,10 +830,6 @@ public class SslConnection extends AbstractConnection
                             }
                     }
                 }
-            }
-            catch (Exception e)
-            {
-                throw e;
             }
             finally
             {

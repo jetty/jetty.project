@@ -28,8 +28,6 @@ import java.io.FileOutputStream;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
@@ -46,24 +44,9 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
-@RunWith(Parameterized.class)
 public class IncludableGzipFilterTest
 {
-    @Parameters
-    public static Collection<String[]> data()
-    {
-        String[][] data = new String[][]
-                {
-                { GzipFilter.GZIP },
-                { GzipFilter.DEFLATE }
-                };
-
-        return Arrays.asList(data);
-    }
 
     @Rule
     public TestingDir testdir = new TestingDir();
@@ -85,9 +68,9 @@ public class IncludableGzipFilterTest
     private ServletTester tester;
     private String compressionType;
 
-    public IncludableGzipFilterTest(String compressionType)
+    public IncludableGzipFilterTest()
     {
-        this.compressionType = compressionType;
+        this.compressionType = GzipFilter.GZIP;
     }
 
     @Before
@@ -105,7 +88,7 @@ public class IncludableGzipFilterTest
         tester=new ServletTester("/context");
         tester.getContext().setResourceBase(testdir.getDir().getCanonicalPath());
         tester.getContext().addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
-        FilterHolder holder = tester.getContext().addFilter(IncludableGzipFilter.class,"/*",null);
+        FilterHolder holder = tester.getContext().addFilter(GzipFilter.class,"/*",null);
         holder.setInitParameter("mimeTypes","text/plain");
         tester.start();
     }

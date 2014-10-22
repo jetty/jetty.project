@@ -19,8 +19,6 @@
 package org.eclipse.jetty.servlets;
 
 import java.io.IOException;
-import java.util.Arrays;
-import java.util.List;
 
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
@@ -38,34 +36,19 @@ import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.runner.RunWith;
-import org.junit.runners.Parameterized;
-import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test the GzipFilter support built into the {@link DefaultServlet}
  */
-@RunWith(Parameterized.class)
 public class GzipFilterDefaultTest
 {
-    @Parameters
-    public static List<Object[]> data()
-    {
-        return Arrays.asList(new Object[][]
-        { 
-            { AsyncGzipFilter.class, GzipFilter.GZIP },
-            { GzipFilter.class, GzipFilter.GZIP },
-            { GzipFilter.class, GzipFilter.DEFLATE },
-        });
-    }
-
     private Class<? extends Filter> testFilter;
     private String compressionType;
 
-    public GzipFilterDefaultTest(Class<? extends Filter> testFilter, String compressionType)
+    public GzipFilterDefaultTest()
     {
-        this.testFilter=testFilter;
-        this.compressionType = compressionType;
+        this.testFilter=GzipFilter.class;
+        this.compressionType = GzipFilter.GZIP;
     }
 
     public static class HttpStatusServlet extends HttpServlet
