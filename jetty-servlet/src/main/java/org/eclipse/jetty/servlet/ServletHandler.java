@@ -579,6 +579,8 @@ public class ServletHandler extends ScopedHandler
                     res = ((ServletResponseHttpWrapper)res).getResponse();
 
                 // Do the filter/handling thang
+                servlet_holder.prepare(baseRequest, req, res);
+                
                 if (chain!=null)
                     chain.doFilter(req, res);
                 else
