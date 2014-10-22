@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.SslConnectionFactory;
+import org.eclipse.jetty.server.handler.AsyncDelayHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.webapp.Configuration;
 
 public class LikeJettyXml
 {
@@ -142,7 +144,11 @@ public class LikeJettyXml
 
         deployer.addAppProvider(webapp_provider);
         server.addBean(deployer);
-
+        
+        // === setup jetty plus ==
+        Configuration.ClassList.setServerDefault(server)
+        .addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
+                  "org.eclipse.jetty.plus.webapp.EnvConfiguration","org.eclipse.jetty.plus.webapp.PlusConfiguration");
 
         // === jetty-stats.xml ===
         StatisticsHandler stats = new StatisticsHandler();
@@ -181,7 +187,6 @@ public class LikeJettyXml
         login.setConfig(jetty_base + "/etc/realm.properties");
         login.setRefreshInterval(0);
         server.addBean(login);
-
 
         // Start the server
         server.start();
