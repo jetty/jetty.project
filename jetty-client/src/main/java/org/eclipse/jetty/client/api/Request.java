@@ -151,10 +151,15 @@ public interface Request
      * @param name the name of the header
      * @param value the value of the header
      * @return this request object
+     * @see #header(HttpHeader, String)
      */
     Request header(String name, String value);
 
     /**
+     * <p>Adds the given {@code value} to the specified {@code header}.</p>
+     * <p>Multiple calls with the same parameters will add multiple values;
+     * use the value {@code null} to remove the header completely.</p>
+     *
      * @param header the header name
      * @param value the value of the header
      * @return this request object
