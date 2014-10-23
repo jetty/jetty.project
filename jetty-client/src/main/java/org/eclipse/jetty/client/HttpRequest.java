@@ -94,6 +94,9 @@ public class HttpRequest implements Request
         HttpField acceptEncodingField = client.getAcceptEncodingField();
         if (acceptEncodingField != null)
             headers.put(acceptEncodingField);
+        HttpField userAgentField = client.getUserAgentField();
+        if (userAgentField != null)
+            headers.put(userAgentField);
     }
 
     protected HttpConversation getConversation()
@@ -238,8 +241,7 @@ public class HttpRequest implements Request
     @Override
     public Request agent(String agent)
     {
-        headers.put(HttpHeader.USER_AGENT, agent);
-        return this;
+        return header(HttpHeader.USER_AGENT, agent);
     }
 
     @Override
