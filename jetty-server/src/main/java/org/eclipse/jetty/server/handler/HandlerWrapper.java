@@ -89,6 +89,22 @@ public class HandlerWrapper extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
+    /** Replace the current handler with another HandlerWrapper
+     * linked to the current handler.  This is equivalent to:<pre>
+     *   wrapper.setHandler(getHandler());
+     *   setHandler(wrapper);
+     * </pre>
+     * @param wrapper
+     */
+    public void insertHandler(HandlerWrapper wrapper)
+    {
+        if (wrapper==null || wrapper.getHandler()!=null)
+            throw new IllegalArgumentException();
+        wrapper.setHandler(getHandler());
+        setHandler(wrapper);
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {

@@ -16,14 +16,13 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets.gzip;
+package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
-import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 
@@ -37,6 +36,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PathMap;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
@@ -55,22 +55,22 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public final static String GZIP = "gzip";
     public final static String DEFLATE = "deflate";
     public final static String ETAG_GZIP="--gzip";
-    public final static String ETAG = "o.e.j.s.GzipFilter.ETag";
+    public final static String ETAG = "o.e.j.s.Gzip.ETag";
     public final static int DEFAULT_MIN_GZIP_SIZE=16;
 
-    private final Set<String> _mimeTypes=new HashSet<>();
-    private boolean _excludeMimeTypes;
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
     private int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
     private boolean _checkGzExists = true;
     
-    // non-static, as other GzipFilter instances may have different configurations
+    // non-static, as other GzipHandler instances may have different configurations
     private final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
 
-    private final MimeTypes _knownMimeTypes= new MimeTypes();
     private final Set<String> _methods=new HashSet<>();
     private final Set<Pattern> _excludedAgentPatterns=new HashSet<>();
-    private final Set<Pattern> _excludedPathPatterns=new HashSet<>();
+    private final PathMap<Boolean> _excludedPaths=new PathMap<>();
+    private final PathMap<Boolean> _includedPaths=new PathMap<>();
+    private final Set<String> _excludedMimeTypes=new HashSet<>();
+    private final Set<String> _includedMimeTypes=new HashSet<>();
     private HttpField _vary=GzipHttpOutputInterceptor.VARY;
     
     private final Set<String> _uaCache = new ConcurrentHashSet<>();
@@ -83,19 +83,90 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public GzipHandler()
     {
         _methods.add(HttpMethod.GET.asString());
-        _excludeMimeTypes=true;
         for (String type:MimeTypes.getKnownMimeTypes())
         {
             if (type.startsWith("image/")||
                 type.startsWith("audio/")||
                 type.startsWith("video/"))
-                _mimeTypes.add(type);
-            _mimeTypes.add("application/compress");
-            _mimeTypes.add("application/zip");
-            _mimeTypes.add("application/gzip");
+                _excludedMimeTypes.add(type);
         }
+        _excludedMimeTypes.add("application/compress");
+        _excludedMimeTypes.add("application/zip");
+        _excludedMimeTypes.add("application/gzip");
+        _excludedMimeTypes.add("application/bzip2");
+        _excludedMimeTypes.add("application/x-rar-compressed");
+        LOG.debug("{} excluding mimes {}",this,_excludedMimeTypes);
     }
 
+    /* ------------------------------------------------------------ */
+    public void addExcludedAgentPatterns(String... patterns)
+    {
+        for (String s : patterns)
+            _excludedAgentPatterns.add(Pattern.compile(s));
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the mime types.
+     */
+    public void addExcludedMimeTypes(String... types)
+    {
+        _excludedMimeTypes.addAll(Arrays.asList(types));
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param pathspecs Path specs (as per servlet spec) to exclude. If a 
+     * ServletContext is available, the paths are relative to the context path,
+     * otherwise they are absolute
+     */
+    public void addExcludedPaths(String... pathspecs)
+    {
+        for (String ps : pathspecs)
+            _excludedPaths.put(ps,Boolean.TRUE);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void addIncludedMethods(String... methods)
+    {
+        for (String m : methods)
+            _methods.add(m);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the mime types.
+     */
+    public void addIncludedMimeTypes(String... types)
+    {
+        _includedMimeTypes.addAll(Arrays.asList(types));
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param pathspecs Path specs (as per servlet spec) to include. If a 
+     * ServletContext is available, the paths are relative to the context path,
+     * otherwise they are absolute
+     */
+    public void addIncludedPaths(String... pathspecs)
+    {
+        for (String ps : pathspecs)
+            _includedPaths.put(ps,Boolean.TRUE);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean getCheckGzExists()
+    {
+        return _checkGzExists;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getDeflateCompressionLevel()
+    {
+        return _deflateCompressionLevel;
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
     public Deflater getDeflater(Request request, long content_length)
     {
@@ -139,6 +210,50 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         
         return df;
     }
+    
+    /* ------------------------------------------------------------ */
+    public String[] getExcludedAgentPatterns()
+    {
+        Pattern[] ps =  _excludedAgentPatterns.toArray(new Pattern[_excludedAgentPatterns.size()]);
+        String[] s = new String[ps.length];
+        
+        int i=0;
+        for (Pattern p: ps)
+            s[i++]=p.toString();
+        return s;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public String[] getExcludedMimeTypes()
+    {
+        return _excludedMimeTypes.toArray(new String[_excludedMimeTypes.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getExcludedPaths()
+    {
+        String[] ps =  _excludedPaths.keySet().toArray(new String[_excludedPaths.size()]);
+        return ps;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getIncludedMimeTypes()
+    {
+        return _includedMimeTypes.toArray(new String[_includedMimeTypes.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getIncludedPaths()
+    {
+        String[] ps =  _includedPaths.keySet().toArray(new String[_includedPaths.size()]);
+        return ps;
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getMethods()
+    {
+        return _methods.toArray(new String[_methods.size()]);
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -158,18 +273,21 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        LOG.debug("{} doFilter {}",this,request);
+        ServletContext context = baseRequest.getServletContext();
+        String path = context==null?baseRequest.getRequestURI():URIUtil.addPaths(baseRequest.getServletPath(),baseRequest.getPathInfo());
+        LOG.debug("{} handle {} in {}",this,baseRequest,context);
 
-        // If not a supported method or it is an Excluded URI or an excluded UA - no Vary because no matter what client, this URI is always excluded
-        String requestURI = request.getRequestURI();
-        if (!_methods.contains(request.getMethod()))
+        // If not a supported method - no Vary because no matter what client, this URI is always excluded
+        if (!_methods.contains(baseRequest.getMethod()))
         {
             LOG.debug("{} excluded by method {}",this,request);
             _handler.handle(target,baseRequest, request, response);
             return;
         }
         
-        if (isExcludedPath(requestURI))
+        // If not a supported URI- no Vary because no matter what client, this URI is always excluded
+        // Use pathInfo because this is be
+        if (!isPathGzipable(path))
         {
             LOG.debug("{} excluded by path {}",this,request);
             _handler.handle(target,baseRequest, request, response);
@@ -177,38 +295,25 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // Exclude non compressible mime-types known from URI extension. - no Vary because no matter what client, this URI is always excluded
-        if (_mimeTypes.size()>0 && _excludeMimeTypes)
+        String mimeType = context==null?null:context.getMimeType(path);
+        if (mimeType!=null)
         {
-            ServletContext context = request.getServletContext();
- 
-            String mimeType = context==null?_knownMimeTypes.getMimeByExtension(request.getRequestURI()):context.getMimeType(request.getRequestURI());
-
-            if (mimeType!=null)
+            mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
+            if (!isMimeTypeGzipable(mimeType))
             {
-                mimeType = MimeTypes.getContentTypeWithoutCharset(mimeType);
-                if (_mimeTypes.contains(mimeType))
-                {
-                    LOG.debug("{} excluded by path suffix {}",this,request);
-                    // handle normally without setting vary header
-                    _handler.handle(target,baseRequest, request, response);
-                    return;
-                }
+                LOG.debug("{} excluded by path suffix mime type {}",this,request);
+                // handle normally without setting vary header
+                _handler.handle(target,baseRequest, request, response);
+                return;
             }
         }
-
-        //If the Content-Encoding is already set, then we won't compress
-        if (response.getHeader("Content-Encoding") != null)
-        {
-            _handler.handle(target,baseRequest, request, response);
-            return;
-        }
         
-        if (_checkGzExists && request.getServletContext()!=null)
+        if (_checkGzExists && context!=null)
         {
-            String path=request.getServletContext().getRealPath(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()));
-            if (path!=null)
+            String realpath=request.getServletContext().getRealPath(path);
+            if (realpath!=null)
             {
-                File gz=new File(path+".gz");
+                File gz=new File(realpath+".gz");
                 if (gz.exists())
                 {
                     LOG.debug("{} gzip exists {}",this,request);
@@ -235,40 +340,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         
     }
 
-    public int getDeflateCompressionLevel()
-    {
-        return _deflateCompressionLevel;
-    }
-
-
-    public void setDeflateCompressionLevel(int deflateCompressionLevel)
-    {
-        _deflateCompressionLevel = deflateCompressionLevel;
-    }
-
-    public boolean getCheckGzExists()
-    {
-        return _checkGzExists;
-    }
-
-    public void setCheckGzExists(boolean checkGzExists)
-    {
-        _checkGzExists = checkGzExists;
-    }
-
-    public String[] getMethods()
-    {
-        return _methods.toArray(new String[_methods.size()]);
-    }
-    
-    public void setMethods(String[] methods)
-    {
-        _methods.clear();
-        for (String m : methods)
-            _methods.add(m);
-    }
-    
-    
+    /* ------------------------------------------------------------ */
     /**
      * Checks to see if the userAgent is excluded
      *
@@ -276,11 +348,10 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      *            the user agent
      * @return boolean true if excluded
      */
-    private boolean isExcludedAgent(String ua)
+    protected boolean isExcludedAgent(String ua)
     {
         if (ua == null)
             return false;
-
         
         if (_excludedAgentPatterns != null)
         {
@@ -303,37 +374,38 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         return false;
     }
 
+    /* ------------------------------------------------------------ */
     @Override
-    public boolean isExcludedMimeType(String mimetype)
+    public boolean isMimeTypeGzipable(String mimetype)
     {
-        return _mimeTypes.contains(mimetype) == _excludeMimeTypes;
+        if (_includedMimeTypes.size()>0 && _includedMimeTypes.contains(mimetype))
+            return true;
+        return !_excludedMimeTypes.contains(mimetype);
     }
 
+    /* ------------------------------------------------------------ */
     /**
-     * Checks to see if the path is excluded
+     * Checks to see if the path is included and/pr excluded 
      *
      * @param requestURI
      *            the request uri
-     * @return boolean true if excluded
+     * @return boolean true if gzipable
      */
-    private boolean isExcludedPath(String requestURI)
+    protected boolean isPathGzipable(String requestURI)
     {
         if (requestURI == null)
+            return true;
+        
+        if (_includedPaths.size()>0 && _includedPaths.containsMatch(requestURI))
+            return true;
+
+        if (_excludedPaths.size()>0 && _excludedPaths.containsMatch(requestURI))
             return false;
         
-        if (_excludedPathPatterns != null)
-        {
-            for (Pattern pattern : _excludedPathPatterns)
-            {
-                if (pattern.matcher(requestURI).matches())
-                {
-                    return true;
-                }
-            }
-        }
-        return false;
+        return true;
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     public void recycle(Deflater deflater)
     {
@@ -344,86 +416,63 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /* ------------------------------------------------------------ */
+    public void setCheckGzExists(boolean checkGzExists)
+    {
+        _checkGzExists = checkGzExists;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setDeflateCompressionLevel(int deflateCompressionLevel)
+    {
+        _deflateCompressionLevel = deflateCompressionLevel;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setExcludedAgentPatterns(String... patterns)
+    {
+        _excludedAgentPatterns.clear();
+        addExcludedAgentPatterns(patterns);
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * Set the mime types.
      */
-    public void setExcludeMimeTypes(boolean exclude)
+    public void setExcludedMimeTypes(String... types)
     {
-        _excludeMimeTypes=exclude;
+        _excludedMimeTypes.clear();
+        addExcludedMimeTypes(types);
     }
 
-    public String[] getMimeTypes()
+    /* ------------------------------------------------------------ */
+    public void setExcludedPaths(String... pathspecs)
     {
-        return _mimeTypes.toArray(new String[_mimeTypes.size()]);
-    }
-    
-    public void setMimeTypes(String[] types)
-    {
-        _mimeTypes.clear();
-        _mimeTypes.addAll(Arrays.asList(types));
-    }
-    
-    public boolean isExcludeMimeTypes()
-    {
-        return _excludeMimeTypes;
+        _excludedPaths.clear();
+        addExcludedPaths(pathspecs);
     }
 
-    public String[] getExcludedPathPatterns()
+    /* ------------------------------------------------------------ */
+    public void setIncludedMethods(String... methods)
     {
-        Pattern[] ps =  _excludedPathPatterns.toArray(new Pattern[_excludedPathPatterns.size()]);
-        String[] s = new String[ps.length];
-        
-        int i=0;
-        for (Pattern p: ps)
-            s[i++]=p.toString();
-        return s;
+        _methods.clear();
+        addIncludedMethods(methods);
     }
-    
-    public void setExcludedPathPatterns(String[] patterns)
-    {
-        _excludedPathPatterns.clear();
-        for (String s : patterns)
-            _excludedPathPatterns.add(Pattern.compile(s));
-    }
-
-    public String[] getExcludedAgentPatterns()
-    {
-        Pattern[] ps =  _excludedAgentPatterns.toArray(new Pattern[_excludedAgentPatterns.size()]);
-        String[] s = new String[ps.length];
-        
-        int i=0;
-        for (Pattern p: ps)
-            s[i++]=p.toString();
-        return s;
-    }
-    
-    public void setExcludedAgentPatterns(String[] patterns)
-    {
-        _excludedAgentPatterns.clear();
-        for (String s : patterns)
-            _excludedAgentPatterns.add(Pattern.compile(s));
-    }
-
     
     /* ------------------------------------------------------------ */
     /**
      * Set the mime types.
-     *
-     * @param mimeTypes
-     *            the mime types to set
      */
-    public void setMimeTypes(String mimeTypes)
+    public void setIncludedMimeTypes(String... types)
     {
-        if (mimeTypes != null)
-        {
-            _excludeMimeTypes=false;
-            _mimeTypes.clear();
-            StringTokenizer tok = new StringTokenizer(mimeTypes,",",false);
-            while (tok.hasMoreTokens())
-            {
-                _mimeTypes.add(tok.nextToken());
-            }
-        }
+        _includedMimeTypes.clear();
+        addIncludedMimeTypes(types);
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setIncludedPaths(String... pathspecs)
+    {
+        _includedPaths.clear();
+        addIncludedPaths(pathspecs);
     }
 
     /* ------------------------------------------------------------ */

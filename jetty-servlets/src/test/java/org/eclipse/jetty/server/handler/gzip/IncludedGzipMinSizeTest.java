@@ -16,28 +16,25 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.server.handler.gzip;
 
 import javax.servlet.Servlet;
 
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlets.gzip.GzipTester;
-import org.eclipse.jetty.servlets.gzip.TestMinGzipSizeServlet;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Perform specific tests on the IncludableGzipFilter's ability to manage
+ * Perform specific tests on the IncludableGzipHandler's ability to manage
  * minGzipSize initialization parameter.
  *
  * @see <a href="Eclipse Bug 366106">http://bugs.eclipse.org/366106</a>
  */
-public class IncludableGzipFilterMinSizeTest
+public class IncludedGzipMinSizeTest
 {
-    public IncludableGzipFilterMinSizeTest()
+    public IncludedGzipMinSizeTest()
     {
-        this.compressionType = GzipFilter.GZIP;
+        this.compressionType = GzipHandler.GZIP;
     }
 
     @Rule
@@ -50,21 +47,18 @@ public class IncludableGzipFilterMinSizeTest
     public void testUnderMinSize() throws Exception
     {
         GzipTester tester = new GzipTester(testdir, compressionType);
-        // Use IncludableGzipFilter
-        tester.setGzipFilterClass(GzipFilter.class);
 
-        FilterHolder holder = tester.setContentServlet(testServlet);
+        tester.setContentServlet(testServlet);
         // A valid mime type that we will never use in this test.
         // configured here to prevent mimeType==null logic
-        holder.setInitParameter("mimeTypes","application/soap+xml");
-        holder.setInitParameter("minGzipSize", "2048");
-        holder.setInitParameter("uncheckedPrintWriter","true");
+        tester.getGzipHandler().addIncludedMimeTypes("application/soap+xml");
+        tester.getGzipHandler().setMinGzipSize(2048);
 
         tester.copyTestServerFile("small_script.js");
 
         try {
             tester.start();
-            tester.assertIsResponseNotGzipFiltered("small_script.js",
+            tester.assertIsResponseNotGziped("small_script.js",
                     "small_script.js.sha1",
                     "text/javascript; charset=utf-8");
         } finally {
@@ -76,13 +70,10 @@ public class IncludableGzipFilterMinSizeTest
     public void testOverMinSize() throws Exception
     {
         GzipTester tester = new GzipTester(testdir, compressionType);
-        // Use IncludableGzipFilter
-        tester.setGzipFilterClass(GzipFilter.class);
 
-        FilterHolder holder = tester.setContentServlet(testServlet);
-        holder.setInitParameter("mimeTypes","application/soap+xml,text/javascript,application/javascript");
-        holder.setInitParameter("minGzipSize", "2048");
-        holder.setInitParameter("uncheckedPrintWriter","true");
+        tester.setContentServlet(testServlet);
+        tester.getGzipHandler().addIncludedMimeTypes("application/soap+xml","text/javascript","application/javascript");
+        tester.getGzipHandler().setMinGzipSize(2048);
 
         tester.copyTestServerFile("big_script.js");
 

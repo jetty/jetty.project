@@ -48,7 +48,9 @@ import org.eclipse.jetty.server.handler.AbstractHandlerContainer;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -172,6 +174,55 @@ public class ServletContextHandlerTest
         response = _connector.getResponses(request.toString());
         assertResponseContains("Hello World", response);
     }
+    
+    @Test
+    public void testHandlerBeforeServletHandler() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        
+        HandlerWrapper extra = new HandlerWrapper();
+        
+        context.getSessionHandler().insertHandler(extra);
+        
+        context.addServlet(TestServlet.class,"/test");
+        context.setContextPath("/");
+        _server.setHandler(context);
+        _server.start();
+
+        StringBuffer request = new StringBuffer();
+        request.append("GET /test HTTP/1.0\n");
+        request.append("Host: localhost\n");
+        request.append("\n");
+
+        String response = _connector.getResponses(request.toString());
+        assertResponseContains("Test", response);
+        
+        assertEquals(extra,context.getSessionHandler().getHandler());
+    }
+    
+    @Test
+    public void testGzipHandlerOption() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS|ServletContextHandler.GZIP);
+        GzipHandler gzip = context.getGzipHandler();        
+        _server.start();
+        assertEquals(context.getSessionHandler(),context.getHandler());
+        assertEquals(gzip,context.getSessionHandler().getHandler());
+        assertEquals(context.getServletHandler(),gzip.getHandler());
+    }
+    
+    @Test
+    public void testGzipHandlerSet() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.setSessionHandler(new SessionHandler());
+        context.setGzipHandler(new GzipHandler());
+        GzipHandler gzip = context.getGzipHandler();        
+        _server.start();
+        assertEquals(context.getSessionHandler(),context.getHandler());
+        assertEquals(gzip,context.getSessionHandler().getHandler());
+        assertEquals(context.getServletHandler(),gzip.getHandler());
+    }
 
     @Test
     public void testReplaceServletHandlerWithServlet() throws Exception
@@ -268,7 +319,7 @@ public class ServletContextHandlerTest
 
         ResourceHandler rh = new ResourceHandler();
 
-        servletContextHandler.setHandler(rh);    
+        servletContextHandler.insertHandler(rh);    
         assertEquals(shandler, servletContextHandler.getServletHandler());
         assertEquals(rh, servletContextHandler.getHandler());
         assertEquals(rh.getHandler(), shandler);

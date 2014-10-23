@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets.gzip;
+package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.IOException;
 
@@ -25,25 +25,23 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.servlets.GzipFilter;
-
 /**
  * A sample servlet to serve static content, using a order of construction that has caused problems for
- * {@link GzipFilter} in the past.
+ * {@link GzipHandler} in the past.
  *
  * Using a real-world pattern of:
  *
  * <pre>
  *  1) set content type
- *  2) get stream
- *  3) set content length
+ *  2) set content length
+ *  3) get stream
  *  4) write
  * </pre>
  *
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @SuppressWarnings("serial")
-public class TestServletTypeStreamLengthWrite extends TestDirContentServlet
+public class TestServletTypeLengthStreamWrite extends TestDirContentServlet
 {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -57,10 +55,9 @@ public class TestServletTypeStreamLengthWrite extends TestDirContentServlet
             response.setContentType("audio/mpeg");
         response.setHeader("ETag","W/etag-"+fileName);
 
-        ServletOutputStream out = response.getOutputStream();
-
         response.setContentLength(dataBytes.length);
 
+        ServletOutputStream out = response.getOutputStream();
         out.write(dataBytes);
     }
 }

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets.gzip;
+package org.eclipse.jetty.server.handler.gzip;
 
 public final class Hex
 {

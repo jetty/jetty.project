@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets.gzip;
+package org.eclipse.jetty.server.handler.gzip;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
-import org.eclipse.jetty.servlets.GzipFilter;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -155,7 +154,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         if (ct!=null)
         {
             ct=MimeTypes.getContentTypeWithoutCharset(ct);
-            if (_factory.isExcludedMimeType(StringUtil.asciiToLowerCase(ct)))
+            if (!_factory.isMimeTypeGzipable(StringUtil.asciiToLowerCase(ct)))
             {
                 LOG.debug("{} exclude by mimeType {}",this,ct);
                 noCompression();
@@ -204,7 +203,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             _channel.getResponse().setContentLength(-1);
             String etag=fields.get(HttpHeader.ETAG);
             if (etag!=null)
-                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+GzipFilter.ETAG_GZIP+ '"');
+                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+GzipHandler.ETAG_GZIP+ '"');
 
             LOG.debug("{} compressing {}",this,_deflater);
             _state.set(GZState.COMPRESSING);

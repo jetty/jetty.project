@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.server.handler.gzip;
 
 import static org.junit.Assert.assertEquals;
 
@@ -35,7 +35,6 @@ import java.util.zip.InflaterInputStream;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpTester;
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.BufferUtil;
@@ -45,7 +44,7 @@ import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 
-public class IncludableGzipFilterTest
+public class IncludedGzipTest
 {
 
     @Rule
@@ -68,9 +67,9 @@ public class IncludableGzipFilterTest
     private ServletTester tester;
     private String compressionType;
 
-    public IncludableGzipFilterTest()
+    public IncludedGzipTest()
     {
-        this.compressionType = GzipFilter.GZIP;
+        this.compressionType = GzipHandler.GZIP;
     }
 
     @Before
@@ -88,8 +87,10 @@ public class IncludableGzipFilterTest
         tester=new ServletTester("/context");
         tester.getContext().setResourceBase(testdir.getDir().getCanonicalPath());
         tester.getContext().addServlet(org.eclipse.jetty.servlet.DefaultServlet.class, "/");
-        FilterHolder holder = tester.getContext().addFilter(GzipFilter.class,"/*",null);
-        holder.setInitParameter("mimeTypes","text/plain");
+        
+        GzipHandler gzipHandler = new GzipHandler();
+        gzipHandler.setHandler(tester.getContext().getHandler());
+        tester.getContext().setHandler(gzipHandler);
         tester.start();
     }
 
@@ -101,7 +102,7 @@ public class IncludableGzipFilterTest
     }
 
     @Test
-    public void testGzipFilter() throws Exception
+    public void testGzip() throws Exception
     {
         // generated and parsed test
 
@@ -119,11 +120,11 @@ public class IncludableGzipFilterTest
 
         InputStream testIn = null;
         ByteArrayInputStream compressedResponseStream = new ByteArrayInputStream(response.getContentBytes());
-        if (compressionType.equals(GzipFilter.GZIP))
+        if (compressionType.equals(GzipHandler.GZIP))
         {
             testIn = new GZIPInputStream(compressedResponseStream);
         }
-        else if (compressionType.equals(GzipFilter.DEFLATE))
+        else if (compressionType.equals(GzipHandler.DEFLATE))
         {
             testIn = new InflaterInputStream(compressedResponseStream, new Inflater(true));
         }

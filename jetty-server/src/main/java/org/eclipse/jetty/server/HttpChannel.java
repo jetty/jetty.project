@@ -339,13 +339,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         handleException(e);
                     }
                 }
+                catch (EofException|QuietServletException e)
+                {
+                    error=true;
+                    LOG.debug(e);
+                    _state.error(e);
+                    _request.setHandled(true);
+                    handleException(e);
+                }
                 catch (Exception e)
                 {
                     error=true;
-                    if (e instanceof EofException)
-                        LOG.debug(e);
-                    else
-                        LOG.warn(String.valueOf(_request.getHttpURI()), e);
+                    LOG.warn(String.valueOf(_request.getHttpURI()), e);
                     _state.error(e);
                     _request.setHandled(true);
                     handleException(e);

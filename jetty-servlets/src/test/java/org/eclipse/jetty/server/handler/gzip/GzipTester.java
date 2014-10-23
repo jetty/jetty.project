@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets.gzip;
+package org.eclipse.jetty.server.handler.gzip;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.equalTo;
@@ -35,7 +35,6 @@ import java.io.InputStream;
 import java.io.UnsupportedEncodingException;
 import java.security.DigestOutputStream;
 import java.security.MessageDigest;
-import java.util.EnumSet;
 import java.util.Enumeration;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -43,8 +42,6 @@ import java.util.zip.GZIPInputStream;
 import java.util.zip.Inflater;
 import java.util.zip.InflaterInputStream;
 
-import javax.servlet.DispatcherType;
-import javax.servlet.Filter;
 import javax.servlet.Servlet;
 import javax.servlet.http.HttpServletResponse;
 
@@ -52,10 +49,9 @@ import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConnectionFactory;
-import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletTester;
-import org.eclipse.jetty.servlets.GzipFilter;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
@@ -64,26 +60,32 @@ import org.junit.Assert;
 
 public class GzipTester
 {
-    private Class<? extends Filter> gzipFilterClass = GzipFilter.class;
     private String encoding = "ISO8859_1";
     private String userAgent = null;
-    private final ServletTester tester = new ServletTester();;
+    private final ServletTester tester = new ServletTester("/context",ServletContextHandler.GZIP);
     private TestingDir testdir;
     private String accept;
     private String compressionType;
+    
 
     public GzipTester(TestingDir testingdir, String compressionType, String accept)
     {
         this.testdir = testingdir;
         this.compressionType = compressionType;
         this.accept=accept;
+        
     }
     
     public GzipTester(TestingDir testingdir, String compressionType)
     {
         this.testdir = testingdir;
         this.compressionType = compressionType;
-        this.accept=compressionType;
+        this.accept=compressionType;        
+    }
+    
+    public GzipHandler getGzipHandler()
+    {
+        return tester.getContext().getGzipHandler();
     }
 
     public int getOutputBufferSize()
@@ -105,7 +107,6 @@ public class GzipTester
     {
         return assertIsResponseGzipCompressed(method,requestedFilename,serverFilename,-1);
     }
-    
 
     public HttpTester.Response assertNonStaticContentIsResponseGzipCompressed(String method, String path, String expected) throws Exception
     {
@@ -138,11 +139,11 @@ public class GzipTester
         try
         {
             bais = new ByteArrayInputStream(response.getContentBytes());
-            if (compressionType.startsWith(GzipFilter.GZIP))
+            if (compressionType.startsWith(GzipHandler.GZIP))
             {
                 in = new GZIPInputStream(bais);
             }
-            else if (compressionType.startsWith(GzipFilter.DEFLATE))
+            else if (compressionType.startsWith(GzipHandler.DEFLATE))
             {
                 in = new InflaterInputStream(bais, new Inflater(true));
             }
@@ -217,11 +218,11 @@ public class GzipTester
         try
         {
             bais = new ByteArrayInputStream(response.getContentBytes());
-            if (compressionType.startsWith(GzipFilter.GZIP))
+            if (compressionType.startsWith(GzipHandler.GZIP))
             {
                 in = new GZIPInputStream(bais);
             }
-            else if (compressionType.startsWith(GzipFilter.DEFLATE))
+            else if (compressionType.startsWith(GzipHandler.DEFLATE))
             {
                 in = new InflaterInputStream(bais, new Inflater(true));
             }
@@ -269,10 +270,10 @@ public class GzipTester
     /**
      * Makes sure that the response contains an unfiltered file contents.
      * <p>
-     * This is used to test exclusions and passthroughs in the GzipFilter.
+     * This is used to test exclusions and passthroughs in the GzipHandler.
      * <p>
-     * An example is to test that it is possible to configure GzipFilter to not recompress content that shouldn't be
-     * compressed by the GzipFilter.
+     * An example is to test that it is possible to configure GzipHandler to not recompress content that shouldn't be
+     * compressed by the GzipHandler.
      *
      * @param requestedFilename
      *            the filename used to on the GET request,.
@@ -281,18 +282,18 @@ public class GzipTester
      *            contents are what is intended.
      * @param expectedContentType
      */
-    public void assertIsResponseNotGzipFiltered(String requestedFilename, String testResourceSha1Sum, String expectedContentType) throws Exception
+    public void assertIsResponseNotGziped(String requestedFilename, String testResourceSha1Sum, String expectedContentType) throws Exception
     {
-        assertIsResponseNotGzipFiltered(requestedFilename, testResourceSha1Sum, expectedContentType,null);
+        assertIsResponseNotGziped(requestedFilename, testResourceSha1Sum, expectedContentType,null);
     }
     
     /**
      * Makes sure that the response contains an unfiltered file contents.
      * <p>
-     * This is used to test exclusions and passthroughs in the GzipFilter.
+     * This is used to test exclusions and passthroughs in the GzipHandler.
      * <p>
-     * An example is to test that it is possible to configure GzipFilter to not recompress content that shouldn't be
-     * compressed by the GzipFilter.
+     * An example is to test that it is possible to configure GzipHandler to not recompress content that shouldn't be
+     * compressed by the GzipHandler.
      *
      * @param requestedFilename
      *            the filename used to on the GET request,.
@@ -302,7 +303,7 @@ public class GzipTester
      * @param expectedContentType
      * @param expectedContentEncoding can be non-null in some circumstances, eg when dealing with pre-gzipped .svgz files
      */
-    public void assertIsResponseNotGzipFiltered(String requestedFilename, String testResourceSha1Sum, String expectedContentType, String expectedContentEncoding) throws Exception
+    public void assertIsResponseNotGziped(String requestedFilename, String testResourceSha1Sum, String expectedContentType, String expectedContentEncoding) throws Exception
     {
         //System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester.Request request = HttpTester.newRequest();
@@ -325,7 +326,7 @@ public class GzipTester
         String prefix = requestedFilename + " / Response";
         Assert.assertThat(prefix + ".status",response.getStatus(),is(HttpServletResponse.SC_OK));
         Assert.assertThat(prefix + ".header[Content-Length]",response.get("Content-Length"),notNullValue());
-        Assert.assertThat(prefix + ".header[Content-Encoding] (should not be recompressed by GzipFilter)",response.get("Content-Encoding"),
+        Assert.assertThat(prefix + ".header[Content-Encoding] (should not be recompressed by GzipHandler)",response.get("Content-Encoding"),
                           expectedContentEncoding == null? nullValue() : notNullValue());
         if (expectedContentEncoding != null)
             Assert.assertThat(prefix + ".header[Content-Encoding]",response.get("Content-Encoding"),is(expectedContentEncoding));
@@ -378,7 +379,7 @@ public class GzipTester
     }
 
     /**
-     * Asserts that the requested filename results in a properly structured GzipFilter response, where the content is
+     * Asserts that the requested filename results in a properly structured GzipHandler response, where the content is
      * not compressed, and the content-length is returned appropriately.
      *
      * @param filename
@@ -410,7 +411,7 @@ public class GzipTester
     
 
     /**
-     * Asserts that the request results in a properly structured GzipFilter response, where the content is
+     * Asserts that the request results in a properly structured GzipHandler response, where the content is
      * not compressed, and the content-length is returned appropriately.
      *
      * @param expectedResponse
@@ -431,7 +432,7 @@ public class GzipTester
     }
 
     /**
-     * Asserts that the request results in a properly structured GzipFilter response, where the content is
+     * Asserts that the request results in a properly structured GzipHandler response, where the content is
      * not compressed, and the content-length is returned appropriately.
      *
      * @param expectedFilesize
@@ -598,32 +599,18 @@ public class GzipTester
     }
 
     /**
-     * Set the servlet that provides content for the GzipFilter in being tested.
+     * Set the servlet that provides content for the GzipHandler in being tested.
      *
      * @param servletClass
      *            the servlet that will provide content.
-     * @return the FilterHolder for configuring the GzipFilter's initParameters with
      */
-    public FilterHolder setContentServlet(Class<? extends Servlet> servletClass) throws IOException
+    public void setContentServlet(Class<? extends Servlet> servletClass) throws IOException
     {
         tester.setContextPath("/context");
         tester.setResourceBase(testdir.getDir().getCanonicalPath());
         ServletHolder servletHolder = tester.addServlet(servletClass,"/");
         servletHolder.setInitParameter("baseDir",testdir.getDir().getAbsolutePath());
         servletHolder.setInitParameter("etags","true");
-        FilterHolder holder = tester.addFilter(gzipFilterClass,"/*",EnumSet.allOf(DispatcherType.class));
-        holder.setInitParameter("vary","Accept-Encoding");
-        return holder;
-    }
-
-    public Class<? extends Filter> getGzipFilterClass()
-    {
-        return gzipFilterClass;
-    }
-
-    public void setGzipFilterClass(Class<? extends Filter> gzipFilterClass)
-    {
-        this.gzipFilterClass = gzipFilterClass;
     }
 
     public void setEncoding(String encoding)
