@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
@@ -59,19 +58,19 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public final static int DEFAULT_MIN_GZIP_SIZE=16;
 
     private int _minGzipSize=DEFAULT_MIN_GZIP_SIZE;
-    private int _deflateCompressionLevel=Deflater.DEFAULT_COMPRESSION;
+    private int _compressionLevel=Deflater.DEFAULT_COMPRESSION;
     private boolean _checkGzExists = true;
     
     // non-static, as other GzipHandler instances may have different configurations
     private final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
 
-    private final Set<String> _methods=new HashSet<>();
+    private final Set<String> _includedMethods=new HashSet<>();
     private final Set<Pattern> _excludedAgentPatterns=new HashSet<>();
     private final PathMap<Boolean> _excludedPaths=new PathMap<>();
     private final PathMap<Boolean> _includedPaths=new PathMap<>();
     private final Set<String> _excludedMimeTypes=new HashSet<>();
     private final Set<String> _includedMimeTypes=new HashSet<>();
-    private HttpField _vary=GzipHttpOutputInterceptor.VARY;
+    private HttpField _vary;
     
     private final Set<String> _uaCache = new ConcurrentHashSet<>();
     private int _uaCacheSize = 1024;
@@ -82,7 +81,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public GzipHandler()
     {
-        _methods.add(HttpMethod.GET.asString());
+        _includedMethods.add(HttpMethod.GET.asString());
         for (String type:MimeTypes.getKnownMimeTypes())
         {
             if (type.startsWith("image/")||
@@ -96,6 +95,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _excludedMimeTypes.add("application/bzip2");
         _excludedMimeTypes.add("application/x-rar-compressed");
         LOG.debug("{} excluding mimes {}",this,_excludedMimeTypes);
+        
+        _excludedAgentPatterns.add(Pattern.compile(".*MSIE 6.0.*"));
     }
 
     /* ------------------------------------------------------------ */
@@ -130,7 +131,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public void addIncludedMethods(String... methods)
     {
         for (String m : methods)
-            _methods.add(m);
+            _includedMethods.add(m);
     }
 
     /* ------------------------------------------------------------ */
@@ -161,9 +162,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /* ------------------------------------------------------------ */
-    public int getDeflateCompressionLevel()
+    public int getCompressionLevel()
     {
-        return _deflateCompressionLevel;
+        return _compressionLevel;
     }
 
     /* ------------------------------------------------------------ */
@@ -204,7 +205,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         
         Deflater df = _deflater.get();
         if (df==null)
-            df=new Deflater(_deflateCompressionLevel,true);        
+            df=new Deflater(_compressionLevel,true);        
         else
             _deflater.set(null);
         
@@ -252,7 +253,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     /* ------------------------------------------------------------ */
     public String[] getMethods()
     {
-        return _methods.toArray(new String[_methods.size()]);
+        return _includedMethods.toArray(new String[_includedMethods.size()]);
     }
 
     /* ------------------------------------------------------------ */
@@ -267,6 +268,14 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
 
     /* ------------------------------------------------------------ */
+    @Override
+    protected void doStart() throws Exception
+    {
+        _vary=(_excludedAgentPatterns.size()>0)?GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING_USER_AGENT:GzipHttpOutputInterceptor.VARY_ACCEPT_ENCODING;
+        super.doStart();
+    }
+
+    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.handler.HandlerWrapper#handle(java.lang.String, org.eclipse.jetty.server.Request, javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
      */
@@ -278,7 +287,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         LOG.debug("{} handle {} in {}",this,baseRequest,context);
 
         // If not a supported method - no Vary because no matter what client, this URI is always excluded
-        if (!_methods.contains(baseRequest.getMethod()))
+        if (!_includedMethods.contains(baseRequest.getMethod()))
         {
             LOG.debug("{} excluded by method {}",this,request);
             _handler.handle(target,baseRequest, request, response);
@@ -333,8 +342,10 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         HttpChannel channel = HttpChannel.getCurrentHttpChannel();
-        HttpOutput out = channel.getResponse().getHttpOutput();        
-        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,channel,out.getFilter()));
+        HttpOutput out = channel.getResponse().getHttpOutput();   
+        HttpOutput.Interceptor interceptor = out.getInterceptor();
+        if (!(interceptor instanceof GzipHttpOutputInterceptor))
+            out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,channel,interceptor));
 
         _handler.handle(target,baseRequest, request, response);
         
@@ -422,9 +433,9 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     }
     
     /* ------------------------------------------------------------ */
-    public void setDeflateCompressionLevel(int deflateCompressionLevel)
+    public void setCompressionLevel(int compressionLevel)
     {
-        _deflateCompressionLevel = deflateCompressionLevel;
+        _compressionLevel = compressionLevel;
     }
 
     /* ------------------------------------------------------------ */
@@ -454,7 +465,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     /* ------------------------------------------------------------ */
     public void setIncludedMethods(String... methods)
     {
-        _methods.clear();
+        _includedMethods.clear();
         addIncludedMethods(methods);
     }
     
@@ -487,22 +498,5 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         _minGzipSize = minGzipSize;
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * Set the value of the Vary header sent with responses that could be compressed.  
-     * <p>
-     * By default it is set to 'Accept-Encoding, User-Agent' since IE6 is excluded by 
-     * default from the excludedAgents. If user-agents are not to be excluded, then 
-     * this can be set to 'Accept-Encoding'.  Note also that shared caches may cache 
-     * many copies of a resource that is varied by User-Agent - one per variation of the 
-     * User-Agent, unless the cache does some normalization of the UA string.
-     * @param vary The value of the Vary header set if a response can be compressed.
-     */
-    public void setVary(String vary)
-    {
-        _vary=new PreEncodedHttpField(HttpHeader.VARY,vary);
-    }
-
-
 
 }

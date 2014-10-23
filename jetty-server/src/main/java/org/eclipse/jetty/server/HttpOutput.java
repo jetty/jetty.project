@@ -104,7 +104,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         return _channel;
     }
 
-    public Interceptor getFilter()
+    public Interceptor getInterceptor()
     {
         return _filter;
     }
