@@ -847,6 +847,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         response = client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
+                .header(HttpHeader.USER_AGENT, null)
                 .header(HttpHeader.USER_AGENT, userAgent)
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
