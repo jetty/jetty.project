@@ -241,7 +241,8 @@ public class HttpRequest implements Request
     @Override
     public Request agent(String agent)
     {
-        return header(HttpHeader.USER_AGENT, agent);
+        headers.put(HttpHeader.USER_AGENT, agent);
+        return this;
     }
 
     @Override
