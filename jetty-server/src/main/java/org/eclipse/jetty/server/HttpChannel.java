@@ -49,7 +49,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.URIUtil;
@@ -406,43 +405,42 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                 }
             }
 
+            if (action==Action.COMPLETE)
+            {
+                try
+                {
+                    _state.completed();
+
+                    if (!_response.isCommitted() && !_request.isHandled())
+                    {
+                        _response.sendError(404);
+                    }
+                    else
+                    {
+                        // Complete generating the response
+                        _response.closeOutput();
+                    }
+                }
+                catch(EofException|ClosedChannelException e)
+                {
+                    LOG.debug(e);
+                }
+                catch(Exception e)
+                {
+                    LOG.warn("complete failed",e);
+                }
+                finally
+                {
+                    _request.setHandled(true);
+                    _transport.completed();
+                }
+            }
         }
         finally
         {
             setCurrentHttpChannel(last);
             if (threadName != null && LOG.isDebugEnabled())
                 Thread.currentThread().setName(threadName);
-        }
-
-        if (action==Action.COMPLETE)
-        {
-            try
-            {
-                _state.completed();
-
-                if (!_response.isCommitted() && !_request.isHandled())
-                {
-                    _response.sendError(404);
-                }
-                else
-                {
-                    // Complete generating the response
-                    _response.closeOutput();
-                }
-            }
-            catch(EofException|ClosedChannelException e)
-            {
-                LOG.debug(e);
-            }
-            catch(Exception e)
-            {
-                LOG.warn("complete failed",e);
-            }
-            finally
-            {
-                _request.setHandled(true);
-                _transport.completed();
-            }
         }
 
         if (LOG.isDebugEnabled())
@@ -604,7 +602,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
 
                             default:
                                 String[] values = value.split(",");
-                                for (int i = 0; values != null && i < values.length; i++)
+                                for (int i = 0; i < values.length; i++)
                                 {
                                     expect = HttpHeaderValue.CACHE.get(values[i].trim());
                                     if (expect == null)
