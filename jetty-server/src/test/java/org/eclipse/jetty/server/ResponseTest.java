@@ -36,7 +36,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
@@ -85,7 +84,7 @@ public class ResponseTest
         _channel = new HttpChannel(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             @Override
-            public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
+            public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
             {
                 callback.succeeded();
             }
@@ -787,7 +786,7 @@ public class ResponseTest
     
     private Response newResponse()
     {
-        _channel.reset();
+        _channel.recycle();
         _channel.getRequest().setMetaData(new MetaData.Request("GET",new HttpURI("/path/info"),HttpVersion.HTTP_1_0,new HttpFields()));
         return new Response(_channel, _channel.getResponse().getHttpOutput());
     }

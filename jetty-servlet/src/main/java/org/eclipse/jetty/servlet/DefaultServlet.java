@@ -772,8 +772,8 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                     
                     if (ifnm!=null && content.getETagValue()!=null)
                     {
-                        // Look for GzipFiltered version of etag
-                        if (content.getETagValue().equals(request.getAttribute("o.e.j.s.GzipFilter.ETag")))
+                        // Look for Gzip'd version of etag
+                        if (content.getETagValue().equals(request.getAttribute("o.e.j.s.Gzip.ETag")))
                         {
                             response.setStatus(HttpServletResponse.SC_NOT_MODIFIED);
                             response.setHeader(HttpHeader.ETAG.asString(),ifnm);

@@ -61,9 +61,9 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     }
 
     @Override
-    public void reset()
+    public void recycle()
     {
-        super.reset();
+        super.recycle();
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;

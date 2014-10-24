@@ -102,7 +102,7 @@ public class HTTPSPDYServerConnectionFactory extends SPDYServerConnectionFactory
             // accept-encoding header as it is redundant to negotiate gzip compression support with the server,
             // if clients have to accept it.
             // So we inject the accept-encoding header here, even if not set by the client. This will enforce SPDY
-            // clients to follow the spec and enable gzip compression if GzipFilter or the like is enabled.
+            // clients to follow the spec and enable gzip compression if enabled.
             if (!(headers.get("accept-encoding") != null && headers.get("accept-encoding").getValue().contains
                     ("gzip")))
                 headers.add("accept-encoding", "gzip");

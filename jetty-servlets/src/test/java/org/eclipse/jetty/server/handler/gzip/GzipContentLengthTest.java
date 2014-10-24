@@ -16,28 +16,17 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets;
+package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.File;
 import java.util.Arrays;
 import java.util.List;
 
-import javax.servlet.Filter;
 import javax.servlet.Servlet;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlets.gzip.GzipTester;
-import org.eclipse.jetty.servlets.gzip.TestServletBufferTypeLengthWrite;
-import org.eclipse.jetty.servlets.gzip.TestServletLengthStreamTypeWrite;
-import org.eclipse.jetty.servlets.gzip.TestServletLengthTypeStreamWrite;
-import org.eclipse.jetty.servlets.gzip.TestServletStreamLengthTypeWrite;
-import org.eclipse.jetty.servlets.gzip.TestServletStreamLengthTypeWriteWithFlush;
-import org.eclipse.jetty.servlets.gzip.TestServletStreamTypeLengthWrite;
-import org.eclipse.jetty.servlets.gzip.TestServletTypeLengthStreamWrite;
-import org.eclipse.jetty.servlets.gzip.TestServletTypeStreamLengthWrite;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -50,12 +39,12 @@ import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
- * Test the GzipFilter support for Content-Length setting variations.
+ * Test the GzipHandler support for Content-Length setting variations.
  *
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @RunWith(Parameterized.class)
-public class GzipFilterContentLengthTest
+public class GzipContentLengthTest
 {
 
     @Rule
@@ -90,22 +79,22 @@ public class GzipFilterContentLengthTest
     {
         return Arrays.asList(new Object[][]
         {
-        { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletStreamLengthTypeWriteWithFlush.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletStreamTypeLengthWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletBufferTypeLengthWrite.class, GzipFilter.GZIP },
-
-        { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletStreamLengthTypeWriteWithFlush.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletStreamTypeLengthWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
+        { TestServletLengthStreamTypeWrite.class},
+        { TestServletLengthTypeStreamWrite.class},
+        { TestServletStreamLengthTypeWrite.class},
+        { TestServletStreamLengthTypeWriteWithFlush.class },
+        { TestServletStreamTypeLengthWrite.class},
+        { TestServletTypeLengthStreamWrite.class},
+        { TestServletTypeStreamLengthWrite.class},
+        { TestServletBufferTypeLengthWrite.class},
+                                                
+        { TestServletLengthStreamTypeWrite.class},
+        { TestServletLengthTypeStreamWrite.class},
+        { TestServletStreamLengthTypeWrite.class},
+        { TestServletStreamLengthTypeWriteWithFlush.class},
+        { TestServletStreamTypeLengthWrite.class},
+        { TestServletTypeLengthStreamWrite.class},
+        { TestServletTypeStreamLengthWrite.class},
         
         });
     }
@@ -114,32 +103,28 @@ public class GzipFilterContentLengthTest
     private static final int LARGE = defaultHttp.getOutputBufferSize() * 8;
     private static final int MEDIUM = defaultHttp.getOutputBufferSize();
     private static final int SMALL = defaultHttp.getOutputBufferSize() / 4;
-    private static final int TINY = GzipFilter.DEFAULT_MIN_GZIP_SIZE / 2;
+    private static final int TINY = GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2;
 
     private String compressionType;
 
-    public GzipFilterContentLengthTest(Class<? extends Filter> testFilter,Class<? extends Servlet> testServlet, String compressionType)
+    public GzipContentLengthTest(Class<? extends Servlet> testServlet)
     {
-        this.testFilter = testFilter;
         this.testServlet = testServlet;
-        this.compressionType = compressionType;
+        this.compressionType = GzipHandler.GZIP;
     }
 
     @Rule
     public TestingDir testingdir = new TestingDir();
 
-    private Class<? extends Filter> testFilter;
     private Class<? extends Servlet> testServlet;
 
     private void assertIsGzipCompressed(String filename, int filesize) throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
-        tester.setGzipFilterClass(testFilter);
 
         File testfile = tester.prepareServerFile(testServlet.getSimpleName() + "-" + filename,filesize);
 
-        FilterHolder holder = tester.setContentServlet(testServlet);
-        holder.setInitParameter("mimeTypes","text/plain");
+        tester.setContentServlet(testServlet);
 
         try
         {
@@ -155,12 +140,10 @@ public class GzipFilterContentLengthTest
     private void assertIsNotGzipCompressed(String filename, int filesize) throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
-        tester.setGzipFilterClass(testFilter);
 
         File testfile = tester.prepareServerFile(testServlet.getSimpleName() + "-" + filename,filesize);
 
-        FilterHolder holder = tester.setContentServlet(testServlet);
-        holder.setInitParameter("mimeTypes","text/plain");
+        tester.setContentServlet(testServlet);
 
         try
         {
@@ -212,7 +195,7 @@ public class GzipFilterContentLengthTest
 
     /**
      * Tests for problems with Content-Length header on small size files
-     * that are not being compressed encountered when using GzipFilter
+     * that are not being compressed encountered when using GzipHandler
      *
      * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
@@ -224,7 +207,7 @@ public class GzipFilterContentLengthTest
 
     /**
      * Tests for problems with Content-Length header on small size files
-     * that are not being compressed encountered when using GzipFilter
+     * that are not being compressed encountered when using GzipHandler
      *
      * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
@@ -236,7 +219,7 @@ public class GzipFilterContentLengthTest
 
     /**
      * Tests for problems with Content-Length header on medium size files
-     * that are not being compressed encountered when using GzipFilter
+     * that are not being compressed encountered when using GzipHandler
      *
      * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
@@ -248,7 +231,7 @@ public class GzipFilterContentLengthTest
 
     /**
      * Tests for problems with Content-Length header on large size files
-     * that were not being compressed encountered when using GzipFilter
+     * that were not being compressed encountered when using GzipHandler
      *
      * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */

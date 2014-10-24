@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets.gzip;
+package org.eclipse.jetty.server.handler.gzip;
 
 import java.util.zip.Deflater;
 
@@ -26,7 +26,7 @@ public interface GzipFactory
 {
     Deflater getDeflater(Request request, long content_length);
 
-    boolean isExcludedMimeType(String mimetype);
+    boolean isMimeTypeGzipable(String mimetype);
 
     void recycle(Deflater deflater);
 }

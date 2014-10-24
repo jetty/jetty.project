@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets.gzip;
+package org.eclipse.jetty.server.handler.gzip;
 
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
-import org.eclipse.jetty.servlets.GzipFilter;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingNestedCallback;
@@ -45,7 +44,8 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
     private final static PreEncodedHttpField CONTENT_ENCODING_GZIP=new PreEncodedHttpField(HttpHeader.CONTENT_ENCODING,"gzip");
     private final static byte[] GZIP_HEADER = new byte[] { (byte)0x1f, (byte)0x8b, Deflater.DEFLATED, 0, 0, 0, 0, 0, 0, 0 };
 
-    public final static HttpField VARY=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
+    public final static HttpField VARY_ACCEPT_ENCODING_USER_AGENT=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING+", "+HttpHeader.USER_AGENT);
+    public final static HttpField VARY_ACCEPT_ENCODING=new PreEncodedHttpField(HttpHeader.VARY,HttpHeader.ACCEPT_ENCODING.asString());
     
     private enum GZState {  MIGHT_COMPRESS, NOT_COMPRESSING, COMMITTING, COMPRESSING, FINISHED};
     private final AtomicReference<GZState> _state = new AtomicReference<>(GZState.MIGHT_COMPRESS);
@@ -62,7 +62,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
 
     public GzipHttpOutputInterceptor(GzipFactory factory, HttpChannel channel, HttpOutput.Interceptor next)
     {
-        this(factory,VARY,channel.getHttpConfiguration().getOutputBufferSize(),channel,next);
+        this(factory,VARY_ACCEPT_ENCODING_USER_AGENT,channel.getHttpConfiguration().getOutputBufferSize(),channel,next);
     }
     
     public GzipHttpOutputInterceptor(GzipFactory factory, HttpField vary, HttpChannel channel, HttpOutput.Interceptor next)
@@ -155,7 +155,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         if (ct!=null)
         {
             ct=MimeTypes.getContentTypeWithoutCharset(ct);
-            if (_factory.isExcludedMimeType(StringUtil.asciiToLowerCase(ct)))
+            if (!_factory.isMimeTypeGzipable(StringUtil.asciiToLowerCase(ct)))
             {
                 LOG.debug("{} exclude by mimeType {}",this,ct);
                 noCompression();
@@ -204,7 +204,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             _channel.getResponse().setContentLength(-1);
             String etag=fields.get(HttpHeader.ETAG);
             if (etag!=null)
-                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+GzipFilter.ETAG_GZIP+ '"');
+                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+GzipHandler.ETAG_GZIP+ '"');
 
             LOG.debug("{} compressing {}",this,_deflater);
             _state.set(GZState.COMPRESSING);

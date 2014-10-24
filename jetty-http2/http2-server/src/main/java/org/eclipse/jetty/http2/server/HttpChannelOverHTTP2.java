@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
@@ -108,13 +107,13 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     }
    
     @Override
-    protected void commit(ResponseInfo info)
+    protected void commit(MetaData.Response info)
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Commit Response #{}/{}:{}{} {} {}{}{}",
-                    stream.getId(),Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getHttpVersion(), info.getStatus(), info.getReason(),
-                    System.lineSeparator(), info.getHttpFields());
+                    stream.getId(),Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getVersion(), info.getStatus(), info.getReason(),
+                    System.lineSeparator(), info.getFields());
         }
     }
 

@@ -17,7 +17,7 @@
 //
 
 /**
- * Jetty Servlets : GZIP Filter Classes
+ * Jetty GZIP Handler 
  */
-package org.eclipse.jetty.servlets.gzip;
+package org.eclipse.jetty.server.handler.gzip;
 

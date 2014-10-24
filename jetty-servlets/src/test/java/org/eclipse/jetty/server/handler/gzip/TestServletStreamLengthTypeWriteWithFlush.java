@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets.gzip;
+package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.IOException;
 
@@ -25,11 +25,9 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.servlets.GzipFilter;
-
 /**
  * A sample servlet to serve static content, using a order of construction that has caused problems for
- * {@link GzipFilter} in the past.
+ * {@link GzipHandler} in the past.
  * 
  * Using a real-world pattern of:
  * 
@@ -53,7 +51,7 @@ public class TestServletStreamLengthTypeWriteWithFlush extends TestDirContentSer
 
         ServletOutputStream out = response.getOutputStream();
 
-        // set content-length of uncompressed content (GzipFilter should handle this)
+        // set content-length of uncompressed content (GzipHandler should handle this)
         response.setContentLength(dataBytes.length);
         
         if (fileName.endsWith("txt"))

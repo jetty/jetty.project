@@ -24,8 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.http.HttpGenerator.RequestInfo;
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 
@@ -180,7 +178,7 @@ public class HttpTester
             try
             {
                 HttpGenerator generator = new HttpGenerator();
-                HttpGenerator.Info info = getInfo();
+                MetaData info = getInfo();
                 // System.err.println(info.getClass());
                 // System.err.println(info);
 
@@ -192,9 +190,9 @@ public class HttpTester
 
                 loop: while(!generator.isEnd())
                 {
-                    HttpGenerator.Result result =  info instanceof RequestInfo
-                        ?generator.generateRequest((RequestInfo)info,header,chunk,content,true)
-                        :generator.generateResponse((ResponseInfo)info,header,chunk,content,true);
+                    HttpGenerator.Result result =  info instanceof MetaData.Request
+                        ?generator.generateRequest((MetaData.Request)info,header,chunk,content,true)
+                        :generator.generateResponse((MetaData.Response)info,false,header,chunk,content,true);
                     switch(result)
                     {
                         case NEED_HEADER:
@@ -239,7 +237,7 @@ public class HttpTester
             }
 
         }
-        abstract public HttpGenerator.Info getInfo();
+        abstract public MetaData getInfo();
 
         @Override
         public int getHeaderCacheSize()
@@ -284,9 +282,9 @@ public class HttpTester
         }
 
         @Override
-        public HttpGenerator.RequestInfo getInfo()
+        public MetaData.Request getInfo()
         {
-            return new HttpGenerator.RequestInfo(_version,this,_content==null?0:_content.size(),_method,_uri);
+            return new MetaData.Request(_method,new HttpURI(_uri),_version,this,_content==null?0:_content.size());
         }
 
         @Override
@@ -346,9 +344,9 @@ public class HttpTester
         }
 
         @Override
-        public HttpGenerator.ResponseInfo getInfo()
+        public MetaData.Response getInfo()
         {
-            return new HttpGenerator.ResponseInfo(_version,this,_content==null?-1:_content.size(),_status,_reason,false);
+            return new MetaData.Response(_version,_status,_reason,this,_content==null?-1:_content.size());
         }
 
         @Override

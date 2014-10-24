@@ -145,7 +145,7 @@ public class HttpGeneratorServerHTTPTest
             }
             ByteBuffer header = null;
             ByteBuffer chunk = null;
-            HttpGenerator.ResponseInfo info = null;
+            MetaData.Response info = null;
 
             loop:
             while (true)
@@ -157,12 +157,12 @@ public class HttpGeneratorServerHTTPTest
                 // Generate
                 boolean last = !BufferUtil.hasContent(content);
 
-                HttpGenerator.Result result = gen.generateResponse(info, header, chunk, content, last);
+                HttpGenerator.Result result = gen.generateResponse(info, _head, header, chunk, content, last);
 
                 switch (result)
                 {
                     case NEED_INFO:
-                        info = new HttpGenerator.ResponseInfo(HttpVersion.fromVersion(version), _fields, _contentLength, _code, reason, _head);
+                        info = new MetaData.Response(HttpVersion.fromVersion(version), _code, reason, _fields, _contentLength);
                         continue;
 
                     case NEED_HEADER:
