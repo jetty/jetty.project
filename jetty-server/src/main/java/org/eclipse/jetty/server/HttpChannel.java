@@ -94,7 +94,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
-    private MetaData.Response _committedInfo;
     private RequestLog _requestLog;
 
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
@@ -210,7 +209,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _committed.set(false);
         _request.recycle();
         _response.recycle();
-        _committedInfo=null;
         _requestLog=null;
     }
 
@@ -366,43 +364,42 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 }
             }
 
+            if (action==Action.COMPLETE)
+            {
+                try
+                {
+                    _state.completed();
+
+                    if (!_response.isCommitted() && !_request.isHandled())
+                    {
+                        _response.sendError(404);
+                    }
+                    else
+                    {
+                        // Complete generating the response
+                        _response.closeOutput();
+                    }
+                }
+                catch(EofException|ClosedChannelException e)
+                {
+                    LOG.debug(e);
+                }
+                catch(Exception e)
+                {
+                    LOG.warn("complete failed",e);
+                }
+                finally
+                {
+                    _request.setHandled(true);
+                    _transport.completed();
+                }
+            }
         }
         finally
         {
             setCurrentHttpChannel(last);
             if (threadName != null && LOG.isDebugEnabled())
                 Thread.currentThread().setName(threadName);
-        }
-
-        if (action==Action.COMPLETE)
-        {
-            try
-            {
-                _state.completed();
-
-                if (!_response.isCommitted() && !_request.isHandled())
-                {
-                    _response.sendError(404);
-                }
-                else
-                {
-                    // Complete generating the response
-                    _response.closeOutput();
-                }
-            }
-            catch(EofException|ClosedChannelException e)
-            {
-                LOG.debug(e);
-            }
-            catch(Exception e)
-            {
-                LOG.warn("complete failed",e);
-            }
-            finally
-            {
-                _request.setHandled(true);
-                _transport.completed();
-            }
         }
 
         if (LOG.isDebugEnabled())
@@ -563,7 +560,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback);
 
             // committing write
-            _committedInfo=info;
             _transport.send(info, _request.isHead(), content, complete, committed);
         }
         else if (info==null)
