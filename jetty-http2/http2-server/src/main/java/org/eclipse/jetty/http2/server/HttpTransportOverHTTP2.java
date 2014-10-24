@@ -64,9 +64,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     }
 
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
+    public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        boolean isHeadRequest = HttpMethod.HEAD.is(request.getMethod());
+        boolean isHeadRequest = head;
 
         // info != null | content != 0 | last = true => commit + send/end
         // info != null | content != 0 | last = false => commit + send
@@ -143,17 +143,16 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         });
     }
     
-    private void commit(HttpGenerator.ResponseInfo info, boolean endStream, Callback callback)
+    private void commit(MetaData.Response info, boolean endStream, Callback callback)
     {
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Response #{}:{}{} {}{}{}",
                     stream.getId(), System.lineSeparator(), HttpVersion.HTTP_2, info.getStatus(),
-                    System.lineSeparator(), info.getHttpFields());
+                    System.lineSeparator(), info.getFields());
         }
 
-        MetaData metaData = new MetaData.Response(HttpVersion.HTTP_2, info.getStatus(), info.getHttpFields());
-        HeadersFrame frame = new HeadersFrame(stream.getId(), metaData, null, endStream);
+        HeadersFrame frame = new HeadersFrame(stream.getId(), info, null, endStream);
         stream.headers(frame, callback);
     }
     

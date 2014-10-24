@@ -31,7 +31,6 @@ import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpStatus;
@@ -95,6 +94,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
+    private MetaData.Response _committedInfo;
+    private RequestLog _requestLog;
 
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
@@ -204,11 +205,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         throw new UnsupportedOperationException();
     }
 
-    public void reset()
+    public void recycle()
     {
         _committed.set(false);
         _request.recycle();
         _response.recycle();
+        _committedInfo=null;
+        _requestLog=null;
     }
 
     @Override
@@ -427,8 +430,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             {
                 HttpFields fields = new HttpFields();
                 fields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
-                ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, HttpStatus.INTERNAL_SERVER_ERROR_500, null, _request.isHead());
-                boolean committed = sendResponse(info, null, true);
+                MetaData.Response info = new MetaData.Response(_request.getHttpVersion(), HttpStatus.INTERNAL_SERVER_ERROR_500, null, fields, 0);
+                boolean committed = sendResponse(info,null, true);
                 if (!committed)
                     LOG.warn("Could not send response error 500: "+x);
                 _request.getAsyncContext().complete();
@@ -502,6 +505,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _request.getHttpInput().messageComplete();
     }
 
+    public void onCompleted()
+    {
+        if (_requestLog!=null)
+            _requestLog.log(_request,_response);        
+    }
+    
     public void onEarlyEOF()
     {
         _request.getHttpInput().earlyEOF();
@@ -523,7 +532,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 if (handler!=null)
                     content=handler.badMessageError(status,reason,fields);
 
-                sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,fields,0,status,reason,false),content ,true);
+                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1,status,reason,fields,0),content ,true);
             }
         }
         catch (IOException e)
@@ -539,7 +548,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
 
-    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete, final Callback callback)
+    protected boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete, final Callback callback)
     {
         boolean committing = _committed.compareAndSet(false, true);
         if (committing)
@@ -554,12 +563,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback);
 
             // committing write
-            _transport.send(info, content, complete, committed);
+            _committedInfo=info;
+            _transport.send(info, _request.isHead(), content, complete, committed);
         }
         else if (info==null)
         {
             // This is a normal write
-            _transport.send(null,content, complete, callback);
+            _transport.send(null,_request.isHead(), content, complete, callback);
         }
         else
         {
@@ -568,7 +578,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return committing;
     }
 
-    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
+    protected boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException
     {
         try(Blocker blocker = _response.getHttpOutput().acquireWriteBlockingCallback())
         {
@@ -585,7 +595,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
     }
     
-    protected void commit (ResponseInfo info)
+    protected void commit (MetaData.Response info)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Commit {} to {}",info,this);
@@ -666,8 +676,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             else
             {
+                _committed.set(false);
                 LOG.warn("Commit failed",x);
-                _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
+                sendResponse(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
                 {
                     @Override
                     public void succeeded()

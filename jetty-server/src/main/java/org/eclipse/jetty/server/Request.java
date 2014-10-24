@@ -507,6 +507,8 @@ public class Request implements HttpServletRequest
     @Override
     public int getContentLength()
     {
+        if (_metadata.getContentLength()!=Long.MIN_VALUE)
+            return (int)_metadata.getContentLength();
         return (int)_metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 
@@ -517,6 +519,8 @@ public class Request implements HttpServletRequest
     @Override
     public long getContentLengthLong()
     {
+        if (_metadata.getContentLength()!=Long.MIN_VALUE)
+            return _metadata.getContentLength();
         return _metadata.getFields().getLongField(HttpHeader.CONTENT_LENGTH.toString());
     }
 

@@ -24,6 +24,7 @@ public class MetaData implements Iterable<HttpField>
 {
     private HttpVersion _httpVersion;
     private HttpFields _fields;
+    long _contentLength=Long.MIN_VALUE;
 
     /* ------------------------------------------------------------ */
     public MetaData()
@@ -35,6 +36,14 @@ public class MetaData implements Iterable<HttpField>
     {
         _httpVersion = version;
         _fields = fields;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public MetaData(HttpVersion version, HttpFields fields, long contentLength)
+    {
+        _httpVersion = version;
+        _fields = fields;
+        _contentLength=contentLength;
     }
 
     /* ------------------------------------------------------------ */
@@ -83,8 +92,21 @@ public class MetaData implements Iterable<HttpField>
     public void setFields(HttpFields fields)
     {
         _fields = fields;
+        _contentLength=Long.MIN_VALUE;
     }
 
+    /* ------------------------------------------------------------ */
+    public long getContentLength()
+    {
+        if (_contentLength==Long.MIN_VALUE)
+        {
+            HttpField cl = _fields.getField(HttpHeader.CONTENT_LENGTH);
+            _contentLength=(cl==null)?-1:cl.getLongValue();
+        }
+            
+        return _contentLength;
+    }
+    
     /* ------------------------------------------------------------ */
     public Iterator<HttpField> iterator()
     {
@@ -135,7 +157,7 @@ public class MetaData implements Iterable<HttpField>
         public Request()
         {    
         }
-        
+
         /* ------------------------------------------------------------ */
         /**
          * @param method
@@ -145,7 +167,19 @@ public class MetaData implements Iterable<HttpField>
          */
         public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields)
         {
-            super(version,fields);
+            this(method,uri,version,fields,Long.MIN_VALUE);
+        }
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @param method
+         * @param uri
+         * @param version
+         * @param fields
+         */
+        public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields, long contentLength)
+        {
+            super(version,fields,contentLength);
             _method = method;
             _uri = uri;
         }
@@ -155,11 +189,17 @@ public class MetaData implements Iterable<HttpField>
         {
             this(method,new HttpURI(scheme==null?null:scheme.asString(),hostPort.getHost(),hostPort.getPort(),uri),version,fields);
         }
+        
+        /* ------------------------------------------------------------ */
+        public Request(String method, HttpScheme scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
+        {
+            this(method,new HttpURI(scheme==null?null:scheme.asString(),hostPort.getHost(),hostPort.getPort(),uri),version,fields,contentLength);
+        }
 
         /* ------------------------------------------------------------ */
-        public Request(String method, String scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields)
+        public Request(String method, String scheme, HostPortHttpField hostPort, String uri, HttpVersion version, HttpFields fields, long contentLength)
         {
-            this(method,new HttpURI(scheme,hostPort.getHost(),hostPort.getPort(),uri),version,fields);
+            this(method,new HttpURI(scheme,hostPort.getHost(),hostPort.getPort(),uri),version,fields,contentLength);
         }
 
         /* ------------------------------------------------------------ */
@@ -194,6 +234,15 @@ public class MetaData implements Iterable<HttpField>
         public HttpURI getURI()
         {
             return _uri;
+        }
+        
+        /* ------------------------------------------------------------ */
+        /** Get the uri.
+         * @return the uri
+         */
+        public String getURIString()
+        {
+            return _uri==null?null:_uri.toString();
         }
 
         /* ------------------------------------------------------------ */
@@ -242,6 +291,7 @@ public class MetaData implements Iterable<HttpField>
     public static class Response extends MetaData
     {
         private int _status;
+        private String _reason;
 
         public Response()
         {
@@ -255,7 +305,31 @@ public class MetaData implements Iterable<HttpField>
          */
         public Response(HttpVersion version, int status, HttpFields fields)
         {
-            super(version,fields);
+            this(version,status,fields,Long.MIN_VALUE);
+        }
+
+        /* ------------------------------------------------------------ */
+        /**
+         * @param version
+         * @param fields
+         * @param status
+         */
+        public Response(HttpVersion version, int status, HttpFields fields,long contentLength)
+        {
+            super(version,fields,contentLength);
+            _status=status;
+        }
+        
+        /* ------------------------------------------------------------ */
+        /**
+         * @param version
+         * @param fields
+         * @param status
+         */
+        public Response(HttpVersion version, int status, String reason, HttpFields fields,long contentLength)
+        {
+            super(version,fields,contentLength);
+            _reason=reason;
             _status=status;
         }
 
@@ -274,6 +348,15 @@ public class MetaData implements Iterable<HttpField>
         {
             return _status;
         }
+        
+        /* ------------------------------------------------------------ */
+        /** Get the reason.
+         * @return the status
+         */
+        public String getReason()
+        {
+            return _reason;
+        }
 
         /* ------------------------------------------------------------ */
         /** Set the status.
@@ -282,6 +365,15 @@ public class MetaData implements Iterable<HttpField>
         public void setStatus(int status)
         {
             _status = status;
+        }
+
+        /* ------------------------------------------------------------ */
+        /** Set the reason.
+         * @param reason the reason to set
+         */
+        public void setReason(String reason)
+        {
+            _reason = reason;
         }
 
         /* ------------------------------------------------------------ */

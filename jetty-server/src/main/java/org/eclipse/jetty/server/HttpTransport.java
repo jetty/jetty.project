@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.Callback;
 
 public interface HttpTransport
 {    
-    void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback);
+    void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback);
     
     void push (MetaData.Request request);
     

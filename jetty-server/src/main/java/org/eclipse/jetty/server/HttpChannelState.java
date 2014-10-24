@@ -514,6 +514,7 @@ public class HttpChannelState
 
             event.completed();
         }
+        _channel.onCompleted();
     }
 
     protected void recycle()

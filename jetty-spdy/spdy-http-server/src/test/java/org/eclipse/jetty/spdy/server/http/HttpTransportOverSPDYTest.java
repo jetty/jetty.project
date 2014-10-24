@@ -33,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -71,7 +72,7 @@ public class HttpTransportOverSPDYTest
     @Mock
     Session session;
     @Mock
-    HttpGenerator.ResponseInfo responseInfo;
+    MetaData.Response responseInfo;
 
     Random random = new Random();
     short version = SPDY.V3;
@@ -97,7 +98,7 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = null;
         boolean lastContent = true;
 
-        httpTransportOverSPDY.send(null, content, lastContent, callback);
+        httpTransportOverSPDY.send(null, false, content, lastContent, callback);
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
         ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
         verify(stream, times(1)).data(dataInfoCaptor.capture(), callbackCaptor.capture());
@@ -114,7 +115,7 @@ public class HttpTransportOverSPDYTest
 
         boolean lastContent = true;
 
-        httpTransportOverSPDY.send(null, content, lastContent, callback);
+        httpTransportOverSPDY.send(null, false, content, lastContent, callback);
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
         ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
         verify(stream, times(1)).data(dataInfoCaptor.capture(), callbackCaptor.capture());
@@ -130,7 +131,7 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = BufferUtil.EMPTY_BUFFER;
         boolean lastContent = true;
 
-        httpTransportOverSPDY.send(null, content, lastContent, callback);
+        httpTransportOverSPDY.send(null, false, content, lastContent, callback);
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
         ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
         verify(stream, times(1)).data(dataInfoCaptor.capture(), callbackCaptor.capture());
@@ -146,7 +147,7 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = createRandomByteBuffer();
         boolean lastContent = false;
 
-        httpTransportOverSPDY.send(null, content, lastContent, callback);
+        httpTransportOverSPDY.send(null, false, content, lastContent, callback);
         ArgumentCaptor<ByteBufferDataInfo> dataInfoCaptor = ArgumentCaptor.forClass(ByteBufferDataInfo.class);
         ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
         verify(stream, times(1)).data(dataInfoCaptor.capture(), callbackCaptor.capture());
@@ -161,7 +162,7 @@ public class HttpTransportOverSPDYTest
     {
         ByteBuffer content = null;
         boolean lastContent = false;
-        httpTransportOverSPDY.send(null, content, lastContent, callback);
+        httpTransportOverSPDY.send(null, false, content, lastContent, callback);
     }
 
     @Test(expected = IllegalStateException.class)
@@ -169,7 +170,7 @@ public class HttpTransportOverSPDYTest
     {
         ByteBuffer content = BufferUtil.EMPTY_BUFFER;
         boolean lastContent = false;
-        httpTransportOverSPDY.send(null, content, lastContent, callback);
+        httpTransportOverSPDY.send(null, false, content, lastContent, callback);
     }
 
     @Test
@@ -178,7 +179,7 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = null;
         boolean lastContent = false;
 
-        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
+        httpTransportOverSPDY.send(responseInfo, false, content, lastContent, callback);
         ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
         ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
         verify(stream, times(1)).reply(replyInfoCaptor.capture(), callbackCaptor.capture());
@@ -198,7 +199,7 @@ public class HttpTransportOverSPDYTest
         // when stream.isClosed() is called a 2nd time, the reply has closed the stream already
         when(stream.isClosed()).thenReturn(false).thenReturn(true);
 
-        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
+        httpTransportOverSPDY.send(responseInfo, false, content, lastContent, callback);
         ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
         ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
         verify(stream, times(1)).reply(replyInfoCaptor.capture(), callbackCaptor.capture());
@@ -214,7 +215,7 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = createRandomByteBuffer();
         boolean lastContent = true;
 
-        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
+        httpTransportOverSPDY.send(responseInfo, false, content, lastContent, callback);
         ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
         ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
         verify(stream, times(1)).reply(replyInfoCaptor.capture(), callbackCaptor.capture());
@@ -234,7 +235,7 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = createRandomByteBuffer();
         boolean lastContent = false;
 
-        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
+        httpTransportOverSPDY.send(responseInfo, false, content, lastContent, callback);
         ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
         ArgumentCaptor<Callback> callbackCaptor = ArgumentCaptor.forClass(Callback.class);
         verify(stream, times(1)).reply(replyInfoCaptor.capture(), callbackCaptor.capture());
@@ -257,12 +258,12 @@ public class HttpTransportOverSPDYTest
         ByteBuffer content = createRandomByteBuffer();
         boolean lastContent = false;
 
-        httpTransportOverSPDY.send(responseInfo, content, lastContent, callback);
+        httpTransportOverSPDY.send(responseInfo, false, content, lastContent, callback);
         ArgumentCaptor<ReplyInfo> replyInfoCaptor = ArgumentCaptor.forClass(ReplyInfo.class);
         verify(stream, times(1)).reply(replyInfoCaptor.capture(), any(Callback.class));
         assertThat("ReplyInfo close is false", replyInfoCaptor.getValue().isClose(), is(false));
 
-        httpTransportOverSPDY.send(HttpGenerator.RESPONSE_500_INFO, null, true, new Callback.Adapter()
+        httpTransportOverSPDY.send(HttpGenerator.RESPONSE_500_INFO, false, null, true, new Callback.Adapter()
         {
             @Override
             public void failed(Throwable x)

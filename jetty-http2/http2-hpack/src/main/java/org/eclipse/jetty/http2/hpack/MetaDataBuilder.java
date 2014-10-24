@@ -40,7 +40,8 @@ public class MetaDataBuilder
     private String _method;
     private HttpScheme _scheme;
     private HostPortHttpField _authority;
-    private String _path;        
+    private String _path;  
+    private long _contentLength=Long.MIN_VALUE;
 
     private HttpFields _fields = new HttpFields(10);
     
@@ -123,6 +124,11 @@ public class MetaDataBuilder
                 case C_PATH:
                     _path = field.getValue();
                     break;
+
+                case CONTENT_LENGTH:
+                    _contentLength = field.getLongValue();
+                    _fields.add(field);
+                    break;
                     
                 default:
                     if (field.getName().charAt(0)!=':')
@@ -144,10 +150,10 @@ public class MetaDataBuilder
             _fields = new HttpFields(Math.max(10,fields.size()+5));
             
             if (_method!=null)
-                return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields);
+                return new MetaData.Request(_method,_scheme,_authority,_path,HttpVersion.HTTP_2,fields,_contentLength);
             if (_status!=0)
-                return new MetaData.Response(HttpVersion.HTTP_2,_status,fields);
-            return new MetaData(HttpVersion.HTTP_2,fields);
+                return new MetaData.Response(HttpVersion.HTTP_2,_status,fields,_contentLength);
+            return new MetaData(HttpVersion.HTTP_2,fields,_contentLength);
         }
         finally
         {
@@ -157,6 +163,7 @@ public class MetaDataBuilder
             _authority=null;
             _path=null;
             _size=0;
+            _contentLength=Long.MIN_VALUE;
         }
     }
 

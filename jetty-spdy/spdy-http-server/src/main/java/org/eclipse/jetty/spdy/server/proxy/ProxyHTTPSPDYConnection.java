@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -191,9 +192,9 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
         @Override
         public void rst(RstInfo rstInfo, Callback handler)
         {
-            HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(HttpVersion.fromString(headers.get
-                    ("version").getValue()), null, 0, 502, "SPDY reset received from upstream server", false);
-            send(info, null, true, Callback.Adapter.INSTANCE);
+            MetaData.Response info = new MetaData.Response(HttpVersion.fromString(headers.get
+                    ("version").getValue()), 502, "SPDY reset received from upstream server", null, 0);
+            send(info, false, null, true, Callback.Adapter.INSTANCE);
         }
 
         @Override
@@ -261,10 +262,10 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
 
             // TODO: handle better the HEAD last parameter
             long contentLength = fields.getLongField(HttpHeader.CONTENT_LENGTH.asString());
-            HttpGenerator.ResponseInfo info = new HttpGenerator.ResponseInfo(httpVersion, fields, contentLength, code,
-                    reason, false);
+            MetaData.Response info = new MetaData.Response(httpVersion, code, reason, fields,
+                    contentLength);
 
-            send(info, null, replyInfo.isClose(), new Adapter()
+            send(info, false, null, replyInfo.isClose(), new Adapter()
             {
                 @Override
                 public void failed(Throwable x)
@@ -300,7 +301,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
             // Data buffer must be copied, as the ByteBuffer is pooled
             ByteBuffer byteBuffer = dataInfo.asByteBuffer(false);
 
-            send(null, byteBuffer, dataInfo.isClose(), new Adapter()
+            send(null, false, byteBuffer, dataInfo.isClose(), new Adapter()
             {
                 @Override
                 public void failed(Throwable x)

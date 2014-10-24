@@ -47,10 +47,10 @@ public class HttpGenerator
 
     private final static byte[] __colon_space = new byte[] {':',' '};
     private final static HttpHeaderValue[] CLOSE = {HttpHeaderValue.CLOSE};
-    public static final ResponseInfo CONTINUE_100_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,100,null,false);
-    public static final ResponseInfo PROGRESS_102_INFO = new ResponseInfo(HttpVersion.HTTP_1_1,null,-1,102,null,false);
-    public final static ResponseInfo RESPONSE_500_INFO =
-        new ResponseInfo(HttpVersion.HTTP_1_1,new HttpFields(){{put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);}},0,HttpStatus.INTERNAL_SERVER_ERROR_500,null,false);
+    public static final MetaData.Response CONTINUE_100_INFO = new MetaData.Response(HttpVersion.HTTP_1_1,100,null,null,-1);
+    public static final MetaData.Response PROGRESS_102_INFO = new MetaData.Response(HttpVersion.HTTP_1_1,102,null,null,-1);
+    public final static MetaData.Response RESPONSE_500_INFO =
+        new MetaData.Response(HttpVersion.HTTP_1_1,HttpStatus.INTERNAL_SERVER_ERROR_500,null,new HttpFields(){{put(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);}},0);
 
     // states
     public enum State { START, COMMITTED, COMPLETING, COMPLETING_1XX, END }
@@ -199,7 +199,7 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    public Result generateRequest(RequestInfo info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
+    public Result generateRequest(MetaData.Request info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
     {
         switch(_state)
         {
@@ -214,7 +214,7 @@ public class HttpGenerator
 
                 // If we have not been told our persistence, set the default
                 if (_persistent==null)
-                    _persistent=(info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
+                    _persistent=(info.getVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
 
                 // prepare the header
                 int pos=BufferUtil.flipToFill(header);
@@ -223,12 +223,12 @@ public class HttpGenerator
                     // generate ResponseLine
                     generateRequestLine(info,header);
 
-                    if (info.getHttpVersion()==HttpVersion.HTTP_0_9)
+                    if (info.getVersion()==HttpVersion.HTTP_0_9)
                         _noContent=true;
                     else
                         generateHeaders(info,header,content,last);
 
-                    boolean expect100 = info.getHttpFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+                    boolean expect100 = info.getFields().contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
 
                     if (expect100)
                     {
@@ -328,7 +328,13 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    public Result generateResponse(ResponseInfo info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
+    public Result generateResponse(MetaData.Response info, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
+    {
+        return generateResponse(info,false,header,chunk,content,last);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public Result generateResponse(MetaData.Response info, boolean head, ByteBuffer header, ByteBuffer chunk, ByteBuffer content, boolean last) throws IOException
     {
         switch(_state)
         {
@@ -338,7 +344,7 @@ public class HttpGenerator
                     return Result.NEED_INFO;
 
                 // Handle 0.9
-                if (info.getHttpVersion() == HttpVersion.HTTP_0_9)
+                if (info.getVersion() == HttpVersion.HTTP_0_9)
                 {
                     _persistent = false;
                     _endOfContent=EndOfContent.EOF_CONTENT;
@@ -354,7 +360,7 @@ public class HttpGenerator
 
                 // If we have not been told our persistence, set the default
                 if (_persistent==null)
-                    _persistent=(info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
+                    _persistent=(info.getVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal());
 
                 // prepare the header
                 int pos=BufferUtil.flipToFill(header);
@@ -388,7 +394,7 @@ public class HttpGenerator
                     if (len>0)
                     {
                         _contentPrepared+=len;
-                        if (isChunking() && !info.isHead())
+                        if (isChunking() && !head)
                             prepareChunk(header,len);
                     }
                     _state = last?State.COMPLETING:State.COMMITTED;
@@ -503,17 +509,17 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    private void generateRequestLine(RequestInfo request,ByteBuffer header)
+    private void generateRequestLine(MetaData.Request request,ByteBuffer header)
     {
         header.put(StringUtil.getBytes(request.getMethod()));
         header.put((byte)' ');
-        header.put(StringUtil.getBytes(request.getUri()));
-        switch(request.getHttpVersion())
+        header.put(StringUtil.getBytes(request.getURIString()));
+        switch(request.getVersion())
         {
             case HTTP_1_0:
             case HTTP_1_1:
                 header.put((byte)' ');
-                header.put(request.getHttpVersion().toBytes());
+                header.put(request.getVersion().toBytes());
                 break;
             default:
                 throw new IllegalStateException();
@@ -522,7 +528,7 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    private void generateResponseLine(ResponseInfo response, ByteBuffer header)
+    private void generateResponseLine(MetaData.Response response, ByteBuffer header)
     {
         // Look for prepared response line
         int status=response.getStatus();
@@ -572,10 +578,10 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
-    private void generateHeaders(Info _info,ByteBuffer header,ByteBuffer content,boolean last)
+    private void generateHeaders(MetaData _info,ByteBuffer header,ByteBuffer content,boolean last)
     {
-        final RequestInfo request=(_info instanceof RequestInfo)?(RequestInfo)_info:null;
-        final ResponseInfo response=(_info instanceof ResponseInfo)?(ResponseInfo)_info:null;
+        final MetaData.Request request=(_info instanceof MetaData.Request)?(MetaData.Request)_info:null;
+        final MetaData.Response response=(_info instanceof MetaData.Response)?(MetaData.Response)_info:null;
 
         // default field values
         int send=_send;
@@ -586,9 +592,9 @@ public class HttpGenerator
         StringBuilder connection = null;
 
         // Generate fields
-        if (_info.getHttpFields() != null)
+        if (_info.getFields() != null)
         {
-            for (HttpField field : _info.getHttpFields())
+            for (HttpField field : _info.getFields())
             {
                 String v = field.getValue();
                 if (v==null || v.length()==0)
@@ -617,7 +623,7 @@ public class HttpGenerator
 
                     case TRANSFER_ENCODING:
                     {
-                        if (_info.getHttpVersion() == HttpVersion.HTTP_1_1)
+                        if (_info.getVersion() == HttpVersion.HTTP_1_1)
                             transfer_encoding = field;
                         // Do NOT add yet!
                         break;
@@ -671,7 +677,7 @@ public class HttpGenerator
 
                                 case KEEP_ALIVE:
                                 {
-                                    if (_info.getHttpVersion() == HttpVersion.HTTP_1_0)
+                                    if (_info.getVersion() == HttpVersion.HTTP_1_0)
                                     {
                                         keep_alive = true;
                                         if (response!=null)
@@ -763,7 +769,7 @@ public class HttpGenerator
                     // For a request with HTTP 1.0 & Connection: keep-alive
                     // we *must* close the connection, otherwise the client
                     // has no way to detect the end of the content.
-                    if (!isPersistent() || _info.getHttpVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal())
+                    if (!isPersistent() || _info.getVersion().ordinal() < HttpVersion.HTTP_1_1.ordinal())
                         _endOfContent = EndOfContent.EOF_CONTENT;
                 }
                 break;
@@ -834,7 +840,7 @@ public class HttpGenerator
         // If this is a response, work out persistence
         if (response!=null)
         {
-            if (!isPersistent() && (close || _info.getHttpVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal()))
+            if (!isPersistent() && (close || _info.getVersion().ordinal() > HttpVersion.HTTP_1_0.ordinal()))
             {
                 if (connection==null)
                     header.put(CONNECTION_CLOSE);
@@ -948,103 +954,6 @@ public class HttpGenerator
             __preprepared[i]._responseLine=line;
         }
     }
-
-    public static class Info
-    {
-        final HttpVersion _httpVersion;
-        final HttpFields _httpFields;
-        final long _contentLength;
-
-        private Info(HttpVersion httpVersion, HttpFields httpFields, long contentLength)
-        {
-            _httpVersion = httpVersion;
-            _httpFields = httpFields;
-            _contentLength = contentLength;
-        }
-
-        public HttpVersion getHttpVersion()
-        {
-            return _httpVersion;
-        }
-        public HttpFields getHttpFields()
-        {
-            return _httpFields;
-        }
-        public long getContentLength()
-        {
-            return _contentLength;
-        }
-    }
-
-    public static class RequestInfo extends Info
-    {
-        private final String _method;
-        private final String _uri;
-
-        public RequestInfo(HttpVersion httpVersion, HttpFields httpFields, long contentLength, String method, String uri)
-        {
-            super(httpVersion,httpFields,contentLength);
-            _method = method;
-            _uri = uri;
-        }
-
-        public String getMethod()
-        {
-            return _method;
-        }
-
-        public String getUri()
-        {
-            return _uri;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("RequestInfo{%s %s %s,%d}",_method,_uri,_httpVersion,_contentLength);
-        }
-    }
-
-    public static class ResponseInfo extends Info
-    {
-        private final int _status;
-        private final String _reason;
-        private final boolean _head;
-
-        public ResponseInfo(HttpVersion httpVersion, HttpFields httpFields, long contentLength, int status, String reason, boolean head)
-        {
-            super(httpVersion,httpFields,contentLength);
-            _status = status;
-            _reason = reason;
-            _head = head;
-        }
-
-        public boolean isInformational()
-        {
-            return _status>=100 && _status<200;
-        }
-
-        public int getStatus()
-        {
-            return _status;
-        }
-
-        public String getReason()
-        {
-            return _reason;
-        }
-
-        public boolean isHead()
-        {
-            return _head;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("ResponseInfo{%s %s %s,%d,%b}",_httpVersion,_status,_reason,_contentLength,_head);
-        }
-    } 
 
     private static void putSanitisedName(String s,ByteBuffer buffer)
     {

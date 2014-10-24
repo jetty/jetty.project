@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector;
@@ -90,7 +91,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, final Callback callback)
+    public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, final Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Sending {} {} {} {} last={}", this, stream, info, BufferUtil.toDetailString(content), lastContent);
@@ -171,7 +172,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
     
     
-    private void sendReply(HttpGenerator.ResponseInfo info, Callback callback, boolean close)
+    private void sendReply(MetaData.Response info, Callback callback, boolean close)
     {
         Fields headers = new Fields();
 
@@ -190,7 +191,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             LOG.debug("HTTP < {} {}", httpVersion, httpStatus);
 
         // TODO merge the two Field classes into one
-        HttpFields fields = info.getHttpFields();
+        HttpFields fields = info.getFields();
         if (fields != null)
         {
             for (int i = 0; i < fields.size(); ++i)

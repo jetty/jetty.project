@@ -24,9 +24,9 @@ import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
 
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -333,7 +333,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 onClose();
                 getEndPoint().setConnection(connection);
                 connection.onOpen();
-                _channel.reset();
+                _channel.recycle();
                 _parser.reset();
                 _generator.reset();
                 releaseRequestBuffer();
@@ -351,7 +351,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _channel.getRequest().getHttpInput().consumeAll();
 
         // Reset the channel, parsers and generator
-        _channel.reset();
+        _channel.recycle();
         if (_generator.isPersistent() && !_parser.isClosed())
             _parser.reset();
         else
@@ -433,7 +433,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
-    public void send(ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
+    public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (info == null)
         {
@@ -451,13 +451,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 _generator.setPersistent(false);
         }
             
-        if(_sendCallback.reset(info,content,lastContent,callback))
+        if(_sendCallback.reset(info,head,content,lastContent,callback))
             _sendCallback.iterate();
     }
 
     private class SendCallback extends IteratingCallback
     {
-        private ResponseInfo _info;
+        private MetaData.Response _info;
+        private boolean _head;
         private ByteBuffer _content;
         private boolean _lastContent;
         private Callback _callback;
@@ -469,11 +470,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             super(true);
         }
 
-        private boolean reset(ResponseInfo info, ByteBuffer content, boolean last, Callback callback)
+        private boolean reset(MetaData.Response info, boolean head, ByteBuffer content, boolean last, Callback callback)
         {
             if (reset())
             {
                 _info = info;
+                _head = head;
                 _content = content;
                 _lastContent = last;
                 _callback = callback;
@@ -498,7 +500,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             ByteBuffer chunk = _chunk;
             while (true)
             {
-                HttpGenerator.Result result = _generator.generateResponse(_info, _header, chunk, _content, _lastContent);
+                HttpGenerator.Result result = _generator.generateResponse(_info, _head, _header, chunk, _content, _lastContent);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} generate: {} ({},{},{})@{}",
                         this,
@@ -541,7 +543,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     case FLUSH:
                     {
                         // Don't write the chunk or the content if this is a HEAD response, or any other type of response that should have no content
-                        if (_channel.getRequest().isHead() || _generator.isNoContent())
+                        if (_head || _generator.isNoContent())
                         {
                             BufferUtil.clear(chunk);
                             BufferUtil.clear(_content);

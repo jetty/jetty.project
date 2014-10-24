@@ -26,6 +26,7 @@ import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
@@ -48,10 +49,10 @@ public class HttpTransportOverFCGI implements HttpTransport
     }
 
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
+    public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (info!=null)
-            commit(info,content,lastContent,callback);
+            commit(info,head,content,lastContent,callback);
         else
         {
             if (head)
@@ -88,10 +89,10 @@ public class HttpTransportOverFCGI implements HttpTransport
         // LOG.debug("ignore push in {}",this);
     }
     
-    private void commit(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
+    private void commit(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        boolean head = this.head = info.isHead();
-        boolean shutdown = this.shutdown = info.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        this.head = head;
+        boolean shutdown = this.shutdown = info.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
         if (head)
         {
@@ -118,9 +119,9 @@ public class HttpTransportOverFCGI implements HttpTransport
             flusher.shutdown();
     }
 
-    protected Generator.Result generateResponseHeaders(HttpGenerator.ResponseInfo info, Callback callback)
+    protected Generator.Result generateResponseHeaders(MetaData.Response info, Callback callback)
     {
-        return generator.generateResponseHeaders(request, info.getStatus(), info.getReason(), info.getHttpFields(), callback);
+        return generator.generateResponseHeaders(request, info.getStatus(), info.getReason(), info.getFields(), callback);
     }
 
     protected Generator.Result generateResponseContent(ByteBuffer buffer, boolean lastContent, Callback callback)
