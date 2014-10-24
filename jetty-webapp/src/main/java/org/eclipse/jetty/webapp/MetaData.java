@@ -59,8 +59,8 @@ public class MetaData
     protected final Map<Resource, List<DiscoveredAnnotation>> _annotations = new HashMap<Resource, List<DiscoveredAnnotation>>();
     protected final List<Resource> _webInfClasses = new ArrayList<Resource>();
     protected final List<Resource> _webInfJars = new ArrayList<Resource>();
-    protected final List<Resource> _orderedWebInfJars = new ArrayList<Resource>();
     protected final List<Resource> _orderedContainerResources = new ArrayList<Resource>();
+    protected final List<Resource> _orderedWebInfResources = new ArrayList<Resource>();
     protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean allowDuplicateFragmentNames = false;
 
@@ -158,7 +158,7 @@ public class MetaData
         _webFragmentResourceMap.clear();
         _annotations.clear();
         _webInfJars.clear();
-        _orderedWebInfJars.clear();
+        _orderedWebInfResources.clear();
         _orderedContainerResources.clear();
         _ordering = null;
         allowDuplicateFragmentNames = false;
@@ -171,17 +171,21 @@ public class MetaData
         _webDefaultsRoot.parse();
         if (_webDefaultsRoot.isOrdered())
         {
-            if (_ordering == null)
-                _ordering = new Ordering.AbsoluteOrdering(this);
+            Ordering ordering = getOrdering();
+            if (ordering == null)
+               ordering = new Ordering.AbsoluteOrdering(this);
 
             List<String> order = _webDefaultsRoot.getOrdering();
             for (String s:order)
             {
                 if (s.equalsIgnoreCase("others"))
-                    ((Ordering.AbsoluteOrdering)_ordering).addOthers();
+                    ((Ordering.AbsoluteOrdering)ordering).addOthers();
                 else
-                    ((Ordering.AbsoluteOrdering)_ordering).add(s);
+                    ((Ordering.AbsoluteOrdering)ordering).add(s);
             }
+            
+            //(re)set the ordering to cause webinf jar order to be recalculated
+            setOrdering(ordering);
         }
     }
 
@@ -194,17 +198,21 @@ public class MetaData
 
         if (_webXmlRoot.isOrdered())
         {
-            if (_ordering == null)
-                _ordering = new Ordering.AbsoluteOrdering(this);
+            Ordering ordering = getOrdering();
+            if (ordering == null)
+                ordering = new Ordering.AbsoluteOrdering(this);
 
             List<String> order = _webXmlRoot.getOrdering();
             for (String s:order)
             {
                 if (s.equalsIgnoreCase("others"))
-                    ((Ordering.AbsoluteOrdering)_ordering).addOthers();
+                    ((Ordering.AbsoluteOrdering)ordering).addOthers();
                 else
-                    ((Ordering.AbsoluteOrdering)_ordering).add(s);
+                    ((Ordering.AbsoluteOrdering)ordering).add(s);
             }
+            
+            //(re)set the ordering to cause webinf jar order to be recalculated
+            setOrdering(ordering);
         }
     }
 
@@ -229,17 +237,22 @@ public class MetaData
 
         if (webOverrideRoot.isOrdered())
         {
-            if (_ordering == null)
-                _ordering = new Ordering.AbsoluteOrdering(this);
+            Ordering ordering = getOrdering();
+            
+            if (ordering == null)
+               ordering = new Ordering.AbsoluteOrdering(this);
 
             List<String> order = webOverrideRoot.getOrdering();
             for (String s:order)
             {
                 if (s.equalsIgnoreCase("others"))
-                    ((Ordering.AbsoluteOrdering)_ordering).addOthers();
+                    ((Ordering.AbsoluteOrdering)ordering).addOthers();
                 else
-                    ((Ordering.AbsoluteOrdering)_ordering).add(s);
+                    ((Ordering.AbsoluteOrdering)ordering).add(s);
             }
+            
+            //set or reset the ordering to cause the webinf jar ordering to be recomputed
+            setOrdering(ordering);
         }
         _webOverrideRoots.add(webOverrideRoot);
     }
@@ -276,12 +289,16 @@ public class MetaData
                 _webFragmentNameMap.put(descriptor.getName(), descriptor);
         }
 
-        //If web.xml has specified an absolute ordering, ignore any relative ordering in the fragment
-        if (_ordering != null && _ordering.isAbsolute())
-            return;
 
+        //only accept an ordering from the fragment if there is no ordering already established
         if (_ordering == null && descriptor.isOrdered())
-            _ordering = new Ordering.RelativeOrdering(this);
+        {
+            setOrdering(new Ordering.RelativeOrdering(this));
+            return;
+        }
+        
+        //recompute the ordering with the new fragment name
+        orderFragments();
     }
 
     /**
@@ -343,14 +360,9 @@ public class MetaData
     
     public void orderFragments ()
     {
-        //if we have already ordered them don't do it again
-        if (_orderedWebInfJars.size()==_webInfJars.size())
-            return;
-
-        if (_ordering != null)
-            _orderedWebInfJars.addAll(_ordering.order(_webInfJars));
-        else
-            _orderedWebInfJars.addAll(_webInfJars);
+        _orderedWebInfResources.clear();
+        if (getOrdering() != null)
+            _orderedWebInfResources.addAll(getOrdering().order(_webInfJars));
     }
 
 
@@ -367,10 +379,12 @@ public class MetaData
         _origins.clear();
 
         // Set the ordered lib attribute
-        if (_ordering != null)
+        List<Resource> orderedWebInfJars = null;
+        if (getOrdering() != null)
         {
+            orderedWebInfJars = getOrderedWebInfJars();
             List<String> orderedLibs = new ArrayList<String>();
-            for (Resource webInfJar:_orderedWebInfJars)
+            for (Resource webInfJar:orderedWebInfJars)
             {
                 //get just the name of the jar file
                 String fullname = webInfJar.getName();
@@ -413,7 +427,13 @@ public class MetaData
       
         //apply the annotations that are associated with a fragment, according to the 
         //established ordering
-        List<Resource> resources = getOrderedWebInfJars();
+        List<Resource> resources = null;
+        
+        if (getOrdering() != null)
+            resources = orderedWebInfJars;
+        else
+            resources = getWebInfJars();
+        
         for (Resource r:resources)
         {
             FragmentDescriptor fd = _webFragmentResourceMap.get(r);
@@ -448,12 +468,15 @@ public class MetaData
         for (WebDescriptor d : _webOverrideRoots)
             distributable&=d.isDistributable();
 
-        List<Resource> orderedResources = getOrderedWebInfJars();
-        for (Resource r: orderedResources)
+        if (getOrdering() != null)
         {
-            FragmentDescriptor d = _webFragmentResourceMap.get(r);
-            if (d!=null)
-                distributable = distributable && d.isDistributable();
+            List<Resource> orderedResources = getOrderedWebInfJars();
+            for (Resource r: orderedResources)
+            {
+                FragmentDescriptor d = _webFragmentResourceMap.get(r);
+                if (d!=null)
+                    distributable = distributable && d.isDistributable();
+            }
         }
         return distributable;
     }
@@ -481,16 +504,16 @@ public class MetaData
 
     public List<Resource> getOrderedWebInfJars()
     {
-        return _orderedWebInfJars == null? new ArrayList<Resource>(): _orderedWebInfJars;
+        return _orderedWebInfResources;
     }
 
     public List<FragmentDescriptor> getOrderedFragments ()
     {
         List<FragmentDescriptor> list = new ArrayList<FragmentDescriptor>();
-        if (_orderedWebInfJars == null)
+        if (getOrdering() == null)
             return list;
 
-        for (Resource r:_orderedWebInfJars)
+        for (Resource r:getOrderedWebInfJars())
         {
             FragmentDescriptor fd = _webFragmentResourceMap.get(r);
             if (fd != null)
@@ -505,8 +528,9 @@ public class MetaData
     }
 
     public void setOrdering (Ordering o)
-    {
+    {    
         _ordering = o;
+        orderFragments();
     }
 
     public FragmentDescriptor getFragment (Resource jar)
