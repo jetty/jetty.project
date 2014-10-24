@@ -45,15 +45,6 @@ public class FragmentConfiguration extends AbstractConfiguration
         
     }
 
-    @Override
-    public void configure(WebAppContext context) throws Exception
-    { 
-        if (!context.isConfigurationDiscovered())
-            return;
-        
-        //order the fragments
-        context.getMetaData().orderFragments(); 
-    }
 
     @Override
     public void postConfigure(WebAppContext context) throws Exception
