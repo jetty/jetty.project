@@ -96,7 +96,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
-    private MetaData.Response _committedInfo;
     private RequestLog _requestLog;
     
     /** Bytes written after interception (eg after compression) */
@@ -230,7 +229,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _committed.set(false);
         _request.recycle();
         _response.recycle();
-        _committedInfo=null;
         _requestLog=null;
         _written=0;
     }
@@ -387,43 +385,42 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 }
             }
 
+            if (action==Action.COMPLETE)
+            {
+                try
+                {
+                    _state.completed();
+
+                    if (!_response.isCommitted() && !_request.isHandled())
+                    {
+                        _response.sendError(404);
+                    }
+                    else
+                    {
+                        // Complete generating the response
+                        _response.closeOutput();
+                    }
+                }
+                catch(EofException|ClosedChannelException e)
+                {
+                    LOG.debug(e);
+                }
+                catch(Exception e)
+                {
+                    LOG.warn("complete failed",e);
+                }
+                finally
+                {
+                    _request.setHandled(true);
+                    onCompleted();
+                }
+            }
         }
         finally
         {
             setCurrentHttpChannel(last);
             if (threadName != null && LOG.isDebugEnabled())
                 Thread.currentThread().setName(threadName);
-        }
-
-        if (action==Action.COMPLETE)
-        {
-            try
-            {
-                _state.completed();
-
-                if (!_response.isCommitted() && !_request.isHandled())
-                {
-                    _response.sendError(404);
-                }
-                else
-                {
-                    // Complete generating the response
-                    _response.closeOutput();
-                }
-            }
-            catch(EofException|ClosedChannelException e)
-            {
-                LOG.debug(e);
-            }
-            catch(Exception e)
-            {
-                LOG.warn("complete failed",e);
-            }
-            finally
-            {
-                _request.setHandled(true);
-                onCompleted();
-            }
         }
 
         if (LOG.isDebugEnabled())
