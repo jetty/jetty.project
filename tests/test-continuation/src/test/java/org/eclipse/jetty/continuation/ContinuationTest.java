@@ -26,7 +26,6 @@ import java.util.List;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
@@ -194,9 +193,9 @@ public class ContinuationTest extends ContinuationBase
     class Log extends AbstractLifeCycle implements RequestLog
     {
         @Override
-        public void log(Request request, Response response)
+        public void log(Request request, int status, long written)
         {
-            _log.add(response.getStatus()+" "+response.getContentCount()+" "+request.getRequestURI());
+            _log.add(status+" "+written+" "+request.getRequestURI());
         }
         
     }

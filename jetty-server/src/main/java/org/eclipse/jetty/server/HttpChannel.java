@@ -25,6 +25,7 @@ import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
@@ -43,6 +44,7 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
 import org.eclipse.jetty.util.log.Log;
@@ -96,6 +98,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Response _response;
     private MetaData.Response _committedInfo;
     private RequestLog _requestLog;
+    
+    /** Bytes written after interception (eg after compression) */
+    private long _written;
 
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
@@ -131,6 +136,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public HttpTransport getHttpTransport()
     {
         return _transport;
+    }
+
+    public RequestLog getRequestLog()
+    {
+        return _requestLog;
+    }
+
+    public void setRequestLog(RequestLog requestLog)
+    {
+        _requestLog = requestLog;
+    }
+
+    public MetaData.Response getCommittedInfo()
+    {
+        return _committedInfo;
     }
 
     /**
@@ -212,6 +232,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _response.recycle();
         _committedInfo=null;
         _requestLog=null;
+        _written=0;
     }
 
     @Override
@@ -401,7 +422,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             finally
             {
                 _request.setHandled(true);
-                _transport.completed();
+                onCompleted();
             }
         }
 
@@ -507,8 +528,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public void onCompleted()
     {
-        if (_requestLog!=null)
-            _requestLog.log(_request,_response);        
+        if (_requestLog!=null )
+            _requestLog.log(_request,_committedInfo==null?-1:_committedInfo.getStatus(), _written);   
+        _transport.completed();
     }
     
     public void onEarlyEOF()
@@ -545,6 +567,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                 _state.completed();
             else 
                 throw new IllegalStateException();
+            onCompleted();
         }
     }
 
@@ -555,7 +578,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             // We need an info to commit
             if (info==null)
-                info = _response.newResponseInfo();
+                info = _response.newResponseMetaData();
             commit(info);
             
             // wrap callback to process 100 responses
@@ -563,7 +586,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback);
 
             // committing write
-            _committedInfo=info;
             _transport.send(info, _request.isHead(), content, complete, committed);
         }
         else if (info==null)
@@ -597,6 +619,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     
     protected void commit (MetaData.Response info)
     {
+        _committedInfo=info;
         if (LOG.isDebugEnabled())
             LOG.debug("Commit {} to {}",info,this);
     }
@@ -616,6 +639,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     @Override
     public void write(ByteBuffer content, boolean complete, Callback callback)
     {
+        _written+=BufferUtil.length(content);
         sendResponse(null,content,complete,callback);
     }
 

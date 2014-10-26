@@ -45,7 +45,6 @@ import javax.servlet.http.HttpServletResponseWrapper;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
@@ -107,9 +106,9 @@ public class AsyncServletTest
     @After
     public void tearDown() throws Exception
     {
+        _server.stop();
         assertEquals(_expectedLogs,_log.size());
         Assert.assertThat(_log.get(0), Matchers.containsString(_expectedCode));
-        _server.stop();
     }
 
     @Test
@@ -888,9 +887,9 @@ public class AsyncServletTest
     class Log extends AbstractLifeCycle implements RequestLog
     {
         @Override
-        public void log(Request request, Response response)
+        public void log(Request request, int status, long written)
         {            
-            _log.add(response.getStatus()+" "+response.getContentCount()+" "+request.getRequestURI());
+            _log.add(status+" "+written+" "+request.getRequestURI());
         }
     }
 }

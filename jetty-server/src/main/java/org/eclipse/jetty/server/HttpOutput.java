@@ -64,7 +64,10 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     private final HttpChannel _channel;
     private final SharedBlockingCallback _writeBlock;
     private Interceptor _filter;
+    
+    /** Bytes written via the write API (excludes bytes written via sendContent). Used to autocommit once content length is written. */
     private long _written;
+    
     private ByteBuffer _aggregate;
     private int _bufferSize;
     private int _commitSize;

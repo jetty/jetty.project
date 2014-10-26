@@ -1239,7 +1239,7 @@ public class Response implements HttpServletResponse
         _out.resetBuffer();
     }
 
-    protected MetaData.Response newResponseInfo()
+    protected MetaData.Response newResponseMetaData()
     {
         return new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
     }

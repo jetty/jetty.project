@@ -26,5 +26,5 @@ import org.eclipse.jetty.util.component.LifeCycle;
  */
 public interface RequestLog extends LifeCycle
 {
-    public void log(Request request, Response response);
+    public void log(Request request, int status, long written);
 }

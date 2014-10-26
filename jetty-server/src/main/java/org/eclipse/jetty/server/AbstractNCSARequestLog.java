@@ -83,10 +83,10 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      * Writes the request and response information to the output stream.
      *
      * @see org.eclipse.jetty.server.RequestLog#log(org.eclipse.jetty.server.Request,
-     *      org.eclipse.jetty.server.Response)
+     *      int, long)
      */
     @Override
-    public void log(Request request, Response response)
+    public void log(Request request, int status, long written)
     {
         try
         {
@@ -136,30 +136,28 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             buf.append(request.getProtocol());
             buf.append("\" ");
 
-            int status = response.getStatus();
             if (status <= 0)
                 status = 404;
             buf.append((char)('0' + ((status / 100) % 10)));
             buf.append((char)('0' + ((status / 10) % 10)));
             buf.append((char)('0' + (status % 10)));
 
-            long responseLength = response.getLongContentLength();
-            if (responseLength >= 0)
+            if (written >= 0)
             {
                 buf.append(' ');
-                if (responseLength > 99999)
-                    buf.append(responseLength);
+                if (written > 99999)
+                    buf.append(written);
                 else
                 {
-                    if (responseLength > 9999)
-                        buf.append((char)('0' + ((responseLength / 10000) % 10)));
-                    if (responseLength > 999)
-                        buf.append((char)('0' + ((responseLength / 1000) % 10)));
-                    if (responseLength > 99)
-                        buf.append((char)('0' + ((responseLength / 100) % 10)));
-                    if (responseLength > 9)
-                        buf.append((char)('0' + ((responseLength / 10) % 10)));
-                    buf.append((char)('0' + (responseLength) % 10));
+                    if (written > 9999)
+                        buf.append((char)('0' + ((written / 10000) % 10)));
+                    if (written > 999)
+                        buf.append((char)('0' + ((written / 1000) % 10)));
+                    if (written > 99)
+                        buf.append((char)('0' + ((written / 100) % 10)));
+                    if (written > 9)
+                        buf.append((char)('0' + ((written / 10) % 10)));
+                    buf.append((char)('0' + (written) % 10));
                 }
                 buf.append(' ');
             }
@@ -168,7 +166,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
 
             if (_extended)
-                logExtended(request, response, buf);
+                logExtended(request, buf);
 
             if (_logCookies)
             {
@@ -216,12 +214,10 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      * Writes extended request and response information to the output stream.
      *
      * @param request  request object
-     * @param response response object
      * @param b        StringBuilder to write to
      * @throws IOException
      */
     protected void logExtended(Request request,
-                               Response response,
                                StringBuilder b) throws IOException
     {
         String referer = request.getHeader(HttpHeader.REFERER.toString());
