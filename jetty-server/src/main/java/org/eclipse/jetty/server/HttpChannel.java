@@ -96,6 +96,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
+    private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
     
     /** Bytes written after interception (eg after compression) */
@@ -149,7 +150,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     public MetaData.Response getCommittedInfo()
     {
-        return _committedInfo;
+        return _committedMetaData;
     }
 
     /**
@@ -229,6 +230,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _committed.set(false);
         _request.recycle();
         _response.recycle();
+        _committedMetaData=null;
         _requestLog=null;
         _written=0;
     }
@@ -526,7 +528,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onCompleted()
     {
         if (_requestLog!=null )
-            _requestLog.log(_request,_committedInfo==null?-1:_committedInfo.getStatus(), _written);   
+            _requestLog.log(_request,_committedMetaData==null?-1:_committedMetaData.getStatus(), _written);   
         _transport.completed();
     }
     
@@ -616,7 +618,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     
     protected void commit (MetaData.Response info)
     {
-        _committedInfo=info;
+        _committedMetaData=info;
         if (LOG.isDebugEnabled())
             LOG.debug("Commit {} to {}",info,this);
     }
