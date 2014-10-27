@@ -1,3 +1,73 @@
+jetty-9.2.4.v20141027 - 27 October 2014
+ + 376365 "jetty.sh start" returns 0 on failure
+ + 396569 'bin/jetty.sh stop' reports 'OK' even when jetty was not running
+ + 396572 Starting jetty from cygwin is not working properly
+ + 438387 NullPointerException after ServletUpgradeResponse.sendForbidden is
+   called during WebSocketCreator.createWebSocket
+ + 440729 SSL requests often fail with EOFException or IllegalStateException.
+ + 442419 CrossOriginFilter javadoc says "exposeHeaders", but should be
+   "exposedHeaders"
+ + 442495 Bad Context ClassLoader in JSR356 WebSocket onOpen
+ + 442942 Content sent with status 204 (No Content)
+ + 443529 CrossOriginFilter does not accept wildcard for allowedHeaders
+ + 443530 CrossOriginFilter does not set the Vary header
+ + 444031 Ensure exceptions do not reduce threadpool below minimum
+ + 444124 JSP include with <servlet><jsp-file> can cause infinite recursion
+ + 444214 Socks4Proxy fails when reading less than 8 bytes.
+ + 444222 replace CRLF in header values with whitespace rather than ?
+ + 444415 iterative WriteFlusher
+ + 444416 AsyncProxyServlet recursion.
+ + 444517 Ensure WebSocketUpgradeFilter is always first in filter chain
+ + 444547 Format exception in ResourceCache.Content.toString()
+ + 444595 nosql/mongodb - Cleanup process/Refreshing does not respect encoding
+   of attribute keys
+ + 444617 Expose local and remote socket address to applications
+ + 444676 Goal jetty:deploy-war produces errors with version 9.2.3
+ + 444748 WebSocketClient.stop() does not unregister from ShutdownThread
+ + 444764 HttpClient notifies callbacks for last chunk of content twice.
+ + 444771 JSR356 / EndPointConfig.userProperties are not unique per endpoint
+   upgrade
+ + 444863 ProxyServlet does not filter headers listed by the Connection header.
+ + 444896 Overriding of web-default servlet mapping in web.xml not working with
+   quickstart
+ + 445157 First redeployed servlet leaks WebAppContext
+ + 445258 STOP.WAIT is not really respected
+ + 445374 Reevaluate org.eclipse.jetty.websocket.jsr356 enablement concepts
+ + 445495 Improve Exception message when no jndi resource to bind for a name in
+   web.xml
+ + 445542 Add SecuredRedirectHandler for embedded jetty use to redirect to
+   secure port/scheme
+ + 445821 Error 400 should be logged with RequestLog
+ + 445823 RequestLogHandler at end of HandlerCollection doesn't work
+ + 445830 Support setting environment variables on forked jetty with
+   jetty:run-forked
+ + 445979 jetty.sh fails to start when start-stop-daemon does not exist and the
+   user is not root
+ + 446033 org.eclipse.jetty.websocket.server.WebSocketServerFactory not
+   available in OSGi
+ + 446063 ALPN Fail SSL Handshake if no supported Application Protocols.
+ + 446107 NullPointerException in ProxyServlet when extended by Servlet without
+   a package
+ + 446425 Oracle Sql error on JettySessions table when this table do not exist
+   already
+ + 446506 getAsyncContext ISE before startAsync on async dispatches
+ + 446563 Null HttpChannel.getCurrentHttpChannel() in
+   ServletHandler.doFilter().
+ + 446672 NPN Specification issue in the case no protocols are selected.
+ + 446923 SharedBlockingCallback does not handle connector max idle time of
+   Long.MAX_VALUE; BlockerTimeoutException not serializable
+ + 447381 Disable SSLv3 by default.
+ + 447472 test harness for slow large writes
+ + 447627 MultiPart file always created when "filename" set in
+   Content-Disposition
+ + 447629 getPart()/getParts() fails on Multipart request if getParameter is
+   called in a filter first
+ + 447746 HttpClient is always going to send User-Agent header even though I do
+   not want it to.
+ + 447979 Refactor to make MetaData responsible for progressively ordering
+   web-inf jars
+ + 448156 Fixed INACTIVE race in IteratingCallback
+
 jetty-9.2.3.v20140905 - 05 September 2014
  + 347110 renamed class transformer methods
  + 411163 Add embedded jetty code example with JSP enabled
