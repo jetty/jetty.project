@@ -409,7 +409,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
     private boolean startThreads(int threadsToStart)
     {
-        while (threadsToStart > 0)
+        while (threadsToStart > 0 && isRunning())
         {
             int threads = _threadsStarted.get();
             if (threads >= _maxThreads)
@@ -522,6 +522,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         public void run()
         {
             boolean shrink = false;
+            boolean ignore = false;
             try
             {
                 Runnable job = _jobs.poll();
@@ -538,7 +539,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     {
                         runJob(job);
                         if (Thread.interrupted())
+                        {
+                            ignore=true;
                             break loop;
+                        }
                         job = _jobs.poll();
                     }
 
@@ -561,11 +565,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                                     long now = System.nanoTime();
                                     if (last == 0 || (now - last) > TimeUnit.MILLISECONDS.toNanos(_idleTimeout))
                                     {
-                                        shrink = _lastShrink.compareAndSet(last, now) &&
-                                                _threadsStarted.compareAndSet(size, size - 1);
-                                        if (shrink)
+                                        if (_lastShrink.compareAndSet(last, now) && _threadsStarted.compareAndSet(size, size - 1))
                                         {
-                                            return;
+                                            shrink=true;
+                                            break loop;
                                         }
                                     }
                                 }
@@ -584,6 +587,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             }
             catch (InterruptedException e)
             {
+                ignore=true;
                 LOG.ignore(e);
             }
             catch (Throwable e)
@@ -592,8 +596,14 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             }
             finally
             {
-                if (!shrink)
-                    _threadsStarted.decrementAndGet();
+                if (!shrink && isRunning())
+                {
+                    if (!ignore)
+                        LOG.warn("Unexpected thread death: {} in {}",this,QueuedThreadPool.this);
+                    // This is an unexpected thread death!
+                    if (_threadsStarted.decrementAndGet()<getMaxThreads())
+                        startThreads(1);
+                }
                 _threads.remove(Thread.currentThread());
             }
         }

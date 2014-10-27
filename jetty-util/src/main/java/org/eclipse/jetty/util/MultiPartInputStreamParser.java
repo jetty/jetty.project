@@ -92,19 +92,9 @@ public class MultiPartInputStreamParser
         protected void open()
         throws IOException
         {
-            //We will either be writing to a file, if it has a filename on the content-disposition
-            //and otherwise a byte-array-input-stream, OR if we exceed the getFileSizeThreshold, we
-            //will need to change to write to a file.
-            if (_filename != null && _filename.trim().length() > 0)
-            {
-                createFile();
-            }
-            else
-            {
-                //Write to a buffer in memory until we discover we've exceed the
-                //MultipartConfig fileSizeThreshold
-                _out = _bout= new ByteArrayOutputStream2();
-            }
+            //Write to a buffer in memory until we discover we've exceed the
+            //MultipartConfig fileSizeThreshold
+            _out = _bout= new ByteArrayOutputStream2();
         }
 
         protected void close()
@@ -122,6 +112,7 @@ public class MultiPartInputStreamParser
 
             if (MultiPartInputStreamParser.this._config.getFileSizeThreshold() > 0 && _size + 1 > MultiPartInputStreamParser.this._config.getFileSizeThreshold() && _file==null)
                 createFile();
+
             _out.write(b);
             _size ++;
         }
@@ -134,7 +125,7 @@ public class MultiPartInputStreamParser
 
             if (MultiPartInputStreamParser.this._config.getFileSizeThreshold() > 0 && _size + length > MultiPartInputStreamParser.this._config.getFileSizeThreshold() && _file==null)
                 createFile();
-
+           
             _out.write(bytes, offset, length);
             _size += length;
         }
@@ -143,6 +134,7 @@ public class MultiPartInputStreamParser
         throws IOException
         {
             _file = File.createTempFile("MultiPart", "", MultiPartInputStreamParser.this._tmpDir);
+            
             if (_deleteOnExit)
                 _file.deleteOnExit();
             FileOutputStream fos = new FileOutputStream(_file);

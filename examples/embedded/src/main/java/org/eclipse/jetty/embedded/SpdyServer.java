@@ -123,7 +123,7 @@ public class SpdyServer
         // create a ServerConnector and pass in the supported factories. NPN will then be used to negotiate the
         // protocol with the client.
         HTTPSPDYServerConnectionFactory spdy3 = new HTTPSPDYServerConnectionFactory(3,config,push);
-        spdy2.setInputBufferSize(8192);
+        spdy3.setInputBufferSize(8192);
 
         NPNServerConnectionFactory npn = new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getProtocol());
         npn.setDefaultProtocol(http.getProtocol());

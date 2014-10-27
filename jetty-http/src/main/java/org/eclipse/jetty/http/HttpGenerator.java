@@ -159,6 +159,12 @@ public class HttpGenerator
     }
 
     /* ------------------------------------------------------------ */
+    public boolean isNoContent()
+    {
+        return _noContent;
+    }
+    
+    /* ------------------------------------------------------------ */
     public void setPersistent(boolean persistent)
     {
         _persistent=persistent;

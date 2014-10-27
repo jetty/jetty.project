@@ -731,9 +731,33 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         _runAsRole = role;
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Prepare to service a request.
+     * 
+     * @param baseRequest
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws UnavailableException
+     */
+    protected void prepare (Request baseRequest, ServletRequest request, ServletResponse response)
+    throws ServletException, UnavailableException
+    {
+        MultipartConfigElement mpce = ((Registration)getRegistration()).getMultipartConfig();
+        if (mpce != null)
+            baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+    }
 
     /* ------------------------------------------------------------ */
     /** Service a request with this servlet.
+     * @param baseRequest
+     * @param request
+     * @param response
+     * @throws ServletException
+     * @throws UnavailableException
+     * @throws IOException
      */
     public void handle(Request baseRequest,
                        ServletRequest request,
@@ -772,10 +796,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
             if (!isAsyncSupported())
                 baseRequest.setAsyncSupported(false);
-
-            MultipartConfigElement mpce = ((Registration)getRegistration()).getMultipartConfig();
-            if (mpce != null)
-                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
 
             servlet.service(request,response);
             servlet_error=false;

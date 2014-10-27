@@ -760,11 +760,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
         if (isFromContainerClassPath(context, sci))
             return false;
         
-        List<Resource> orderedJars = context.getMetaData().getOrderedWebInfJars();
-
         //If no ordering, nothing is excluded
         if (context.getMetaData().getOrdering() == null)
             return false;
+        
+        
+        List<Resource> orderedJars = context.getMetaData().getOrderedWebInfJars();
 
         //there is an ordering, but there are no jars resulting from the ordering, everything excluded
         if (orderedJars.isEmpty())
@@ -1007,10 +1008,12 @@ public class AnnotationConfiguration extends AbstractConfiguration
         //they have to participate in the ordering
         ArrayList<URI> webInfUris = new ArrayList<URI>();
 
-        List<Resource> jars = context.getMetaData().getOrderedWebInfJars();
-
-        //No ordering just use the jars in any order
-        if (jars == null || jars.isEmpty())
+        List<Resource> jars = null;
+        
+        if (context.getMetaData().getOrdering() != null)
+            jars = context.getMetaData().getOrderedWebInfJars();
+        else
+            //No ordering just use the jars in any order
             jars = context.getMetaData().getWebInfJars();
 
         _webInfLibStats = new CounterStatistic();

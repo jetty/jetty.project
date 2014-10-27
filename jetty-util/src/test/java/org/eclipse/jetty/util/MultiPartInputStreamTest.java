@@ -659,7 +659,7 @@ public class MultiPartInputStreamTest
     
     
     
-    private void testMulti(String filename) throws IOException, ServletException
+    private void testMulti(String filename) throws IOException, ServletException, InterruptedException
     {
         MultipartConfigElement config = new MultipartConfigElement(_dirname, 1024, 3072, 50);
         MultiPartInputStreamParser mpis = new MultiPartInputStreamParser(new ByteArrayInputStream(createMultipartRequestString(filename).getBytes()),
@@ -699,6 +699,7 @@ public class MultiPartInputStreamTest
         assertThat(stuff.getHeader("content-disposition"),is("form-data; name=\"stuff\"; filename=\"" + filename + "\""));
         assertThat(stuff.getHeaderNames().size(),is(2));
         assertThat(stuff.getSize(),is(51L));
+        
         File tmpfile = ((MultiPartInputStreamParser.MultiPart)stuff).getFile();
         assertThat(tmpfile,notNullValue()); // longer than 100 bytes, should already be a tmp file
         assertThat(((MultiPartInputStreamParser.MultiPart)stuff).getBytes(),nullValue()); //not in an internal buffer
@@ -859,7 +860,7 @@ public class MultiPartInputStreamTest
         }
         
         return "--AaB03x\r\n"+
-        "content-disposition: form-data; name=\"field1\"\r\n"+
+        "content-disposition: form-data; name=\"field1\"; filename=\"frooble.txt\"\r\n"+
         "\r\n"+
         "Joe Blow\r\n"+
         "--AaB03x\r\n"+

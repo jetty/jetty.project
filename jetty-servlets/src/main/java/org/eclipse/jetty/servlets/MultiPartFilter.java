@@ -60,6 +60,10 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Multipart Form Data Filter.
  * <p>
+ * This class is ONLY needed if you cannot use the Servlet 3.0 APIs for 
+ * configuring and handling multipart requests. See javax.servlet.http.HttpServletRequest.getParts(). If
+ * you use the new servlet apis then you should REMOVE this filter from your webapp.
+ * <p>
  * This class decodes the <code>multipart/form-data</code> stream sent by a HTML form that uses a file input
  * item.  Any files sent are stored to a temporary file and a File object added to the request
  * as an attribute.  All other values are made available via the normal getParameter API and
@@ -89,6 +93,7 @@ import org.eclipse.jetty.util.log.Logger;
  * To limit the size of the multipart request.
  * </dd>
  * </dl>
+ * @deprecated See servlet 3.0 apis like javax.servlet.http.HttpServletRequest.getParts()
  */
 public class MultiPartFilter implements Filter
 {
