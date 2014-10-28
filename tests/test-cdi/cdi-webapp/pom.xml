@@ -1,0 +1,56 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  // ========================================================================
+  // Copyright (c) Webtide LLC
+  //
+  // All rights reserved. This program and the accompanying materials
+  // are made available under the terms of the Eclipse Public License v1.0
+  // and Apache License v2.0 which accompanies this distribution.
+  //
+  // The Eclipse Public License is available at
+  // http://www.eclipse.org/legal/epl-v10.html
+  //
+  // The Apache License v2.0 is available at
+  // http://www.apache.org/licenses/LICENSE-2.0.txt
+  //
+  // You may elect to redistribute this code under either of these licenses.
+  // ========================================================================
+-->
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
+  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+  <parent>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>test-cdi-parent</artifactId>
+    <version>9.2.4-SNAPSHOT</version>
+  </parent>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>cdi-webapp</artifactId>
+  <packaging>war</packaging>
+  <name>Jetty Tests :: CDI :: WebApp</name>
+  <url>http://www.eclipse.org/jetty</url>
+  <properties>
+    <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
+    <bundle-symbolic-name>${project.groupId}.cdi.webapp</bundle-symbolic-name>
+  </properties>
+  <dependencies>
+    <dependency>
+      <groupId>javax.servlet</groupId>
+      <artifactId>javax.servlet-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.enterprise</groupId>
+      <artifactId>cdi-api</artifactId>
+      <version>1.1</version>
+      <scope>provided</scope>
+    </dependency>
+    <dependency>
+      <groupId>javax.websocket</groupId>
+      <artifactId>javax.websocket-api</artifactId>
+      <scope>provided</scope>
+    </dependency>
+  </dependencies>
+  <build>
+    <finalName>cdi-webapp</finalName>
+  </build>
+</project>

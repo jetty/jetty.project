@@ -82,12 +82,13 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 public class Main
 {
     private static final int EXIT_USAGE = 1;
-    private static BufferedReader input = new BufferedReader(new InputStreamReader(System.in));
 
     public static String join(Collection<?> objs, String delim)
     {
         if (objs==null)
+        {
             return "";
+        }
         StringBuilder str = new StringBuilder();
         boolean needDelim = false;
         for (Object obj : objs)
@@ -399,23 +400,29 @@ public class Main
         {
             // is it an explicit request to create an ini file?
             if (topLevel && !FS.exists(startd_ini) && !appendStartIni)
+            {
                 buildIni=true;
-            
-            // else is it transitive 
-            else if (transitive) 
+            }
+            // else is it transitive
+            else if (transitive)
             {
                 // do we need an ini anyway?
-                if (module.hasDefaultConfig() || module.hasLicense()) 
-                    buildIni=true;
+                if (module.hasDefaultConfig() || module.hasLicense())
+                {
+                    buildIni = true;
+                }
                 else
+                {
                     StartLog.info("%-15s initialised transitively",name);
+                }
             }
-            
             // else must be initialized explicitly
             else 
             {
                 for (String source : module.getSources())
+                {
                     StartLog.info("%-15s initialised in %s",name,baseHome.toShortForm(source));
+                }
             }
         }
         else 
@@ -435,13 +442,28 @@ public class Main
                 System.err.printf(" + has not been audited for compliance with its license%n");
                 System.err.printf("%n");
                 for (String l : module.getLicense())
+                {
                     System.err.printf("    %s%n",l);
+                }
 
-                System.err.printf("%nProceed (y/N)? ");
-                String line = input.readLine();
-                
-                if (line==null || line.length()==0 || !line.toLowerCase().startsWith("y"))
-                    System.exit(1);
+                if (args.isApproveAllLicenses())
+                {
+                    System.err.println("All licenses approved via command line");
+                }
+                else 
+                {
+                    try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in)))
+                    {
+                        System.err.printf("%nProceed (y/N)? ");
+                        String line = input.readLine();
+
+                        if (line == null || line.length() == 0 || !line.toLowerCase().startsWith("y"))
+                        {
+                            System.err.printf("Exiting: license not acknowledged%n");
+                            System.exit(1);
+                        }
+                    }
+                }
             }
             
             
@@ -567,7 +589,9 @@ public class Main
                 }
                 
                 if (complete)
+                {
                     break;
+                }
                 
                 // look for any new ones resolved via expansion
                 depends.clear();
@@ -701,7 +725,7 @@ public class Main
 
         if (args.isStopCommand())
         {
-          doStop(args);
+            doStop(args);
         }
 
         // Initialize start.ini
@@ -727,14 +751,25 @@ public class Main
 
             if (!FS.exists(file))
             {
-                /* Startup should NEVER fail to run on missing content.
-                 * See Bug #427204
-                 */
-                // args.setRun(false);
-                String type=arg.location.endsWith("/")?"directory":"file";
-                if (arg.uri!=null)
+                boolean isDir = arg.location.endsWith("/");
+                if (isDir)
                 {
-                    StartLog.warn("Required %s '%s' not downloaded from %s.  Run with --create-files to download",type,baseHome.toShortForm(file),arg.uri);
+                    System.err.println("MKDIR: " + baseHome.toShortForm(file));
+                    FS.ensureDirectoryExists(file);
+                    /* Startup should not fail to run on missing directories.
+                     * See Bug #427204
+                     */
+                    // args.setRun(false);
+                }
+                else
+                {
+                    StartLog.warn("Missing Required File: %s",baseHome.toShortForm(file));
+                    args.setRun(false);
+                    if (arg.uri != null)
+                    {
+                        StartLog.warn("  Can be downloaded From: %s",arg.uri);
+                        StartLog.warn("  Run start.jar --create-files to download");
+                    }
                 }
             }
         }
@@ -743,6 +778,12 @@ public class Main
         if (!args.isRun())
         {
             return;
+        }
+        
+        // Warning Message
+        if (!baseHome.isBaseDifferent() && args.isNormalMainClass())
+        {
+            BaseHomeWarning.show(args.getProperties());
         }
 
         // execute Jetty in another JVM
@@ -791,20 +832,21 @@ public class Main
         }
     }
 
-    private void doStop(StartArgs args) {
-      int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
-      String stopKey = args.getProperties().getString("STOP.KEY");
+    private void doStop(StartArgs args)
+    {
+        int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
+        String stopKey = args.getProperties().getString("STOP.KEY");
 
-      if (args.getProperties().getString("STOP.WAIT") != null)
-      {
-          int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
+        if (args.getProperties().getString("STOP.WAIT") != null)
+        {
+            int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
 
-          stop(stopPort,stopKey,stopWait);
-      }
-      else
-      {
-          stop(stopPort,stopKey);
-      }
+            stop(stopPort,stopKey,stopWait);
+        }
+        else
+        {
+            stop(stopPort,stopKey);
+        }
     }
 
     /**
@@ -880,15 +922,26 @@ public class Main
     public void usage(boolean exit)
     {
         StartLog.endStartLog();
-        String usageResource = "org/eclipse/jetty/start/usage.txt";
-        boolean usagePresented = false;
-        try (InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource))
+        if(!printTextResource("org/eclipse/jetty/start/usage.txt"))
         {
-            if (usageStream != null)
+            System.err.println("ERROR: detailed usage resource unavailable");
+        }
+        if (exit)
+        {
+            System.exit(EXIT_USAGE);
+        }
+    }
+    
+    public static boolean printTextResource(String resourceName)
+    {
+        boolean resourcePrinted = false;
+        try (InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName))
+        {
+            if (stream != null)
             {
-                try (InputStreamReader reader = new InputStreamReader(usageStream); BufferedReader buf = new BufferedReader(reader))
+                try (InputStreamReader reader = new InputStreamReader(stream); BufferedReader buf = new BufferedReader(reader))
                 {
-                    usagePresented = true;
+                    resourcePrinted = true;
                     String line;
                     while ((line = buf.readLine()) != null)
                     {
@@ -898,50 +951,44 @@ public class Main
             }
             else
             {
-                System.out.println("No usage.txt ??");
+                System.out.println("Unable to find resource: " + resourceName);
             }
         }
         catch (IOException e)
         {
             StartLog.warn(e);
         }
-        if (!usagePresented)
-        {
-            System.err.println("ERROR: detailed usage resource unavailable");
-        }
-        if (exit)
-        {
-            System.exit(EXIT_USAGE);
-        }
+
+        return resourcePrinted;
     }
 
     // ------------------------------------------------------------
     // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
     public void init(String[] args) throws Exception
     {
-      try
-      {
-        startupArgs = processCommandLine(args);
-      }
-      catch (UsageException e)
-      {
-        System.err.println(e.getMessage());
-        usageExit(e.getCause(),e.getExitCode());
-      }
-      catch (Throwable e)
-      {
-        usageExit(e,UsageException.ERR_UNKNOWN);
-      }
+        try
+        {
+            startupArgs = processCommandLine(args);
+        }
+        catch (UsageException e)
+        {
+            System.err.println(e.getMessage());
+            usageExit(e.getCause(),e.getExitCode());
+        }
+        catch (Throwable e)
+        {
+            usageExit(e,UsageException.ERR_UNKNOWN);
+        }
     }
 
     public void start() throws Exception
     {
-      start(startupArgs);
+        start(startupArgs);
     }
 
     public void stop() throws Exception
     {
-      doStop(startupArgs);
+        doStop(startupArgs);
     }
 
     public void destroy()

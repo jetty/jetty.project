@@ -1,0 +1,16 @@
+============================================================================
+WARNING: Jetty is starting using LEGACY behavior. 
+
+A proper {jetty.base} should be configured with no changes being made to the {jetty.home} directory.
+
+Please see http://www.eclipse.org/jetty/documentation/current/startup.html
+
+A demo-base directory has been provided as an example of this setup.
+
+  $ cd demo-base
+  $ java -jar ../start.jar
+
+This warning may be disabled by setting the system property
+
+  -Dorg.eclipse.jetty.start.home.warning=false
+============================================================================
