@@ -25,8 +25,6 @@ import org.eclipse.jetty.deploy.AppLifeCycle;
 import org.eclipse.jetty.deploy.graph.Node;
 import org.eclipse.jetty.plus.jndi.Resource;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
@@ -34,8 +32,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class WeldDeploymentBinding implements AppLifeCycle.Binding
 {
-    private static final Logger LOG = Log.getLogger(WeldDeploymentBinding.class);
-    
     public String[] getBindingTargets()
     {
         return new String[]
@@ -53,13 +49,7 @@ public class WeldDeploymentBinding implements AppLifeCycle.Binding
         if (handler instanceof WebAppContext)
         {
             WebAppContext webapp = (WebAppContext)handler;
-            
-            if (!wantsCDI(webapp))
-            {
-                LOG.info("No CDI features discovered, not adding Weld to context: {}",webapp);
-                return;
-            }
-            
+
             // Add context specific weld container reference.
             // See https://issues.jboss.org/browse/WELD-1710
             // and https://github.com/weld/core/blob/2.2.5.Final/environments/servlet/core/src/main/java/org/jboss/weld/environment/servlet/WeldServletLifecycle.java#L244-L253
@@ -83,11 +73,5 @@ public class WeldDeploymentBinding implements AppLifeCycle.Binding
             webapp.addServerClass("-org.jboss.logging.");
             webapp.addServerClass("-com.google.common.");
         }
-    }
-
-    private boolean wantsCDI(WebAppContext webapp)
-    {
-        // TODO implement search for various "bean.xml" entries.
-        return true;
     }
 }
