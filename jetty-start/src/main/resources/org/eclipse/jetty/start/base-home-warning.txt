@@ -1,0 +1,15 @@
+WARNING
+-------
+
+While it is possible to run Jetty from within {jetty.home}, 
+it is not recommended that you run Jetty this way.
+
+Please setup a proper {jetty.base}.
+
+See http://www.eclipse.org/jetty/documentation/current/startup.html
+
+The demo-base has been provided to you for an example of this kind of setup.
+
+ $ cd demo-base
+ $ java -jar ../start.jar
+

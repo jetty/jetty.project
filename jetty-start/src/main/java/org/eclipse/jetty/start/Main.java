@@ -741,14 +741,25 @@ public class Main
 
             if (!FS.exists(file))
             {
-                /* Startup should NEVER fail to run on missing content.
-                 * See Bug #427204
-                 */
-                // args.setRun(false);
-                String type=arg.location.endsWith("/")?"directory":"file";
-                if (arg.uri!=null)
+                boolean isDir = arg.location.endsWith("/");
+                if (isDir)
                 {
-                    StartLog.warn("Required %s '%s' not downloaded from %s.  Run with --create-files to download",type,baseHome.toShortForm(file),arg.uri);
+                    System.err.println("MKDIR: " + baseHome.toShortForm(file));
+                    FS.ensureDirectoryExists(file);
+                    /* Startup should not fail to run on missing directories.
+                     * See Bug #427204
+                     */
+                    // args.setRun(false);
+                }
+                else
+                {
+                    StartLog.warn("Missing Required File: %s",baseHome.toShortForm(file));
+                    args.setRun(false);
+                    if (arg.uri != null)
+                    {
+                        StartLog.warn("  Can be downloaded From: %s",arg.uri);
+                        StartLog.warn("  Run start.jar --create-files to download");
+                    }
                 }
             }
         }
@@ -894,15 +905,26 @@ public class Main
     public void usage(boolean exit)
     {
         StartLog.endStartLog();
-        String usageResource = "org/eclipse/jetty/start/usage.txt";
-        boolean usagePresented = false;
-        try (InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource))
+        if(!printTextResource("org/eclipse/jetty/start/usage.txt"))
         {
-            if (usageStream != null)
+            System.err.println("ERROR: detailed usage resource unavailable");
+        }
+        if (exit)
+        {
+            System.exit(EXIT_USAGE);
+        }
+    }
+    
+    public static boolean printTextResource(String resourceName)
+    {
+        boolean resourcePrinted = false;
+        try (InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName))
+        {
+            if (stream != null)
             {
-                try (InputStreamReader reader = new InputStreamReader(usageStream); BufferedReader buf = new BufferedReader(reader))
+                try (InputStreamReader reader = new InputStreamReader(stream); BufferedReader buf = new BufferedReader(reader))
                 {
-                    usagePresented = true;
+                    resourcePrinted = true;
                     String line;
                     while ((line = buf.readLine()) != null)
                     {
@@ -912,21 +934,15 @@ public class Main
             }
             else
             {
-                System.out.println("No usage.txt ??");
+                System.out.println("Unable to find resource: " + resourceName);
             }
         }
         catch (IOException e)
         {
             StartLog.warn(e);
         }
-        if (!usagePresented)
-        {
-            System.err.println("ERROR: detailed usage resource unavailable");
-        }
-        if (exit)
-        {
-            System.exit(EXIT_USAGE);
-        }
+
+        return resourcePrinted;
     }
 
     // ------------------------------------------------------------

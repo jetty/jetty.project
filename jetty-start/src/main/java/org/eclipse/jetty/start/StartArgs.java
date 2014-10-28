@@ -574,7 +574,7 @@ public class StartArgs
         for (String key : systemPropertyKeys)
         {
             // ignored keys
-            if ("jetty.home".equals(key) || "jetty.base".equals(key))
+            if ("jetty.home".equals(key) || "jetty.base".equals(key) || "main.class".equals(key))
             {
                 // skip
                 continue;
