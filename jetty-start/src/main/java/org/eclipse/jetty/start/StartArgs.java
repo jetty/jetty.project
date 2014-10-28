@@ -603,6 +603,11 @@ public class StartArgs
     {
         return exec;
     }
+    
+    public boolean isNormalMainClass()
+    {
+        return SERVER_MAIN.equals(getMainClassname());
+    }
 
     public boolean isHelp()
     {

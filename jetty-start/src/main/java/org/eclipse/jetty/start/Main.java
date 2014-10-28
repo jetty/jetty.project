@@ -779,6 +779,12 @@ public class Main
         {
             return;
         }
+        
+        // Warning Message
+        if (!baseHome.isBaseDifferent() && args.isNormalMainClass())
+        {
+            BaseHomeWarning.show(args.getProperties());
+        }
 
         // execute Jetty in another JVM
         if (args.isExec())

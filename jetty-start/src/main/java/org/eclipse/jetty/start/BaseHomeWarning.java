@@ -18,17 +18,34 @@
 
 package org.eclipse.jetty.start;
 
+import java.util.concurrent.TimeUnit;
+
+import org.eclipse.jetty.start.Props.Prop;
 
 public class BaseHomeWarning
 {
-    public static void main(String[] args)
+    public static void show(Props props)
     {
-        if(!Main.printTextResource("org/eclipse/jetty/start/base-home-warning.txt"))
+        Prop showWarn = props.getProp("org.eclipse.jetty.start.home.warning",true);
+        if (showWarn == null || Boolean.parseBoolean(showWarn.value))
         {
-            StartLog.warn("It is not recommended to run Jetty from within {jetty.home}");
-            StartLog.warn("Use proper {jetty.base} setup");
-            StartLog.warn("See: http://www.eclipse.org/jetty/documentation/current/startup.html");
+            if (!Main.printTextResource("org/eclipse/jetty/start/base-home-warning.txt"))
+            {
+                StartLog.warn("It is not recommended to run Jetty from within {jetty.home}");
+                StartLog.warn("Use a proper {jetty.base} setup");
+                StartLog.warn("See: http://www.eclipse.org/jetty/documentation/current/startup.html");
+            }
+
+            try
+            {
+                System.err.print("Your startup will proceed shortly ...");
+                TimeUnit.SECONDS.sleep(2);
+                System.err.println();
+            }
+            catch (InterruptedException e)
+            {
+                e.printStackTrace();
+            }
         }
-        System.exit(-1);
     }
 }

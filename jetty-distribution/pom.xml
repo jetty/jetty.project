@@ -559,6 +559,21 @@
         <artifactId>exec-maven-plugin</artifactId>
         <executions>
           <execution>
+            <id>setup home</id>
+            <phase>process-classes</phase>
+            <configuration>
+              <mainClass>org.eclipse.jetty.start.Main</mainClass>
+              <arguments>
+                <argument>jetty.home=${assembly-directory}</argument>
+                <argument>jetty.base=${assembly-directory}</argument>
+                <argument>--add-to-start=server,deploy,websocket,ext,resources,jsp,jstl,http</argument>
+              </arguments>
+            </configuration>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+          <execution>
             <id>setup demo-base</id>
             <phase>process-classes</phase>
             <configuration>
