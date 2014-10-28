@@ -1,6 +1,4 @@
-jetty-9.2.5-SNAPSHOT
-
-jetty-9.2.4.v20141027 - 27 October 2014
+jetty-9.2.4.v20141028 - 28 October 2014
  + 376365 "jetty.sh start" returns 0 on failure
  + 396569 'bin/jetty.sh stop' reports 'OK' even when jetty was not running
  + 396572 Starting jetty from cygwin is not working properly
@@ -33,6 +31,7 @@ jetty-9.2.4.v20141027 - 27 October 2014
  + 444896 Overriding of web-default servlet mapping in web.xml not working with
    quickstart
  + 445157 First redeployed servlet leaks WebAppContext
+ + 445239 Rename weld.mod to cdi.mod to be consistent with past module namings
  + 445258 STOP.WAIT is not really respected
  + 445374 Reevaluate org.eclipse.jetty.websocket.jsr356 enablement concepts
  + 445495 Improve Exception message when no jndi resource to bind for a name in
@@ -69,6 +68,8 @@ jetty-9.2.4.v20141027 - 27 October 2014
  + 447979 Refactor to make MetaData responsible for progressively ordering
    web-inf jars
  + 448156 Fixed INACTIVE race in IteratingCallback
+ + 449001 Remove start.d directory from JETTY_HOME
+ + 449038 WebSocketUpgradeFilter must support async.
 
 jetty-9.2.3.v20140905 - 05 September 2014
  + 347110 renamed class transformer methods
