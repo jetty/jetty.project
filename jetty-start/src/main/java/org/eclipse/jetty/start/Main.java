@@ -880,15 +880,26 @@ public class Main
     public void usage(boolean exit)
     {
         StartLog.endStartLog();
-        String usageResource = "org/eclipse/jetty/start/usage.txt";
-        boolean usagePresented = false;
-        try (InputStream usageStream = getClass().getClassLoader().getResourceAsStream(usageResource))
+        if(!printTextResource("org/eclipse/jetty/start/usage.txt"))
         {
-            if (usageStream != null)
+            System.err.println("ERROR: detailed usage resource unavailable");
+        }
+        if (exit)
+        {
+            System.exit(EXIT_USAGE);
+        }
+    }
+    
+    public static boolean printTextResource(String resourceName)
+    {
+        boolean resourcePrinted = false;
+        try (InputStream stream = Thread.currentThread().getContextClassLoader().getResourceAsStream(resourceName))
+        {
+            if (stream != null)
             {
-                try (InputStreamReader reader = new InputStreamReader(usageStream); BufferedReader buf = new BufferedReader(reader))
+                try (InputStreamReader reader = new InputStreamReader(stream); BufferedReader buf = new BufferedReader(reader))
                 {
-                    usagePresented = true;
+                    resourcePrinted = true;
                     String line;
                     while ((line = buf.readLine()) != null)
                     {
@@ -898,21 +909,15 @@ public class Main
             }
             else
             {
-                System.out.println("No usage.txt ??");
+                System.out.println("Unable to find resource: " + resourceName);
             }
         }
         catch (IOException e)
         {
             StartLog.warn(e);
         }
-        if (!usagePresented)
-        {
-            System.err.println("ERROR: detailed usage resource unavailable");
-        }
-        if (exit)
-        {
-            System.exit(EXIT_USAGE);
-        }
+
+        return resourcePrinted;
     }
 
     // ------------------------------------------------------------
