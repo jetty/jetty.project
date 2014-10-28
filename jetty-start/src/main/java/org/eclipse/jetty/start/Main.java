@@ -86,7 +86,9 @@ public class Main
     public static String join(Collection<?> objs, String delim)
     {
         if (objs==null)
+        {
             return "";
+        }
         StringBuilder str = new StringBuilder();
         boolean needDelim = false;
         for (Object obj : objs)
@@ -398,23 +400,29 @@ public class Main
         {
             // is it an explicit request to create an ini file?
             if (topLevel && !FS.exists(startd_ini) && !appendStartIni)
+            {
                 buildIni=true;
-            
-            // else is it transitive 
-            else if (transitive) 
+            }
+            // else is it transitive
+            else if (transitive)
             {
                 // do we need an ini anyway?
-                if (module.hasDefaultConfig() || module.hasLicense()) 
-                    buildIni=true;
+                if (module.hasDefaultConfig() || module.hasLicense())
+                {
+                    buildIni = true;
+                }
                 else
+                {
                     StartLog.info("%-15s initialised transitively",name);
+                }
             }
-            
             // else must be initialized explicitly
             else 
             {
                 for (String source : module.getSources())
+                {
                     StartLog.info("%-15s initialised in %s",name,baseHome.toShortForm(source));
+                }
             }
         }
         else 
@@ -581,7 +589,9 @@ public class Main
                 }
                 
                 if (complete)
+                {
                     break;
+                }
                 
                 // look for any new ones resolved via expansion
                 depends.clear();
@@ -715,7 +725,7 @@ public class Main
 
         if (args.isStopCommand())
         {
-          doStop(args);
+            doStop(args);
         }
 
         // Initialize start.ini
@@ -816,20 +826,21 @@ public class Main
         }
     }
 
-    private void doStop(StartArgs args) {
-      int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
-      String stopKey = args.getProperties().getString("STOP.KEY");
+    private void doStop(StartArgs args)
+    {
+        int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
+        String stopKey = args.getProperties().getString("STOP.KEY");
 
-      if (args.getProperties().getString("STOP.WAIT") != null)
-      {
-          int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
+        if (args.getProperties().getString("STOP.WAIT") != null)
+        {
+            int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
 
-          stop(stopPort,stopKey,stopWait);
-      }
-      else
-      {
-          stop(stopPort,stopKey);
-      }
+            stop(stopPort,stopKey,stopWait);
+        }
+        else
+        {
+            stop(stopPort,stopKey);
+        }
     }
 
     /**
@@ -949,29 +960,29 @@ public class Main
     // implement Apache commons daemon (jsvc) lifecycle methods (init, start, stop, destroy)
     public void init(String[] args) throws Exception
     {
-      try
-      {
-        startupArgs = processCommandLine(args);
-      }
-      catch (UsageException e)
-      {
-        System.err.println(e.getMessage());
-        usageExit(e.getCause(),e.getExitCode());
-      }
-      catch (Throwable e)
-      {
-        usageExit(e,UsageException.ERR_UNKNOWN);
-      }
+        try
+        {
+            startupArgs = processCommandLine(args);
+        }
+        catch (UsageException e)
+        {
+            System.err.println(e.getMessage());
+            usageExit(e.getCause(),e.getExitCode());
+        }
+        catch (Throwable e)
+        {
+            usageExit(e,UsageException.ERR_UNKNOWN);
+        }
     }
 
     public void start() throws Exception
     {
-      start(startupArgs);
+        start(startupArgs);
     }
 
     public void stop() throws Exception
     {
-      doStop(startupArgs);
+        doStop(startupArgs);
     }
 
     public void destroy()
