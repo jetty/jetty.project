@@ -727,14 +727,25 @@ public class Main
 
             if (!FS.exists(file))
             {
-                /* Startup should NEVER fail to run on missing content.
-                 * See Bug #427204
-                 */
-                // args.setRun(false);
-                String type=arg.location.endsWith("/")?"directory":"file";
-                if (arg.uri!=null)
+                boolean isDir = arg.location.endsWith("/");
+                if (isDir)
                 {
-                    StartLog.warn("Required %s '%s' not downloaded from %s.  Run with --create-files to download",type,baseHome.toShortForm(file),arg.uri);
+                    System.err.println("MKDIR: " + baseHome.toShortForm(file));
+                    FS.ensureDirectoryExists(file);
+                    /* Startup should not fail to run on missing directories.
+                     * See Bug #427204
+                     */
+                    // args.setRun(false);
+                }
+                else
+                {
+                    StartLog.warn("Missing Required File: %s",baseHome.toShortForm(file));
+                    args.setRun(false);
+                    if (arg.uri != null)
+                    {
+                        StartLog.warn("  Can be downloaded From: %s",arg.uri);
+                        StartLog.warn("  Run start.jar --create-files to download");
+                    }
                 }
             }
         }
