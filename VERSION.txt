@@ -123,7 +123,7 @@ jetty-9.2.2.v20140723 - 23 July 2014
  + 440020 Abort bad proxy responses with sendError(-1)
  + 440038 Content decoding may fail.
  + 440114 ContextHandlerCollection does not skip context wrappers
- + 440122 Remove usages of ForkInvoker. >>>>>>> origin/master
+ + 440122 Remove usages of ForkInvoker.
 
 jetty-9.2.1.v20140609 - 09 June 2014
  + 347110 Supprt ClassFileTransormers in WebAppClassLoader

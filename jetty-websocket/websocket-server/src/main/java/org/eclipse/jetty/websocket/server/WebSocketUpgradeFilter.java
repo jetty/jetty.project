@@ -20,7 +20,6 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -77,6 +76,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
         FilterHolder fholder = new FilterHolder(filter);
         fholder.setName(name);
+        fholder.setAsyncSupported(true);
         fholder.setInitParameter(CONTEXT_ATTRIBUTE_KEY,WebSocketUpgradeFilter.class.getName());
         context.addFilter(fholder,pathSpec,dispatcherTypes);
 
@@ -108,6 +108,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         String urlPatterns[] = { pathSpec };
 
         FilterRegistration.Dynamic dyn = context.addFilter(name,filter);
+        dyn.setAsyncSupported(true);
         dyn.setInitParameter(CONTEXT_ATTRIBUTE_KEY,WebSocketUpgradeFilter.class.getName());
         dyn.addMappingForUrlPatterns(dispatcherTypes,isMatchAfter,urlPatterns);
 

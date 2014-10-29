@@ -76,9 +76,9 @@ public class RequestLogHandlerTest
         public List<String> captured = new ArrayList<>();
 
         @Override
-        public void log(Request request, Response response)
+        public void log(Request request, int status, long written)
         {
-            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),response.getStatus()));
+            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),status));
         }
     }
 
@@ -663,9 +663,9 @@ public class RequestLogHandlerTest
         server.addBean(errorDispatcher);
         
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        ContextHandler errorContext = new ContextHandler("errorok");
+        ContextHandler errorContext = new ContextHandler("/errorok");
         errorContext.setHandler(new OKErrorHandler());
-        ContextHandler testContext = new ContextHandler("test");
+        ContextHandler testContext = new ContextHandler("/test");
         testContext.setHandler(testHandler);
         contexts.addHandler(errorContext);
         contexts.addHandler(testContext);

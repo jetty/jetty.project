@@ -77,9 +77,9 @@ public class ServletRequestLogTest
         public List<String> captured = new ArrayList<>();
 
         @Override
-        public void log(Request request, Response response)
+        public void log(Request request, int status, long written)
         {
-            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),response.getStatus()));
+            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),status));
         }
     }
     
