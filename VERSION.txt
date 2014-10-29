@@ -31,6 +31,7 @@ jetty-9.2.4-SNAPSHOT
  + 444896 Overriding of web-default servlet mapping in web.xml not working with
    quickstart
  + 445157 First redeployed servlet leaks WebAppContext
+ + 445239 Rename weld.mod to cdi.mod to be consistent with past module namings
  + 445258 STOP.WAIT is not really respected
  + 445374 Reevaluate org.eclipse.jetty.websocket.jsr356 enablement concepts
  + 445495 Improve Exception message when no jndi resource to bind for a name in
@@ -67,6 +68,8 @@ jetty-9.2.4-SNAPSHOT
  + 447979 Refactor to make MetaData responsible for progressively ordering
    web-inf jars
  + 448156 Fixed INACTIVE race in IteratingCallback
+ + 449001 Remove start.d directory from JETTY_HOME
+ + 449038 WebSocketUpgradeFilter must support async.
 
 jetty-9.3.0.M0 - 24 September 2014
  + 437395 Start / Properties in template sections should be default applied for
