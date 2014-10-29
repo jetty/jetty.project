@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import java.util.concurrent.TimeUnit;
-
 import org.eclipse.jetty.start.Props.Prop;
 
 public class BaseHomeWarning
@@ -34,17 +32,6 @@ public class BaseHomeWarning
                 StartLog.warn("It is not recommended to run Jetty from within {jetty.home}");
                 StartLog.warn("Use a proper {jetty.base} setup");
                 StartLog.warn("See: http://www.eclipse.org/jetty/documentation/current/startup.html");
-            }
-
-            try
-            {
-                System.err.print("Your startup will proceed shortly ...");
-                TimeUnit.SECONDS.sleep(2);
-                System.err.println();
-            }
-            catch (InterruptedException e)
-            {
-                e.printStackTrace();
             }
         }
     }
