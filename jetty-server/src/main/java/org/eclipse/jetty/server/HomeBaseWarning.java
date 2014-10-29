@@ -67,11 +67,8 @@ public class HomeBaseWarning
         if (showWarn)
         {
             StringBuilder warn = new StringBuilder();
-            warn.append("This instance of Jetty is running directly from {jetty.home} at ");
-            warn.append(homePath.toAbsolutePath().toString());
-            warn.append(", this is not recommended.").append(System.lineSeparator());
-            warn.append("Please setup a separate {jetty.base} directory to manage your configuration.").append(System.lineSeparator());
-            warn.append("See documentation at http://www.eclipse.org/jetty/documentation/current/startup.html");
+            warn.append("This instance of Jetty is not running from a separate {jetty.base} directory");
+            warn.append(", this is not recommended.  See documentation at http://www.eclipse.org/jetty/documentation/current/startup.html");
             LOG.warn("{}",warn.toString());
         }
     }
