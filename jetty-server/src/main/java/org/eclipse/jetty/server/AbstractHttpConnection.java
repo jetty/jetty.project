@@ -1193,7 +1193,7 @@ public abstract class AbstractHttpConnection  extends AbstractConnection
 
                     int len=buffer.readFrom(in,max);
 
-                    while (len>=0)
+                    while (len>=0 && !_endp.isOutputShutdown())
                     {
                         super._generator.completeUncheckedAddContent();
                         _out.flush();
