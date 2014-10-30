@@ -632,9 +632,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s}",
+        return String.format("%s@%x{%s,%s}",
                 _name==null?getClass().getSimpleName():_name,
                 hashCode(),
-                getDefaultProtocol());
+                getDefaultProtocol(),getProtocols());
     }
 }
