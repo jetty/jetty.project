@@ -107,7 +107,7 @@ public class ServerConnector extends AbstractNetworkConnector
      *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
      *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or -1 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or <=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      */
     public ServerConnector(
         @Name("server") Server server,
@@ -125,7 +125,7 @@ public class ServerConnector extends AbstractNetworkConnector
      *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
      *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or -1 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or <=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public ServerConnector(
@@ -174,7 +174,7 @@ public class ServerConnector extends AbstractNetworkConnector
      *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
      *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or -1 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or <=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      */
     public ServerConnector(
         @Name("server") Server server,
@@ -204,7 +204,7 @@ public class ServerConnector extends AbstractNetworkConnector
      * @param server    
      *          The server this connector will be accept connection for.  
      * @param executor  
-     *          An executor used to run tasks for handling requests, acceptors and selectors. I
+     *          An executor used to run tasks for handling requests, acceptors and selectors.
      *          If null then use the servers executor
      * @param scheduler 
      *          A scheduler used to schedule timeouts. If null then use the servers scheduler
@@ -214,7 +214,7 @@ public class ServerConnector extends AbstractNetworkConnector
      *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
      *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or -1 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or <=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      * @param factories 
      *          Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
