@@ -120,7 +120,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             if (authentication instanceof Authentication.User)
                 buf.append(((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName());
             else
-                buf.append(" - ");
+                buf.append("-");
 
             buf.append(" [");
             if (_logDateCache != null)
