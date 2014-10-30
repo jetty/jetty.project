@@ -13,3 +13,12 @@ protonego-impl/${protonego}
 #             and the future HTTP/2 spec
 #  Note: java 1.8+ are ALPN only.
 protonego=alpn
+
+# Configuration for NPN
+# npn.protocols=spdy/3,http/1.1
+# npn.defaultProtocol=http/1.1
+
+# Configuration for ALPN
+# alpn.protocols=h2-14,http/1.1
+# alpn.defaultProtocol=http/1.1
+
