@@ -319,21 +319,16 @@ public class ResourceHandler extends HandlerWrapper
             path=URIUtil.canonicalPath(path);
             Resource r = base.addPath(path);
             
-            System.err.println(base+" + "+path+" = "+r);
-            
             if (r!=null && r.getAlias()!=null && (_context==null || !_context.checkAlias(path, r)))
             {
-                System.err.println("!OK "+r);
                 if (LOG.isDebugEnabled())
                     LOG.debug("resource={} alias={}",r,r.getAlias());
                 return null;
             }
-            System.err.println("OK "+r);
             return r;
         }
         catch(Exception e)
         {
-            e.printStackTrace();
             LOG.ignore(e);
         }
 
