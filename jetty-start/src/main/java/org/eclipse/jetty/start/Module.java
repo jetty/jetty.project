@@ -97,6 +97,7 @@ public class Module
     private List<String> xmls;
     /** List of ini template lines */
     private List<String> defaultConfig;
+    private boolean hasDefaultConfig = false;
     /** List of library options for this Module */
     private List<String> libs;
     /** List of files for this Module */
@@ -222,7 +223,7 @@ public class Module
 
     public boolean hasDefaultConfig()
     {
-        return (defaultConfig != null) && (defaultConfig.size() > 0);
+        return hasDefaultConfig;
     }
 
     public List<String> getLibs()
@@ -365,6 +366,7 @@ public class Module
                             case "DEFAULTS":
                             case "INI-TEMPLATE":
                                 defaultConfig.add(line);
+                                hasDefaultConfig = true;
                                 break;
                             case "LIB":
                                 libs.add(line);

@@ -31,10 +31,6 @@ lib/jetty-npn-server-${jetty.version}.jar
 lib/
 lib/npn/
 
-[ini-template]
-# npn.protocols=spdy/3,http/1.1
-# npn.defaultProtocol=http/1.1
-
 [license]
 NPN is a hosted at github under the GPL v2 with ClassPath Exception.
 NPN replaces/modifies OpenJDK classes in the java.sun.security.ssl package.
