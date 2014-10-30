@@ -42,6 +42,7 @@ import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.jetty.security.LoginService;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
@@ -61,11 +62,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public abstract class AbstractJettyMojo extends AbstractMojo
 {
-    /**
-     * 
-     */
-    public String PORT_SYSPROPERTY = "jetty.port";
-    
+
     
     /**
      * Whether or not to include dependencies on the plugin's classpath with &lt;scope&gt;provided&lt;/scope&gt;
@@ -277,8 +274,9 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     
     /**
      * A wrapper for the Server object
+     * @parameter
      */
-    protected JettyServer server = new JettyServer();
+    protected Server server;
     
     
     /**
@@ -303,6 +301,10 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * A scanner to check ENTER hits on the console
      */
     protected Thread consoleScanner;
+    
+    protected ServerSupport serverSupport;
+    
+    
     
     
     /**
@@ -451,11 +453,13 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @throws Exception
      */
     public void applyJettyXml() throws Exception
-    {
-        if (getJettyXmlFiles() == null)
-            return;
-
-        this.server.applyXmlConfigurations(getJettyXmlFiles());
+    {        
+        Server tmp = ServerSupport.applyXmlConfigurations(server, getJettyXmlFiles());
+        if (server == null)
+            server = tmp;
+        
+        if (server == null)
+            server = new Server();
     }
 
 
@@ -469,6 +473,9 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         try
         {
             getLog().debug("Starting Jetty Server ...");
+            
+            //make sure Jetty does not use URLConnection caches with the plugin
+            Resource.setDefaultUseCaches(false);
          
             configureMonitor();
             
@@ -477,7 +484,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             //apply any config from a jetty.xml file first which is able to
             //be overwritten by config in the pom.xml
             applyJettyXml ();      
-
+            
             // if a <httpConnector> was specified in the pom, use it
             if (httpConnector != null)
             {
@@ -485,46 +492,21 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                 if (httpConnector.getPort() <= 0)
                 {
                     //use any jetty.port settings provided
-                    String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR); 
+                    String tmp = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR); 
                     httpConnector.setPort(Integer.parseInt(tmp.trim()));
                 }  
-                if (httpConnector.getServer() == null)
-                    httpConnector.setServer(this.server);
-                this.server.addConnector(httpConnector);
+                httpConnector.setServer(server);
             }
 
-            // if the user hasn't configured the connectors in a jetty.xml file so use a default one
-            Connector[] connectors = this.server.getConnectors();
-            if (connectors == null|| connectors.length == 0)
-            {
-                //if <httpConnector> not configured in the pom, create one
-                if (httpConnector == null)
-                {
-                    httpConnector = new MavenServerConnector();               
-                    //use any jetty.port settings provided
-                    String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
-                    httpConnector.setPort(Integer.parseInt(tmp.trim()));
-                }
-                if (httpConnector.getServer() == null)
-                    httpConnector.setServer(this.server);
-                this.server.setConnectors(new Connector[] {httpConnector});
-            }
+            ServerSupport.configureConnectors(server, httpConnector);
 
-            //set up a RequestLog if one is provided
-            if (this.requestLog != null)
-                this.server.setRequestLog(this.requestLog);
-
-            //set up the webapp and any context provided
-            this.server.configureHandlers();
+            //set up a RequestLog if one is provided and the handle structure
+            ServerSupport.configureHandlers(server, this.requestLog);
             configureWebApplication();
-            this.server.addWebApplication(webApp);
+            ServerSupport.addWebApplication(server, webApp);
 
             // set up security realms
-            for (int i = 0; (this.loginServices != null) && i < this.loginServices.length; i++)
-            {
-                getLog().debug(this.loginServices[i].getClass().getName() + ": "+ this.loginServices[i].toString());
-                this.server.addBean(this.loginServices[i]);
-            }
+            ServerSupport.configureLoginServices(server, loginServices);
 
             //do any other configuration required by the
             //particular Jetty version
@@ -534,7 +516,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             this.server.start();
 
             getLog().info("Started Jetty Server");
-           
             
             if ( dumpOnStart )
             {
@@ -579,6 +560,10 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
     }
 
+    
+    
+    
+    
     
     /**
      * Subclasses should invoke this to setup basic info

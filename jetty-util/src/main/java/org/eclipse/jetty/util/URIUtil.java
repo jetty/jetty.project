@@ -839,13 +839,12 @@ public class URIUtil
             if (cb=='%')
                 cb=TypeUtil.convertHexDigit(uriB.charAt(b++))*16+TypeUtil.convertHexDigit(uriB.charAt(b++));
             
-            if (ca!=cb)
-                return false;
-            
             if (ca=='/' && oa!=ob)
                 return false;
+            
+            if (ca!=cb )
+                return URIUtil.decodePath(uriA).equals(URIUtil.decodePath(uriB));
         }
-        
         return a==lenA && b==lenB;
     }
 }

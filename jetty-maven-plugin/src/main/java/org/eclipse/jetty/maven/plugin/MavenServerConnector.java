@@ -47,6 +47,8 @@ import org.eclipse.jetty.util.thread.Scheduler;
  */
 public class MavenServerConnector extends AbstractLifeCycle implements Connector
 {
+    public static String PORT_SYSPROPERTY = "jetty.port";
+    
     public static final int DEFAULT_PORT = 8080;
     public static final String DEFAULT_PORT_STR = String.valueOf(DEFAULT_PORT);
     public static final int DEFAULT_MAX_IDLE_TIME = 30000;

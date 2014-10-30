@@ -155,7 +155,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * @param executor An executor for this connector or null to use the servers executor
      * @param scheduler A scheduler for this connector or null to either a {@link Scheduler} set as a server bean or if none set, then a new {@link ScheduledExecutorScheduler} instance.
      * @param pool A buffer pool for this connector or null to either a {@link ByteBufferPool} set as a server bean or none set, the new  {@link ArrayByteBufferPool} instance.
-     * @param acceptors the number of acceptor threads to use, or 0 for a default value.
+     * @param acceptors the number of acceptor threads to use, or -1 for a default value. If 0, then no acceptor threads will be launched and some other mechanism will need to be used to accept new connections.
      * @param factories The Connection Factories to use.
      */
     public AbstractConnector(
@@ -632,9 +632,9 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s}",
+        return String.format("%s@%x{%s,%s}",
                 _name==null?getClass().getSimpleName():_name,
                 hashCode(),
-                getDefaultProtocol());
+                getDefaultProtocol(),getProtocols());
     }
 }
