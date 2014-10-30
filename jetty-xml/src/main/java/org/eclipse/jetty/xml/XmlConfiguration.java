@@ -92,7 +92,7 @@ public class XmlConfiguration
 
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
     private static final XmlParser __parser = initParser();
-    private synchronized static XmlParser initParser()
+    private static XmlParser initParser()
     {
         XmlParser parser = new XmlParser();
         URL config60 = Loader.getResource(XmlConfiguration.class, "org/eclipse/jetty/xml/configure_6_0.dtd");

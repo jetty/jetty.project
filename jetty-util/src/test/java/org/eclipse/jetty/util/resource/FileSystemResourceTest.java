@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.CollectionAssert;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -1042,5 +1043,21 @@ public class FileSystemResourceTest
             res.delete();
             assertThat("File should have been deleted.",res.exists(),is(false));
         }
+    }
+
+    
+    @Test
+    public void testUtf8Dir() throws Exception
+    {
+        File dir=new File(testdir.getDir(),"bãm");
+        dir.mkdir();
+        File file = new File(dir,"file.txt");
+        file.createNewFile();
+        
+        Resource base = newResource(dir);
+        assertNull(base.getAlias());
+        
+        Resource r = base.addPath("file.txt");
+        assertNull(r.getAlias());
     }
 }

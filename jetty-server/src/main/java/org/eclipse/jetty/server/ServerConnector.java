@@ -327,8 +327,8 @@ public class ServerConnector extends AbstractNetworkConnector
                 serverChannel = ServerSocketChannel.open();
 
                 InetSocketAddress bindAddress = getHost() == null ? new InetSocketAddress(getPort()) : new InetSocketAddress(getHost(), getPort());
-                serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
                 serverChannel.socket().setReuseAddress(getReuseAddress());
+                serverChannel.socket().bind(bindAddress, getAcceptQueueSize());
 
                 _localPort = serverChannel.socket().getLocalPort();
                 if (_localPort <= 0)

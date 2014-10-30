@@ -303,6 +303,9 @@ public class ResourceHandler extends HandlerWrapper
         if (path==null || !path.startsWith("/"))
             throw new MalformedURLException(path);
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} getResource({})",_context==null?_baseResource:_context,_baseResource,path);
+        
         Resource base = _baseResource;
         if (base==null)
         {
@@ -315,8 +318,12 @@ public class ResourceHandler extends HandlerWrapper
         {
             path=URIUtil.canonicalPath(path);
             Resource r = base.addPath(path);
-            if (r!=null && r.isAlias() && !_context.checkAlias(path, r))
+            if (r!=null && r.isAlias() && (_context==null || !_context.checkAlias(path, r)))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("resource={} alias={}",r,r.getAlias());
                 return null;
+            }
             return r;
         }
         catch(Exception e)
@@ -404,6 +411,16 @@ public class ResourceHandler extends HandlerWrapper
         }
 
         Resource resource = getResource(request);
+        
+        if (LOG.isDebugEnabled())
+        { 
+            if (resource==null)
+                LOG.debug("resource=null");
+            else
+                LOG.debug("resource={} alias={} exists={}",resource,resource.getAlias(),resource.exists());
+        }
+        
+        
         // If resource is not found
         if (resource==null || !resource.exists())
         {
