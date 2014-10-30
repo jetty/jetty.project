@@ -1,16 +1,18 @@
-jetty-9.2.4.v20141028 - 28 October 2014
+jetty-9.2.4.v20141030 - 30 October 2014
  + 376365 "jetty.sh start" returns 0 on failure
  + 396569 'bin/jetty.sh stop' reports 'OK' even when jetty was not running
  + 396572 Starting jetty from cygwin is not working properly
  + 438387 NullPointerException after ServletUpgradeResponse.sendForbidden is
    called during WebSocketCreator.createWebSocket
  + 440729 SSL requests often fail with EOFException or IllegalStateException.
+ + 440925 NPE when using relative paths for --start-log-file
  + 442419 CrossOriginFilter javadoc says "exposeHeaders", but should be
    "exposedHeaders"
  + 442495 Bad Context ClassLoader in JSR356 WebSocket onOpen
  + 442942 Content sent with status 204 (No Content)
  + 443529 CrossOriginFilter does not accept wildcard for allowedHeaders
  + 443530 CrossOriginFilter does not set the Vary header
+ + 443550 improved FileResource encoded alias checking
  + 444031 Ensure exceptions do not reduce threadpool below minimum
  + 444124 JSP include with <servlet><jsp-file> can cause infinite recursion
  + 444214 Socks4Proxy fails when reading less than 8 bytes.
@@ -23,6 +25,7 @@ jetty-9.2.4.v20141028 - 28 October 2014
    of attribute keys
  + 444617 Expose local and remote socket address to applications
  + 444676 Goal jetty:deploy-war produces errors with version 9.2.3
+ + 444722 Fixed order of setReuseAddress call
  + 444748 WebSocketClient.stop() does not unregister from ShutdownThread
  + 444764 HttpClient notifies callbacks for last chunk of content twice.
  + 444771 JSR356 / EndPointConfig.userProperties are not unique per endpoint
@@ -68,8 +71,12 @@ jetty-9.2.4.v20141028 - 28 October 2014
  + 447979 Refactor to make MetaData responsible for progressively ordering
    web-inf jars
  + 448156 Fixed INACTIVE race in IteratingCallback
+ + 448225 Removed unnecessary synchronize on initParser
+ + 448841 Clarified selectors==0 javadoc 448840 Clarified ServerConnector
+   javadoc 448839 Fixed javadoc typo in ServerConnector
  + 449001 Remove start.d directory from JETTY_HOME
  + 449038 WebSocketUpgradeFilter must support async.
+ + 449175 Removed extra space in NCSA log
 
 jetty-9.2.3.v20140905 - 05 September 2014
  + 347110 renamed class transformer methods
