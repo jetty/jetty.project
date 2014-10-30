@@ -47,6 +47,7 @@ import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.CollectionAssert;
+import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -497,5 +498,21 @@ public abstract class AbstractFSResourceTest
         {
             // Expected path
         }
+    }
+    
+    @Test
+    public void testUtf8Dir() throws Exception
+    {
+        File dir=new File(testdir.getDir(),"bãm");
+        dir.mkdir();
+        File file = new File(dir,"file.txt");
+        file.createNewFile();
+        
+        Resource base = newResource(dir);
+        Assert.assertNull(base.getAlias());
+        
+        Resource r = base.addPath("file.txt");
+        Assert.assertNull(r.getAlias());
+        
     }
 }
