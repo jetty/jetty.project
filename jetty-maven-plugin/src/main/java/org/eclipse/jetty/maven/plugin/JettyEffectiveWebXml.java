@@ -94,9 +94,8 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             //apply any config from a jetty.xml file first to our "fake" server instance
             //TODO probably not necessary
             applyJettyXml ();  
-
         
-            server.configureHandlers();
+            ServerSupport.configureHandlers(server, null);
                    
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
@@ -114,7 +113,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             
             webApp.setQuickStartWebDescriptor(descriptor);
             
-            server.addWebApplication(webApp);
+            ServerSupport.addWebApplication(server, webApp);
                        
             //if our server has a thread pool associated we can do any annotation scanning multithreaded,
             //otherwise scanning will be single threaded

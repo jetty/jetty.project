@@ -33,6 +33,7 @@ import java.util.TreeMap;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.log.Log;
@@ -57,7 +58,7 @@ public class Starter
     private List<File> jettyXmls; // list of jetty.xml config files to apply - Mandatory
     private File contextXml; //name of context xml file to configure the webapp - Mandatory
 
-    private JettyServer server = new JettyServer();
+    private Server server;
     private JettyWebAppContext webApp;
 
     
@@ -121,34 +122,16 @@ public class Starter
     public void configureJetty () throws Exception
     {
         LOG.debug("Starting Jetty Server ...");
-
+        Resource.setDefaultUseCaches(false);
+        
         //apply any configs from jetty.xml files first 
         applyJettyXml ();
 
-        // if the user hasn't configured a connector in the jetty.xml
-        //then use a default
-        Connector[] connectors = this.server.getConnectors();
-        if (connectors == null|| connectors.length == 0)
-        {
-            //if a SystemProperty -Djetty.port=<portnum> has been supplied, use that as the default port
-            MavenServerConnector httpConnector = new MavenServerConnector();
-            httpConnector.setServer(this.server);
-            String tmp = System.getProperty(PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
-            httpConnector.setPort(Integer.parseInt(tmp.trim()));
-            connectors = new Connector[] {httpConnector};
-            this.server.setConnectors(connectors);
-        }
-
-        //check that everything got configured, and if not, make the handlers
-        HandlerCollection handlers = (HandlerCollection) server.getChildHandlerByClass(HandlerCollection.class);
-        if (handlers == null)
-        {
-            handlers = new HandlerCollection();
-            server.setHandler(handlers);
-        }
+        //ensure there's a connector
+        ServerSupport.configureConnectors(server, null);
 
         //check if contexts already configured, create if not
-        this.server.configureHandlers();
+        ServerSupport.configureHandlers(server, null);
 
         webApp = new JettyWebAppContext();
         
@@ -176,7 +159,7 @@ public class Starter
             xmlConfiguration.configure(webApp);
         }
 
-        this.server.addWebApplication(webApp);
+        ServerSupport.addWebApplication(server, webApp);
 
         if(stopPort>0 && stopKey!=null)
         {
@@ -431,9 +414,12 @@ public class Starter
      */
     public void applyJettyXml() throws Exception
     {
-        if (jettyXmls == null)
-            return;
-        this.server.applyXmlConfigurations(jettyXmls);
+        Server tmp = ServerSupport.applyXmlConfigurations(server, jettyXmls);
+        if (server == null)
+            server = tmp;
+        
+        if (server == null)
+            server = new Server();
     }
 
 
