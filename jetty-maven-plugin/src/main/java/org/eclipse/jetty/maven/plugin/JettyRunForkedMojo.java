@@ -111,7 +111,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
     
     /**
      * Arbitrary jvm args to pass to the forked process
-     * @parameter
+     * @parameter expression="${jetty.jvmArgs}"
      */
     private String jvmArgs;
     
