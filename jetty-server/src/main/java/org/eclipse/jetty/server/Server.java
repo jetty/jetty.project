@@ -85,6 +85,7 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
+    private RequestLog _requestLog;
     
     private volatile DateField _dateField;
     
@@ -121,8 +122,6 @@ public class Server extends HandlerWrapper implements Attributes
         setConnectors(new Connector[]{connector});
     }
 
-
-
     /* ------------------------------------------------------------ */
     public Server(@Name("threadpool") ThreadPool pool)
     {
@@ -131,6 +130,18 @@ public class Server extends HandlerWrapper implements Attributes
         setServer(this);
     }
 
+    /* ------------------------------------------------------------ */
+    public RequestLog getRequestLog()
+    {
+        return _requestLog;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setRequestLog(RequestLog requestLog)
+    {
+        updateBean(_requestLog,requestLog);
+        _requestLog = requestLog;
+    }
 
     /* ------------------------------------------------------------ */
     @ManagedAttribute("version of this server")

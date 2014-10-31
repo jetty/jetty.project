@@ -36,12 +36,16 @@ import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A HttpChannel customized to be transported over the HTTP/1 protocol
  */
 class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ProxyHandler
 {
+    private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
+    
     private final HttpConnection _httpConnection;
     private final HttpFields _fields = new HttpFields();
     private HttpField _connection;
@@ -226,6 +230,16 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public void badMessage(int status, String reason)
     {
         _httpConnection._generator.setPersistent(false);
+        try
+        {
+            // Need to call onRequest, so RequestLog can reports as much as possible
+            onRequest(_metadata);
+        }
+        catch (Exception e)
+        {
+            LOG.ignore(e);
+        }
+        
         onBadMessage(status,reason);
     }
 

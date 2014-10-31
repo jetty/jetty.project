@@ -377,6 +377,7 @@ public class Main
             return;
         }
         
+        boolean transitive = module.isEnabled() && (module.getSources().size() == 0);
 
         // Find any named ini file and check it follows the convention
         Path start_ini = baseHome.getBasePath("start.ini");
@@ -394,7 +395,6 @@ public class Main
             }
         }
 
-        boolean transitive = module.isEnabled() && (module.getSources().size() == 0);
         boolean buildIni=false;
         if (module.isEnabled())
         {
@@ -406,13 +406,9 @@ public class Main
             // else is it transitive
             else if (transitive)
             {
-                // do we need an ini anyway?
-                if (module.hasDefaultConfig() || module.hasLicense())
+                if (module.hasDefaultConfig())
                 {
                     buildIni = true;
-                }
-                else
-                {
                     StartLog.info("%-15s initialised transitively",name);
                 }
             }
@@ -429,7 +425,6 @@ public class Main
         {
             buildIni=true;
         }
-        
         
         // If we need an ini
         if (buildIni)
@@ -466,7 +461,6 @@ public class Main
                 }
             }
             
-            
             // File BufferedWriter
             BufferedWriter writer = null;
             String source = null;
@@ -495,12 +489,12 @@ public class Main
                 {
                     out.println();
                 }
-                out.println("#");
-                out.println("# Initialize module " + name);
-                out.println("#");
+                out.println("# --------------------------------------- ");
+                out.println("# Module: " + name);
                 Pattern p = Pattern.compile("--module=([^,]+)(,([^,]+))*");
 
                 out.println("--module=" + name);
+                
                 args.parse("--module=" + name,source);
                 modules.enable(name,Collections.singletonList(source));
                 for (String line : module.getDefaultConfig())

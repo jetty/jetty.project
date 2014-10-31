@@ -78,7 +78,15 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     public abstract void write(String requestEntry) throws IOException;
 
     /* ------------------------------------------------------------ */
-
+    
+    private void append(StringBuilder buf,String s)
+    {
+        if (s==null || s.length()==0)
+            buf.append('-');
+        else
+            buf.append(s);
+    }
+    
     /**
      * Writes the request and response information to the output stream.
      *
@@ -101,7 +109,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
             if (_logServer)
             {
-                buf.append(request.getServerName());
+                append(buf,request.getServerName());
                 buf.append(' ');
             }
 
@@ -117,10 +125,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
             buf.append(addr);
             buf.append(" - ");
             Authentication authentication = request.getAuthentication();
-            if (authentication instanceof Authentication.User)
-                buf.append(((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName());
-            else
-                buf.append("-");
+            append(buf,(authentication instanceof Authentication.User)?((Authentication.User)authentication).getUserIdentity().getUserPrincipal().getName():null);
 
             buf.append(" [");
             if (_logDateCache != null)
@@ -129,18 +134,21 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
                 buf.append(request.getTimeStamp());
 
             buf.append("] \"");
-            buf.append(request.getMethod());
+            append(buf,request.getMethod());
             buf.append(' ');
-            buf.append(request.getHttpURI().toString());
+            append(buf,request.getHttpURI().toString());
             buf.append(' ');
-            buf.append(request.getProtocol());
+            append(buf,request.getProtocol());
             buf.append("\" ");
 
-            if (status <= 0)
-                status = 404;
-            buf.append((char)('0' + ((status / 100) % 10)));
-            buf.append((char)('0' + ((status / 10) % 10)));
-            buf.append((char)('0' + (status % 10)));
+            if (status >=0)
+            {
+                buf.append((char)('0' + ((status / 100) % 10)));
+                buf.append((char)('0' + ((status / 10) % 10)));
+                buf.append((char)('0' + (status % 10)));
+            }
+            else
+                buf.append(status);
 
             if (written >= 0)
             {
