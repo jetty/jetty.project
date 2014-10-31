@@ -990,7 +990,12 @@ public class Request implements HttpServletRequest
     @Override
     public String getProtocol()
     {
-        return _metadata==null?null:_metadata.getVersion().toString();
+        if (_metadata==null)
+            return null;
+        HttpVersion version = _metadata.getVersion();
+        if (version==null)
+            return null;
+        return version.toString();
     }
 
     /* ------------------------------------------------------------ */
@@ -1636,21 +1641,29 @@ public class Request implements HttpServletRequest
                 uri.setPath(path);
             }
             else
+            {
+                setPathInfo("");
                 throw new BadMessageException(400,"Bad URI");
+            }
             info=path;
         }
         else if (!path.startsWith("/"))
         {
-            System.err.println(request);
             if (!"*".equals(path) && !HttpMethod.CONNECT.is(getMethod()))
+            {
+                setPathInfo(path);
                 throw new BadMessageException(400,"Bad URI");
+            }
             info=path;
         }
         else
             info = URIUtil.canonicalPath(path);// TODO should this be done prior to decoding???
         
         if (info == null)
+        {
+            setPathInfo(path);
             throw new BadMessageException(400,"Bad URI");
+        }
         
         setPathInfo(info);
     }

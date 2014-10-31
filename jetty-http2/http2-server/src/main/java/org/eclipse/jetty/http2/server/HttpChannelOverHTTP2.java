@@ -109,6 +109,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     @Override
     protected void commit(MetaData.Response info)
     {
+        super.commit(info);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("HTTP2 Commit Response #{}/{}:{}{} {} {}{}{}",

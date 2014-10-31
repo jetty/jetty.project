@@ -32,17 +32,19 @@ import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-
 /**
  * RequestLogHandler.
  * This handler can be used to wrap an individual context for context logging.
+ * To set a {@link RequestLog} instance for the entire {@link Server}, use 
+ * {@link Server#setRequestLog(RequestLog)} instead of this handler.
  *
- *
+ * @see Server#setRequestLog(RequestLog)
  * @org.apache.xbean.XBean
  */
 public class RequestLogHandler extends HandlerWrapper

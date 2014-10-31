@@ -113,6 +113,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         input.init(_state);
         _request = new Request(this, input);
         _response = new Response(this, new HttpOutput(this));
+        _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
     }
 
     public HttpChannelState getState()
@@ -231,7 +232,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _request.recycle();
         _response.recycle();
         _committedMetaData=null;
-        _requestLog=null;
+        _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
         _written=0;
     }
 
@@ -501,12 +502,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onRequest(MetaData.Request request)
     {
         _requests.incrementAndGet();
-
         _request.setTimeStamp(System.currentTimeMillis());
-        _request.setMetaData(request);
-
         if (_configuration.getSendDateHeader())
             _response.getHttpFields().put(_connector.getServer().getDateField());
+        
+        _request.setMetaData(request);
     }
 
     public void onContent(HttpInput.Content content)
