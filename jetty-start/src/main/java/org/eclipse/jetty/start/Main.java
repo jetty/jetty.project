@@ -47,7 +47,6 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
 import java.util.Set;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
@@ -491,35 +490,16 @@ public class Main
                 }
                 out.println("# --------------------------------------- ");
                 out.println("# Module: " + name);
-                Pattern p = Pattern.compile("--module=([^,]+)(,([^,]+))*");
 
                 out.println("--module=" + name);
                 
                 args.parse("--module=" + name,source);
                 modules.enable(name,Collections.singletonList(source));
+                
                 for (String line : module.getDefaultConfig())
                 {
                     out.println(line);
                     args.parse(line,source);
-                    Matcher m = p.matcher(line);
-                    if (m.matches())
-                    {
-                        for (int i = 1; i <= m.groupCount(); i++)
-                        {
-                            String n = m.group(i);
-                            if (n == null)
-                            {
-                                continue;
-                            }
-                            n = n.trim();
-                            if ((n.length() == 0) || n.startsWith(","))
-                            {
-                                continue;
-                            }
-
-                            modules.enable(n,Collections.singletonList(source));
-                        }
-                    }
                 }
             }
             finally
