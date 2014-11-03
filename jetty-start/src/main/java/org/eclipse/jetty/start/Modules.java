@@ -128,13 +128,13 @@ public class Modules implements Iterable<Module>
 
                 if (parent == null)
                 {
-                    if (parentName.contains("${"))
+                    if (Props.hasPropertyKey(parentName))
                     {
-                        StartLog.debug("module not found [%s]%n",parentName);
+                        StartLog.debug("Module property not expandable (yet) [%s]",parentName);
                     }
                     else
                     {
-                        StartLog.warn("module not found [%s]%n",parentName);
+                        StartLog.warn("Module not found [%s]",parentName);
                     }
                 }
                 else
@@ -149,7 +149,7 @@ public class Modules implements Iterable<Module>
                 Module optional = get(optionalParentName);
                 if (optional == null)
                 {
-                    StartLog.debug("optional module not found [%s]%n",optionalParentName);
+                    StartLog.debug("Optional module not found [%s]",optionalParentName);
                 }
                 else if (optional.isEnabled())
                 {
@@ -178,6 +178,11 @@ public class Modules implements Iterable<Module>
         }
     }
 
+    public void clearMissing()
+    {
+        missingModules.clear();
+    }
+    
     public Integer count()
     {
         return modules.size();
@@ -316,18 +321,23 @@ public class Modules implements Iterable<Module>
 
     private void enableModule(Module module, List<String> sources) throws IOException
     {
+        String via = "<transitive>";
+
         // Always add the sources
         if (sources != null)
+        {
             module.addSources(sources);
+            via = Main.join(sources, ", ");
+        }
         
         // If already enabled, nothing else to do
         if (module.isEnabled())
         {
-            StartLog.debug("Enabled  module: %s (via %s)",module.getName(),Main.join(sources,", "));
+            StartLog.debug("Enabled module: %s (via %s)",module.getName(),via);
             return;
         }
         
-        StartLog.debug("Enabling module: %s (via %s)",module.getName(),Main.join(sources,", "));
+        StartLog.debug("Enabling module: %s (via %s)",module.getName(),via);
         module.setEnabled(true);
         args.parseModule(module);
         module.expandProperties(args.getProperties());
@@ -346,12 +356,16 @@ public class Modules implements Iterable<Module>
                 if (FS.canReadFile(file))
                 {
                     parent = registerModule(file);
+                    parent.expandProperties(args.getProperties());
                     updateParentReferencesTo(parent);
                 }
                 else
                 {
-                    StartLog.debug("Missing module definition: [ Mod: %s | File: %s ]",name,file);
-                    missingModules.add(name);
+                    if (!Props.hasPropertyKey(name))
+                    {
+                        StartLog.debug("Missing module definition: [ Mod: %s | File: %s ]",name,file);
+                        missingModules.add(name);
+                    }
                 }
             }
             if (parent != null)
@@ -507,12 +521,22 @@ public class Modules implements Iterable<Module>
                     Module module = registerModule(file);
                     updateParentReferencesTo(module);
                     if (!expanded.equals(missingParent))
+                    {
                         expandedModules.add(missingParent);
+                    }
                 }
                 else
                 {
-                    StartLog.debug("Missing module definition: %s == %s",missingParent,expanded);
-                    missingModules.add(missingParent);
+                    if (Props.hasPropertyKey(expanded))
+                    {
+                        StartLog.debug("Module property not expandable (yet) [%s]",expanded);
+                        expandedModules.add(missingParent);
+                    }
+                    else
+                    {
+                        StartLog.debug("Missing module definition: %s expanded to %s",missingParent,expanded);
+                        missingModules.add(missingParent);
+                    }
                 }
             }
         }
@@ -650,4 +674,5 @@ public class Modules implements Iterable<Module>
         str.append("]");
         return str.toString();
     }
+
 }

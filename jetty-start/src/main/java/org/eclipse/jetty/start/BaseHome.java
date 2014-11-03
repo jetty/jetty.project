@@ -465,7 +465,7 @@ public class BaseHome
      */
     public String toShortForm(final String path)
     {
-        if (path == null)
+        if ((path == null) || (path.charAt(0) == '<'))
         {
             return path;
         }

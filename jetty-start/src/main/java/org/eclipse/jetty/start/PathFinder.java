@@ -87,7 +87,7 @@ public class PathFinder extends SimpleFileVisitor<Path>
     {
         if (dirMatcher.matches(dir))
         {
-            StartLog.debug("Following dir: " + dir);
+            StartLog.trace("Following dir: " + dir);
             if (includeDirsInResults && fileMatcher.matches(dir))
             {
                 addHit(dir);
@@ -96,7 +96,7 @@ public class PathFinder extends SimpleFileVisitor<Path>
         }
         else
         {
-            StartLog.debug("Skipping dir: " + dir);
+            StartLog.trace("Skipping dir: " + dir);
             return FileVisitResult.SKIP_SUBTREE;
         }
     }
@@ -143,7 +143,7 @@ public class PathFinder extends SimpleFileVisitor<Path>
         }
         else
         {
-            StartLog.debug("Ignoring file: " + file);
+            StartLog.trace("Ignoring file: " + file);
         }
         return FileVisitResult.CONTINUE;
     }

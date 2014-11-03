@@ -233,7 +233,7 @@ public final class Props implements Iterable<Prop>
             value = getString(property);
             if (value == null)
             {
-                StartLog.debug("Unable to expand: %s",property);
+                StartLog.trace("Unable to expand: %s",property);
                 expanded.append(mat.group(1));
             }
             else
@@ -314,6 +314,11 @@ public final class Props implements Iterable<Prop>
             return null;
         }
         return new Prop(key,value,ORIGIN_SYSPROP);
+    }
+
+    public static boolean hasPropertyKey(String name)
+    {
+        return Pattern.compile("(?<=[^$]|^)(\\$\\{[^}]*\\})").matcher(name).find();
     }
 
     @Override

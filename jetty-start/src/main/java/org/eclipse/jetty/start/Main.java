@@ -80,6 +80,7 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
  */
 public class Main
 {
+    private static final String EXITING_LICENSE_NOT_ACKNOWLEDGED = "Exiting: license not acknowledged!";
     private static final int EXIT_USAGE = 1;
 
     public static String join(Collection<?> objs, String delim)
@@ -171,26 +172,32 @@ public class Main
         }).start();
     }
 
-    private void initFile(FileArg arg)
+    private void initFile(StartArgs args, FileArg farg)
     {
         try
         {
-            Path file = baseHome.getBasePath(arg.location);
-
-            StartLog.debug("Module file %s %s",file.toAbsolutePath(),(FS.exists(file)?"[Exists!]":""));
+            Path file = baseHome.getBasePath(farg.location);
+            
+            StartLog.debug("[init-file] %s module specified file %s",file.toAbsolutePath(),(FS.exists(file)?"[Exists!]":""));
             if (FS.exists(file))
             {
                 // file already initialized / downloaded, skip it
                 return;
             }
 
-            if (arg.uri!=null)
+            if (farg.uri!=null)
             {
-                URL url = new URL(arg.uri);
+                URL url = new URL(farg.uri);
 
-                System.err.println("DOWNLOAD: " + url + " to " + arg.location);
+                StartLog.log("DOWNLOAD", "%s to %s", url, farg.location);
 
                 FS.ensureDirectoryExists(file.getParent());
+                
+                if (args.isTestingModeEnabled())
+                {
+                    StartLog.log("TESTING MODE", "Skipping download of " + url);
+                    return;
+                }
 
                 byte[] buf = new byte[8192];
                 try (InputStream in = url.openStream(); 
@@ -211,19 +218,25 @@ public class Main
                     }
                 }
             }
-            else if (arg.location.endsWith("/"))
+            else if (farg.location.endsWith("/"))
             {
-                System.err.println("MKDIR: " + baseHome.toShortForm(file));
+                StartLog.log("MKDIR",baseHome.toShortForm(file));
                 FS.ensureDirectoryExists(file);
             }
             else
             {
-                StartLog.warn("MISSING: required file "+ baseHome.toShortForm(file));
+                String shortRef = baseHome.toShortForm(file);
+                if (args.isTestingModeEnabled())
+                {
+                    StartLog.log("TESTING MODE","Skipping required file check on: %s",shortRef);
+                    return;
+                }
+                StartLog.warn("MISSING: Required file %s",shortRef);
             }
         }
         catch (Exception e)
         {
-            StartLog.warn("ERROR: processing %s%n%s",arg,e);
+            StartLog.warn("ERROR: processing %s%n%s",farg,e);
             StartLog.warn(e);
             usageExit(EXIT_USAGE);
         }
@@ -394,6 +407,15 @@ public class Main
             }
         }
 
+        if (!args.isApproveAllLicenses())
+        {
+            if (!module.acknowledgeLicense())
+            {
+                StartLog.warn(EXITING_LICENSE_NOT_ACKNOWLEDGED);
+                System.exit(1);
+            }
+        }
+        
         boolean buildIni=false;
         if (module.isEnabled())
         {
@@ -425,44 +447,13 @@ public class Main
             buildIni=true;
         }
         
+        String source = "<transitive>";
+
         // If we need an ini
         if (buildIni)
         {
-            if (module.hasLicense())
-            {
-                System.err.printf("%nModule %s:%n",module.getName());
-                System.err.printf(" + contains software not provided by the Eclipse Foundation!%n");
-                System.err.printf(" + contains software not covered by the Eclipse Public License!%n");
-                System.err.printf(" + has not been audited for compliance with its license%n");
-                System.err.printf("%n");
-                for (String l : module.getLicense())
-                {
-                    System.err.printf("    %s%n",l);
-                }
-
-                if (args.isApproveAllLicenses())
-                {
-                    System.err.println("All licenses approved via command line");
-                }
-                else 
-                {
-                    try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in)))
-                    {
-                        System.err.printf("%nProceed (y/N)? ");
-                        String line = input.readLine();
-
-                        if (line == null || line.length() == 0 || !line.toLowerCase().startsWith("y"))
-                        {
-                            System.err.printf("Exiting: license not acknowledged%n");
-                            System.exit(1);
-                        }
-                    }
-                }
-            }
-            
             // File BufferedWriter
             BufferedWriter writer = null;
-            String source = null;
             PrintWriter out = null;
             try
             {
@@ -494,12 +485,11 @@ public class Main
                 out.println("--module=" + name);
                 
                 args.parse("--module=" + name,source);
-                modules.enable(name,Collections.singletonList(source));
+                args.parseModule(module);
                 
                 for (String line : module.getDefaultConfig())
                 {
                     out.println(line);
-                    args.parse(line,source);
                 }
             }
             finally
@@ -511,20 +501,22 @@ public class Main
             }
         }
         
+        modules.enable(name,Collections.singletonList(source));
+        
         // Also list other places this module is enabled
-        for (String source : module.getSources())
+        for (String src : module.getSources())
         {
-            StartLog.debug("also enabled in: %s",source);
-            if (!short_start_ini.equals(source))
+            StartLog.debug("also enabled in: %s",src);
+            if (!short_start_ini.equals(src))
             {
-                StartLog.info("%-15s enabled in     %s",name,baseHome.toShortForm(source));
+                StartLog.info("%-15s enabled in     %s",name,baseHome.toShortForm(src));
             }
         }
 
         // Do downloads now
         for (String file : module.getFiles())
         {
-            initFile(new FileArg(file));
+            initFile(args, new FileArg(module,file));
         }
 
         // Process dependencies
@@ -701,17 +693,43 @@ public class Main
         {
             doStop(args);
         }
+        
+        boolean rebuildGraph = false;
 
         // Initialize start.ini
         for (String module : args.getAddToStartIni())
         {
             buildIni(args,module,true,true);
+            rebuildGraph = true;
         }
 
         // Initialize start.d
         for (String module : args.getAddToStartdIni())
         {
             buildIni(args,module,true,false);
+            rebuildGraph = true;
+        }
+        
+        if (rebuildGraph)
+        {
+            args.getAllModules().clearMissing();
+            args.getAllModules().buildGraph();
+        }
+        
+        // If in --create-files, check licenses
+        if(args.isDownload())
+        {
+            if (!args.isApproveAllLicenses())
+            {
+                for (Module module : args.getAllModules().resolveEnabled())
+                {
+                    if (!module.acknowledgeLicense())
+                    {
+                        StartLog.warn(EXITING_LICENSE_NOT_ACKNOWLEDGED);
+                        System.exit(1);
+                    }
+                }
+            }
         }
 
         // Check ini files for download possibilities
@@ -720,7 +738,7 @@ public class Main
             Path file = baseHome.getBasePath(arg.location);
             if (!FS.exists(file) && args.isDownload())
             {
-                initFile(arg);
+                initFile(args, arg);
             }
 
             if (!FS.exists(file))
@@ -728,7 +746,7 @@ public class Main
                 boolean isDir = arg.location.endsWith("/");
                 if (isDir)
                 {
-                    System.err.println("MKDIR: " + baseHome.toShortForm(file));
+                    StartLog.log("MKDIR", baseHome.toShortForm(file));
                     FS.ensureDirectoryExists(file);
                     /* Startup should not fail to run on missing directories.
                      * See Bug #427204
@@ -737,6 +755,13 @@ public class Main
                 }
                 else
                 {
+                    String shortRef = baseHome.toShortForm(file);
+                    if (args.isTestingModeEnabled())
+                    {
+                        StartLog.log("TESTING MODE","Skipping required file check on: %s",shortRef);
+                        return;
+                    }
+
                     StartLog.warn("Missing Required File: %s",baseHome.toShortForm(file));
                     args.setRun(false);
                     if (arg.uri != null)

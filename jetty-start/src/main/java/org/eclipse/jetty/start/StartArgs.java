@@ -123,15 +123,16 @@ public class StartArgs
 
     private boolean exec = false;
     private boolean approveAllLicenses = false;
+    private boolean testingMode = false;
 
     public StartArgs()
     {
         classpath = new Classpath();
     }
 
-    private void addFile(String uriLocation)
+    private void addFile(Module module, String uriLocation)
     {
-        FileArg arg = new FileArg(uriLocation);
+        FileArg arg = new FileArg(module, uriLocation);
         if (!files.contains(arg))
         {
             files.add(arg);
@@ -376,6 +377,7 @@ public class StartArgs
      */
     public void expandLibs(BaseHome baseHome) throws IOException
     {
+        StartLog.debug("Expanding Libs");
         for (String rawlibref : rawLibs)
         {
             StartLog.debug("rawlibref = " + rawlibref);
@@ -401,6 +403,7 @@ public class StartArgs
      */
     public void expandModules(BaseHome baseHome, List<Module> activeModules) throws IOException
     {
+        StartLog.debug("Expanding Modules");
         for (Module module : activeModules)
         {
             // Find and Expand Libraries
@@ -434,7 +437,7 @@ public class StartArgs
             for (String file : module.getFiles())
             {
                 StartLog.debug("Adding module specified file: %s",file);
-                addFile(file);
+                addFile(module,file);
             }
         }
     }
@@ -638,6 +641,11 @@ public class StartArgs
     {
         return stopCommand;
     }
+    
+    public boolean isTestingModeEnabled()
+    {
+        return testingMode;
+    }
 
     public boolean isVersion()
     {
@@ -702,6 +710,13 @@ public class StartArgs
             // valid, but handled in StartLog instead
             return;
         }
+        
+        if ("--testing-mode".equals(arg))
+        {
+            System.setProperty("org.eclipse.jetty.start.testing","true");
+            testingMode = true;
+            return;
+        }
 
         if (arg.startsWith("--include-jetty-dir="))
         {
@@ -718,7 +733,7 @@ public class StartArgs
 
         if (arg.startsWith("--download="))
         {
-            addFile(Props.getValue(arg));
+            addFile(null,Props.getValue(arg));
             run = false;
             download = true;
             return;
@@ -793,7 +808,8 @@ public class StartArgs
         // jetty.base build-out : add to ${jetty.base}/start.d/
         if (arg.startsWith("--add-to-startd="))
         {
-            addToStartdIni.addAll(Props.getValues(arg));
+            List<String> moduleNames = Props.getValues(arg);
+            addToStartdIni.addAll(moduleNames);
             run = false;
             download = true;
             return;
@@ -802,7 +818,8 @@ public class StartArgs
         // jetty.base build-out : add to ${jetty.base}/start.ini
         if (arg.startsWith("--add-to-start="))
         {
-            addToStartIni.addAll(Props.getValues(arg));
+            List<String> moduleNames = Props.getValues(arg);
+            addToStartIni.addAll(moduleNames);
             run = false;
             download = true;
             return;
@@ -811,17 +828,8 @@ public class StartArgs
         // Enable a module
         if (arg.startsWith("--module="))
         {
-            for (String moduleName : Props.getValues(arg))
-            {
-                modules.add(moduleName);
-                List<String> list = sources.get(moduleName);
-                if (list == null)
-                {
-                    list = new ArrayList<String>();
-                    sources.put(moduleName,list);
-                }
-                list.add(source);
-            }
+            List<String> moduleNames = Props.getValues(arg);
+            enableModules(source,moduleNames);
             return;
         }
 
@@ -919,6 +927,21 @@ public class StartArgs
 
         // Anything else is unrecognized
         throw new UsageException(ERR_BAD_ARG,"Unrecognized argument: \"%s\" in %s",arg,source);
+    }
+
+    private void enableModules(String source, List<String> moduleNames)
+    {
+        for (String moduleName : moduleNames)
+        {
+            modules.add(moduleName);
+            List<String> list = sources.get(moduleName);
+            if (list == null)
+            {
+                list = new ArrayList<String>();
+                sources.put(moduleName,list);
+            }
+            list.add(source);
+        }
     }
 
     public void parseModule(Module module)
