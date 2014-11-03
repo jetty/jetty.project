@@ -26,6 +26,7 @@ import java.io.InterruptedIOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
@@ -884,7 +885,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void testBigUploadWithOutputFromInputStream() throws Exception
+    public void testBigUploadWithOutputStreamFromInputStream() throws Exception
     {
         start(new AbstractHandler()
         {
@@ -931,6 +932,130 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         }
 
         Assert.assertTrue(latch.await(30, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testUploadWithOutputStreamFailureToConnect() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final byte[] data = new byte[512];
+        final CountDownLatch latch = new CountDownLatch(1);
+        OutputStreamContentProvider content = new OutputStreamContentProvider();
+        client.newRequest("0.0.0.1", connector.getLocalPort())
+                .scheme(scheme)
+                .content(content)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isFailed())
+                            latch.countDown();
+                    }
+                });
+
+        try (OutputStream output = content.getOutputStream())
+        {
+            output.write(data);
+            Assert.fail();
+        }
+        catch (IOException x)
+        {
+            // Expected
+        }
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testUploadWithDeferredContentProviderFailsMultipleOffers() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final CountDownLatch failLatch = new CountDownLatch(2);
+        final Callback.Adapter callback = new Callback.Adapter()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                failLatch.countDown();
+            }
+        };
+
+        final CountDownLatch completeLatch = new CountDownLatch(1);
+        final DeferredContentProvider content = new DeferredContentProvider();
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .content(content)
+                .onRequestBegin(new Request.BeginListener()
+                {
+                    @Override
+                    public void onBegin(Request request)
+                    {
+                        content.offer(ByteBuffer.wrap(new byte[256]), callback);
+                        content.offer(ByteBuffer.wrap(new byte[256]), callback);
+                        request.abort(new Exception("explicitly_thrown_by_test"));
+                    }
+                })
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isFailed())
+                            completeLatch.countDown();
+                    }
+                });
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(failLatch.await(5, TimeUnit.SECONDS));
+
+        // Make sure that adding more content results in the callback to be failed.
+        final CountDownLatch latch = new CountDownLatch(1);
+        content.offer(ByteBuffer.wrap(new byte[128]), new Callback.Adapter()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                latch.countDown();
+            }
+        });
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testUploadWithConnectFailureClosesStream() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        final CountDownLatch closeLatch = new CountDownLatch(1);
+        InputStream stream = new ByteArrayInputStream("test".getBytes(StandardCharsets.UTF_8))
+        {
+            @Override
+            public void close() throws IOException
+            {
+                super.close();
+                closeLatch.countDown();
+            }
+        };
+        InputStreamContentProvider content = new InputStreamContentProvider(stream);
+
+        final CountDownLatch completeLatch = new CountDownLatch(1);
+        client.newRequest("0.0.0.1", connector.getLocalPort())
+                .scheme(scheme)
+                .content(content)
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertTrue(result.isFailed());
+                        completeLatch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
     }
 
     @Test

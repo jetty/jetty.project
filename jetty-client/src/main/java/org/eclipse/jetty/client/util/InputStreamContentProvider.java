@@ -27,6 +27,7 @@ import java.util.NoSuchElementException;
 
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -50,10 +51,11 @@ import org.eclipse.jetty.util.log.Logger;
  * consumed (or when an exception is thrown while reading it), unless otherwise specified
  * to the {@link #InputStreamContentProvider(java.io.InputStream, int, boolean) constructor}.
  */
-public class InputStreamContentProvider implements ContentProvider
+public class InputStreamContentProvider implements ContentProvider, Callback, Closeable
 {
     private static final Logger LOG = Log.getLogger(InputStreamContentProvider.class);
 
+    private final InputStreamContentProviderIterator iterator = new InputStreamContentProviderIterator();
     private final InputStream stream;
     private final int bufferSize;
     private final boolean autoClose;
@@ -115,7 +117,35 @@ public class InputStreamContentProvider implements ContentProvider
     @Override
     public Iterator<ByteBuffer> iterator()
     {
-        return new InputStreamIterator();
+        return iterator;
+    }
+
+    @Override
+    public void close()
+    {
+        if (autoClose)
+        {
+            try
+            {
+                stream.close();
+            }
+            catch (IOException x)
+            {
+                LOG.ignore(x);
+            }
+        }
+    }
+
+    @Override
+    public void succeeded()
+    {
+    }
+
+    @Override
+    public void failed(Throwable failure)
+    {
+        // TODO: forward the failure to the iterator.
+        close();
     }
 
     /**
@@ -133,7 +163,7 @@ public class InputStreamContentProvider implements ContentProvider
      * Therefore we need to make sure that {@link #hasNext()} does not perform any side effect (so that
      * it can be called multiple times) until {@link #next()} is called.
      */
-    private class InputStreamIterator implements Iterator<ByteBuffer>, Closeable
+    private class InputStreamContentProviderIterator implements Iterator<ByteBuffer>, Closeable
     {
         private Throwable failure;
         private ByteBuffer buffer;
@@ -227,17 +257,7 @@ public class InputStreamContentProvider implements ContentProvider
         @Override
         public void close()
         {
-            if (autoClose)
-            {
-                try
-                {
-                    stream.close();
-                }
-                catch (IOException x)
-                {
-                    LOG.ignore(x);
-                }
-            }
+            InputStreamContentProvider.this.close();
         }
     }
 }

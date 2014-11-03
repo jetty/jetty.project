@@ -18,12 +18,17 @@
 
 package org.eclipse.jetty.client.util;
 
+import java.io.Closeable;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.nio.ByteBuffer;
 import java.util.Iterator;
 
 import org.eclipse.jetty.client.AsyncContentProvider;
+import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
+import org.eclipse.jetty.util.Callback;
 
 /**
  * A {@link ContentProvider} that provides content asynchronously through an {@link OutputStream}
@@ -68,7 +73,7 @@ import org.eclipse.jetty.client.AsyncContentProvider;
  * }
  * </pre>
  */
-public class OutputStreamContentProvider implements AsyncContentProvider
+public class OutputStreamContentProvider implements AsyncContentProvider, Callback, Closeable
 {
     private final DeferredContentProvider deferred = new DeferredContentProvider();
     private final OutputStream output = new DeferredOutputStream();
@@ -101,9 +106,22 @@ public class OutputStreamContentProvider implements AsyncContentProvider
         deferred.offer(buffer);
     }
 
-    protected void close()
+    @Override
+    public void close()
     {
         deferred.close();
+    }
+
+    @Override
+    public void succeeded()
+    {
+        deferred.succeeded();
+    }
+
+    @Override
+    public void failed(Throwable failure)
+    {
+        deferred.failed(failure);
     }
 
     private class DeferredOutputStream extends OutputStream
