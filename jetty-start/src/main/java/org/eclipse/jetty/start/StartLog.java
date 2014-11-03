@@ -50,6 +50,14 @@ public class StartLog
             out.printf(format + "%n",args);
         }
     }
+    
+    public static void trace(String format, Object... args)
+    {
+        if (INSTANCE.trace)
+        {
+            out.printf("TRACE: " + format + "%n",args);
+        }
+    }
 
     public static void debug(Throwable t)
     {
@@ -63,15 +71,25 @@ public class StartLog
     {
         return INSTANCE;
     }
+    
+    public static void log(String type, String msg)
+    {
+        err.println(type + ": " + msg);
+    }
+    
+    public static void log(String type, String format, Object... args)
+    {
+        err.printf(type + ": " + format + "%n",args);
+    }
 
     public static void info(String format, Object... args)
     {
-        err.printf("INFO: " + format + "%n",args);
+        log("INFO",format,args);
     }
 
     public static void warn(String format, Object... args)
     {
-        err.printf("WARNING: " + format + "%n",args);
+        log("WARNING",format,args);
     }
 
     public static void warn(Throwable t)
@@ -84,6 +102,7 @@ public class StartLog
         return INSTANCE.debug;
     }
 
+    private boolean trace = false;
     private boolean debug = false;
 
     public void initialize(BaseHome baseHome, CommandLineConfigSource cmdLineSource) throws IOException

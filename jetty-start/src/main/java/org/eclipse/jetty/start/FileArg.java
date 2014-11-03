@@ -20,11 +20,23 @@ package org.eclipse.jetty.start;
 
 public class FileArg
 {
-    public String uri;
-    public String location;
-
+    public final String moduleName;
+    public final String uri;
+    public final String location;
+    
+    public FileArg(final Module module, final String uriLocation)
+    {
+        this(module == null?(String)null:module.getName(),uriLocation);
+    }
+    
     public FileArg(final String uriLocation)
     {
+        this((String)null,uriLocation);
+    }
+    
+    private FileArg(final String moduleName, final String uriLocation)
+    {
+        this.moduleName = moduleName;
         String parts[] = uriLocation.split("\\|",3);
         if (parts.length > 2)
         {
@@ -49,7 +61,7 @@ public class FileArg
             this.location = uriLocation;
         }
     }
-
+    
     @Override
     public boolean equals(Object obj)
     {

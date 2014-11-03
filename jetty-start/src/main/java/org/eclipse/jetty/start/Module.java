@@ -21,6 +21,7 @@ package org.eclipse.jetty.start;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -111,6 +112,7 @@ public class Module
     private boolean enabled = false;
     /** List of sources that enabled this module */
     private final Set<String> sources = new HashSet<>();
+    private boolean licenseAck = false;
 
     public Module(BaseHome basehome, Path file) throws FileNotFoundException, IOException
     {
@@ -250,7 +252,7 @@ public class Module
     {
         return parentNames;
     }
-    
+
     public Set<String> getSources()
     {
         return Collections.unmodifiableSet(sources);
@@ -268,14 +270,57 @@ public class Module
 
     public boolean hasLicense()
     {
-        return license!=null && license.size()>0;
+        return license != null && license.size() > 0;
     }
-    
+
+    public boolean acknowledgeLicense() throws IOException
+    {
+        if (!hasLicense() || licenseAck)
+        {
+            return true;
+        }
+
+        System.err.printf("%nModule %s:%n",getName());
+        System.err.printf(" + contains software not provided by the Eclipse Foundation!%n");
+        System.err.printf(" + contains software not covered by the Eclipse Public License!%n");
+        System.err.printf(" + has not been audited for compliance with its license%n");
+        System.err.printf("%n");
+        for (String l : getLicense())
+        {
+            System.err.printf("    %s%n",l);
+        }
+
+        String propBasedAckName = "org.eclipse.jetty.start.ack.license." + getName();
+        String propBasedAckValue = System.getProperty(propBasedAckName);
+        if (propBasedAckValue != null)
+        {
+            StartLog.log("TESTING MODE", "Programmatic ACK - %s=%s",propBasedAckName,propBasedAckValue);
+            licenseAck = Boolean.parseBoolean(propBasedAckValue);
+        }
+        else
+        {
+            if (Boolean.getBoolean("org.eclipse.jetty.start.testing"))
+            {
+                throw new RuntimeException("Test Configuration Missing - Pre-specify answer to (" + propBasedAckName + ") in test case");
+            }
+
+            try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in)))
+            {
+                System.err.printf("%nProceed (y/N)? ");
+                String line = input.readLine();
+
+                licenseAck = !(line == null || line.length() == 0 || !line.toLowerCase().startsWith("y"));
+            }
+        }
+
+        return licenseAck;
+    }
+
     public List<String> getLicense()
     {
         return license;
     }
-    
+
     @Override
     public int hashCode()
     {

@@ -1,4 +1,4 @@
-jetty-9.3.0.M1 - 31 October 2014
+jetty-9.3.0.M1 - 03 November 2014
  + 376365 "jetty.sh start" returns 0 on failure
  + 396569 'bin/jetty.sh stop' reports 'OK' even when jetty was not running
  + 396572 Starting jetty from cygwin is not working properly
@@ -44,6 +44,7 @@ jetty-9.3.0.M1 - 31 October 2014
  + 446559 Avoid spin consuming extra data
  + 446563 Null HttpChannel.getCurrentHttpChannel() in
    ServletHandler.doFilter().
+ + 446564 Refactored RequestLog Mechanism
  + 446672 NPN Specification issue in the case no protocols are selected.
  + 446923 SharedBlockingCallback does not handle connector max idle time of
    Long.MAX_VALUE; BlockerTimeoutException not serializable
@@ -67,8 +68,11 @@ jetty-9.3.0.M1 - 31 October 2014
  + 448841 Clarified selectors==0 javadoc 448840 Clarified ServerConnector
    javadoc 448839 Fixed javadoc typo in ServerConnector
  + 449001 Remove start.d directory from JETTY_HOME
+ + 449003 WARNING: Cannot enable requested module [protonego-impl]: not a valid
+   module name
  + 449038 WebSocketUpgradeFilter must support async.
  + 449175 Removed extra space in NCSA log
+ + 449372 Make jvmArgs of jetty:run-forked configurable from command line
 
 jetty-9.3.0.M0 - 24 September 2014
  + 437395 Start / Properties in template sections should be default applied for

@@ -22,7 +22,9 @@ import java.io.Closeable;
 import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.Iterator;
+import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
 import java.util.Queue;
@@ -30,6 +32,9 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.AsyncContentProvider;
+import org.eclipse.jetty.client.api.ContentProvider;
+import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -80,14 +85,14 @@ import org.eclipse.jetty.util.Callback;
  * }
  * </pre>
  */
-public class DeferredContentProvider implements AsyncContentProvider, Closeable
+public class DeferredContentProvider implements AsyncContentProvider, Callback, Closeable
 {
     private static final AsyncChunk CLOSE = new AsyncChunk(BufferUtil.EMPTY_BUFFER, Callback.Adapter.INSTANCE);
 
     private final Object lock = this;
     private final Queue<AsyncChunk> chunks = new ArrayQueue<>(4, 64, lock);
     private final AtomicReference<Listener> listener = new AtomicReference<>();
-    private final Iterator<ByteBuffer> iterator = new DeferredContentProviderIterator();
+    private final DeferredContentProviderIterator iterator = new DeferredContentProviderIterator();
     private final AtomicBoolean closed = new AtomicBoolean();
     private int size;
     private Throwable failure;
@@ -136,16 +141,31 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
 
     private boolean offer(AsyncChunk chunk)
     {
-        boolean result;
+        Throwable failure;
+        boolean result = false;
         synchronized (lock)
         {
-            result = chunks.offer(chunk);
-            if (result && chunk != CLOSE)
-                ++size;
+            failure = this.failure;
+            if (failure == null)
+            {
+                result = chunks.offer(chunk);
+                if (result && chunk != CLOSE)
+                    ++size;
+            }
         }
-        if (result)
+        if (failure != null)
+            chunk.callback.failed(failure);
+        else if (result)
             notifyListener();
         return result;
+    }
+
+    private void clear()
+    {
+        synchronized (lock)
+        {
+            chunks.clear();
+        }
     }
 
     public void flush() throws IOException
@@ -178,6 +198,17 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
     {
         if (closed.compareAndSet(false, true))
             offer(CLOSE);
+    }
+
+    @Override
+    public void succeeded()
+    {
+    }
+
+    @Override
+    public void failed(Throwable failure)
+    {
+        iterator.failed(failure);
     }
 
     private void notifyListener()
@@ -244,14 +275,17 @@ public class DeferredContentProvider implements AsyncContentProvider, Closeable
         @Override
         public void failed(Throwable x)
         {
-            AsyncChunk chunk;
+            List<AsyncChunk> chunks = new ArrayList<>();
             synchronized (lock)
             {
-                chunk = current;
                 failure = x;
+                // Transfer all chunks to fail them all.
+                chunks.addAll(DeferredContentProvider.this.chunks);
+                clear();
+                current = null;
                 lock.notify();
             }
-            if (chunk != null)
+            for (AsyncChunk chunk : chunks)
                 chunk.callback.failed(x);
         }
     }
