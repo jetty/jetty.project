@@ -22,28 +22,14 @@ import java.util.ArrayList;
 import java.util.Deque;
 import java.util.List;
 import java.util.concurrent.ConcurrentLinkedDeque;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.AttributesMap;
 
 public class HttpConversation extends AttributesMap
 {
-    private static final AtomicLong ids = new AtomicLong();
-
     private final Deque<HttpExchange> exchanges = new ConcurrentLinkedDeque<>();
-    private final long id;
     private volatile List<Response.ResponseListener> listeners;
-
-    protected HttpConversation()
-    {
-        this.id = ids.incrementAndGet();
-    }
-
-    public long getID()
-    {
-        return id;
-    }
 
     public Deque<HttpExchange> getExchanges()
     {
@@ -158,6 +144,6 @@ public class HttpConversation extends AttributesMap
     @Override
     public String toString()
     {
-        return String.format("%s[%d]", HttpConversation.class.getSimpleName(), id);
+        return String.format("%s[%x]", HttpConversation.class.getSimpleName(), hashCode());
     }
 }
