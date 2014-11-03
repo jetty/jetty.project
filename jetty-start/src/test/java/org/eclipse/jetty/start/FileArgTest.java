@@ -85,7 +85,7 @@ public class FileArgTest
     @Test
     public void testFileArg()
     {
-        FileArg arg = new FileArg(rawFileRef);
+        FileArg arg = new FileArg(null,rawFileRef);
         if (expectedUri == null)
         {
             assertThat("URI",arg.uri,nullValue());
