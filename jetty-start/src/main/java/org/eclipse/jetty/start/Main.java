@@ -289,10 +289,9 @@ public class Main
         return "";
     }
 
-    public void invokeMain(StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, IOException
+    public void invokeMain(ClassLoader classloader, StartArgs args) throws IllegalAccessException, InvocationTargetException, NoSuchMethodException, ClassNotFoundException, IOException
     {
         Class<?> invoked_class = null;
-        ClassLoader classloader = args.getClasspath().getClassLoader();
         String mainclass = args.getMainClassname();
 
         try
@@ -317,8 +316,7 @@ public class Main
         { argArray.getClass() };
 
         Method main = invoked_class.getDeclaredMethod("main",method_param_types);
-        Object[] method_params = new Object[]
-        { argArray };
+        Object[] method_params = new Object[] { argArray };
         StartLog.endStartLog();
         main.invoke(null,method_params);
     }
@@ -810,14 +808,13 @@ public class Main
             System.err.println("WARNING: System properties and/or JVM args set.  Consider using --dry-run or --exec");
         }
 
-        // Set current context class loader to what is selected.
         ClassLoader cl = classpath.getClassLoader();
         Thread.currentThread().setContextClassLoader(cl);
 
         // Invoke the Main Class
         try
         {
-            invokeMain(args);
+            invokeMain(cl, args);
         }
         catch (Exception e)
         {
