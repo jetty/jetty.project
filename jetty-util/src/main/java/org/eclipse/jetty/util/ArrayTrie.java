@@ -99,6 +99,7 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         this(128);
     }
     
+    @SuppressWarnings("unchecked")
     public ArrayTrie(int capacityInNodes)
     {
         super(true);
@@ -151,8 +152,14 @@ public class ArrayTrie<V> extends AbstractTrie<V>
                 }
             }
         }
+        
+        if (t>=_key.length)
+        {
+            _rows=(char)_key.length;
+            return false;
+        }
+        
         _key[t]=v==null?null:s;
-        V old=(V)_value[t];
         _value[t] = v;
         return true;
     }
@@ -440,6 +447,6 @@ public class ArrayTrie<V> extends AbstractTrie<V>
     @Override
     public boolean isFull()
     {
-        return _rows+1==_key.length;
+        return _rows+1>=_key.length;
     }
 }
