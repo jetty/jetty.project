@@ -204,8 +204,13 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             _channel.getResponse().setContentLength(-1);
             String etag=fields.get(HttpHeader.ETAG);
             if (etag!=null)
-                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+GzipHandler.ETAG_GZIP+ '"');
-
+            {
+                int end = etag.length()-1;
+                etag=(etag.charAt(end)=='"')?etag.substring(0,end)+GzipHandler.ETAG_GZIP+'"':etag+GzipHandler.ETAG_GZIP;
+                fields.put(HttpHeader.ETAG,etag);
+            }
+            
+            
             LOG.debug("{} compressing {}",this,_deflater);
             _state.set(GZState.COMPRESSING);
             
