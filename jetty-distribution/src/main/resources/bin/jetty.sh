@@ -284,7 +284,7 @@ CYGWIN*) JETTY_STATE="`cygpath -w $JETTY_STATE`";;
 esac
 
 
-JETTY_ARGS+=("jetty.state=$JETTY_STATE")
+JETTY_ARGS=("$JETTY_ARGS" "jetty.state=$JETTY_STATE")
 rm -f $JETTY_STATE
 
 ##################################################
@@ -307,14 +307,14 @@ then
       do
         if [ -r "$XMLFILE" ] && [ -f "$XMLFILE" ] 
         then
-          JETTY_ARGS+=("$XMLFILE")
+          JETTY_ARGS=("$JETTY_ARGS" "$XMLFILE")
         else
           echo "** WARNING: Cannot read '$XMLFILE' specified in '$JETTY_CONF'" 
         fi
       done
     else
       # assume it's a command line parameter (let start.jar deal with its validity)
-      JETTY_ARGS+=("$CONF")
+      JETTY_ARGS=("$JETTY_ARGS" "$CONF")
     fi
   done < "$JETTY_CONF"
 fi
@@ -351,7 +351,7 @@ then
   CYGWIN*) JETTY_LOGS="`cygpath -w $JETTY_LOGS`";;
   esac
 
-  JAVA_OPTIONS+=("-Djetty.logs=$JETTY_LOGS")
+  JAVA_OPTIONS=("$JAVA_OPTIONS" "-Djetty.logs=$JETTY_LOGS")
 fi
 
 #####################################################
@@ -375,7 +375,7 @@ TMPDIR="`cygpath -w $TMPDIR`"
 ;;
 esac
 
-JAVA_OPTIONS+=("-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
+JAVA_OPTIONS=("$JAVA_OPTIONS" "-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
 
 #####################################################
 # This is how the Jetty server will be started
