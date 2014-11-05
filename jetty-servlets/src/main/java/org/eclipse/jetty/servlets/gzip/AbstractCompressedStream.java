@@ -255,7 +255,12 @@ public abstract class AbstractCompressedStream extends ServletOutputStream
 
                         String etag=_wrapper.getETag();
                         if (etag!=null)
-                            setHeader("ETag",etag.substring(0,etag.length()-1)+"--"+_encoding+'"');
+                        {
+                            if (etag.charAt(0)=='"')
+                                setHeader("ETag",etag.substring(0,etag.length()-1)+"--"+_encoding+'"');
+                            else
+                                setHeader("ETag",etag+"--"+_encoding);
+                        }
                         return;
                     }
                 }
