@@ -42,7 +42,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         startServer(connector);
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testIdleTimeoutAfterSuspend() throws Exception
     {
         SuspendHandler _handler = new SuspendHandler();
@@ -57,7 +57,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("RESUMED"));
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testIdleTimeoutAfterTimeout() throws Exception
     {
         SuspendHandler _handler = new SuspendHandler();
@@ -71,7 +71,7 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
         assertTrue(process(null).toUpperCase(Locale.ENGLISH).contains("TIMEOUT"));
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testIdleTimeoutAfterComplete() throws Exception
     {
         SuspendHandler _handler = new SuspendHandler();
