@@ -25,7 +25,8 @@ import java.util.Set;
 
 
 /* ------------------------------------------------------------ */
-/** A Ternary Trie String lookup data structure.
+/** 
+ * <p>A Ternary Trie String lookup data structure.</p>
  * This Trie is of a fixed size and cannot grow (which can be a good thing with regards to DOS when used as a cache).
  * <p>
  * The Trie is stored in 3 arrays:<dl>
@@ -36,10 +37,21 @@ import java.util.Set;
  * indicates that the _tree row is a complete key rather than an intermediate character of a longer key.</dd>
  * <dt>V[] _value</dt><dd>An array of values corresponding to the _key array</dd>
  * </dl>
+ * </p>
  * <p>The lookup of a value will iterate through the _tree array matching characters. If the equal tree branch is followed,
  * then the _key array is looked up to see if this is a complete match.  If a match is found then the _value array is looked up
  * to return the matching value.
  * </p>
+ * <p>
+ * This Trie may be instantiated either as case sensitive or insensitive.
+ * </p>
+ * <p>This Trie is not Threadsafe and contains no mutual exclusion 
+ * or deliberate memory barriers.  It is intended for an ArrayTrie to be
+ * built by a single thread and then used concurrently by multiple threads
+ * and not mutated during that access.  If concurrent mutations of the
+ * Trie is required external locks need to be applied.
+ * </p>
+ * 
  * @param <V>
  */
 public class ArrayTernaryTrie<V> extends AbstractTrie<V>
@@ -78,27 +90,53 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
      */
     private char _rows;
 
+    /* ------------------------------------------------------------ */
+    /** Create a case insensitive Trie of default capacity.
+     */
     public ArrayTernaryTrie()
     {
         this(128);
     }
     
+    /* ------------------------------------------------------------ */
+    /** Create a Trie of default capacity
+     * @param insensitive true if the Trie is insensitive to the case of the key.
+     */
     public ArrayTernaryTrie(boolean insensitive)
     {
         this(insensitive,128);
     }
 
-    public ArrayTernaryTrie(int capacityInNodes)
+    /* ------------------------------------------------------------ */
+    /** Create a case insensitive Trie
+     * @param capacity  The capacity of the Trie, which is in the worst case
+     * is the total number of characters of all keys stored in the Trie.
+     * The capacity needed is dependent of the shared prefixes of the keys.
+     * For example, a capacity of 6 nodes is required to store keys "foo" 
+     * and "bar", but a capacity of only 4 is required to
+     * store "bar" and "bat".
+     */
+    public ArrayTernaryTrie(int capacity)
     {
-        this(true,capacityInNodes);
+        this(true,capacity);
     }
     
-    public ArrayTernaryTrie(boolean insensitive, int capacityInNodes)
+    /* ------------------------------------------------------------ */
+    /** Create a Trie
+     * @param insensitive true if the Trie is insensitive to the case of the key.
+     * @param capacity The capacity of the Trie, which is in the worst case
+     * is the total number of characters of all keys stored in the Trie.
+     * The capacity needed is dependent of the shared prefixes of the keys.
+     * For example, a capacity of 6 nodes is required to store keys "foo" 
+     * and "bar", but a capacity of only 4 is required to
+     * store "bar" and "bat".
+     */
+    public ArrayTernaryTrie(boolean insensitive, int capacity)
     {
         super(insensitive);
-        _value=(V[])new Object[capacityInNodes];
-        _tree=new char[capacityInNodes*ROW_SIZE];
-        _key=new String[capacityInNodes];
+        _value=(V[])new Object[capacity];
+        _tree=new char[capacity*ROW_SIZE];
+        _key=new String[capacity];
     }
 
     /* ------------------------------------------------------------ */
