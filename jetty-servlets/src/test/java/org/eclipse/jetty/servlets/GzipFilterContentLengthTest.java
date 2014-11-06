@@ -38,13 +38,12 @@ import org.eclipse.jetty.servlets.gzip.TestServletStreamLengthTypeWriteWithFlush
 import org.eclipse.jetty.servlets.gzip.TestServletStreamTypeLengthWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeLengthStreamWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeStreamLengthWrite;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -57,20 +56,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class GzipFilterContentLengthTest
 {
-
     @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
-
-        @Override
-        public void starting(Description description)
-        {
-            super.starting(description);
-            System.err.printf("Running %s.%s()%n",
-                    description.getClassName(),
-                    description.getMethodName());
-        }
-    };
+    public final TestTracker tracker = new TestTracker();
     
     /**
      * These are the junit parameters for running this test.
