@@ -68,6 +68,7 @@ public class GzipFilterDefaultTest
         this.compressionType = compressionType;
     }
 
+    @SuppressWarnings("serial")
     public static class HttpStatusServlet extends HttpServlet
     {
         private int _status = 204;
@@ -86,6 +87,7 @@ public class GzipFilterDefaultTest
 
     }
 
+    @SuppressWarnings("serial")
     public static class HttpErrorServlet extends HttpServlet
     {
         private int _status = 400;
@@ -104,6 +106,7 @@ public class GzipFilterDefaultTest
     }
     
 
+    @SuppressWarnings("serial")
     public static class HttpContentTypeWithEncoding extends HttpServlet
     {
         public static final String COMPRESSED_CONTENT = "<html><head></head><body><h1>COMPRESSABLE CONTENT</h1>"+
@@ -154,6 +157,7 @@ public class GzipFilterDefaultTest
         }
     }
     
+    @SuppressWarnings("serial")
     public static class GetServlet extends DefaultServlet
     {
         public GetServlet()
@@ -191,6 +195,7 @@ public class GzipFilterDefaultTest
         try
         {
             tester.start();
+            @SuppressWarnings("unused")
             HttpTester.Response http = tester.assertIsResponseNotGzipCompressed("GET","empty.txt",0,200);
         }
         finally
@@ -278,6 +283,7 @@ public class GzipFilterDefaultTest
         GzipTester tester = new GzipTester(testingdir, compressionType);
         tester.setGzipFilterClass(testFilter);
         tester.copyTestServerFile("test.svg");
+        @SuppressWarnings("unused")
         FilterHolder holder = tester.setContentServlet(org.eclipse.jetty.servlet.DefaultServlet.class);
         try
         {
@@ -632,6 +638,7 @@ public class GzipFilterDefaultTest
         GzipTester tester = new GzipTester(testingdir,compressionType);
         tester.setGzipFilterClass(testFilter);
 
+        @SuppressWarnings("unused")
         FilterHolder holder = tester.setContentServlet(DefaultServlet.class);
         tester.copyTestServerFile("test.svgz");
         try

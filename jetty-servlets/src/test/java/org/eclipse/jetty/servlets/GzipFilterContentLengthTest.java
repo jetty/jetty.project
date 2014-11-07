@@ -29,6 +29,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlets.gzip.AsyncScheduledWrite;
+import org.eclipse.jetty.servlets.gzip.AsyncTimeoutWrite;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestServletBufferTypeLengthWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthStreamTypeWrite;
@@ -38,13 +40,13 @@ import org.eclipse.jetty.servlets.gzip.TestServletStreamLengthTypeWriteWithFlush
 import org.eclipse.jetty.servlets.gzip.TestServletStreamTypeLengthWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeLengthStreamWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeStreamLengthWrite;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -57,20 +59,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class GzipFilterContentLengthTest
 {
-
     @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
-
-        @Override
-        public void starting(Description description)
-        {
-            super.starting(description);
-            System.err.printf("Running %s.%s()%n",
-                    description.getClassName(),
-                    description.getMethodName());
-        }
-    };
+    public final TestTracker tracker = new TestTracker();
     
     /**
      * These are the junit parameters for running this test.
@@ -85,11 +75,13 @@ public class GzipFilterContentLengthTest
      *
      * @return the junit parameters
      */
-    @Parameters
+    @Parameters(name="{2}/{1} {0}")
     public static List<Object[]> data()
     {
         return Arrays.asList(new Object[][]
         {
+        { AsyncGzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.GZIP },
+        { AsyncGzipFilter.class, AsyncScheduledWrite.class, GzipFilter.GZIP },
         { AsyncGzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
         { AsyncGzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
         { AsyncGzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.GZIP },
@@ -99,6 +91,8 @@ public class GzipFilterContentLengthTest
         { AsyncGzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
         { AsyncGzipFilter.class, TestServletBufferTypeLengthWrite.class, GzipFilter.GZIP },
 
+        //{ GzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.GZIP },
+        //{ GzipFilter.class, AsyncScheduledWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.GZIP },
@@ -107,6 +101,8 @@ public class GzipFilterContentLengthTest
         { GzipFilter.class, TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
         
+        //{ GzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.DEFLATE },
+        //{ GzipFilter.class, AsyncScheduledWrite.class, GzipFilter.DEFLATE },
         { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.DEFLATE },
         { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.DEFLATE },
         { GzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.DEFLATE },
