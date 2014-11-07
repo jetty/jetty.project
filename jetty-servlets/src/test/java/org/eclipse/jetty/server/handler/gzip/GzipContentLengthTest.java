@@ -27,8 +27,6 @@ import javax.servlet.Servlet;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
-import org.eclipse.jetty.servlets.gzip.AsyncScheduledWrite;
-import org.eclipse.jetty.servlets.gzip.AsyncTimeoutWrite;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.hamcrest.Matchers;

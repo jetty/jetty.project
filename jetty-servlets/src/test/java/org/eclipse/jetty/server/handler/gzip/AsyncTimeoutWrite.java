@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.servlets.gzip;
+package org.eclipse.jetty.server.handler.gzip;
 
 import java.io.IOException;
 
@@ -27,8 +27,6 @@ import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-
-import org.eclipse.jetty.server.handler.gzip.TestDirContentServlet;
 
 @SuppressWarnings("serial")
 public class AsyncTimeoutWrite extends TestDirContentServlet implements AsyncListener
