@@ -28,6 +28,8 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.handler.gzip.TestDirContentServlet;
+
 @SuppressWarnings("serial")
 public class AsyncTimeoutWrite extends TestDirContentServlet implements AsyncListener
 {
