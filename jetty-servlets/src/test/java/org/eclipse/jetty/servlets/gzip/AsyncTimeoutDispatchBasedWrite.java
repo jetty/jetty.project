@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlets.gzip;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-
 import java.io.IOException;
 
 import javax.servlet.AsyncContext;
@@ -32,19 +29,41 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @SuppressWarnings("serial")
-public class AsyncTimeoutWrite extends TestDirContentServlet implements AsyncListener
+public class AsyncTimeoutDispatchBasedWrite extends TestDirContentServlet implements AsyncListener
 {
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        assertThat("'filename' request attribute shouldn't be declared", request.getAttribute("filename"), nullValue());
-
         AsyncContext ctx = (AsyncContext)request.getAttribute(AsyncContext.class.getName());
-        ctx = request.startAsync();
-        String fileName = request.getServletPath();
-        request.setAttribute("filename",fileName);
-        ctx.addListener(this);
-        ctx.setTimeout(200);
+        if (ctx == null)
+        {
+            // First pass through
+            ctx = request.startAsync();
+            ctx.addListener(this);
+            ctx.setTimeout(200);
+            request.setAttribute(AsyncContext.class.getName(),ctx);
+        }
+        else
+        {
+            // second pass through, as result of timeout -> dispatch
+            String fileName = request.getServletPath();
+            byte[] dataBytes = loadContentFileBytes(fileName);
+
+            response.setContentLength(dataBytes.length);
+
+            ServletOutputStream out = response.getOutputStream();
+
+            if (fileName.endsWith("txt"))
+                response.setContentType("text/plain");
+            else if (fileName.endsWith("mp3"))
+                response.setContentType("audio/mpeg");
+            response.setHeader("ETag","W/etag-" + fileName);
+
+            out.write(dataBytes);
+            // no need to call AsyncContext.complete() from here
+            // in fact, it will cause an IllegalStateException if we do
+            // ctx.complete();
+        }
     }
 
     @Override
@@ -55,26 +74,7 @@ public class AsyncTimeoutWrite extends TestDirContentServlet implements AsyncLis
     @Override
     public void onTimeout(AsyncEvent event) throws IOException
     {
-        HttpServletRequest request = (HttpServletRequest)event.getSuppliedRequest();
-        HttpServletResponse response = (HttpServletResponse)event.getSuppliedResponse();
-
-        String fileName = (String)request.getAttribute("filename");
-        byte[] dataBytes = loadContentFileBytes(fileName);
-
-        response.setContentLength(dataBytes.length);
-
-        ServletOutputStream out = response.getOutputStream();
-
-        if (fileName.endsWith("txt"))
-            response.setContentType("text/plain");
-        else if (fileName.endsWith("mp3"))
-            response.setContentType("audio/mpeg");
-        response.setHeader("ETag","W/etag-" + fileName);
-
-        out.write(dataBytes);
-
-        event.getAsyncContext().complete();
-      
+        event.getAsyncContext().dispatch();
     }
 
     @Override

@@ -30,6 +30,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.AsyncScheduledWrite;
+import org.eclipse.jetty.servlets.gzip.AsyncTimeoutDispatchBasedWrite;
 import org.eclipse.jetty.servlets.gzip.AsyncTimeoutWrite;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.TestServletBufferTypeLengthWrite;
@@ -44,7 +45,6 @@ import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -81,6 +81,7 @@ public class GzipFilterContentLengthTest
         return Arrays.asList(new Object[][]
         {
         { AsyncGzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.GZIP },
+        { AsyncGzipFilter.class, AsyncTimeoutDispatchBasedWrite.class, GzipFilter.GZIP },
         { AsyncGzipFilter.class, AsyncScheduledWrite.class, GzipFilter.GZIP },
         { AsyncGzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
         { AsyncGzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
@@ -91,8 +92,6 @@ public class GzipFilterContentLengthTest
         { AsyncGzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
         { AsyncGzipFilter.class, TestServletBufferTypeLengthWrite.class, GzipFilter.GZIP },
 
-        //{ GzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.GZIP },
-        //{ GzipFilter.class, AsyncScheduledWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.GZIP },
@@ -101,8 +100,6 @@ public class GzipFilterContentLengthTest
         { GzipFilter.class, TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
         
-        //{ GzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.DEFLATE },
-        //{ GzipFilter.class, AsyncScheduledWrite.class, GzipFilter.DEFLATE },
         { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.DEFLATE },
         { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.DEFLATE },
         { GzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.DEFLATE },
