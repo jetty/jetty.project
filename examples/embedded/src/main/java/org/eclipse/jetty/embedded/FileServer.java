@@ -24,8 +24,8 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 
-/* ------------------------------------------------------------ */
-/** Simple Jetty FileServer.
+/** 
+ * Simple Jetty FileServer.
  * This is a simple example of Jetty configured as a FileServer.
  */
 public class FileServer
@@ -56,5 +56,4 @@ public class FileServer
         server.start();
         server.join();
     }
-
 }
