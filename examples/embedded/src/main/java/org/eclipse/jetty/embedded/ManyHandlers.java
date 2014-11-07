@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
 //
 
 package org.eclipse.jetty.embedded;
@@ -38,7 +38,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
 import org.eclipse.jetty.util.ajax.JSON;
 
-/* ------------------------------------------------------------ */
 /**
  * Frequently many handlers are combined together to handle different aspects of
  * a request. A handler may:
@@ -49,7 +48,6 @@ import org.eclipse.jetty.util.ajax.JSON;
  * <li>select another handler to pass the request to.
  * <li>use business logic to decide to do one of the above.
  * </ul>
- *
  * Multiple handlers may be combined with:
  * <ul>
  * <li>{@link HandlerWrapper} which will nest one handler inside another. In
@@ -68,28 +66,60 @@ import org.eclipse.jetty.util.ajax.JSON;
  */
 public class ManyHandlers
 {
-    public static void main(String[] args) throws Exception
+    /**
+     * Produce output that lists all of the request parameters
+     */
+    public static class ParamHandler extends AbstractHandler
+    {
+        public void handle( String target,
+                            Request baseRequest,
+                            HttpServletRequest request,
+                            HttpServletResponse response ) throws IOException,
+                                                          ServletException
+        {
+            Map<String, String[]> params = request.getParameterMap();
+            if (params.size() > 0)
+            {
+                response.setContentType("text/plain");
+                response.getWriter().println(JSON.toString(params));
+                baseRequest.setHandled(true);
+            }
+        }
+    }
+
+    /**
+     * Add a request attribute, but produce no output.
+     */
+    public static class WelcomeWrapHandler extends HandlerWrapper
+    {
+        @Override
+        public void handle( String target,
+                            Request baseRequest,
+                            HttpServletRequest request,
+                            HttpServletResponse response ) throws IOException,
+                                                          ServletException
+        {
+            request.setAttribute("welcome", "Hello");
+            super.handle(target, baseRequest, request, response);
+        }
+    }
+
+    public static void main( String[] args ) throws Exception
     {
         Server server = new Server(8080);
 
         // create the handlers
         Handler param = new ParamHandler();
-        HandlerWrapper wrapper = new HandlerWrapper()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException,
-                    ServletException
-            {
-                request.setAttribute("welcome","Hello");
-                super.handle(target,baseRequest,request,response);
-            }
-        };
+        HandlerWrapper wrapper = new WelcomeWrapHandler();
         Handler hello = new HelloHandler();
         Handler dft = new DefaultHandler();
-        RequestLogHandler log = new RequestLogHandler();
+        RequestLogHandler requestLog = new RequestLogHandler();
 
-        // configure logs
-        log.setRequestLog(new NCSARequestLog(File.createTempFile("demo","log").getAbsolutePath()));
+        // configure request logging
+        File requestLogFile = File.createTempFile("demo", "log");
+        NCSARequestLog ncsaLog = new NCSARequestLog(
+                requestLogFile.getAbsolutePath());
+        requestLog.setRequestLog(ncsaLog);
 
         // create the handler collections
         HandlerCollection handlers = new HandlerCollection();
@@ -97,28 +127,24 @@ public class ManyHandlers
 
         // link them all together
         wrapper.setHandler(hello);
-        list.setHandlers(new Handler[]
-        { param, wrapper, dft });
-        handlers.setHandlers(new Handler[]
-        { list, log });
+        list.setHandlers(new Handler[] { param, wrapper, dft });
+        handlers.setHandlers(new Handler[] { list, requestLog });
+
+        // Handler tree looks like the following
+        // <pre>
+        // Server
+        // + HandlerCollection
+        // . + HandlerList
+        // . | + param (ParamHandler)
+        // . | + wrapper (WelcomeWrapHandler)
+        // . | | \ hello (HelloHandler)
+        // . | \ dft (DefaultHandler)
+        // . \ requestLog (RequestLogHandler)
+        // </pre>
 
         server.setHandler(handlers);
 
         server.start();
         server.join();
-    }
-
-    public static class ParamHandler extends AbstractHandler
-    {
-        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-        {
-            Map<String,String[]> params = request.getParameterMap();
-            if (params.size() > 0)
-            {
-                response.setContentType("text/plain");
-                response.getWriter().println(JSON.toString(params));
-                ((Request)request).setHandled(true);
-            }
-        }
     }
 }

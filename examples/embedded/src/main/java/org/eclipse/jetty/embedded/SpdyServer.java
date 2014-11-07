@@ -1,23 +1,25 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
 //
 
 package org.eclipse.jetty.embedded;
 
+import java.io.File;
+import java.io.FileNotFoundException;
 import java.lang.management.ManagementFactory;
 
 import org.eclipse.jetty.deploy.DeploymentManager;
@@ -49,10 +51,20 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class SpdyServer
 {
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
-        String jetty_home = System.getProperty("jetty.home","../../jetty-distribution/target/distribution");
-        System.setProperty("jetty.home",jetty_home);
+        // Path to as-built jetty-distribution directory
+        String jettyHomeBuild = "../../jetty-distribution/target/distribution";
+
+        // Find jetty home directories
+        String homePath = System.getProperty("jetty.home", jettyHomeBuild);
+        File homeDir = new File(homePath);
+        if (!homeDir.exists())
+        {
+            throw new FileNotFoundException(homeDir.getAbsolutePath());
+        }
+        String jetty_home = homeDir.getAbsolutePath();
+        System.setProperty("jetty.home", jetty_home);
 
         // Setup Threadpool
         QueuedThreadPool threadPool = new QueuedThreadPool(512);
@@ -64,9 +76,9 @@ public class SpdyServer
         server.setDumpBeforeStop(false);
 
         // Setup JMX
-        MBeanContainer mbContainer=new MBeanContainer(ManagementFactory.getPlatformMBeanServer());
+        MBeanContainer mbContainer = new MBeanContainer(
+                ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
-
 
         // Common HTTP configuration
         HttpConfiguration config = new HttpConfiguration();
@@ -75,21 +87,23 @@ public class SpdyServer
         config.addCustomizer(new SecureRequestCustomizer());
         config.setSendServerVersion(true);
 
-
         // Http Connector Setup
 
-        // A plain HTTP connector listening on port 8080. Note that it's also possible to have port 8080 configured as
-        // a non SSL SPDY connector. But the specification and most browsers do not allow to use SPDY without SSL
-        // encryption. However some browsers allow it to be configured.
+        // A plain HTTP connector listening on port 8080. Note that it's also
+        // possible to have port 8080 configured as a non SSL SPDY connector.
+        // But the specification and most browsers do not allow to use SPDY
+        // without SSL encryption. However some browsers allow it to be
+        // configured.
         HttpConnectionFactory http = new HttpConnectionFactory(config);
-        ServerConnector httpConnector = new ServerConnector(server,http);
+        ServerConnector httpConnector = new ServerConnector(server, http);
         httpConnector.setPort(8080);
         httpConnector.setIdleTimeout(10000);
         server.addConnector(httpConnector);
-        
+
         // SSL configurations
 
-        // We need a SSLContextFactory for the SSL encryption. That SSLContextFactory will be used by the SPDY
+        // We need a SSLContextFactory for the SSL encryption. That
+        // SSLContextFactory will be used by the SPDY
         // connector.
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_home + "/etc/keystore");
@@ -99,13 +113,12 @@ public class SpdyServer
         sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setExcludeCipherSuites(
                 "SSL_RSA_WITH_DES_CBC_SHA",
-                "SSL_DHE_RSA_WITH_DES_CBC_SHA",
+                "SSL_DHE_RSA_WITH_DES_CBC_SHA", 
                 "SSL_DHE_DSS_WITH_DES_CBC_SHA",
                 "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
                 "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-
 
         // Spdy Connector
 
@@ -113,39 +126,51 @@ public class SpdyServer
         SPDYServerConnectionFactory.checkProtocolNegotiationAvailable();
 
         // A ReferrerPushStrategy is being initialized.
-        // See: http://www.eclipse.org/jetty/documentation/current/spdy-configuring-push.html for more details.
+        // See:
+        // http://www.eclipse.org/jetty/documentation/current/spdy-configuring-push.html
+        // for more details.
         PushStrategy push = new ReferrerPushStrategy();
-        HTTPSPDYServerConnectionFactory spdy2 = new HTTPSPDYServerConnectionFactory(2,config,push);
+        HTTPSPDYServerConnectionFactory spdy2 = 
+                new HTTPSPDYServerConnectionFactory(2, config, push);
         spdy2.setInputBufferSize(8192);
         spdy2.setInitialWindowSize(32768);
 
-        // We need a connection factory per protocol that our server is supposed to support on the NPN port. We then
-        // create a ServerConnector and pass in the supported factories. NPN will then be used to negotiate the
+        // We need a connection factory per protocol that our server is supposed
+        // to support on the NPN port. We then
+        // create a ServerConnector and pass in the supported factories. NPN
+        // will then be used to negotiate the
         // protocol with the client.
-        HTTPSPDYServerConnectionFactory spdy3 = new HTTPSPDYServerConnectionFactory(3,config,push);
+        HTTPSPDYServerConnectionFactory spdy3 = 
+                new HTTPSPDYServerConnectionFactory(3, config, push);
         spdy3.setInputBufferSize(8192);
 
-        NPNServerConnectionFactory npn = new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getProtocol());
+        NPNServerConnectionFactory npn = new NPNServerConnectionFactory(
+                spdy3.getProtocol(), spdy2.getProtocol(), http.getProtocol());
         npn.setDefaultProtocol(http.getProtocol());
         npn.setInputBufferSize(1024);
-        
-        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol());
+
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,
+                npn.getProtocol());
 
         // Setup the npn connector on port 8443
-        ServerConnector spdyConnector = new ServerConnector(server,ssl,npn,spdy3,spdy2,http);
+        ServerConnector spdyConnector = new ServerConnector(server, ssl, 
+                npn, spdy3, spdy2, http);
         spdyConnector.setPort(8443);
 
         server.addConnector(spdyConnector);
 
-        // The following section adds some handlers, deployers and webapp providers.
-        // See: http://www.eclipse.org/jetty/documentation/current/advanced-embedding.html for details.
-        
+        // The following section adds some handlers, deployers and webapp
+        // providers. See
+        // http://www.eclipse.org/jetty/documentation/current/advanced-embedding.html
+        // for details.
+
         // Setup handlers
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();
         RequestLogHandler requestLogHandler = new RequestLogHandler();
 
-        handlers.setHandlers(new Handler[] { contexts, new DefaultHandler(), requestLogHandler });
+        handlers.setHandlers(new Handler[] { contexts, new DefaultHandler(),
+                requestLogHandler });
 
         StatisticsHandler stats = new StatisticsHandler();
         stats.setHandler(handlers);
@@ -162,7 +187,8 @@ public class SpdyServer
         webapp_provider.setParentLoaderPriority(false);
         webapp_provider.setExtractWars(true);
         webapp_provider.setScanInterval(2);
-        webapp_provider.setDefaultsDescriptor(jetty_home + "/etc/webdefault.xml");
+        webapp_provider.setDefaultsDescriptor(jetty_home
+                + "/etc/webdefault.xml");
         deployer.addAppProvider(webapp_provider);
 
         HashLoginService login = new HashLoginService();

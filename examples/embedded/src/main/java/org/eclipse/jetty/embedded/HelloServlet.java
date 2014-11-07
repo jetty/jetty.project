@@ -1,19 +1,19 @@
 //
-//  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
-//  ------------------------------------------------------------------------
-//  All rights reserved. This program and the accompanying materials
-//  are made available under the terms of the Eclipse Public License v1.0
-//  and Apache License v2.0 which accompanies this distribution.
+// ========================================================================
+// Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+// ------------------------------------------------------------------------
+// All rights reserved. This program and the accompanying materials
+// are made available under the terms of the Eclipse Public License v1.0
+// and Apache License v2.0 which accompanies this distribution.
 //
-//      The Eclipse Public License is available at
-//      http://www.eclipse.org/legal/epl-v10.html
+// The Eclipse Public License is available at
+// http://www.eclipse.org/legal/epl-v10.html
 //
-//      The Apache License v2.0 is available at
-//      http://www.opensource.org/licenses/apache2.0.php
+// The Apache License v2.0 is available at
+// http://www.opensource.org/licenses/apache2.0.php
 //
-//  You may elect to redistribute this code under either of these licenses.
-//  ========================================================================
+// You may elect to redistribute this code under either of these licenses.
+// ========================================================================
 //
 
 package org.eclipse.jetty.embedded;
@@ -28,22 +28,26 @@ import javax.servlet.http.HttpServletResponse;
 @SuppressWarnings("serial")
 public class HelloServlet extends HttpServlet
 {
-    String greeting = "Hello";
+    final String greeting;
 
     public HelloServlet()
     {
+        this("Hello");
     }
 
-    public HelloServlet(String hi)
+    public HelloServlet( String greeting )
     {
-        greeting = hi;
+        this.greeting = greeting;
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet( HttpServletRequest request,
+                          HttpServletResponse response ) throws ServletException,
+                                                        IOException
     {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("<h1>" + greeting + " from HelloServlet</h1>");
+        response.getWriter().println(
+                "<h1>" + greeting + " from HelloServlet</h1>");
     }
 }
