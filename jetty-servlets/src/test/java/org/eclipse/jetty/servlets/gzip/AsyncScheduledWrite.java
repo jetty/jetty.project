@@ -59,11 +59,12 @@ public class AsyncScheduledWrite extends TestDirContentServlet
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-    {
-        AsyncContext ctx = (AsyncContext)request.getAttribute(AsyncContext.class.getName());
-        if (ctx == null)
+    {        
+        Boolean suspended = (Boolean)request.getAttribute("SUSPENDED");
+        if (suspended==null || !suspended)
         {
-            ctx = request.startAsync();
+            request.setAttribute("SUSPENDED",Boolean.TRUE);
+            AsyncContext ctx = request.startAsync();
             ctx.setTimeout(0);
             scheduler.schedule(new DispatchBack(ctx),500,TimeUnit.MILLISECONDS);
         }
@@ -83,8 +84,6 @@ public class AsyncScheduledWrite extends TestDirContentServlet
             response.setHeader("ETag","W/etag-" + fileName);
 
             out.write(dataBytes);
-
-            ctx.complete();
         }
     }
 }

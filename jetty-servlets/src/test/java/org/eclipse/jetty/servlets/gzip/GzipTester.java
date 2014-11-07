@@ -611,7 +611,7 @@ public class GzipTester
         ServletHolder servletHolder = tester.addServlet(servletClass,"/");
         servletHolder.setInitParameter("baseDir",testdir.getDir().getAbsolutePath());
         servletHolder.setInitParameter("etags","true");
-        FilterHolder holder = tester.addFilter(gzipFilterClass,"/*",EnumSet.allOf(DispatcherType.class));
+        FilterHolder holder = tester.addFilter(gzipFilterClass,"/*",EnumSet.of(DispatcherType.REQUEST));
         holder.setInitParameter("vary","Accept-Encoding");
         return holder;
     }

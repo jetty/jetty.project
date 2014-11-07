@@ -34,32 +34,17 @@ public class AsyncTimeoutWrite extends TestDirContentServlet implements AsyncLis
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
+        if (request.getAttribute("filename")!=null)
+            throw new IllegalStateException();
+
+        ServletOutputStream out = response.getOutputStream();
+        
         AsyncContext ctx = (AsyncContext)request.getAttribute(AsyncContext.class.getName());
-        if (ctx == null)
-        {
-            ctx = request.startAsync();
-            ctx.addListener(this);
-            ctx.setTimeout(200);
-        }
-        else
-        {
-            String fileName = request.getServletPath();
-            byte[] dataBytes = loadContentFileBytes(fileName);
-
-            response.setContentLength(dataBytes.length);
-
-            ServletOutputStream out = response.getOutputStream();
-
-            if (fileName.endsWith("txt"))
-                response.setContentType("text/plain");
-            else if (fileName.endsWith("mp3"))
-                response.setContentType("audio/mpeg");
-            response.setHeader("ETag","W/etag-" + fileName);
-
-            out.write(dataBytes);
-
-            ctx.complete();
-        }
+        ctx = request.startAsync();
+        String fileName = request.getServletPath();
+        request.setAttribute("filename",fileName);
+        ctx.addListener(this);
+        ctx.setTimeout(200);
     }
 
     @Override
@@ -70,7 +55,26 @@ public class AsyncTimeoutWrite extends TestDirContentServlet implements AsyncLis
     @Override
     public void onTimeout(AsyncEvent event) throws IOException
     {
-        event.getAsyncContext().dispatch();
+        HttpServletRequest request = (HttpServletRequest)event.getSuppliedRequest();
+        HttpServletResponse response = (HttpServletResponse)event.getSuppliedResponse();
+
+        String fileName = (String)request.getAttribute("filename");
+        byte[] dataBytes = loadContentFileBytes(fileName);
+
+        response.setContentLength(dataBytes.length);
+
+        ServletOutputStream out = response.getOutputStream();
+
+        if (fileName.endsWith("txt"))
+            response.setContentType("text/plain");
+        else if (fileName.endsWith("mp3"))
+            response.setContentType("audio/mpeg");
+        response.setHeader("ETag","W/etag-" + fileName);
+
+        out.write(dataBytes);
+
+        event.getAsyncContext().complete();
+      
     }
 
     @Override

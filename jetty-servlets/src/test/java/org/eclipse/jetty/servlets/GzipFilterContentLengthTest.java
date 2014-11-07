@@ -57,7 +57,6 @@ import org.junit.runners.Parameterized.Parameters;
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @RunWith(Parameterized.class)
-@Ignore
 public class GzipFilterContentLengthTest
 {
     @Rule
@@ -92,8 +91,8 @@ public class GzipFilterContentLengthTest
         { AsyncGzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
         { AsyncGzipFilter.class, TestServletBufferTypeLengthWrite.class, GzipFilter.GZIP },
 
-        { GzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.GZIP },
-        { GzipFilter.class, AsyncScheduledWrite.class, GzipFilter.GZIP },
+        //{ GzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.GZIP },
+        //{ GzipFilter.class, AsyncScheduledWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.GZIP },
@@ -102,8 +101,8 @@ public class GzipFilterContentLengthTest
         { GzipFilter.class, TestServletTypeLengthStreamWrite.class, GzipFilter.GZIP },
         { GzipFilter.class, TestServletTypeStreamLengthWrite.class, GzipFilter.GZIP },
         
-        { GzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.DEFLATE },
-        { GzipFilter.class, AsyncScheduledWrite.class, GzipFilter.DEFLATE },
+        //{ GzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.DEFLATE },
+        //{ GzipFilter.class, AsyncScheduledWrite.class, GzipFilter.DEFLATE },
         { GzipFilter.class, TestServletLengthStreamTypeWrite.class, GzipFilter.DEFLATE },
         { GzipFilter.class, TestServletLengthTypeStreamWrite.class, GzipFilter.DEFLATE },
         { GzipFilter.class, TestServletStreamLengthTypeWrite.class, GzipFilter.DEFLATE },
