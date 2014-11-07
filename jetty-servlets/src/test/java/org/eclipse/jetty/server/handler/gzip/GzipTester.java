@@ -55,11 +55,15 @@ import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 
 public class GzipTester
 {
+    private static final Logger LOG = Log.getLogger(GzipTester.class);
+    
     private String encoding = "ISO8859_1";
     private String userAgent = null;
     private final ServletTester tester = new ServletTester("/context",ServletContextHandler.GZIP);
@@ -166,7 +170,6 @@ public class GzipTester
     
     public HttpTester.Response assertIsResponseGzipCompressed(String method, String requestedFilename, String serverFilename, long ifmodifiedsince) throws Exception
     {
-        // System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
@@ -187,10 +190,10 @@ public class GzipTester
         // Assert.assertThat("Response.status",response.getStatus(),is(HttpServletResponse.SC_OK));
         
         // Response headers should have either a Transfer-Encoding indicating chunked OR a Content-Length
+        /* TODO need to check for the 3rd option of EOF content.  To do this properly you might need to look at both HTTP/1.1 and HTTP/1.0 requests
         String contentLength = response.get("Content-Length");
         String transferEncoding = response.get("Transfer-Encoding");
         
-        /* TODO need to check for the 3rd option of EOF content.  To do this properly you might need to look at both HTTP/1.1 and HTTP/1.0 requests
         boolean chunked = (transferEncoding != null) && (transferEncoding.indexOf("chunk") >= 0);
         if(!chunked) {
             Assert.assertThat("Response.header[Content-Length]",contentLength,notNullValue());
@@ -244,7 +247,7 @@ public class GzipTester
 
 
     public HttpTester.Response assertIsResponseNotModified(String method, String requestedFilename, long ifmodifiedsince) throws Exception
-    {        // System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
+    {
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
@@ -305,7 +308,6 @@ public class GzipTester
      */
     public void assertIsResponseNotGziped(String requestedFilename, String testResourceSha1Sum, String expectedContentType, String expectedContentEncoding) throws Exception
     {
-        //System.err.printf("[GzipTester] requesting /context/%s%n",requestedFilename);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 
@@ -357,14 +359,13 @@ public class GzipTester
 
     private void dumpHeaders(String prefix, HttpTester.Message message)
     {
-        //System.out.println(prefix);
-        @SuppressWarnings("unchecked")
+        LOG.debug("dumpHeaders: {}", prefix);
         Enumeration<String> names = message.getFieldNames();
         while (names.hasMoreElements())
         {
             String name = names.nextElement();
             String value = message.get(name);
-           //System.out.printf("  [%s] = %s%n",name,value);
+            LOG.debug("dumpHeaders:   {} = {}",name,value);
         }
     }
 
@@ -470,7 +471,6 @@ public class GzipTester
 
     private HttpTester.Response executeRequest(String method, String uri) throws IOException, Exception
     {
-        //System.err.printf("[GzipTester] requesting %s%n",uri);
         HttpTester.Request request = HttpTester.newRequest();
         HttpTester.Response response;
 

@@ -27,13 +27,15 @@ import javax.servlet.Servlet;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.servlets.gzip.AsyncScheduledWrite;
+import org.eclipse.jetty.servlets.gzip.AsyncTimeoutWrite;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-import org.junit.rules.TestWatcher;
-import org.junit.runner.Description;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
@@ -46,20 +48,8 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class GzipContentLengthTest
 {
-
     @Rule
-    public final TestWatcher testName = new TestWatcher()
-    {
-
-        @Override
-        public void starting(Description description)
-        {
-            super.starting(description);
-            System.err.printf("Running %s.%s()%n",
-                    description.getClassName(),
-                    description.getMethodName());
-        }
-    };
+    public final TestTracker tracker = new TestTracker();
     
     /**
      * These are the junit parameters for running this test.
@@ -74,19 +64,23 @@ public class GzipContentLengthTest
      *
      * @return the junit parameters
      */
-    @Parameters
+    @Parameters(name="{2}/{1} {0}")
     public static List<Object[]> data()
     {
         return Arrays.asList(new Object[][]
         {
         { TestServletLengthStreamTypeWrite.class},
         { TestServletLengthTypeStreamWrite.class},
+        { AsyncTimeoutWrite.class},
+        { AsyncScheduledWrite.class},
         { TestServletStreamLengthTypeWrite.class},
         { TestServletStreamLengthTypeWriteWithFlush.class },
         { TestServletStreamTypeLengthWrite.class},
         { TestServletTypeLengthStreamWrite.class},
         { TestServletTypeStreamLengthWrite.class},
         { TestServletBufferTypeLengthWrite.class},
+        //{ GzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.GZIP },
+        //{ GzipFilter.class, AsyncScheduledWrite.class, GzipFilter.GZIP },
                                                 
         { TestServletLengthStreamTypeWrite.class},
         { TestServletLengthTypeStreamWrite.class},

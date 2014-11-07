@@ -46,6 +46,7 @@ public class GzipDefaultTest
         this.compressionType = GzipHandler.GZIP;
     }
 
+    @SuppressWarnings("serial")
     public static class HttpStatusServlet extends HttpServlet
     {
         private int _status = 204;
@@ -64,6 +65,7 @@ public class GzipDefaultTest
 
     }
 
+    @SuppressWarnings("serial")
     public static class HttpErrorServlet extends HttpServlet
     {
         private int _status = 400;
@@ -82,6 +84,7 @@ public class GzipDefaultTest
     }
     
 
+    @SuppressWarnings("serial")
     public static class HttpContentTypeWithEncoding extends HttpServlet
     {
         public static final String COMPRESSED_CONTENT = "<html><head></head><body><h1>COMPRESSABLE CONTENT</h1>"+
@@ -130,6 +133,7 @@ public class GzipDefaultTest
         }
     }
     
+    @SuppressWarnings("serial")
     public static class GetServlet extends DefaultServlet
     {
         public GetServlet()
