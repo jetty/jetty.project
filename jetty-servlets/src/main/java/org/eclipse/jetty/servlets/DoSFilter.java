@@ -331,7 +331,7 @@ public class DoSFilter implements Filter
                     LOG.warn("DOS ALERT: Request rejected ip={}, session={}, user={}", request.getRemoteAddr(), request.getRequestedSessionId(), request.getUserPrincipal());
                     if (insertHeaders)
                         response.addHeader("DoSFilter", "unavailable");
-                    response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    response.sendError(429, "Too Many Requests");
                     return;
                 }
                 case 0:
