@@ -18,24 +18,32 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import java.io.File;
-import java.util.Arrays;
-import java.util.List;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
-import javax.servlet.Servlet;
+import java.io.File;
+import java.util.ArrayList;
+import java.util.EnumSet;
+import java.util.List;
+import java.util.concurrent.TimeUnit;
+
+import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.handler.gzip.GzipTester.ContentMetadata;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlets.AsyncGzipFilter;
+import org.eclipse.jetty.servlets.GzipFilter;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
 import org.junit.runners.Parameterized.Parameters;
 
 /**
@@ -48,100 +56,91 @@ public class GzipContentLengthTest
 {
     @Rule
     public final TestTracker tracker = new TestTracker();
-    
-    /**
-     * These are the junit parameters for running this test.
-     * <p>
-     * In addition to Jetty's DefaultServlet we have multiple test
-     * servlets that arrange content-length/content-type/get stream
-     * in different order so as to simulate the real world scenario
-     * that caused the bug in Eclipse <a href="Bug 354014">http://bugs.eclipse.org/354014</a>
-     * <p>
-     * This test case will be run with each of the entries in
-     * the array below as setup parameters for the test case.
-     *
-     * @return the junit parameters
-     */
-    @Parameters(name="{2}/{1} {0}")
-    public static List<Object[]> data()
-    {
-        return Arrays.asList(new Object[][]
-        {
-        { TestServletLengthStreamTypeWrite.class},
-        { TestServletLengthTypeStreamWrite.class},
-        { AsyncTimeoutWrite.class},
-        { AsyncScheduledWrite.class},
-        { TestServletStreamLengthTypeWrite.class},
-        { TestServletStreamLengthTypeWriteWithFlush.class },
-        { TestServletStreamTypeLengthWrite.class},
-        { TestServletTypeLengthStreamWrite.class},
-        { TestServletTypeStreamLengthWrite.class},
-        { TestServletBufferTypeLengthWrite.class},
-        //{ GzipFilter.class, AsyncTimeoutWrite.class, GzipFilter.GZIP },
-        //{ GzipFilter.class, AsyncScheduledWrite.class, GzipFilter.GZIP },
-                                                
-        { TestServletLengthStreamTypeWrite.class},
-        { TestServletLengthTypeStreamWrite.class},
-        { TestServletStreamLengthTypeWrite.class},
-        { TestServletStreamLengthTypeWriteWithFlush.class},
-        { TestServletStreamTypeLengthWrite.class},
-        { TestServletTypeLengthStreamWrite.class},
-        { TestServletTypeStreamLengthWrite.class},
-        
-        });
-    }
 
+    @Rule
+    public TestingDir testingdir = new TestingDir();
+    
     private static final HttpConfiguration defaultHttp = new HttpConfiguration();
     private static final int LARGE = defaultHttp.getOutputBufferSize() * 8;
     private static final int MEDIUM = defaultHttp.getOutputBufferSize();
     private static final int SMALL = defaultHttp.getOutputBufferSize() / 4;
     private static final int TINY = GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2;
+    private static final boolean EXPECT_COMPRESSED = true;
 
-    private String compressionType;
-
-    public GzipContentLengthTest(Class<? extends Servlet> testServlet)
+    @Parameters(name = "{0} bytes - {1} - compressed({2}) - type({3}) - filter({4})")
+    public static List<Object[]> data()
     {
-        this.testServlet = testServlet;
-        this.compressionType = GzipHandler.GZIP;
+        List<Object[]> ret = new ArrayList<Object[]>();
+        
+        String compressionTypes[] = new String[] { GzipHandler.GZIP, GzipHandler.DEFLATE };
+        Class<?> gzipFilters[] = new Class<?>[] { GzipFilter.class, AsyncGzipFilter.class };
+        
+        for(String compressionType: compressionTypes)
+        {
+            for(Class<?> gzipFilter: gzipFilters)
+            {
+                ret.add(new Object[] { 0, "empty.txt", !EXPECT_COMPRESSED, compressionType, gzipFilter });
+                ret.add(new Object[] { TINY, "file-tiny.txt", !EXPECT_COMPRESSED, compressionType, gzipFilter });
+                ret.add(new Object[] { SMALL, "file-small.txt", EXPECT_COMPRESSED, compressionType, gzipFilter });
+                ret.add(new Object[] { SMALL, "file-small.mp3", !EXPECT_COMPRESSED, compressionType, gzipFilter });
+                ret.add(new Object[] { MEDIUM, "file-med.txt", EXPECT_COMPRESSED, compressionType, gzipFilter });
+                ret.add(new Object[] { MEDIUM, "file-medium.mp3", !EXPECT_COMPRESSED, compressionType, gzipFilter });
+                ret.add(new Object[] { LARGE, "file-large.txt", EXPECT_COMPRESSED, compressionType, gzipFilter });
+                ret.add(new Object[] { LARGE, "file-large.mp3", !EXPECT_COMPRESSED, compressionType, gzipFilter });
+            }
+        }
+
+        return ret;
     }
 
-    @Rule
-    public TestingDir testingdir = new TestingDir();
-
-    private Class<? extends Servlet> testServlet;
-
-    private void assertIsGzipCompressed(String filename, int filesize) throws Exception
+    @Parameter(0)
+    public int fileSize;
+    @Parameter(1)
+    public String fileName;
+    @Parameter(2)
+    public boolean expectCompressed;
+    @Parameter(3)
+    public String compressionType;
+    @Parameter(4)
+    public Class<? extends GzipFilter> gzipFilterClass;
+    
+    private void testWithGzip(Class<? extends TestDirContentServlet> contentServlet) throws Exception
     {
-        GzipTester tester = new GzipTester(testingdir, compressionType);
+        GzipTester tester = new GzipTester(testingdir, GzipHandler.GZIP);
+        
+        // Add AsyncGzip Filter
+        FilterHolder gzipHolder = new FilterHolder(gzipFilterClass);
+        gzipHolder.setAsyncSupported(true);
+        tester.addFilter(gzipHolder,"*.txt",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        tester.addFilter(gzipHolder,"*.mp3",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        gzipHolder.setInitParameter("mimeTypes","text/plain");
 
-        File testfile = tester.prepareServerFile(testServlet.getSimpleName() + "-" + filename,filesize);
-
-        tester.setContentServlet(testServlet);
-
+        // Add content servlet
+        tester.setContentServlet(contentServlet);
+        
         try
         {
+            String testFilename = String.format("%s-%s-%s", gzipFilterClass.getSimpleName(), contentServlet.getSimpleName(), fileName);
+            File testFile = tester.prepareServerFile(testFilename,fileSize);
+            
             tester.start();
-            tester.assertIsResponseGzipCompressed("GET",testfile.getName());
-        }
-        finally
-        {
-            tester.stop();
-        }
-    }
-
-    private void assertIsNotGzipCompressed(String filename, int filesize) throws Exception
-    {
-        GzipTester tester = new GzipTester(testingdir, compressionType);
-
-        File testfile = tester.prepareServerFile(testServlet.getSimpleName() + "-" + filename,filesize);
-
-        tester.setContentServlet(testServlet);
-
-        try
-        {
-            tester.start();
-            HttpTester.Response response = tester.assertIsResponseNotGzipCompressed("GET",testfile.getName(),filesize,HttpStatus.OK_200);
-            Assert.assertThat(response.get("ETAG"),Matchers.startsWith("W/etag-"));
+            
+            HttpTester.Response response = tester.executeRequest("GET","/context/" + testFile.getName(),2,TimeUnit.SECONDS);
+            
+            assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
+            
+            if (expectCompressed)
+            {
+                // Must be gzip compressed
+                assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipHandler.GZIP));
+            } else
+            {
+                assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(GzipHandler.GZIP)));
+            }
+            
+            // Uncompressed content Size
+            ContentMetadata content = tester.getResponseMetadata(response);
+            assertThat("(Uncompressed) Content Length", content.size, is((long)fileSize));
         }
         finally
         {
@@ -150,86 +149,148 @@ public class GzipContentLengthTest
     }
 
     /**
-     * Tests gzip compression of a small size file
+     * Test with content servlet that does:  
+     * AsyncContext create -> timeout -> onTimeout -> write-response -> complete
      */
     @Test
-    public void testEmpty() throws Exception
+    @Ignore
+    public void testAsyncTimeoutWrite() throws Exception
     {
-        assertIsNotGzipCompressed("empty.txt",0);
+        testWithGzip(AsyncTimeoutWrite.class);
     }
     
     /**
-     * Tests gzip compression of a small size file
+     * Test with content servlet that does:  
+     * AsyncContext create -> timeout -> onTimeout -> dispatch -> write-response
      */
     @Test
-    public void testIsGzipCompressedSmall() throws Exception
+    @Ignore
+    public void testAsyncTimeoutDispatchBasedWrite() throws Exception
     {
-        assertIsGzipCompressed("file-small.txt",SMALL);
+        testWithGzip(AsyncTimeoutWrite.class);
     }
 
     /**
-     * Tests gzip compression of a medium size file
-     */
-    @Test
-    public void testIsGzipCompressedMedium() throws Exception
-    {
-        assertIsGzipCompressed("file-med.txt",MEDIUM);
-    }
-
-    /**
-     * Tests gzip compression of a large size file
-     */
-    @Test
-    public void testIsGzipCompressedLarge() throws Exception
-    {
-        assertIsGzipCompressed("file-large.txt",LARGE);
-    }
-
-    /**
-     * Tests for problems with Content-Length header on small size files
-     * that are not being compressed encountered when using GzipHandler
-     *
+     * Test with content servlet that does:  
+     * 1) setHeader(content-length)
+     * 2) getOutputStream()
+     * 3) setHeader(content-type)
+     * 4) outputStream.write()
+     * 
      * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
     @Test
-    public void testIsNotGzipCompressedTiny() throws Exception
+    public void testServletLengthStreamTypeWrite() throws Exception
     {
-        assertIsNotGzipCompressed("file-tiny.txt",TINY);
+        testWithGzip(TestServletLengthStreamTypeWrite.class);
     }
 
     /**
-     * Tests for problems with Content-Length header on small size files
-     * that are not being compressed encountered when using GzipHandler
-     *
+     * Test with content servlet that does:  
+     * 1) setHeader(content-length)
+     * 2) setHeader(content-type)
+     * 3) getOutputStream()
+     * 4) outputStream.write()
+     * 
      * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
     @Test
-    public void testIsNotGzipCompressedSmall() throws Exception
+    public void testServletLengthTypeStreamWrite() throws Exception
     {
-        assertIsNotGzipCompressed("file-small.mp3",SMALL);
+        testWithGzip(TestServletLengthTypeStreamWrite.class);
     }
 
     /**
-     * Tests for problems with Content-Length header on medium size files
-     * that are not being compressed encountered when using GzipHandler
-     *
+     * Test with content servlet that does:  
+     * 1) getOutputStream()
+     * 2) setHeader(content-length)
+     * 3) setHeader(content-type)
+     * 4) outputStream.write()
+     * 
      * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
     @Test
-    public void testIsNotGzipCompressedMedium() throws Exception
+    public void testServletStreamLengthTypeWrite() throws Exception
     {
-        assertIsNotGzipCompressed("file-medium.mp3",MEDIUM);
+        testWithGzip(TestServletStreamLengthTypeWrite.class);
     }
 
     /**
-     * Tests for problems with Content-Length header on large size files
-     * that were not being compressed encountered when using GzipHandler
-     *
+     * Test with content servlet that does:  
+     * 1) getOutputStream()
+     * 2) setHeader(content-length)
+     * 3) setHeader(content-type)
+     * 4) outputStream.write() (with frequent response flush)
+     * 
      * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
     @Test
-    public void testIsNotGzipCompressedLarge() throws Exception
+    public void testServletStreamLengthTypeWriteWithFlush() throws Exception
     {
-        assertIsNotGzipCompressed("file-large.mp3",LARGE);
+        testWithGzip(TestServletStreamLengthTypeWriteWithFlush.class);
+    }
+
+    /**
+     * Test with content servlet that does:  
+     * 1) getOutputStream()
+     * 2) setHeader(content-type)
+     * 3) setHeader(content-length)
+     * 4) outputStream.write()
+     * 
+     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     */
+    @Test
+    public void testServletStreamTypeLengthWrite() throws Exception
+    {
+        testWithGzip(TestServletStreamTypeLengthWrite.class);
+    }
+
+    /**
+     * Test with content servlet that does:  
+     * 1) setHeader(content-type)
+     * 2) setHeader(content-length)
+     * 3) getOutputStream()
+     * 4) outputStream.write()
+     * 
+     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     */
+    @Test
+    public void testServletTypeLengthStreamWrite() throws Exception
+    {
+        testWithGzip(TestServletTypeLengthStreamWrite.class);
+    }
+
+    /**
+     * Test with content servlet that does:  
+     * 1) setHeader(content-type)
+     * 2) getOutputStream()
+     * 3) setHeader(content-length)
+     * 4) outputStream.write()
+     * 
+     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     */
+    @Test
+    public void testServletTypeStreamLengthWrite() throws Exception
+    {
+        testWithGzip(TestServletTypeStreamLengthWrite.class);
+    }
+
+    /**
+     * Test with content servlet that does:  
+     * 2) getOutputStream()
+     * 1) setHeader(content-type)
+     * 3) setHeader(content-length)
+     * 4) (unwrapped) HttpOutput.write(ByteBuffer)
+     * 
+     * This is done to demonstrate a bug with using HttpOutput.write()
+     * while also using GzipFilter
+     * 
+     * @see <a href="Eclipse Bug 450873">http://bugs.eclipse.org/450873</a>
+     */
+    @Test
+    @Ignore
+    public void testHttpOutputWrite() throws Exception
+    {
+        testWithGzip(TestServletBufferTypeLengthWrite.class);
     }
 }

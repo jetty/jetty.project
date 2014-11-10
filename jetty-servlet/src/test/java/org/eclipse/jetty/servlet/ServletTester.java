@@ -34,11 +34,16 @@ import org.eclipse.jetty.server.LocalConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 
 public class ServletTester extends ContainerLifeCycle
 {
+    private static final Logger LOG = Log.getLogger(ServletTester.class);
+    
     private final Server _server=new Server();
     private final LocalConnector _connector=new LocalConnector(_server);
     private final ServletContextHandler _context;
@@ -163,8 +168,6 @@ public class ServletTester extends ContainerLifeCycle
         _context.setResourceBase(resourceBase);
     }
 
-    private final ServletHandler _handler;
-
     public ServletTester()
     {
         this("/",ServletContextHandler.SECURITY|ServletContextHandler.SESSIONS);
@@ -178,7 +181,6 @@ public class ServletTester extends ContainerLifeCycle
     public ServletTester(String contextPath,int options)
     {
         _context=new ServletContextHandler(_server,contextPath,options);
-        _handler=_context.getServletHandler();
         _server.setConnectors(new Connector[]{_connector});
         addBean(_server);
     }
@@ -190,25 +192,40 @@ public class ServletTester extends ContainerLifeCycle
 
     public String getResponses(String request) throws Exception
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Request: {}",request);
+        }
         return _connector.getResponses(request);
     }
     
     public String getResponses(String request, long idleFor,TimeUnit units) throws Exception
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Request: {}",request);
+        }
         return _connector.getResponses(request, idleFor, units);
     }
     
     public ByteBuffer getResponses(ByteBuffer request) throws Exception
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Request (Buffer): {}",BufferUtil.toUTF8String(request));
+        }
         return _connector.getResponses(request);
     }
     
     public ByteBuffer getResponses(ByteBuffer requestsBuffer,long idleFor,TimeUnit units) throws Exception
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Requests (Buffer): {}",BufferUtil.toUTF8String(requestsBuffer));
+        }
         return _connector.getResponses(requestsBuffer, idleFor, units);
     }
 
-    /* ------------------------------------------------------------ */
     /** Create a port based connector.
      * This methods adds a port connector to the server
      * @return A URL to access the server via the connector.

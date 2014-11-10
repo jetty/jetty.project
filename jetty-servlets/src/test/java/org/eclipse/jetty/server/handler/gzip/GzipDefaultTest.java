@@ -614,7 +614,7 @@ public class GzipDefaultTest
         try
         {
             tester.start();
-            tester.assertIsResponseNotGziped("test.svgz", "test.svgz.sha1", "image/svg+xml", "gzip");
+            tester.assertIsResponseNotGzipFiltered("test.svgz", "test.svgz.sha1", "image/svg+xml", "gzip");
         }
         finally
         {
