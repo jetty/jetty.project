@@ -34,6 +34,7 @@ import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlets.gzip.AsyncManipFilter;
+import org.eclipse.jetty.servlets.gzip.AsyncTimeoutDispatchBasedWrite;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.GzipTester.ContentMetadata;
 import org.eclipse.jetty.servlets.gzip.TestServletLengthStreamTypeWrite;
@@ -134,6 +135,53 @@ public class GzipFilterLayeredTest
     }
     
     @Test
+    @Ignore
+    public void testGzipDosAsync() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, GzipFilter.GZIP);
+        
+        // Add Gzip Filter first
+        FilterHolder gzipHolder = new FilterHolder(AsyncGzipFilter.class);
+        gzipHolder.setAsyncSupported(true);
+        tester.addFilter(gzipHolder,"*.txt",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        tester.addFilter(gzipHolder,"*.mp3",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        gzipHolder.setInitParameter("mimeTypes","text/plain");
+
+        // Add (DoSFilter-like) manip filter (in chain of Gzip)
+        FilterHolder manipHolder = new FilterHolder(AsyncManipFilter.class);
+        manipHolder.setAsyncSupported(true);
+        tester.addFilter(manipHolder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        
+        // Add normal content servlet
+        tester.setContentServlet(AsyncTimeoutDispatchBasedWrite.class);
+        
+        try
+        {
+            File testFile = tester.prepareServerFile("GzipDosAsync-" + fileName,fileSize);
+            
+            tester.start();
+            
+            HttpTester.Response response = tester.issueRequest("GET","/" + testFile.getName(), 2, TimeUnit.SECONDS);
+            
+            assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
+            
+            if (expectCompressed)
+            {
+                // Must be gzip compressed
+                assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipFilter.GZIP));
+            }
+            
+            // Uncompressed content Size
+            ContentMetadata content = tester.getResponseMetadata(response);
+            assertThat("(Uncompressed) Content Length", content.size, is((long)fileSize));
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    @Test
     public void testDosGzipNormal() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, GzipFilter.GZIP);
@@ -156,6 +204,56 @@ public class GzipFilterLayeredTest
         try
         {
             File testFile = tester.prepareServerFile("DosGzipNormal-" + fileName,fileSize);
+            
+            tester.start();
+            
+            HttpTester.Response response = tester.issueRequest("GET",testFile.getName(),2,TimeUnit.SECONDS);
+            
+            assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
+            
+            if (expectCompressed)
+            {
+                // Must be gzip compressed
+                assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipFilter.GZIP));
+            } else
+            {
+                assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(GzipFilter.GZIP)));
+            }
+            
+            // Uncompressed content Size
+            ContentMetadata content = tester.getResponseMetadata(response);
+            assertThat("(Uncompressed) Content Length", content.size, is((long)fileSize));
+        }
+        finally
+        {
+            tester.stop();
+        }
+    }
+    
+    @Test
+    @Ignore
+    public void testDosGzipAsync() throws Exception
+    {
+        GzipTester tester = new GzipTester(testingdir, GzipFilter.GZIP);
+        
+        // Add (DoSFilter-like) manip filter
+        FilterHolder manipHolder = new FilterHolder(AsyncManipFilter.class);
+        manipHolder.setAsyncSupported(true);
+        tester.addFilter(manipHolder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        
+        // Add Gzip Filter first (in chain of DosFilter)
+        FilterHolder gzipHolder = new FilterHolder(AsyncGzipFilter.class);
+        gzipHolder.setAsyncSupported(true);
+        tester.addFilter(gzipHolder,"*.txt",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        tester.addFilter(gzipHolder,"*.mp3",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        gzipHolder.setInitParameter("mimeTypes","text/plain");
+
+        // Add normal content servlet
+        tester.setContentServlet(AsyncTimeoutDispatchBasedWrite.class);
+        
+        try
+        {
+            File testFile = tester.prepareServerFile("DosGzipAsync-" + fileName,fileSize);
             
             tester.start();
             
