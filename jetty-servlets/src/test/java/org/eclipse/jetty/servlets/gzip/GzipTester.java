@@ -104,32 +104,6 @@ public class GzipTester
         return tester.getConnector().getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().getOutputBufferSize();
     }
     
-    public HttpTester.Response issueRequest(String method, String path) throws Exception
-    {
-        return issueRequest(method, path, 2, TimeUnit.SECONDS);
-    }
-
-    public HttpTester.Response issueRequest(String method, String path, int idleFor, TimeUnit idleUnit) throws Exception
-    {
-        HttpTester.Request request = HttpTester.newRequest();
-
-        request.setMethod(method);
-        request.setVersion("HTTP/1.1");
-        request.setHeader("Host","tester");
-        request.setHeader("Accept-Encoding",accept);
-        request.setHeader("Connection","close");
-
-        if (this.userAgent != null)
-        {
-            request.setHeader("User-Agent",this.userAgent);
-        }
-        
-        request.setURI("/context/" + path);
-
-        // Issue the request
-        return HttpTester.parseResponse(tester.getResponses(request.generate(),idleFor,idleUnit));
-    }
-
     public ContentMetadata getResponseMetadata(Response response) throws Exception
     {
         long size = response.getContentBytes().length;
@@ -546,21 +520,30 @@ public class GzipTester
         Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),not(containsString(compressionType)));
     }
 
-    private HttpTester.Response executeRequest(String method, String uri) throws IOException, Exception
+    public HttpTester.Response executeRequest(String method, String path, int idleFor, TimeUnit idleUnit) throws Exception
     {
         HttpTester.Request request = HttpTester.newRequest();
-        HttpTester.Response response;
 
         request.setMethod(method);
-        request.setVersion("HTTP/1.0");
+        request.setVersion("HTTP/1.1");
         request.setHeader("Host","tester");
-        request.setHeader("Accept-Encoding",compressionType);
-        if (this.userAgent != null)
-            request.setHeader("User-Agent",this.userAgent);
+        request.setHeader("Accept-Encoding",accept);
+        request.setHeader("Connection","close");
 
-        request.setURI(uri);
-        response = HttpTester.parseResponse(tester.getResponses(request.generate()));
-        return response;
+        if (this.userAgent != null)
+        {
+            request.setHeader("User-Agent",this.userAgent);
+        }
+        
+        request.setURI(path);
+
+        // Issue the request
+        return HttpTester.parseResponse(tester.getResponses(request.generate(),idleFor,idleUnit));
+    }
+
+    private HttpTester.Response executeRequest(String method, String path) throws IOException, Exception
+    {
+        return executeRequest(method,path,2,TimeUnit.SECONDS);
     }
 
     private String readResponse(HttpTester.Response response) throws IOException, UnsupportedEncodingException

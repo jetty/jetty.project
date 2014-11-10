@@ -114,7 +114,7 @@ public class GzipFilterLayeredTest
             
             tester.start();
             
-            HttpTester.Response response = tester.issueRequest("GET","/" + testFile.getName(), 2, TimeUnit.SECONDS);
+            HttpTester.Response response = tester.executeRequest("GET","/context/" + testFile.getName(),2,TimeUnit.SECONDS);
             
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
             
@@ -161,7 +161,7 @@ public class GzipFilterLayeredTest
             
             tester.start();
             
-            HttpTester.Response response = tester.issueRequest("GET","/" + testFile.getName(), 2, TimeUnit.SECONDS);
+            HttpTester.Response response = tester.executeRequest("GET","/context/" + testFile.getName(),2,TimeUnit.SECONDS);
             
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
             
@@ -207,7 +207,7 @@ public class GzipFilterLayeredTest
             
             tester.start();
             
-            HttpTester.Response response = tester.issueRequest("GET",testFile.getName(),2,TimeUnit.SECONDS);
+            HttpTester.Response response = tester.executeRequest("GET","/context/" + testFile.getName(),2,TimeUnit.SECONDS);
             
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
             
@@ -257,7 +257,7 @@ public class GzipFilterLayeredTest
             
             tester.start();
             
-            HttpTester.Response response = tester.issueRequest("GET",testFile.getName(),2,TimeUnit.SECONDS);
+            HttpTester.Response response = tester.executeRequest("GET","/context/" + testFile.getName(),2,TimeUnit.SECONDS);
             
             assertThat("Response status", response.getStatus(), is(HttpStatus.OK_200));
             
