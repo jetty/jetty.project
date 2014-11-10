@@ -76,7 +76,7 @@ public class GzipFilterContentLengthTest
     private static final int TINY = AsyncGzipFilter.DEFAULT_MIN_GZIP_SIZE / 2;
     private static final boolean EXPECT_COMPRESSED = true;
 
-    @Parameters(name = "{0} bytes - {1} - compressed: {2} - type: {3} - filter: {4}")
+    @Parameters(name = "{0} bytes - {1} - compressed({2}) - type({3}) - filter({4})")
     public static List<Object[]> data()
     {
         List<Object[]> ret = new ArrayList<Object[]>();
