@@ -29,8 +29,31 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @SuppressWarnings("serial")
-public class AsyncTimeoutDispatchBasedWrite extends TestDirContentServlet implements AsyncListener
+public class AsyncTimeoutDispatchWrite extends TestDirContentServlet implements AsyncListener
 {
+    public static class Default extends AsyncTimeoutDispatchWrite
+    {
+        public Default()
+        {
+            super(true);
+        }
+    }
+    
+    public static class Passed extends AsyncTimeoutDispatchWrite
+    {
+        public Passed()
+        {
+            super(false);
+        }
+    }
+
+    private final boolean originalReqResp;
+
+    public AsyncTimeoutDispatchWrite(boolean originalReqResp)
+    {
+        this.originalReqResp = originalReqResp;
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
@@ -38,7 +61,16 @@ public class AsyncTimeoutDispatchBasedWrite extends TestDirContentServlet implem
         if (ctx == null)
         {
             // First pass through
-            ctx = request.startAsync();
+            if (originalReqResp)
+            {
+                // Use Original Request & Response
+                ctx = request.startAsync();
+            }
+            else
+            {
+                // Pass Request & Response
+                ctx = request.startAsync(request,response);
+            }
             ctx.addListener(this);
             ctx.setTimeout(200);
             request.setAttribute(AsyncContext.class.getName(),ctx);

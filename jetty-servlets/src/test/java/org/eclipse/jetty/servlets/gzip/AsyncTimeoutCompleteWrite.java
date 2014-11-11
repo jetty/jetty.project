@@ -31,20 +31,69 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+/**
+ * Respond with requested content, but via AsyncContext manipulation.
+ * <p>
+ * 
+ * <pre>
+ *   1) startAsync
+ *   2) AsyncContext.setTimeout()
+ *   3) onTimeout()
+ *   4) send-response
+ *   5) AsyncContext.complete()
+ * </pre>
+ */
 @SuppressWarnings("serial")
-public class AsyncTimeoutWrite extends TestDirContentServlet implements AsyncListener
+public abstract class AsyncTimeoutCompleteWrite extends TestDirContentServlet implements AsyncListener
 {
+    public static class Default extends AsyncTimeoutCompleteWrite
+    {
+        public Default()
+        {
+            super(true);
+        }
+    }
+    
+    public static class Passed extends AsyncTimeoutCompleteWrite
+    {
+        public Passed()
+        {
+            super(false);
+        }
+    }
+
+    private final boolean originalReqResp;
+
+    public AsyncTimeoutCompleteWrite(boolean originalReqResp)
+    {
+        this.originalReqResp = originalReqResp;
+    }
+
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
     {
-        assertThat("'filename' request attribute shouldn't be declared", request.getAttribute("filename"), nullValue());
+        assertThat("'filename' request attribute shouldn't be declared",request.getAttribute("filename"),nullValue());
 
-        AsyncContext ctx = (AsyncContext)request.getAttribute(AsyncContext.class.getName());
-        ctx = request.startAsync();
+        AsyncContext ctx = (AsyncContext)request.getAttribute(this.getClass().getName());
+        assertThat("AsyncContext (shouldn't be in request attribute)", ctx, nullValue());
+        
+        if (originalReqResp)
+        {
+            // Use Original Request & Response
+            ctx = request.startAsync();
+        }
+        else
+        {
+            // Pass Request & Response
+            ctx = request.startAsync(request,response);
+        }
         String fileName = request.getServletPath();
         request.setAttribute("filename",fileName);
         ctx.addListener(this);
         ctx.setTimeout(200);
+        
+        // Setup indication of a redispatch (which this scenario shouldn't do)
+        request.setAttribute(this.getClass().getName(),ctx);
     }
 
     @Override
@@ -74,7 +123,6 @@ public class AsyncTimeoutWrite extends TestDirContentServlet implements AsyncLis
         out.write(dataBytes);
 
         event.getAsyncContext().complete();
-      
     }
 
     @Override

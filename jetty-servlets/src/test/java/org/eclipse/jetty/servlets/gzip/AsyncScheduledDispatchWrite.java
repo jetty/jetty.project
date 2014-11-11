@@ -31,8 +31,24 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 @SuppressWarnings("serial")
-public class AsyncScheduledWrite extends TestDirContentServlet
+public abstract class AsyncScheduledDispatchWrite extends TestDirContentServlet
 {
+    public static class Default extends AsyncScheduledDispatchWrite
+    {
+        public Default()
+        {
+            super(true);
+        }
+    }
+    
+    public static class Passed extends AsyncScheduledDispatchWrite
+    {
+        public Passed()
+        {
+            super(false);
+        }
+    }
+
     private static class DispatchBack implements Runnable
     {
         private final AsyncContext ctx;
@@ -49,7 +65,13 @@ public class AsyncScheduledWrite extends TestDirContentServlet
         }
     }
 
+    private final boolean originalReqResp;
     private ScheduledExecutorService scheduler;
+
+    public AsyncScheduledDispatchWrite(boolean originalReqResp)
+    {
+        this.originalReqResp = originalReqResp;
+    }
 
     public void init(ServletConfig config) throws ServletException
     {
@@ -59,12 +81,22 @@ public class AsyncScheduledWrite extends TestDirContentServlet
 
     @Override
     protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
-    {        
+    {
         Boolean suspended = (Boolean)request.getAttribute("SUSPENDED");
-        if (suspended==null || !suspended)
+        if (suspended == null || !suspended)
         {
             request.setAttribute("SUSPENDED",Boolean.TRUE);
-            AsyncContext ctx = request.startAsync();
+            AsyncContext ctx;
+            if (originalReqResp)
+            {
+                // Use Original Request & Response
+                ctx = request.startAsync();
+            }
+            else
+            {
+                // Pass Request & Response
+                ctx = request.startAsync(request,response);
+            }
             ctx.setTimeout(0);
             scheduler.schedule(new DispatchBack(ctx),500,TimeUnit.MILLISECONDS);
         }

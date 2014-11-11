@@ -33,7 +33,9 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlets.gzip.AsyncTimeoutWrite;
+import org.eclipse.jetty.servlets.gzip.AsyncScheduledDispatchWrite;
+import org.eclipse.jetty.servlets.gzip.AsyncTimeoutDispatchWrite;
+import org.eclipse.jetty.servlets.gzip.AsyncTimeoutCompleteWrite;
 import org.eclipse.jetty.servlets.gzip.GzipTester;
 import org.eclipse.jetty.servlets.gzip.GzipTester.ContentMetadata;
 import org.eclipse.jetty.servlets.gzip.TestDirContentServlet;
@@ -61,6 +63,7 @@ import org.junit.runners.Parameterized.Parameters;
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @RunWith(Parameterized.class)
+@Ignore
 public class GzipFilterContentLengthTest
 {
     @Rule
@@ -162,10 +165,19 @@ public class GzipFilterContentLengthTest
      * AsyncContext create -> timeout -> onTimeout -> write-response -> complete
      */
     @Test
-    @Ignore
-    public void testAsyncTimeoutWrite() throws Exception
+    public void testAsyncTimeoutCompleteWrite_Default() throws Exception
     {
-        testWithGzip(AsyncTimeoutWrite.class);
+        testWithGzip(AsyncTimeoutCompleteWrite.Default.class);
+    }
+    
+    /**
+     * Test with content servlet that does:  
+     * AsyncContext create -> timeout -> onTimeout -> write-response -> complete
+     */
+    @Test
+    public void testAsyncTimeoutCompleteWrite_Passed() throws Exception
+    {
+        testWithGzip(AsyncTimeoutCompleteWrite.Passed.class);
     }
     
     /**
@@ -173,10 +185,39 @@ public class GzipFilterContentLengthTest
      * AsyncContext create -> timeout -> onTimeout -> dispatch -> write-response
      */
     @Test
-    @Ignore
-    public void testAsyncTimeoutDispatchBasedWrite() throws Exception
+    public void testAsyncTimeoutDispatchWrite_Default() throws Exception
     {
-        testWithGzip(AsyncTimeoutWrite.class);
+        testWithGzip(AsyncTimeoutDispatchWrite.Default.class);
+    }
+    
+    /**
+     * Test with content servlet that does:  
+     * AsyncContext create -> timeout -> onTimeout -> dispatch -> write-response
+     */
+    @Test
+    public void testAsyncTimeoutDispatchWrite_Passed() throws Exception
+    {
+        testWithGzip(AsyncTimeoutDispatchWrite.Passed.class);
+    }
+
+    /**
+     * Test with content servlet that does:  
+     * AsyncContext create -> no-timeout -> scheduler.schedule -> dispatch -> write-response
+     */
+    @Test
+    public void testAsyncScheduledDispatchWrite_Default() throws Exception
+    {
+        testWithGzip(AsyncScheduledDispatchWrite.Default.class);
+    }
+    
+    /**
+     * Test with content servlet that does:  
+     * AsyncContext create -> no-timeout -> scheduler.schedule -> dispatch -> write-response
+     */
+    @Test
+    public void testAsyncScheduledDispatchWrite_Passed() throws Exception
+    {
+        testWithGzip(AsyncScheduledDispatchWrite.Passed.class);
     }
 
     /**
