@@ -61,7 +61,7 @@ public class TestServletBufferTypeLengthWrite extends TestDirContentServlet
         response.setHeader("ETag","W/etag-"+fileName);
 
         response.setContentLength(dataBytes.length);
-
+        
         ((HttpOutput)out).write(ByteBuffer.wrap(dataBytes).asReadOnlyBuffer());
     }
 }

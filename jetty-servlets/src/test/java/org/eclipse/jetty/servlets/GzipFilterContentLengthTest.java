@@ -344,9 +344,10 @@ public class GzipFilterContentLengthTest
      * @see <a href="Eclipse Bug 450873">http://bugs.eclipse.org/450873</a>
      */
     @Test
-    @Ignore
     public void testHttpOutputWrite() throws Exception
     {
+        if (gzipFilterClass == GzipFilter.class)
+            return;  // Can't downcaste output stream when wrapper is used
         testWithGzip(TestServletBufferTypeLengthWrite.class);
     }
 }
