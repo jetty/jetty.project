@@ -1449,11 +1449,12 @@ public class ServletContextHandler extends ContextHandler
 
 
     /* ------------------------------------------------------------ */
-    /** Interface to decorate loaded classes.
+    /** 
+     * Interface to decorate loaded classes.
+     * <p>
+     * Left for backwards compatibility with Weld / CDI
      */
-    public interface Decorator
+    public interface Decorator extends org.eclipse.jetty.util.Decorator
     {
-        <T> T decorate (T o);
-        void destroy (Object o);
     }
 }

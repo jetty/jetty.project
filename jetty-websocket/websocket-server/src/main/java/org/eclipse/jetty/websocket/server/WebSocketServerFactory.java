@@ -30,6 +30,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
+
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -38,6 +39,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.util.Decorator;
+import org.eclipse.jetty.util.Decorators;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -85,6 +88,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
+    private Decorators decorators = new Decorators();
 
     public WebSocketServerFactory()
     {
@@ -317,6 +321,16 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         return extensionFactory;
     }
+    
+    public void addDecorator(Decorator decorator)
+    {
+        decorators.addDecorator(decorator);
+    }
+    
+    public List<Decorator> getDecorators()
+    {
+        return decorators.getDecorators();
+    }
 
     public Set<WebSocketSession> getOpenSessions()
     {
@@ -430,6 +444,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     public void setCreator(WebSocketCreator creator)
     {
         this.creator = creator;
+    }
+    
+    public void setDecorators(List<Decorator> decorators)
+    {
+        this.decorators.setDecorators(decorators);
     }
 
     /**
