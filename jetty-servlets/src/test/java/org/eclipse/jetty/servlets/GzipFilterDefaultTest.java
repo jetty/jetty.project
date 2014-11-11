@@ -18,10 +18,16 @@
 
 package org.eclipse.jetty.servlets;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.IOException;
 import java.util.Arrays;
+import java.util.EnumSet;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -48,7 +54,7 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class GzipFilterDefaultTest
 {
-    @Parameters
+    @Parameters(name="{1} - {0}")
     public static List<Object[]> data()
     {
         return Arrays.asList(new Object[][]
@@ -518,22 +524,31 @@ public class GzipFilterDefaultTest
     public void testIsNotGzipCompressedHttpBadRequestStatus() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
-        tester.setGzipFilterClass(testFilter);
+        
+        // Add Gzip Filter first
+        FilterHolder gzipHolder = new FilterHolder(testFilter);
+        gzipHolder.setAsyncSupported(true);
+        tester.addFilter(gzipHolder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        gzipHolder.setInitParameter("mimeTypes","text/plain");
 
         // Test error code 400
-        FilterHolder holder = tester.setContentServlet(HttpErrorServlet.class);
-        holder.setInitParameter("mimeTypes","text/plain");
+        tester.setContentServlet(HttpErrorServlet.class);
 
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressedAndEqualToExpectedString("GET","error message", -1, 400);
+            
+            HttpTester.Response response = tester.executeRequest("GET","/context/",2,TimeUnit.SECONDS);
+            
+            assertThat("Response status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
+            
+            String content = tester.readResponse(response);
+            assertThat("Response content", content, is("error message"));
         }
         finally
         {
             tester.stop();
         }
-
     }
 
     @Test

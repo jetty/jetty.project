@@ -465,28 +465,6 @@ public class GzipTester
      * Asserts that the request results in a properly structured GzipFilter response, where the content is not compressed, and the content-length is returned
      * appropriately.
      *
-     * @param expectedResponse
-     *            the expected response body string
-     * @param expectedFilesize
-     *            the expected filesize to be specified on the Content-Length portion of the response headers. (note: passing -1 will disable the Content-Length
-     *            assertion)
-     * @throws Exception
-     */
-    public void assertIsResponseNotGzipCompressedAndEqualToExpectedString(String method, String expectedResponse, int expectedFilesize, int status)
-            throws Exception
-    {
-        String uri = "/context/";
-        HttpTester.Response response = executeRequest(method,uri);
-        assertResponseHeaders(expectedFilesize,status,response);
-
-        String actual = readResponse(response);
-        Assert.assertEquals("Expected response equals actual response",expectedResponse,actual);
-    }
-
-    /**
-     * Asserts that the request results in a properly structured GzipFilter response, where the content is not compressed, and the content-length is returned
-     * appropriately.
-     *
      * @param expectedFilesize
      *            the expected filesize to be specified on the Content-Length portion of the response headers. (note: passing -1 will disable the Content-Length
      *            assertion)
@@ -546,7 +524,7 @@ public class GzipTester
         return executeRequest(method,path,2,TimeUnit.SECONDS);
     }
 
-    private String readResponse(HttpTester.Response response) throws IOException, UnsupportedEncodingException
+    public String readResponse(HttpTester.Response response) throws IOException, UnsupportedEncodingException
     {
         String actual = null;
         InputStream in = null;
@@ -688,7 +666,8 @@ public class GzipTester
     {
         return gzipFilterClass;
     }
-
+    
+    @Deprecated
     public void setGzipFilterClass(Class<? extends Filter> gzipFilterClass)
     {
         this.gzipFilterClass = gzipFilterClass;
