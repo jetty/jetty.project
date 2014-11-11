@@ -502,16 +502,25 @@ public class GzipFilterDefaultTest
     public void testIsNotGzipCompressedHttpStatus() throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, compressionType);
-        tester.setGzipFilterClass(testFilter);
+
+        // Add Gzip Filter first
+        FilterHolder gzipHolder = new FilterHolder(testFilter);
+        gzipHolder.setAsyncSupported(true);
+        tester.addFilter(gzipHolder,"/*",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
+        gzipHolder.setInitParameter("mimeTypes","text/plain");
 
         // Test error code 204
-        FilterHolder holder = tester.setContentServlet(HttpStatusServlet.class);
-        holder.setInitParameter("mimeTypes","text/plain");
+        tester.setContentServlet(HttpStatusServlet.class);
 
         try
         {
             tester.start();
-            tester.assertIsResponseNotGzipCompressed("GET",-1, 204);
+
+            HttpTester.Response response = tester.executeRequest("GET","/context/",2,TimeUnit.SECONDS);
+            
+            assertThat("Response status", response.getStatus(), is(HttpStatus.NO_CONTENT_204));
+            
+            assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(GzipFilter.GZIP)));
         }
         finally
         {
@@ -541,6 +550,7 @@ public class GzipFilterDefaultTest
             HttpTester.Response response = tester.executeRequest("GET","/context/",2,TimeUnit.SECONDS);
             
             assertThat("Response status", response.getStatus(), is(HttpStatus.BAD_REQUEST_400));
+            assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(GzipFilter.GZIP)));
             
             String content = tester.readResponse(response);
             assertThat("Response content", content, is("error message"));

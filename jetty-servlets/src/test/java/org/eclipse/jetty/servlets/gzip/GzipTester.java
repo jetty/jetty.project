@@ -461,22 +461,6 @@ public class GzipTester
         return response;
     }
 
-    /**
-     * Asserts that the request results in a properly structured GzipFilter response, where the content is not compressed, and the content-length is returned
-     * appropriately.
-     *
-     * @param expectedFilesize
-     *            the expected filesize to be specified on the Content-Length portion of the response headers. (note: passing -1 will disable the Content-Length
-     *            assertion)
-     * @throws Exception
-     */
-    public void assertIsResponseNotGzipCompressed(String method, int expectedFilesize, int status) throws Exception
-    {
-        String uri = "/context/";
-        HttpTester.Response response = executeRequest(method,uri);
-        assertResponseHeaders(expectedFilesize,status,response);
-    }
-
     private void assertResponseHeaders(int expectedFilesize, int status, HttpTester.Response response)
     {
         Assert.assertThat("Response.status",response.getStatus(),is(status));
