@@ -189,8 +189,6 @@ public class GzipFilterContentLengthTest
     @Test
     public void testAsyncTimeoutDispatchWrite_Default() throws Exception
     {
-        if (expectCompressed && gzipFilterClass==GzipFilter.class)
-            return; // Default startAsync will never work with GzipFilter, which needs wrapping
         testWithGzip(AsyncTimeoutDispatchWrite.Default.class);
     }
     
@@ -211,8 +209,6 @@ public class GzipFilterContentLengthTest
     @Test
     public void testAsyncScheduledDispatchWrite_Default() throws Exception
     {
-        if (expectCompressed && gzipFilterClass==GzipFilter.class)
-            return; // Default startAsync will never work with GzipFilter, which needs wrapping
         testWithGzip(AsyncScheduledDispatchWrite.Default.class);
     }
     
