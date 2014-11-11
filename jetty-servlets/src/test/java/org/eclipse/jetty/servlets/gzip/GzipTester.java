@@ -431,57 +431,6 @@ public class GzipTester
         return mat.group();
     }
 
-    /**
-     * Asserts that the requested filename results in a properly structured GzipFilter response, where the content is not compressed, and the content-length is
-     * returned appropriately.
-     *
-     * @param filename
-     *            the filename used for the request, and also used to compare the response to the server file, assumes that the file is suitable for
-     *            {@link Assert#assertEquals(Object, Object)} use. (in other words, the contents of the file are text)
-     * @param expectedFilesize
-     *            the expected filesize to be specified on the Content-Length portion of the response headers. (note: passing -1 will disable the Content-Length
-     *            assertion)
-     * @throws Exception
-     */
-    public HttpTester.Response assertIsResponseNotGzipCompressed(String method, String filename, int expectedFilesize, int status) throws Exception
-    {
-        String uri = "/context/" + filename;
-        HttpTester.Response response = executeRequest(method,uri);
-        assertResponseHeaders(expectedFilesize,status,response);
-        // Assert that the contents are what we expect.
-        if (filename != null)
-        {
-            File serverFile = testdir.getFile(filename);
-            String expectedResponse = IO.readToString(serverFile);
-
-            String actual = readResponse(response);
-            Assert.assertEquals("Expected response equals actual response",expectedResponse,actual);
-        }
-
-        return response;
-    }
-
-    private void assertResponseHeaders(int expectedFilesize, int status, HttpTester.Response response)
-    {
-        Assert.assertThat("Response.status",response.getStatus(),is(status));
-        Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),not(containsString(compressionType)));
-        if (expectedFilesize != (-1))
-        {
-            Assert.assertEquals(expectedFilesize,response.getContentBytes().length);
-            String cl = response.get("Content-Length");
-            if (cl != null)
-            {
-                int serverLength = Integer.parseInt(response.get("Content-Length"));
-                Assert.assertEquals(serverLength,expectedFilesize);
-            }
-
-            if (status >= 200 && status < 300)
-                Assert.assertThat(response.get("ETAG"),Matchers.startsWith("W/"));
-
-        }
-        Assert.assertThat("Response.header[Content-Encoding]",response.get("Content-Encoding"),not(containsString(compressionType)));
-    }
-
     public HttpTester.Response executeRequest(String method, String path, int idleFor, TimeUnit idleUnit) throws Exception
     {
         HttpTester.Request request = HttpTester.newRequest();
@@ -501,11 +450,6 @@ public class GzipTester
 
         // Issue the request
         return HttpTester.parseResponse(tester.getResponses(request.generate(),idleFor,idleUnit));
-    }
-
-    private HttpTester.Response executeRequest(String method, String path) throws IOException, Exception
-    {
-        return executeRequest(method,path,2,TimeUnit.SECONDS);
     }
 
     public String readResponse(HttpTester.Response response) throws IOException, UnsupportedEncodingException
