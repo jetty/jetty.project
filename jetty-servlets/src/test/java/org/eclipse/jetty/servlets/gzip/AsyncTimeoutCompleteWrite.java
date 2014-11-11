@@ -90,7 +90,7 @@ public abstract class AsyncTimeoutCompleteWrite extends TestDirContentServlet im
         String fileName = request.getServletPath();
         request.setAttribute("filename",fileName);
         ctx.addListener(this);
-        ctx.setTimeout(200);
+        ctx.setTimeout(20);
         
         // Setup indication of a redispatch (which this scenario shouldn't do)
         request.setAttribute(this.getClass().getName(),ctx);

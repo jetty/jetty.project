@@ -28,6 +28,7 @@ import java.util.StringTokenizer;
 import java.util.regex.Pattern;
 import java.util.zip.Deflater;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
@@ -302,6 +303,19 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
         LOG.debug("{} doFilter {}",this,req);
         HttpServletRequest request=(HttpServletRequest)req;
         HttpServletResponse response=(HttpServletResponse)res;
+        HttpChannel<?> channel = HttpChannel.getCurrentHttpChannel();
+        
+        // Have we already started compressing this response?
+        if (req.getDispatcherType()!=DispatcherType.REQUEST)
+        {
+            HttpOutput out = channel.getResponse().getHttpOutput();
+            if (out instanceof GzipHttpOutput && ((GzipHttpOutput)out).mightCompress())
+            {
+                LOG.debug("{} already might compress {}",this,request);
+                super.doFilter(request,response,chain);
+                return;
+            }
+        }
 
         // If not a supported method or it is an Excluded URI or an excluded UA - no Vary because no matter what client, this URI is always excluded
         String requestURI = request.getRequestURI();
@@ -368,7 +382,6 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
                 request.setAttribute(ETAG,etag.replace(ETAG_GZIP,""));
         }
 
-        HttpChannel<?> channel = HttpChannel.getCurrentHttpChannel();
         HttpOutput out = channel.getResponse().getHttpOutput();
         if (!(out instanceof GzipHttpOutput))
         {

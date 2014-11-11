@@ -248,6 +248,10 @@ public class GzipHttpOutput extends HttpOutput
         }
     }
 
+    public boolean mightCompress()
+    {
+        return _state.get()==GZState.MIGHT_COMPRESS;
+    }
 
     public void mightCompress(GzipFactory factory)
     {

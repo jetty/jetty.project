@@ -49,6 +49,7 @@ import org.eclipse.jetty.servlets.gzip.TestServletTypeLengthStreamWrite;
 import org.eclipse.jetty.servlets.gzip.TestServletTypeStreamLengthWrite;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -63,7 +64,6 @@ import org.junit.runners.Parameterized.Parameters;
  * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
  */
 @RunWith(Parameterized.class)
-@Ignore
 public class GzipFilterContentLengthTest
 {
     @Rule
@@ -167,6 +167,8 @@ public class GzipFilterContentLengthTest
     @Test
     public void testAsyncTimeoutCompleteWrite_Default() throws Exception
     {
+        if (expectCompressed && gzipFilterClass==GzipFilter.class)
+            return; // Default startAsync will never work with GzipFilter, which needs wrapping
         testWithGzip(AsyncTimeoutCompleteWrite.Default.class);
     }
     
@@ -187,6 +189,8 @@ public class GzipFilterContentLengthTest
     @Test
     public void testAsyncTimeoutDispatchWrite_Default() throws Exception
     {
+        if (expectCompressed && gzipFilterClass==GzipFilter.class)
+            return; // Default startAsync will never work with GzipFilter, which needs wrapping
         testWithGzip(AsyncTimeoutDispatchWrite.Default.class);
     }
     
@@ -207,6 +211,8 @@ public class GzipFilterContentLengthTest
     @Test
     public void testAsyncScheduledDispatchWrite_Default() throws Exception
     {
+        if (expectCompressed && gzipFilterClass==GzipFilter.class)
+            return; // Default startAsync will never work with GzipFilter, which needs wrapping
         testWithGzip(AsyncScheduledDispatchWrite.Default.class);
     }
     
