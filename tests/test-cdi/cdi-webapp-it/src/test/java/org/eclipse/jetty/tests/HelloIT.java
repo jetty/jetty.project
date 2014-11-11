@@ -36,6 +36,6 @@ public class HelloIT
     {
         URI serverURI = new URI("http://localhost:58080/cdi-webapp/");
         SimpleRequest req = new SimpleRequest(serverURI);
-        assertThat(req.getString("hello"),is("Hello World"));
+        assertThat(req.getString("hello"),is("Hello World" + System.lineSeparator()));
     }
 }
