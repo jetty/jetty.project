@@ -285,7 +285,6 @@ esac
 
 
 JETTY_ARGS=("$JETTY_ARGS" "jetty.state=$JETTY_STATE")
-rm -f $JETTY_STATE
 
 ##################################################
 # Get the list of config.xml files from jetty.conf
@@ -495,9 +494,6 @@ case "$ACTION" in
 
         sleep 1
       done
-
-      rm -f "$JETTY_PID"
-      echo OK
     else
       if [ ! -f "$JETTY_PID" ] ; then
         echo "ERROR: no pid found at $JETTY_PID"
@@ -519,10 +515,11 @@ case "$ACTION" in
 
         sleep 1
       done
-
-      rm -f "$JETTY_PID"
-      echo OK
     fi
+
+    rm -f "$JETTY_PID"
+    rm -f "$JETTY_STATE"
+    echo OK
 
     ;;
 
@@ -571,6 +568,7 @@ case "$ACTION" in
     echo "JETTY_PID      =  $JETTY_PID"
     echo "JETTY_START    =  $JETTY_START"
     echo "JETTY_LOGS     =  $JETTY_LOGS"
+    echo "JETTY_STATE    =  $JETTY_STATE"
     echo "CLASSPATH      =  $CLASSPATH"
     echo "JAVA           =  $JAVA"
     echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
