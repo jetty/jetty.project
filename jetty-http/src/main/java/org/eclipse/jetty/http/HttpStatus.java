@@ -668,6 +668,7 @@ public class HttpStatus
     public final static int UNPROCESSABLE_ENTITY_422 = 422;
     public final static int LOCKED_423 = 423;
     public final static int FAILED_DEPENDENCY_424 = 424;
+    public final static int UPGRADE_REQUIRED_426 = 426;
 
     public final static int INTERNAL_SERVER_ERROR_500 = 500;
     public final static int NOT_IMPLEMENTED_501 = 501;
@@ -677,8 +678,13 @@ public class HttpStatus
     public final static int HTTP_VERSION_NOT_SUPPORTED_505 = 505;
     public final static int INSUFFICIENT_STORAGE_507 = 507;
 
-    public static final int MAX_CODE = 507;
-
+    // RFC 6585
+    public final static int PRECONDITION_REQUIRED_428 = 428;
+    public final static int TOO_MANY_REQUESTS_429 = 429;
+    public final static int REQUEST_HEADER_FIELDS_TOO_LARGE_431 = 431;
+    public final static int NETWORK_AUTHENTICATION_REQUIRED_511 = 511;
+    
+    public static final int MAX_CODE = 511;
 
     private static final Code[] codeMap = new Code[MAX_CODE+1];
 
@@ -802,7 +808,17 @@ public class HttpStatus
         LOCKED(LOCKED_423, "Locked"),
         /** <code>424 Failed Dependency</code> */
         FAILED_DEPENDENCY(FAILED_DEPENDENCY_424, "Failed Dependency"),
-
+        
+        /** <code>426 Upgrade Required (RFC7231)</code> */
+        UPGRADE_REQUIRED(UPGRADE_REQUIRED_426, "Upgrade Required"),
+        
+        /** <code>428 Precondition Required (RFC6585)</code> */
+        PRECONDITION_REQUIRED(PRECONDITION_REQUIRED_428, "Precondition Required"),
+        /** <code>429 Too Many Requests (RFC6585)</code> */
+        TOO_MANY_REQUESTS(TOO_MANY_REQUESTS_429, "Too Many Requests"),
+        /** <code>431 Request Header Fields Too Large (RFC6585)</code> */
+        REQUEST_HEADER_FIELDS_TOO_LARGE(REQUEST_HEADER_FIELDS_TOO_LARGE_431, "Request Header Fields Too Large"),
+      
         /*
          * --------------------------------------------------------------------
          * Server Error messages in 5xx series. As defined by ... RFC 1945 -
@@ -822,8 +838,13 @@ public class HttpStatus
         /** <code>505 HTTP Version Not Supported</code> */
         HTTP_VERSION_NOT_SUPPORTED(HTTP_VERSION_NOT_SUPPORTED_505, "HTTP Version Not Supported"),
         /** <code>507 Insufficient Storage</code> */
-        INSUFFICIENT_STORAGE(INSUFFICIENT_STORAGE_507, "Insufficient Storage");
+        INSUFFICIENT_STORAGE(INSUFFICIENT_STORAGE_507, "Insufficient Storage"),
 
+        /** <code>511 Network Authentication Required (RFC6585)</code> */
+        NETWORK_AUTHENTICATION_REQUIRED(NETWORK_AUTHENTICATION_REQUIRED_511, "Network Authentication Required"),
+        
+        ;
+        
         private final int _code;
         private final String _message;
 

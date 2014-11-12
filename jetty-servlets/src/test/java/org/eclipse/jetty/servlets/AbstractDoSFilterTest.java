@@ -260,7 +260,7 @@ public abstract class AbstractDoSFilterTest
         // System.err.println("RESPONSES: \n"+responses);
 
         assertEquals(4,count(responses,"HTTP/1.1 200 OK"));
-        assertEquals(1,count(responses,"HTTP/1.1 503"));
+        assertEquals(1,count(responses,"HTTP/1.1 429"));
         assertEquals(1,count(responses,"DoSFilter: delayed"));
         assertEquals(1,count(responses,"DoSFilter: throttled"));
         assertEquals(1,count(responses,"DoSFilter: unavailable"));
