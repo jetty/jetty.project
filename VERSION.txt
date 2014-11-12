@@ -1,3 +1,14 @@
+jetty-9.2.5.v20141112 - 12 November 2014
+ + 448446 org.eclipse.jetty.start.Main create classloader duplicate
+ + 449594 Handle ArrayTrie overflow with false return
+ + 449811 handle unquoted etags when gzipping
+ + 450467 Integer overflow in Session expiry calculation in MongoSessionManager
+ + 450483 Missing parameterization of etc/jetty-deploy.xml.
+ + 450484 Missing parameterization of etc/jetty-http[s].xml.
+ + 450855 GzipFilter MIGHT_COMPRESS exception
+ + 450873 Disable tests that downcaste wrapped GzipFilterResponses
+ + 450894 jetty.sh does not delete JETTY_STATE at start
+
 jetty-9.2.4.v20141103 - 03 November 2014
  + 376365 "jetty.sh start" returns 0 on failure
  + 396569 'bin/jetty.sh stop' reports 'OK' even when jetty was not running
