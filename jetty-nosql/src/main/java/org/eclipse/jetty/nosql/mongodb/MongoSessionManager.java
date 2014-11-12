@@ -237,7 +237,7 @@ public class MongoSessionManager extends NoSqlSessionManager
             // handle valid or invalid
             if (session.isValid())
             {
-                long expiry = (session.getMaxInactiveInterval() > 0?(session.getAccessed()+(1000*getMaxInactiveInterval())):0);
+                long expiry = (session.getMaxInactiveInterval() > 0?(session.getAccessed()+(1000L*getMaxInactiveInterval())):0);
                 __log.debug("MongoSessionManager: calculated expiry {} for session {}", expiry, session.getId());
                 
                 // handle new or existing
