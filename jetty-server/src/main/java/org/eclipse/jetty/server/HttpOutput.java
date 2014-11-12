@@ -57,6 +57,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public interface Interceptor
     {
         void write(ByteBuffer content, boolean complete, Callback callback);
+        Interceptor getNextInterceptor();
     }
     
     private static Logger LOG = Log.getLogger(HttpOutput.class);

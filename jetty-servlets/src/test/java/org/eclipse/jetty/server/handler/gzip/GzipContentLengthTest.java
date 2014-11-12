@@ -38,6 +38,7 @@ import org.eclipse.jetty.servlets.AsyncGzipFilter;
 import org.eclipse.jetty.servlets.GzipFilter;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
@@ -155,6 +156,8 @@ public class GzipContentLengthTest
     @Test
     public void testAsyncTimeoutCompleteWrite_Default() throws Exception
     {
+        if (expectCompressed && gzipFilterClass==GzipFilter.class)
+            return; // Default startAsync will never work with GzipFilter, which needs wrapping
         testWithGzip(AsyncTimeoutCompleteWrite.Default.class);
     }
     
@@ -326,9 +329,10 @@ public class GzipContentLengthTest
      * @see <a href="Eclipse Bug 450873">http://bugs.eclipse.org/450873</a>
      */
     @Test
-    @Ignore
     public void testHttpOutputWrite() throws Exception
     {
+        if (gzipFilterClass == GzipFilter.class)
+            return;  // Can't downcaste output stream when wrapper is used
         testWithGzip(TestServletBufferTypeLengthWrite.class);
     }
 }
