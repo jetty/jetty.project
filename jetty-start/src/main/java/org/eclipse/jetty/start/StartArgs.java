@@ -112,7 +112,11 @@ public class StartArgs
     private Modules allModules;
     /** Should the server be run? */
     private boolean run = true;
+    
+    /** Download related args */
     private boolean download = false;
+    private boolean testingMode = false;
+    
     private boolean help = false;
     private boolean stopCommand = false;
     private boolean listModules = false;
@@ -123,7 +127,6 @@ public class StartArgs
 
     private boolean exec = false;
     private boolean approveAllLicenses = false;
-    private boolean testingMode = false;
 
     public StartArgs()
     {
@@ -135,6 +138,10 @@ public class StartArgs
         FileArg arg = new FileArg(module, uriLocation);
         if (!files.contains(arg))
         {
+            if (arg.uri != null)
+            {
+                this.download = true;
+            }
             files.add(arg);
         }
     }

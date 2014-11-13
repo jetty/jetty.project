@@ -35,7 +35,7 @@ import java.net.ConnectException;
 import java.net.InetAddress;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
-import java.net.URL;
+import java.net.URI;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -50,6 +50,9 @@ import java.util.Set;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
+import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
+import org.eclipse.jetty.start.fileinits.TestFileInitializer;
+import org.eclipse.jetty.start.fileinits.UriFileInitializer;
 
 /**
  * Main start class.
@@ -170,76 +173,6 @@ public class Main
             }
 
         }).start();
-    }
-
-    private void initFile(StartArgs args, FileArg farg)
-    {
-        try
-        {
-            Path file = baseHome.getBasePath(farg.location);
-            
-            StartLog.debug("[init-file] %s module specified file %s",file.toAbsolutePath(),(FS.exists(file)?"[Exists!]":""));
-            if (FS.exists(file))
-            {
-                // file already initialized / downloaded, skip it
-                return;
-            }
-
-            if (farg.uri!=null)
-            {
-                URL url = new URL(farg.uri);
-
-                StartLog.log("DOWNLOAD", "%s to %s", url, farg.location);
-
-                FS.ensureDirectoryExists(file.getParent());
-                
-                if (args.isTestingModeEnabled())
-                {
-                    StartLog.log("TESTING MODE", "Skipping download of " + url);
-                    return;
-                }
-
-                byte[] buf = new byte[8192];
-                try (InputStream in = url.openStream(); 
-                     OutputStream out = Files.newOutputStream(file,StandardOpenOption.CREATE_NEW,StandardOpenOption.WRITE))
-                {
-                    while (true)
-                    {
-                        int len = in.read(buf);
-
-                        if (len > 0)
-                        {
-                            out.write(buf,0,len);
-                        }
-                        if (len < 0)
-                        {
-                            break;
-                        }
-                    }
-                }
-            }
-            else if (farg.location.endsWith("/"))
-            {
-                StartLog.log("MKDIR",baseHome.toShortForm(file));
-                FS.ensureDirectoryExists(file);
-            }
-            else
-            {
-                String shortRef = baseHome.toShortForm(file);
-                if (args.isTestingModeEnabled())
-                {
-                    StartLog.log("TESTING MODE","Skipping required file check on: %s",shortRef);
-                    return;
-                }
-                StartLog.warn("MISSING: Required file %s",shortRef);
-            }
-        }
-        catch (Exception e)
-        {
-            StartLog.warn("ERROR: processing %s%n%s",farg,e);
-            StartLog.warn(e);
-            usageExit(EXIT_USAGE);
-        }
     }
 
     private void dumpClasspathWithVersions(Classpath classpath)
@@ -366,6 +299,7 @@ public class Main
      * This applies equally for either <code>${jetty.base}/start.ini</code> or
      * <code>${jetty.base}/start.d/${name}.ini</code> 
      * 
+     * @param fileInitializers the configured initializers
      * @param args the arguments of what modules are enabled
      * @param name the name of the module to based the build of the ini
      * @param topLevel 
@@ -373,7 +307,7 @@ public class Main
      * false to create a <code>${jetty.base}/start.d/${name}.ini</code> entry instead.
      * @throws IOException
      */
-    private void buildIni(StartArgs args, String name, boolean topLevel, boolean appendStartIni) throws IOException
+    private void buildIni(List<FileInitializer> fileInitializers, StartArgs args, String name, boolean topLevel, boolean appendStartIni) throws IOException
     {        
         // Find the start.d relative to the base directory only.
         Path start_d = baseHome.getBasePath("start.d");
@@ -512,10 +446,12 @@ public class Main
         }
 
         // Do downloads now
+        List<FileArg> files = new ArrayList<FileArg>();
         for (String file : module.getFiles())
         {
-            initFile(args, new FileArg(module,file));
+            files.add(new FileArg(module,file));
         }
+        processFileResources(fileInitializers,args,files);
 
         // Process dependencies
         module.expandProperties(args.getProperties());
@@ -547,7 +483,7 @@ public class Main
                     if (!done.contains(m.getName()))
                     {
                         complete=false;
-                        buildIni(args,m.getName(),false,appendStartIni);
+                        buildIni(fileInitializers,args,m.getName(),false,appendStartIni);
                         done.add(m.getName());
                     }
                 }
@@ -636,7 +572,140 @@ public class Main
 
         return args;
     }
+    
+    /**
+     * Process the {@link FileArg} for startup, assume that all licenses have
+     * been acknowledged at this stage.
+     * 
+     * @param fileInitializers the file initializer mechanisms.
+     * @param args the start arguments
+     */
+    private void processFileResources(List<FileInitializer> fileInitializers, StartArgs args) throws IOException
+    {
+        processFileResources(fileInitializers,args,args.getFiles());
+    }
 
+    /**
+     * Process the {@link FileArg} for startup, assume that all licenses have
+     * been acknowledged at this stage.
+     * 
+     * @param fileInitializers the file initializer mechanisms.
+     * @param args the start arguments
+     * @param files the list of {@link FileArg}s to process
+     */
+    private void processFileResources(List<FileInitializer> fileInitializers, StartArgs args, List<FileArg> files) throws IOException
+    {
+        List<String> failures = new ArrayList<String>();
+        
+        for (FileArg arg : files)
+        {
+            Path file = baseHome.getBasePath(arg.location);
+            try
+            {
+                if (!processFileResource(fileInitializers,args,arg,file))
+                {
+                    failures.add(String.format("[GenericError] %s",file.toAbsolutePath().toString()));
+                }
+            }
+            catch (Throwable t)
+            {
+                StartLog.warn(t);
+                failures.add(String.format("[%s] %s - %s",t.getClass().getSimpleName(),t.getMessage(),file.toAbsolutePath().toString()));
+            }
+        }
+        
+        if (failures.isEmpty())
+        {
+            return;
+        }
+        
+        StartLog.warn("Failed to process all file resources.");
+        for (String failure : failures)
+        {
+            StartLog.warn(" - %s",failure);
+        }
+    }
+
+    private boolean processFileResource(List<FileInitializer> fileInitializers, StartArgs args, FileArg arg, Path file) throws IOException
+    {
+        if (args.isDownload() && arg.uri != null)
+        {
+            URI uri = URI.create(arg.uri);
+
+            // Process via initializers
+            for (FileInitializer finit : fileInitializers)
+            {
+                if (finit.init(uri,file))
+                {
+                    // Completed successfully
+                    return true;
+                }
+            }
+
+            return false;
+        }
+        else
+        {
+            // Process directly
+            boolean isDir = arg.location.endsWith("/");
+
+            if (FS.exists(file))
+            {
+                // Validate existence
+                if (isDir)
+                {
+                    if (!Files.isDirectory(file))
+                    {
+                        throw new IOException("Invalid: path should be a directory (but isn't): " + file);
+                    }
+                    if (!FS.canReadDirectory(file))
+                    {
+                        throw new IOException("Unable to read directory: " + file);
+                    }
+                }
+                else
+                {
+                    if (!FS.canReadFile(file))
+                    {
+                        throw new IOException("Unable to read file: " + file);
+                    }
+                }
+
+                return true;
+            }
+
+            if (isDir)
+            {
+                // Create directory
+                StartLog.log("MKDIR",baseHome.toShortForm(file));
+                FS.ensureDirectoryExists(file);
+
+                return true;
+            }
+            else
+            {
+                // Warn on missing file (this has to be resolved manually by
+                // user)
+                String shortRef = baseHome.toShortForm(file);
+                if (args.isTestingModeEnabled())
+                {
+                    StartLog.log("TESTING MODE","Skipping required file check on: %s",shortRef);
+                    return true;
+                }
+
+                StartLog.warn("Missing Required File: %s",baseHome.toShortForm(file));
+                args.setRun(false);
+                if (arg.uri != null)
+                {
+                    StartLog.warn("  Can be downloaded From: %s",arg.uri);
+                    StartLog.warn("  Run start.jar --create-files to download");
+                }
+
+                return false;
+            }
+        }
+    }
+    
     public void start(StartArgs args) throws IOException, InterruptedException
     {
         StartLog.debug("StartArgs: %s",args);
@@ -692,19 +761,33 @@ public class Main
             doStop(args);
         }
         
+        // Establish FileInitializers
+        List<FileInitializer> fileInitializers = new ArrayList<FileInitializer>();
+        if (args.isTestingModeEnabled())
+        {
+            // No downloads performed
+            fileInitializers.add(new TestFileInitializer());
+        }
+        else
+        {
+            // Downloads performed
+            fileInitializers.add(new MavenLocalRepoFileInitializer());
+            fileInitializers.add(new UriFileInitializer());
+        }
+        
         boolean rebuildGraph = false;
 
         // Initialize start.ini
         for (String module : args.getAddToStartIni())
         {
-            buildIni(args,module,true,true);
+            buildIni(fileInitializers,args,module,true,true);
             rebuildGraph = true;
         }
 
         // Initialize start.d
         for (String module : args.getAddToStartdIni())
         {
-            buildIni(args,module,true,false);
+            buildIni(fileInitializers,args,module,true,false);
             rebuildGraph = true;
         }
         
@@ -719,6 +802,7 @@ public class Main
         {
             if (!args.isApproveAllLicenses())
             {
+                StartLog.debug("Requesting License Acknowledgement");
                 for (Module module : args.getAllModules().resolveEnabled())
                 {
                     if (!module.acknowledgeLicense())
@@ -730,46 +814,7 @@ public class Main
             }
         }
 
-        // Check ini files for download possibilities
-        for (FileArg arg : args.getFiles())
-        {
-            Path file = baseHome.getBasePath(arg.location);
-            if (!FS.exists(file) && args.isDownload())
-            {
-                initFile(args, arg);
-            }
-
-            if (!FS.exists(file))
-            {
-                boolean isDir = arg.location.endsWith("/");
-                if (isDir)
-                {
-                    StartLog.log("MKDIR", baseHome.toShortForm(file));
-                    FS.ensureDirectoryExists(file);
-                    /* Startup should not fail to run on missing directories.
-                     * See Bug #427204
-                     */
-                    // args.setRun(false);
-                }
-                else
-                {
-                    String shortRef = baseHome.toShortForm(file);
-                    if (args.isTestingModeEnabled())
-                    {
-                        StartLog.log("TESTING MODE","Skipping required file check on: %s",shortRef);
-                        return;
-                    }
-
-                    StartLog.warn("Missing Required File: %s",baseHome.toShortForm(file));
-                    args.setRun(false);
-                    if (arg.uri != null)
-                    {
-                        StartLog.warn("  Can be downloaded From: %s",arg.uri);
-                        StartLog.warn("  Run start.jar --create-files to download");
-                    }
-                }
-            }
-        }
+        processFileResources(fileInitializers, args);
         
         // Informational command line, don't run jetty
         if (!args.isRun())
@@ -821,6 +866,8 @@ public class Main
             usageExit(e,ERR_INVOKE_MAIN);
         }
     }
+
+    
 
     private void doStop(StartArgs args)
     {

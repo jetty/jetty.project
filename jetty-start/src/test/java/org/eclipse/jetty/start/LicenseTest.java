@@ -123,6 +123,7 @@ public class LicenseTest
         List<String> cmds = getBaseCommandLine(basePath);
 
         cmds.add("-Dorg.eclipse.jetty.start.ack.license.protonego-impl=true");
+        cmds.add("--dry-run");
         
         StringReader startIni = new StringReader("--module=spdy\n");
         try (FileWriter writer = new FileWriter(new File(basePath,"start.ini")))

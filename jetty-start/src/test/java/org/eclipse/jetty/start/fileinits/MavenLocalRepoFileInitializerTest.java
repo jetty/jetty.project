@@ -1,0 +1,126 @@
+//
+//  ========================================================================
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  ------------------------------------------------------------------------
+//  All rights reserved. This program and the accompanying materials
+//  are made available under the terms of the Eclipse Public License v1.0
+//  and Apache License v2.0 which accompanies this distribution.
+//
+//      The Eclipse Public License is available at
+//      http://www.eclipse.org/legal/epl-v10.html
+//
+//      The Apache License v2.0 is available at
+//      http://www.opensource.org/licenses/apache2.0.php
+//
+//  You may elect to redistribute this code under either of these licenses.
+//  ========================================================================
+//
+
+package org.eclipse.jetty.start.fileinits;
+
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
+import java.net.URI;
+
+import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer.Coordinates;
+import org.junit.Rule;
+import org.junit.Test;
+import org.junit.rules.ExpectedException;
+
+public class MavenLocalRepoFileInitializerTest
+{
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+
+    @Test
+    public void testGetCoordinate_NotMaven()
+    {
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer();
+        String ref = "http://www.eclipse.org/jetty";
+        Coordinates coords = repo.getCoordinates(URI.create(ref));
+        assertThat("Coords",coords,nullValue());
+    }
+
+    @Test
+    public void testGetCoordinate_InvalidMaven()
+    {
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer();
+        String ref = "maven://www.eclipse.org/jetty";
+        expectedException.expect(RuntimeException.class);
+        expectedException.expectMessage(containsString("Not a valid maven:// uri"));
+        repo.getCoordinates(URI.create(ref));
+    }
+
+    @Test
+    public void testGetCoordinate_Normal()
+    {
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer();
+        String ref = "maven://org.eclipse.jetty/jetty-start/9.3.x";
+        Coordinates coords = repo.getCoordinates(URI.create(ref));
+        assertThat("Coordinates",coords,notNullValue());
+
+        assertThat("coords.groupId",coords.groupId,is("org.eclipse.jetty"));
+        assertThat("coords.artifactId",coords.artifactId,is("jetty-start"));
+        assertThat("coords.version",coords.version,is("9.3.x"));
+        assertThat("coords.type",coords.type,is("jar"));
+        assertThat("coords.classifier",coords.classifier,nullValue());
+        
+        assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(), 
+                is("http://central.maven.org/maven2/org/eclipse/jetty/jetty-start/9.3.x/jetty-start-9.3.x.jar"));
+    }
+
+    @Test
+    public void testGetCoordinate_Zip()
+    {
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer();
+        String ref = "maven://org.eclipse.jetty/jetty-distribution/9.3.x/zip";
+        Coordinates coords = repo.getCoordinates(URI.create(ref));
+        assertThat("Coordinates",coords,notNullValue());
+
+        assertThat("coords.groupId",coords.groupId,is("org.eclipse.jetty"));
+        assertThat("coords.artifactId",coords.artifactId,is("jetty-distribution"));
+        assertThat("coords.version",coords.version,is("9.3.x"));
+        assertThat("coords.type",coords.type,is("zip"));
+        assertThat("coords.classifier",coords.classifier,nullValue());
+        
+        assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(), 
+                is("http://central.maven.org/maven2/org/eclipse/jetty/jetty-distribution/9.3.x/jetty-distribution-9.3.x.zip"));
+    }
+
+    @Test
+    public void testGetCoordinate_TestJar()
+    {
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer();
+        String ref = "maven://org.eclipse.jetty/jetty-http/9.3.x/jar/tests";
+        Coordinates coords = repo.getCoordinates(URI.create(ref));
+        assertThat("Coordinates",coords,notNullValue());
+
+        assertThat("coords.groupId",coords.groupId,is("org.eclipse.jetty"));
+        assertThat("coords.artifactId",coords.artifactId,is("jetty-http"));
+        assertThat("coords.version",coords.version,is("9.3.x"));
+        assertThat("coords.type",coords.type,is("jar"));
+        assertThat("coords.classifier",coords.classifier,is("tests"));
+        
+        assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(), 
+                is("http://central.maven.org/maven2/org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
+    }
+    
+    @Test
+    public void testGetCoordinate_Test_UnspecifiedType()
+    {
+        MavenLocalRepoFileInitializer repo = new MavenLocalRepoFileInitializer();
+        String ref = "maven://org.eclipse.jetty/jetty-http/9.3.x//tests";
+        Coordinates coords = repo.getCoordinates(URI.create(ref));
+        assertThat("Coordinates",coords,notNullValue());
+
+        assertThat("coords.groupId",coords.groupId,is("org.eclipse.jetty"));
+        assertThat("coords.artifactId",coords.artifactId,is("jetty-http"));
+        assertThat("coords.version",coords.version,is("9.3.x"));
+        assertThat("coords.type",coords.type,is("jar"));
+        assertThat("coords.classifier",coords.classifier,is("tests"));
+        
+        assertThat("coords.toCentralURI", coords.toCentralURI().toASCIIString(), 
+                is("http://central.maven.org/maven2/org/eclipse/jetty/jetty-http/9.3.x/jetty-http-9.3.x-tests.jar"));
+    }
+}
