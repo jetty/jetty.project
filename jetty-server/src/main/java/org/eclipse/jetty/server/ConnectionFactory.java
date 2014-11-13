@@ -19,6 +19,8 @@
 package org.eclipse.jetty.server;
 
 
+import java.util.List;
+
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 
@@ -42,9 +44,15 @@ public interface ConnectionFactory
 {
     /* ------------------------------------------------------------ */
     /**
-     * @return A string representing the protocol name.
+     * @return A string representing the primary protocol name.
      */
     public String getProtocol();
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return A list of alternative protocol names/versions including the primary protocol.
+     */
+    public List<String> getProtocols();
     
     /**
      * <p>Creates a new {@link Connection} with the given parameters</p>

@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.server;
 
+import java.util.Arrays;
+import java.util.Collections;
+import java.util.List;
+
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -28,17 +32,31 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 public abstract class AbstractConnectionFactory extends ContainerLifeCycle implements ConnectionFactory
 {
     private final String _protocol;
+    private final List<String> _protocols;
     private int _inputbufferSize = 8192;
 
     protected AbstractConnectionFactory(String protocol)
     {
         _protocol=protocol;
+        _protocols=Collections.unmodifiableList(Arrays.asList(new String[]{protocol}));
+    }
+    
+    protected AbstractConnectionFactory(String... protocols)
+    {
+        _protocol=protocols[0];
+        _protocols=Collections.unmodifiableList(Arrays.asList(protocols));
     }
 
     @Override
     public String getProtocol()
     {
         return _protocol;
+    }
+
+    @Override
+    public List<String> getProtocols()
+    {
+        return _protocols;
     }
 
     public int getInputBufferSize()
@@ -67,7 +85,7 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s}",this.getClass().getSimpleName(),hashCode(),getProtocol());
+        return String.format("%s@%x%s",this.getClass().getSimpleName(),hashCode(),getProtocols());
     }
 
     public static ConnectionFactory[] getFactories(SslContextFactory sslContextFactory, ConnectionFactory... factories)

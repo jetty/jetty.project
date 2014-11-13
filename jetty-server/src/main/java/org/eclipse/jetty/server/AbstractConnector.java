@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.HashSet;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
@@ -358,17 +359,33 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            String key=StringUtil.asciiToLowerCase(factory.getProtocol());
-            ConnectionFactory old=_factories.remove(key);
-            if (old!=null)
+            Set<ConnectionFactory> to_remove = new HashSet<ConnectionFactory>();
+            for (String key:factory.getProtocols())
             {
-                if (old.getProtocol().equals(_defaultProtocol))
-                    _defaultProtocol=null;
+                key=StringUtil.asciiToLowerCase(key);
+                ConnectionFactory old=_factories.remove(key);
+                if (old!=null)
+                {
+                    if (old.getProtocol().equals(_defaultProtocol))
+                        _defaultProtocol=null;
+                    to_remove.add(old);
+                }
+                _factories.put(key, factory);
+            }
+            
+            // keep factories still referenced
+            for (ConnectionFactory f : _factories.values())
+                to_remove.remove(f);
+            
+            // remove old factories
+            for (ConnectionFactory old: to_remove)
+            {
                 removeBean(old);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} removed {}", this, old);
             }
-            _factories.put(key, factory);
+
+            // add new Bean
             addBean(factory);
             if (_defaultProtocol==null)
                 _defaultProtocol=factory.getProtocol();
