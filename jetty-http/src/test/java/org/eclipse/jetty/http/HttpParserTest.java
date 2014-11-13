@@ -1633,7 +1633,7 @@ public class HttpParserTest
     private boolean _headerCompleted;
     private boolean _messageCompleted;
 
-    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, HttpParser.ProxyHandler
+    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler
     {
         private HttpFields fields;
         String _proxy;
@@ -1741,12 +1741,6 @@ public class HttpParserTest
         public int getHeaderCacheSize()
         {
             return 512;
-        }
-
-        @Override
-        public void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort)
-        {
-            _proxy="PROXY "+protocol+" "+sAddr+" "+dAddr+" "+sPort+" "+dPort;
         }
     }
 }

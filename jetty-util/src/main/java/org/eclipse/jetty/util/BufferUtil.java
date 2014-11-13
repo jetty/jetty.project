@@ -516,10 +516,12 @@ public class BufferUtil
     }
 
     /* ------------------------------------------------------------ */
-    /** Convert a partial buffer to a String
-     * @param buffer  The buffer to convert in flush mode. The buffer is unchanged
+    /** Convert a partial buffer to a String.
+     * 
+     * @param position The position in the buffer to start the string from
+     * @param length The length of the buffer
      * @param charset The {@link Charset} to use to convert the bytes
-     * @return The buffer as a string.
+     * @return  The buffer as a string.
      */
     public static String toString(ByteBuffer buffer, int position, int length, Charset charset)
     {
@@ -548,11 +550,29 @@ public class BufferUtil
      */
     public static int toInt(ByteBuffer buffer)
     {
+        return toInt(buffer,buffer.position(),buffer.remaining());
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
+     *
+     * @param buffer
+     *            A buffer containing an integer in flush mode. The position is not changed.
+     * @return an int
+     */
+    public static int toInt(ByteBuffer buffer, int position, int length)
+    {
         int val = 0;
         boolean started = false;
         boolean minus = false;
 
-        for (int i = buffer.position(); i < buffer.limit(); i++)
+        int limit = position+length;
+        
+        if (length<=0)
+            throw new NumberFormatException(toString(buffer,position,length,StandardCharsets.UTF_8));
+        
+        for (int i = position; i < limit; i++)
         {
             byte b = buffer.get(i);
             if (b <= SPACE)
