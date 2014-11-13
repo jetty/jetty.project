@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
+import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.resource.Resource;
 import org.osgi.framework.Bundle;
@@ -56,7 +57,7 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
      */
     protected Resource indexBundle(Bundle bundle) throws Exception
     {
-        File bundleFile = BundleFileLocatorHelper.DEFAULT.getBundleInstallLocation(bundle);
+        File bundleFile = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(bundle);
         Resource resource = Resource.newResource(bundleFile.toURI());
         URI uri = resource.getURI();
         _uriToBundle.putIfAbsent(uri,bundle);
