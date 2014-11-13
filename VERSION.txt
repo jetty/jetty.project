@@ -1,3 +1,5 @@
+jetty-9.2.6-SNAPSHOT
+
 jetty-9.2.5.v20141112 - 12 November 2014
  + 448446 org.eclipse.jetty.start.Main create classloader duplicate
  + 449594 Handle ArrayTrie overflow with false return
