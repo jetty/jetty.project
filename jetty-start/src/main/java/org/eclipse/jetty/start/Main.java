@@ -749,8 +749,22 @@ public class Main
         }
         else
         {
-            // Downloads performed
-            fileInitializers.add(new MavenLocalRepoFileInitializer());
+            // Downloads are allowed to be performed
+
+            // Setup Maven Local Repo
+            Path localRepoDir = args.getMavenLocalRepoDir();
+            if (localRepoDir != null)
+            {
+                // Use provided local repo directory
+                fileInitializers.add(new MavenLocalRepoFileInitializer(localRepoDir));
+            }
+            else
+            {
+                // No no local repo directory (direct downloads)
+                fileInitializers.add(new MavenLocalRepoFileInitializer());
+            }
+
+            // Normal URL downloads
             fileInitializers.add(new UriFileInitializer());
         }
         

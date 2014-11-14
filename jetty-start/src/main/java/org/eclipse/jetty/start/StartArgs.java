@@ -23,6 +23,7 @@ import static org.eclipse.jetty.start.UsageException.*;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -555,6 +556,46 @@ public class StartArgs
         return System.getProperty("main.class",mainclass);
     }
 
+    public Path getMavenLocalRepoDir()
+    {
+        // Try property first
+        String localRepo = getProperties().getString("maven.local.repo");
+
+        if (Utils.isBlank(localRepo))
+        {
+            // Try jetty specific env variable
+            localRepo = System.getenv("JETTY_MAVEN_LOCAL_REPO");
+        }
+
+        if (Utils.isBlank(localRepo))
+        {
+            // Try generic env variable
+            localRepo = System.getenv("MAVEN_LOCAL_REPO");
+        }
+        
+        // TODO: load & use $HOME/.m2/settings.xml ?
+        // TODO: possibly use Eclipse Aether to manage it ?
+        // TODO: see https://bugs.eclipse.org/bugs/show_bug.cgi?id=449511
+
+        // Still blank? then its not specified
+        if (Utils.isBlank(localRepo))
+        {
+            return null;
+        }
+
+        Path localRepoDir = new File(localRepo).toPath();
+        localRepoDir = localRepoDir.normalize().toAbsolutePath();
+        if (Files.exists(localRepoDir) && Files.isDirectory(localRepoDir))
+        {
+            return localRepoDir;
+        }
+
+        StartLog.warn("Not a valid maven local repository directory: %s",localRepoDir);
+
+        // Not a valid repository directory, skip it
+        return null;
+    }
+
     public String getModuleGraphFilename()
     {
         return moduleGraphFilename;
@@ -1050,5 +1091,4 @@ public class StartArgs
         builder.append("]");
         return builder.toString();
     }
-
 }
