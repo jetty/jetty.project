@@ -43,7 +43,7 @@ public class ProxyConnectionTest
         http.getHttpConfiguration().setRequestHeaderSize(1024);
         http.getHttpConfiguration().setResponseHeaderSize(1024);
         
-        ProxyConnectionFactory proxy = new ProxyConnectionFactory(http.getProtocol());
+        ProxyConnectionFactory proxy = new ProxyConnectionFactory();
         
         _connector = new LocalConnector(_server,null,null,null,1,proxy,http);
         _connector.setIdleTimeout(1000);

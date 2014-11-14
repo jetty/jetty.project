@@ -665,6 +665,7 @@ public class HttpStatus
     public final static int UNSUPPORTED_MEDIA_TYPE_415 = 415;
     public final static int REQUESTED_RANGE_NOT_SATISFIABLE_416 = 416;
     public final static int EXPECTATION_FAILED_417 = 417;
+    public final static int MISDIRECTED_REQUEST_421 = 421;
     public final static int UNPROCESSABLE_ENTITY_422 = 422;
     public final static int LOCKED_423 = 423;
     public final static int FAILED_DEPENDENCY_424 = 424;
@@ -802,6 +803,8 @@ public class HttpStatus
         REQUESTED_RANGE_NOT_SATISFIABLE(REQUESTED_RANGE_NOT_SATISFIABLE_416, "Requested Range Not Satisfiable"),
         /** <code>417 Expectation Failed</code> */
         EXPECTATION_FAILED(EXPECTATION_FAILED_417, "Expectation Failed"),
+        /** <code>421 Misdirected Request(RFC7234)y</code> */
+        MISDIRECTED_REQUEST(MISDIRECTED_REQUEST_421, "Misdirected Request"),
         /** <code>422 Unprocessable Entity</code> */
         UNPROCESSABLE_ENTITY(UNPROCESSABLE_ENTITY_422, "Unprocessable Entity"),
         /** <code>423 Locked</code> */

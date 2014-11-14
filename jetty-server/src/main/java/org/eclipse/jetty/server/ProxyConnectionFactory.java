@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
+import java.util.Iterator;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.Connection;
@@ -44,17 +45,41 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
 {
     private static final Logger LOG = Log.getLogger(ProxyConnectionFactory.class);
     private final String _next;
+
+    /* ------------------------------------------------------------ */
+    /** Proxy Connection Factory that uses the next ConnectionFactory 
+     * on the connector as the next protocol
+     */
+    public ProxyConnectionFactory()
+    {
+        super("proxy");
+        _next=null;
+    }
     
     public ProxyConnectionFactory(String nextProtocol)
     {
-        super("haproxy");
+        super("proxy");
         _next=nextProtocol;
     }
-
+    
     @Override
     public Connection newConnection(Connector connector, EndPoint endp)
     {
-        return new ProxyConnection(endp,connector,_next);
+        String next=_next;
+        if (next==null)
+        {
+            for (Iterator<String> i = connector.getProtocols().iterator();i.hasNext();)
+            {
+                String p=i.next();                
+                if (getProtocol().equalsIgnoreCase(p))
+                {
+                    next=i.next();
+                    break;
+                }
+            }
+        }
+        
+        return new ProxyConnection(endp,connector,next);
     }
     
     public static class ProxyConnection extends AbstractConnection

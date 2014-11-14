@@ -43,7 +43,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     public AbstractHTTP2ServerConnectionFactory()
     {
-        super("h2-14");
+        super("h2-15","h2-14");
     }
 
     public boolean isDispatchIO()
