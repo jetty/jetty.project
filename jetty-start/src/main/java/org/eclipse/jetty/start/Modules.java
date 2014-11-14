@@ -327,7 +327,7 @@ public class Modules implements Iterable<Module>
         if (sources != null)
         {
             module.addSources(sources);
-            via = Main.join(sources, ", ");
+            via = Utils.join(sources, ", ");
         }
         
         // If already enabled, nothing else to do

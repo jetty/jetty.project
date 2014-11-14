@@ -41,7 +41,6 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashSet;
 import java.util.List;
@@ -85,26 +84,6 @@ public class Main
 {
     private static final String EXITING_LICENSE_NOT_ACKNOWLEDGED = "Exiting: license not acknowledged!";
     private static final int EXIT_USAGE = 1;
-
-    public static String join(Collection<?> objs, String delim)
-    {
-        if (objs==null)
-        {
-            return "";
-        }
-        StringBuilder str = new StringBuilder();
-        boolean needDelim = false;
-        for (Object obj : objs)
-        {
-            if (needDelim)
-            {
-                str.append(delim);
-            }
-            str.append(obj);
-            needDelim = true;
-        }
-        return str.toString();
-    }
 
     public static void main(String[] args)
     {

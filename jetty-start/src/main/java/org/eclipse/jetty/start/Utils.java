@@ -18,8 +18,58 @@
 
 package org.eclipse.jetty.start;
 
+import java.util.Collection;
+
 public final class Utils
 {
+    public static String join(Object[] arr, String delim)
+    {
+        if (arr == null)
+        {
+            return "";
+        }
+
+        return join(arr,0,arr.length,delim);
+    }
+
+    public static String join(Object[] arr, int start, int end, String delim)
+    {
+        if (arr == null)
+        {
+            return "";
+        }
+        StringBuilder str = new StringBuilder();
+        for (int i = start; i < end; i++)
+        {
+            if (i > start)
+            {
+                str.append(delim);
+            }
+            str.append(arr[i]);
+        }
+        return str.toString();
+    }
+
+    public static String join(Collection<?> objs, String delim)
+    {
+        if (objs == null)
+        {
+            return "";
+        }
+        StringBuilder str = new StringBuilder();
+        boolean needDelim = false;
+        for (Object obj : objs)
+        {
+            if (needDelim)
+            {
+                str.append(delim);
+            }
+            str.append(obj);
+            needDelim = true;
+        }
+        return str.toString();
+    }
+
     /**
      * Is String null, empty, or consisting of only whitespace.
      * 
@@ -44,7 +94,7 @@ public final class Utils
         }
         return true;
     }
-    
+
     /**
      * Is String valid and has something other than whitespace
      * 
