@@ -34,8 +34,8 @@ public interface FileInitializer
      *            the remote URI of the resource acting as its source
      * @param file
      *            the local file resource to initialize
-     * @return true if local file is initialized, false if this
-     *         {@link FileInitializer} skipped this attempt.
+     * @return true if local file is initialized (resulted in a change on disk), false if this
+     *         {@link FileInitializer} did nothing.
      * @throws IOException
      *             if there was an attempt to initialize, but an error occurred.
      */

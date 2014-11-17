@@ -23,6 +23,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 
+import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartLog;
@@ -80,13 +81,14 @@ public class MavenLocalRepoFileInitializer extends UriFileInitializer implements
 
     private Path localRepositoryDir;
 
-    public MavenLocalRepoFileInitializer()
+    public MavenLocalRepoFileInitializer(BaseHome baseHome)
     {
-        this(null);
+        this(baseHome,null);
     }
 
-    public MavenLocalRepoFileInitializer(Path localRepoDir)
+    public MavenLocalRepoFileInitializer(BaseHome baseHome, Path localRepoDir)
     {
+        super(baseHome);
         this.localRepositoryDir = localRepoDir;
     }
 

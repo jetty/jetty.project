@@ -116,6 +116,7 @@ public class StartArgs
     
     /** Download related args */
     private boolean download = false;
+    private boolean licenseCheckRequired = false;
     private boolean testingMode = false;
     
     private boolean help = false;
@@ -139,10 +140,6 @@ public class StartArgs
         FileArg arg = new FileArg(module, uriLocation);
         if (!files.contains(arg))
         {
-            if (arg.uri != null)
-            {
-                this.download = true;
-            }
             files.add(arg);
         }
     }
@@ -656,6 +653,11 @@ public class StartArgs
         return exec;
     }
     
+    public boolean isLicenseCheckRequired()
+    {
+        return licenseCheckRequired;
+    }
+    
     public boolean isNormalMainClass()
     {
         return SERVER_MAIN.equals(getMainClassname());
@@ -792,6 +794,7 @@ public class StartArgs
         {
             run = false;
             download = true;
+            licenseCheckRequired = true;
             return;
         }
 
@@ -861,6 +864,7 @@ public class StartArgs
             addToStartdIni.addAll(moduleNames);
             run = false;
             download = true;
+            licenseCheckRequired = true;
             return;
         }
 
@@ -871,6 +875,7 @@ public class StartArgs
             addToStartIni.addAll(moduleNames);
             run = false;
             download = true;
+            licenseCheckRequired = true;
             return;
         }
 

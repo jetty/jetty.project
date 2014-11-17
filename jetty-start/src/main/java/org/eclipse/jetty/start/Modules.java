@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
@@ -38,6 +39,134 @@ import java.util.regex.Pattern;
  */
 public class Modules implements Iterable<Module>
 {
+    public static interface Matcher
+    {
+        public boolean match(Module module);
+    }
+    
+    public static class AllMatcher implements Matcher
+    {
+        @Override
+        public boolean match(Module module)
+        {
+            return true;
+        }
+    }
+    
+    public static class AndMatcher implements Matcher
+    {
+        private final Matcher matchers[];
+        
+        public AndMatcher(Matcher ... matchers)
+        {
+            this.matchers = matchers;
+        }
+        
+        @Override
+        public boolean match(Module module)
+        {
+            for (Matcher matcher : this.matchers)
+            {
+                if (!matcher.match(module))
+                {
+                    return false;
+                }
+            }
+
+            return true;
+        }
+    }
+    
+    public static class EnabledMatcher implements Matcher
+    {
+        @Override
+        public boolean match(Module module)
+        {
+            return module.isEnabled();
+        }
+    }
+    
+    public static class RegexNameMatcher implements Matcher
+    {
+        private final Pattern pat;
+        
+        public RegexNameMatcher(String regex)
+        {
+            this.pat = Pattern.compile(regex);
+        }
+        
+        @Override
+        public boolean match(Module module)
+        {
+            return pat.matcher(module.getName()).matches();
+        }
+    }
+    
+    public static class UniqueSourceMatcher implements Matcher
+    {
+        private final Pattern pat;
+        
+        public UniqueSourceMatcher(String sourceRegex)
+        {
+            this.pat = Pattern.compile(sourceRegex);
+        }
+        
+        @Override
+        public boolean match(Module module)
+        {
+            if (module.getSources().size() != 1)
+            {
+                // Not unique
+                return false;
+            }
+
+            String sourceId = module.getSources().iterator().next();
+            return pat.matcher(sourceId).matches();
+        }
+    }
+    
+    public static class SourceSetMatcher implements Matcher
+    {
+        private final Set<String> nameSet;
+        
+        public SourceSetMatcher(String... names)
+        {
+            this.nameSet = new HashSet<>();
+
+            for (String name : names)
+            {
+                this.nameSet.add(name);
+            }
+        }
+
+        @Override
+        public boolean match(Module module)
+        {
+            Set<String> sources = module.getSources();
+            if (sources == null)
+            {
+                // empty sources list
+                return false;
+            }
+
+            if (sources.size() != nameSet.size())
+            {
+                // non-equal sized set
+                return false;
+            }
+
+            for (String source : module.getSources())
+            {
+                if (!this.nameSet.contains(source))
+                {
+                    return false;
+                }
+            }
+            return true;
+        }
+        
+    }
+    
     private final BaseHome baseHome;
     private final StartArgs args;
     
@@ -194,7 +323,7 @@ public class Modules implements Iterable<Module>
         ordered.addAll(modules.values());
         Collections.sort(ordered,new Module.NameComparator());
 
-        List<Module> active = resolveEnabled();
+        List<Module> active = getEnabled();
 
         for (Module module : ordered)
         {
@@ -275,37 +404,40 @@ public class Modules implements Iterable<Module>
         List<String> empty = Collections.emptyList();
         enable(name,empty);
     }
+
     
-    public void enable(String name, List<String> sources) throws IOException
+    public int enableAll(List<String> names, String source) throws IOException
     {
+        if ((names == null) || (names.isEmpty()))
+        {
+            // nothing to do
+            return 0;
+        }
+
+        List<String> sources = Collections.singletonList(source);
+
+        int count = 0;
+        for (String name : names)
+        {
+            count += enable(name,sources);
+        }
+        return count;
+    }
+    
+    public int enable(String name, List<String> sources) throws IOException
+    {
+        int count = 0;
+        
         if (name.contains("*"))
         {
             // A regex!
-            Pattern pat = Pattern.compile(name);
-            List<Module> matching = new ArrayList<>();
-            do
+            List<Module> matching = getMatching(new RegexNameMatcher(name));
+            
+            // enable them
+            for (Module module : matching)
             {
-                matching.clear();
-                
-                // find matching entries that are not enabled
-                for (Map.Entry<String, Module> entry : modules.entrySet())
-                {
-                    if (pat.matcher(entry.getKey()).matches())
-                    {
-                        if (!entry.getValue().isEnabled())
-                        {
-                            matching.add(entry.getValue());
-                        }
-                    }
-                }
-                
-                // enable them
-                for (Module module : matching)
-                {
-                    enableModule(module,sources);
-                }
+                count += enableModule(module,sources);
             }
-            while (!matching.isEmpty());
         }
         else
         {
@@ -313,32 +445,36 @@ public class Modules implements Iterable<Module>
             if (module == null)
             {
                 System.err.printf("WARNING: Cannot enable requested module [%s]: not a valid module name.%n",name);
-                return;
+                return count;
             }
-            enableModule(module,sources);
+            count += enableModule(module,sources);
         }
+        return count;
     }
 
-    private void enableModule(Module module, List<String> sources) throws IOException
+    private int enableModule(Module module, List<String> sources) throws IOException
     {
-        String via = "<transitive>";
-
-        // Always add the sources
-        if (sources != null)
+        int count = 0;
+        if(sources == null)
         {
-            module.addSources(sources);
-            via = Utils.join(sources, ", ");
+            // We use source for tagging how a node was selected, it should
+            // always be required
+            throw new RuntimeException("sources should never be empty");
         }
+        
+        module.addSources(sources);
+        String via = Utils.join(sources, ", ");
         
         // If already enabled, nothing else to do
         if (module.isEnabled())
         {
             StartLog.debug("Enabled module: %s (via %s)",module.getName(),via);
-            return;
+            return count;
         }
         
         StartLog.debug("Enabling module: %s (via %s)",module.getName(),via);
         module.setEnabled(true);
+        count++;
         args.parseModule(module);
         module.expandProperties(args.getProperties());
         
@@ -370,9 +506,10 @@ public class Modules implements Iterable<Module>
             }
             if (parent != null)
             {
-                enableModule(parent,null);
+                count += enableModule(parent,sources);
             }
         }
+        return count;
     }
     
     private void findChildren(Module module, Set<Module> ret)
@@ -560,12 +697,40 @@ public class Modules implements Iterable<Module>
         findChildren(module,ret);
         return asNameSet(ret);
     }
+    
+    public List<Module> getEnabled()
+    {
+        return getMatching(new EnabledMatcher());
+    }
 
     /**
-     * Resolve the execution order of the enabled modules, and all dependant modules, based on depth first transitive reduction.
+     * Get the modules from the tree that match the provided matcher.  
      * 
-     * @return the list of active modules (plus dependant modules), in execution order.
+     * @param matcher the matcher to use for matches
+     * @return the list of matching modules in execution order.
      */
+    public List<Module> getMatching(Matcher matcher)
+    {
+        List<Module> selected = new ArrayList<Module>();
+
+        for (Module module : modules.values())
+        {
+            if (matcher.match(module))
+            {
+                selected.add(module);
+            }
+        }
+        
+        Collections.sort(selected,new Module.DepthComparator());
+        return selected;
+    }
+
+    /**
+     * Resolve the execution order of the enabled modules, and all dependent modules, based on depth first transitive reduction.
+     * 
+     * @return the list of active modules (plus dependent modules), in execution order.
+     */
+    @Deprecated
     public List<Module> resolveEnabled()
     {
         Map<String, Module> active = new HashMap<String, Module>();
@@ -578,6 +743,16 @@ public class Modules implements Iterable<Module>
             }
         }
 
+        assertModulesValid(active.values());
+
+        List<Module> ordered = new ArrayList<>();
+        ordered.addAll(active.values());
+        Collections.sort(ordered,new Module.DepthComparator());
+        return ordered;
+    }
+
+    public void assertModulesValid(Collection<Module> active)
+    {
         /*
          * check against the missing modules
          * 
@@ -585,9 +760,9 @@ public class Modules implements Iterable<Module>
          */
         for (String missing : missingModules)
         {
-            for (String activeModule : active.keySet())
+            for (Module module : active)
             {
-                if (missing.startsWith(activeModule))
+                if (missing.startsWith(module.getName()))
                 {
                     StartLog.warn("** Unable to continue, required dependency missing. [%s]",missing);
                     StartLog.warn("** As configured, Jetty is unable to start due to a missing enabled module dependency.");
@@ -596,11 +771,6 @@ public class Modules implements Iterable<Module>
                 }
             }
         }
-
-        List<Module> ordered = new ArrayList<>();
-        ordered.addAll(active.values());
-        Collections.sort(ordered,new Module.DepthComparator());
-        return ordered;
     }
 
     public Set<String> resolveParentModulesOf(String moduleName)

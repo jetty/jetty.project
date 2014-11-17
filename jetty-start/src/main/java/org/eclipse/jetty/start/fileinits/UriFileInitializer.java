@@ -27,6 +27,7 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
+import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.FileInitializer;
 import org.eclipse.jetty.start.StartLog;
@@ -34,6 +35,12 @@ import org.eclipse.jetty.start.StartLog;
 public class UriFileInitializer implements FileInitializer
 {
     private final static String[] SUPPORTED_SCHEMES = { "http", "https" };
+    private final BaseHome baseHome;
+    
+    public UriFileInitializer(BaseHome baseHome)
+    {
+        this.baseHome = baseHome;
+    }
 
     @Override
     public boolean init(URI uri, Path file) throws IOException
@@ -57,7 +64,7 @@ public class UriFileInitializer implements FileInitializer
 
     protected void download(URI uri, Path file) throws IOException
     {
-        StartLog.log("DOWNLOAD","%s to %s",uri,file);
+        StartLog.log("DOWNLOAD","%s to %s",uri,baseHome.toShortForm(file));
 
         FS.ensureDirectoryExists(file.getParent());
         
