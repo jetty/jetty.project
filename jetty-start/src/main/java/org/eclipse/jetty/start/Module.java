@@ -108,7 +108,7 @@ public class Module
     /** License lines */
     private List<String> license;
 
-    /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini ? */
+    /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini */
     private boolean enabled = false;
     /** List of sources that enabled this module */
     private final Set<String> sources = new HashSet<>();
@@ -272,6 +272,29 @@ public class Module
     {
         return license != null && license.size() > 0;
     }
+    
+
+    public boolean hasSource(String regex)
+    {
+        for (String source : sources)
+        {
+            if (source.matches(regex))
+            {
+                return true;
+            }
+        }
+        return false;
+    }
+    
+    public boolean hasUniqueSource(String regex)
+    {
+        if (sources.size() != 1)
+        {
+            return false;
+        }
+
+        return sources.iterator().next().matches(regex);
+    }
 
     public boolean acknowledgeLicense() throws IOException
     {
@@ -359,6 +382,11 @@ public class Module
     public boolean isEnabled()
     {
         return enabled;
+    }
+
+    public boolean isVirtual()
+    {
+        return !logicalName.equals(fileRef);
     }
 
     public void process(BaseHome basehome) throws FileNotFoundException, IOException
@@ -477,5 +505,4 @@ public class Module
         str.append(']');
         return str.toString();
     }
-
 }

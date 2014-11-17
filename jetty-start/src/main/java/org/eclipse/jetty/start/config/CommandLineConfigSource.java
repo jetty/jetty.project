@@ -32,6 +32,7 @@ import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
+import org.eclipse.jetty.start.Utils;
 
 /**
  * Configuration Source representing the Command Line arguments.
@@ -69,14 +70,14 @@ public class CommandLineConfigSource implements ConfigSource
     {
         // If a jetty property is defined, use it
         Prop prop = this.props.getProp(BaseHome.JETTY_BASE,false);
-        if (prop != null && !isEmpty(prop.value))
+        if (prop != null && !Utils.isBlank(prop.value))
         {
             return FS.toPath(prop.value);
         }
 
         // If a system property is defined, use it
         String val = System.getProperty(BaseHome.JETTY_BASE);
-        if (!isEmpty(val))
+        if (!Utils.isBlank(val))
         {
             return FS.toPath(val);
         }
@@ -91,14 +92,14 @@ public class CommandLineConfigSource implements ConfigSource
     {
         // If a jetty property is defined, use it
         Prop prop = this.props.getProp(BaseHome.JETTY_HOME,false);
-        if (prop != null && !isEmpty(prop.value))
+        if (prop != null && !Utils.isBlank(prop.value))
         {
             return FS.toPath(prop.value);
         }
 
         // If a system property is defined, use it
         String val = System.getProperty(BaseHome.JETTY_HOME);
-        if (!isEmpty(val))
+        if (!Utils.isBlank(val))
         {
             return FS.toPath(val);
         }
@@ -128,24 +129,6 @@ public class CommandLineConfigSource implements ConfigSource
         Path home = FS.toPath(System.getProperty("user.dir","."));
         setProperty(BaseHome.JETTY_HOME,home.toString(),ORIGIN_INTERNAL_FALLBACK);
         return home;
-    }
-
-    private boolean isEmpty(String value)
-    {
-        if (value == null)
-        {
-            return true;
-        }
-        int len = value.length();
-        for (int i = 0; i < len; i++)
-        {
-            int c = value.codePointAt(i);
-            if (!Character.isWhitespace(c))
-            {
-                return false;
-            }
-        }
-        return true;
     }
 
     @Override

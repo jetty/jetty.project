@@ -18,21 +18,25 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
+import java.util.Set;
 
+import org.eclipse.jetty.start.Modules.AndMatcher;
+import org.eclipse.jetty.start.Modules.EnabledMatcher;
+import org.eclipse.jetty.start.Modules.UniqueSourceMatcher;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
@@ -49,18 +53,18 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
         File baseDir = testdir.getEmptyDir();
-        String cmdLine[] = new String[] {"jetty.version=TEST"};
-        
+        String cmdLine[] = new String[] { "jetty.version=TEST" };
+
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
         config.add(new JettyHomeConfigSource(homeDir.toPath()));
         config.add(new JettyBaseConfigSource(baseDir.toPath()));
-        
+
         // Initialize
         BaseHome basehome = new BaseHome(config);
-        
+
         StartArgs args = new StartArgs();
         args.parse(config);
 
@@ -112,14 +116,14 @@ public class ModulesTest
         expected.add("server");
         expected.add("annotations");
         expected.add("resources");
-        expected.add("logging"); 
-        
+        expected.add("logging");
+
         ConfigurationAssert.assertContainsUnordered("All Modules",expected,moduleNames);
     }
-    
+
     /**
      * Test loading of only shallow modules, not deep references.
-     * In other words. ${search-dir}/modules/*.mod  should be the only
+     * In other words. ${search-dir}/modules/*.mod should be the only
      * valid references, but ${search-dir}/alt/foo/modules/*.mod should
      * not be considered valid.
      */
@@ -128,20 +132,21 @@ public class ModulesTest
     {
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("jetty home with spaces");
-        // intentionally setup top level resources dir (as this would have many deep references)
+        // intentionally setup top level resources dir (as this would have many
+        // deep references)
         File baseDir = MavenTestingUtils.getTestResourcesDir();
-        String cmdLine[] = new String[] {"jetty.version=TEST"};
-        
+        String cmdLine[] = new String[] { "jetty.version=TEST" };
+
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
         config.add(new JettyHomeConfigSource(homeDir.toPath()));
         config.add(new JettyBaseConfigSource(baseDir.toPath()));
-        
+
         // Initialize
         BaseHome basehome = new BaseHome(config);
-        
+
         StartArgs args = new StartArgs();
         args.parse(config);
 
@@ -154,10 +159,10 @@ public class ModulesTest
         {
             moduleNames.add(mod.getName());
         }
-        
+
         List<String> expected = new ArrayList<>();
         expected.add("base");
-        
+
         ConfigurationAssert.assertContainsUnordered("All Modules",expected,moduleNames);
     }
 
@@ -167,18 +172,18 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
         File baseDir = testdir.getEmptyDir();
-        String cmdLine[] = new String[] {"jetty.version=TEST", "java.version=1.7.0_60"};
-        
+        String cmdLine[] = new String[] { "jetty.version=TEST", "java.version=1.7.0_60" };
+
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
         config.add(new JettyHomeConfigSource(homeDir.toPath()));
         config.add(new JettyBaseConfigSource(baseDir.toPath()));
-        
+
         // Initialize
         BaseHome basehome = new BaseHome(config);
-        
+
         StartArgs args = new StartArgs();
         args.parse(config);
 
@@ -206,9 +211,9 @@ public class ModulesTest
         expected.add("protonego-impl");
         expected.add("xml");
         expected.add("jsp-impl");
-        
+
         List<String> resolved = new ArrayList<>();
-        for (Module module : modules.resolveEnabled())
+        for (Module module : modules.getEnabled())
         {
             resolved.add(module.getName());
         }
@@ -222,23 +227,23 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
         File baseDir = testdir.getEmptyDir();
-        String cmdLine[] = new String[] {"jetty.version=TEST"};
-        
+        String cmdLine[] = new String[] { "jetty.version=TEST" };
+
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
         config.add(new JettyHomeConfigSource(homeDir.toPath()));
         config.add(new JettyBaseConfigSource(baseDir.toPath()));
-        
+
         // Initialize
         BaseHome basehome = new BaseHome(config);
-        
+
         StartArgs args = new StartArgs();
         args.parse(config);
 
         // Test Modules
-        Modules modules = new Modules(basehome, args);
+        Modules modules = new Modules(basehome,args);
         modules.registerAll();
 
         // Enable 2 modules
@@ -248,7 +253,7 @@ public class ModulesTest
         modules.buildGraph();
 
         // Collect active module list
-        List<Module> active = modules.resolveEnabled();
+        List<Module> active = modules.getEnabled();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
@@ -263,7 +268,7 @@ public class ModulesTest
             actualNames.add(actual.getName());
         }
 
-        Assert.assertThat("Resolved Names: " + actualNames,actualNames,contains(expectedNames.toArray()));
+        assertThat("Resolved Names: " + actualNames,actualNames,contains(expectedNames.toArray()));
 
         // Assert Library List
         List<String> expectedLibs = new ArrayList<>();
@@ -277,7 +282,7 @@ public class ModulesTest
         expectedLibs.add("lib/jetty-server-${jetty.version}.jar");
 
         List<String> actualLibs = modules.normalizeLibs(active);
-        Assert.assertThat("Resolved Libs: " + actualLibs,actualLibs,contains(expectedLibs.toArray()));
+        assertThat("Resolved Libs: " + actualLibs,actualLibs,contains(expectedLibs.toArray()));
 
         // Assert XML List
         List<String> expectedXmls = new ArrayList<>();
@@ -285,7 +290,7 @@ public class ModulesTest
         expectedXmls.add("etc/jetty-http.xml");
 
         List<String> actualXmls = modules.normalizeXmls(active);
-        Assert.assertThat("Resolved XMLs: " + actualXmls,actualXmls,contains(expectedXmls.toArray()));
+        assertThat("Resolved XMLs: " + actualXmls,actualXmls,contains(expectedXmls.toArray()));
     }
 
     @Test
@@ -294,18 +299,18 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
         File baseDir = testdir.getEmptyDir();
-        String cmdLine[] = new String[] {"jetty.version=TEST"};
-        
+        String cmdLine[] = new String[] { "jetty.version=TEST" };
+
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
         ConfigSources config = new ConfigSources();
         config.add(cmdLineSource);
         config.add(new JettyHomeConfigSource(homeDir.toPath()));
         config.add(new JettyBaseConfigSource(baseDir.toPath()));
-        
+
         // Initialize
         BaseHome basehome = new BaseHome(config);
-        
+
         StartArgs args = new StartArgs();
         args.parse(config);
 
@@ -321,7 +326,7 @@ public class ModulesTest
         // modules.dump();
 
         // Collect active module list
-        List<Module> active = modules.resolveEnabled();
+        List<Module> active = modules.getEnabled();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
@@ -341,7 +346,7 @@ public class ModulesTest
             actualNames.add(actual.getName());
         }
 
-        Assert.assertThat("Resolved Names: " + actualNames,actualNames,contains(expectedNames.toArray()));
+        assertThat("Resolved Names: " + actualNames,actualNames,contains(expectedNames.toArray()));
 
         // Assert Library List
         List<String> expectedLibs = new ArrayList<>();
@@ -362,7 +367,7 @@ public class ModulesTest
         expectedLibs.add("lib/websocket/*.jar");
 
         List<String> actualLibs = modules.normalizeLibs(active);
-        Assert.assertThat("Resolved Libs: " + actualLibs,actualLibs,contains(expectedLibs.toArray()));
+        assertThat("Resolved Libs: " + actualLibs,actualLibs,contains(expectedLibs.toArray()));
 
         // Assert XML List
         List<String> expectedXmls = new ArrayList<>();
@@ -373,6 +378,98 @@ public class ModulesTest
         expectedXmls.add("etc/jetty-websockets.xml");
 
         List<String> actualXmls = modules.normalizeXmls(active);
-        Assert.assertThat("Resolved XMLs: " + actualXmls,actualXmls,contains(expectedXmls.toArray()));
+        assertThat("Resolved XMLs: " + actualXmls,actualXmls,contains(expectedXmls.toArray()));
+    }
+
+    @Test
+    public void testResolve_Alt() throws IOException
+    {
+        // Test Env
+        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File baseDir = testdir.getEmptyDir();
+        String cmdLine[] = new String[] { "jetty.version=TEST" };
+
+        // Configuration
+        CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
+        ConfigSources config = new ConfigSources();
+        config.add(cmdLineSource);
+        config.add(new JettyHomeConfigSource(homeDir.toPath()));
+        config.add(new JettyBaseConfigSource(baseDir.toPath()));
+
+        // Initialize
+        BaseHome basehome = new BaseHome(config);
+
+        StartArgs args = new StartArgs();
+        args.parse(config);
+
+        // Test Modules
+        Modules modules = new Modules(basehome,args);
+        modules.registerAll();
+
+        // Enable test modules
+        modules.enable("http",TEST_SOURCE);
+        modules.enable("annotations",TEST_SOURCE);
+        modules.enable("deploy",TEST_SOURCE);
+        // Enable alternate modules
+        String alt = "<alt>";
+        modules.enable("websocket",Collections.singletonList(alt));
+        modules.enable("jsp",Collections.singletonList(alt));
+
+        modules.buildGraph();
+        // modules.dump();
+
+        // Collect active module list
+        List<Module> active = modules.getEnabled();
+
+        // Assert names are correct, and in the right order
+        List<String> expectedNames = new ArrayList<>();
+        expectedNames.add("base");
+        expectedNames.add("jsp-impl");
+        expectedNames.add("xml");
+        expectedNames.add("server");
+        expectedNames.add("http");
+        expectedNames.add("jndi");
+        expectedNames.add("security");
+        expectedNames.add("servlet");
+        expectedNames.add("jsp");
+        expectedNames.add("plus");
+        expectedNames.add("webapp");
+        expectedNames.add("annotations");
+        expectedNames.add("deploy");
+        expectedNames.add("websocket");
+
+        List<String> actualNames = new ArrayList<>();
+        for (Module actual : active)
+        {
+            actualNames.add(actual.getName());
+        }
+
+        assertThat("Resolved Names: " + actualNames,actualNames,contains(expectedNames.toArray()));
+
+        // Now work with the 'alt' selected
+        List<String> expectedAlts = new ArrayList<>();
+        expectedAlts.add("jsp-impl");
+        expectedAlts.add("jsp");
+        expectedAlts.add("websocket");
+
+        for (String expectedAlt : expectedAlts)
+        {
+            Module altMod = modules.get(expectedAlt);
+            assertThat("Alt.mod[" + expectedAlt + "].enabled",altMod.isEnabled(),is(true));
+            Set<String> sources = altMod.getSources();
+            assertThat("Alt.mod[" + expectedAlt + "].sources: [" + Utils.join(sources,", ") + "]",sources,contains(alt));
+        }
+
+        // Now collect the unique source list
+        List<Module> alts = modules.getMatching(new AndMatcher(new EnabledMatcher(),new UniqueSourceMatcher(alt)));
+
+        // Assert names are correct, and in the right order
+        actualNames = new ArrayList<>();
+        for (Module actual : alts)
+        {
+            actualNames.add(actual.getName());
+        }
+
+        assertThat("Resolved Alt (Sources) Names: " + actualNames,actualNames,contains(expectedAlts.toArray()));
     }
 }

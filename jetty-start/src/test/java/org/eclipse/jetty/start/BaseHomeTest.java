@@ -57,7 +57,7 @@ public class BaseHomeTest
                 System.out.printf(" %s%n",path);
             }
         }
-        Assert.assertThat(message + ": " + Main.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
+        Assert.assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
     }
     
     public static void assertPathList(BaseHome hb, String message, List<String> expected, List<Path> paths)
@@ -81,7 +81,7 @@ public class BaseHomeTest
                 System.out.printf(" %s%n",path);
             }
         }
-        Assert.assertThat(message + ": " + Main.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
+        Assert.assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
     }
 
     public static void assertFileList(BaseHome hb, String message, List<String> expected, List<File> files)
@@ -91,7 +91,7 @@ public class BaseHomeTest
         {
             actual.add(hb.toShortForm(file));
         }
-        Assert.assertThat(message + ": " + Main.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
+        Assert.assertThat(message + ": " + Utils.join(actual,", "),actual,containsInAnyOrder(expected.toArray()));
     }
 
     @Test

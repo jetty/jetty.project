@@ -38,7 +38,7 @@ import org.junit.Test;
 /**
  * Test various license handling.
  */
-public class LicenseTest
+public class LicensingTest
 {
     @Rule
     public TestingDir testdir = new TestingDir();
@@ -93,7 +93,7 @@ public class LicenseTest
 
         List<String> cmds = getBaseCommandLine(basePath);
 
-        cmds.add("-Dorg.eclipse.jetty.start.ack.license.cdi=true");
+        cmds.add("-Dorg.eclipse.jetty.start.ack.licenses=true");
         cmds.add("--add-to-start=cdi");
 
         execMain(cmds);
@@ -106,7 +106,7 @@ public class LicenseTest
 
         List<String> cmds = getBaseCommandLine(basePath);
 
-        cmds.add("-Dorg.eclipse.jetty.start.ack.license.protonego-impl=true");
+        cmds.add("-Dorg.eclipse.jetty.start.ack.licenses=true");
         cmds.add("--add-to-start=spdy");
 
         execMain(cmds);
@@ -122,7 +122,8 @@ public class LicenseTest
 
         List<String> cmds = getBaseCommandLine(basePath);
 
-        cmds.add("-Dorg.eclipse.jetty.start.ack.license.protonego-impl=true");
+        cmds.add("-Dorg.eclipse.jetty.start.ack.licenses=true");
+        cmds.add("--dry-run");
         
         StringReader startIni = new StringReader("--module=spdy\n");
         try (FileWriter writer = new FileWriter(new File(basePath,"start.ini")))
@@ -140,7 +141,7 @@ public class LicenseTest
 
         List<String> cmds = getBaseCommandLine(basePath);
 
-        cmds.add("-Dorg.eclipse.jetty.start.ack.license.cdi=true");
+        cmds.add("-Dorg.eclipse.jetty.start.ack.licenses=true");
         cmds.add("--create-files");
 
         StringReader startIni = new StringReader("--module=cdi\n");
