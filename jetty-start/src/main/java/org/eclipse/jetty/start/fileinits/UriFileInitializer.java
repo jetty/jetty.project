@@ -107,7 +107,7 @@ public class UriFileInitializer implements FileInitializer
                 throw new IOException("Directory in the way: " + file.toAbsolutePath());
             }
 
-            if (Files.isReadable(file))
+            if (!Files.isReadable(file))
             {
                 throw new IOException("File not readable: " + file.toAbsolutePath());
             }

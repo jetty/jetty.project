@@ -73,7 +73,7 @@ public class StartIniBuilder implements BaseBuilder.Config
                     List<String> moduleNames = Props.getValues(line);
                     this.modulesPresent.addAll(moduleNames);
                 }
-                else if (!line.startsWith("-") && line.contains("-"))
+                else if (!line.startsWith("-") && line.contains("="))
                 {
                     String key = line.substring(0,line.indexOf('='));
                     this.propsPresent.add(key);
