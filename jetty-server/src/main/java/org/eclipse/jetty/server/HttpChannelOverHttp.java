@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A HttpChannel customized to be transported over the HTTP/1 protocol
  */
-class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ProxyHandler
+class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
     
@@ -98,16 +98,6 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         _expect100Continue = false;
         _expect102Processing = false;
         return false;
-    }
-    
-    @Override
-    public void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort)
-    {
-        _metadata.setMethod(HttpMethod.CONNECT.asString());
-        Request request = getRequest();
-        request.setAttribute("PROXY", protocol);
-        request.setAuthority(sAddr,dPort);
-        request.setRemoteAddr(InetSocketAddress.createUnresolved(sAddr,sPort));
     }
 
     @Override

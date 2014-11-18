@@ -83,8 +83,8 @@ jetty-9.2.4.v20141103 - 03 November 2014
  + 449175 Removed extra space in NCSA log
  + 449291 create-files downloads without license
  + 449372 Make jvmArgs of jetty:run-forked configurable from command line
-<<<<<<< HEAD
- 
+ + 449603 OutputStreamContentProvider hangs when host is not available.
+
 jetty-9.3.0.M0 - 24 September 2014
  + 437395 Start / Properties in template sections should be default applied for
    enabled modules
@@ -120,10 +120,6 @@ jetty-9.3.0.M0 - 24 September 2014
  + 444771 JSR356 / EndPointConfig.userProperties are not unique per endpoint
    upgrade
  + 444863 ProxyServlet does not filter headers listed by the Connection header.
-||||||| merged common ancestors
-=======
- + 449603 OutputStreamContentProvider hangs when host is not available.
->>>>>>> origin/jetty-9.2.x
 
 jetty-9.2.3.v20140905 - 05 September 2014
  + 347110 renamed class transformer methods
@@ -855,8 +851,8 @@ jetty-9.1.0.M0 - 16 September 2013
  + 412940 minor threadsafe fixes
  + 413018 ServletContext.addListener() should throw IllegalArgumentException if
    arg is not correct type of listener
- + 413020 Second call to HttpSession.invalidate() should throw exception 413019
-   HttpSession.getCreateTime() should throw exception after session is
+ + 413020 Second call to HttpSession.invalidate() should throw exception 
+ + 413019 HttpSession.getCreateTime() should throw exception after session is
    invalidated
  + 413291 Avoid SPDY double dispatch
  + 413387 onResponseHeaders is not called multiple times when multiple

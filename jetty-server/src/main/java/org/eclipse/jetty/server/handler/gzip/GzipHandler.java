@@ -311,6 +311,21 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         String path = context==null?baseRequest.getRequestURI():URIUtil.addPaths(baseRequest.getServletPath(),baseRequest.getPathInfo());
         LOG.debug("{} handle {} in {}",this,baseRequest,context);
 
+        HttpChannel channel = HttpChannel.getCurrentHttpChannel();
+        HttpOutput out = channel.getResponse().getHttpOutput();   
+        // Are we already being gzipped?
+        HttpOutput.Interceptor interceptor = out.getInterceptor();
+        while (interceptor!=null)
+        {
+            if (interceptor instanceof GzipHttpOutputInterceptor)
+            {
+                LOG.debug("{} already intercepting {}",this,request);
+                _handler.handle(target,baseRequest, request, response);
+                return;
+            }
+            interceptor=interceptor.getNextInterceptor();
+        }
+        
         // If not a supported method - no Vary because no matter what client, this URI is always excluded
         if (!_includedMethods.contains(baseRequest.getMethod()))
         {
@@ -366,12 +381,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                 request.setAttribute(ETAG,etag.replace(ETAG_GZIP,""));
         }
 
-        HttpChannel channel = HttpChannel.getCurrentHttpChannel();
-        HttpOutput out = channel.getResponse().getHttpOutput();   
-        HttpOutput.Interceptor interceptor = out.getInterceptor();
-        if (!(interceptor instanceof GzipHttpOutputInterceptor))
-            out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,channel,interceptor));
-
+        // install interceptor and handle
+        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,channel,out.getInterceptor()));
         _handler.handle(target,baseRequest, request, response);
         
     }

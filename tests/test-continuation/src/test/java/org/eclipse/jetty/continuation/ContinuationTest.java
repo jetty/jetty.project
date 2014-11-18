@@ -76,10 +76,10 @@ public class ContinuationTest extends ContinuationBase
     @After
     public void tearDown() throws Exception
     {
+        _server.stop();
         Assert.assertEquals(1,_log.size());
         Assert.assertTrue(_log.get(0).startsWith("200 "));
         Assert.assertTrue(_log.get(0).endsWith(" /"));
-        _server.stop();
     }
     
     @Test

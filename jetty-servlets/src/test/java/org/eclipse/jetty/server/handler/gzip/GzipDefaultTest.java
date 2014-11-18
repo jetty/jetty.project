@@ -139,7 +139,7 @@ public class GzipDefaultTest
             tester.assertIsResponseGzipCompressed("POST","file.txt");
             tester.assertIsResponseGzipCompressed("WIBBLE","file.txt");
 
-            response = tester.executeRequest("GET","/context/file.txt",2,TimeUnit.SECONDS);
+            response = tester.executeRequest("GET","/context/file.txt",5,TimeUnit.SECONDS);
 
             assertThat("Response status",response.getStatus(),is(HttpStatus.OK_200));
             assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(compressionType)));
@@ -197,7 +197,7 @@ public class GzipDefaultTest
 
             HttpTester.Response response;
 
-            response = tester.executeRequest("GET","/context/empty.txt",2,TimeUnit.SECONDS);
+            response = tester.executeRequest("GET","/context/empty.txt",5,TimeUnit.SECONDS);
 
             assertThat("Response status",response.getStatus(),is(HttpStatus.OK_200));
             assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(compressionType)));
@@ -512,7 +512,7 @@ public class GzipDefaultTest
         {
             tester.start();
 
-            HttpTester.Response response = tester.executeRequest("GET","/context/",2,TimeUnit.SECONDS);
+            HttpTester.Response response = tester.executeRequest("GET","/context/",5,TimeUnit.SECONDS);
 
             assertThat("Response status",response.getStatus(),is(HttpStatus.NO_CONTENT_204));
             assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(compressionType)));
@@ -539,7 +539,7 @@ public class GzipDefaultTest
         {
             tester.start();
 
-            HttpTester.Response response = tester.executeRequest("GET","/context/",2,TimeUnit.SECONDS);
+            HttpTester.Response response = tester.executeRequest("GET","/context/",5,TimeUnit.SECONDS);
 
             assertThat("Response status",response.getStatus(),is(HttpStatus.BAD_REQUEST_400));
             assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(compressionType)));
@@ -686,7 +686,7 @@ public class GzipDefaultTest
     public HttpTester.Response assertIsResponseNotGzipCompressed(GzipTester tester, String method, String filename, int expectedFilesize, int status)
             throws Exception
     {
-        HttpTester.Response response = tester.executeRequest(method,"/context/" + filename,2,TimeUnit.SECONDS);
+        HttpTester.Response response = tester.executeRequest(method,"/context/" + filename,5,TimeUnit.SECONDS);
 
         assertThat("Response status",response.getStatus(),is(status));
         assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(compressionType)));

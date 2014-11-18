@@ -79,6 +79,11 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         _bufferSize=bufferSize;
     }
 
+    public HttpOutput.Interceptor getNextInterceptor()
+    {
+        return _interceptor;
+    }
+    
     @Override
     public void write(ByteBuffer content, boolean complete, Callback callback)
     {
@@ -261,6 +266,10 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         }
     }
     
+    public boolean mightCompress()
+    {
+        return _state.get()==GZState.MIGHT_COMPRESS;
+    }
     private class GzipArrayCB extends IteratingNestedCallback
     {        
         private final boolean _complete;

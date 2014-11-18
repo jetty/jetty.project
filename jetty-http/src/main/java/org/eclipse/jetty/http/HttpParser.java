@@ -632,28 +632,8 @@ public class HttpParser
                                 version=HttpVersion.lookAheadGet(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.arrayOffset()+buffer.limit());
                             else
                                 version=HttpVersion.CACHE.getBest(buffer,0,buffer.remaining());
-                            if (version==null)
-                            {
-                                if (_method==HttpMethod.PROXY)
-                                {
-                                    if (!(_requestHandler instanceof ProxyHandler))
-                                        throw new BadMessageException();
-                                    
-                                    String protocol=_uri.toString();
-                                    // This is the proxy protocol, so we can assume entire first line is in buffer else 400
-                                    buffer.position(buffer.position()-1);
-                                    String sAddr = getProxyField(buffer);
-                                    String dAddr = getProxyField(buffer);
-                                    int sPort = BufferUtil.takeInt(buffer);
-                                    next(buffer);
-                                    int dPort = BufferUtil.takeInt(buffer);
-                                    next(buffer);
-                                    _state=State.START;
-                                    ((ProxyHandler)_requestHandler).proxied(protocol,sAddr,dAddr,sPort,dPort);
-                                    return false;
-                                }
-                            }
-                            else
+                            
+                            if (version!=null)
                             {
                                 int pos = buffer.position()+version.asString().length()-1;
                                 if (pos<buffer.limit())
@@ -1572,14 +1552,6 @@ public class HttpParser
         /** @return the size in bytes of the per parser header cache
          */
         public int getHeaderCacheSize();
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    public interface ProxyHandler 
-    {
-        void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort);
     }
 
     /* ------------------------------------------------------------------------------- */

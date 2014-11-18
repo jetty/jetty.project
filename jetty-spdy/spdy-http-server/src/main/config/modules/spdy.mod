@@ -3,12 +3,14 @@
 #
 
 [depend]
-ssl-protonego
+ssl
+protonego
 
 [lib]
 lib/spdy/*.jar
 
 [xml]
+etc/protonego-${protonego}.xml
 etc/jetty-ssl.xml
 etc/jetty-spdy.xml
 

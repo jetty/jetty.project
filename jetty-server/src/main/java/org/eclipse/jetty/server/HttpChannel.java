@@ -641,6 +641,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written+=BufferUtil.length(content);
         sendResponse(null,content,complete,callback);
     }
+    
+    public HttpOutput.Interceptor getNextInterceptor()
+    {
+        return null;
+    }
 
     protected void execute(Runnable task)
     {
