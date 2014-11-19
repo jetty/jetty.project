@@ -579,7 +579,7 @@
               <arguments>
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}</argument>
-                <argument>--add-to-start=server,deploy,websocket,ext,resources,jsp,jstl,http</argument>
+                <argument>--add-to-start=deploy,websocket,ext,resources,jsp,jstl,http</argument>
               </arguments>
             </configuration>
             <goals>
@@ -587,14 +587,28 @@
             </goals>
           </execution>
           <execution>
-            <id>setup demo-base</id>
+            <id>setup demo-base-ini</id>
             <phase>process-classes</phase>
             <configuration>
               <mainClass>org.eclipse.jetty.start.Main</mainClass>
               <arguments>
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}/demo-base</argument>
-                <argument>--add-to-start=server,continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets</argument>
+                <argument>--add-to-start=continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets</argument>
+              </arguments>
+            </configuration>
+            <goals>
+              <goal>java</goal>
+            </goals>
+          </execution>
+          <execution>
+            <id>setup demo-base-startd</id>
+            <phase>process-classes</phase>
+            <configuration>
+              <mainClass>org.eclipse.jetty.start.Main</mainClass>
+              <arguments>
+                <argument>jetty.home=${assembly-directory}</argument>
+                <argument>jetty.base=${assembly-directory}/demo-base</argument>
                 <argument>--add-to-startd=jsp,jstl,http,https</argument>
               </arguments>
             </configuration>
