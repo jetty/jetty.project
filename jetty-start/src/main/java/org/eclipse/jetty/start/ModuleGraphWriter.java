@@ -168,7 +168,7 @@ public class ModuleGraphWriter
     private void writeModuleNode(PrintWriter out, Module module, boolean resolved)
     {
         String color = colorModuleBg;
-        if (module.isEnabled())
+        if (module.isSelected())
         {
             // specifically enabled by config
             color = colorEnabledBg;
@@ -183,7 +183,7 @@ public class ModuleGraphWriter
         out.printf("<TABLE BORDER=\"0\" CELLBORDER=\"0\" CELLSPACING=\"0\" CELLPADDING=\"2\">%n");
         out.printf("  <TR><TD ALIGN=\"LEFT\"><B>%s</B></TD></TR>%n",module.getName());
 
-        if (module.isEnabled())
+        if (module.isSelected())
         {
             writeModuleDetailHeader(out,"ENABLED");
             for (Selection selection : module.getSelections())

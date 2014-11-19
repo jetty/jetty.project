@@ -205,12 +205,6 @@ public class Module extends Node<Module>
         setName(this.fileRef);
     }
 
-    @Deprecated
-    public boolean isEnabled()
-    {
-        return isSelected();
-    }
-
     public boolean isVirtual()
     {
         return !getName().equals(fileRef);

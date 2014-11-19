@@ -80,4 +80,17 @@ public class DistTest
 
         execMain(cmds);
     }
+    
+    @Test
+    public void testLikeDistro_SetupDemoBase() throws Exception
+    {
+        File basePath = testdir.getEmptyDir();
+
+        List<String> cmds = getBaseCommandLine(basePath);
+
+        cmds.add("--add-to-start=continuation,deploy,websocket,ext,resources,client,annotations,jndi,servlets");
+        cmds.add("--add-to-startd=jsp,jstl,http,https");
+
+        execMain(cmds);
+    }
 }

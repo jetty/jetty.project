@@ -35,7 +35,7 @@ import org.eclipse.jetty.start.StartLog;
 public class UriFileInitializer implements FileInitializer
 {
     private final static String[] SUPPORTED_SCHEMES = { "http", "https" };
-    private final BaseHome baseHome;
+    protected final BaseHome baseHome;
     
     public UriFileInitializer(BaseHome baseHome)
     {
