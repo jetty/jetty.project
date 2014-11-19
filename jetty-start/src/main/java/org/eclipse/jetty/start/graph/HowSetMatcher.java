@@ -24,7 +24,7 @@ import java.util.Set;
 public class HowSetMatcher implements Predicate
 {
     private final Set<String> howSet;
-    
+
     public HowSetMatcher(String... hows)
     {
         this.howSet = new HashSet<>();
@@ -45,20 +45,22 @@ public class HowSetMatcher implements Predicate
             return false;
         }
 
-        if (selections.size() != howSet.size())
+        Set<String> actualHows = node.getSelectedHowSet();
+
+        if (actualHows.size() != howSet.size())
         {
             // non-equal sized set
             return false;
         }
 
-        for (Selection selection : selections)
+        for (String how : actualHows)
         {
-            if (!this.howSet.contains(selection.getHow()))
+            if (!this.howSet.contains(how))
             {
                 return false;
             }
         }
         return true;
     }
-    
+
 }

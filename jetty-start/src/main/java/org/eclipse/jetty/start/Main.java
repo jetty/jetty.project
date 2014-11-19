@@ -311,7 +311,6 @@ public class Main
 
             args.setAllModules(modules);
             List<Module> activeModules = modules.getEnabled();
-            modules.assertModulesValid(activeModules);
 
             // ------------------------------------------------------------
             // 5) Lib & XML Expansion / Resolution

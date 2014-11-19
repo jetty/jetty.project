@@ -21,17 +21,13 @@ package org.eclipse.jetty.start;
 import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.Collection;
 import java.util.Collections;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 
 import org.eclipse.jetty.start.graph.Graph;
 import org.eclipse.jetty.start.graph.GraphException;
-import org.eclipse.jetty.start.graph.NodeDepthComparator;
 import org.eclipse.jetty.start.graph.OnlyTransitivePredicate;
 import org.eclipse.jetty.start.graph.Selection;
 
@@ -43,13 +39,6 @@ public class Modules extends Graph<Module>
     private final BaseHome baseHome;
     private final StartArgs args;
 
-    //    /*
-    //     * modules that may appear in the resolved graph but are undefined in the module system
-    //     * 
-    //     * ex: modules/npn/npn-1.7.0_01.mod (property expansion resolves to non-existent file)
-    //     */
-    //    private Set<String> missingModules = new HashSet<String>();
-
     public Modules(BaseHome basehome, StartArgs args)
     {
         this.baseHome = basehome;
@@ -57,11 +46,6 @@ public class Modules extends Graph<Module>
         this.setSelectionTerm("enable");
         this.setNodeTerm("module");
     }
-
-    //    public void clearMissing()
-    //    {
-    //        missingModules.clear();
-    //    }
 
     public void dump()
     {
@@ -121,112 +105,6 @@ public class Modules extends Graph<Module>
             }
         }
     }
-
-    //    public int enableAll(List<String> names, String source) throws IOException
-    //    {
-    //        if ((names == null) || (names.isEmpty()))
-    //        {
-    //            // nothing to do
-    //            return 0;
-    //        }
-    //
-    //        List<String> sources = Collections.singletonList(source);
-    //
-    //        int count = 0;
-    //        for (String name : names)
-    //        {
-    //            count += enable(name,sources);
-    //        }
-    //        return count;
-    //    }
-
-    //    public int enable(String name, List<String> sources) throws IOException
-    //    {
-    //        int count = 0;
-    //
-    //        if (name.contains("*"))
-    //        {
-    //            // A regex!
-    //            List<Module> matching = getMatching(new RegexNamePredicate(name));
-    //
-    //            // enable them
-    //            for (Module module : matching)
-    //            {
-    //                count += enableModule(module,sources);
-    //            }
-    //        }
-    //        else
-    //        {
-    //            Module module = get(name);
-    //            if (module == null)
-    //            {
-    //                System.err.printf("WARNING: Cannot enable requested module [%s]: not a valid module name.%n",name);
-    //                return count;
-    //            }
-    //            count += enableModule(module,sources);
-    //        }
-    //        return count;
-    //    }
-
-    //    private int enableModule(Module module, List<String> sources) throws IOException
-    //    {
-    //        int count = 0;
-    //        if (sources == null)
-    //        {
-    //            // We use source for tagging how a node was selected, it should
-    //            // always be required
-    //            throw new RuntimeException("sources should never be empty");
-    //        }
-    //
-    //        module.addSources(sources);
-    //        String via = Utils.join(sources,", ");
-    //
-    //        // If already enabled, nothing else to do
-    //        if (module.isEnabled())
-    //        {
-    //            StartLog.debug("Enabled module: %s (via %s)",module.getName(),via);
-    //            return count;
-    //        }
-    //
-    //        StartLog.debug("Enabling module: %s (via %s)",module.getName(),via);
-    //        module.setEnabled(true);
-    //        count++;
-    //        args.parseModule(module);
-    //        module.expandProperties(args.getProperties());
-    //
-    //        // enable any parents that haven't been enabled (yet)
-    //        Set<String> parentNames = new HashSet<>();
-    //        parentNames.addAll(module.getParentNames());
-    //        for (String name : parentNames)
-    //        {
-    //            StartLog.debug("Enable parent '%s' of module: %s",name,module.getName());
-    //            Module parent = get(name);
-    //            if (parent == null)
-    //            {
-    //                // parent module doesn't exist, yet
-    //                Path file = baseHome.getPath("modules/" + name + ".mod");
-    //                if (FS.canReadFile(file))
-    //                {
-    //                    parent = registerModule(file);
-    //                    parent.expandProperties(args.getProperties());
-    //                    updateParentReferencesTo(parent);
-    //                }
-    //                else
-    //                {
-    //                    if (!Props.hasPropertyKey(name))
-    //                    {
-    //                        StartLog.debug("Missing module definition: [ Mod: %s | File: %s ]",name,file);
-    //                        missingModules.add(name);
-    //                    }
-    //                }
-    //            }
-    //            if (parent != null)
-    //            {
-    //                count += enableModule(parent,sources);
-    //            }
-    //        }
-    //        return count;
-    //    }
 
     @Override
     public Module resolveNode(String name)
@@ -293,24 +171,6 @@ public class Modules extends Graph<Module>
             }
         }
         return xmls;
-    }
-
-    public void registerParentsIfMissing(Module module) throws IOException
-    {
-        Set<String> parents = new HashSet<>(module.getParentNames());
-        for (String name : parents)
-        {
-            if (!containsNode(name))
-            {
-                Path file = baseHome.getPath("modules/" + name + ".mod");
-                if (FS.canReadFile(file))
-                {
-                    Module parent = registerModule(file);
-                    updateParentReferencesTo(parent);
-                    registerParentsIfMissing(parent);
-                }
-            }
-        }
     }
 
     public void registerAll() throws IOException
@@ -393,56 +253,6 @@ public class Modules extends Graph<Module>
         {
             throw new GraphException("Unable to register module: " + shortName,t);
         }
-    }
-
-    /**
-     * Resolve the execution order of the enabled modules, and all dependent modules, based on depth first transitive
-     * reduction.
-     * 
-     * @return the list of active modules (plus dependent modules), in execution order.
-     * @deprecated use {@link #getEnabled()} and {@link #assertModulesValid(Collection)} instead.
-     */
-    @Deprecated
-    public List<Module> resolveEnabled()
-    {
-        Map<String, Module> active = new HashMap<String, Module>();
-
-        for (Module module : getNodes())
-        {
-            if (module.isEnabled())
-            {
-                findParents(module,active);
-            }
-        }
-
-        assertModulesValid(active.values());
-
-        List<Module> ordered = new ArrayList<>();
-        ordered.addAll(active.values());
-        Collections.sort(ordered,new NodeDepthComparator());
-        return ordered;
-    }
-
-    public void assertModulesValid(Collection<Module> active)
-    {
-        //        /*
-        //         * check against the missing modules
-        //         * 
-        //         * Ex: npn should match anything under npn/
-        //         */
-        //        for (String missing : missingModules)
-        //        {
-        //            for (Module module : active)
-        //            {
-        //                if (missing.startsWith(module.getName()))
-        //                {
-        //                    StartLog.warn("** Unable to continue, required dependency missing. [%s]",missing);
-        //                    StartLog.warn("** As configured, Jetty is unable to start due to a missing enabled module dependency.");
-        //                    StartLog.warn("** This may be due to a transitive dependency akin to spdy on npn, which resolves based on the JDK in use.");
-        //                    throw new UsageException(UsageException.ERR_BAD_ARG,"Missing referenced dependency: " + missing);
-        //                }
-        //            }
-        //        }
     }
 
     /**
