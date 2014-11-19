@@ -458,7 +458,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
     
     protected class HttpChannelOverHttp extends HttpChannel<ByteBuffer>
-    {
+    {        
         public HttpChannelOverHttp(Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
         {
             super(connector,config,endPoint,transport,input);
@@ -528,7 +528,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (!persistent)
                 _generator.setPersistent(false);
 
-            return super.headerComplete();
+            boolean superhc = super.headerComplete();
+            
+            // Should we delay dispatch until we have some content?
+            // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
+            if (superhc && getHttpConfiguration().isDelayDispatchOnContent() && _parser.getContentLength()>0 && !isExpecting100Continue() && !isCommitted() && BufferUtil.isEmpty(_requestBuffer))
+                return false;
+            
+            return superhc;
         }
 
         @Override
