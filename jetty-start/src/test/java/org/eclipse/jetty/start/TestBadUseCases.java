@@ -80,6 +80,4 @@ public class TestBadUseCases
                 "Missing referenced dependency: protonego-impl/npn-1.7.0_01",
                 "java.version=1.7.0_01", "protonego=npn");
     }
-
-
 }

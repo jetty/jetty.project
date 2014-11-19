@@ -28,6 +28,10 @@ import java.nio.file.StandardOpenOption;
 import java.util.Collection;
 import java.util.List;
 
+import org.eclipse.jetty.start.graph.Graph;
+import org.eclipse.jetty.start.graph.Node;
+import org.eclipse.jetty.start.graph.Selection;
+
 /**
  * Generate a graphviz dot graph of the modules found
  */
@@ -182,9 +186,9 @@ public class ModuleGraphWriter
         if (module.isEnabled())
         {
             writeModuleDetailHeader(out,"ENABLED");
-            for (String source : module.getSources())
+            for (Selection selection : module.getSelections())
             {
-                writeModuleDetailLine(out,"via: " + source);
+                writeModuleDetailLine(out,"via: " + selection);
             }
         }
         else if (resolved)
@@ -247,11 +251,11 @@ public class ModuleGraphWriter
         }
     }
 
-    private void writeRelationships(PrintWriter out, Modules modules, List<Module> enabled)
+    private void writeRelationships(PrintWriter out, Graph<Module> modules, List<Module> enabled)
     {
         for (Module module : modules)
         {
-            for (Module parent : module.getParentEdges())
+            for (Node<?> parent : module.getParentEdges())
             {
                 out.printf("    \"%s\" -> \"%s\";%n",module.getName(),parent.getName());
             }

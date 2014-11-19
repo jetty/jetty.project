@@ -38,6 +38,8 @@ import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
+import org.eclipse.jetty.start.graph.GraphException;
+import org.eclipse.jetty.start.graph.Selection;
 
 /**
  * Main start class.
@@ -285,31 +287,40 @@ public class Main
         StartArgs args = new StartArgs();
         args.parse(baseHome.getConfigSources());
 
-        // ------------------------------------------------------------
-        // 3) Module Registration
-        Modules modules = new Modules(baseHome,args);
-        StartLog.debug("Registering all modules");
-        modules.registerAll();
-
-        // ------------------------------------------------------------
-        // 4) Active Module Resolution
-        for (String enabledModule : args.getEnabledModules())
+        try
         {
-            List<String> msources = args.getSources(enabledModule);
-            modules.enable(enabledModule,msources);
-        }
-        
-        StartLog.debug("Building Module Graph");
-        modules.buildGraph();
+            // ------------------------------------------------------------
+            // 3) Module Registration
+            Modules modules = new Modules(baseHome,args);
+            StartLog.debug("Registering all modules");
+            modules.registerAll();
 
-        args.setAllModules(modules);
-        List<Module> activeModules = modules.getEnabled();
-        modules.assertModulesValid(activeModules);
-        
-        // ------------------------------------------------------------
-        // 5) Lib & XML Expansion / Resolution
-        args.expandLibs(baseHome);
-        args.expandModules(baseHome,activeModules);
+            // ------------------------------------------------------------
+            // 4) Active Module Resolution
+            for (String enabledModule : args.getEnabledModules())
+            {
+                for (String source : args.getSources(enabledModule))
+                {
+                    String shortForm = baseHome.toShortForm(source);
+                    modules.selectNode(enabledModule,new Selection(shortForm));
+                }
+            }
+
+            StartLog.debug("Building Module Graph");
+            modules.buildGraph();
+
+            args.setAllModules(modules);
+            List<Module> activeModules = modules.getEnabled();
+            modules.assertModulesValid(activeModules);
+
+            // ------------------------------------------------------------
+            // 5) Lib & XML Expansion / Resolution
+            args.expandLibs(baseHome);
+            args.expandModules(baseHome,activeModules);
+            
+        } catch(GraphException e) {
+            throw new UsageException(ERR_BAD_GRAPH,e);
+        }
 
         // ------------------------------------------------------------
         // 6) Resolve Extra XMLs

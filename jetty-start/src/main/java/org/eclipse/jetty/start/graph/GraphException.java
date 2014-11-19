@@ -16,36 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.start;
+package org.eclipse.jetty.start.graph;
 
 /**
- * A Usage Error has occured. Print the usage and exit with the appropriate exit code.
+ * A non-recoverable graph exception
  */
 @SuppressWarnings("serial")
-public class UsageException extends RuntimeException
+public class GraphException extends RuntimeException
 {
-    public static final int ERR_LOGGING = -1;
-    public static final int ERR_INVOKE_MAIN = -2;
-    public static final int ERR_NOT_STOPPED = -4;
-    public static final int ERR_BAD_ARG = -5;
-    public static final int ERR_BAD_GRAPH = -6;
-    public static final int ERR_UNKNOWN = -9;
-    private int exitCode;
-
-    public UsageException(int exitCode, String format, Object... objs)
+    public GraphException(String message, Throwable cause)
     {
-        super(String.format(format,objs));
-        this.exitCode = exitCode;
+        super(message,cause);
     }
 
-    public UsageException(int exitCode, Throwable cause)
+    public GraphException(String message)
     {
-        super(cause);
-        this.exitCode = exitCode;
-    }
-
-    public int getExitCode()
-    {
-        return exitCode;
+        super(message);
     }
 }

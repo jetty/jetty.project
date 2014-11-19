@@ -25,16 +25,14 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.start.Modules.AndMatcher;
-import org.eclipse.jetty.start.Modules.EnabledMatcher;
-import org.eclipse.jetty.start.Modules.Matcher;
-import org.eclipse.jetty.start.Modules.SourceSetMatcher;
-import org.eclipse.jetty.start.Modules.UniqueSourceMatcher;
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
 import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
+import org.eclipse.jetty.start.graph.HowSetMatcher;
+import org.eclipse.jetty.start.graph.Predicate;
+import org.eclipse.jetty.start.graph.Selection;
 
 /**
  * Build a start configuration in <code>${jetty.base}</code>, including
@@ -137,16 +135,18 @@ public class BaseBuilder
 
         String dirSource = "<add-to-startd>";
         String iniSource = "<add-to-start-ini>";
+        Selection startDirSelection = new Selection(dirSource);
+        Selection startIniSelection = new Selection(iniSource);
 
         int count = 0;
-        count += modules.enableAll(startArgs.getAddToStartdIni(),dirSource);
-        count += modules.enableAll(startArgs.getAddToStartIni(),iniSource);
+        count += modules.selectNodes(startArgs.getAddToStartdIni(),startDirSelection);
+        count += modules.selectNodes(startArgs.getAddToStartIni(),startIniSelection);
 
-        Matcher startDMatcher = new AndMatcher(new EnabledMatcher(),new UniqueSourceMatcher(dirSource));
-        Matcher startIniMatcher = new AndMatcher(new EnabledMatcher(),new UniqueSourceMatcher(iniSource));
+        Predicate startDMatcher = new HowSetMatcher(dirSource);
+        Predicate startIniMatcher = new HowSetMatcher(iniSource);
 
-        // look for ambiguous declaration in 2 places
-        Matcher ambiguousMatcher = new AndMatcher(new EnabledMatcher(),new SourceSetMatcher(dirSource,iniSource));
+        // look for ambiguous declaration found in both places
+        Predicate ambiguousMatcher = new HowSetMatcher(dirSource,iniSource);
         List<Module> ambiguous = modules.getMatching(ambiguousMatcher);
 
         if (ambiguous.size() > 0)
