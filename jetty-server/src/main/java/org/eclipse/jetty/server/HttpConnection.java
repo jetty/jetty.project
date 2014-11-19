@@ -175,6 +175,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return _requestBuffer;
     }
 
+    public boolean isRequestBufferEmpty()
+    {
+        return BufferUtil.isEmpty(_requestBuffer);
+    }
+
     /**
      * <p>Parses and handles HTTP messages.</p>
      * <p>This method is called when this {@link Connection} is ready to read bytes from the {@link EndPoint}.
