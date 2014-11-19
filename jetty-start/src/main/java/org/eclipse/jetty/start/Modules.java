@@ -386,7 +386,7 @@ public class Modules implements Iterable<Module>
         ordered.addAll(modules.values());
         Collections.sort(ordered,new Module.DepthComparator());
 
-        List<Module> active = resolveEnabled();
+        List<Module> active = getEnabled();
 
         for (Module module : ordered)
         {
@@ -729,6 +729,7 @@ public class Modules implements Iterable<Module>
      * Resolve the execution order of the enabled modules, and all dependent modules, based on depth first transitive reduction.
      * 
      * @return the list of active modules (plus dependent modules), in execution order.
+     * @deprecated use {@link #getEnabled()} and {@link #assertModulesValid(Collection)} instead.
      */
     @Deprecated
     public List<Module> resolveEnabled()
