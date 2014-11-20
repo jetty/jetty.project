@@ -82,6 +82,7 @@ public class DistTest
     }
     
     @Test
+    @Ignore
     public void testLikeDistro_SetupDemoBase() throws Exception
     {
         File basePath = testdir.getEmptyDir();
