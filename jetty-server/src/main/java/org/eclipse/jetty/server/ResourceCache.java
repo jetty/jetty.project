@@ -58,9 +58,9 @@ public class ResourceCache
     private final boolean _etagSupported;
     private final boolean  _useFileMappedBuffer;
     
-    private int _maxCachedFileSize =4*1024*1024;
+    private int _maxCachedFileSize =128*1024*1024;
     private int _maxCachedFiles=2048;
-    private int _maxCacheSize =32*1024*1024;
+    private int _maxCacheSize =256*1024*1024;
     
     /* ------------------------------------------------------------ */
     /** Constructor.
@@ -297,7 +297,7 @@ public class ResourceCache
     {
         try
         {
-            if (_useFileMappedBuffer && resource.getFile()!=null) 
+            if (_useFileMappedBuffer && resource.getFile()!=null && resource.length()<Integer.MAX_VALUE) 
                 return BufferUtil.toMappedBuffer(resource.getFile());
             
             return BufferUtil.toBuffer(resource,true);
