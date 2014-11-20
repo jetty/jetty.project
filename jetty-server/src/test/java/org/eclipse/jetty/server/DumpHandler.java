@@ -81,6 +81,9 @@ public class DumpHandler extends AbstractHandler
                 read.append((char)in.read());
         }
 
+        if (request.getParameter("date")!=null)
+            response.setHeader("Date",request.getParameter("date"));
+        
         if (request.getParameter("ISE")!=null)
         {
             throw new IllegalStateException("Testing ISE");

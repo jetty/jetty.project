@@ -73,6 +73,7 @@ public class HttpConnectionTest
         
         connector = new LocalConnector(server,http,null);
         connector.setIdleTimeout(5000);
+        connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(true);
         server.addConnector(connector);
         server.setHandler(new DumpHandler());
         ErrorHandler eh=new ErrorHandler();
@@ -143,6 +144,34 @@ public class HttpConnectionTest
 
         int offset=0;
         offset = checkContains(response,offset,"HTTP/1.1 200");
+        checkContains(response,offset,"pathInfo=/");
+    }
+
+    @Test
+    public void testDate() throws Exception
+    {
+        String response=connector.getResponses("GET / HTTP/1.1\n"+
+                "Host: localhost:80\n"+
+                "Connection: close\n"+
+                "\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"Date: ");
+        checkContains(response,offset,"pathInfo=/");
+    }
+
+    @Test
+    public void testSetDate() throws Exception
+    {
+        String response=connector.getResponses("GET /?date=1+Jan+1970 HTTP/1.1\n"+
+                "Host: localhost:80\n"+
+                "Connection: close\n"+
+                "\n");
+
+        int offset=0;
+        offset = checkContains(response,offset,"HTTP/1.1 200");
+        offset = checkContains(response,offset,"Date: 1 Jan 1970");
         checkContains(response,offset,"pathInfo=/");
     }
 

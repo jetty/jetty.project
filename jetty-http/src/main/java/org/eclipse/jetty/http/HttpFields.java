@@ -180,7 +180,17 @@ public class HttpFields implements Iterable<HttpField>
         }
         return false;
     }
-    
+
+    public boolean contains(HttpHeader header)
+    {
+        for (int i=_size;i-->0;)
+        {
+            HttpField f=_fields[i];
+            if (f.getHeader()==header)
+                return true;
+        }
+        return false;
+    }
     
     public boolean containsKey(String name)
     {
@@ -192,7 +202,8 @@ public class HttpFields implements Iterable<HttpField>
         }
         return false;
     }
-
+    
+    
     public String get(HttpHeader header)
     {
         for (int i=0;i<_size;i++)

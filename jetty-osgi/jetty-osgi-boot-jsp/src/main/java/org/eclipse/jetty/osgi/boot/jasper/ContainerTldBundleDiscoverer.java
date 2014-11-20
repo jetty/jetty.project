@@ -79,7 +79,7 @@ public class ContainerTldBundleDiscoverer implements TldBundleDiscoverer
      * we locate the corresponding bundle and register it as a bundle that
      * contains tld files.
      */
-    private static String DEFAULT_JSTL_BUNDLE_CLASS = "org.apache.taglibs.standard.tag.el.core.WhenTag";
+    private static String DEFAULT_JSTL_BUNDLE_CLASS = "org.apache.taglibs.standard.tag.rt.core.WhenTag";
 
     private Bundle jstlBundle = null;
     
