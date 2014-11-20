@@ -24,8 +24,10 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
-
+import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.WriteListener;
 
 import org.eclipse.jetty.http.HttpContent;
@@ -85,8 +87,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public HttpOutput(HttpChannel<?> channel)
     {
         _channel = channel;
-        _bufferSize = _channel.getHttpConfiguration().getOutputBufferSize();
-        _commitSize=_bufferSize/4;
+        HttpConfiguration config = channel.getHttpConfiguration();
+        _bufferSize = config.getOutputBufferSize();
+        _commitSize = config.getOutputAggregationSize();
     }
     
     public HttpChannel<?> getHttpChannel()

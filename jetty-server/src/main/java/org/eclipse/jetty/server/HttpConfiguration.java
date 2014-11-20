@@ -45,6 +45,7 @@ public class HttpConfiguration
 
     private List<Customizer> _customizers=new CopyOnWriteArrayList<>();
     private int _outputBufferSize=32*1024;
+    private int _outputAggregationSize=_outputBufferSize/4;
     private int _requestHeaderSize=8*1024;
     private int _responseHeaderSize=8*1024;
     private int _headerCacheSize=512;
@@ -93,6 +94,7 @@ public class HttpConfiguration
     {
         _customizers.addAll(config._customizers);
         _outputBufferSize=config._outputBufferSize;
+        _outputAggregationSize=config._outputAggregationSize;
         _requestHeaderSize=config._requestHeaderSize;
         _responseHeaderSize=config._responseHeaderSize;
         _securePort=config._securePort;
@@ -135,6 +137,13 @@ public class HttpConfiguration
     public int getOutputBufferSize()
     {
         return _outputBufferSize;
+    }
+
+    /* ------------------------------------------------------------ */
+    @ManagedAttribute("The maximum size in bytes for HTTP output to be aggregated")
+    public int getOutputAggregationSize()
+    {
+        return _outputAggregationSize;
     }
 
     /* ------------------------------------------------------------ */
@@ -231,9 +240,9 @@ public class HttpConfiguration
     /**
      * <p>Set the {@link Customizer}s that are invoked for every 
      * request received.</p>
-     * <p>Customisers are often used to interpret optional headers (eg {@link ForwardedRequestCustomizer}) or 
+     * <p>Customizers are often used to interpret optional headers (eg {@link ForwardedRequestCustomizer}) or
      * optional protocol semantics (eg {@link SecureRequestCustomizer}). 
-     * @param customizers
+     * @param customizers the list of customizers
      */
     public void setCustomizers(List<Customizer> customizers)
     {
@@ -254,6 +263,19 @@ public class HttpConfiguration
         _outputBufferSize = responseBufferSize;
     }
     
+    /* ------------------------------------------------------------ */
+    /**
+     * Set the max size of the response content write that is copied into the aggregate buffer.
+     * Writes that are smaller of this size are copied into the aggregate buffer, while
+     * writes that are larger of this size will cause the aggregate buffer to be flushed
+     * and the write to be executed without being copied.
+     * @param outputAggregationSize the max write size that is aggregated
+     */
+    public void setOutputAggregationSize(int outputAggregationSize)
+    {
+        _outputAggregationSize = outputAggregationSize;
+    }
+
     /* ------------------------------------------------------------ */
     /** Set the maximum size of a request header.
      * <p>Larger headers will allow for more and/or larger cookies plus larger form content encoded 
@@ -288,28 +310,32 @@ public class HttpConfiguration
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the TCP/IP port used for CONFIDENTIAL and INTEGRAL 
-     * redirections.
-     * @param confidentialPort
+    /** Set the TCP/IP port used for CONFIDENTIAL and INTEGRAL redirections.
+     * @param securePort the secure port to redirect to.
      */
-    public void setSecurePort(int confidentialPort)
+    public void setSecurePort(int securePort)
     {
-        _securePort = confidentialPort;
+        _securePort = securePort;
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the  URI scheme used for CONFIDENTIAL and INTEGRAL 
-     * redirections.
-     * @param confidentialScheme A string like"https"
+    /** Set the  URI scheme used for CONFIDENTIAL and INTEGRAL redirections.
+     * @param secureScheme A scheme string like "https"
      */
-    public void setSecureScheme(String confidentialScheme)
+    public void setSecureScheme(String secureScheme)
     {
-        _secureScheme = confidentialScheme;
+        _secureScheme = secureScheme;
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%d,%d/%d,%s://:%d,%s}",this.getClass().getSimpleName(),hashCode(),_outputBufferSize,_requestHeaderSize,_responseHeaderSize,_secureScheme,_securePort,_customizers);
+        return String.format("%s@%x{%d/%d,%d/%d,%s://:%d,%s}",
+                this.getClass().getSimpleName(),
+                hashCode(),
+                _outputBufferSize, _outputAggregationSize,
+                _requestHeaderSize,_responseHeaderSize,
+                _secureScheme,_securePort,
+                _customizers);
     }
 }
