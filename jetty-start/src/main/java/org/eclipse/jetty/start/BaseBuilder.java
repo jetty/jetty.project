@@ -23,14 +23,17 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Set;
 
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
 import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
-import org.eclipse.jetty.start.graph.HowSetMatcher;
+import org.eclipse.jetty.start.graph.HowSetPredicate;
+import org.eclipse.jetty.start.graph.HowUniquePredicate;
 import org.eclipse.jetty.start.graph.Predicate;
 import org.eclipse.jetty.start.graph.Selection;
 
@@ -137,17 +140,19 @@ public class BaseBuilder
         String iniSource = "<add-to-start-ini>";
         Selection startDirSelection = new Selection(dirSource);
         Selection startIniSelection = new Selection(iniSource);
+        
+        Set<String> startDNames = new HashSet<>();
+        startDNames.addAll(startArgs.getAddToStartdIni());
+        Set<String> startIniNames = new HashSet<>();
+        startIniNames.addAll(startArgs.getAddToStartIni());
 
         int count = 0;
-        count += modules.selectNodes(startArgs.getAddToStartdIni(),startDirSelection);
-        count += modules.selectNodes(startArgs.getAddToStartIni(),startIniSelection);
-
-        Predicate startDMatcher = new HowSetMatcher(dirSource);
-        Predicate startIniMatcher = new HowSetMatcher(iniSource);
+        count += modules.selectNodes(startDNames,startDirSelection);
+        count += modules.selectNodes(startIniNames,startIniSelection);
 
         // look for ambiguous declaration found in both places
-        Predicate ambiguousMatcher = new HowSetMatcher(dirSource,iniSource);
-        List<Module> ambiguous = modules.getMatching(ambiguousMatcher);
+        Predicate ambiguousPredicate = new HowSetPredicate(dirSource,iniSource);
+        List<Module> ambiguous = modules.getMatching(ambiguousPredicate);
 
         if (ambiguous.size() > 0)
         {
@@ -173,11 +178,15 @@ public class BaseBuilder
         }
 
         StartLog.debug("Adding %s new module(s)",count);
-
+        
         // Acknowledge Licenses
         ackLicenses();
 
         // Collect specific modules to enable
+        // Should match 'how', with no other selections.explicit
+        Predicate startDMatcher = new HowUniquePredicate(dirSource);
+        Predicate startIniMatcher = new HowUniquePredicate(iniSource);
+
         List<Module> startDModules = modules.getMatching(startDMatcher);
         List<Module> startIniModules = modules.getMatching(startIniMatcher);
 

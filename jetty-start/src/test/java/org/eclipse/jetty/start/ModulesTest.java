@@ -31,7 +31,7 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
-import org.eclipse.jetty.start.graph.HowSetMatcher;
+import org.eclipse.jetty.start.graph.HowSetPredicate;
 import org.eclipse.jetty.start.graph.Predicate;
 import org.eclipse.jetty.start.graph.RegexNamePredicate;
 import org.eclipse.jetty.start.graph.Selection;
@@ -462,7 +462,7 @@ public class ModulesTest
         }
 
         // Now collect the unique source list
-        List<Module> alts = modules.getMatching(new HowSetMatcher(alt));
+        List<Module> alts = modules.getMatching(new HowSetPredicate(alt));
 
         // Assert names are correct, and in the right order
         actualNames = new ArrayList<>();

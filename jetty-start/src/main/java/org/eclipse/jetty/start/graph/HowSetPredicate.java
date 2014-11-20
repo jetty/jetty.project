@@ -21,11 +21,16 @@ package org.eclipse.jetty.start.graph;
 import java.util.HashSet;
 import java.util.Set;
 
-public class HowSetMatcher implements Predicate
+/**
+ * Should match against the provided set of {@link Selection#getHow()} values.
+ * <p>
+ * Incomplete set is considered to be no-match.
+ */
+public class HowSetPredicate implements Predicate
 {
     private final Set<String> howSet;
 
-    public HowSetMatcher(String... hows)
+    public HowSetPredicate(String... hows)
     {
         this.howSet = new HashSet<>();
 
