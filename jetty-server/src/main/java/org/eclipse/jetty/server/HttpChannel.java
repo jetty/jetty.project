@@ -120,6 +120,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         input.init(_state);
         _request = new Request(this, input);
         _response = new Response(this, new HttpOutput(this));
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
     }
 
     public HttpChannelState getState()

@@ -646,4 +646,135 @@ public class XmlConfigurationTest
         Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
         Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
     }
+
+    public static class NativeHolder
+    {
+        private boolean _boolean;
+        private int _integer;
+        private float _float;
+
+        public boolean getBoolean()
+        {
+            return _boolean;
+        }
+
+        public void setBoolean(boolean value)
+        {
+            this._boolean = value;
+        }
+
+        public int getInteger()
+        {
+            return _integer;
+        }
+
+        public void setInteger(int integer)
+        {
+            _integer = integer;
+        }
+
+        public float getFloat()
+        {
+            return _float;
+        }
+
+        public void setFloat(float f)
+        {
+            _float = f;
+        }
+        
+    }
+    
+    @Test
+    public void testSetBooleanTrue() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                "  <Set name=\"boolean\">true</Set>" +
+                "</Configure>");
+
+        NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
+        Assert.assertTrue(bh.getBoolean());
+    }
+    
+    @Test
+    public void testSetBooleanFalse() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                "  <Set name=\"boolean\">false</Set>" +
+                "</Configure>");
+
+        NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
+        Assert.assertFalse(bh.getBoolean());
+    }
+    
+    @Test
+    public void testSetBadBoolean() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                "  <Set name=\"boolean\">tru</Set>" +
+                "</Configure>");
+
+        NativeHolder bh = (NativeHolder)xmlConfiguration.configure();
+        Assert.assertTrue(bh.getBoolean());
+    }
+    
+    @Test
+    public void testSetBadInteger() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                "  <Set name=\"integer\">bad</Set>" +
+                "</Configure>");
+
+        try
+        {
+            xmlConfiguration.configure();
+            Assert.fail();
+        }
+        catch (Exception e)
+        {
+            
+        }
+    }
+    
+    @Test
+    public void testSetBadExtraInteger() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                "  <Set name=\"integer\">100 bas</Set>" +
+                "</Configure>");
+
+        try
+        {
+            xmlConfiguration.configure();
+            Assert.fail();
+        }
+        catch (Exception e)
+        {
+            
+        }
+    }
+    
+    @Test
+    public void testSetBadFloatInteger() throws Exception
+    {
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.XmlConfigurationTest$NativeHolder\">" +
+                "  <Set name=\"integer\">1.5</Set>" +
+                "</Configure>");
+
+        try
+        {
+            xmlConfiguration.configure();
+            Assert.fail();
+        }
+        catch (Exception e)
+        {
+            
+        }
+    }
 }
