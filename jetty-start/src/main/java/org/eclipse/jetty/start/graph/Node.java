@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.start.graph;
 
+import java.util.ArrayList;
 import java.util.HashSet;
+import java.util.LinkedHashSet;
+import java.util.List;
 import java.util.Set;
 
 /**
@@ -31,16 +34,16 @@ public abstract class Node<T>
     /** The depth of the Node in the tree */
     private int depth = 0;
     /** The set of selections for how this node was selected */
-    private Set<Selection> selections = new HashSet<>();
+    private Set<Selection> selections = new LinkedHashSet<>();
     /** Set of Nodes, by name, that this Node depends on */
-    private Set<String> parentNames = new HashSet<>();
+    private List<String> parentNames = new ArrayList<>();
     /** Set of Nodes, by name, that this Node optionally depend on */
-    private Set<String> optionalParentNames = new HashSet<>();
+    private List<String> optionalParentNames = new ArrayList<>();
 
     /** The Edges to parent Nodes */
-    private Set<T> parentEdges = new HashSet<>();
+    private Set<T> parentEdges = new LinkedHashSet<>();
     /** The Edges to child Nodes */
-    private Set<T> childEdges = new HashSet<>();
+    private Set<T> childEdges = new LinkedHashSet<>();
 
     public void addChildEdge(T child)
     {
@@ -54,6 +57,11 @@ public abstract class Node<T>
 
     public void addOptionalParentName(String name)
     {
+        if (this.optionalParentNames.contains(name))
+        {
+            // skip, name already exists
+            return;
+        }
         this.optionalParentNames.add(name);
     }
 
@@ -69,6 +77,11 @@ public abstract class Node<T>
 
     public void addParentName(String name)
     {
+        if (this.parentNames.contains(name))
+        {
+            // skip, name already exists
+            return;
+        }
         this.parentNames.add(name);
     }
 
@@ -98,7 +111,7 @@ public abstract class Node<T>
         return logicalName;
     }
 
-    public Set<String> getOptionalParentNames()
+    public List<String> getOptionalParentNames()
     {
         return optionalParentNames;
     }
@@ -108,7 +121,7 @@ public abstract class Node<T>
         return parentEdges;
     }
 
-    public Set<String> getParentNames()
+    public List<String> getParentNames()
     {
         return parentNames;
     }
@@ -143,18 +156,12 @@ public abstract class Node<T>
         this.depth = depth;
     }
 
-    @Deprecated
-    public void setLogicalName(String logicalName)
-    {
-        this.logicalName = logicalName;
-    }
-
     public void setName(String name)
     {
         this.logicalName = name;
     }
 
-    public void setParentNames(Set<String> parents)
+    public void setParentNames(List<String> parents)
     {
         this.parentNames.clear();
         this.parentEdges.clear();

@@ -28,10 +28,8 @@ import java.text.CollationKey;
 import java.text.Collator;
 import java.util.ArrayList;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -121,7 +119,7 @@ public class Module extends Node<Module>
     public void expandProperties(Props props)
     {
         // Expand Parents
-        Set<String> parents = new HashSet<>();
+        List<String> parents = new ArrayList<>();
         for (String parent : getParentNames())
         {
             parents.add(props.expand(parent));

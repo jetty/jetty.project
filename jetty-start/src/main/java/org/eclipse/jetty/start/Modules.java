@@ -137,6 +137,7 @@ public class Modules extends Graph<Module>
     @Override
     public void onNodeSelected(Module module)
     {
+        StartLog.debug("on node selected: %s [%s]",module.getName(),baseHome.toShortForm(module.getFilesystemRef()));
         args.parseModule(module);
         module.expandProperties(args.getProperties());
     }
@@ -273,7 +274,7 @@ public class Modules extends Graph<Module>
 
         for (Module m : getNodes())
         {
-            Set<String> resolvedParents = new HashSet<>();
+            List<String> resolvedParents = new ArrayList<>();
             for (String parent : m.getParentNames())
             {
                 if (parent.equals(module.getFilesystemRef()))

@@ -27,6 +27,7 @@ import java.util.Collections;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -34,6 +35,7 @@ import java.util.Stack;
 
 import org.eclipse.jetty.start.Props;
 import org.eclipse.jetty.start.StartLog;
+import org.eclipse.jetty.start.Utils;
 
 /**
  * Basic Graph
@@ -42,7 +44,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
 {
     private String selectionTerm = "select";
     private String nodeTerm = "node";
-    private Map<String, T> nodes = new HashMap<>();
+    private Map<String, T> nodes = new LinkedHashMap<>();
     private int maxDepth = -1;
 
     protected Set<String> asNameSet(Set<T> nodeSet)
@@ -321,27 +323,6 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
      */
     public abstract T resolveNode(String name);
 
-    private Set<T> resolveNodes(Set<String> parentNames)
-    {
-        Set<T> ret = new HashSet<>();
-        for (String name : parentNames)
-        {
-            T node = get(name);
-            // Node doesn't exist yet (try to resolve it it just-in-time)
-            if (node == null)
-            {
-                node = resolveNode(name);
-            }
-            // Node still doesn't exist? this is now an invalid graph.
-            if (node == null)
-            {
-                throw new GraphException("Missing referenced dependency: " + name);
-            }
-            ret.add(node);
-        }
-        return ret;
-    }
-
     public Set<String> resolveParentModulesOf(String nodeName)
     {
         Map<String, T> ret = new HashMap<>();
@@ -361,7 +342,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
             err.append(" requested ").append(nodeTerm);
             err.append("s.  ").append(nodePredicate);
             err.append(" returned no matches.");
-            System.err.println(err);
+            StartLog.warn(err.toString());
             return count;
         }
 
@@ -381,11 +362,11 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
         if (node == null)
         {
             StringBuilder err = new StringBuilder();
-            err.append("WARNING: Cannot ").append(selectionTerm);
+            err.append("Cannot ").append(selectionTerm);
             err.append(" requested ").append(nodeTerm);
             err.append(" [").append(name).append("]: not a valid ");
             err.append(nodeTerm).append(" name.");
-            System.err.println(err);
+            StartLog.warn(err.toString());
             return count;
         }
 
@@ -418,23 +399,35 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
 
         // Walk transitive
         Selection transitive = selection.asTransitive();
-        Set<String> parentNames = new HashSet<>();
+        List<String> parentNames = new ArrayList<>();
         parentNames.addAll(node.getParentNames());
-        Set<T> parentNodes = resolveNodes(parentNames);
-        for (T parentNode : parentNodes)
-        {
-            count += selectNode(parentNode,transitive);
-        }
+
+        count += selectNodes(parentNames,transitive);
 
         return count;
     }
 
     public int selectNodes(Collection<String> names, Selection selection)
     {
+        StartLog.debug("%s [%s] (via %s)",toCap(selectionTerm),Utils.join(names,", "),selection);
+
         int count = 0;
 
         for (String name : names)
         {
+            T node = get(name);
+            // Node doesn't exist yet (try to resolve it it just-in-time)
+            if (node == null)
+            {
+                StartLog.debug("resolving node [%s]",name);
+                node = resolveNode(name);
+            }
+            // Node still doesn't exist? this is now an invalid graph.
+            if (node == null)
+            {
+                throw new GraphException("Missing referenced dependency: " + name);
+            }
+
             count += selectNode(name,selection);
         }
 

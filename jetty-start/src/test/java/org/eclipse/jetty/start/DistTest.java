@@ -18,19 +18,15 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
+import static org.eclipse.jetty.start.StartMatchers.*;
 import static org.junit.Assert.*;
 
-import java.io.File;
-import java.io.IOException;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
-import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Ignore;
 import org.junit.Rule;
@@ -47,19 +43,6 @@ public class DistTest
     @Rule
     public SystemExitAsException exitrule = new SystemExitAsException();
 
-    protected String assertFileExists(File basePath, String name) throws IOException
-    {
-        File file = new File(basePath, OS.separators(name));
-        FS.exists(file.toPath());
-        return IO.readToString(file);
-    }
-    
-    protected void assertNotFileExists(File basePath, String name) throws IOException
-    {
-        File file = new File(basePath, OS.separators(name));
-        assertThat("File should not exist: " + file, file.exists(), is(false));
-    }
-
     private void execMain(List<String> cmds) throws Exception
     {
         int len = cmds.size();
@@ -70,12 +53,12 @@ public class DistTest
         main.start(startArgs);
     }
 
-    public List<String> getBaseCommandLine(File basePath)
+    public List<String> getBaseCommandLine(Path basePath)
     {
         List<String> cmds = new ArrayList<String>();
         cmds.add("-Djava.io.tmpdir=" + MavenTestingUtils.getTargetDir().getAbsolutePath());
         cmds.add("-Djetty.home=" + MavenTestingUtils.getTestResourceDir("dist-home").getAbsolutePath());
-        cmds.add("-Djetty.base=" + basePath.getAbsolutePath());
+        cmds.add("-Djetty.base=" + basePath.normalize().toAbsolutePath().toString());
         cmds.add("--testing-mode");
 
         return cmds;
@@ -84,11 +67,24 @@ public class DistTest
     @Test
     public void testLikeDistro_SetupHome() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyDir().toPath();
 
         List<String> cmds = getBaseCommandLine(basePath);
 
         cmds.add("--add-to-start=deploy,websocket,ext,resources,jsp,jstl,http");
+
+        execMain(cmds);
+    }
+    
+    @Test
+    public void testAddJstl() throws Exception
+    {
+        StartLog.enableDebug();
+        Path basePath = testdir.getEmptyDir().toPath();
+
+        List<String> cmds = getBaseCommandLine(basePath);
+
+        cmds.add("--add-to-start=jstl");
 
         execMain(cmds);
     }
@@ -99,17 +95,19 @@ public class DistTest
     @Test
     public void testReAddServerModule() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyDir().toPath();
 
         List<String> cmds = getBaseCommandLine(basePath);
         cmds.add("--add-to-startd=http");
         execMain(cmds);
         
-        assertFileExists(basePath,"start.d/http.ini");
-        assertFileExists(basePath,"start.d/server.ini");
+        Path httpIni = basePath.resolve("start.d/http.ini");
+        Path serverIni = basePath.resolve("start.d/server.ini");
+        
+        assertThat("start.d/http.ini", httpIni, fileExists());
+        assertThat("start.d/server.ini", serverIni, fileExists());
         
         // Delete server.ini
-        Path serverIni = basePath.toPath().resolve("start.d/server.ini");
         Files.deleteIfExists(serverIni);
         
         // Attempt to re-add via 'server' module reference
@@ -117,7 +115,7 @@ public class DistTest
         cmds.add("--add-to-startd=server");
         execMain(cmds);
         
-        assertFileExists(basePath,"start.d/server.ini");
+        assertThat("start.d/server.ini", serverIni, fileExists());
     }
     
     /**
@@ -126,17 +124,19 @@ public class DistTest
     @Test
     public void testReAddServerViaHttpModule() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyDir().toPath();
 
         List<String> cmds = getBaseCommandLine(basePath);
         cmds.add("--add-to-startd=http");
         execMain(cmds);
         
-        assertFileExists(basePath,"start.d/http.ini");
-        assertFileExists(basePath,"start.d/server.ini");
+        Path httpIni = basePath.resolve("start.d/http.ini");
+        Path serverIni = basePath.resolve("start.d/server.ini");
+        
+        assertThat("start.d/http.ini", httpIni, fileExists());
+        assertThat("start.d/server.ini", serverIni, fileExists());
         
         // Delete server.ini
-        Path serverIni = basePath.toPath().resolve("start.d/server.ini");
         Files.deleteIfExists(serverIni);
         
         // Attempt to re-add via 'http' module reference
@@ -144,7 +144,7 @@ public class DistTest
         cmds.add("--add-to-startd=http");
         execMain(cmds);
         
-        assertFileExists(basePath,"start.d/server.ini");
+        assertThat("start.d/server.ini", serverIni, fileExists());
     }
     
     /**
@@ -153,28 +153,31 @@ public class DistTest
     @Test
     public void testReAddHttpThenDeployViaStartD() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyDir().toPath();
 
         List<String> cmds = getBaseCommandLine(basePath);
         cmds.add("--add-to-start=http");
         execMain(cmds);
         
-        assertFileExists(basePath,"start.ini");
+        Path startIni = basePath.resolve("start.ini");
         
+        assertThat("start.ini", startIni, fileExists());
+
         // Now add 'deploy' module.
         cmds = getBaseCommandLine(basePath);
         cmds.add("--add-to-startd=deploy");
         execMain(cmds);
         
         // The following files should not exist (as its already defined in /start.ini)
-        assertNotFileExists(basePath,"start.d/server.ini");
+        Path serverIni = basePath.resolve("start.d/server.ini");
+        assertThat("start.d/server.ini", serverIni, notPathExists());
     }
     
     @Test
     @Ignore("See https://bugs.eclipse.org/451973")
     public void testLikeDistro_SetupDemoBase() throws Exception
     {
-        File basePath = testdir.getEmptyDir();
+        Path basePath = testdir.getEmptyDir().toPath();
 
         List<String> cmds = getBaseCommandLine(basePath);
 

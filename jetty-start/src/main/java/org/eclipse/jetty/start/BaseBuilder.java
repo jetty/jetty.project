@@ -23,9 +23,7 @@ import java.net.URI;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
@@ -141,9 +139,9 @@ public class BaseBuilder
         Selection startDirSelection = new Selection(dirSource);
         Selection startIniSelection = new Selection(iniSource);
         
-        Set<String> startDNames = new HashSet<>();
+        List<String> startDNames = new ArrayList<>();
         startDNames.addAll(startArgs.getAddToStartdIni());
-        Set<String> startIniNames = new HashSet<>();
+        List<String> startIniNames = new ArrayList<>();
         startIniNames.addAll(startArgs.getAddToStartIni());
 
         int count = 0;
