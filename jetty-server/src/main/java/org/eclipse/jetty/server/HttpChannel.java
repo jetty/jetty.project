@@ -656,19 +656,20 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     public boolean headerComplete()
     {
         _requests.incrementAndGet();
+        HttpFields fields = _response.getHttpFields();
         switch (_version)
         {
             case HTTP_0_9:
                 break;
 
             case HTTP_1_0:
-                if (_configuration.getSendDateHeader())
-                    _response.getHttpFields().put(_connector.getServer().getDateField());
+                if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
+                    _response.getHttpFields().add(_connector.getServer().getDateField());
                 break;
 
             case HTTP_1_1:
-                if (_configuration.getSendDateHeader())
-                    _response.getHttpFields().put(_connector.getServer().getDateField());
+                if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
+                    _response.getHttpFields().add(_connector.getServer().getDateField());
 
                 if (_expect)
                 {
