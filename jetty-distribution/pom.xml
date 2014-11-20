@@ -579,6 +579,7 @@
               <arguments>
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}</argument>
+                <argument>jsp-impl=apache</argument>
                 <argument>--add-to-start=deploy,websocket,ext,resources,jsp,jstl,http</argument>
               </arguments>
             </configuration>
@@ -609,6 +610,7 @@
               <arguments>
                 <argument>jetty.home=${assembly-directory}</argument>
                 <argument>jetty.base=${assembly-directory}/demo-base</argument>
+                <argument>jsp-impl=apache</argument>
                 <argument>--add-to-startd=jsp,jstl,http,https</argument>
               </arguments>
             </configuration>
