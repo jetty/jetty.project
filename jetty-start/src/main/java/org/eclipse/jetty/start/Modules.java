@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Collections;
-import java.util.HashSet;
 import java.util.List;
-import java.util.Set;
 
 import org.eclipse.jetty.start.graph.Graph;
 import org.eclipse.jetty.start.graph.GraphException;
@@ -113,7 +111,8 @@ public class Modules extends Graph<Module>
 
         if (Props.hasPropertyKey(expandedName))
         {
-            throw new GraphException("Unable to expand property in name: " + name);
+            StartLog.debug("Not yet able to expand property in: %s",name);
+            return null;
         }
 
         Path file = baseHome.getPath("modules/" + expandedName + ".mod");
@@ -137,7 +136,7 @@ public class Modules extends Graph<Module>
     @Override
     public void onNodeSelected(Module module)
     {
-        StartLog.debug("on node selected: %s [%s]",module.getName(),baseHome.toShortForm(module.getFilesystemRef()));
+        StartLog.debug("on node selected: [%s] (%s.mod)",module.getName(),module.getFilesystemRef());
         args.parseModule(module);
         module.expandProperties(args.getProperties());
     }
@@ -179,61 +178,6 @@ public class Modules extends Graph<Module>
         for (Path path : baseHome.getPaths("modules/*.mod"))
         {
             registerModule(path);
-        }
-    }
-
-    // load missing post-expanded dependent modules
-    public void normalizeDependencies() throws IOException
-    {
-        Set<String> expandedModules = new HashSet<>();
-        boolean done = false;
-        while (!done)
-        {
-            done = true;
-            Set<String> missingParents = new HashSet<>();
-
-            for (Module m : getNodes())
-            {
-                for (String parent : m.getParentNames())
-                {
-                    String expanded = args.getProperties().expand(parent);
-                    if (containsNode(expanded) || expandedModules.contains(parent))
-                    {
-                        continue; // found. skip it.
-                    }
-                    done = false;
-                    StartLog.debug("Missing parent module %s == %s for %s",parent,expanded,m);
-                    missingParents.add(parent);
-                }
-            }
-
-            for (String missingParent : missingParents)
-            {
-                String expanded = args.getProperties().expand(missingParent);
-                Path file = baseHome.getPath("modules/" + expanded + ".mod");
-                if (FS.canReadFile(file))
-                {
-                    Module module = registerModule(file);
-                    updateParentReferencesTo(module);
-                    if (!expanded.equals(missingParent))
-                    {
-                        expandedModules.add(missingParent);
-                    }
-                }
-                else
-                {
-                    if (Props.hasPropertyKey(expanded))
-                    {
-                        StartLog.debug("Module property not expandable (yet) [%s]",expanded);
-                        expandedModules.add(missingParent);
-                    }
-                    else
-                    {
-                        StartLog.debug("Missing module definition: %s expanded to %s",missingParent,expanded);
-                        //                        missingModules.add(missingParent);
-                    }
-                }
-            }
         }
     }
 

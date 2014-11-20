@@ -106,14 +106,19 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
 
     public void buildGraph() throws FileNotFoundException, IOException
     {
-        normalizeDependencies();
-
         // Connect edges
-        for (T node : nodes.values())
+        // Make a copy of nodes.values() as the list could be modified
+        List<T> nodeList = new ArrayList<>(nodes.values());
+        for (T node : nodeList)
         {
             for (String parentName : node.getParentNames())
             {
                 T parent = get(parentName);
+                
+                if (parent == null)
+                {
+                    parent = resolveNode(parentName);
+                }
 
                 if (parent == null)
                 {
@@ -295,15 +300,11 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
         return nodes.values().iterator();
     }
 
-    public void normalizeDependencies() throws IOException
-    {
-        // override to implement
-    }
-
     public abstract void onNodeSelected(T node);
 
     public T register(T node)
     {
+        StartLog.debug("Registering Node: [%s] %s", node.getName(), node);
         nodes.put(node.getName(),node);
         return node;
     }
@@ -428,7 +429,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
                 throw new GraphException("Missing referenced dependency: " + name);
             }
 
-            count += selectNode(name,selection);
+            count += selectNode(node.getName(),selection);
         }
 
         return count;
