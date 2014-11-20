@@ -53,7 +53,7 @@ public class HttpConfiguration
     private boolean _sendServerVersion = true; //send Server: header
     private boolean _sendXPoweredBy = false; //send X-Powered-By: header
     private boolean _sendDateHeader = true; //send Date: header
-    private boolean _delayDispatchOnContent = false; // Don't dispatch until content arrives
+    private boolean _delayDispatchOnContent = true; // Don't dispatch until content arrives
 
     
     /* ------------------------------------------------------------ */
