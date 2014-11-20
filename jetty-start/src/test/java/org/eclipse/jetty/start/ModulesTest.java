@@ -214,7 +214,7 @@ public class ModulesTest
         expected.add("jsp-impl");
 
         List<String> resolved = new ArrayList<>();
-        for (Module module : modules.getEnabled())
+        for (Module module : modules.getSelected())
         {
             resolved.add(module.getName());
         }
@@ -254,7 +254,7 @@ public class ModulesTest
         modules.buildGraph();
 
         // Collect active module list
-        List<Module> active = modules.getEnabled();
+        List<Module> active = modules.getSelected();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
@@ -327,7 +327,7 @@ public class ModulesTest
         // modules.dump();
 
         // Collect active module list
-        List<Module> active = modules.getEnabled();
+        List<Module> active = modules.getSelected();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
@@ -420,7 +420,7 @@ public class ModulesTest
         // modules.dump();
 
         // Collect active module list
-        List<Module> active = modules.getEnabled();
+        List<Module> active = modules.getSelected();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();

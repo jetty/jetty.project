@@ -51,7 +51,7 @@ public class Modules extends Graph<Module>
         ordered.addAll(getNodes());
         Collections.sort(ordered,new Module.NameComparator());
 
-        List<Module> active = getEnabled();
+        List<Module> active = getSelected();
 
         for (Module module : ordered)
         {

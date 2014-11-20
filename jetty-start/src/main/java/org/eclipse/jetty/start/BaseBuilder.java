@@ -105,7 +105,7 @@ public class BaseBuilder
             else
             {
                 Licensing licensing = new Licensing();
-                for (Module module : startArgs.getAllModules().getEnabled())
+                for (Module module : startArgs.getAllModules().getSelected())
                 {
                     licensing.addModule(module);
                 }

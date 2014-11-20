@@ -310,7 +310,7 @@ public class Main
             modules.buildGraph();
 
             args.setAllModules(modules);
-            List<Module> activeModules = modules.getEnabled();
+            List<Module> activeModules = modules.getSelected();
 
             // ------------------------------------------------------------
             // 5) Lib & XML Expansion / Resolution

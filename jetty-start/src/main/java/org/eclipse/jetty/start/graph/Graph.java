@@ -188,7 +188,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
         ordered.addAll(nodes.values());
         Collections.sort(ordered,new NodeDepthComparator());
 
-        List<T> active = getEnabled();
+        List<T> active = getSelected();
 
         for (T module : ordered)
         {
@@ -208,7 +208,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
         ordered.addAll(nodes.values());
         Collections.sort(ordered,new NodeDepthComparator());
 
-        List<T> active = getEnabled();
+        List<T> active = getSelected();
 
         for (T module : ordered)
         {
@@ -265,7 +265,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
     /**
      * Get the list of Selected nodes.
      */
-    public List<T> getEnabled()
+    public List<T> getSelected()
     {
         return getMatching(new AnySelectionPredicate());
     }
