@@ -20,7 +20,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -71,7 +70,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;
-        _metadata.getURI().clear();
+        _metadata.recycle();
         _connection=null;
         _fields.clear();
     }
