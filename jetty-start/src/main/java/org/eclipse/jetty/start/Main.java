@@ -253,10 +253,10 @@ public class Main
 
         // Dump Enabled Modules
         System.out.println();
-        System.out.println("Jetty Active Module Tree:");
-        System.out.println("-------------------------");
+        System.out.println("Jetty Selected Module Ordering:");
+        System.out.println("-------------------------------");
         Modules modules = args.getAllModules();
-        modules.dumpEnabledTree();
+        modules.dumpSelected();
     }
 
     /**
@@ -316,8 +316,10 @@ public class Main
             // 5) Lib & XML Expansion / Resolution
             args.expandLibs(baseHome);
             args.expandModules(baseHome,activeModules);
-            
-        } catch(GraphException e) {
+
+        }
+        catch (GraphException e)
+        {
             throw new UsageException(ERR_BAD_GRAPH,e);
         }
 

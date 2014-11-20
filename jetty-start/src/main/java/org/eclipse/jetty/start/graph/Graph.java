@@ -114,7 +114,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
             for (String parentName : node.getParentNames())
             {
                 T parent = get(parentName);
-                
+
                 if (parent == null)
                 {
                     parent = resolveNode(parentName);
@@ -182,7 +182,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
         return nodes.size();
     }
 
-    public void dumpEnabledTree()
+    public void dumpSelectedTree()
     {
         List<T> ordered = new ArrayList<>();
         ordered.addAll(nodes.values());
@@ -196,7 +196,44 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
             {
                 // Show module name
                 String indent = toIndent(module.getDepth());
-                System.out.printf("%s + Module: %s [%s]%n",indent,module.getName(),module.isSelected()?"selected":"transitive");
+                boolean transitive = module.matches(OnlyTransitivePredicate.INSTANCE);
+                System.out.printf("%s + %s: %s [%s]%n",indent,toCap(nodeTerm),module.getName(),transitive?"transitive":"selected");
+            }
+        }
+    }
+
+    public void dumpSelected()
+    {
+        List<T> ordered = new ArrayList<>();
+        ordered.addAll(nodes.values());
+        Collections.sort(ordered,new NodeDepthComparator());
+
+        List<T> active = getEnabled();
+
+        for (T module : ordered)
+        {
+            if (active.contains(module))
+            {
+                // Show module name
+                boolean transitive = module.matches(OnlyTransitivePredicate.INSTANCE);
+                System.out.printf("  %3d) %-15s ",module.getDepth() + 1,module.getName());
+                if (transitive)
+                {
+                    System.out.println("<transitive> ");
+                }
+                else
+                {
+                    List<String> hows = new ArrayList<>();
+                    for (Selection selection : module.getSelections())
+                    {
+                        if (selection.isExplicit())
+                        {
+                            hows.add(selection.getHow());
+                        }
+                    }
+                    Collections.sort(hows);
+                    System.out.println(Utils.join(hows,", "));
+                }
             }
         }
     }
@@ -234,7 +271,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
     }
 
     /**
-     * Get the Nodes from the tree that match the provided predicat.
+     * Get the Nodes from the tree that match the provided predicate.
      *
      * @param predicate
      *            the way to match nodes
@@ -304,7 +341,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
 
     public T register(T node)
     {
-        StartLog.debug("Registering Node: [%s] %s", node.getName(), node);
+        StartLog.debug("Registering Node: [%s] %s",node.getName(),node);
         nodes.put(node.getName(),node);
         return node;
     }
