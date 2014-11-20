@@ -50,12 +50,11 @@ public class HttpConfiguration
     private int _headerCacheSize=512;
     private int _securePort;
     private String _secureScheme = HttpScheme.HTTPS.asString();
-    private boolean _sendServerVersion = true; //send Server: header
-    private boolean _sendXPoweredBy = false; //send X-Powered-By: header
-    private boolean _sendDateHeader = true; //send Date: header
-    private boolean _delayDispatchOnContent = false; // Don't dispatch until content arrives
+    private boolean _sendServerVersion = true;
+    private boolean _sendXPoweredBy = false;
+    private boolean _sendDateHeader = true;
+    private boolean _delayDispatchUntilContent = false;
 
-    
     /* ------------------------------------------------------------ */
     /** 
      * <p>An interface that allows a request object to be customized 
@@ -211,24 +210,23 @@ public class HttpConfiguration
     {
         return _sendDateHeader;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param delay if true, delay the application dispatch until content is available
      */
-    public void setDelayDispatchOnContent(boolean delay)
+    public void setDelayDispatchUntilContent(boolean delay)
     {
-        _delayDispatchOnContent=delay;
+        _delayDispatchUntilContent = delay;
     }
 
     /* ------------------------------------------------------------ */
     @ManagedAttribute("if true, delay the application dispatch until content is available")
-    public boolean isDelayDispatchOnContent()
+    public boolean isDelayDispatchUntilContent()
     {
-        return _delayDispatchOnContent;
+        return _delayDispatchUntilContent;
     }
 
-    
     /* ------------------------------------------------------------ */
     /**
      * <p>Set the {@link Customizer}s that are invoked for every 

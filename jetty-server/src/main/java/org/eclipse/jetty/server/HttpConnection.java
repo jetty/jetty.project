@@ -528,14 +528,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (!persistent)
                 _generator.setPersistent(false);
 
-            boolean superhc = super.headerComplete();
+            if (!super.headerComplete())
+                return false;
             
             // Should we delay dispatch until we have some content?
             // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
-            if (superhc && getHttpConfiguration().isDelayDispatchOnContent() && _parser.getContentLength()>0 && !isExpecting100Continue() && !isCommitted() && BufferUtil.isEmpty(_requestBuffer))
+            if (getHttpConfiguration().isDelayDispatchUntilContent() && _parser.getContentLength() > 0 &&
+                    !isExpecting100Continue() && !isCommitted() && BufferUtil.isEmpty(_requestBuffer))
                 return false;
-            
-            return superhc;
+
+            return true;
         }
 
         @Override
