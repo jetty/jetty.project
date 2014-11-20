@@ -79,7 +79,6 @@ public class DistTest
     @Test
     public void testAddJstl() throws Exception
     {
-        StartLog.enableDebug();
         Path basePath = testdir.getEmptyDir().toPath();
 
         List<String> cmds = getBaseCommandLine(basePath);
