@@ -160,7 +160,6 @@ public class DistTest
         execMain(cmds);
         
         Path startIni = basePath.resolve("start.ini");
-        
         assertThat("start.ini", startIni, fileExists());
 
         // Now add 'deploy' module.

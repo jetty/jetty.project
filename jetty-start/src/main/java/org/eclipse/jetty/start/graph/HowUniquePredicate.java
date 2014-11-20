@@ -34,20 +34,30 @@ public class HowUniquePredicate implements Predicate
     @Override
     public boolean match(Node<?> node)
     {
+        if (node.getSelections().isEmpty())
+        {
+            // Empty selection list (no uniqueness to it)
+            return false;
+        }
+        
+        // Assume no match
         boolean ret = false;
-
+        
         for (Selection selection : node.getSelections())
         {
             if (how.equalsIgnoreCase(selection.getHow()))
             {
+                // Found a match
                 ret = true;
-                continue; // this how is always valid.
+                continue; // this 'how' is always valid.
             }
-            if (selection.isExplicit())
+            else if (selection.isExplicit())
             {
-                ret = false;
+                // Automatic failure
+                return false;
             }
         }
+
         return ret;
     }
 }
