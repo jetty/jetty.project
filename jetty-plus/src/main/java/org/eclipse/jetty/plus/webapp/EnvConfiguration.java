@@ -185,9 +185,14 @@ public class EnvConfiguration extends AbstractConfiguration
     @Override
     public void destroy (WebAppContext context) throws Exception
     {
+        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(context.getClassLoader());
+        ContextFactory.associateClassLoader(context.getClassLoader());
+
         try
         {
             //unbind any NamingEntries that were configured in this webapp's name space
+            
             NamingContext scopeContext = (NamingContext)NamingEntryUtil.getContextForScope(context);
             scopeContext.getParent().destroySubcontext(scopeContext.getName());
         }
@@ -195,6 +200,11 @@ public class EnvConfiguration extends AbstractConfiguration
         {
             LOG.ignore(e);
             LOG.debug("No naming entries configured in environment for webapp "+context);
+        }
+        finally
+        {
+            ContextFactory.disassociateClassLoader();
+            Thread.currentThread().setContextClassLoader(old_loader);
         }
     }
 

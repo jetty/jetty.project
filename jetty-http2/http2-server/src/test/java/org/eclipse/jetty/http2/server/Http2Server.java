@@ -94,8 +94,7 @@ public class Http2Server
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
         
         NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
-        ALPNServerConnectionFactory alpn =
-            new ALPNServerConnectionFactory(h2.getProtocol(),http.getDefaultProtocol());
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(http.getDefaultProtocol());
         
         // SSL Factory

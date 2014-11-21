@@ -27,8 +27,11 @@ import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 
 import org.eclipse.jetty.start.BaseBuilder;
+import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Module;
+import org.eclipse.jetty.start.StartLog;
+import org.eclipse.jetty.start.graph.OnlyTransitivePredicate;
 
 /**
  * Management of the <code>${jetty.base}/start.d/</code> based configuration.
@@ -37,11 +40,13 @@ import org.eclipse.jetty.start.Module;
  */
 public class StartDirBuilder implements BaseBuilder.Config
 {
+    private final BaseHome baseHome;
     private final Path startDir;
     
     public StartDirBuilder(BaseBuilder baseBuilder) throws IOException
     {
-        this.startDir = baseBuilder.getBaseHome().getBasePath("start.d");
+        this.baseHome = baseBuilder.getBaseHome();
+        this.startDir = baseHome.getBasePath("start.d");
         FS.ensureDirectoryExists(startDir);
     }
     
@@ -51,12 +56,19 @@ public class StartDirBuilder implements BaseBuilder.Config
         if (module.isVirtual())
         {
             // skip, no need to reference
+            StartLog.info("%-15s skipping (virtual module)",module.getName());
             return false;
         }
-
-        // Create start.d/{name}.ini
         
+        String mode = "";
+        if (module.matches(OnlyTransitivePredicate.INSTANCE))
+        {
+            mode = "(transitively) ";
+        }
+        
+        // Create start.d/{name}.ini
         Path ini = startDir.resolve(module.getName() + ".ini");
+        StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(ini));
         
         try (BufferedWriter writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING))
         {

@@ -53,6 +53,7 @@ public class HttpConfiguration
     private boolean _sendServerVersion = true; //send Server: header
     private boolean _sendXPoweredBy = false; //send X-Powered-By: header
     private boolean _sendDateHeader = true; //send Date: header
+    private boolean _delayDispatchOnContent = true; // Don't dispatch until content arrives
 
     
     /* ------------------------------------------------------------ */
@@ -130,74 +131,103 @@ public class HttpConfiguration
         return null;
     }
 
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("The size in bytes of the output buffer used to aggregate HTTP output")
     public int getOutputBufferSize()
     {
         return _outputBufferSize;
     }
-    
+
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("The maximum allowed size in bytes for a HTTP request header")
     public int getRequestHeaderSize()
     {
         return _requestHeaderSize;
     }
-    
+
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("The maximum allowed size in bytes for a HTTP response header")
     public int getResponseHeaderSize()
     {
         return _responseHeaderSize;
     }
 
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("The maximum allowed size in bytes for a HTTP header field cache")
     public int getHeaderCacheSize()
     {
         return _headerCacheSize;
     }
 
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("The port to which Integral or Confidential security constraints are redirected")
     public int getSecurePort()
     {
         return _securePort;
     }
-    
+
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("The scheme with which Integral or Confidential security constraints are redirected")
     public String getSecureScheme()
     {
         return _secureScheme;
     }
 
+    /* ------------------------------------------------------------ */
     public void setSendServerVersion (boolean sendServerVersion)
     {
         _sendServerVersion = sendServerVersion;
     }
 
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("if true, send the Server header in responses")
     public boolean getSendServerVersion()
     {
         return _sendServerVersion;
     }
-    
+
+    /* ------------------------------------------------------------ */
     public void setSendXPoweredBy (boolean sendXPoweredBy)
     {
         _sendXPoweredBy=sendXPoweredBy;
     }
 
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("if true, send the X-Powered-By header in responses")
     public boolean getSendXPoweredBy()
     {
         return _sendXPoweredBy;
     }
 
+    /* ------------------------------------------------------------ */
     public void setSendDateHeader(boolean sendDateHeader)
     {
         _sendDateHeader = sendDateHeader;
     }
 
+    /* ------------------------------------------------------------ */
     @ManagedAttribute("if true, include the date in HTTP headers")
     public boolean getSendDateHeader()
     {
         return _sendDateHeader;
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param delay if true, delay the application dispatch until content is available
+     */
+    public void setDelayDispatchOnContent(boolean delay)
+    {
+        _delayDispatchOnContent=delay;
+    }
+
+    /* ------------------------------------------------------------ */
+    @ManagedAttribute("if true, delay the application dispatch until content is available")
+    public boolean isDelayDispatchOnContent()
+    {
+        return _delayDispatchOnContent;
+    }
+
     
     /* ------------------------------------------------------------ */
     /**

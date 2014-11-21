@@ -20,7 +20,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -71,7 +70,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         _expect = false;
         _expect100Continue = false;
         _expect102Processing = false;
-        _metadata.getURI().clear();
+        _metadata.recycle();
         _connection=null;
         _fields.clear();
     }
@@ -295,6 +294,12 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
             _httpConnection._generator.setPersistent(false);
 
         onRequest(_metadata);
+
+        // Should we delay dispatch until we have some content?
+        // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
+        if (getHttpConfiguration().isDelayDispatchOnContent() && _httpConnection.getParser().getContentLength()>0 && !isExpecting100Continue() && !isCommitted() && _httpConnection.isRequestBufferEmpty())
+            return false;
+            
         return true;
     }
 

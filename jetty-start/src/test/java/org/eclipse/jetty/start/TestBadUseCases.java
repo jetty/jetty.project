@@ -19,20 +19,24 @@
 package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
 
 /**
  * Test bad configuration scenarios.
  */
 public class TestBadUseCases
 {
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
     private void assertBadConfig(String homeName, String baseName, String expectedErrorMessage, String... cmdLineArgs) throws Exception
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/" + homeName);
@@ -48,15 +52,9 @@ public class TestBadUseCases
             cmdLine.add(arg);
         }
 
-        try
-        {
-            main.processCommandLine(cmdLine);
-            fail("Expected " + UsageException.class.getName());
-        }
-        catch (UsageException e)
-        {
-            assertThat("Usage error",e.getMessage(),containsString(expectedErrorMessage));
-        }
+        expectedException.expect(UsageException.class);
+        expectedException.expectMessage(containsString(expectedErrorMessage));
+        main.processCommandLine(cmdLine);
     }
 
     @Test
@@ -80,6 +78,4 @@ public class TestBadUseCases
                 "Missing referenced dependency: protonego-impl/npn-1.7.0_01",
                 "java.version=1.7.0_01", "protonego=npn");
     }
-
-
 }

@@ -953,6 +953,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 if (request.isAsyncSupported())
                 {
                     final AsyncContext context = request.startAsync();
+                    context.setTimeout(0);
 
                     ((HttpOutput)out).sendContent(content,new Callback()
                     {

@@ -21,47 +21,25 @@ package org.eclipse.jetty.start;
 import java.io.BufferedReader;
 import java.io.FileNotFoundException;
 import java.io.IOException;
-import java.io.InputStreamReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.text.CollationKey;
 import java.text.Collator;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.Comparator;
-import java.util.HashSet;
 import java.util.List;
 import java.util.Locale;
-import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
+import org.eclipse.jetty.start.graph.Node;
 
 /**
  * Represents a Module metadata, as defined in Jetty.
  */
-public class Module
+public class Module extends Node<Module>
 {
-    public static class DepthComparator implements Comparator<Module>
-    {
-        private Collator collator = Collator.getInstance();
-
-        @Override
-        public int compare(Module o1, Module o2)
-        {
-            // order by depth first.
-            int diff = o1.depth - o2.depth;
-            if (diff != 0)
-            {
-                return diff;
-            }
-            // then by name (not really needed, but makes for predictable test cases)
-            CollationKey k1 = collator.getCollationKey(o1.fileRef);
-            CollationKey k2 = collator.getCollationKey(o2.fileRef);
-            return k1.compareTo(k2);
-        }
-    }
-
     public static class NameComparator implements Comparator<Module>
     {
         private Collator collator = Collator.getInstance();
@@ -80,20 +58,7 @@ public class Module
     private Path file;
     /** The name of this Module (as a filesystem reference) */
     private String fileRef;
-    /**
-     * The logical name of this module (for property selected references), And to aid in duplicate detection.
-     */
-    private String logicalName;
-    /** The depth of the module in the tree */
-    private int depth = 0;
-    /** Set of Modules, by name, that this Module depends on */
-    private Set<String> parentNames;
-    /** Set of Modules, by name, that this Module optionally depend on */
-    private Set<String> optionalParentNames;
-    /** The Edges to parent modules */
-    private Set<Module> parentEdges;
-    /** The Edges to child modules */
-    private Set<Module> childEdges;
+
     /** List of xml configurations for this Module */
     private List<String> xmls;
     /** List of ini template lines */
@@ -108,52 +73,17 @@ public class Module
     /** License lines */
     private List<String> license;
 
-    /** Is this Module enabled via start.jar command line, start.ini, or start.d/*.ini */
-    private boolean enabled = false;
-    /** List of sources that enabled this module */
-    private final Set<String> sources = new HashSet<>();
-    private boolean licenseAck = false;
-
     public Module(BaseHome basehome, Path file) throws FileNotFoundException, IOException
     {
+        super();
         this.file = file;
 
         // Strip .mod
         this.fileRef = Pattern.compile(".mod$",Pattern.CASE_INSENSITIVE).matcher(file.getFileName().toString()).replaceFirst("");
-        this.logicalName = fileRef;
+        this.setName(fileRef);
 
         init(basehome);
         process(basehome);
-    }
-
-    public void addChildEdge(Module child)
-    {
-        if (childEdges.contains(child))
-        {
-            // already present, skip
-            return;
-        }
-        this.childEdges.add(child);
-    }
-
-    public void addParentEdge(Module parent)
-    {
-        if (parentEdges.contains(parent))
-        {
-            // already present, skip
-            return;
-        }
-        this.parentEdges.add(parent);
-    }
-
-    public void addSources(List<String> sources)
-    {
-        this.sources.addAll(sources);
-    }
-
-    public void clearSources()
-    {
-        this.sources.clear();
     }
 
     @Override
@@ -189,23 +119,17 @@ public class Module
     public void expandProperties(Props props)
     {
         // Expand Parents
-        Set<String> parents = new HashSet<>();
-        for (String parent : parentNames)
+        List<String> parents = new ArrayList<>();
+        for (String parent : getParentNames())
         {
             parents.add(props.expand(parent));
         }
-        parentNames.clear();
-        parentNames.addAll(parents);
+        setParentNames(parents);
     }
 
-    public Set<Module> getChildEdges()
+    public List<String> getDefaultConfig()
     {
-        return childEdges;
-    }
-
-    public int getDepth()
-    {
-        return depth;
+        return defaultConfig;
     }
 
     public List<String> getFiles()
@@ -218,14 +142,9 @@ public class Module
         return fileRef;
     }
 
-    public List<String> getDefaultConfig()
+    public List<String> getJvmArgs()
     {
-        return defaultConfig;
-    }
-
-    public boolean hasDefaultConfig()
-    {
-        return hasDefaultConfig;
+        return jvmArgs;
     }
 
     public List<String> getLibs()
@@ -233,29 +152,9 @@ public class Module
         return libs;
     }
 
-    public String getName()
+    public List<String> getLicense()
     {
-        return logicalName;
-    }
-
-    public Set<String> getOptionalParentNames()
-    {
-        return optionalParentNames;
-    }
-
-    public Set<Module> getParentEdges()
-    {
-        return parentEdges;
-    }
-
-    public Set<String> getParentNames()
-    {
-        return parentNames;
-    }
-
-    public Set<String> getSources()
-    {
-        return Collections.unmodifiableSet(sources);
+        return license;
     }
 
     public List<String> getXmls()
@@ -263,85 +162,9 @@ public class Module
         return xmls;
     }
 
-    public List<String> getJvmArgs()
+    public boolean hasDefaultConfig()
     {
-        return jvmArgs;
-    }
-
-    public boolean hasLicense()
-    {
-        return license != null && license.size() > 0;
-    }
-    
-
-    public boolean hasSource(String regex)
-    {
-        for (String source : sources)
-        {
-            if (source.matches(regex))
-            {
-                return true;
-            }
-        }
-        return false;
-    }
-    
-    public boolean hasUniqueSource(String regex)
-    {
-        if (sources.size() != 1)
-        {
-            return false;
-        }
-
-        return sources.iterator().next().matches(regex);
-    }
-
-    public boolean acknowledgeLicense() throws IOException
-    {
-        if (!hasLicense() || licenseAck)
-        {
-            return true;
-        }
-
-        System.err.printf("%nModule %s:%n",getName());
-        System.err.printf(" + contains software not provided by the Eclipse Foundation!%n");
-        System.err.printf(" + contains software not covered by the Eclipse Public License!%n");
-        System.err.printf(" + has not been audited for compliance with its license%n");
-        System.err.printf("%n");
-        for (String l : getLicense())
-        {
-            System.err.printf("    %s%n",l);
-        }
-
-        String propBasedAckName = "org.eclipse.jetty.start.ack.license." + getName();
-        String propBasedAckValue = System.getProperty(propBasedAckName);
-        if (propBasedAckValue != null)
-        {
-            StartLog.log("TESTING MODE", "Programmatic ACK - %s=%s",propBasedAckName,propBasedAckValue);
-            licenseAck = Boolean.parseBoolean(propBasedAckValue);
-        }
-        else
-        {
-            if (Boolean.getBoolean("org.eclipse.jetty.start.testing"))
-            {
-                throw new RuntimeException("Test Configuration Missing - Pre-specify answer to (" + propBasedAckName + ") in test case");
-            }
-
-            try (BufferedReader input = new BufferedReader(new InputStreamReader(System.in)))
-            {
-                System.err.printf("%nProceed (y/N)? ");
-                String line = input.readLine();
-
-                licenseAck = !(line == null || line.length() == 0 || !line.toLowerCase().startsWith("y"));
-            }
-        }
-
-        return licenseAck;
-    }
-
-    public List<String> getLicense()
-    {
-        return license;
+        return hasDefaultConfig;
     }
 
     @Override
@@ -353,12 +176,13 @@ public class Module
         return result;
     }
 
+    public boolean hasLicense()
+    {
+        return (license != null) && (license.size() > 0);
+    }
+
     private void init(BaseHome basehome)
     {
-        parentNames = new HashSet<>();
-        optionalParentNames = new HashSet<>();
-        parentEdges = new HashSet<>();
-        childEdges = new HashSet<>();
         xmls = new ArrayList<>();
         defaultConfig = new ArrayList<>();
         libs = new ArrayList<>();
@@ -376,17 +200,12 @@ public class Module
             throw new RuntimeException("Invalid Module location (must be located under /modules/ directory): " + name);
         }
         this.fileRef = mat.group(1).replace('\\','/');
-        this.logicalName = this.fileRef;
-    }
-
-    public boolean isEnabled()
-    {
-        return enabled;
+        setName(this.fileRef);
     }
 
     public boolean isVirtual()
     {
-        return !logicalName.equals(fileRef);
+        return !getName().equals(fileRef);
     }
 
     public void process(BaseHome basehome) throws FileNotFoundException, IOException
@@ -431,7 +250,7 @@ public class Module
                                 // ignore (this would be entries before first section)
                                 break;
                             case "DEPEND":
-                                parentNames.add(line);
+                                addParentName(line);
                                 break;
                             case "FILES":
                                 files.add(line);
@@ -449,10 +268,10 @@ public class Module
                                 license.add(line);
                                 break;
                             case "NAME":
-                                logicalName = line;
+                                setName(line);
                                 break;
                             case "OPTIONAL":
-                                optionalParentNames.add(line);
+                                addOptionalParentName(line);
                                 break;
                             case "EXEC":
                                 jvmArgs.add(line);
@@ -469,38 +288,23 @@ public class Module
         }
     }
 
-    public void setDepth(int depth)
-    {
-        this.depth = depth;
-    }
-
     public void setEnabled(boolean enabled)
     {
-        this.enabled = enabled;
-    }
-
-    public void setParentNames(Set<String> parents)
-    {
-        this.parentNames.clear();
-        this.parentEdges.clear();
-        if (parents != null)
-        {
-            this.parentNames.addAll(parents);
-        }
+        throw new RuntimeException("Don't enable directly");
     }
 
     @Override
     public String toString()
     {
         StringBuilder str = new StringBuilder();
-        str.append("Module[").append(logicalName);
-        if (!logicalName.equals(fileRef))
+        str.append("Module[").append(getName());
+        if (isVirtual())
         {
             str.append(",file=").append(fileRef);
         }
-        if (enabled)
+        if (isSelected())
         {
-            str.append(",enabled");
+            str.append(",selected");
         }
         str.append(']');
         return str.toString();

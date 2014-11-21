@@ -503,8 +503,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         _requests.incrementAndGet();
         _request.setTimeStamp(System.currentTimeMillis());
-        if (_configuration.getSendDateHeader())
-            _response.getHttpFields().put(_connector.getServer().getDateField());
+        HttpFields fields = _response.getHttpFields();
+        if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
+            fields.put(_connector.getServer().getDateField());
         
         _request.setMetaData(request);
     }

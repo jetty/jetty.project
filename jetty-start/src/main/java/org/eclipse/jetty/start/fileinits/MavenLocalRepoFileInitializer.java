@@ -114,7 +114,7 @@ public class MavenLocalRepoFileInitializer extends UriFileInitializer implements
             // Grab copy from local repository (download if needed to local
             // repository)
             Path localRepoFile = getLocalRepoFile(coords);
-            StartLog.log("COPY","%s to %s",localRepoFile,file);
+            StartLog.log("COPY","%s to %s",localRepoFile,baseHome.toShortForm(file));
             Files.copy(localRepoFile,file);
         }
         else

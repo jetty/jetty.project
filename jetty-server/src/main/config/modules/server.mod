@@ -45,5 +45,5 @@ jetty.send.date.header=false
 jetty.dump.start=false
 # Dump the state of the Jetty server, before stop
 jetty.dump.stop=false
-
-
+# Enable delayed dispatch optimisation
+jetty.delayDispatchOnContent=true

@@ -1278,6 +1278,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         AvailableHandler ah = new AvailableHandler();
         configureServer(ah);
+        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchOnContent(false);
 
         try (Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort()))
         {

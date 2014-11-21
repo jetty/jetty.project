@@ -31,8 +31,11 @@ import java.util.List;
 import java.util.Set;
 
 import org.eclipse.jetty.start.BaseBuilder;
+import org.eclipse.jetty.start.BaseHome;
 import org.eclipse.jetty.start.Module;
 import org.eclipse.jetty.start.Props;
+import org.eclipse.jetty.start.StartLog;
+import org.eclipse.jetty.start.graph.OnlyTransitivePredicate;
 
 /**
  * Management of the <code>${jetty.base}/start.ini</code> based configuration.
@@ -42,6 +45,7 @@ import org.eclipse.jetty.start.Props;
  */
 public class StartIniBuilder implements BaseBuilder.Config
 {
+    private final BaseHome baseHome;
     private final Path startIni;
 
     /* List of modules already present in start.ini */
@@ -52,7 +56,8 @@ public class StartIniBuilder implements BaseBuilder.Config
 
     public StartIniBuilder(BaseBuilder baseBuilder) throws IOException
     {
-        this.startIni = baseBuilder.getBaseHome().getBasePath("start.ini");
+        this.baseHome = baseBuilder.getBaseHome();
+        this.startIni = baseHome.getBasePath("start.ini");
 
         if (Files.exists(startIni))
         {
@@ -87,6 +92,7 @@ public class StartIniBuilder implements BaseBuilder.Config
     {
         if (modulesPresent.contains(module.getName()))
         {
+            StartLog.info("%-15s already initialised in %s",module.getName(),baseHome.toShortForm(startIni));
             // skip, already present
             return false;
         }
@@ -94,8 +100,17 @@ public class StartIniBuilder implements BaseBuilder.Config
         if (module.isVirtual())
         {
             // skip, no need to reference
+            StartLog.info("%-15s skipping (virtual module)",module.getName());
             return false;
         }
+        
+        String mode = "";
+        if (module.matches(OnlyTransitivePredicate.INSTANCE))
+        {
+            mode = "(transitively) ";
+        }
+
+        StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(startIni));
 
         // Append to start.ini
         try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))

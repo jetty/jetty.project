@@ -25,16 +25,15 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.start.Modules.AndMatcher;
-import org.eclipse.jetty.start.Modules.EnabledMatcher;
-import org.eclipse.jetty.start.Modules.Matcher;
-import org.eclipse.jetty.start.Modules.SourceSetMatcher;
-import org.eclipse.jetty.start.Modules.UniqueSourceMatcher;
 import org.eclipse.jetty.start.builders.StartDirBuilder;
 import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
 import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
+import org.eclipse.jetty.start.graph.HowSetPredicate;
+import org.eclipse.jetty.start.graph.HowUniquePredicate;
+import org.eclipse.jetty.start.graph.Predicate;
+import org.eclipse.jetty.start.graph.Selection;
 
 /**
  * Build a start configuration in <code>${jetty.base}</code>, including
@@ -106,7 +105,7 @@ public class BaseBuilder
             else
             {
                 Licensing licensing = new Licensing();
-                for (Module module : startArgs.getAllModules().getEnabled())
+                for (Module module : startArgs.getAllModules().getSelected())
                 {
                     licensing.addModule(module);
                 }
@@ -137,17 +136,21 @@ public class BaseBuilder
 
         String dirSource = "<add-to-startd>";
         String iniSource = "<add-to-start-ini>";
+        Selection startDirSelection = new Selection(dirSource);
+        Selection startIniSelection = new Selection(iniSource);
+        
+        List<String> startDNames = new ArrayList<>();
+        startDNames.addAll(startArgs.getAddToStartdIni());
+        List<String> startIniNames = new ArrayList<>();
+        startIniNames.addAll(startArgs.getAddToStartIni());
 
         int count = 0;
-        count += modules.enableAll(startArgs.getAddToStartdIni(),dirSource);
-        count += modules.enableAll(startArgs.getAddToStartIni(),iniSource);
+        count += modules.selectNodes(startDNames,startDirSelection);
+        count += modules.selectNodes(startIniNames,startIniSelection);
 
-        Matcher startDMatcher = new AndMatcher(new EnabledMatcher(),new UniqueSourceMatcher(dirSource));
-        Matcher startIniMatcher = new AndMatcher(new EnabledMatcher(),new UniqueSourceMatcher(iniSource));
-
-        // look for ambiguous declaration in 2 places
-        Matcher ambiguousMatcher = new AndMatcher(new EnabledMatcher(),new SourceSetMatcher(dirSource,iniSource));
-        List<Module> ambiguous = modules.getMatching(ambiguousMatcher);
+        // look for ambiguous declaration found in both places
+        Predicate ambiguousPredicate = new HowSetPredicate(dirSource,iniSource);
+        List<Module> ambiguous = modules.getMatching(ambiguousPredicate);
 
         if (ambiguous.size() > 0)
         {
@@ -173,11 +176,15 @@ public class BaseBuilder
         }
 
         StartLog.debug("Adding %s new module(s)",count);
-
+        
         // Acknowledge Licenses
         ackLicenses();
 
         // Collect specific modules to enable
+        // Should match 'how', with no other selections.explicit
+        Predicate startDMatcher = new HowUniquePredicate(dirSource);
+        Predicate startIniMatcher = new HowUniquePredicate(iniSource);
+
         List<Module> startDModules = modules.getMatching(startDMatcher);
         List<Module> startIniModules = modules.getMatching(startIniMatcher);
 

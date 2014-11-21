@@ -24,17 +24,17 @@ import static org.junit.Assert.*;
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.List;
 import java.util.Set;
 
-import org.eclipse.jetty.start.Modules.AndMatcher;
-import org.eclipse.jetty.start.Modules.EnabledMatcher;
-import org.eclipse.jetty.start.Modules.UniqueSourceMatcher;
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
+import org.eclipse.jetty.start.graph.HowSetPredicate;
+import org.eclipse.jetty.start.graph.Predicate;
+import org.eclipse.jetty.start.graph.RegexNamePredicate;
+import org.eclipse.jetty.start.graph.Selection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Rule;
@@ -42,7 +42,7 @@ import org.junit.Test;
 
 public class ModulesTest
 {
-    private final static List<String> TEST_SOURCE = Collections.singletonList("<test>");
+    private final static String TEST_SOURCE = "<test>";
 
     @Rule
     public TestingDir testdir = new TestingDir();
@@ -190,7 +190,8 @@ public class ModulesTest
         // Test Modules
         Modules modules = new Modules(basehome,args);
         modules.registerAll();
-        modules.enable("[sj]{1}.*",TEST_SOURCE);
+        Predicate sjPredicate = new RegexNamePredicate("[sj]{1}.*");
+        modules.selectNode(sjPredicate,new Selection(TEST_SOURCE));
         modules.buildGraph();
 
         List<String> expected = new ArrayList<>();
@@ -213,7 +214,7 @@ public class ModulesTest
         expected.add("jsp-impl");
 
         List<String> resolved = new ArrayList<>();
-        for (Module module : modules.getEnabled())
+        for (Module module : modules.getSelected())
         {
             resolved.add(module.getName());
         }
@@ -247,13 +248,13 @@ public class ModulesTest
         modules.registerAll();
 
         // Enable 2 modules
-        modules.enable("server",TEST_SOURCE);
-        modules.enable("http",TEST_SOURCE);
+        modules.selectNode("server",new Selection(TEST_SOURCE));
+        modules.selectNode("http",new Selection(TEST_SOURCE));
 
         modules.buildGraph();
 
         // Collect active module list
-        List<Module> active = modules.getEnabled();
+        List<Module> active = modules.getSelected();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
@@ -319,14 +320,14 @@ public class ModulesTest
         modules.registerAll();
 
         // Enable 2 modules
-        modules.enable("websocket",TEST_SOURCE);
-        modules.enable("http",TEST_SOURCE);
+        modules.selectNode("websocket",new Selection(TEST_SOURCE));
+        modules.selectNode("http",new Selection(TEST_SOURCE));
 
         modules.buildGraph();
         // modules.dump();
 
         // Collect active module list
-        List<Module> active = modules.getEnabled();
+        List<Module> active = modules.getSelected();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
@@ -407,19 +408,19 @@ public class ModulesTest
         modules.registerAll();
 
         // Enable test modules
-        modules.enable("http",TEST_SOURCE);
-        modules.enable("annotations",TEST_SOURCE);
-        modules.enable("deploy",TEST_SOURCE);
+        modules.selectNode("http",new Selection(TEST_SOURCE));
+        modules.selectNode("annotations",new Selection(TEST_SOURCE));
+        modules.selectNode("deploy",new Selection(TEST_SOURCE));
         // Enable alternate modules
         String alt = "<alt>";
-        modules.enable("websocket",Collections.singletonList(alt));
-        modules.enable("jsp",Collections.singletonList(alt));
+        modules.selectNode("websocket",new Selection(alt));
+        modules.selectNode("jsp",new Selection(alt));
 
         modules.buildGraph();
         // modules.dump();
 
         // Collect active module list
-        List<Module> active = modules.getEnabled();
+        List<Module> active = modules.getSelected();
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
@@ -455,13 +456,13 @@ public class ModulesTest
         for (String expectedAlt : expectedAlts)
         {
             Module altMod = modules.get(expectedAlt);
-            assertThat("Alt.mod[" + expectedAlt + "].enabled",altMod.isEnabled(),is(true));
-            Set<String> sources = altMod.getSources();
+            assertThat("Alt.mod[" + expectedAlt + "].selected",altMod.isSelected(),is(true));
+            Set<String> sources = altMod.getSelectedHowSet();
             assertThat("Alt.mod[" + expectedAlt + "].sources: [" + Utils.join(sources,", ") + "]",sources,contains(alt));
         }
 
         // Now collect the unique source list
-        List<Module> alts = modules.getMatching(new AndMatcher(new EnabledMatcher(),new UniqueSourceMatcher(alt)));
+        List<Module> alts = modules.getMatching(new HowSetPredicate(alt));
 
         // Assert names are correct, and in the right order
         actualNames = new ArrayList<>();
