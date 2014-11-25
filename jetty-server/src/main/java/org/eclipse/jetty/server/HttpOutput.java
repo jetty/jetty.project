@@ -99,8 +99,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 return _channel.getIdleTimeout();
             }
         };
-        _bufferSize = _channel.getHttpConfiguration().getOutputBufferSize();
-        _commitSize=_bufferSize/4;
+        HttpConfiguration config = channel.getHttpConfiguration();
+        _bufferSize = config.getOutputBufferSize();
+        _commitSize = config.getOutputAggregationSize();
     }
     
     public HttpChannel getHttpChannel()

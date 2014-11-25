@@ -114,6 +114,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _request = new Request(this, input);
         _response = new Response(this, new HttpOutput(this));
         _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
+        if (LOG.isDebugEnabled())
+            LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
     }
 
     public HttpChannelState getState()
