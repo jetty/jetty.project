@@ -545,7 +545,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug(request.getDispatcherType()+" "+target+" on "+connection);
+            LOG.debug(request.getDispatcherType()+" "+request.getMethod()+" "+target+" on "+connection);
             handle(target, baseRequest, request, response);
             LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
         }
