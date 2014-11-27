@@ -146,9 +146,9 @@ public class ResponseTest
         response.setContentType("text/html");
         assertEquals("text/html", response.getContentType());
         response.getWriter();
-        assertEquals("text/html;charset=iso-8859-1", response.getContentType());
+        assertEquals("text/html;charset=utf-8", response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=iso-8859-1", response.getContentType());
+        assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
 
         response.recycle();
         response.setContentType("text/xml;charset=ISO-8859-7");
