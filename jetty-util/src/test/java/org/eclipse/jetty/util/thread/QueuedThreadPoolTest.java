@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.util.thread;
 
-import static org.hamcrest.Matchers.greaterThanOrEqualTo;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
@@ -31,10 +26,14 @@ import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
-import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 @RunWith(AdvancedRunner.class)
 public class QueuedThreadPoolTest
@@ -287,5 +286,26 @@ public class QueuedThreadPoolTest
         {
             ((StdErrLog)Log.getLogger(QueuedThreadPool.class)).setHideStacks(false);
         }
+    }
+
+    @Test
+    public void testZeroMinThreads() throws Exception
+    {
+        int maxThreads = 10;
+        int minThreads = 0;
+        QueuedThreadPool pool = new QueuedThreadPool(maxThreads, minThreads);
+        pool.start();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        pool.execute(new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                latch.countDown();
+            }
+        });
+
+        assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 }
