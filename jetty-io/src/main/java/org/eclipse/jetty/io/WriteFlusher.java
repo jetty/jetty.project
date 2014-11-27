@@ -46,7 +46,6 @@ abstract public class WriteFlusher
 {
     private static final Logger LOG = Log.getLogger(WriteFlusher.class);
     private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
-    private static final ByteBuffer[] NO_BUFFERS = new ByteBuffer[0];
     private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[]{BufferUtil.EMPTY_BUFFER};
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
     private static final State __IDLE = new IdleState();
@@ -405,11 +404,13 @@ abstract public class WriteFlusher
         boolean progress=true;
         while(progress && buffers!=null)
         {
-            int before=buffers[0].remaining();
+            int before=buffers.length==0?0:buffers[0].remaining();
+            boolean flushed=_endPoint.flush(buffers);
+            int r=buffers.length==0?0:buffers[0].remaining();
             
-            if (_endPoint.flush(buffers))
+            if (flushed)
                 return null;
-            int r=buffers[0].remaining();
+            
             progress=before!=r;
             
             int not_empty=0;
@@ -421,6 +422,7 @@ abstract public class WriteFlusher
                     not_empty=0;
                     break;
                 }
+                progress=true;
                 r=buffers[not_empty].remaining();
             }
 
