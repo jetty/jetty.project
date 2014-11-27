@@ -69,6 +69,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /* ------------------------------------------------------------ */
 /** The default servlet.
+ * 
  * This servlet, normally mapped to /, provides the handling for static
  * content, OPTION and TRACE methods for the context.
  * The following initParameters are supported, these can be set either
@@ -123,7 +124,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *                    If set to true, it will use mapped file buffer to serve static content
  *                    when using NIO connector. Setting this value to false means that
  *                    a direct buffer will be used instead of a mapped file buffer.
- *                    By default, this is set to true.
+ *                    This is set to false by default by this class, but may be overridden
+ *                    by eg webdefault.xml 
  *
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
