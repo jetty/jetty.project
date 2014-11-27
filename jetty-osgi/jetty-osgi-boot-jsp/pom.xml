@@ -163,6 +163,7 @@
  org.apache.taglibs.standard.tei;version="1.2";resolution:=optional,
  org.apache.taglibs.standard.tlv;version="1.2";resolution:=optional,
  org.apache.tomcat;version="[8.0.9,9)";resolution:=optional,
+ org.eclipse.jetty.jsp;version="[9.2,10)";resolution:=optional,
  org.osgi.*,
  org.xml.*;resolution:=optional,
  org.xml.sax.*;resolution:=optional,
@@ -172,7 +173,7 @@
  javax.xml.parser;resolution:=optional
  </Import-Package>
                <_nouses>true</_nouses>
-               <DynamicImport-Package>org.apache.jasper.*;version="8.0.9",org.apache.el.*;version="8.0.9"</DynamicImport-Package>
+               <DynamicImport-Package>org.eclipse.jetty.jsp.*;version="9.2.6",org.apache.jasper.*;version="8.0.9",org.apache.el.*;version="8.0.9"</DynamicImport-Package>
               </instructions>
           </configuration>
       </plugin>

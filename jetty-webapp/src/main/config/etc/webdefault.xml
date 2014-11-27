@@ -201,13 +201,13 @@
 
   <!-- ==================================================================== -->
   <!-- JSP Servlet                                                          -->
-  <!-- This is the jasper JSP servlet from the jakarta project              -->
+  <!-- This is the jasper JSP servlet.                                      -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <!-- The JSP page compiler and execution servlet, which is the mechanism  -->
-  <!-- used by Glassfish to support JSP pages.  Traditionally, this servlet -->
-  <!-- is mapped to URL patterh "*.jsp".  This servlet supports the         -->
-  <!-- following initialization parameters (default values are in square    -->
-  <!-- brackets):                                                           -->
+  <!-- used by the jsp container to support JSP pages.  Traditionally,      -->
+  <!-- this servlet is mapped to URL pattern "*.jsp".  This servlet         -->
+  <!-- supports the following initialization parameters (default values     -->
+  <!-- are in square brackets):                                             -->
   <!--                                                                      -->
   <!--   checkInterval       If development is false and reloading is true, -->
   <!--                       background compiles are enabled. checkInterval -->
@@ -215,7 +215,7 @@
   <!--                       if a JSP page needs to be recompiled. [300]    -->
   <!--                                                                      -->
   <!--   compiler            Which compiler Ant should use to compile JSP   -->
-  <!--                       pages.  See the Ant documenation for more      -->
+  <!--                       pages.  See the Ant documentation for more     -->
   <!--                       information. [javac]                           -->
   <!--                                                                      -->
   <!--   classdebuginfo      Should the class file be compiled with         -->
@@ -276,17 +276,10 @@
   <!--   xpoweredBy          Determines whether X-Powered-By response       -->
   <!--                       header is added by generated servlet  [false]  -->
   <!--                                                                      -->
-  <!-- If you wish to use Jikes to compile JSP pages:                       -->
-  <!--   Set the init parameter "compiler" to "jikes".  Define              -->
-  <!--   the property "-Dbuild.compiler.emacs=true" when starting Jetty     -->
-  <!--   to cause Jikes to emit error messages in a format compatible with  -->
-  <!--   Jasper.                                                            -->
-  <!--   If you get an error reporting that jikes can't use UTF-8 encoding, -->
-  <!--   try setting the init parameter "javaEncoding" to "ISO-8859-1".     -->
   <!-- - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -  -->
   <servlet id="jsp">
     <servlet-name>jsp</servlet-name>
-    <servlet-class>org.apache.jasper.servlet.JspServlet</servlet-class>
+    <servlet-class>org.eclipse.jetty.jsp.JettyJspServlet</servlet-class>
     <init-param>
       <param-name>logVerbosityLevel</param-name>
       <param-value>DEBUG</param-value>

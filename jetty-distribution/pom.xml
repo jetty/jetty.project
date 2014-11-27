@@ -477,8 +477,8 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit,org.glassfish.web, org.glassfish, javax.el, javax.servlet.jsp, org.eclipse.jetty.toolchain</includeGroupIds>
-              <includeArtifactIds>org.eclipse.jdt.core, javax.servlet.jsp-api, javax.servlet.jsp, jetty-jsp-jdt, javax.el-api, javax.el</includeArtifactIds>
+              <includeGroupIds>org.eclipse.jetty.orbit,org.glassfish.web, org.glassfish, javax.el, javax.servlet.jsp, org.eclipse.jetty.toolchain, org.eclipse.jetty</includeGroupIds>
+              <includeArtifactIds>org.eclipse.jdt.core, javax.servlet.jsp-api, javax.servlet.jsp, jetty-jsp-jdt, javax.el-api, javax.el, jetty-jsp</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
             </configuration>

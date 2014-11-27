@@ -251,10 +251,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         {
             int oldInterestOps = _key.interestOps();
             int newInterestOps = _interestOps;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Key interests update {} -> {} for {}", oldInterestOps, newInterestOps, this);
             if (oldInterestOps != newInterestOps)
                 _key.interestOps(newInterestOps);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Key interests updated {} -> {} on {}", oldInterestOps, newInterestOps, this);
         }
         catch (CancelledKeyException x)
         {
