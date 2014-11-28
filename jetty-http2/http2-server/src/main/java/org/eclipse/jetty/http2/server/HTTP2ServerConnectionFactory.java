@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.server;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCodes;
@@ -64,12 +65,17 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         return new ServerParser(byteBufferPool, listener, getMaxHeaderTableSize(), httpConfiguration.getRequestHeaderSize());
     }
 
+    
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
         private final Connector connector;
         private final HttpConfiguration httpConfiguration;
         private final EndPoint endPoint;
 
+        // TODO This pool should be on the HTTP2ServerConnection
+        // TODO Evaluate if this is be best data structure to use
+        private final ConcurrentLinkedQueue<HttpChannelOverHTTP2> channels = new ConcurrentLinkedQueue<>();
+        
         public HTTPServerSessionListener(Connector connector, HttpConfiguration httpConfiguration, EndPoint endPoint)
         {
             this.connector = connector;
@@ -95,11 +101,27 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             if (LOG.isDebugEnabled())
                 LOG.debug("Processing {} on {}", frame, stream);
 
-            MetaData.Request request = (MetaData.Request)frame.getMetaData();
-            HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, httpConfiguration, endPoint, (IStream)stream, request);
-            HttpInputOverHTTP2 input = new HttpInputOverHTTP2();
-            // TODO pool HttpChannels per connection - maybe associate with thread?
-            HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport, input, stream);
+            HttpChannelOverHTTP2 channel = channels.poll();
+            if (channel!=null)
+            {
+                channel.getHttp2Transport().setStream((IStream)stream);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("recycled :{}",channel);
+            }
+            else
+            {
+                channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, new HttpTransportOverHTTP2(connector, httpConfiguration, endPoint, (IStream)stream))
+                {
+                    @Override
+                    public void onCompleted()
+                    {
+                        super.onCompleted();
+                        recycle();
+                        // TODO limit size?
+                        channels.add(this);
+                    } 
+                };
+            }
             stream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
 
             channel.onRequest(frame);
@@ -143,5 +165,6 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             final Session session = stream.getSession();
             session.close(ErrorCodes.PROTOCOL_ERROR, reason, Callback.Adapter.INSTANCE);
         }
+        
     }
 }

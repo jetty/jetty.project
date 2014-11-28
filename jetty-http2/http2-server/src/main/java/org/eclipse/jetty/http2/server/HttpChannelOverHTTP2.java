@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -37,7 +38,6 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
@@ -48,13 +48,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
     private static final HttpField SERVER_VERSION=new PreEncodedHttpField(HttpHeader.SERVER,HttpConfiguration.SERVER_VERSION);
     private static final HttpField POWERED_BY=new PreEncodedHttpField(HttpHeader.X_POWERED_BY,HttpConfiguration.SERVER_VERSION);
-    private final Stream stream; // TODO recycle channel for new Stream?
     private boolean _expect100Continue = false;
 
-    public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input, Stream stream)
+    public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
     {
-        super(connector, configuration, endPoint, transport, input);
-        this.stream = stream;
+        super(connector, configuration, endPoint, transport, new HttpInputOverHTTP2());
     }
 
     @Override
@@ -83,6 +81,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
         if (LOG.isDebugEnabled())
         {
+            Stream stream=getHttp2Transport().getStream();
             LOG.debug("HTTP2 Request #{}/{}:{}{} {} {}{}{}",
                     stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(),
                     System.lineSeparator(), fields);
@@ -98,6 +97,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
         if (LOG.isDebugEnabled())
         {
+            Stream stream=getHttp2Transport().getStream();
             LOG.debug("HTTP2 PUSH Request #{}/{}:{}{} {} {}{}{}",
                     stream.getId(),Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(),
                     System.lineSeparator(), request.getFields());
@@ -106,12 +106,25 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         execute(this);
     }
    
+    public HttpTransportOverHTTP2 getHttp2Transport()
+    {
+        return (HttpTransportOverHTTP2)getHttpTransport();
+    }
+    
+    @Override
+    public void recycle()
+    {
+        super.recycle();
+        getHttp2Transport().recycle();
+    }
+
     @Override
     protected void commit(MetaData.Response info)
     {
         super.commit(info);
         if (LOG.isDebugEnabled())
         {
+            Stream stream=getHttp2Transport().getStream();
             LOG.debug("HTTP2 Commit Response #{}/{}:{}{} {} {}{}{}",
                     stream.getId(),Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getVersion(), info.getStatus(), info.getReason(),
                     System.lineSeparator(), info.getFields());
@@ -128,8 +141,11 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         copy.put(original).flip();
 
         if (LOG.isDebugEnabled())
+        {
+            Stream stream=getHttp2Transport().getStream();
             LOG.debug("HTTP2 Request #{}/{}: {} bytes of content", stream.getId(),Integer.toHexString(stream.getSession().hashCode()), copy.remaining());
-
+        }
+        
         onContent(new HttpInput.Content(copy)
         {
             @Override
