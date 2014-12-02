@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
-import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
-import static org.eclipse.jetty.http.HttpTokens.SPACE;
-import static org.eclipse.jetty.http.HttpTokens.TAB;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
@@ -35,6 +30,11 @@ import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
+import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
+import static org.eclipse.jetty.http.HttpTokens.SPACE;
+import static org.eclipse.jetty.http.HttpTokens.TAB;
 
 
 /* ------------------------------------------------------------ */
@@ -1291,7 +1291,7 @@ public class HttpParser
                     // Just ignore data when closed
                     _headerBytes+=buffer.remaining();
                     BufferUtil.clear(buffer);
-                    if (_headerBytes>_maxHeaderBytes)
+                    if (_maxHeaderBytes>0 && _headerBytes>_maxHeaderBytes)
                     {
                         // Don't want to waste time reading data of a closed request
                         throw new IllegalStateException("too much data after closed");
