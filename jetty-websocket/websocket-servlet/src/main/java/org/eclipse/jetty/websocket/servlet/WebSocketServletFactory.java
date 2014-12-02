@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Iterator;
 import java.util.ServiceLoader;
 
+import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -39,10 +40,10 @@ public interface WebSocketServletFactory
 
         public static WebSocketServletFactory create(WebSocketPolicy policy) throws ClassNotFoundException, InstantiationException, IllegalAccessException
         {
-            return load(policy).createFactory(policy);
+            return load().createFactory(policy);
         }
 
-        public static WebSocketServletFactory load(WebSocketPolicy policy) throws ClassNotFoundException, InstantiationException, IllegalAccessException
+        public static WebSocketServletFactory load() throws ClassNotFoundException, InstantiationException, IllegalAccessException
         {
             if (INSTANCE != null)
             {
@@ -64,7 +65,7 @@ public interface WebSocketServletFactory
                         .loadClass("org.eclipse.jetty.websocket.server.WebSocketServerFactory");
                 baseFactory = wssf.newInstance();
             }
-
+            
             INSTANCE = baseFactory;
             return INSTANCE;
         }
@@ -91,7 +92,7 @@ public interface WebSocketServletFactory
      */
     public WebSocketPolicy getPolicy();
 
-    public void init() throws Exception;
+    public void init(ServletContext servletContext) throws Exception;
 
     public boolean isUpgradeRequest(HttpServletRequest request, HttpServletResponse response);
 

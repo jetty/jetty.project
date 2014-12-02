@@ -24,12 +24,12 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.common.extensions.identity.IdentityExtension;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.junit.Assert;
@@ -57,7 +57,8 @@ public class ExtensionStackTest
     private ExtensionStack createExtensionStack()
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
-        ExtensionFactory factory = new WebSocketExtensionFactory(policy,bufferPool);
+        WebSocketExtensionFactory factory = new WebSocketExtensionFactory(policy,bufferPool);
+        factory.setEnhancedInstantiator(new EnhancedInstantiator());
         return new ExtensionStack(factory);
     }
 

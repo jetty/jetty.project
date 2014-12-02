@@ -21,9 +21,11 @@ package org.eclipse.jetty.websocket.jsr356.server;
 import java.net.URI;
 import java.util.ArrayList;
 import java.util.List;
+
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -79,7 +81,7 @@ public class OnPartialTest
         DummyConnection connection = new DummyConnection();
         ClientContainer container = new ClientContainer();
         @SuppressWarnings("resource")
-        JsrSession session = new JsrSession(requestURI,driver,connection,container,id);
+        JsrSession session = new JsrSession(requestURI,driver,connection,container,id, new EnhancedInstantiator());
         session.setPolicy(policy);
         session.open();
         return driver;

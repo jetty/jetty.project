@@ -248,8 +248,6 @@ public class Parser
         }
         try
         {
-            // TODO: create DebugBuffer
-
             // parse through all the frames in the buffer
             while (parseFrame(buffer))
             {

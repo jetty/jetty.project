@@ -24,14 +24,16 @@ import java.util.Iterator;
 import java.util.List;
 
 /**
- * Represents a collection of {@link Decorator} instances that apply to a known
- * state, such as a WebAppContext, WebSocketServerFactory, or WebSocketClient.
+ * An instantiator enhanced by {@link Decorator} instances.
  * <p>
  * Consistent single location for all Decorator behavior, with equal behavior in a ServletContext and also for a stand
  * alone client.
+ * <p>
+ * Used by WebAppContext, WebSocketServerFactory, or WebSocketClient.
  */
-public class Decorators implements Iterable<Decorator>
+public class EnhancedInstantiator implements Iterable<Decorator>
 {
+    public static final String ATTR = EnhancedInstantiator.class.getName();
     private List<Decorator> decorators = new ArrayList<>();
 
     public void addDecorator(Decorator decorator)
@@ -44,16 +46,10 @@ public class Decorators implements Iterable<Decorator>
         this.decorators.clear();
     }
 
-    public <T> T createDecoratedInstance(Class<T> clazz) throws Exception
+    public <T> T createInstance(Class<T> clazz) throws InstantiationException, IllegalAccessException
     {
         T o = clazz.newInstance();
         return decorate(o);
-    }
-
-    public <T> T createInstance(Class<T> clazz) throws Exception
-    {
-        T o = clazz.newInstance();
-        return o;
     }
 
     public <T> T decorate(T obj)

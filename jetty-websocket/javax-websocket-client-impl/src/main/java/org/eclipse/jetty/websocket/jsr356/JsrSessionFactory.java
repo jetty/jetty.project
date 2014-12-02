@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.net.URI;
 import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.SessionListener;
@@ -31,6 +32,7 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.AbstractJsrEventDriver;
 public class JsrSessionFactory implements SessionFactory
 {
     private AtomicLong idgen = new AtomicLong(0);
+    private EnhancedInstantiator enhancedInstantiator;
     private final ClientContainer container;
     private final SessionListener[] listeners;
 
@@ -38,12 +40,13 @@ public class JsrSessionFactory implements SessionFactory
     {
         this.container = container;
         this.listeners = sessionListeners;
+        this.enhancedInstantiator = new EnhancedInstantiator();
     }
 
     @Override
     public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
-        return new JsrSession(requestURI,websocket,connection,container,getNextId(),listeners);
+        return new JsrSession(requestURI,websocket,connection,container,getNextId(),enhancedInstantiator,listeners);
     }
 
     public String getNextId()
@@ -55,5 +58,11 @@ public class JsrSessionFactory implements SessionFactory
     public boolean supports(EventDriver websocket)
     {
         return (websocket instanceof AbstractJsrEventDriver);
+    }
+    
+    @Override
+    public void setEnhancedInstantiator(EnhancedInstantiator enhancedInstantiator)
+    {
+        this.enhancedInstantiator = enhancedInstantiator;
     }
 }

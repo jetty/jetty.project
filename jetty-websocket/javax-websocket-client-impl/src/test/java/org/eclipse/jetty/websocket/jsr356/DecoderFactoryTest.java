@@ -25,6 +25,7 @@ import java.util.Date;
 
 import javax.websocket.Decoder;
 
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.websocket.jsr356.decoders.ByteArrayDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.ByteBufferDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.DateDecoder;
@@ -58,7 +59,7 @@ public class DecoderFactoryTest
     {
         DecoderFactory primitivesFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE);
         metadatas = new DecoderMetadataSet();
-        factory = new DecoderFactory(metadatas,primitivesFactory);
+        factory = new DecoderFactory(metadatas,primitivesFactory,new EnhancedInstantiator());
     }
 
     @Test

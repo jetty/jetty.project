@@ -129,7 +129,7 @@ public abstract class WebSocketServlet extends HttpServlet
 
             configure(factory);
 
-            factory.init();
+            factory.init(getServletContext());
             
             getServletContext().setAttribute(WebSocketServletFactory.class.getName(),factory);
         }

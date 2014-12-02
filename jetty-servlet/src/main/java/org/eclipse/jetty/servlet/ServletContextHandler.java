@@ -60,7 +60,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.BaseHolder.Source;
-import org.eclipse.jetty.util.Decorators;
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -88,7 +88,7 @@ public class ServletContextHandler extends ContextHandler
     
     public interface ServletContainerInitializerCaller extends LifeCycle {};
 
-    protected final Decorators _decorators= new Decorators();
+    protected final EnhancedInstantiator _instantiator= new EnhancedInstantiator();
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass=org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
@@ -252,7 +252,7 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void doStart() throws Exception
     {
-        setAttribute(Decorators.class.getName(), _decorators);
+        setAttribute(EnhancedInstantiator.ATTR, _instantiator);
         super.doStart();
     }
     
@@ -264,7 +264,7 @@ public class ServletContextHandler extends ContextHandler
     protected void doStop() throws Exception
     {
         super.doStop();
-        _decorators.clear();
+        _instantiator.clear();
     }
 
     /* ------------------------------------------------------------ */
@@ -331,7 +331,7 @@ public class ServletContextHandler extends ContextHandler
             {
                 for (ListenerHolder holder:_servletHandler.getListeners())
                 {             
-                    _decorators.decorate(holder.getListener());
+                    _instantiator.decorate(holder.getListener());
                 }
             }
         }
@@ -651,13 +651,13 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     /**
      * @return The decorator list used to resource inject new Filters, Servlets and EventListeners
-     * @deprecated use getAttribute("org.eclipse.jetty.util.Decorators") instead
+     * @deprecated use getAttribute("org.eclipse.jetty.util.EnhancedInstantiator") instead
      */
     @Deprecated
     public List<Decorator> getDecorators()
     {
         List<Decorator> ret = new ArrayList<ServletContextHandler.Decorator>();
-        for (org.eclipse.jetty.util.Decorator decorator : _decorators)
+        for (org.eclipse.jetty.util.Decorator decorator : _instantiator)
         {
             ret.add(new LegacyDecorator(decorator));
         }
@@ -670,7 +670,7 @@ public class ServletContextHandler extends ContextHandler
      */
     public void setDecorators(List<Decorator> decorators)
     {
-        _decorators.setDecorators(decorators);
+        _instantiator.setDecorators(decorators);
     }
 
     /* ------------------------------------------------------------ */
@@ -679,19 +679,19 @@ public class ServletContextHandler extends ContextHandler
      */
     public void addDecorator(Decorator decorator)
     {
-        _decorators.addDecorator(decorator);
+        _instantiator.addDecorator(decorator);
     }
 
     /* ------------------------------------------------------------ */
     void destroyServlet(Servlet servlet)
     {
-        _decorators.destroy(servlet);
+        _instantiator.destroy(servlet);
     }
 
     /* ------------------------------------------------------------ */
     void destroyFilter(Filter filter)
     {
-        _decorators.destroy(filter);
+        _instantiator.destroy(filter);
     }
 
     /* ------------------------------------------------------------ */
@@ -1244,7 +1244,7 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T f = createInstance(c);
-                f = _decorators.decorate(f);
+                f = _instantiator.decorate(f);
                 return f;
             }
             catch (Exception e)
@@ -1260,7 +1260,7 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T s = createInstance(c);
-                s = _decorators.decorate(s);
+                s = _instantiator.decorate(s);
                 return s;
             }
             catch (Exception e)
@@ -1403,7 +1403,7 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T l = createInstance(clazz);
-                l = _decorators.decorate(l);
+                l = _instantiator.decorate(l);
                 return l;
             }            
             catch (Exception e)
