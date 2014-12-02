@@ -19,10 +19,13 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadata;
@@ -64,19 +67,23 @@ public class EncoderFactory implements Configurable
     private static final Logger LOG = Log.getLogger(EncoderFactory.class);
 
     private final EncoderMetadataSet metadatas;
+    private final EnhancedInstantiator enhancedInstantiator;
     private EncoderFactory parentFactory;
     private Map<Class<?>, Wrapper> activeWrappers;
 
     public EncoderFactory(EncoderMetadataSet metadatas)
     {
-        this.metadatas = metadatas;
-        this.activeWrappers = new ConcurrentHashMap<>();
+        this(metadatas,null,new EnhancedInstantiator());
     }
 
-    public EncoderFactory(EncoderMetadataSet metadatas, EncoderFactory parentFactory)
+    public EncoderFactory(EncoderMetadataSet metadatas, EncoderFactory parentFactory, EnhancedInstantiator enhancedInstantiator)
     {
-        this(metadatas);
+        this.metadatas = metadatas;
+        this.activeWrappers = new ConcurrentHashMap<>();
         this.parentFactory = parentFactory;
+
+        Objects.requireNonNull(enhancedInstantiator,"EnhancedInitiator cannot be null");
+        this.enhancedInstantiator = enhancedInstantiator;
     }
 
     public Encoder getEncoderFor(Class<?> type)
@@ -166,7 +173,7 @@ public class EncoderFactory implements Configurable
         Class<? extends Encoder> encoderClass = metadata.getCoderClass();
         try
         {
-            Encoder encoder = encoderClass.newInstance();
+            Encoder encoder = enhancedInstantiator.createInstance(encoderClass);
             return new Wrapper(encoder,metadata);
         }
         catch (InstantiationException | IllegalAccessException e)

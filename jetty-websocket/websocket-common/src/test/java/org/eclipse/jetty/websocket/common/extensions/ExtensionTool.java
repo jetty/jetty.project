@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -126,7 +127,9 @@ public class ExtensionTool
     public ExtensionTool(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         this.policy = policy;
-        this.factory = new WebSocketExtensionFactory(policy,bufferPool);
+        WebSocketExtensionFactory extFactory = new WebSocketExtensionFactory(policy,bufferPool);
+        extFactory.setEnhancedInstantiator(new EnhancedInstantiator());
+        this.factory = extFactory;
     }
 
     public Tester newTester(String parameterizedExtension)

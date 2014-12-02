@@ -46,7 +46,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
     public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory, Executor executor)
     {
-        super(executor);
+        super(executor, factory.getEnhancedInstantiator());
         this.mappedCreator = creator;
         this.webSocketServerFactory = factory;
         EventDriverFactory eventDriverFactory = this.webSocketServerFactory.getEventDriverFactory();

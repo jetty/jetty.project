@@ -44,6 +44,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -228,6 +229,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         this.parser = new Parser(policy,bufferPool);
 
         this.extensionFactory = new WebSocketExtensionFactory(policy,bufferPool);
+        this.extensionFactory.setEnhancedInstantiator(new EnhancedInstantiator());
         this.ioState = new IOState();
         this.ioState.addListener(this);
     }

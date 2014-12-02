@@ -433,6 +433,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         }
         catch (Throwable t)
         {
+            LOG.ignore(t);
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
             int statusCode = StatusCode.SERVER_ERROR;

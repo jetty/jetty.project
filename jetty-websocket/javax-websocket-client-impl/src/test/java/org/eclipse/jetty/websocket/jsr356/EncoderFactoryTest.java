@@ -18,10 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import javax.websocket.Encoder;
 
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.websocket.jsr356.encoders.IntegerEncoder;
 import org.eclipse.jetty.websocket.jsr356.encoders.LongEncoder;
 import org.eclipse.jetty.websocket.jsr356.encoders.PrimitiveEncoderMetadataSet;
@@ -55,7 +56,7 @@ public class EncoderFactoryTest
     {
         EncoderFactory primitivesFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE);
         metadatas = new EncoderMetadataSet();
-        factory = new EncoderFactory(metadatas,primitivesFactory);
+        factory = new EncoderFactory(metadatas,primitivesFactory,new EnhancedInstantiator());
     }
 
     @Test

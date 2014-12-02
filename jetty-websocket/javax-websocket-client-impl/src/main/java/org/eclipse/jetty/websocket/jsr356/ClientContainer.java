@@ -30,6 +30,7 @@ import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
 import java.util.concurrent.Future;
+
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -39,6 +40,7 @@ import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -49,6 +51,7 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.client.io.UpgradeListener;
+import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
@@ -85,15 +88,15 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     public ClientContainer()
     {
         // This constructor is used with Standalone JSR Client usage.
-        this(null);
+        this(null,new EnhancedInstantiator());
         client.setDaemon(true);
     }
     
-    public ClientContainer(Executor executor)
+    public ClientContainer(Executor executor, EnhancedInstantiator enhancedInstantiator)
     {
         endpointClientMetadataCache = new ConcurrentHashMap<>();
-        decoderFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE);
-        encoderFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE);
+        decoderFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE,null,enhancedInstantiator);
+        encoderFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE,null,enhancedInstantiator);
 
         EmptyClientEndpointConfig empty = new EmptyClientEndpointConfig();
         decoderFactory.init(empty);
@@ -103,7 +106,9 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         
         client = new WebSocketClient(new SslContextFactory(trustAll), executor);
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
-        client.setSessionFactory(new JsrSessionFactory(this,this,client));
+        SessionFactory sessionFactory = new JsrSessionFactory(this,this,client);
+        sessionFactory.setEnhancedInstantiator(enhancedInstantiator);
+        client.setSessionFactory(sessionFactory);
         addBean(client);
 
         ShutdownThread.register(this);

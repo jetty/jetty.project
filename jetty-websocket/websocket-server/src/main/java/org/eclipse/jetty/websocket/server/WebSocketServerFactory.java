@@ -31,6 +31,8 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.concurrent.Executor;
 
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -39,8 +41,8 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
-import org.eclipse.jetty.util.Decorator;
-import org.eclipse.jetty.util.Decorators;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -88,7 +90,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
-    private Decorators decorators = new Decorators();
+    private EnhancedInstantiator enhancedInstantiator;
 
     public WebSocketServerFactory()
     {
@@ -290,12 +292,29 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         Class<?> firstClass = registeredSocketClasses.get(0);
         try
         {
-            return firstClass.newInstance();
+            return enhancedInstantiator.createInstance(firstClass);
         }
         catch (InstantiationException | IllegalAccessException e)
         {
             throw new WebSocketException("Unable to create instance of " + firstClass, e);
         }
+    }
+    
+    @Override
+    protected void doStart() throws Exception
+    {
+        if(this.enhancedInstantiator == null)
+        {
+            this.enhancedInstantiator = new EnhancedInstantiator();
+        }
+        
+        this.extensionFactory.setEnhancedInstantiator(this.enhancedInstantiator);
+        for(SessionFactory sessionFactory: this.sessionFactories)
+        {
+            sessionFactory.setEnhancedInstantiator(this.enhancedInstantiator);
+        }
+        
+        super.doStart();
     }
 
     @Override
@@ -310,6 +329,11 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         return this.creator;
     }
+    
+    public EnhancedInstantiator getEnhancedInstantiator()
+    {
+        return enhancedInstantiator;
+    }
 
     public EventDriverFactory getEventDriverFactory()
     {
@@ -322,16 +346,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return extensionFactory;
     }
     
-    public void addDecorator(Decorator decorator)
-    {
-        decorators.addDecorator(decorator);
-    }
-    
-    public List<Decorator> getDecorators()
-    {
-        return decorators.getDecorators();
-    }
-
     public Set<WebSocketSession> getOpenSessions()
     {
         return Collections.unmodifiableSet(this.openSessions);
@@ -343,10 +357,36 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return defaultPolicy;
     }
 
-    @Override
-    public void init() throws Exception
+    public void init(ServletContextHandler context) throws ServletException
     {
-        start(); // start lifecycle
+        this.enhancedInstantiator = (EnhancedInstantiator)context.getAttribute(EnhancedInstantiator.ATTR);
+        if (this.enhancedInstantiator == null)
+        {
+            this.enhancedInstantiator = new EnhancedInstantiator();
+        }
+    }
+    
+    @Override
+    public void init(ServletContext context) throws ServletException
+    {
+        this.enhancedInstantiator = (EnhancedInstantiator)context.getAttribute(EnhancedInstantiator.ATTR);
+        if (this.enhancedInstantiator == null)
+        {
+            this.enhancedInstantiator = new EnhancedInstantiator();
+        }
+        try
+        {
+            // start lifecycle
+            start();
+        }
+        catch (ServletException e)
+        {
+            throw e;
+        }
+        catch (Exception e)
+        {
+            throw new ServletException(e);
+        }
     }
 
     @Override
@@ -446,11 +486,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.creator = creator;
     }
     
-    public void setDecorators(List<Decorator> decorators)
-    {
-        this.decorators.setDecorators(decorators);
-    }
-
     /**
      * Upgrade the request/response to a WebSocket Connection.
      * <p/>

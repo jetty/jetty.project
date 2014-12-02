@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
 import java.util.EnumSet;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -256,7 +257,9 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
         try
         {
+            factory.init(config.getServletContext());
             WebSocketPolicy policy = factory.getPolicy();
+            
 
             String max = config.getInitParameter("maxIdleTime");
             if (max != null)
@@ -290,7 +293,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
             }
             
             setToAttribute(config.getServletContext(), key);
-
+            
             factory.start();
         }
         catch (Exception x)
