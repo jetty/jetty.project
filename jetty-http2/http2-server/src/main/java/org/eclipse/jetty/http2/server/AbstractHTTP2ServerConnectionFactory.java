@@ -18,12 +18,9 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.util.concurrent.Executor;
-
 import org.eclipse.jetty.http2.FlowControl;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.HTTP2FlowControl;
-import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -111,34 +108,4 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
 
     protected abstract ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener);
-
-    private static class HTTP2ServerConnection extends HTTP2Connection
-    {
-        private final ServerSessionListener listener;
-
-        private HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int inputBufferSize, boolean dispatchIO, ServerSessionListener listener)
-        {
-            super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize, dispatchIO);
-            this.listener = listener;
-        }
-
-        @Override
-        public void onOpen()
-        {
-            super.onOpen();
-            notifyConnect(getSession());
-        }
-
-        private void notifyConnect(ISession session)
-        {
-            try
-            {
-                listener.onAccept(session);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while notifying listener " + listener, x);
-            }
-        }
-    }
 }

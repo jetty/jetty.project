@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -34,21 +33,20 @@ import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
 import javax.servlet.SessionTrackingMode;
 
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.BaseHolder.Source;
-import org.eclipse.jetty.servlet.JspPropertyGroupServlet;
 import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspPropertyGroup;
 import org.eclipse.jetty.servlet.ServletContextHandler.TagLib;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.ArrayUtil;
@@ -1398,10 +1396,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         List<String> paths = new ArrayList<String>();
         while (iter.hasNext())
         {
+
             JspPropertyGroup jpg = new JspPropertyGroup();
             config.addJspPropertyGroup(jpg);
             XmlParser.Node group = iter.next();
-
             //url-patterns
             Iterator<XmlParser.Node> iter2 = group.iterator("url-pattern");
             while (iter2.hasNext())
@@ -1440,19 +1438,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (LOG.isDebugEnabled()) LOG.debug(config.toString());
         }
 
+        //add mappings to the jsp servlet from the property-group mappings
         if (paths.size() > 0)
         {
-            ServletHandler handler = context.getServletHandler();
-            ServletHolder jsp_pg_servlet = _servletHolderMap.get(JspPropertyGroupServlet.NAME);
-            if (jsp_pg_servlet==null)
-            {
-                jsp_pg_servlet=new ServletHolder(JspPropertyGroupServlet.NAME,new JspPropertyGroupServlet(context,handler));
-                _servletHolderMap.put(JspPropertyGroupServlet.NAME,jsp_pg_servlet);
-                _servletHolders.add(jsp_pg_servlet);
-            }
-
             ServletMapping mapping = new ServletMapping();
-            mapping.setServletName(JspPropertyGroupServlet.NAME);
+            mapping.setServletName("jsp");
             mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
             _servletMappings.add(mapping);
         }

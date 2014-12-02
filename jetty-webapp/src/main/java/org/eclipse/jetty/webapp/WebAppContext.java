@@ -118,6 +118,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.util.log.",      // webapp should use server log
         "org.eclipse.jetty.servlet.ServletContextHandler.Decorator", // for CDI / weld use
         "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
+        "org.eclipse.jetty.jsp.JettyJspServlet", //webapp cannot change jetty jsp servlet
         "org.eclipse.jetty.servlets.PushCacheFilter" //must be loaded by container classpath
     } ;
 
@@ -132,6 +133,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "-org.eclipse.jetty.jaas.",         // don't hide jaas classes
         "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
+        "-org.eclipse.jetty.jsp.",  //don't hide jsp servlet
         "-org.eclipse.jetty.servlet.listener.", // don't hide useful listeners
         "-org.eclipse.jetty.websocket.",    // don't hide websocket classes from webapps (allow webapp to use ones from system classloader)
         "-org.eclipse.jetty.apache.",       // don't hide jetty apache impls

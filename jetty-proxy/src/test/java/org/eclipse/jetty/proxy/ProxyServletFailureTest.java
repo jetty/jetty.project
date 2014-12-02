@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -104,7 +103,7 @@ public class ProxyServletFailureTest
         proxy = new Server(executor);
         proxyConnector = new ServerConnector(proxy);
         proxy.addConnector(proxyConnector);
-        proxyConnector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchOnContent(false);
+        proxyConnector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setDelayDispatchUntilContent(false);
 
         ServletContextHandler proxyCtx = new ServletContextHandler(proxy, "/", true, false);
         ServletHolder proxyServletHolder = new ServletHolder(proxyServlet);

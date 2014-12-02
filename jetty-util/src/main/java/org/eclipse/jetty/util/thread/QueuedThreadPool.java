@@ -31,7 +31,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
-import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -39,6 +38,7 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
@@ -90,9 +90,11 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         setStopTimeout(5000);
 
         if (queue==null)
-            queue=new BlockingArrayQueue<>(_minThreads, _minThreads);
+        {
+            int capacity=Math.max(_minThreads, 8);
+            queue=new BlockingArrayQueue<>(capacity, capacity);
+        }
         _jobs=queue;
-
     }
 
     @Override
@@ -165,7 +167,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     StringBuilder dmp = new StringBuilder();
                     for (StackTraceElement element : unstopped.getStackTrace())
                     {
-                        dmp.append(StringUtil.__LINE_SEPARATOR).append("\tat ").append(element);
+                        dmp.append(System.lineSeparator()).append("\tat ").append(element);
                     }
                     LOG.warn("Couldn't stop {}{}", unstopped, dmp.toString());
                 }
@@ -359,6 +361,12 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             LOG.warn("{} rejected {}", this, job);
             throw new RejectedExecutionException(job.toString());
         }
+        else
+        {
+            // Make sure there is at least one thread executing the job.
+            if (getThreads() == 0)
+                startThreads(1);
+        }
     }
 
     /**
@@ -429,14 +437,13 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
                 thread.start();
                 started = true;
+                --threadsToStart;
             }
             finally
             {
                 if (!started)
                     _threadsStarted.decrementAndGet();
             }
-            if (started)
-                threadsToStart--;
         }
         return true;
     }
@@ -445,7 +452,6 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     {
         return new Thread(runnable);
     }
-
 
     @Override
     @ManagedOperation("dump thread state")
@@ -481,8 +487,8 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     {
                         out.append(String.valueOf(thread.getId())).append(' ').append(thread.getName()).append(' ').append(thread.getState().toString()).append(idle ? " IDLE" : "");
                         if (thread.getPriority()!=Thread.NORM_PRIORITY)
-                            out.append(" prio="+thread.getPriority());
-                        out.append('\n');
+                            out.append(" prio=").append(String.valueOf(thread.getPriority()));
+                        out.append(System.lineSeparator());
                         if (!idle)
                             ContainerLifeCycle.dump(out, indent, Arrays.asList(trace));
                     }
@@ -666,14 +672,13 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             if (thread.getId() == id)
             {
                 StringBuilder buf = new StringBuilder();
-                buf.append(thread.getId()).append(" ").append(thread.getName()).append(" ").append(thread.getState()).append(":\n");
+                buf.append(thread.getId()).append(" ").append(thread.getName()).append(" ");
+                buf.append(thread.getState()).append(":").append(System.lineSeparator());
                 for (StackTraceElement element : thread.getStackTrace())
-                    buf.append("  at ").append(element.toString()).append('\n');
+                    buf.append("  at ").append(element.toString()).append(System.lineSeparator());
                 return buf.toString();
             }
         }
         return null;
     }
-    
-
 }

@@ -21,8 +21,6 @@ package org.eclipse.jetty.http2.server;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCodes;
@@ -51,18 +49,22 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     private final Connector connector;
     private final HttpConfiguration httpConfiguration;
     private final EndPoint endPoint;
-    private final IStream stream;
-    private final MetaData.Request request;
+    private IStream stream;
 
-    public HttpTransportOverHTTP2(Connector connector, HttpConfiguration httpConfiguration, EndPoint endPoint, IStream stream, MetaData.Request request)
+    public HttpTransportOverHTTP2(Connector connector, HttpConfiguration httpConfiguration, EndPoint endPoint, IStream stream)
     {
         this.connector = connector;
         this.httpConfiguration = httpConfiguration;
         this.endPoint = endPoint;
         this.stream = stream;
-        this.request = request;
     }
 
+    public void recycle()
+    {
+        this.stream=null;
+        commit.set(false);
+    }
+    
     @Override
     public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
@@ -126,9 +128,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             @Override
             public void succeeded(Stream pushStream)
             {
-                HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, httpConfiguration, endPoint, (IStream)pushStream, request);
-                HttpInputOverHTTP2 input = new HttpInputOverHTTP2();
-                HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport, input, pushStream);
+                HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, httpConfiguration, endPoint, (IStream)pushStream);
+                HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport);
                 pushStream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
 
                 channel.onPushRequest(request);
@@ -198,4 +199,17 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 LOG.debug("HTTP2 Response #" + stream.getId() + " failed to commit", x);
         }
     }
+    
+    public void setStream(IStream stream)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} setStream {}",this, stream.getId());
+        this.stream=stream;
+    }
+
+    public Stream getStream()
+    {
+        return stream;
+    }
+
 }
