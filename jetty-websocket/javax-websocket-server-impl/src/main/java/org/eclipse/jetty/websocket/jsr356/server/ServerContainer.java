@@ -67,7 +67,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             }
             else
             {
-                cec = new BasicServerEndpointConfig(endpoint.getClass(),path);
+                cec = new BasicServerEndpointConfig(endpoint.getClass(),path,enhancedInstantiator);
             }
         }
         return new EndpointInstance(endpoint,cec,metadata);
@@ -82,7 +82,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
     public void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
     {
-        JsrCreator creator = new JsrCreator(metadata,webSocketServerFactory.getExtensionFactory());
+        JsrCreator creator = new JsrCreator(metadata,webSocketServerFactory.getExtensionFactory(),enhancedInstantiator);
         mappedCreator.addMapping(new WebSocketPathSpec(metadata.getPath()),creator);
     }
 
@@ -105,7 +105,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
         if (anno != null)
         {
             // Annotated takes precedence here
-            AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(endpoint,config);
+            AnnotatedServerEndpointMetadata ametadata = new AnnotatedServerEndpointMetadata(endpoint,config,enhancedInstantiator);
             AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(ametadata);
             metadata = ametadata;
             scanner.scan();

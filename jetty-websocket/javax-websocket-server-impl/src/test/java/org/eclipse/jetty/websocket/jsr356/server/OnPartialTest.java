@@ -67,8 +67,11 @@ public class OnPartialTest
         Class<?> endpoint = websocket.getClass();
         ServerEndpoint anno = endpoint.getAnnotation(ServerEndpoint.class);
         Assert.assertThat("Endpoint: " + endpoint + " should be annotated with @ServerEndpoint",anno,notNullValue());
-        ServerEndpointConfig config = new BasicServerEndpointConfig(endpoint,"/");
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(endpoint,config);
+        
+        EnhancedInstantiator instantiator = new EnhancedInstantiator();
+        
+        ServerEndpointConfig config = new BasicServerEndpointConfig(endpoint,"/",instantiator);
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(endpoint,config,instantiator);
         AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
         EndpointInstance ei = new EndpointInstance(websocket,config,metadata);

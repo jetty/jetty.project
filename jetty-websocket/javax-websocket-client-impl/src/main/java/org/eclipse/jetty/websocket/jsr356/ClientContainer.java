@@ -85,6 +85,8 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     /** The jetty websocket client in use for this container */
     private WebSocketClient client;
 
+    protected EnhancedInstantiator enhancedInstantiator;
+
     public ClientContainer()
     {
         // This constructor is used with Standalone JSR Client usage.
@@ -94,13 +96,14 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     
     public ClientContainer(Executor executor, EnhancedInstantiator enhancedInstantiator)
     {
-        endpointClientMetadataCache = new ConcurrentHashMap<>();
-        decoderFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE,null,enhancedInstantiator);
-        encoderFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE,null,enhancedInstantiator);
+        this.enhancedInstantiator = enhancedInstantiator;
+        this.endpointClientMetadataCache = new ConcurrentHashMap<>();
+        this.decoderFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE,null,enhancedInstantiator);
+        this.encoderFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE,null,enhancedInstantiator);
 
         EmptyClientEndpointConfig empty = new EmptyClientEndpointConfig();
-        decoderFactory.init(empty);
-        encoderFactory.init(empty);
+        this.decoderFactory.init(empty);
+        this.encoderFactory.init(empty);
 
         boolean trustAll = Boolean.getBoolean("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
         

@@ -12,7 +12,7 @@ cd "$JETTY_BASE"
 
 "$JAVA_HOME/bin/java" -jar "$JETTY_HOME/start.jar" \
     --approve-all-licenses \
-    --add-to-start=deploy,http,annotations,cdi,logging
+    --add-to-start=deploy,http,annotations,websocket,cdi,logging
 
 "$JAVA_HOME/bin/java" -jar "$JETTY_HOME/start.jar" \
     --version

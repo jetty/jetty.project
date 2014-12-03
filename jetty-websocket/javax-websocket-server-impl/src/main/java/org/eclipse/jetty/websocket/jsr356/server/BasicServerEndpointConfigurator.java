@@ -19,11 +19,14 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.List;
+import java.util.Objects;
+
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
@@ -32,7 +35,23 @@ public class BasicServerEndpointConfigurator extends ServerEndpointConfig.Config
 {
     private static final Logger LOG = Log.getLogger(BasicServerEndpointConfigurator.class);
     private static final String NO_SUBPROTOCOL = "";
-    public static final ServerEndpointConfig.Configurator INSTANCE = new BasicServerEndpointConfigurator();
+    private final EnhancedInstantiator enhancedInstantiator;
+    
+    /**
+     * Default Constructor required, as
+     * javax.websocket.server.ServerEndpointConfig$Configurator.fetchContainerDefaultConfigurator()
+     * will be the one that instantiates this class in most cases.
+     */
+    public BasicServerEndpointConfigurator()
+    {
+        this(EnhancedInstantiator.getCurrentInstantiator());
+    }
+
+    public BasicServerEndpointConfigurator(EnhancedInstantiator enhancedInstantiator)
+    {
+        Objects.requireNonNull(enhancedInstantiator,"EnhancedInstantiator cannot be null");
+        this.enhancedInstantiator = enhancedInstantiator;
+    }
 
     @Override
     public boolean checkOrigin(String originHeaderValue)
@@ -47,9 +66,10 @@ public class BasicServerEndpointConfigurator extends ServerEndpointConfig.Config
         {
             LOG.debug(".getEndpointInstance({})",endpointClass);
         }
+        
         try
         {
-            return endpointClass.newInstance();
+            return enhancedInstantiator.createInstance(endpointClass);
         }
         catch (IllegalAccessException e)
         {

@@ -23,6 +23,9 @@ import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
  * An instantiator enhanced by {@link Decorator} instances.
  * <p>
@@ -33,7 +36,42 @@ import java.util.List;
  */
 public class EnhancedInstantiator implements Iterable<Decorator>
 {
+    private static final ThreadLocal<EnhancedInstantiator> CURRENT_INSTANTIATOR = new ThreadLocal<>();
+
+    /**
+     * Get the current EnhancedInstantiator that this thread is dispatched to.
+     * <p>
+     * This exists because of various {@link java.util.ServiceLoader} use that makes passing in an EnhancedInstantiator
+     * difficult.
+     *
+     * @return the current EnhancedInstantiator or null
+     */
+    public static EnhancedInstantiator getCurrentInstantiator()
+    {
+        return CURRENT_INSTANTIATOR.get();
+    }
+
+    public static EnhancedInstantiator setCurrentInstantiator(EnhancedInstantiator instantiator)
+    {
+        EnhancedInstantiator last = CURRENT_INSTANTIATOR.get();
+        if (instantiator == null)
+        {
+            CURRENT_INSTANTIATOR.remove();
+        }
+        else
+        {
+            CURRENT_INSTANTIATOR.set(instantiator);
+        }
+        return last;
+    }
+    
+    private static final Logger LOG = Log.getLogger(EnhancedInstantiator.class);
+
+    /**
+     * ServletContext attribute for the active EnhancedInstantiator
+     */
     public static final String ATTR = EnhancedInstantiator.class.getName();
+
     private List<Decorator> decorators = new ArrayList<>();
 
     public void addDecorator(Decorator decorator)
@@ -48,6 +86,10 @@ public class EnhancedInstantiator implements Iterable<Decorator>
 
     public <T> T createInstance(Class<T> clazz) throws InstantiationException, IllegalAccessException
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Creating Instance: " + clazz,new Throwable("Creation Stack"));
+        }
         T o = clazz.newInstance();
         return decorate(o);
     }
