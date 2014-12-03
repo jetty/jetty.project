@@ -1,4 +1,20 @@
-jetty-9.2.6-SNAPSHOT
+jetty-9.2.6.v20141203 - 03 December 2014
+ + 383207 Use BundleFileLocatorHelperFactory to obtain BundleFileLocatorHelper
+ + 443652 Remove dependency on java.lang.management classes
+ + 447472 Clear async context timeout on async static content
+ + 451529 Change sentinel class for finding jstl on classpath to 
+   org.apache.taglibs.standard.tag.rt.core.WhenTag
+ + 451634 DefaultServlet: useFileMappedBuffer javadoc is misleading
+ + 452188 Delay dispatch until content optimisation.
+ + 452201 EnvConfiguration.destroy() should set the classloader
+ + 452246 Fixed SSL hang on last chunk
+ + 452261 Multiple servlets map to path *.jsp when using jsp-property-group
+ + 452424 Do not add Date header if already set
+ + 452516 Make HttpOutput aggregation size configurable.
+ + 453386 Jetty not working when configuring QueuedThreadPool with
+   minThreads=0.
+ + 453793 _maxHeaderBytes>0 is not verified in parseNext() when in
+   State.CLOSED.
 
 jetty-9.2.5.v20141112 - 12 November 2014
  + 448446 org.eclipse.jetty.start.Main create classloader duplicate
