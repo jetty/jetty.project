@@ -28,6 +28,8 @@ import javax.websocket.Encoder;
 import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpointConfig;
 
+import org.eclipse.jetty.util.EnhancedInstantiator;
+
 public class BasicServerEndpointConfig implements ServerEndpointConfig
 {
     private final List<Class<? extends Decoder>> decoders;
@@ -39,7 +41,7 @@ public class BasicServerEndpointConfig implements ServerEndpointConfig
     private final String path;
     private Map<String, Object> userProperties;
 
-    public BasicServerEndpointConfig(Class<?> endpointClass, String path)
+    public BasicServerEndpointConfig(Class<?> endpointClass, String path, EnhancedInstantiator enhancedInstantiator)
     {
         this.endpointClass = endpointClass;
         this.path = path;
@@ -49,10 +51,10 @@ public class BasicServerEndpointConfig implements ServerEndpointConfig
         this.subprotocols = new ArrayList<>();
         this.extensions = new ArrayList<>();
         this.userProperties = new HashMap<>();
-        this.configurator = BasicServerEndpointConfigurator.INSTANCE;
+        this.configurator = new BasicServerEndpointConfigurator(enhancedInstantiator);
     }
 
-    public BasicServerEndpointConfig(ServerEndpointConfig copy)
+    public BasicServerEndpointConfig(ServerEndpointConfig copy, EnhancedInstantiator enhancedInstantiator)
     {
         // immutable concepts
         this.endpointClass = copy.getEndpointClass();
@@ -68,7 +70,7 @@ public class BasicServerEndpointConfig implements ServerEndpointConfig
         }
         else
         {
-            this.configurator = BasicServerEndpointConfigurator.INSTANCE;
+            this.configurator = new BasicServerEndpointConfigurator(enhancedInstantiator);
         }
 
         // mutable concepts

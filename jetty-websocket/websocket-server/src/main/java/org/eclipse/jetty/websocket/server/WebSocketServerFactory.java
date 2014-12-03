@@ -164,6 +164,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         try
         {
             Thread.currentThread().setContextClassLoader(contextClassloader);
+            
+            // Establish the EnhancedInstantiator thread local 
+            // for various ServiceLoader initiated components to use.
+            EnhancedInstantiator.setCurrentInstantiator(getEnhancedInstantiator(request));
+
+            // Create Servlet Specific Upgrade Request/Response objects
             ServletUpgradeRequest sockreq = new ServletUpgradeRequest(request);
             ServletUpgradeResponse sockresp = new ServletUpgradeResponse(response);
 
@@ -332,6 +338,45 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     
     public EnhancedInstantiator getEnhancedInstantiator()
     {
+        return enhancedInstantiator;
+    }
+
+    public EnhancedInstantiator getEnhancedInstantiator(HttpServletRequest request)
+    {
+        if (enhancedInstantiator != null)
+        {
+            return enhancedInstantiator;
+        }
+        
+        if (request == null)
+        {
+            LOG.debug("Using default EnhancedInstantiator (HttpServletRequest is null)");
+            return new EnhancedInstantiator();
+        }
+        
+        return getEnhancedInstantiator(request.getServletContext());
+    }
+    
+    public EnhancedInstantiator getEnhancedInstantiator(ServletContext context)
+    {
+        if (enhancedInstantiator != null)
+        {
+            return enhancedInstantiator;
+        }
+        
+        if (context == null)
+        {
+            LOG.debug("Using default EnhancedInstantiator (ServletContext is null)");
+            return new EnhancedInstantiator();
+        }
+
+        enhancedInstantiator = (EnhancedInstantiator)context.getAttribute(EnhancedInstantiator.ATTR);
+        if (enhancedInstantiator == null)
+        {
+            LOG.debug("Using default EnhancedInstantiator (ServletContext attribute is null)");
+            enhancedInstantiator = new EnhancedInstantiator();
+        }
+        
         return enhancedInstantiator;
     }
 

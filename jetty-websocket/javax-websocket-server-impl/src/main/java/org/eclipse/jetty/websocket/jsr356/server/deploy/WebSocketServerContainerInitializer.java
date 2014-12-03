@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.server.deploy;
 
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -32,6 +33,7 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.EnhancedInstantiator;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -165,6 +167,17 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
             // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
             context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
+            
+            // Establish the EnhancedInstantiator thread local 
+            // for various ServiceLoader initiated components to use.
+            EnhancedInstantiator instantiator = (EnhancedInstantiator)context.getAttribute(EnhancedInstantiator.ATTR);
+            if (instantiator == null)
+            {
+                LOG.info("Using WebSocket local EnhancedInstantiator - none found in ServletContext");
+                instantiator = new EnhancedInstantiator();
+            }
+            
+            EnhancedInstantiator.setCurrentInstantiator(instantiator);
 
             if (LOG.isDebugEnabled())
             {
