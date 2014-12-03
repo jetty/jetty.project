@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -119,6 +120,10 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <dd>The status code to send if there are too many requests.  By default is 429 (too many requests), but 503 (Unavailable) is 
  * another option</dd>
  * </dl>
+ * </p>
+ * <p>
+ * This filter should be configured for {@link DispatcherType#REQUEST} and {@link DispatcherType#ASYNC} and with 
+ * <code>&lt;async-supported&gt;true&lt;/async-supported&gt;</code>.
  * </p>
  */
 @ManagedObject("limits exposure to abuse from request flooding, whether malicious, or as a result of a misconfigured client")
