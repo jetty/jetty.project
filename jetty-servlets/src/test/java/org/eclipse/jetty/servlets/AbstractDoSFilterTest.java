@@ -69,7 +69,7 @@ public abstract class AbstractDoSFilterTest
 
         _tester.getContext().addServlet(TestServlet.class, "/*");
 
-        _dosFilter = _tester.getContext().addFilter(filter, "/dos/*", EnumSet.allOf(DispatcherType.class));
+        _dosFilter = _tester.getContext().addFilter(filter, "/dos/*", EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         _dosFilter.setInitParameter("maxRequestsPerSec", "4");
         _dosFilter.setInitParameter("delayMs", "200");
         _dosFilter.setInitParameter("throttledRequests", "1");
@@ -78,7 +78,7 @@ public abstract class AbstractDoSFilterTest
         _dosFilter.setInitParameter("remotePort", "false");
         _dosFilter.setInitParameter("insertHeaders", "true");
 
-        _timeoutFilter = _tester.getContext().addFilter(filter, "/timeout/*", EnumSet.allOf(DispatcherType.class));
+        _timeoutFilter = _tester.getContext().addFilter(filter, "/timeout/*", EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         _timeoutFilter.setInitParameter("maxRequestsPerSec", "4");
         _timeoutFilter.setInitParameter("delayMs", "200");
         _timeoutFilter.setInitParameter("throttledRequests", "1");

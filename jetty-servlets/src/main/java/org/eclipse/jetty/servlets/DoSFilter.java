@@ -31,9 +31,11 @@ import java.util.concurrent.Semaphore;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -125,6 +127,10 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
  * manage the configuration of the filter.</dd>
  * </dl>
+ * </p>
+ * <p>
+ * This filter should be configured for {@link DispatcherType#REQUEST} and {@link DispatcherType#ASYNC} and with 
+ * <code>&lt;async-supported&gt;true&lt;/async-supported&gt;</code>.
  * </p>
  */
 @ManagedObject("limits exposure to abuse from request flooding, whether malicious, or as a result of a misconfigured client")
