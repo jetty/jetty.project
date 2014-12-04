@@ -34,6 +34,11 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(NegotiatingServerConnection.class);
 
+    public interface CipherDiscriminator
+    {
+        boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher);
+    }
+    
     private final Connector connector;
     private final SSLEngine engine;
     private final List<String> protocols;
@@ -59,6 +64,11 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
         return defaultProtocol;
     }
 
+    protected Connector getConnector()
+    {
+        return connector;
+    }
+    
     protected SSLEngine getSSLEngine()
     {
         return engine;

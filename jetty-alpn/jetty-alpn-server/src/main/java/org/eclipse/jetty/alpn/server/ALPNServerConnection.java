@@ -20,10 +20,12 @@ package org.eclipse.jetty.alpn.server;
 
 import java.util.Collections;
 import java.util.List;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NegotiatingServerConnection;
 import org.eclipse.jetty.util.log.Log;
@@ -48,24 +50,40 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
     @Override
     public String select(List<String> clientProtocols)
     {
+        SSLEngine sslEngine = getSSLEngine();
         List<String> serverProtocols = getProtocols();
+        String tlsProtocol = sslEngine.getHandshakeSession().getProtocol();
+        String tlsCipher = sslEngine.getHandshakeSession().getCipherSuite();
+                
         String negotiated = null;
         for (String clientProtocol : clientProtocols)
         {
             if (serverProtocols.contains(clientProtocol))
             {
+                ConnectionFactory factory = getConnector().getConnectionFactory(clientProtocol);
+                
+                if (factory instanceof CipherDiscriminator && !((CipherDiscriminator)factory).isAcceptable(clientProtocol,tlsProtocol,tlsCipher))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} protocol {} not acceptable to {} for {}/{}", this, clientProtocol,factory,tlsProtocol,tlsCipher);
+                    continue;
+                }
+                
                 negotiated = clientProtocol;
                 break;
             }
         }
         if (negotiated == null)
         {
-            negotiated = getDefaultProtocol();
+            if (clientProtocols.isEmpty())
+                negotiated=getDefaultProtocol();
+            else
+                throw new IllegalStateException("No acceptable protocol");
         }
         if (LOG.isDebugEnabled())
             LOG.debug("{} protocol selected {}", this, negotiated);
         setProtocol(negotiated);
-        ALPN.remove(getSSLEngine());
+        ALPN.remove(sslEngine);
         return negotiated;
     }
 

@@ -106,7 +106,7 @@ public class Http2Server
         http2Connector.setPort(8443);
         server.addConnector(http2Connector);
         
-        ALPN.debug=true;
+        ALPN.debug=false;
         
         server.start();
         server.dumpStdErr();

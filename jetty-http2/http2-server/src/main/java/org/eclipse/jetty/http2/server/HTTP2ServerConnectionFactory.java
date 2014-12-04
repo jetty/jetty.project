@@ -24,6 +24,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -37,12 +38,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory
+public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory implements CipherDiscriminator
 {
     private static final Logger LOG = Log.getLogger(HTTP2ServerConnectionFactory.class);
 
@@ -66,6 +68,17 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     }
 
     
+    @Override
+    public boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher)
+    {
+        // Implement 9.2.2
+        if (HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher))
+            return false;
+            
+        return true;
+    }
+
+
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
         private final Connector connector;
