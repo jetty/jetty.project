@@ -44,18 +44,18 @@ public class HpackDecoder
     
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
-    private int _localMaxHeaderTableSize;
+    private int _localMaxDynamicTableSize;
 
-    public HpackDecoder(int localMaxHeaderTableSize, int maxHeaderSize)
+    public HpackDecoder(int localMaxDynamicTableSize, int maxHeaderSize)
     {
-        _context=new HpackContext(localMaxHeaderTableSize);
-        _localMaxHeaderTableSize=localMaxHeaderTableSize;
+        _context=new HpackContext(localMaxDynamicTableSize);
+        _localMaxDynamicTableSize=localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
     }
     
-    public void setLocalMaxHeaderTableSize(int localMaxHeaderTableSize)
+    public void setLocalMaxDynamicTableSize(int localMaxdynamciTableSize)
     {
-        _localMaxHeaderTableSize=localMaxHeaderTableSize; 
+        _localMaxDynamicTableSize=localMaxdynamciTableSize; 
     }
     
     public MetaData decode(ByteBuffer buffer)
@@ -123,7 +123,7 @@ public class HpackDecoder
                         int size = NBitInteger.decode(buffer,5);
                         if (LOG.isDebugEnabled())
                             LOG.debug("decode resize="+size);
-                        if (size>_localMaxHeaderTableSize)
+                        if (size>_localMaxDynamicTableSize)
                             throw new IllegalArgumentException();
                         _context.resize(size);
                         continue;

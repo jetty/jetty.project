@@ -87,8 +87,8 @@ public class HpackEncoder
     
     private final HpackContext _context;
     private final boolean _debug;
-    private int _remoteMaxHeaderTableSize;
-    private int _localMaxHeaderTableSize;
+    private int _remoteMaxDynamicTableSize;
+    private int _localMaxDynamicTableSize;
     
     public HpackEncoder()
     {
@@ -103,8 +103,8 @@ public class HpackEncoder
     public HpackEncoder(int localMaxHeaderTableSize,int remoteMaxHeaderTableSize)
     {
         _context=new HpackContext(remoteMaxHeaderTableSize);
-        _remoteMaxHeaderTableSize=remoteMaxHeaderTableSize;
-        _localMaxHeaderTableSize=localMaxHeaderTableSize;
+        _remoteMaxDynamicTableSize=remoteMaxHeaderTableSize;
+        _localMaxDynamicTableSize=localMaxHeaderTableSize;
         _debug=LOG.isDebugEnabled();
     }
 
@@ -115,12 +115,12 @@ public class HpackEncoder
     
     public void setRemoteMaxHeaderTableSize(int remoteMaxHeaderTableSize)
     {
-        _remoteMaxHeaderTableSize=remoteMaxHeaderTableSize;
+        _remoteMaxDynamicTableSize=remoteMaxHeaderTableSize;
     }
     
     public void setLocalMaxHeaderTableSize(int localMaxHeaderTableSize)
     {
-        _localMaxHeaderTableSize=localMaxHeaderTableSize;
+        _localMaxDynamicTableSize=localMaxHeaderTableSize;
     }
     
     // TODO better handling of buffer size
@@ -141,9 +141,9 @@ public class HpackEncoder
         int pos = buffer.position();
 
         // Check the header table sizes!
-        int maxHeaderTableSize=Math.min(_remoteMaxHeaderTableSize,_localMaxHeaderTableSize);
-        if (maxHeaderTableSize!=_context.getMaxHeaderTableSize())
-            encodeMaxHeaderTableSize(buffer,maxHeaderTableSize);
+        int maxDynamicTableSize=Math.min(_remoteMaxDynamicTableSize,_localMaxDynamicTableSize);
+        if (maxDynamicTableSize!=_context.getMaxDynamicTableSize())
+            encodeMaxDynamicTableSize(buffer,maxDynamicTableSize);
 
         // Add Request/response meta fields
         if (metadata.isRequest())
@@ -176,13 +176,13 @@ public class HpackEncoder
             LOG.debug(String.format("CtxTbl[%x] encoded %d octets",_context.hashCode(), buffer.position() - pos));
     }
 
-    public void encodeMaxHeaderTableSize(ByteBuffer buffer, int maxHeaderTableSize)
+    public void encodeMaxDynamicTableSize(ByteBuffer buffer, int maxDynamicTableSize)
     {
-        if (maxHeaderTableSize>_remoteMaxHeaderTableSize)
+        if (maxDynamicTableSize>_remoteMaxDynamicTableSize)
             throw new IllegalArgumentException();
         buffer.put((byte)0x20);
-        NBitInteger.encode(buffer,5,maxHeaderTableSize);
-        _context.resize(maxHeaderTableSize);
+        NBitInteger.encode(buffer,5,maxDynamicTableSize);
+        _context.resize(maxDynamicTableSize);
     }
 
     public void encode(ByteBuffer buffer, HttpField field)
