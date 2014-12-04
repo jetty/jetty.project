@@ -44,11 +44,13 @@ public class JettyJspServlet extends JspServlet
      */
     private static final long serialVersionUID = -5387857473125086791L;
 
+    
+    
+    
+    
     @Override
     public void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
     {
-        
-        
         HttpServletRequest request = null;
         if (req instanceof HttpServletRequest)
             request = (HttpServletRequest)req;
@@ -74,22 +76,30 @@ public class JettyJspServlet extends JspServlet
         }
         
         String pathInContext = URIUtil.addPaths(servletPath,pathInfo);
-        
-        if (pathInContext.endsWith("/"))
+    
+        String jspFile = getInitParameter("jspFile");
+
+        //if this is a forced-path from a jsp-file, we want the jsp servlet to handle it,
+        //otherwise the default servlet might handle it
+        if (jspFile == null)
         {
-            //dispatch via forward to the default servlet
-            getServletContext().getNamedDispatcher("default").forward(req, resp);
-            return;
-        }
-        else
-        {      
-            //check if it resolves to a directory
-            Resource resource = ((ContextHandler.Context)getServletContext()).getContextHandler().getResource(pathInContext);           
-            if (resource!=null && resource.isDirectory())
+            if (pathInContext.endsWith("/"))
             {
                 //dispatch via forward to the default servlet
                 getServletContext().getNamedDispatcher("default").forward(req, resp);
                 return;
+            }
+            else
+            {      
+                //check if it resolves to a directory
+                Resource resource = ((ContextHandler.Context)getServletContext()).getContextHandler().getResource(pathInContext);    
+
+                if (resource!=null && resource.isDirectory())
+                {
+                    //dispatch via forward to the default servlet
+                    getServletContext().getNamedDispatcher("default").forward(req, resp);
+                    return;
+                }
             }
         }
         
