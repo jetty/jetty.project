@@ -140,7 +140,7 @@ public class AsyncServletIOTest
     public void testBigWrites() throws Exception
     {
         process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
-        Assert.assertThat("On Write Possible",_owp.get(),greaterThan(1));
+        Assert.assertThat("On Write Possible",_owp.get(),greaterThanOrEqualTo(1));
     }
 
     @Test
