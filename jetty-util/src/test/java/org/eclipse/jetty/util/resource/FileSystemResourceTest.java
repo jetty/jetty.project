@@ -52,7 +52,6 @@ import org.eclipse.jetty.util.CollectionAssert;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
-import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -266,7 +265,7 @@ public class FileSystemResourceTest
         try (Resource base = newResource(testdir.getDir()))
         {
             Resource res = base.addPath("foo");
-            assertThat("foo.lastModified",res.lastModified(),is(expected));
+            assertThat("foo.lastModified",res.lastModified()/1000*1000,is(expected));
         }
     }
 
