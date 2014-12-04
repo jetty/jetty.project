@@ -280,7 +280,7 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     public void consumeAll()
     {
         synchronized (lock())
-        {
+        {   
             try
             {
                 while (!isFinished())

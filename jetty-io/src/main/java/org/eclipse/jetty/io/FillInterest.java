@@ -58,7 +58,7 @@ public abstract class FillInterest
         
         if (!_interested.compareAndSet(null,callback))
         {
-            LOG.warn("Read pending for "+_interested.get()+" pervented "+callback);
+            LOG.warn("Read pending for "+_interested.get()+" prevented "+callback);
             throw new ReadPendingException();
         }
         try
