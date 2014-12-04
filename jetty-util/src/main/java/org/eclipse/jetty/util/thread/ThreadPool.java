@@ -55,6 +55,13 @@ public interface ThreadPool extends Executor
     
     /* ------------------------------------------------------------ */
     /**
+     * @return The number of busy threads in the pool
+     */
+    @ManagedAttribute("number of busy threads in pool")
+    public int getBusyThreads();
+
+    /* ------------------------------------------------------------ */
+    /**
      * @return True if the pool is low on threads
      */
     @ManagedAttribute("indicates the pool is low on available threads")
