@@ -43,6 +43,6 @@ public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnecti
     protected ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener)
     {
         // TODO: make maxHeaderSize configurable.
-        return new ServerParser(byteBufferPool, listener, getMaxHeaderTableSize(), 8192);
+        return new ServerParser(byteBufferPool, listener, getMaxDynamicTableSize(), 8192);
     }
 }

@@ -33,9 +33,9 @@ public class ServerParser extends Parser
     private final PrefaceParser prefaceParser;
     private State state = State.PREFACE;
 
-    public ServerParser(ByteBufferPool byteBufferPool, Listener listener, int maxHeaderTableSize, int maxHeaderSize)
+    public ServerParser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
     {
-        super(byteBufferPool, listener, maxHeaderTableSize, maxHeaderSize);
+        super(byteBufferPool, listener, maxDynamicTableSize, maxHeaderSize);
         this.listener = listener;
         this.prefaceParser = new PrefaceParser(listener);
     }

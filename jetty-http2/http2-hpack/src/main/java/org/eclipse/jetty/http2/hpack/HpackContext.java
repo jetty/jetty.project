@@ -267,7 +267,7 @@ public class HpackContext
     }
 
     /**
-     * @return Current Header table size in entries
+     * @return Current dynamic table size in entries
      */
     public int size()
     {
@@ -275,15 +275,15 @@ public class HpackContext
     }
     
     /**
-     * @return Current Header table size in Octets
+     * @return Current Dynamic table size in Octets
      */
-    public int getHeaderTableSize()
+    public int getDynamicTableSize()
     {
         return _dynamicTableSizeInBytes;
     }
 
     /**
-     * @return Max Header table size in Octets
+     * @return Max Dynamic table size in Octets
      */
     public int getMaxDynamicTableSize()
     {

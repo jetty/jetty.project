@@ -62,7 +62,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     @Override
     protected ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener)
     {
-        return new ServerParser(byteBufferPool, listener, getMaxHeaderTableSize(), httpConfiguration.getRequestHeaderSize());
+        return new ServerParser(byteBufferPool, listener, getMaxDynamicTableSize(), httpConfiguration.getRequestHeaderSize());
     }
 
     
@@ -87,7 +87,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public Map<Integer, Integer> onPreface(Session session)
         {
             Map<Integer, Integer> settings = new HashMap<>();
-            settings.put(SettingsFrame.HEADER_TABLE_SIZE, getMaxHeaderTableSize());
+            settings.put(SettingsFrame.HEADER_TABLE_SIZE, getMaxDynamicTableSize());
             settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialStreamWindow());
             int maxConcurrentStreams = getMaxConcurrentStreams();
             if (maxConcurrentStreams >= 0)

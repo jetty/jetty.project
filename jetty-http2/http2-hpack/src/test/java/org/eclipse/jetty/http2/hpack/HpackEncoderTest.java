@@ -74,7 +74,7 @@ public class HpackEncoderTest
         // something was encoded!
         assertThat(buffer.remaining(),Matchers.greaterThan(0));
         
-        // All are in the header table
+        // All are in the dynamic table
         Assert.assertEquals(4,encoder.getContext().size());
                 
         // encode exact same fields again!
@@ -82,7 +82,7 @@ public class HpackEncoderTest
         encoder.encode(buffer,new MetaData(HttpVersion.HTTP_2,fields));
         BufferUtil.flipToFlush(buffer,0);
 
-        // All are in the header table
+        // All are in the dynamic table
         Assert.assertEquals(4,encoder.getContext().size());
         
         // Add 4 more fields
@@ -97,7 +97,7 @@ public class HpackEncoderTest
         // something was encoded!
         assertThat(buffer.remaining(),Matchers.greaterThan(0));
 
-        // max header table size reached
+        // max dynamic table size reached
         Assert.assertEquals(5,encoder.getContext().size());
         
         
@@ -113,7 +113,7 @@ public class HpackEncoderTest
         // something was encoded!
         assertThat(buffer.remaining(),Matchers.greaterThan(0));
 
-        // max header table size reached
+        // max dynamic table size reached
         Assert.assertEquals(5,encoder.getContext().size());
 
 
@@ -128,7 +128,7 @@ public class HpackEncoderTest
         // something was encoded!
         assertThat(buffer.remaining(),Matchers.greaterThan(0));
 
-        // max header table size reached
+        // max dynamic table size reached
         Assert.assertEquals(5,encoder.getContext().size());
 
         
@@ -144,7 +144,7 @@ public class HpackEncoderTest
         // something was encoded!
         assertThat(buffer.remaining(),Matchers.greaterThan(0));
 
-        // max header table size reached
+        // max dynamic table size reached
         Assert.assertEquals(5,encoder.getContext().size());
 
     }
@@ -167,7 +167,7 @@ public class HpackEncoderTest
         // something was encoded!
         assertThat(buffer.remaining(),Matchers.greaterThan(0));
         
-        // empty header table
+        // empty dynamic table
         Assert.assertEquals(0,encoder.getContext().size());
         
 
@@ -179,7 +179,7 @@ public class HpackEncoderTest
         // something was encoded!
         assertThat(buffer.remaining(),Matchers.greaterThan(0));
         
-        // empty header table
+        // empty dynamic table
         Assert.assertEquals(0,encoder.getContext().size());
         
     }

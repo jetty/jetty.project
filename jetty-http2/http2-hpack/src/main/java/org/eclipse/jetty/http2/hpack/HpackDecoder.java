@@ -232,7 +232,7 @@ public class HpackDecoder
                 // if indexed
                 if (indexed)
                 {
-                    // add to header table
+                    // add to dynamic table
                     _context.add(field);
                 }
 
