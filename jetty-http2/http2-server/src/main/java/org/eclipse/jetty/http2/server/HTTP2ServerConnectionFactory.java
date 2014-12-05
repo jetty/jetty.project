@@ -48,23 +48,21 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
 {
     private static final Logger LOG = Log.getLogger(HTTP2ServerConnectionFactory.class);
 
-    private final HttpConfiguration httpConfiguration;
-
     public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        this.httpConfiguration = httpConfiguration;
+        super(httpConfiguration);
     }
 
     @Override
     protected ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint)
     {
-        return new HTTPServerSessionListener(connector, httpConfiguration, endPoint);
+        return new HTTPServerSessionListener(connector, endPoint);
     }
 
     @Override
     protected ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener)
     {
-        return new ServerParser(byteBufferPool, listener, getMaxDynamicTableSize(), httpConfiguration.getRequestHeaderSize());
+        return new ServerParser(byteBufferPool, listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
     }
 
     
@@ -82,17 +80,11 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
         private final Connector connector;
-        private final HttpConfiguration httpConfiguration;
         private final EndPoint endPoint;
-
-        // TODO This pool should be on the HTTP2ServerConnection
-        // TODO Evaluate if this is be best data structure to use
-        private final ConcurrentLinkedQueue<HttpChannelOverHTTP2> channels = new ConcurrentLinkedQueue<>();
         
-        public HTTPServerSessionListener(Connector connector, HttpConfiguration httpConfiguration, EndPoint endPoint)
+        public HTTPServerSessionListener(Connector connector, EndPoint endPoint)
         {
             this.connector = connector;
-            this.httpConfiguration = httpConfiguration;
             this.endPoint = endPoint;
         }
 
@@ -111,35 +103,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Processing {} on {}", frame, stream);
-
-            HttpChannelOverHTTP2 channel = channels.poll();
-            if (channel!=null)
-            {
-                channel.getHttp2Transport().setStream((IStream)stream);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("recycled :{}",channel);
-            }
-            else
-            {
-                channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, new HttpTransportOverHTTP2(connector, httpConfiguration, endPoint, (IStream)stream))
-                {
-                    @Override
-                    public void onCompleted()
-                    {
-                        super.onCompleted();
-                        recycle();
-                        // TODO limit size?
-                        channels.add(this);
-                    } 
-                };
-            }
-            stream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
-
-            channel.onRequest(frame);
-
-            return frame.isEndStream() ? null : this;
+            return ((HTTP2ServerConnection)endPoint.getConnection()).onNewStream(connector,stream,frame)?this:null;
         }
 
         @Override

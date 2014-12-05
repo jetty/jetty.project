@@ -68,7 +68,7 @@ public class AbstractTest
 
     protected void startServer(ServerSessionListener listener) throws Exception
     {
-        prepareServer(new RawHTTP2ServerConnectionFactory(listener));
+        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(),listener));
         prepareClient();
         server.start();
         client.start();

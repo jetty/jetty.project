@@ -23,13 +23,15 @@ import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
 
 public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory
 {
     private final ServerSessionListener listener;
 
-    public RawHTTP2ServerConnectionFactory(ServerSessionListener listener)
+    public RawHTTP2ServerConnectionFactory(HttpConfiguration httpConfiguration,ServerSessionListener listener)
     {
+        super(httpConfiguration);
         this.listener = listener;
     }
 

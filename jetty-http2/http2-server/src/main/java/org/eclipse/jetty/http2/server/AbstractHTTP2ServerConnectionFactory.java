@@ -30,6 +30,8 @@ import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.annotation.Name;
 
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
@@ -37,10 +39,12 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxDynamicTableSize = 4096;
     private int initialStreamWindow = FlowControl.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
-
-    public AbstractHTTP2ServerConnectionFactory()
+    private final HttpConfiguration httpConfiguration;
+    
+    public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
         super("h2-15","h2-14");
+        this.httpConfiguration = httpConfiguration;
     }
 
     public boolean isDispatchIO()
@@ -83,6 +87,11 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxConcurrentStreams = maxConcurrentStreams;
     }
 
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return httpConfiguration;
+    }
+    
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
@@ -97,10 +106,10 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         if (idleTimeout > 0)
             idleTimeout /= 2;
         session.setStreamIdleTimeout(idleTimeout);
-
+        
         Parser parser = newServerParser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
-                        endPoint, parser, session, getInputBufferSize(), isDispatchIO(), listener);
+                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), isDispatchIO(), listener);
 
         return configure(connection, connector, endPoint);
     }

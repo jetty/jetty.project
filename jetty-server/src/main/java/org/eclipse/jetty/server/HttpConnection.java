@@ -360,7 +360,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("unconsumed async input {}", this);
-                _channel.abort();
+                _channel.abort(new IOException("unconsumed input"));
             }
             else
             {

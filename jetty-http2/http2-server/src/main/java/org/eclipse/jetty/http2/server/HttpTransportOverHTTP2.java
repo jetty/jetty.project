@@ -128,10 +128,8 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             @Override
             public void succeeded(Stream pushStream)
             {
-                HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, httpConfiguration, endPoint, (IStream)pushStream);
-                HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport);
-                pushStream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
-
+                HTTP2ServerConnection connection = (HTTP2ServerConnection)endPoint.getConnection();
+                HttpChannelOverHTTP2 channel = connection.newHttpChannelOverHTTP2(connector,pushStream);                
                 channel.onPushRequest(request);
             }
 
