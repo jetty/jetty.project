@@ -217,6 +217,7 @@ public class Dispatcher implements RequestDispatcher
         }
     }
     
+    @Deprecated
     public void push(ServletRequest request)
     {
         Request baseRequest = Request.getBaseRequest(request);
