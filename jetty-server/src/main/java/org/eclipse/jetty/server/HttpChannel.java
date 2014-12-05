@@ -461,7 +461,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             else if (isCommitted())
             {
-                _transport.abort(x);
+                abort(x);
                 if (!(x instanceof EofException))
                     LOG.warn("Could not send response error 500: "+x);
             }
