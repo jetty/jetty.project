@@ -21,14 +21,20 @@ package org.eclipse.jetty.client;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.ExecutionException;
 import java.util.concurrent.Executor;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+import java.util.concurrent.atomic.AtomicReference;
 
 import javax.net.ssl.SSLEngine;
 import javax.servlet.ServletException;
@@ -43,7 +49,9 @@ import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.BufferingResponseListener;
+import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.InputStreamContentProvider;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
@@ -301,6 +309,68 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         }
     }
 
+    @Test
+    public void testWriteIdleTimeout() throws Throwable
+    {
+        long timeout = 1000;
+        start(new TimeoutHandler(2 * timeout));
+        BlockOnWriteServer blockOnWriteServer = new BlockOnWriteServer();
+        blockOnWriteServer.start();
+        client.stop();
+        final AtomicBoolean sslIdle = new AtomicBoolean();
+        client = new HttpClient(new HttpClientTransportOverHTTP()
+        {
+            @Override
+            public HttpDestination newHttpDestination(Origin origin)
+            {
+                return new HttpDestinationOverHTTP(getHttpClient(), origin)
+                {
+                    @Override
+                    protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
+                    {
+                        HttpClient client = getHttpClient();
+                        return new SslClientConnectionFactory(client.getSslContextFactory(), client.getByteBufferPool(), client.getExecutor(), connectionFactory)
+                        {
+                            @Override
+                            protected SslConnection newSslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine engine)
+                            {
+                                return new SslConnection(byteBufferPool, executor, endPoint, engine)
+                                {
+                                    @Override
+                                    protected boolean onReadTimeout()
+                                    {
+                                        sslIdle.set(true);
+                                        return super.onReadTimeout();
+                                    }
+                                };
+                            }
+                        };
+                    }
+                };
+            }
+        }, sslContextFactory);
+        client.setIdleTimeout(timeout);
+        client.start();
+
+        try
+        {
+            client.newRequest("localhost", blockOnWriteServer.getLocalPort())
+                    .scheme(scheme)
+                    .method(HttpMethod.PUT)
+                    .content(new BytesContentProvider(new byte[10000]))
+                    .send();
+            Assert.fail();
+        }
+        catch (Exception x)
+        {
+            Assert.assertFalse(sslIdle.get());
+            Assert.assertThat(x.getCause(), Matchers.instanceOf(TimeoutException.class));
+        }
+        finally {
+            blockOnWriteServer.stop();
+        }
+    }
+
     @Ignore
     @Slow
     @Test
@@ -429,6 +499,67 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
             catch (InterruptedException x)
             {
                 throw new ServletException(x);
+            }
+        }
+    }
+
+    private class BlockOnWriteServer
+    {
+        private final ServerSocket serverSocket;
+        private final AtomicReference<Socket> connectionSocket = new AtomicReference<>();
+        private final ExecutorService executor;
+        private Future<?> future;
+
+        private BlockOnWriteServer()
+                throws Exception
+        {
+            if (scheme.equals("https"))
+                serverSocket = sslContextFactory.newSslServerSocket(null, 0, 1);
+            else
+                serverSocket = new ServerSocket(0);
+            executor = Executors.newSingleThreadExecutor();
+        }
+
+        public int getLocalPort()
+        {
+            return serverSocket.getLocalPort();
+        }
+
+        public void start()
+        {
+            future = executor.submit(new Runnable()
+            {
+                @Override
+                public void run()
+                {
+                    try {
+                        Socket connection = serverSocket.accept();
+                        connectionSocket.set(connection);
+                    }
+                    catch (IOException e) {
+                        throw new RuntimeException(e);
+                    }
+                }
+            });
+        }
+
+        public void stop()
+                throws IOException
+        {
+            try {
+                connectionSocket.get().close();
+            }
+            catch (IOException | RuntimeException ignored) {
+            }
+            serverSocket.close();
+            executor.shutdown();
+            try {
+                future.get();
+            }
+            catch (InterruptedException ignored) {
+            }
+            catch (ExecutionException e) {
+                throw (RuntimeException) e.getCause();
             }
         }
     }
