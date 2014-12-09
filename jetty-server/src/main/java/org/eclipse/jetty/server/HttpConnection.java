@@ -662,6 +662,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         getEndPoint().close();
     }
 
+    @Override
+    public boolean isPushSupported()
+    {
+        return false;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)

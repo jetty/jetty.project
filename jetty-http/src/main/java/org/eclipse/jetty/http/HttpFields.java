@@ -94,15 +94,15 @@ public class HttpFields implements Iterable<HttpField>
     /**
      * Get Collection of header names.
      */
-    public Collection<String> getFieldNamesCollection()
+    public Set<String> getFieldNamesCollection()
     {
-        final Set<String> list = new HashSet<>(_size);
+        final Set<String> set = new HashSet<>(_size);
         for (HttpField f : this)
         {
             if (f!=null)
-                list.add(f.getName());
+                set.add(f.getName());
         }
-        return list;
+        return set;
     }
 
     /**

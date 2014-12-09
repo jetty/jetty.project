@@ -114,6 +114,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     }
 
     @Override
+    public boolean isPushSupported()
+    {
+        return stream.getSession().isPushEnabled();
+    }
+
+    @Override
     public void push(final MetaData.Request request)
     {
         if (!stream.getSession().isPushEnabled())

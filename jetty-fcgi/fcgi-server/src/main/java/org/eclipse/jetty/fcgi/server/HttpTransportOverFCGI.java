@@ -79,10 +79,12 @@ public class HttpTransportOverFCGI implements HttpTransport
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
-     */
+    @Override
+    public boolean isPushSupported()
+    {
+        return false;
+    }
+    
     @Override
     public void push(org.eclipse.jetty.http.MetaData.Request request)
     {   

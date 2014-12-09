@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -89,6 +90,12 @@ public class ResponseTest
                 callback.succeeded();
             }
 
+            @Override
+            public boolean isPushSupported()
+            {
+                return false;
+            }
+            
             @Override
             public void push(org.eclipse.jetty.http.MetaData.Request request)
             {   
