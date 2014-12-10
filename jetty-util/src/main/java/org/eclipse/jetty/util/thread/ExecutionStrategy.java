@@ -146,6 +146,7 @@ public abstract class ExecutionStrategy implements Runnable
                         _producing.set(false);
                     }
 
+                    // since we are going to eat the task we just "killed" 
                     // then we may need another thread to keep producing
                     if (!complete && !_dispatched)
                     {
