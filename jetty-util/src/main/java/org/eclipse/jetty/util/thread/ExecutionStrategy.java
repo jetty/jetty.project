@@ -42,7 +42,7 @@ public abstract class ExecutionStrategy implements Runnable
          * results until {@link #produce()} has been called.
          * @return true if this Producer may produce more tasks from {@link #produce()}
          */
-        boolean isMoreToProduce();
+        boolean isMore();
         
         /**
          * Called to signal production is completed
@@ -85,7 +85,7 @@ public abstract class ExecutionStrategy implements Runnable
                         break loop;
 
                     // If we are still producing,
-                    if (_producer.isMoreToProduce())
+                    if (_producer.isMore())
                         // execute the task
                         _executor.execute(task);
                     else
@@ -139,7 +139,7 @@ public abstract class ExecutionStrategy implements Runnable
                     try
                     {
                         task=_producer.produce(); 
-                        complete=task==null || _producer.isMoreToProduce();
+                        complete=task==null || _producer.isMore();
                     }
                     finally
                     {
