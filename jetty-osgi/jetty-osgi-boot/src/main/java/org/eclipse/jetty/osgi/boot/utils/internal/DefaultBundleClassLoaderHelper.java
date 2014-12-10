@@ -37,7 +37,7 @@ import org.osgi.framework.Bundle;
 public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
 {
     private static final Logger LOG = Log.getLogger(BundleClassLoaderHelper.class);
-    private static enum OSGiContainerType {EquinoxOld, EquinoxLuna, FelixOld, Felix403};
+    private static enum OSGiContainerType {EquinoxOld, EquinoxLuna, FelixOld, Felix403, Concierge};
     private static OSGiContainerType osgiContainer;
     private static Class Equinox_BundleHost_Class;
     private static Class Equinox_EquinoxBundle_Class;
@@ -55,6 +55,12 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
     private static Field Felix_BundleImpl_m_Modules_Field;
     private static Field Felix_ModuleImpl_m_ClassLoader_Field;
     private static Method Felix_BundleWiring_getClassLoader_Method;
+    
+    // Concierge
+    private static Class Concierge_BundleImpl_Class;
+    private static Class Concierge_BundleWiring_Class;
+    private static Method Concierge_BundleImpl_Adapt_Method;
+    private static Method Concierge_BundleWiring_getClassLoader_Method;
     
     
     private static void checkContainerType (Bundle bundle)
@@ -102,10 +108,22 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         catch (ClassNotFoundException e)
         {
-            LOG.warn("Unknown OSGi container type");
-            return;
+            LOG.ignore(e);
         }
         
+        try
+        {
+            Concierge_BundleImpl_Class = bundle.getClass().getClassLoader().loadClass("org.eclipse.concierge.BundleImpl");
+            osgiContainer = OSGiContainerType.Concierge;
+            return;
+        }
+        catch (ClassNotFoundException e)
+        {
+            LOG.ignore(e);
+        }
+
+        LOG.warn("Unknown OSGi container type");
+        return;
     }
 
   
@@ -168,6 +186,12 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
             {
                 return internalGetFelixBundleClassLoader(bundle); 
             }
+
+            case Concierge:
+            {
+                return internalGetConciergeBundleClassLoader(bundle); 
+            }
+
             default:
             {
                 LOG.warn("No classloader found for bundle "+bundle.getSymbolicName());
@@ -361,6 +385,57 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
         }
         
         LOG.warn("No classloader for felix platform for bundle "+bundle.getSymbolicName());
+        return null;
+    }
+    
+    /**
+     * @param bundle
+     * @return
+     */
+    private static ClassLoader internalGetConciergeBundleClassLoader(Bundle bundle)
+    {
+        if (osgiContainer == OSGiContainerType.Concierge)
+        {
+            try
+            {
+                /** 
+                 * In Concierge:
+                 * 
+                 * Option A:
+                 * <pre>
+                 * Concierge concierge = new Concierge(...);
+                 * BundleWiring bundleWiring = concierge.getWiring(); // method is public
+                 * </pre>
+                 * Problem: getWiring not yet implementd
+                 * 
+                 * Option B:
+                 * <pre>
+                 * Concierge concierge = new Concierge(...);
+                 * BundleWiring bundleWiring = concierge.adapt(org.osgi.framework.wiring.BundleWiring);
+                 * </pre>
+                 * Same approach as done in Felix.
+                 * 
+                 */
+                if (Concierge_BundleWiring_Class == null) {
+                    Concierge_BundleWiring_Class = bundle.getClass().getClassLoader().loadClass("org.osgi.framework.wiring.BundleWiring");
+                    Concierge_BundleImpl_Adapt_Method = Concierge_BundleImpl_Class.getMethod("adapt", new Class[] {Class.class});
+                    Concierge_BundleImpl_Adapt_Method.setAccessible(true);
+                    Concierge_BundleWiring_getClassLoader_Method = Concierge_BundleWiring_Class.getMethod("getClassLoader");
+                    Concierge_BundleWiring_getClassLoader_Method.setAccessible(true);
+                }
+
+                Object wiring = Concierge_BundleImpl_Adapt_Method.invoke(bundle, new Object[] {Concierge_BundleWiring_Class});
+                ClassLoader cl = (ClassLoader)Concierge_BundleWiring_getClassLoader_Method.invoke(wiring);
+                return cl;
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+                return null;
+            }
+        }
+
+        LOG.warn("No classloader for Concierge platform for bundle "+bundle.getSymbolicName());
         return null;
     }
 }
