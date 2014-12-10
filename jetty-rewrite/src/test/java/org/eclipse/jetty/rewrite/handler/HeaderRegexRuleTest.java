@@ -15,7 +15,6 @@
 // You may elect to redistribute this code under either of these licenses.
 // ========================================================================
 //
-/* Some portions of this code are Copyright (c) 2014, Yahoo! Inc. All rights reserved. */
 package org.eclipse.jetty.rewrite.handler;
 
 
