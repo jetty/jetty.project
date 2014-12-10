@@ -18,25 +18,33 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.util.Queue;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.IStream;
+import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.ConcurrentArrayQueue;
 
 class HTTP2ServerConnection extends HTTP2Connection
-{
-    // TODO the recycle pool of HttpChannelOverHTTP2 should be here
-    
+{    
     private final ServerSessionListener listener;
+    private final Queue<HttpChannelOverHTTP2> channels = new ConcurrentArrayQueue<>();
+    private final HttpConfiguration httpConfig;
 
-    HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int inputBufferSize, boolean dispatchIO, ServerSessionListener listener)
+    HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, Parser parser, ISession session, int inputBufferSize, boolean dispatchIO, ServerSessionListener listener)
     {
         super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize, dispatchIO);
         this.listener = listener;
+        this.httpConfig = httpConfig;
     }
 
     @Override
@@ -56,5 +64,43 @@ class HTTP2ServerConnection extends HTTP2Connection
         {
             LOG.info("Failure while notifying listener " + listener, x);
         }
+    }
+
+    public HttpChannelOverHTTP2 newHttpChannelOverHTTP2(Connector connector, Stream stream)
+    {
+        HttpChannelOverHTTP2 channel = channels.poll();
+        if (channel!=null)
+        {
+            channel.getHttp2Transport().setStream((IStream)stream);
+            if (LOG.isDebugEnabled())
+                LOG.debug("recycled :{}/{}",channel,this);
+        }
+        else
+        {
+            channel = new HttpChannelOverHTTP2(connector, httpConfig, getEndPoint(), new HttpTransportOverHTTP2(connector, httpConfig, getEndPoint(), (IStream)stream))
+            {
+                @Override
+                public void onCompleted()
+                {
+                    super.onCompleted();
+                    recycle();
+                    channels.add(this);
+                } 
+            };
+            if (LOG.isDebugEnabled())
+                LOG.debug("new :{}/{}",channel,this);
+        }
+        stream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
+        return channel;
+    }
+    
+    public boolean onNewStream(Connector connector, Stream stream, HeadersFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing {} on {}", frame, stream);
+
+        HttpChannelOverHTTP2 channel = newHttpChannelOverHTTP2(connector,stream);
+        channel.onRequest(frame);
+        return frame.isEndStream() ? false : true;
     }
 }

@@ -38,7 +38,7 @@ import org.junit.Test;
 
 public class HpackPerfTest
 {
-    int _maxHeaderTableSize=4*1024;
+    int _maxDynamicTableSize=4*1024;
     int _unencodedSize;
     int _encodedSize;
     
@@ -52,17 +52,17 @@ public class HpackPerfTest
     @After
     public void after()
     {        
-        System.err.printf("headertable=%d unencoded=%d encoded=%d p=%3.1f%%%n",_maxHeaderTableSize,_unencodedSize,_encodedSize,100.0*_encodedSize/_unencodedSize);
+        System.err.printf("dynamictable=%d unencoded=%d encoded=%d p=%3.1f%%%n",_maxDynamicTableSize,_unencodedSize,_encodedSize,100.0*_encodedSize/_unencodedSize);
 
     }
     
     @Test
     public void simpleTest() throws Exception
     {
-        runStories(_maxHeaderTableSize);
+        runStories(_maxDynamicTableSize);
     }
     
-    private void runStories(int maxHeaderTableSize) throws Exception
+    private void runStories(int maxDynamicTableSize) throws Exception
     {
         // Find files
         File data = MavenTestingUtils.getTestResourceDir("data");
@@ -101,7 +101,7 @@ public class HpackPerfTest
         {
             if (type.equals(story.get("context")))
             {
-                HpackEncoder encoder = new HpackEncoder(_maxHeaderTableSize,_maxHeaderTableSize);
+                HpackEncoder encoder = new HpackEncoder(_maxDynamicTableSize,_maxDynamicTableSize);
                 
                 // System.err.println(story);
                 Object[] cases = (Object[])story.get("cases");

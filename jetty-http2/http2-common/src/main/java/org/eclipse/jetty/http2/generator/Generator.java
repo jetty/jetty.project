@@ -67,7 +67,7 @@ public class Generator
 
     public void setHeaderTableSize(int headerTableSize)
     {
-        hpackEncoder.setRemoteMaxHeaderTableSize(headerTableSize);
+        hpackEncoder.setRemoteMaxDynamicTableSize(headerTableSize);
     }
 
     public void setMaxFrameSize(int maxFrameSize)

@@ -32,6 +32,7 @@ import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceRegistration;
 import org.osgi.util.tracker.BundleTracker;
+import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * JettyBootstrapActivator
@@ -56,13 +57,11 @@ public class JettyBootstrapActivator implements BundleActivator
 
     private ServiceRegistration _registeredServer;
 
-    private ServiceWatcher _jettyContextHandlerTracker;
-
+    private ServiceTracker _contextHandlerTracker;
+    
     private PackageAdminServiceTracker _packageAdminServiceTracker;
 
     private BundleTracker _webBundleTracker;
-
-    private BundleContext _bundleContext;
 
     private JettyServerServiceTracker _jettyServerServiceTracker;
     
@@ -79,8 +78,8 @@ public class JettyBootstrapActivator implements BundleActivator
      */
     public void start(final BundleContext context) throws Exception
     {
+        try {
         INSTANCE = this;
-        _bundleContext = context;
 
         // track other bundles and fragments attached to this bundle that we
         // should activate.
@@ -90,12 +89,12 @@ public class JettyBootstrapActivator implements BundleActivator
         _jettyServerServiceTracker = new JettyServerServiceTracker();
         context.addServiceListener(_jettyServerServiceTracker, "(objectclass=" + Server.class.getName() + ")");
 
-        // track ContextHandler class instances and deploy them to one of the known Servers
-        _jettyContextHandlerTracker = new ServiceWatcher();
-        context.addServiceListener(_jettyContextHandlerTracker, "(objectclass=" + ContextHandler.class.getName() + ")");
-
         // Create a default jetty instance right now.
         Server defaultServer = DefaultJettyAtJettyHomeHelper.startJettyAtJettyHome(context);
+        
+        // track ContextHandler class instances and deploy them to one of the known Servers
+        _contextHandlerTracker = new ServiceTracker(context, context.createFilter("(objectclass=" + ContextHandler.class.getName() + ")"), new ServiceWatcher());
+        _contextHandlerTracker.open();
 
         //Create a bundle tracker to help deploy webapps and ContextHandlers
         BundleWatcher bundleTrackerCustomizer = new BundleWatcher();
@@ -103,6 +102,7 @@ public class JettyBootstrapActivator implements BundleActivator
         _webBundleTracker =  new BundleTracker(context, Bundle.ACTIVE | Bundle.STOPPING, bundleTrackerCustomizer);
         bundleTrackerCustomizer.setBundleTracker(_webBundleTracker);
         bundleTrackerCustomizer.open();
+        } catch (Exception e) { e.printStackTrace();}
     }
     
     
@@ -123,10 +123,10 @@ public class JettyBootstrapActivator implements BundleActivator
                 _webBundleTracker.close();
                 _webBundleTracker = null;
             }
-            if (_jettyContextHandlerTracker != null)
+            if (_contextHandlerTracker != null)
             {
-                context.removeServiceListener(_jettyContextHandlerTracker);
-                _jettyContextHandlerTracker = null;
+                _contextHandlerTracker.close();
+                _contextHandlerTracker = null;
             }
             if (_jettyServerServiceTracker != null)
             {

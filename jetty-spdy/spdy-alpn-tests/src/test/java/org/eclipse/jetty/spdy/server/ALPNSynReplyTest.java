@@ -52,7 +52,7 @@ public class ALPNSynReplyTest extends AbstractALPNTest
             @Override
             public List<String> protocols()
             {
-                return Arrays.asList("test");
+                return Arrays.asList("http/1.1");
             }
 
             @Override
@@ -111,7 +111,7 @@ public class ALPNSynReplyTest extends AbstractALPNTest
             @Override
             public List<String> protocols()
             {
-                return Arrays.asList("test");
+                return Arrays.asList("http/1.1");
             }
 
             @Override

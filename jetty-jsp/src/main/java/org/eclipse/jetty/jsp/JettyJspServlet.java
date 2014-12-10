@@ -75,25 +75,30 @@ public class JettyJspServlet extends JspServlet
         }
         
         String pathInContext = URIUtil.addPaths(servletPath,pathInfo);
+        String jspFile = getInitParameter("jspFile");
         
-        if (pathInContext.endsWith("/"))
+        //if the request is for a jsp file then fall through to the jsp servlet
+        if (jspFile == null)
         {
-            //dispatch via forward to the default servlet
-            getServletContext().getNamedDispatcher("default").forward(req, resp);
-            return;
-        }
-        else
-        {      
-            //check if it resolves to a directory
-            Resource resource = ((ContextHandler.Context)getServletContext()).getContextHandler().getResource(pathInContext);           
-            if (resource!=null && resource.isDirectory())
+            if (pathInContext.endsWith("/"))
             {
                 //dispatch via forward to the default servlet
                 getServletContext().getNamedDispatcher("default").forward(req, resp);
                 return;
             }
+            else
+            {      
+                //check if it resolves to a directory
+                Resource resource = ((ContextHandler.Context)getServletContext()).getContextHandler().getResource(pathInContext);           
+                if (resource!=null && resource.isDirectory())
+                {
+                    //dispatch via forward to the default servlet
+                    getServletContext().getNamedDispatcher("default").forward(req, resp);
+                    return;
+                }
+            }
         }
-        
+
         //fall through to the normal jsp servlet handling
         super.service(req, resp);
     }

@@ -349,11 +349,27 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         // Finish consuming the request
         // If we are still expecting
         if (_channel.isExpecting100Continue())
+        {
             // close to seek EOF
             _parser.close();
+        }
         else if (_parser.inContentState() && _generator.isPersistent())
-            // Complete reading the request
-            _channel.getRequest().getHttpInput().consumeAll();
+        {
+            // If we are async, then we have problems to complete neatly
+            if (_channel.getRequest().getHttpInput().isAsync())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("unconsumed async input {}", this);
+                _channel.abort(new IOException("unconsumed input"));
+            }
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("unconsumed input {}", this);
+                // Complete reading the request
+                _channel.getRequest().getHttpInput().consumeAll();
+            }
+        }
 
         // Reset the channel, parsers and generator
         _channel.recycle();
