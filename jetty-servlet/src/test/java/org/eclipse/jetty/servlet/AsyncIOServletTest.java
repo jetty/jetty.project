@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.servlet;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.assertThat;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -30,10 +27,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.WriteListener;
 import javax.servlet.http.HttpServlet;
@@ -47,6 +44,13 @@ import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class AsyncIOServletTest
 {
@@ -144,6 +148,73 @@ public class AsyncIOServletTest
 
             Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
             Assert.assertEquals("500", response.getCode());
+        }
+    }
+
+    @Test
+    public void testAsyncReadIdleTimeout() throws Exception
+    {
+        final int status = 567;
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            {
+                final AsyncContext asyncContext = request.startAsync(request, response);
+                asyncContext.setTimeout(0);
+                final ServletInputStream inputStream = request.getInputStream();
+                inputStream.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while (inputStream.isReady() && !inputStream.isFinished())
+                            inputStream.read();
+                    }
+
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                    }
+
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        response.setStatus(status);
+                        // Do not put Connection: close header here, the test
+                        // verifies that the server closes no matter what.
+                        asyncContext.complete();
+                    }
+                });
+            }
+        });
+        server.stop();
+        long idleTimeout = 1000;
+        connector.setIdleTimeout(idleTimeout);
+        server.start();
+
+        String data1 = "0123456789";
+        String data2 = "ABCDEF";
+        // Only send the first chunk of data and then let it idle timeout.
+        String request = "GET " + path + " HTTP/1.1\r\n" +
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "Content-Length: " + (data1.length() + data2.length()) + "\r\n" +
+                "\r\n" +
+                data1;
+
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = client.getOutputStream();
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            SimpleHttpParser parser = new SimpleHttpParser();
+            SimpleHttpResponse response = parser.readResponse(new BufferedReader(new InputStreamReader(client.getInputStream(), "UTF-8")));
+
+            assertEquals(String.valueOf(status), response.getCode());
+
+            // Make sure the connection was closed by the server.
+            assertEquals(-1, client.getInputStream().read());
         }
     }
 

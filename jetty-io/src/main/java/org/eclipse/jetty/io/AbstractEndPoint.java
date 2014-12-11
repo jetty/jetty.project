@@ -150,7 +150,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         boolean fillFailed = _fillInterest.onFail(timeout);
         boolean writeFailed = _writeFlusher.onFail(timeout);
         
-        // If the endpoint is half closed and there was no onFail handling, the close here
+        // If the endpoint is half closed and there was no fill/write handling, then close here.
         // This handles the situation where the connection has completed its close handling 
         // and the endpoint is half closed, but the other party does not complete the close.
         // This perhaps should not check for half closed, however the servlet spec case allows

@@ -367,7 +367,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (LOG.isDebugEnabled())
                     LOG.debug("unconsumed input {}", this);
                 // Complete reading the request
-                _channel.getRequest().getHttpInput().consumeAll();
+                if (!_channel.getRequest().getHttpInput().consumeAll())
+                    _channel.abort();
             }
         }
 

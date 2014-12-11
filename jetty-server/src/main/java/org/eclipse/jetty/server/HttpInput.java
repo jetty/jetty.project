@@ -319,10 +319,14 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         _channelState.onReadPossible();
     }
 
-    public void consumeAll()
+    public boolean consumeAll()
     {
         synchronized (lock())
-        {   
+        {
+            // Don't bother reading if we already know there was an error.
+            if (_onError != null)
+                return false;
+
             try
             {
                 while (!isFinished())
@@ -333,10 +337,12 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                     else
                         consume(item, remaining(item));
                 }
+                return true;
             }
             catch (IOException e)
             {
                 LOG.debug(e);
+                return false;
             }
         }
     }
