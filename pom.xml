@@ -33,6 +33,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.2</version>
         <configuration>
           <source>1.7</source>
           <target>1.7</target>
@@ -864,21 +865,9 @@
     </profile>
     <profile>
       <id>compact3</id>
-      <build>
-        <plugins>
-          <plugin>
-            <groupId>org.apache.maven.plugins</groupId>
-            <artifactId>maven-compiler-plugin</artifactId>
-            <configuration>
-              <source>7</source>
-              <target>8</target>
-              <compilerArguments>
-                <profile>compact3</profile>
-              </compilerArguments>
-            </configuration>
-          </plugin>
-        </plugins>
-      </build>
+      <modules>
+        <module>aggregates/jetty-all-compact3</module>
+      </modules>
     </profile>
     <profile>
       <id>api-change</id>
