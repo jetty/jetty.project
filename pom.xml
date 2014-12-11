@@ -753,7 +753,6 @@
         </plugins>
       </build>
     </profile>
-    
     <profile>
       <id>eclipse-release</id>
       <modules>
@@ -858,6 +857,22 @@
                    </script>
                 ]]>
               </header>
+            </configuration>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
+      <id>compact3</id>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-compiler-plugin</artifactId>
+            <configuration>
+              <compilerArguments>
+                <profile>compact3</profile>
+              </compilerArguments>
             </configuration>
           </plugin>
         </plugins>
