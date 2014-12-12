@@ -174,6 +174,10 @@ public class OSGiWebInfConfiguration extends WebInfConfiguration
             
             for (Bundle b : bundles)
             {
+                //skip bundles that are not installed
+                if (b.getState() == Bundle.UNINSTALLED)
+                    continue;
+                
                 //add to context attribute storing associated fragments and required bundles
                 fragsAndReqsBundles.add(b);
                 File f = BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(b);

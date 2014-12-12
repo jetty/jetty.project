@@ -128,6 +128,9 @@ public class DefaultJettyAtJettyHomeHelper
             jettyHomeBundleSysProp = Util.resolvePropertyValue(jettyHomeBundleSysProp);
             for (Bundle b : bundleContext.getBundles())
             {
+                if (b.getState() == Bundle.UNINSTALLED)
+                    continue;
+                
                 if (b.getSymbolicName().equals(jettyHomeBundleSysProp))
                 {
                     jettyHomeBundle = b;
