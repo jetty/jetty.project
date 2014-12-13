@@ -46,7 +46,6 @@ import org.eclipse.jetty.util.security.Credential;
 import org.eclipse.jetty.util.security.Password;
 
 /**
- * @deprecated use *ServerAuthentication
  * @version $Rev: 4792 $ $Date: 2009-03-18 22:55:52 +0100 (Wed, 18 Mar 2009) $
  */
 public class BaseAuthModule implements ServerAuthModule, ServerAuthContext

@@ -150,7 +150,8 @@ public class FormAuthModule extends BaseAuthModule
         HttpSession session = request.getSession(mandatory);
         
         // not mandatory or its the login or login error page don't authenticate
-        if (!mandatory || isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()))) return AuthStatus.SUCCESS;
+        if (!mandatory || isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()))) 
+            return AuthStatus.SUCCESS;  // TODO return null for do nothing?
 
         try
         {
