@@ -164,6 +164,16 @@ public class JettyRunForkedMojo extends JettyRunMojo
     private Resource originalBaseResource;
     
     
+
+    /**
+     * if true, the QuickStart mechanism is enabled
+     * 
+     * @parameter expression="true" default-value="true"
+     */
+    protected boolean enableQuickStart;
+    
+    
+    
     /**
      * ShutdownThread
      *
@@ -270,14 +280,17 @@ public class JettyRunForkedMojo extends JettyRunMojo
             //set the webapp up to do very little other than generate the quickstart-web.xml
             webApp.setCopyWebDir(false);
             webApp.setCopyWebInf(false);
-            webApp.setGenerateQuickStart(true);
-         
-            if (!forkWebXml.getParentFile().exists())
-                forkWebXml.getParentFile().mkdirs();
-            if (!forkWebXml.exists())
-                forkWebXml.createNewFile();
+            webApp.setGenerateQuickStart(enableQuickStart);
+
+            if (enableQuickStart)
+            {
+                if (!forkWebXml.getParentFile().exists())
+                    forkWebXml.getParentFile().mkdirs();
+                if (!forkWebXml.exists())
+                    forkWebXml.createNewFile();
             
-            webApp.setQuickStartWebDescriptor(Resource.newResource(forkWebXml));
+                webApp.setQuickStartWebDescriptor(Resource.newResource(forkWebXml));
+            }
             
             //add webapp to our fake server instance
             server.addWebApplication(webApp);
