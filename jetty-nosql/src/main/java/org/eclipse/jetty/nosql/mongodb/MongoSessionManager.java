@@ -42,6 +42,8 @@ import com.mongodb.BasicDBObject;
 import com.mongodb.DBCollection;
 import com.mongodb.DBObject;
 import com.mongodb.MongoException;
+import com.mongodb.WriteConcern;
+import com.mongodb.WriteResult;
 
 
 /**
@@ -268,7 +270,7 @@ public class MongoSessionManager extends NoSqlSessionManager
                         Long currentExpiry = (Long)o.get(__EXPIRY);
                         if (currentMaxIdle != null && getMaxInactiveInterval() > 0 && getMaxInactiveInterval() < currentMaxIdle)
                             sets.put(__MAX_IDLE, getMaxInactiveInterval());
-                        if (currentExpiry != null && expiry > 0 && expiry < currentExpiry)
+                        if (currentExpiry != null && expiry > 0 && expiry != currentExpiry)
                             sets.put(__EXPIRY, currentExpiry);
                     }
                 }
@@ -302,9 +304,11 @@ public class MongoSessionManager extends NoSqlSessionManager
             if (!unsets.isEmpty())
                 update.put("$unset",unsets);
 
-            _dbSessions.update(key,update,upsert,false);
-            __log.debug("MongoSessionManager:save:db.sessions.update( {}, {}, true) ", key, update);
+            _dbSessions.update(key,update,upsert,false,WriteConcern.SAFE);
 
+            if (__log.isDebugEnabled())
+                __log.debug("MongoSessionManager:save:db.sessions.update( {}, {} )", key, update);
+           
             if (activateAfterSave)
                 session.didActivate();
 
@@ -421,7 +425,7 @@ public class MongoSessionManager extends NoSqlSessionManager
                 update.put("$set",sets);
             }            
             
-            _dbSessions.update(key,update,false,false);
+            _dbSessions.update(key,update,false,false,WriteConcern.SAFE);
             
             session.didActivate();
 
@@ -520,7 +524,7 @@ public class MongoSessionManager extends NoSqlSessionManager
             BasicDBObject unsets = new BasicDBObject();
             unsets.put(getContextKey(),1);
             remove.put("$unset",unsets);
-            _dbSessions.update(key,remove);
+            _dbSessions.update(key,remove,false,false,WriteConcern.SAFE);
 
             return true;
         }
@@ -556,7 +560,7 @@ public class MongoSessionManager extends NoSqlSessionManager
             update.put("$set",sets);
                         
             BasicDBObject key = new BasicDBObject(__ID,idInCluster);
-            _dbSessions.update(key,update);
+            _dbSessions.update(key,update,false,false,WriteConcern.SAFE);
         }       
     }
     
@@ -573,7 +577,7 @@ public class MongoSessionManager extends NoSqlSessionManager
         BasicDBObject sets = new BasicDBObject();
         BasicDBObject update = new BasicDBObject(__ID, newClusterId);
         sets.put("$set", update);
-        _dbSessions.update(key, sets, false, false);
+        _dbSessions.update(key, sets, false, false,WriteConcern.SAFE);
     }
 
     /*------------------------------------------------------------ */
