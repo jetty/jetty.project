@@ -26,6 +26,7 @@ import java.util.Map;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;

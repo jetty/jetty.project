@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -53,8 +54,8 @@ import org.eclipse.jetty.client.ssl.SslBytesTest.TLSRecord.Type;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;

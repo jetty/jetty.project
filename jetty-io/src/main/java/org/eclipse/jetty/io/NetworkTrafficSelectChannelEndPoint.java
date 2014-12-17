@@ -35,7 +35,7 @@ public class NetworkTrafficSelectChannelEndPoint extends SelectChannelEndPoint
 
     private final List<NetworkTrafficListener> listeners;
 
-    public NetworkTrafficSelectChannelEndPoint(SocketChannel channel, SelectorManager.ManagedSelector selectSet, SelectionKey key, Scheduler scheduler, long idleTimeout, List<NetworkTrafficListener> listeners) throws IOException
+    public NetworkTrafficSelectChannelEndPoint(SocketChannel channel, ManagedSelector selectSet, SelectionKey key, Scheduler scheduler, long idleTimeout, List<NetworkTrafficListener> listeners) throws IOException
     {
         super(channel, selectSet, key, scheduler, idleTimeout);
         this.listeners = listeners;

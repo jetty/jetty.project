@@ -24,7 +24,6 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -46,7 +45,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
      * true if {@link ManagedSelector#destroyEndPoint(EndPoint)} has not been called
      */
     private final AtomicBoolean _open = new AtomicBoolean();
-    private final SelectorManager.ManagedSelector _selector;
+    private final ManagedSelector _selector;
     private final SelectionKey _key;
     /**
      * The desired value for {@link SelectionKey#interestOps()}
