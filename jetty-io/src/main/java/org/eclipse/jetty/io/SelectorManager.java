@@ -394,7 +394,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
          * Callback method invoked when a read or write events has been
          * detected by the {@link ManagedSelector} for this endpoint.
          */
-        void onSelected();
+        Runnable onSelected();
 
         /**
          * Callback method invoked when all the keys selected by the

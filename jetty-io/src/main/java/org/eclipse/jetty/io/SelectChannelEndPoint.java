@@ -53,6 +53,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     private int _interestOps;
     
     private final Runnable _runUpdateKey = new Runnable() { public void run() { updateKey(); } };
+    private final Runnable _runFillable = new Runnable() { public void run() { getFillInterest().fillable(); } };
+    private final Runnable _runCompleteWrite = new Runnable() { public void run() { getWriteFlusher().completeWrite(); } };
+    private final Runnable _runFillableCompleteWrite = new Runnable() { public void run() {  getFillInterest().fillable(); getWriteFlusher().completeWrite(); } };
 
     public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout)
     {
@@ -76,13 +79,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     }
 
     @Override
-    public void onSelected()
+    public Runnable onSelected()
     {
         /**
          * This method may run concurrently with {@link #changeInterests(int)}.
          */
-
-        assert _selector.isSelectorThread();
 
         while (true)
         {
@@ -117,11 +118,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                     }
                     
                     if ((readyOps & SelectionKey.OP_READ) != 0)
-                        getFillInterest().fillable();
+                    {
+                        if ((readyOps & SelectionKey.OP_WRITE) != 0)
+                            return _runFillableCompleteWrite;
+                        return _runFillable;
+                    }
                     if ((readyOps & SelectionKey.OP_WRITE) != 0)
-                        getWriteFlusher().completeWrite();
+                        return _runCompleteWrite;
 
-                    return;
+                    return null;
                 }
                 case LOCKED:
                 {

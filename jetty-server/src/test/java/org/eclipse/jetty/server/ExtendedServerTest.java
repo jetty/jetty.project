@@ -78,10 +78,10 @@ public class ExtendedServerTest extends HttpServerTestBase
         }
 
         @Override
-        public void onSelected()
+        public Runnable onSelected()
         {
             _lastSelected=System.currentTimeMillis();
-            super.onSelected();
+            return super.onSelected();
         }
 
         long getLastSelected()

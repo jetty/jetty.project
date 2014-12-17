@@ -276,7 +276,6 @@ public class SslConnectionTest
         len=5;
         while(len>0)
             len-=client.getInputStream().read(buffer);
-        Assert.assertEquals(1, _dispatches.get());
 
         client.close();
     }
@@ -308,7 +307,7 @@ public class SslConnectionTest
     public void testBlockedWrite() throws Exception
     {
         Socket client = newClient();
-        client.setSoTimeout(60000);
+        client.setSoTimeout(5000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);

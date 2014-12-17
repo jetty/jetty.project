@@ -325,12 +325,14 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 
     private void processKey(SelectionKey key)
     {
-        Object attachment = key.attachment();
+        final Object attachment = key.attachment();
         try
         {
             if (attachment instanceof SelectableEndPoint)
             {
-                ((SelectableEndPoint)attachment).onSelected();
+                Runnable task=((SelectableEndPoint)attachment).onSelected();
+                if (task!=null)
+                    _selectorManager.getExecutor().execute(task);
             }
             else if (key.isConnectable())
             {
