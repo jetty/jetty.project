@@ -51,7 +51,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
 
     private final Executor executor;
-    final Scheduler scheduler;
+    private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
     int _priorityDelta;
