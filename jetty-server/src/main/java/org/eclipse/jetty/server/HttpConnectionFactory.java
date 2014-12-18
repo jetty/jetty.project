@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;
-    private boolean _dispatchIO = true;
 
     public HttpConnectionFactory()
     {
@@ -51,19 +50,20 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _config;
     }
 
+    @Deprecated
     public boolean isDispatchIO()
     {
-        return _dispatchIO;
+        return false;
     }
 
+    @Deprecated
     public void setDispatchIO(boolean dispatchIO)
     {
-        _dispatchIO = dispatchIO;
     }
 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return configure(new HttpConnection(_config, connector, endPoint, isDispatchIO()), connector, endPoint);
+        return configure(new HttpConnection(_config, connector, endPoint, false), connector, endPoint);
     }
 }

@@ -28,7 +28,6 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.NonBlockingThread;
 
 /**
  * <p>A convenience base implementation of {@link Connection}.</p>
@@ -87,7 +86,7 @@ public abstract class AbstractConnection implements Connection
 
     protected void failedCallback(final Callback callback, final Throwable x)
     {
-        boolean dispatchFailure = isDispatchIO() && NonBlockingThread.isNonBlockingThread();
+        boolean dispatchFailure = isDispatchIO();
         if (dispatchFailure)
         {
             try

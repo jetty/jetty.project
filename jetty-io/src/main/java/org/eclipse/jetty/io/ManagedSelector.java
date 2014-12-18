@@ -28,6 +28,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -40,6 +41,9 @@ import org.eclipse.jetty.io.SelectorManager.State;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -48,22 +52,23 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * happen for registered channels. When events happen, it notifies the {@link EndPoint} associated
  * with the channel.</p>
  */
-public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
+public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable, ExecutionStrategy.Producer
 {
-    /**
-     * 
-     */
+    protected static final Logger LOG = Log.getLogger(ManagedSelector.class);
+    private final ExecutionStrategy _strategy;
     private final SelectorManager _selectorManager;
     private final AtomicReference<State> _state= new AtomicReference<>(State.PROCESSING);
     private List<Runnable> _runChanges = new ArrayList<>();
     private List<Runnable> _addChanges = new ArrayList<>();
     private final int _id;
     private Selector _selector;
-    volatile Thread _thread;
+    private Set<SelectionKey> _selectedKeys;
+    private Iterator<SelectionKey> _selections;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
         _selectorManager = selectorManager;
+        _strategy = new ExecutionStrategy.Iterative(this,selectorManager.getExecutor());
         _id = id;
         setStopTimeout(5000);
     }
@@ -84,13 +89,13 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     @Override
     protected void doStop() throws Exception
     {
-        if (SelectorManager.LOG.isDebugEnabled())
-            SelectorManager.LOG.debug("Stopping {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stopping {}", this);
         Stop stop = new Stop();
         submit(stop);
         stop.await(getStopTimeout());
-        if (SelectorManager.LOG.isDebugEnabled())
-            SelectorManager.LOG.debug("Stopped {}", this);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Stopped {}", this);
     }
 
     
@@ -108,8 +113,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         // lead to stack overflows on a busy server, so we always offer the
         // change to the queue and process the state.
 
-        if (SelectorManager.LOG.isDebugEnabled())
-            SelectorManager.LOG.debug("Queued change {}", change);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Queued change {}", change);
 
         out: while (true)
         {
@@ -151,216 +156,211 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     {
         try
         {
-            if (SelectorManager.LOG.isDebugEnabled())
-                SelectorManager.LOG.debug("Running change {}", change);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Running change {}", change);
             change.run();
         }
         catch (Throwable x)
         {
-            SelectorManager.LOG.debug("Could not run change " + change, x);
+            LOG.debug("Could not run change " + change, x);
         }
     }
 
     @Override
     public void run()
     {
-        _thread = Thread.currentThread();
-        String name = _thread.getName();
-        int priority = _thread.getPriority();
-        try
-        {
-            if (_selectorManager._priorityDelta != 0)
-                _thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, priority + _selectorManager._priorityDelta)));
-
-            _thread.setName(String.format("%s-selector-%s@%h/%d", name, _selectorManager.getClass().getSimpleName(), _selectorManager.hashCode(), _id));
-            if (SelectorManager.LOG.isDebugEnabled())
-                SelectorManager.LOG.debug("Starting {} on {}", _thread, this);
-            while (isRunning())
-                select();
-            while (isStopping())
-                select();
-        }
-        finally
-        {
-            if (SelectorManager.LOG.isDebugEnabled())
-                SelectorManager.LOG.debug("Stopped {} on {}", _thread, this);
-            _thread.setName(name);
-            if (_selectorManager._priorityDelta != 0)
-                _thread.setPriority(priority);
-        }
+        while (isRunning() || isStopping())
+            _strategy.produce();
     }
 
-    /**
-     * <p>Process changes and waits on {@link Selector#select()}.</p>
-     *
-     * @see #submit(Runnable)
-     */
-    public void select()
+
+    @Override
+    public Runnable produce()
     {
-        boolean debug = SelectorManager.LOG.isDebugEnabled();
         try
         {
-
-            // Run the changes, and only exit if we ran all changes
-            loop: while(true)
+            while (isRunning()||isStopping())
             {
-                State state=_state.get();
-                switch (state)
+                // Do we have a selections iterator
+                if (_selections==null || !_selections.hasNext())
                 {
-                    case PROCESSING:    
-                        // We can loop on _runChanges list without lock, because only access here.
-                        int size = _runChanges.size();
-                        for (int i=0;i<size;i++)
-                            runChange(_runChanges.get(i));
-                        _runChanges.clear();
-                        
+                    // No, so let's select again
 
-                        // Do we have new changes?
-                        if (!_state.compareAndSet(state, State.LOCKED))
-                            continue;
-                        if (_addChanges.isEmpty())
+
+                    // Do we have selected Keys?
+                    if (_selectedKeys!=null)
+                    {
+                        // yes, then update those keys
+                        for (SelectionKey key : _selectedKeys)
+                            updateKey(key);
+                        _selectedKeys.clear();
+                    }
+                    
+                    runChangesAndSetSelecting();
+           
+                    selectAndSetProcessing();
+                    
+                }
+                
+                // Process any selected keys
+                while (_selections.hasNext())
+                {
+                    SelectionKey key = _selections.next();
+                    
+                    if (key.isValid())
+                    {
+                        Object attachment = key.attachment();
+                        try
                         {
-                            // No, so lets go selecting
-                            _state.set(State.SELECTING);
-                            break loop;
+                            if (attachment instanceof SelectableEndPoint)
+                            {
+                                // Try to produce a task
+                                Runnable task = ((SelectableEndPoint)attachment).onSelected();
+                                if (task!=null)
+                                    return task;
+                            }
+                            else if (key.isConnectable())
+                            {
+                                processConnect(key, (Connect)attachment);
+                            }
+                            else if (key.isAcceptable())
+                            {
+                                processAccept(key);
+                            }
+                            else
+                            {
+                                throw new IllegalStateException();
+                            }
                         }
-                            
-                        // We have changes, so switch add/run lists and go keep processing
-                        List<Runnable> tmp=_runChanges;
-                        _runChanges=_addChanges;
-                        _addChanges=tmp;
-                        _state.set(State.PROCESSING);
-                        continue;
-
-                        
-                    case LOCKED:
-                        Thread.yield();
-                        continue;
-                        
-                    default:
-                        throw new IllegalStateException();    
+                        catch (CancelledKeyException x)
+                        {
+                            LOG.debug("Ignoring cancelled key for channel {}", key.channel());
+                            if (attachment instanceof EndPoint)
+                                closeNoExceptions((EndPoint)attachment);
+                        }
+                        catch (Throwable x)
+                        {
+                            LOG.warn("Could not process key for channel " + key.channel(), x);
+                            if (attachment instanceof EndPoint)
+                                closeNoExceptions((EndPoint)attachment);
+                        }
+                    }
+                    else
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Selector loop ignoring invalid key for channel {}", key.channel());
+                        Object attachment = key.attachment();
+                        if (attachment instanceof EndPoint)
+                            ((EndPoint)attachment).close();
+                    }
                 }
             }
-        
-            // Do the selecting!
-            int selected;
-            if (debug)
-            {
-                SelectorManager.LOG.debug("Selector loop waiting on select");
-                selected = _selector.select();
-                SelectorManager.LOG.debug("Selector loop woken up from select, {}/{} selected", selected, _selector.keys().size());
-            }
-            else
-                selected = _selector.select();
-
-            // We have finished selecting.  This while loop could probably be replaced with just 
-            // _state.compareAndSet(State.SELECTING, State.PROCESSING)
-            // since if state is locked by submit, the resulting state will be processing anyway.
-            // but let's be thorough and do the full loop.
-            out: while(true)
-            {
-                switch (_state.get())
-                {
-                    case SELECTING:
-                        // we were still in selecting state, so probably have
-                        // selected a key, so goto processing state to handle
-                        if (_state.compareAndSet(State.SELECTING, State.PROCESSING))
-                            continue;
-                        break out;
-                    case PROCESSING:
-                        // we were already in processing, so were woken up by a change being
-                        // submitted, so no state change needed - lets just process
-                        break out;
-                    case LOCKED:
-                        // A change is currently being submitted.  This does not matter
-                        // here so much, but we will spin anyway so we don't race it later nor
-                        // overwrite it's state change.
-                        Thread.yield();
-                        continue;
-                    default:
-                        throw new IllegalStateException();    
-                }
-            }
-
-            // Process any selected keys
-            Set<SelectionKey> selectedKeys = _selector.selectedKeys();
-            for (SelectionKey key : selectedKeys)
-            {
-                if (key.isValid())
-                {
-                    processKey(key);
-                }
-                else
-                {
-                    if (debug)
-                        SelectorManager.LOG.debug("Selector loop ignoring invalid key for channel {}", key.channel());
-                    Object attachment = key.attachment();
-                    if (attachment instanceof EndPoint)
-                        ((EndPoint)attachment).close();
-                }
-            }
-            
-            // Allow any dispatched tasks to run.
-            Thread.yield();
-
-            // Update the keys.  This is done separately to calling processKey, so that any momentary changes
-            // to the key state do not have to be submitted, as they are frequently reverted by the dispatched
-            // handling threads.
-            for (SelectionKey key : selectedKeys)
-            {
-                if (key.isValid())
-                    updateKey(key);
-            }
-            
-            selectedKeys.clear();
+            return null;  
         }
         catch (Throwable x)
         {
             if (isRunning())
-                SelectorManager.LOG.warn(x);
+                LOG.warn(x);
             else
-                SelectorManager.LOG.ignore(x);
+                LOG.ignore(x);
+            return null;  
         }
     }
-
-    private void processKey(SelectionKey key)
+    
+    private void runChangesAndSetSelecting()
     {
-        final Object attachment = key.attachment();
-        try
+
+        // Run the changes, and only exit if we ran all changes
+        loop: while(true)
         {
-            if (attachment instanceof SelectableEndPoint)
+            State state=_state.get();
+            switch (state)
             {
-                Runnable task=((SelectableEndPoint)attachment).onSelected();
-                if (task!=null)
-                    _selectorManager.getExecutor().execute(task);
+                case PROCESSING:    
+                    // We can loop on _runChanges list without lock, because only access here.
+                    int size = _runChanges.size();
+                    for (int i=0;i<size;i++)
+                        runChange(_runChanges.get(i));
+                    _runChanges.clear();
+                    
+
+                    // Do we have new changes?
+                    if (!_state.compareAndSet(state, State.LOCKED))
+                        continue;
+                    if (_addChanges.isEmpty())
+                    {
+                        // No, so lets go selecting
+                        _state.set(State.SELECTING);
+                        break loop;
+                    }
+                        
+                    // We have changes, so switch add/run lists and go keep processing
+                    List<Runnable> tmp=_runChanges;
+                    _runChanges=_addChanges;
+                    _addChanges=tmp;
+                    _state.set(State.PROCESSING);
+                    continue;
+                    
+                case LOCKED:
+                    Thread.yield();
+                    continue;
+                    
+                default:
+                    throw new IllegalStateException();    
             }
-            else if (key.isConnectable())
-            {
-                processConnect(key, (Connect)attachment);
-            }
-            else if (key.isAcceptable())
-            {
-                processAccept(key);
-            }
-            else
-            {
-                throw new IllegalStateException();
-            }
-        }
-        catch (CancelledKeyException x)
-        {
-            SelectorManager.LOG.debug("Ignoring cancelled key for channel {}", key.channel());
-            if (attachment instanceof EndPoint)
-                closeNoExceptions((EndPoint)attachment);
-        }
-        catch (Throwable x)
-        {
-            SelectorManager.LOG.warn("Could not process key for channel " + key.channel(), x);
-            if (attachment instanceof EndPoint)
-                closeNoExceptions((EndPoint)attachment);
         }
     }
 
+    private void selectAndSetProcessing() throws IOException
+    {
+        // Do the selecting!
+        if (LOG.isDebugEnabled())
+            LOG.debug("Selector loop waiting on select");
+        int selected = _selector.select();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Selector loop woken up from select, {}/{} selected", selected, _selector.keys().size());
+
+        // We have finished selecting.  This while loop could probably be replaced with just 
+        // _state.compareAndSet(State.SELECTING, State.PROCESSING)
+        // since if state is locked by submit, the resulting state will be processing anyway.
+        // but let's be thorough and do the full loop.
+        out: while(true)
+        {
+            switch (_state.get())
+            {
+                case SELECTING:
+                    // we were still in selecting state, so probably have
+                    // selected a key, so goto processing state to handle
+                    if (_state.compareAndSet(State.SELECTING, State.PROCESSING))
+                        continue;
+                    break out;
+                case PROCESSING:
+                    // we were already in processing, so were woken up by a change being
+                    // submitted, so no state change needed - lets just process
+                    break out;
+                case LOCKED:
+                    // A change is currently being submitted.  This does not matter
+                    // here so much, but we will spin anyway so we don't race it later nor
+                    // overwrite it's state change.
+                    Thread.yield();
+                    continue;
+                default:
+                    throw new IllegalStateException();    
+            }
+        }     
+
+        _selectedKeys = _selector.selectedKeys();
+        _selections = _selectedKeys.iterator();
+    }
+
+    @Override
+    public void onProductionComplete()
+    {
+        // TODO Auto-generated method stub
+        
+    }
+    
+    
     private void updateKey(SelectionKey key)
     {
         Object attachment = key.attachment();
@@ -407,7 +407,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         catch (Throwable x)
         {
             closeNoExceptions(channel);
-            SelectorManager.LOG.warn("Accept failed for channel " + channel, x);
+            LOG.warn("Accept failed for channel " + channel, x);
         }
     }
 
@@ -420,13 +420,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
         catch (Throwable x)
         {
-            SelectorManager.LOG.ignore(x);
+            LOG.ignore(x);
         }
-    }
-
-    public boolean isSelectorThread()
-    {
-        return Thread.currentThread() == _thread;
     }
 
     private EndPoint createEndPoint(SocketChannel channel, SelectionKey selectionKey) throws IOException
@@ -436,15 +431,15 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         Connection connection = _selectorManager.newConnection(channel, endPoint, selectionKey.attachment());
         endPoint.setConnection(connection);
         _selectorManager.connectionOpened(connection);
-        if (SelectorManager.LOG.isDebugEnabled())
-            SelectorManager.LOG.debug("Created {}", endPoint);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created {}", endPoint);
         return endPoint;
     }
 
     public void destroyEndPoint(EndPoint endPoint)
     {
-        if (SelectorManager.LOG.isDebugEnabled())
-            SelectorManager.LOG.debug("Destroyed {}", endPoint);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Destroyed {}", endPoint);
         Connection connection = endPoint.getConnection();
         if (connection != null)
             _selectorManager.connectionClosed(connection);
@@ -462,25 +457,10 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     {
         out.append(String.valueOf(this)).append(" id=").append(String.valueOf(_id)).append("\n");
 
-        Thread selecting = _thread;
-
-        Object where = "not selecting";
-        StackTraceElement[] trace = selecting == null ? null : selecting.getStackTrace();
-        if (trace != null)
-        {
-            for (StackTraceElement t : trace)
-                if (t.getClassName().startsWith("org.eclipse.jetty."))
-                {
-                    where = t;
-                    break;
-                }
-        }
-
         Selector selector = _selector;
         if (selector != null && selector.isOpen())
         {
             final ArrayList<Object> dump = new ArrayList<>(selector.keys().size() * 2);
-            dump.add(where);
 
             DumpKeys dumpKeys = new DumpKeys(dump);
             submit(dumpKeys);
@@ -504,6 +484,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
+
+    
     @Override
     public String toString()
     {
@@ -559,13 +541,13 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             try
             {
                 SelectionKey key = _channel.register(_selector, SelectionKey.OP_ACCEPT, null);
-                if (SelectorManager.LOG.isDebugEnabled())
-                    SelectorManager.LOG.debug("{} acceptor={}", this, key);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} acceptor={}", this, key);
             }
             catch (Throwable x)
             {
                 closeNoExceptions(_channel);
-                SelectorManager.LOG.warn(x);
+                LOG.warn(x);
             }
         }
     }
@@ -593,7 +575,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             catch (Throwable x)
             {
                 closeNoExceptions(channel);
-                SelectorManager.LOG.debug(x);
+                LOG.debug(x);
             }
         }
     }
@@ -651,8 +633,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             SocketChannel channel = connect.channel;
             if (channel.isConnectionPending())
             {
-                if (SelectorManager.LOG.isDebugEnabled())
-                    SelectorManager.LOG.debug("Channel {} timed out while connecting, closing it", channel);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Channel {} timed out while connecting, closing it", channel);
                 connect.failed(new SocketTimeoutException());
             }
         }
@@ -738,4 +720,5 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             }
         }
     }
+
 }

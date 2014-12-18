@@ -24,11 +24,8 @@ import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
-import java.util.Queue;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.util.ArrayQueue;
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -36,7 +33,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.NonBlockingThread;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
@@ -54,7 +50,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     private final Scheduler scheduler;
     private final ManagedSelector[] _selectors;
     private long _connectTimeout = DEFAULT_CONNECT_TIMEOUT;
-    int _priorityDelta;
     private long _selectorIndex;
 
     protected SelectorManager(Executor executor, Scheduler scheduler)
@@ -101,11 +96,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         _connectTimeout = milliseconds;
     }
 
-
     @ManagedAttribute("The priority delta to apply to selector threads")
+    @Deprecated
     public int getSelectorPriorityDelta()
     {
-        return _priorityDelta;
+        return 0;
     }
 
     /**
@@ -119,22 +114,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *                              delta to (may be negative)
      * @see Thread#getPriority()
      */
+    @Deprecated
     public void setSelectorPriorityDelta(int selectorPriorityDelta)
     {
-        int oldDelta = _priorityDelta;
-        _priorityDelta = selectorPriorityDelta;
-        if (oldDelta != selectorPriorityDelta && isStarted())
-        {
-            for (ManagedSelector selector : _selectors)
-            {
-                Thread thread = selector._thread;
-                if (thread != null)
-                {
-                    int deltaDiff = selectorPriorityDelta - oldDelta;
-                    thread.setPriority(Math.max(Thread.MIN_PRIORITY, Math.min(Thread.MAX_PRIORITY, thread.getPriority() - deltaDiff)));
-                }
-            }
-        }
     }
 
     /**
@@ -242,7 +224,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             ManagedSelector selector = newSelector(i);
             _selectors[i] = selector;
             selector.start();
-            execute(new NonBlockingThread(selector));
+            execute(selector);
         }
     }
 
@@ -393,6 +375,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         /**
          * Callback method invoked when a read or write events has been
          * detected by the {@link ManagedSelector} for this endpoint.
+         * @return a job that may block or null
          */
         Runnable onSelected();
 

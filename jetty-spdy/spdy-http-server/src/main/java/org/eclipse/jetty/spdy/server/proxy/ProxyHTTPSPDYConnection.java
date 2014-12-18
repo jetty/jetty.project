@@ -68,7 +68,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
 
     public ProxyHTTPSPDYConnection(Connector connector, HttpConfiguration config, EndPoint endPoint, short version, ProxyEngineSelector proxyEngineSelector)
     {
-        super(config, connector, endPoint, true);
+        super(config, connector, endPoint, false);
         this.version = version;
         this.proxyEngineSelector = proxyEngineSelector;
         this.session = new HTTPSession(version, connector);
