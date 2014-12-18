@@ -60,7 +60,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.BaseHolder.Source;
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.LifeCycle;
@@ -88,7 +88,7 @@ public class ServletContextHandler extends ContextHandler
     
     public interface ServletContainerInitializerCaller extends LifeCycle {};
 
-    protected final EnhancedInstantiator _instantiator= new EnhancedInstantiator();
+    protected final DecoratedObjectFactory _instantiator= new DecoratedObjectFactory();
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass=org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
@@ -252,7 +252,7 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void doStart() throws Exception
     {
-        setAttribute(EnhancedInstantiator.ATTR, _instantiator);
+        setAttribute(DecoratedObjectFactory.ATTR, _instantiator);
         super.doStart();
     }
     
@@ -651,7 +651,7 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     /**
      * @return The decorator list used to resource inject new Filters, Servlets and EventListeners
-     * @deprecated use getAttribute("org.eclipse.jetty.util.EnhancedInstantiator") instead
+     * @deprecated use getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") instead
      */
     @Deprecated
     public List<Decorator> getDecorators()

@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
@@ -74,23 +74,23 @@ public class DecoderFactory implements Configurable
     private static final Logger LOG = Log.getLogger(DecoderFactory.class);
 
     private final DecoderMetadataSet metadatas;
-    private final EnhancedInstantiator enhancedInstantiator;
+    private final DecoratedObjectFactory objectFactory;
     private DecoderFactory parentFactory;
     private Map<Class<?>, Wrapper> activeWrappers;
 
     public DecoderFactory(DecoderMetadataSet metadatas)
     {
-        this(metadatas, null, new EnhancedInstantiator());
+        this(metadatas, null, new DecoratedObjectFactory());
     }
 
-    public DecoderFactory(DecoderMetadataSet metadatas, DecoderFactory parentFactory, EnhancedInstantiator enhancedInstantiator)
+    public DecoderFactory(DecoderMetadataSet metadatas, DecoderFactory parentFactory, DecoratedObjectFactory objectFactory)
     {
         this.metadatas = metadatas;
         this.activeWrappers = new ConcurrentHashMap<>();
         this.parentFactory = parentFactory;
 
-        Objects.requireNonNull(enhancedInstantiator,"EnhancedInitiator cannot be null");
-        this.enhancedInstantiator = enhancedInstantiator;
+        Objects.requireNonNull(objectFactory,"EnhancedInitiator cannot be null");
+        this.objectFactory = objectFactory;
     }
 
     public Decoder getDecoderFor(Class<?> type)
@@ -179,7 +179,7 @@ public class DecoderFactory implements Configurable
         Class<? extends Decoder> decoderClass = metadata.getCoderClass();
         try
         {
-            Decoder decoder = enhancedInstantiator.createInstance(decoderClass);
+            Decoder decoder = objectFactory.createInstance(decoderClass);
             return new Wrapper(decoder,metadata);
         }
         catch (InstantiationException | IllegalAccessException e)

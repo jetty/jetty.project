@@ -25,7 +25,7 @@ import java.util.List;
 
 import javax.websocket.DeploymentException;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.jsr356.decoders.PrimitiveDecoderMetadataSet;
 import org.eclipse.jetty.websocket.jsr356.handlers.ByteArrayPartialHandler;
 import org.eclipse.jetty.websocket.jsr356.handlers.StringPartialHandler;
@@ -47,7 +47,7 @@ public class MessageHandlerFactoryTest
     {
         DecoderFactory primitivesFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE);
         metadatas = new DecoderMetadataSet();
-        decoders = new DecoderFactory(metadatas,primitivesFactory,new EnhancedInstantiator());
+        decoders = new DecoderFactory(metadatas,primitivesFactory,new DecoratedObjectFactory());
         factory = new MessageHandlerFactory();
     }
 

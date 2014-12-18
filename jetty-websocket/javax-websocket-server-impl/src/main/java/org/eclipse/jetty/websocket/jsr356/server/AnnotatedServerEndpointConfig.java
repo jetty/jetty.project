@@ -32,7 +32,7 @@ import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 
 public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 {
@@ -46,12 +46,12 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
     private Map<String, Object> userProperties;
     private List<Extension> extensions;
 
-    public AnnotatedServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno, EnhancedInstantiator enhancedInstantiator) throws DeploymentException
+    public AnnotatedServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno, DecoratedObjectFactory objectFactory) throws DeploymentException
     {
-        this(endpointClass,anno,enhancedInstantiator,null);
+        this(endpointClass,anno,objectFactory,null);
     }
 
-    public AnnotatedServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno, EnhancedInstantiator enhancedInstantiator, ServerEndpointConfig baseConfig) throws DeploymentException
+    public AnnotatedServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno, DecoratedObjectFactory objectFactory, ServerEndpointConfig baseConfig) throws DeploymentException
     {
         ServerEndpointConfig.Configurator configr = null;
 
@@ -120,7 +120,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
             }
             else
             {
-                this.configurator = new BasicServerEndpointConfigurator(enhancedInstantiator);
+                this.configurator = new BasicServerEndpointConfigurator(objectFactory);
             }
         }
         else

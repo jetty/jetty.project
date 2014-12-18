@@ -19,7 +19,7 @@
 package org.eclipse.jetty.websocket.common.extensions;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -31,7 +31,7 @@ public class WebSocketExtensionFactory extends ExtensionFactory
 {
     private WebSocketPolicy policy;
     private ByteBufferPool bufferPool;
-    private EnhancedInstantiator enhancedInstantiator;
+    private DecoratedObjectFactory objectFactory;
 
     public WebSocketExtensionFactory(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
@@ -62,7 +62,7 @@ public class WebSocketExtensionFactory extends ExtensionFactory
 
         try
         {
-            Extension ext = enhancedInstantiator.createInstance(extClass);
+            Extension ext = objectFactory.createInstance(extClass);
             if (ext instanceof AbstractExtension)
             {
                 AbstractExtension aext = (AbstractExtension)ext;
@@ -78,8 +78,8 @@ public class WebSocketExtensionFactory extends ExtensionFactory
         }
     }
     
-    public void setEnhancedInstantiator(EnhancedInstantiator enhancedInstantiator)
+    public void setEnhancedInstantiator(DecoratedObjectFactory objectFactory)
     {
-        this.enhancedInstantiator = enhancedInstantiator;
+        this.objectFactory = objectFactory;
     }
 }

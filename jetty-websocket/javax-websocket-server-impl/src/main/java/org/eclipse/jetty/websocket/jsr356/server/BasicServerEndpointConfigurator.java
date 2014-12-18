@@ -26,7 +26,7 @@ import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
@@ -35,7 +35,7 @@ public class BasicServerEndpointConfigurator extends ServerEndpointConfig.Config
 {
     private static final Logger LOG = Log.getLogger(BasicServerEndpointConfigurator.class);
     private static final String NO_SUBPROTOCOL = "";
-    private final EnhancedInstantiator enhancedInstantiator;
+    private final DecoratedObjectFactory objectFactory;
     
     /**
      * Default Constructor required, as
@@ -44,13 +44,13 @@ public class BasicServerEndpointConfigurator extends ServerEndpointConfig.Config
      */
     public BasicServerEndpointConfigurator()
     {
-        this(EnhancedInstantiator.getCurrentInstantiator());
+        this(DecoratedObjectFactory.getCurrentInstantiator());
     }
 
-    public BasicServerEndpointConfigurator(EnhancedInstantiator enhancedInstantiator)
+    public BasicServerEndpointConfigurator(DecoratedObjectFactory objectFactory)
     {
-        Objects.requireNonNull(enhancedInstantiator,"EnhancedInstantiator cannot be null");
-        this.enhancedInstantiator = enhancedInstantiator;
+        Objects.requireNonNull(objectFactory,"DecoratedObjectFactory cannot be null");
+        this.objectFactory = objectFactory;
     }
 
     @Override
@@ -69,7 +69,7 @@ public class BasicServerEndpointConfigurator extends ServerEndpointConfig.Config
         
         try
         {
-            return enhancedInstantiator.createInstance(endpointClass);
+            return objectFactory.createInstance(endpointClass);
         }
         catch (IllegalAccessException e)
         {

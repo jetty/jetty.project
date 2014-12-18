@@ -39,7 +39,7 @@ import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -75,7 +75,7 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
-    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id, EnhancedInstantiator enhancedInstantiator, SessionListener... sessionListeners)
+    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id, DecoratedObjectFactory objectFactory, SessionListener... sessionListeners)
     {
         super(requestURI, websocket, connection, sessionListeners);
         if (!(websocket instanceof AbstractJsrEventDriver))
@@ -87,8 +87,8 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         this.metadata = jsr.getMetadata();
         this.container = container;
         this.id = id;
-        this.decoderFactory = new DecoderFactory(metadata.getDecoders(),container.getDecoderFactory(),enhancedInstantiator);
-        this.encoderFactory = new EncoderFactory(metadata.getEncoders(),container.getEncoderFactory(),enhancedInstantiator);
+        this.decoderFactory = new DecoderFactory(metadata.getDecoders(),container.getDecoderFactory(),objectFactory);
+        this.encoderFactory = new EncoderFactory(metadata.getEncoders(),container.getEncoderFactory(),objectFactory);
         this.messageHandlerFactory = new MessageHandlerFactory();
         this.wrappers = new MessageHandlerWrapper[MessageType.values().length];
         this.messageHandlerSet = new HashSet<>();

@@ -25,7 +25,7 @@ import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.MessageHandler;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
@@ -65,7 +65,7 @@ public class JsrSessionTest
 
         EventDriver driver = new JsrEndpointEventDriver(policy,ei);
         DummyConnection connection = new DummyConnection();
-        session = new JsrSession(requestURI,driver,connection,container,id, new EnhancedInstantiator());
+        session = new JsrSession(requestURI,driver,connection,container,id, new DecoratedObjectFactory());
     }
 
     @Test

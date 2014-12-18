@@ -40,7 +40,7 @@ import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -85,21 +85,21 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     /** The jetty websocket client in use for this container */
     private WebSocketClient client;
 
-    protected EnhancedInstantiator enhancedInstantiator;
+    protected DecoratedObjectFactory objectFactory;
 
     public ClientContainer()
     {
         // This constructor is used with Standalone JSR Client usage.
-        this(null,new EnhancedInstantiator());
+        this(null,new DecoratedObjectFactory());
         client.setDaemon(true);
     }
     
-    public ClientContainer(Executor executor, EnhancedInstantiator enhancedInstantiator)
+    public ClientContainer(Executor executor, DecoratedObjectFactory objectFactory)
     {
-        this.enhancedInstantiator = enhancedInstantiator;
+        this.objectFactory = objectFactory;
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();
-        this.decoderFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE,null,enhancedInstantiator);
-        this.encoderFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE,null,enhancedInstantiator);
+        this.decoderFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE,null,objectFactory);
+        this.encoderFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE,null,objectFactory);
 
         EmptyClientEndpointConfig empty = new EmptyClientEndpointConfig();
         this.decoderFactory.init(empty);
@@ -110,7 +110,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         client = new WebSocketClient(new SslContextFactory(trustAll), executor);
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
         SessionFactory sessionFactory = new JsrSessionFactory(this,this,client);
-        sessionFactory.setEnhancedInstantiator(enhancedInstantiator);
+        sessionFactory.setEnhancedInstantiator(objectFactory);
         client.setSessionFactory(sessionFactory);
         addBean(client);
 
