@@ -57,7 +57,7 @@ public class HttpInputOverHTTP extends HttpInput implements Callback
         {
             try (Blocker blocker=_readBlocker.acquire())
             {            
-                _httpConnection.fillInterested(blocker);
+//                _httpConnection.fillInterested(blocker);
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} block readable on {}",this,blocker);
                 blocker.block();
@@ -104,7 +104,7 @@ public class HttpInputOverHTTP extends HttpInput implements Callback
     @Override
     protected void unready()
     {
-        _httpConnection.fillInterested(this);
+//        _httpConnection.fillInterested(this);
     }
 
     @Override
