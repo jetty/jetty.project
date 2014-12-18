@@ -20,23 +20,29 @@ package org.eclipse.jetty.http2;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Queue;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
 public class HTTP2Connection extends AbstractConnection
 {
     protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
 
+    private final Queue<Runnable> tasks = new ConcurrentArrayQueue<>();
     private final ByteBufferPool byteBufferPool;
     private final Parser parser;
     private final ISession session;
     private final int bufferSize;
+    private final ExecutionStrategy executionStrategy; // TODO: make it pluggable from outside
 
     public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize, boolean dispatchIO)
     {
@@ -45,6 +51,7 @@ public class HTTP2Connection extends AbstractConnection
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
+        this.executionStrategy = new ExecutionStrategy.Iterative(new HTTP2Producer(), executor);
     }
 
     protected ISession getSession()
@@ -72,33 +79,7 @@ public class HTTP2Connection extends AbstractConnection
     @Override
     public void onFillable()
     {
-        ByteBuffer buffer = byteBufferPool.acquire(bufferSize, false);
-        boolean readMore = read(buffer) == 0;
-        byteBufferPool.release(buffer);
-        if (readMore)
-            fillInterested();
-    }
-
-    protected int read(ByteBuffer buffer)
-    {
-        EndPoint endPoint = getEndPoint();
-        while (true)
-        {
-            int filled = fill(endPoint, buffer);
-            if (filled == 0)
-            {
-                return 0;
-            }
-            else if (filled < 0)
-            {
-                session.onShutdown();
-                return -1;
-            }
-            else
-            {
-                parser.parse(buffer);
-            }
-        }
+        executionStrategy.produce();
     }
 
     private int fill(EndPoint endPoint, ByteBuffer buffer)
@@ -123,5 +104,83 @@ public class HTTP2Connection extends AbstractConnection
             LOG.debug("Idle timeout {}ms expired on {}", getEndPoint().getIdleTimeout(), this);
         session.onIdleTimeout();
         return false;
+    }
+
+    protected void offerTask(Runnable task)
+    {
+        tasks.offer(task);
+    }
+
+    private class HTTP2Producer implements ExecutionStrategy.Producer
+    {
+        private ByteBuffer buffer;
+
+        @Override
+        public Runnable produce()
+        {
+            Runnable task = tasks.poll();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Dequeued task {}", task);
+            if (task != null)
+                return task;
+
+            boolean looping = false;
+            while (true)
+            {
+                if (buffer == null)
+                    buffer = byteBufferPool.acquire(bufferSize, false);
+
+                if (looping)
+                {
+                    while (buffer.hasRemaining())
+                    {
+                        if (parser.parse(buffer))
+                            break;
+                    }
+
+                    task = tasks.poll();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Dequeued task {}", task);
+                    if (task != null)
+                    {
+                        release();
+                        return task;
+                    }
+                }
+
+                int filled = fill(getEndPoint(), buffer);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Filled {} bytes", filled);
+
+                if (filled == 0)
+                {
+                    fillInterested();
+                    release();
+                    return null;
+                }
+                else if (filled < 0)
+                {
+                    session.onShutdown();
+                    release();
+                    return null;
+                }
+
+                looping = true;
+            }
+        }
+
+        private void release()
+        {
+            if (BufferUtil.isEmpty(buffer))
+            {
+                byteBufferPool.release(buffer);
+                buffer = null;
+            }
+        }
+
+        @Override
+        public void onProductionComplete()
+        {
+        }
     }
 }

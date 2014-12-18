@@ -16,26 +16,25 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
-
-/* ------------------------------------------------------------ */
-/** Strategies to execute Producers
+/**
+ * Strategies to execute Producers
  */
-public abstract class ExecutionStrategy 
-{    
+public abstract class ExecutionStrategy
+{
     public interface Producer
     {
         /**
          * Produce a task to run
+         *
          * @return A task to run or null if we are complete.
          */
         Runnable produce();
-        
+
         /**
          * Called to signal production is completed
          */
@@ -47,23 +46,23 @@ public abstract class ExecutionStrategy
 
     protected ExecutionStrategy(Producer producer, Executor executor)
     {
-        _producer=producer;
-        _executor=executor;
+        _producer = producer;
+        _executor = executor;
     }
-    
+
     public abstract void produce();
     
-    /* ------------------------------------------------------------ */
-    /** Simple iterative strategy.
+    /**
+     * Simple iterative strategy.
      * Iterate over production until complete and execute each task.
      */
     public static class Iterative extends ExecutionStrategy
     {
         public Iterative(Producer producer, Executor executor)
         {
-            super(producer,executor);
+            super(producer, executor);
         }
-        
+
         public void produce()
         {
             try
@@ -72,11 +71,11 @@ public abstract class ExecutionStrategy
                 while (true)
                 {
                     // produce a task
-                    Runnable task=_producer.produce(); 
-                    
-                    if (task==null)
+                    Runnable task = _producer.produce();
+
+                    if (task == null)
                         break;
-                    
+
                     // execute the task
                     _executor.execute(task);
                 }
@@ -88,15 +87,14 @@ public abstract class ExecutionStrategy
         }
     }
     
-    /* ------------------------------------------------------------ */
-    /** 
+    /**
      * A Strategy that allows threads to run the tasks that they have produced,
      * so execution is done with a hot cache (ie threads eat what they kill).
-     * <p>
-     * The phrase 'eat what you kill' comes from the hunting ethic that says a person 
-     * shouldn’t kill anything he or she doesn’t plan on eating. It was taken up in its 
-     * more general sense by lawyers, who used it to mean that an individual’s earnings 
-     * should be based on how much business that person brings to the firm and the phrase 
+     * <p/>
+     * The phrase 'eat what you kill' comes from the hunting ethic that says a person
+     * shouldn’t kill anything he or she doesn’t plan on eating. It was taken up in its
+     * more general sense by lawyers, who used it to mean that an individual’s earnings
+     * should be based on how much business that person brings to the firm and the phrase
      * is now quite common throughout the business world.  In this case, the phrase is
      * used to mean that a thread should not produce a task that it does not intend
      * to consume.  By making producers consume the task that they have just generated
@@ -107,24 +105,47 @@ public abstract class ExecutionStrategy
      */
     public static class EatWhatYouKill extends ExecutionStrategy implements Runnable
     {
-        private enum State {IDLE,PRODUCING,PENDING,PRODUCING_PENDING};
         private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
-        
+
+        public EatWhatYouKill(Producer producer, Executor executor)
+        {
+            super(producer, executor);
+        }
+
+        public void produce()
+        {
+            while (true)
+            {
+                State state = _state.get();
+                switch (state)
+                {
+                    case IDLE:
+                        if (!_state.compareAndSet(state, State.PENDING))
+                            continue;
+                        run();
+                        return;
+
+                    default:
+                        return;
+                }
+            }
+        }
+
         @Override
         public void run()
-        {      
-            // A new thread has arrived, so clear pending 
+        {
+            // A new thread has arrived, so clear pending
             // and try to set producing.
             if (!clearPendingTryProducing())
                 return;
-            
+
             while (true)
-            {                
+            {
                 // If we got here, then we are the thread that is producing
-                Runnable task=_producer.produce();
+                Runnable task = _producer.produce();
 
                 // If no task was produced
-                if (task==null)
+                if (task == null)
                 {
                     // If we are the thread that sets idle
                     if (tryIdle())
@@ -149,35 +170,35 @@ public abstract class ExecutionStrategy
 
         private boolean tryProducing()
         {
-            while(true)
+            while (true)
             {
-                State state=_state.get();
-                switch(state)
+                State state = _state.get();
+                switch (state)
                 {
                     case PENDING:
-                        if (!_state.compareAndSet(state,State.PRODUCING_PENDING))
+                        if (!_state.compareAndSet(state, State.PRODUCING_PENDING))
                             continue;
                         return true;
 
                     default:
-                        return false; 
+                        return false;
                 }
             }
         }
 
         private boolean clearProducingTryPending()
         {
-            while(true)
+            while (true)
             {
-                State state=_state.get();
-                switch(state)
+                State state = _state.get();
+                switch (state)
                 {
                     case PRODUCING:
-                        if (!_state.compareAndSet(state,State.PENDING))
+                        if (!_state.compareAndSet(state, State.PENDING))
                             continue;
                         return true;
                     case PRODUCING_PENDING:
-                        if (!_state.compareAndSet(state,State.PENDING))
+                        if (!_state.compareAndSet(state, State.PENDING))
                             continue;
                         return false;
                     default:
@@ -188,21 +209,21 @@ public abstract class ExecutionStrategy
 
         private boolean clearPendingTryProducing()
         {
-            while(true)
+            while (true)
             {
-                State state=_state.get();
-                switch(state)
+                State state = _state.get();
+                switch (state)
                 {
                     case IDLE:
                         return false;
 
                     case PENDING:
-                        if (!_state.compareAndSet(state,State.PRODUCING))
+                        if (!_state.compareAndSet(state, State.PRODUCING))
                             continue;
                         return true;
 
                     case PRODUCING_PENDING:
-                        if (!_state.compareAndSet(state,State.PRODUCING))
+                        if (!_state.compareAndSet(state, State.PRODUCING))
                             continue;
                         return false;  // Another thread is already producing
 
@@ -214,14 +235,14 @@ public abstract class ExecutionStrategy
 
         private boolean tryIdle()
         {
-            while(true)
+            while (true)
             {
-                State state=_state.get();
-                switch(state)
+                State state = _state.get();
+                switch (state)
                 {
                     case PRODUCING:
                     case PRODUCING_PENDING:
-                        if (!_state.compareAndSet(state,State.IDLE))
+                        if (!_state.compareAndSet(state, State.IDLE))
                             continue;
                         return true;
                     default:
@@ -230,28 +251,9 @@ public abstract class ExecutionStrategy
             }
         }
 
-        public EatWhatYouKill(Producer producer, Executor executor)
+        private enum State
         {
-            super(producer,executor);
-        }
-
-        public void produce()
-        {               
-            while(true)
-            {
-                State state=_state.get();
-                switch(state)
-                {
-                    case IDLE:
-                        if (!_state.compareAndSet(state,State.PENDING))
-                            continue;
-                        run();
-                        return;
-
-                    default:
-                        return;
-                }
-            }
+            IDLE, PRODUCING, PENDING, PRODUCING_PENDING
         }
     }
 }

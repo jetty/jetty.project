@@ -20,7 +20,6 @@ package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -29,6 +28,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -46,8 +46,8 @@ import org.eclipse.jetty.util.log.Logger;
 public class HttpChannelOverHTTP2 extends HttpChannel
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
-    private static final HttpField SERVER_VERSION=new PreEncodedHttpField(HttpHeader.SERVER,HttpConfiguration.SERVER_VERSION);
-    private static final HttpField POWERED_BY=new PreEncodedHttpField(HttpHeader.X_POWERED_BY,HttpConfiguration.SERVER_VERSION);
+    private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
+    private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
     private boolean _expect100Continue = false;
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
@@ -55,67 +55,75 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         super(connector, configuration, endPoint, transport, new HttpInputOverHTTP2());
     }
 
+    private IStream getStream()
+    {
+        return getHttpTransport().getStream();
+    }
+
     @Override
     public boolean isExpecting100Continue()
     {
         return _expect100Continue;
     }
-    
-    public void onRequest(HeadersFrame frame)
+
+    public Runnable onRequest(HeadersFrame frame)
     {
         MetaData.Request request = (MetaData.Request)frame.getMetaData();
         HttpFields fields = request.getFields();
-        
-        _expect100Continue = fields.contains(HttpHeader.EXPECT,HttpHeaderValue.CONTINUE.asString());
 
-        HttpFields response=getResponse().getHttpFields();
+        _expect100Continue = fields.contains(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString());
+
+        HttpFields response = getResponse().getHttpFields();
         if (getHttpConfiguration().getSendServerVersion())
             response.add(SERVER_VERSION);
         if (getHttpConfiguration().getSendXPoweredBy())
             response.add(POWERED_BY);
-        
+
         onRequest(request);
-        
+
         if (frame.isEndStream())
             onRequestComplete();
 
         if (LOG.isDebugEnabled())
         {
-            Stream stream=getHttp2Transport().getStream();
+            Stream stream = getStream();
             LOG.debug("HTTP2 Request #{}/{}:{}{} {} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(),
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
+                    request.getMethod(), request.getURI(), request.getVersion(),
                     System.lineSeparator(), fields);
         }
 
-        execute(this);
+        return this;
     }
 
-    public void onPushRequest(MetaData.Request request)
+    public Runnable onPushRequest(MetaData.Request request)
     {
         onRequest(request);
-        getRequest().setAttribute("org.eclipse.jetty.pushed",Boolean.TRUE);
+        getRequest().setAttribute("org.eclipse.jetty.pushed", Boolean.TRUE);
 
         if (LOG.isDebugEnabled())
         {
-            Stream stream=getHttp2Transport().getStream();
+            Stream stream = getStream();
             LOG.debug("HTTP2 PUSH Request #{}/{}:{}{} {} {}{}{}",
-                    stream.getId(),Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), request.getMethod(), request.getURI(), request.getVersion(),
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
+                    request.getMethod(), request.getURI(), request.getVersion(),
                     System.lineSeparator(), request.getFields());
         }
 
-        execute(this);
+        return this;
     }
-   
-    public HttpTransportOverHTTP2 getHttp2Transport()
+
+    @Override
+    public HttpTransportOverHTTP2 getHttpTransport()
     {
-        return (HttpTransportOverHTTP2)getHttpTransport();
+        return (HttpTransportOverHTTP2)super.getHttpTransport();
     }
-    
+
     @Override
     public void recycle()
     {
         super.recycle();
-        getHttp2Transport().recycle();
+        getHttpTransport().recycle();
     }
 
     @Override
@@ -124,9 +132,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         super.commit(info);
         if (LOG.isDebugEnabled())
         {
-            Stream stream=getHttp2Transport().getStream();
+            Stream stream = getStream();
             LOG.debug("HTTP2 Commit Response #{}/{}:{}{} {} {}{}{}",
-                    stream.getId(),Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getVersion(), info.getStatus(), info.getReason(),
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(), info.getVersion(), info.getStatus(), info.getReason(),
                     System.lineSeparator(), info.getFields());
         }
     }
@@ -142,10 +150,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
         if (LOG.isDebugEnabled())
         {
-            Stream stream=getHttp2Transport().getStream();
-            LOG.debug("HTTP2 Request #{}/{}: {} bytes of content", stream.getId(),Integer.toHexString(stream.getSession().hashCode()), copy.remaining());
+            Stream stream = getStream();
+            LOG.debug("HTTP2 Request #{}/{}: {} bytes of content", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), copy.remaining());
         }
-        
+
         onContent(new HttpInput.Content(copy)
         {
             @Override

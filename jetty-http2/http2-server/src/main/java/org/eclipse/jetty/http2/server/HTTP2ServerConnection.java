@@ -21,10 +21,10 @@ package org.eclipse.jetty.http2.server;
 import java.util.Queue;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
-import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -34,13 +34,13 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 
-class HTTP2ServerConnection extends HTTP2Connection
-{    
-    private final ServerSessionListener listener;
+public class HTTP2ServerConnection extends HTTP2Connection
+{
     private final Queue<HttpChannelOverHTTP2> channels = new ConcurrentArrayQueue<>();
+    private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
 
-    HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, Parser parser, ISession session, int inputBufferSize, boolean dispatchIO, ServerSessionListener listener)
+    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, Parser parser, ISession session, int inputBufferSize, boolean dispatchIO, ServerSessionListener listener)
     {
         super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize, dispatchIO);
         this.listener = listener;
@@ -51,10 +51,10 @@ class HTTP2ServerConnection extends HTTP2Connection
     public void onOpen()
     {
         super.onOpen();
-        notifyConnect(getSession());
+        notifyAccept(getSession());
     }
 
-    private void notifyConnect(ISession session)
+    private void notifyAccept(ISession session)
     {
         try
         {
@@ -66,41 +66,51 @@ class HTTP2ServerConnection extends HTTP2Connection
         }
     }
 
-    public HttpChannelOverHTTP2 newHttpChannelOverHTTP2(Connector connector, Stream stream)
+    public void onNewStream(Connector connector, IStream stream, HeadersFrame frame)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing {} on {}", frame, stream);
+        HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
+        Runnable task = channel.onRequest(frame);
+        offerTask(task);
+    }
+
+    public void onPush(Connector connector, IStream stream, MetaData.Request request)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing push {} on {}", request, stream);
+        HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
+        Runnable task = channel.onPushRequest(request);
+        offerTask(task);
+    }
+
+    private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)
     {
         HttpChannelOverHTTP2 channel = channels.poll();
-        if (channel!=null)
+        if (channel != null)
         {
-            channel.getHttp2Transport().setStream((IStream)stream);
+            channel.getHttpTransport().setStream(stream);
             if (LOG.isDebugEnabled())
-                LOG.debug("recycled :{}/{}",channel,this);
+                LOG.debug("Recycling channel {} for {}", channel, this);
         }
         else
         {
-            channel = new HttpChannelOverHTTP2(connector, httpConfig, getEndPoint(), new HttpTransportOverHTTP2(connector, httpConfig, getEndPoint(), (IStream)stream))
+            HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, this);
+            transport.setStream(stream);
+            channel = new HttpChannelOverHTTP2(connector, httpConfig, getEndPoint(), transport)
             {
                 @Override
                 public void onCompleted()
                 {
                     super.onCompleted();
                     recycle();
-                    channels.add(this);
-                } 
+                    channels.offer(this);
+                }
             };
             if (LOG.isDebugEnabled())
-                LOG.debug("new :{}/{}",channel,this);
+                LOG.debug("Creating channel {} for {}", channel, this);
         }
         stream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
         return channel;
-    }
-    
-    public boolean onNewStream(Connector connector, Stream stream, HeadersFrame frame)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("Processing {} on {}", frame, stream);
-
-        HttpChannelOverHTTP2 channel = newHttpChannelOverHTTP2(connector,stream);
-        channel.onRequest(frame);
-        return frame.isEndStream() ? false : true;
     }
 }

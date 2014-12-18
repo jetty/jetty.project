@@ -30,9 +30,7 @@ import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -47,29 +45,36 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     private final AtomicBoolean commit = new AtomicBoolean();
     private final Callback commitCallback = new CommitCallback();
     private final Connector connector;
-    private final HttpConfiguration httpConfiguration;
-    private final EndPoint endPoint;
+    private final HTTP2ServerConnection connection;
     private IStream stream;
 
-    public HttpTransportOverHTTP2(Connector connector, HttpConfiguration httpConfiguration, EndPoint endPoint, IStream stream)
+    public HttpTransportOverHTTP2(Connector connector, HTTP2ServerConnection connection)
     {
         this.connector = connector;
-        this.httpConfiguration = httpConfiguration;
-        this.endPoint = endPoint;
+        this.connection = connection;
+    }
+
+    public IStream getStream()
+    {
+        return stream;
+    }
+
+    public void setStream(IStream stream)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} setStream {}", this, stream.getId());
         this.stream = stream;
     }
 
     public void recycle()
     {
-        this.stream=null;
+        this.stream = null;
         commit.set(false);
     }
-    
-    @Override
-    public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
-    {
-        boolean isHeadRequest = head;
 
+    @Override
+    public void send(MetaData.Response info, boolean isHeadRequest, ByteBuffer content, boolean lastContent, Callback callback)
+    {
         // info != null | content != 0 | last = true => commit + send/end
         // info != null | content != 0 | last = false => commit + send
         // info != null | content == 0 | last = true => commit/end
@@ -134,9 +139,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             @Override
             public void succeeded(Stream pushStream)
             {
-                HTTP2ServerConnection connection = (HTTP2ServerConnection)endPoint.getConnection();
-                HttpChannelOverHTTP2 channel = connection.newHttpChannelOverHTTP2(connector,pushStream);                
-                channel.onPushRequest(request);
+                connection.onPush(connector, (IStream)pushStream, request);
             }
 
             @Override
@@ -147,7 +150,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             }
         });
     }
-    
+
     private void commit(MetaData.Response info, boolean endStream, Callback callback)
     {
         if (LOG.isDebugEnabled())
@@ -160,7 +163,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         HeadersFrame frame = new HeadersFrame(stream.getId(), info, null, endStream);
         stream.headers(frame, callback);
     }
-    
+
     private void send(ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
@@ -171,7 +174,6 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         DataFrame frame = new DataFrame(stream.getId(), content, lastContent);
         stream.data(frame, callback);
     }
-
 
     @Override
     public void completed()
@@ -203,17 +205,4 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 LOG.debug("HTTP2 Response #" + stream.getId() + " failed to commit", x);
         }
     }
-    
-    public void setStream(IStream stream)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} setStream {}",this, stream.getId());
-        this.stream=stream;
-    }
-
-    public Stream getStream()
-    {
-        return stream;
-    }
-
 }

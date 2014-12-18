@@ -20,9 +20,7 @@ package org.eclipse.jetty.http2.server;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentLinkedQueue;
 
-import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.IStream;
@@ -65,23 +63,21 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         return new ServerParser(byteBufferPool, listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
     }
 
-    
     @Override
     public boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher)
     {
         // Implement 9.2.2
         if (HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher))
             return false;
-            
+
         return true;
     }
-
 
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
         private final Connector connector;
         private final EndPoint endPoint;
-        
+
         public HTTPServerSessionListener(Connector connector, EndPoint endPoint)
         {
             this.connector = connector;
@@ -103,7 +99,8 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
-            return ((HTTP2ServerConnection)endPoint.getConnection()).onNewStream(connector,stream,frame)?this:null;
+            ((HTTP2ServerConnection)endPoint.getConnection()).onNewStream(connector, (IStream)stream, frame);
+            return frame.isEndStream() ? null : this;
         }
 
         @Override
@@ -142,6 +139,6 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             final Session session = stream.getSession();
             session.close(ErrorCodes.PROTOCOL_ERROR, reason, Callback.Adapter.INSTANCE);
         }
-        
+
     }
 }
