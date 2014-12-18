@@ -56,7 +56,7 @@ public class HeadersBodyParser extends BodyParser
     }
 
     @Override
-    protected boolean emptyBody()
+    protected boolean emptyBody(ByteBuffer buffer)
     {
         MetaData metaData = headerBlockParser.parse(BufferUtil.EMPTY_BUFFER, 0);
         boolean result = onHeaders(0, 0, false, metaData);
@@ -77,12 +77,14 @@ public class HeadersBodyParser extends BodyParser
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_headers_frame");
                     }
 
                     // For now we don't support HEADERS frames that don't have END_HEADERS.
                     if (!hasFlag(Flags.END_HEADERS))
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.INTERNAL_ERROR, "unsupported_headers_frame");
                     }
 
@@ -111,6 +113,7 @@ public class HeadersBodyParser extends BodyParser
                     loop = length == 0;
                     if (length < 0)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame_padding");
                     }
                     break;
@@ -134,6 +137,7 @@ public class HeadersBodyParser extends BodyParser
                         state = State.WEIGHT;
                         if (length < 1)
                         {
+                            BufferUtil.clear(buffer);
                             return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame");
                         }
                     }
@@ -152,6 +156,7 @@ public class HeadersBodyParser extends BodyParser
                     --length;
                     if (cursor > 0 && length <= 0)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame");
                     }
                     if (cursor == 0)
@@ -160,6 +165,7 @@ public class HeadersBodyParser extends BodyParser
                         state = State.WEIGHT;
                         if (length < 1)
                         {
+                            BufferUtil.clear(buffer);
                             return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame");
                         }
                     }
@@ -178,6 +184,7 @@ public class HeadersBodyParser extends BodyParser
                     MetaData metaData = headerBlockParser.parse(buffer, length);
                     if (metaData != null)
                     {
+                        // TODO: optimize of paddingLength==0: reset() here.
                         state = State.PADDING;
                         loop = paddingLength == 0;
                         if (onHeaders(streamId, weight, exclusive, metaData))

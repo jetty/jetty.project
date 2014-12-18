@@ -31,6 +31,7 @@ import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -49,8 +50,9 @@ public abstract class BodyParser
 
     public abstract Result parse(ByteBuffer buffer);
 
-    protected boolean emptyBody()
+    protected boolean emptyBody(ByteBuffer buffer)
     {
+        BufferUtil.clear(buffer);
         notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_frame");
         return false;
     }

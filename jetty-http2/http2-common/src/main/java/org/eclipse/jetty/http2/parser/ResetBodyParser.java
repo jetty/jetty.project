@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.frames.ResetFrame;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class ResetBodyParser extends BodyParser
 {
@@ -53,11 +54,13 @@ public class ResetBodyParser extends BodyParser
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_rst_stream_frame");
                     }
                     int length = getBodyLength();
                     if (length != 4)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_rst_stream_frame");
                     }
                     state = State.ERROR;

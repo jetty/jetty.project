@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class PriorityBodyParser extends BodyParser
 {
@@ -55,11 +56,13 @@ public class PriorityBodyParser extends BodyParser
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_priority_frame");
                     }
                     int length = getBodyLength();
                     if (length != 5)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_priority_frame");
                     }
                     state = State.EXCLUSIVE;
