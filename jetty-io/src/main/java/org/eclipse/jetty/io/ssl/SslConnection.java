@@ -869,7 +869,7 @@ public class SslConnection extends AbstractConnection
                 {
                     _sslEngine.closeOutbound();
                     flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
-                    SslConnection.this.fillInterested(); // seek reply FIN or RST or close handshake
+                    // TODO SslConnection.this.fillInterested(); // seek reply FIN or RST or close handshake
                 }
                 catch (Exception e)
                 {
@@ -888,10 +888,10 @@ public class SslConnection extends AbstractConnection
         @Override
         public void close()
         {
-            super.close();
             // First send the TLS Close Alert, then the FIN
             shutdownOutput();
             getEndPoint().close();
+            super.close();
         }
 
         @Override
