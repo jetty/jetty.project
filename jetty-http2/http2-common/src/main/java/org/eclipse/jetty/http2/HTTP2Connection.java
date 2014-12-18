@@ -42,7 +42,7 @@ public class HTTP2Connection extends AbstractConnection
     private final Parser parser;
     private final ISession session;
     private final int bufferSize;
-    private final ExecutionStrategy executionStrategy; // TODO: make it pluggable from outside
+    private final ExecutionStrategy executionStrategy; // TODO: make it pluggable from outside ?
 
     public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize, boolean dispatchIO)
     {
@@ -51,7 +51,7 @@ public class HTTP2Connection extends AbstractConnection
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.executionStrategy = new ExecutionStrategy.Iterative(new HTTP2Producer(), executor);
+        this.executionStrategy = new ExecutionStrategy.EatWhatYouKill(new HTTP2Producer(), executor);
     }
 
     protected ISession getSession()
