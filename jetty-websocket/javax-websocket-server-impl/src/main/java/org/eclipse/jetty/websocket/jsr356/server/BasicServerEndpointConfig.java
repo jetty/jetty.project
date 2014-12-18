@@ -28,7 +28,7 @@ import javax.websocket.Encoder;
 import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 
 public class BasicServerEndpointConfig implements ServerEndpointConfig
 {
@@ -41,7 +41,7 @@ public class BasicServerEndpointConfig implements ServerEndpointConfig
     private final String path;
     private Map<String, Object> userProperties;
 
-    public BasicServerEndpointConfig(Class<?> endpointClass, String path, EnhancedInstantiator enhancedInstantiator)
+    public BasicServerEndpointConfig(Class<?> endpointClass, String path, DecoratedObjectFactory objectFactory)
     {
         this.endpointClass = endpointClass;
         this.path = path;
@@ -51,10 +51,10 @@ public class BasicServerEndpointConfig implements ServerEndpointConfig
         this.subprotocols = new ArrayList<>();
         this.extensions = new ArrayList<>();
         this.userProperties = new HashMap<>();
-        this.configurator = new BasicServerEndpointConfigurator(enhancedInstantiator);
+        this.configurator = new BasicServerEndpointConfigurator(objectFactory);
     }
 
-    public BasicServerEndpointConfig(ServerEndpointConfig copy, EnhancedInstantiator enhancedInstantiator)
+    public BasicServerEndpointConfig(ServerEndpointConfig copy, DecoratedObjectFactory objectFactory)
     {
         // immutable concepts
         this.endpointClass = copy.getEndpointClass();
@@ -70,7 +70,7 @@ public class BasicServerEndpointConfig implements ServerEndpointConfig
         }
         else
         {
-            this.configurator = new BasicServerEndpointConfigurator(enhancedInstantiator);
+            this.configurator = new BasicServerEndpointConfigurator(objectFactory);
         }
 
         // mutable concepts

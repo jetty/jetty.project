@@ -27,50 +27,21 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * An instantiator enhanced by {@link Decorator} instances.
+ * An ObjectFactory enhanced by {@link Decorator} instances.
  * <p>
  * Consistent single location for all Decorator behavior, with equal behavior in a ServletContext and also for a stand
  * alone client.
  * <p>
  * Used by WebAppContext, WebSocketServerFactory, or WebSocketClient.
  */
-public class EnhancedInstantiator implements Iterable<Decorator>
+public class DecoratedObjectFactory implements Iterable<Decorator>
 {
-    private static final ThreadLocal<EnhancedInstantiator> CURRENT_INSTANTIATOR = new ThreadLocal<>();
+    private static final Logger LOG = Log.getLogger(DecoratedObjectFactory.class);
 
     /**
-     * Get the current EnhancedInstantiator that this thread is dispatched to.
-     * <p>
-     * This exists because of various {@link java.util.ServiceLoader} use that makes passing in an EnhancedInstantiator
-     * difficult.
-     *
-     * @return the current EnhancedInstantiator or null
+     * ServletContext attribute for the active DecoratedObjectFactory
      */
-    public static EnhancedInstantiator getCurrentInstantiator()
-    {
-        return CURRENT_INSTANTIATOR.get();
-    }
-
-    public static EnhancedInstantiator setCurrentInstantiator(EnhancedInstantiator instantiator)
-    {
-        EnhancedInstantiator last = CURRENT_INSTANTIATOR.get();
-        if (instantiator == null)
-        {
-            CURRENT_INSTANTIATOR.remove();
-        }
-        else
-        {
-            CURRENT_INSTANTIATOR.set(instantiator);
-        }
-        return last;
-    }
-    
-    private static final Logger LOG = Log.getLogger(EnhancedInstantiator.class);
-
-    /**
-     * ServletContext attribute for the active EnhancedInstantiator
-     */
-    public static final String ATTR = EnhancedInstantiator.class.getName();
+    public static final String ATTR = DecoratedObjectFactory.class.getName();
 
     private List<Decorator> decorators = new ArrayList<>();
 

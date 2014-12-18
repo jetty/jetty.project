@@ -34,7 +34,7 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicBinaryMessageByteBufferSocket;
@@ -183,7 +183,7 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     @Test
     public void testScan_Basic() throws Exception
     {
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(testcase.pojo,null,new EnhancedInstantiator());
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(testcase.pojo,null,new DecoratedObjectFactory());
         AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 

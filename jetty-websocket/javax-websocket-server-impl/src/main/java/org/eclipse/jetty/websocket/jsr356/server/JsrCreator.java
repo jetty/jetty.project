@@ -26,7 +26,7 @@ import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -47,13 +47,13 @@ public class JsrCreator implements WebSocketCreator
     private static final Logger LOG = Log.getLogger(JsrCreator.class);
     private final ServerEndpointMetadata metadata;
     private final ExtensionFactory extensionFactory;
-    private final EnhancedInstantiator enhancedInstantiator;
+    private final DecoratedObjectFactory objectFactory;
 
-    public JsrCreator(ServerEndpointMetadata metadata, ExtensionFactory extensionFactory, EnhancedInstantiator enhancedInstantiator)
+    public JsrCreator(ServerEndpointMetadata metadata, ExtensionFactory extensionFactory, DecoratedObjectFactory objectFactory)
     {
         this.metadata = metadata;
         this.extensionFactory = extensionFactory;
-        this.enhancedInstantiator = enhancedInstantiator;
+        this.objectFactory = objectFactory;
     }
 
     @Override
@@ -67,7 +67,7 @@ public class JsrCreator implements WebSocketCreator
         
         // Establish a copy of the config, so that the UserProperties are unique
         // per upgrade request.
-        config = new BasicServerEndpointConfig(config, enhancedInstantiator);
+        config = new BasicServerEndpointConfig(config, objectFactory);
         
         // Bug 444617 - Expose localAddress and remoteAddress for jsr modify handshake to use
         // This is being implemented as an optional set of userProperties so that
@@ -145,7 +145,7 @@ public class JsrCreator implements WebSocketCreator
                 WebSocketPathSpec wspathSpec = (WebSocketPathSpec)pathSpec;
                 String requestPath = req.getRequestPath();
                 // Wrap the config with the path spec information
-                config = new PathParamServerEndpointConfig(config,enhancedInstantiator,wspathSpec,requestPath);
+                config = new PathParamServerEndpointConfig(config,objectFactory,wspathSpec,requestPath);
             }
             return new EndpointInstance(endpoint,config,metadata);
         }

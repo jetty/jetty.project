@@ -25,7 +25,7 @@ import java.util.List;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
@@ -68,7 +68,7 @@ public class OnPartialTest
         ServerEndpoint anno = endpoint.getAnnotation(ServerEndpoint.class);
         Assert.assertThat("Endpoint: " + endpoint + " should be annotated with @ServerEndpoint",anno,notNullValue());
         
-        EnhancedInstantiator instantiator = new EnhancedInstantiator();
+        DecoratedObjectFactory instantiator = new DecoratedObjectFactory();
         
         ServerEndpointConfig config = new BasicServerEndpointConfig(endpoint,"/",instantiator);
         AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(endpoint,config,instantiator);
@@ -84,7 +84,7 @@ public class OnPartialTest
         DummyConnection connection = new DummyConnection();
         ClientContainer container = new ClientContainer();
         @SuppressWarnings("resource")
-        JsrSession session = new JsrSession(requestURI,driver,connection,container,id, new EnhancedInstantiator());
+        JsrSession session = new JsrSession(requestURI,driver,connection,container,id, new DecoratedObjectFactory());
         session.setPolicy(policy);
         session.open();
         return driver;

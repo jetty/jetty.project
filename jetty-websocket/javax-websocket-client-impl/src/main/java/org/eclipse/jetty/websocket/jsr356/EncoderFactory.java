@@ -25,7 +25,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadata;
@@ -67,23 +67,23 @@ public class EncoderFactory implements Configurable
     private static final Logger LOG = Log.getLogger(EncoderFactory.class);
 
     private final EncoderMetadataSet metadatas;
-    private final EnhancedInstantiator enhancedInstantiator;
+    private final DecoratedObjectFactory objectFactory;
     private EncoderFactory parentFactory;
     private Map<Class<?>, Wrapper> activeWrappers;
 
     public EncoderFactory(EncoderMetadataSet metadatas)
     {
-        this(metadatas,null,new EnhancedInstantiator());
+        this(metadatas,null,new DecoratedObjectFactory());
     }
 
-    public EncoderFactory(EncoderMetadataSet metadatas, EncoderFactory parentFactory, EnhancedInstantiator enhancedInstantiator)
+    public EncoderFactory(EncoderMetadataSet metadatas, EncoderFactory parentFactory, DecoratedObjectFactory objectFactory)
     {
         this.metadatas = metadatas;
         this.activeWrappers = new ConcurrentHashMap<>();
         this.parentFactory = parentFactory;
 
-        Objects.requireNonNull(enhancedInstantiator,"EnhancedInitiator cannot be null");
-        this.enhancedInstantiator = enhancedInstantiator;
+        Objects.requireNonNull(objectFactory,"EnhancedInitiator cannot be null");
+        this.objectFactory = objectFactory;
     }
 
     public Encoder getEncoderFor(Class<?> type)
@@ -173,7 +173,7 @@ public class EncoderFactory implements Configurable
         Class<? extends Encoder> encoderClass = metadata.getCoderClass();
         try
         {
-            Encoder encoder = enhancedInstantiator.createInstance(encoderClass);
+            Encoder encoder = objectFactory.createInstance(encoderClass);
             return new Wrapper(encoder,metadata);
         }
         catch (InstantiationException | IllegalAccessException e)

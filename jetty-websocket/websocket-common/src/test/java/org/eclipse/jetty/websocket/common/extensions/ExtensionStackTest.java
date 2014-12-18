@@ -24,7 +24,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -58,7 +58,7 @@ public class ExtensionStackTest
     {
         WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
         WebSocketExtensionFactory factory = new WebSocketExtensionFactory(policy,bufferPool);
-        factory.setEnhancedInstantiator(new EnhancedInstantiator());
+        factory.setEnhancedInstantiator(new DecoratedObjectFactory());
         return new ExtensionStack(factory);
     }
 

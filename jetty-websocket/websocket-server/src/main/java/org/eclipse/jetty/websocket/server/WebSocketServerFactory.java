@@ -42,7 +42,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -90,7 +90,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
-    private EnhancedInstantiator enhancedInstantiator;
+    private DecoratedObjectFactory objectFactory;
 
     public WebSocketServerFactory()
     {
@@ -165,15 +165,16 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             Thread.currentThread().setContextClassLoader(contextClassloader);
             
-            // Establish the EnhancedInstantiator thread local 
+            // Establish the DecoratedObjectFactory thread local 
             // for various ServiceLoader initiated components to use.
-            EnhancedInstantiator.setCurrentInstantiator(getEnhancedInstantiator(request));
+            DecoratedObjectFactory.setCurrentInstantiator(getEnhancedInstantiator(request));
 
             // Create Servlet Specific Upgrade Request/Response objects
             ServletUpgradeRequest sockreq = new ServletUpgradeRequest(request);
             ServletUpgradeResponse sockresp = new ServletUpgradeResponse(response);
 
             Object websocketPojo = creator.createWebSocket(sockreq, sockresp);
+            websocketPojo = objectFactory.decorate(websocketPojo);
 
             // Handle response forbidden (and similar paths)
             if (sockresp.isCommitted())
@@ -298,7 +299,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         Class<?> firstClass = registeredSocketClasses.get(0);
         try
         {
-            return enhancedInstantiator.createInstance(firstClass);
+            return objectFactory.createInstance(firstClass);
         }
         catch (InstantiationException | IllegalAccessException e)
         {
@@ -309,15 +310,15 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     protected void doStart() throws Exception
     {
-        if(this.enhancedInstantiator == null)
+        if(this.objectFactory == null)
         {
-            this.enhancedInstantiator = new EnhancedInstantiator();
+            this.objectFactory = new DecoratedObjectFactory();
         }
         
-        this.extensionFactory.setEnhancedInstantiator(this.enhancedInstantiator);
+        this.extensionFactory.setEnhancedInstantiator(this.objectFactory);
         for(SessionFactory sessionFactory: this.sessionFactories)
         {
-            sessionFactory.setEnhancedInstantiator(this.enhancedInstantiator);
+            sessionFactory.setEnhancedInstantiator(this.objectFactory);
         }
         
         super.doStart();
@@ -336,48 +337,48 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return this.creator;
     }
     
-    public EnhancedInstantiator getEnhancedInstantiator()
+    public DecoratedObjectFactory getEnhancedInstantiator()
     {
-        return enhancedInstantiator;
+        return objectFactory;
     }
 
-    public EnhancedInstantiator getEnhancedInstantiator(HttpServletRequest request)
+    public DecoratedObjectFactory getEnhancedInstantiator(HttpServletRequest request)
     {
-        if (enhancedInstantiator != null)
+        if (objectFactory != null)
         {
-            return enhancedInstantiator;
+            return objectFactory;
         }
         
         if (request == null)
         {
-            LOG.debug("Using default EnhancedInstantiator (HttpServletRequest is null)");
-            return new EnhancedInstantiator();
+            LOG.debug("Using default DecoratedObjectFactory (HttpServletRequest is null)");
+            return new DecoratedObjectFactory();
         }
         
         return getEnhancedInstantiator(request.getServletContext());
     }
     
-    public EnhancedInstantiator getEnhancedInstantiator(ServletContext context)
+    public DecoratedObjectFactory getEnhancedInstantiator(ServletContext context)
     {
-        if (enhancedInstantiator != null)
+        if (objectFactory != null)
         {
-            return enhancedInstantiator;
+            return objectFactory;
         }
         
         if (context == null)
         {
-            LOG.debug("Using default EnhancedInstantiator (ServletContext is null)");
-            return new EnhancedInstantiator();
+            LOG.debug("Using default DecoratedObjectFactory (ServletContext is null)");
+            return new DecoratedObjectFactory();
         }
 
-        enhancedInstantiator = (EnhancedInstantiator)context.getAttribute(EnhancedInstantiator.ATTR);
-        if (enhancedInstantiator == null)
+        objectFactory = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
+        if (objectFactory == null)
         {
-            LOG.debug("Using default EnhancedInstantiator (ServletContext attribute is null)");
-            enhancedInstantiator = new EnhancedInstantiator();
+            LOG.debug("Using default DecoratedObjectFactory (ServletContext attribute is null)");
+            objectFactory = new DecoratedObjectFactory();
         }
         
-        return enhancedInstantiator;
+        return objectFactory;
     }
 
     public EventDriverFactory getEventDriverFactory()
@@ -404,20 +405,20 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
     public void init(ServletContextHandler context) throws ServletException
     {
-        this.enhancedInstantiator = (EnhancedInstantiator)context.getAttribute(EnhancedInstantiator.ATTR);
-        if (this.enhancedInstantiator == null)
+        this.objectFactory = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
+        if (this.objectFactory == null)
         {
-            this.enhancedInstantiator = new EnhancedInstantiator();
+            this.objectFactory = new DecoratedObjectFactory();
         }
     }
     
     @Override
     public void init(ServletContext context) throws ServletException
     {
-        this.enhancedInstantiator = (EnhancedInstantiator)context.getAttribute(EnhancedInstantiator.ATTR);
-        if (this.enhancedInstantiator == null)
+        this.objectFactory = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
+        if (this.objectFactory == null)
         {
-            this.enhancedInstantiator = new EnhancedInstantiator();
+            this.objectFactory = new DecoratedObjectFactory();
         }
         try
         {

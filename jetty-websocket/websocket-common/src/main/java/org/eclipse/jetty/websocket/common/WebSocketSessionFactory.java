@@ -20,7 +20,7 @@ package org.eclipse.jetty.websocket.common;
 
 import java.net.URI;
 
-import org.eclipse.jetty.util.EnhancedInstantiator;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.JettyAnnotatedEventDriver;
 import org.eclipse.jetty.websocket.common.events.JettyListenerEventDriver;
@@ -50,7 +50,7 @@ public class WebSocketSessionFactory implements SessionFactory
     }
 
     @Override
-    public void setEnhancedInstantiator(EnhancedInstantiator enhancedInstantiator)
+    public void setEnhancedInstantiator(DecoratedObjectFactory objectFactory)
     {
         /* does nothing here */
     }
