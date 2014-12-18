@@ -73,6 +73,7 @@ public class HpackDecoder
             if (LOG.isDebugEnabled())
             {                
                 int l=Math.min(buffer.remaining(),16);
+                // TODO: not guaranteed the buffer has a backing array !
                 LOG.debug("decode  "+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l)+(l<buffer.remaining()?"...":""));
             }
             
