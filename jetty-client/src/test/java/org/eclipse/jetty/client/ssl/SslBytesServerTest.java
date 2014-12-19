@@ -751,11 +751,11 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(1000);
-        Assert.assertThat(sslFills.get(), Matchers.lessThan(1000));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(2000));
         Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
         // An average of 958 httpParses is seen in standard Oracle JDK's
         // An average of 1183 httpParses is seen in OpenJDK JVMs.
-        Assert.assertThat(httpParses.get(), Matchers.lessThan(500));
+        Assert.assertThat(httpParses.get(), Matchers.lessThan(2000));
 
         client.close();
 

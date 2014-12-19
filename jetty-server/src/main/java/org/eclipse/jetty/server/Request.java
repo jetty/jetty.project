@@ -213,6 +213,18 @@ public class Request implements HttpServletRequest
     {
         return _input;
     }
+
+    /* ------------------------------------------------------------ */
+    public boolean isPush()
+    {
+        return Boolean.TRUE.equals(getAttribute("org.eclipse.jetty.pushed"));
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isPushSupported()
+    {
+        return getHttpChannel().getHttpTransport().isPushSupported();
+    }
     
     /* ------------------------------------------------------------ */
     /** Get a PushBuilder associated with this request initialized as follows:<ul>
@@ -253,6 +265,9 @@ public class Request implements HttpServletRequest
      */
     public PushBuilder getPushBuilder()
     {
+        if (!isPushSupported())
+            throw new IllegalStateException();
+        
         HttpFields fields = new HttpFields(getHttpFields().size()+5);
         boolean conditional=false;
         UserIdentity user_identity=null;

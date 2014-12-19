@@ -162,6 +162,13 @@ public class HttpTransportOverSPDY implements HttpTransport
 
 
     /* ------------------------------------------------------------ */
+    @Override
+    public boolean isPushSupported()
+    {
+        return false;
+    }
+    
+    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
      */

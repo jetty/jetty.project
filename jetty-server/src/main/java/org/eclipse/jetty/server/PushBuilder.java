@@ -19,6 +19,7 @@
 package org.eclipse.jetty.server;
 
 import java.util.Collection;
+import java.util.Set;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
@@ -57,36 +58,46 @@ public class PushBuilder
         return _method;
     }
     
-    public void setMethod(String method)
+    public PushBuilder setMethod(String method)
     {
         _method = method;
+        return this;
     }
+    
     public String getQueryString()
     {
         return _queryString;
     }
-    public void setQueryString(String queryString)
+    
+    public PushBuilder setQueryString(String queryString)
     {
         _queryString = queryString;
+        return this;
     }
+    
     public String getSessionId()
     {
         return _sessionId;
     }
-    public void setSessionId(String sessionId)
+    
+    public PushBuilder setSessionId(String sessionId)
     {
         _sessionId = sessionId;
+        return this;
     }
+    
     public boolean isConditional()
     {
         return _conditional;
     }
-    public void setConditional(boolean conditional)
+    
+    public PushBuilder setConditional(boolean conditional)
     {
         _conditional = conditional;
+        return this;
     }
     
-    public Collection<String> getHeaderNames()
+    public Set<String> getHeaderNames()
     {
         return _fields.getFieldNamesCollection();
     }
@@ -96,14 +107,26 @@ public class PushBuilder
         return _fields.get(name);
     }
     
-    public void setHeader(String name,String value)
+    public PushBuilder setHeader(String name,String value)
     {
         _fields.put(name,value);
+        return this;
     }
     
     public void addHeader(String name,String value)
     {
         _fields.add(name,value);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Push a resource.
+     * Equivalent to {@link #push(String, String, String)} with null etag and 
+     * lastModified.
+     * @param uriInContext
+     */
+    public void push(String uriInContext)
+    {
+        push(uriInContext,null,null);
     }
     
     /* ------------------------------------------------------------ */
@@ -152,6 +175,4 @@ public class PushBuilder
         _request.getHttpChannel().getHttpTransport().push(push);
         
     }
-    
-    
 }

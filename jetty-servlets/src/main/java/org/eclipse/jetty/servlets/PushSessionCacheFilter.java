@@ -50,6 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class PushSessionCacheFilter implements Filter
 {
     private static final String TARGET_ATTR="PushCacheFilter.target";
+    private static final String TIMESTAMP_ATTR="PushCacheFilter.timestamp";
     private static final Logger LOG = Log.getLogger(PushSessionCacheFilter.class);
     private final ConcurrentMap<String, Target> _cache = new ConcurrentHashMap<>();
     
@@ -65,8 +66,11 @@ public class PushSessionCacheFilter implements Filter
         if (config.getInitParameter("associateDelay")!=null)
             _associateDelay=Long.valueOf(config.getInitParameter("associateDelay"));
         
+        // Add a listener that is used to collect information about associated resource,
+        // etags and modified dates
         config.getServletContext().addListener(new ServletRequestListener()
         {
+            // Collect information when request is destroyed.
             @Override
             public void requestDestroyed(ServletRequestEvent sre)
             {
@@ -93,8 +97,9 @@ public class PushSessionCacheFilter implements Filter
                         Target referer_target = _cache.get(path_in_ctx);
                         if (referer_target!=null)
                         {
-                            String sessionId = request.getSession(true).getId();
-                            Long last = referer_target._timestamp.get(sessionId);
+                            HttpSession session = request.getSession();                            
+                            ConcurrentHashMap<String, Long> timestamps = (ConcurrentHashMap<String, Long>)session.getAttribute(TIMESTAMP_ATTR);
+                            Long last = timestamps.get(referer_target._path);
                             if (last!=null && (System.currentTimeMillis()-last)<_associateDelay && !referer_target._associated.containsKey(path))
                             {
                                 if (referer_target._associated.putIfAbsent(path,target)==null)
@@ -121,7 +126,14 @@ public class PushSessionCacheFilter implements Filter
     @Override
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     { 
+        // Get Jetty request as these APIs are not yet standard
         Request baseRequest = Request.getBaseRequest(request);
+        
+        if (baseRequest.isPush())
+        {
+            LOG.info("PUSH {} if modified since {}",baseRequest,baseRequest.getHttpFields().get("If-Modified-Since"));
+        }
+        
         
         // Iterating over fields is more efficient than multiple gets
         HttpFields fields = baseRequest.getHttpFields();
@@ -129,7 +141,6 @@ public class PushSessionCacheFilter implements Filter
         
         if (LOG.isDebugEnabled())
             LOG.debug("{} {} referer={}%n",baseRequest.getMethod(),baseRequest.getRequestURI(),referer);
-
 
         HttpSession session = baseRequest.getSession(true);
         String sessionId = session.getId();
@@ -143,22 +154,27 @@ public class PushSessionCacheFilter implements Filter
             target = _cache.putIfAbsent(path,t);
             target = target==null?t:target;
         }
-        target._timestamp.put(sessionId,System.currentTimeMillis());
+        
+        ConcurrentHashMap<String, Long> timestamps = (ConcurrentHashMap<String, Long>)session.getAttribute(TIMESTAMP_ATTR);
+        if (timestamps==null)
+        {
+            timestamps=new ConcurrentHashMap<>();
+            session.setAttribute(TIMESTAMP_ATTR,timestamps);
+        }
+        
+        timestamps.put(path,System.currentTimeMillis());
         request.setAttribute(TARGET_ATTR,target);
         
         // push any associated resources
-        if (target._associated.size()>0)
+        if (baseRequest.isPushSupported() && target._associated.size()>0)
         {
             PushBuilder builder = baseRequest.getPushBuilder();
             if (!session.isNew())
                 builder.setConditional(true);
-            if (builder!=null)
+            for (Target associated : target._associated.values())
             {
-                for (Target associated : target._associated.values())
-                {
-                    LOG.info("PUSH {}->{}",path,associated._path);
-                    builder.push(associated._path,associated._etag,associated._lastModified);
-                }
+                LOG.info("PUSH {}->{}",path,associated);
+                builder.push(associated._path,associated._etag,associated._lastModified);
             }
         }
 
@@ -180,7 +196,6 @@ public class PushSessionCacheFilter implements Filter
     {
         final String _path;
         final ConcurrentMap<String,Target> _associated = new ConcurrentHashMap<>();
-        final ConcurrentMap<String,Long> _timestamp = new ConcurrentHashMap<>();
         volatile String _etag;
         volatile String _lastModified;
         
@@ -189,5 +204,10 @@ public class PushSessionCacheFilter implements Filter
             _path=path;
         }
         
+        @Override
+        public String toString()
+        {
+            return String.format("Target(p=%s,e=%s,m=%s)->%s",_path,_etag,_lastModified,_associated);
+        }
     }
 }
