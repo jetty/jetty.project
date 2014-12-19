@@ -87,13 +87,15 @@ public class SessionTest
             RemoteEndpoint remote = cliSock.getSession().getRemote();
             remote.sendStringByFuture("Hello World!");
             if (remote.getBatchMode() == BatchMode.ON)
+            {
                 remote.flush();
+            }
             srvSock.echoMessage(1,500,TimeUnit.MILLISECONDS);
             // wait for response from server
             cliSock.waitForMessage(500,TimeUnit.MILLISECONDS);
             
             Set<WebSocketSession> open = client.getOpenSessions();
-            Assert.assertThat("Open Sessions.size", open.size(), is(1));
+            Assert.assertThat("(Before Close) Open Sessions.size", open.size(), is(1));
 
             cliSock.assertMessage("Hello World!");
             cliSock.close();
@@ -101,7 +103,7 @@ public class SessionTest
             
             cliSock.waitForClose(500,TimeUnit.MILLISECONDS);
             open = client.getOpenSessions();
-            Assert.assertThat("Open Sessions.size", open.size(), is(0));
+            Assert.assertThat("(After Close) Open Sessions.size", open.size(), is(0));
         }
         finally
         {

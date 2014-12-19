@@ -177,8 +177,6 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
                 instantiator = new DecoratedObjectFactory();
             }
             
-            DecoratedObjectFactory.setCurrentInstantiator(instantiator);
-
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("Found {} classes",c.size());

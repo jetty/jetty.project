@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.Matchers.*;
+
 import java.net.URI;
 import java.nio.ByteBuffer;
 
@@ -25,7 +27,6 @@ import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
 import javax.websocket.MessageHandler;
 
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
@@ -41,8 +42,6 @@ import org.eclipse.jetty.websocket.jsr356.samples.DummyEndpoint;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.instanceOf;
 
 public class JsrSessionTest
 {
@@ -62,10 +61,10 @@ public class JsrSessionTest
         // Executor executor = null;
 
         EndpointInstance ei = new EndpointInstance(websocket,config,metadata);
-
+        
         EventDriver driver = new JsrEndpointEventDriver(policy,ei);
         DummyConnection connection = new DummyConnection();
-        session = new JsrSession(requestURI,driver,connection,container,id, new DecoratedObjectFactory());
+        session = new JsrSession(container,id,requestURI,driver,connection);
     }
 
     @Test

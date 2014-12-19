@@ -28,6 +28,8 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadataSet;
 
@@ -78,19 +80,23 @@ public class DecoderFactory implements Configurable
     private DecoderFactory parentFactory;
     private Map<Class<?>, Wrapper> activeWrappers;
 
-    public DecoderFactory(DecoderMetadataSet metadatas)
+    public DecoderFactory(WebSocketContainerScope containerScope, DecoderMetadataSet metadatas)
     {
-        this(metadatas, null, new DecoratedObjectFactory());
+        this(containerScope,metadatas,null);
+    }
+    
+    public DecoderFactory(WebSocketSessionScope sessionScope, DecoderMetadataSet metadatas, DecoderFactory parentFactory)
+    {
+        this(sessionScope.getContainerScope(),metadatas,parentFactory);
     }
 
-    public DecoderFactory(DecoderMetadataSet metadatas, DecoderFactory parentFactory, DecoratedObjectFactory objectFactory)
+    protected DecoderFactory(WebSocketContainerScope containerScope, DecoderMetadataSet metadatas, DecoderFactory parentFactory)
     {
+        Objects.requireNonNull(containerScope,"Container Scope cannot be null");
+        this.objectFactory = containerScope.getObjectFactory();
         this.metadatas = metadatas;
         this.activeWrappers = new ConcurrentHashMap<>();
         this.parentFactory = parentFactory;
-
-        Objects.requireNonNull(objectFactory,"EnhancedInitiator cannot be null");
-        this.objectFactory = objectFactory;
     }
 
     public Decoder getDecoderFor(Class<?> type)
@@ -109,6 +115,7 @@ public class DecoderFactory implements Configurable
         {
             LOG.debug("getMetadataFor({})",type);
         }
+        
         DecoderMetadata metadata = metadatas.getMetadataByType(type);
 
         if (metadata != null)

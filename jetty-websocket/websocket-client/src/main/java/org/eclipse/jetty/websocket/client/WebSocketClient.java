@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.util.Collections;
 import java.util.HashSet;
 import java.util.Locale;
 import java.util.Set;
@@ -31,6 +32,7 @@ import java.util.concurrent.Future;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectorManager;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -57,15 +59,16 @@ import org.eclipse.jetty.websocket.common.WebSocketSessionFactory;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 /**
  * WebSocketClient provides a means of establishing connections to remote websocket endpoints.
  */
-public class WebSocketClient extends ContainerLifeCycle implements SessionListener
+public class WebSocketClient extends ContainerLifeCycle implements SessionListener, WebSocketContainerScope
 {
     private static final Logger LOG = Log.getLogger(WebSocketClient.class);
 
-    private final WebSocketPolicy policy;
+    private final WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
     private final SslContextFactory sslContextFactory;
     private final WebSocketExtensionFactory extensionRegistry;
     private boolean daemon = false;
@@ -73,6 +76,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     private SessionFactory sessionFactory;
     private ByteBufferPool bufferPool;
     private Executor executor;
+    private DecoratedObjectFactory objectFactory;
     private Scheduler scheduler;
     private CookieStore cookieStore;
     private ConnectionManager connectionManager;
@@ -83,9 +87,9 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
     public WebSocketClient()
     {
-        this(null,null);
+        this((SslContextFactory)null,null);
     }
-
+    
     public WebSocketClient(Executor executor)
     {
         this(null,executor);
@@ -106,13 +110,28 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         this(sslContextFactory,executor,new MappedByteBufferPool());
     }
     
+    public WebSocketClient(WebSocketContainerScope scope)
+    {
+        this(scope.getSslContextFactory(), scope.getExecutor(), scope.getBufferPool(), scope.getObjectFactory());
+    }
+    
+    public WebSocketClient(WebSocketContainerScope scope, SslContextFactory sslContextFactory)
+    {
+        this(sslContextFactory, scope.getExecutor(), scope.getBufferPool(), scope.getObjectFactory());
+    }
+
     public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool)
+    {
+        this(sslContextFactory, executor, bufferPool, new DecoratedObjectFactory());
+    }
+
+    public WebSocketClient(SslContextFactory sslContextFactory, Executor executor, ByteBufferPool bufferPool, DecoratedObjectFactory objectFactory)
     {
         this.executor = executor;
         this.sslContextFactory = sslContextFactory;
-        this.policy = WebSocketPolicy.newClientPolicy();
         this.bufferPool = bufferPool;
-        this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
+        this.objectFactory = objectFactory;
+        this.extensionRegistry = new WebSocketExtensionFactory(this);
         
         // Bug #431459 - unregistering compression extensions till they are more stable
         this.extensionRegistry.unregister("deflate-frame");
@@ -121,7 +140,6 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
-        this.sessionFactory = new WebSocketSessionFactory(this);
         
         addBean(this.executor);
         addBean(this.sslContextFactory);
@@ -249,6 +267,16 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         if (cookieStore == null)
         {
             cookieStore = new HttpCookieStore.Empty();
+        }
+
+        if(this.sessionFactory == null)
+        {
+            this.sessionFactory = new WebSocketSessionFactory(this);
+        }
+        
+        if(this.objectFactory == null)
+        {
+            this.objectFactory = new DecoratedObjectFactory();
         }
 
         super.doStart();
@@ -390,9 +418,15 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         return this.policy.getMaxTextMessageSize();
     }
 
+    @Override
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return this.objectFactory;
+    }
+
     public Set<WebSocketSession> getOpenSessions()
     {
-        return new HashSet<>(getBeans(WebSocketSession.class));
+        return Collections.unmodifiableSet(new HashSet<>(getBeans(WebSocketSession.class)));
     }
 
     public WebSocketPolicy getPolicy()

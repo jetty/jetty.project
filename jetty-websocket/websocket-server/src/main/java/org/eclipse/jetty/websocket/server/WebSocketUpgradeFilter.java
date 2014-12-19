@@ -259,7 +259,6 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
         {
             factory.init(config.getServletContext());
             WebSocketPolicy policy = factory.getPolicy();
-            
 
             String max = config.getInitParameter("maxIdleTime");
             if (max != null)

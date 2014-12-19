@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,18 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.common.scopes;
 
-import java.net.URI;
-
-import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.api.UpgradeRequest;
+import org.eclipse.jetty.websocket.api.UpgradeResponse;
 
 /**
- * Interface for creating jetty {@link WebSocketSession} objects.
+ * Defined Scope for a WebSocket Handshake/Upgrade
  */
-public interface SessionFactory
+public interface WebSocketHandshakeScope
 {
-    public boolean supports(EventDriver websocket);
+    Class<?> getPotentialEndpointClass();
     
-    public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection);
+    UpgradeRequest getHandshakeRequest();
+    
+    UpgradeResponse getHandshakeResponse();
+    
+    WebSocketContainerScope getContainerScope();
 }

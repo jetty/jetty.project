@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -16,18 +16,16 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common;
+package org.eclipse.jetty.websocket.common.scopes;
 
-import java.net.URI;
-
-import org.eclipse.jetty.websocket.common.events.EventDriver;
+import org.eclipse.jetty.websocket.common.WebSocketSession;
 
 /**
- * Interface for creating jetty {@link WebSocketSession} objects.
+ * Defined Scope for a WebSocketSession (active connection)
  */
-public interface SessionFactory
+public interface WebSocketSessionScope
 {
-    public boolean supports(EventDriver websocket);
-    
-    public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection);
+    WebSocketSession getWebSocketSession();
+
+    WebSocketContainerScope getContainerScope();
 }
