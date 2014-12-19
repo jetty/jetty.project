@@ -361,11 +361,6 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         ContainerLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
     }
 
-    enum State
-    {
-        PROCESSING, SELECTING, LOCKED
-    }
-
     /**
      * A {@link SelectableEndPoint} is an {@link EndPoint} that wish to be
      * notified of non-blocking events by the {@link ManagedSelector}.

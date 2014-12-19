@@ -28,6 +28,7 @@ import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -37,7 +38,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.io.SelectorManager.SelectableEndPoint;
-import org.eclipse.jetty.io.SelectorManager.State;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -57,18 +57,18 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     protected static final Logger LOG = Log.getLogger(ManagedSelector.class);
     private final ExecutionStrategy _strategy;
     private final SelectorManager _selectorManager;
-    private final AtomicReference<State> _state= new AtomicReference<>(State.PROCESSING);
+    private final AtomicReference<State> _state = new AtomicReference<>(State.PROCESSING);
+    private final int _id;
     private List<Runnable> _runChanges = new ArrayList<>();
     private List<Runnable> _addChanges = new ArrayList<>();
-    private final int _id;
+    private Iterator<SelectionKey> _selections = Collections.emptyIterator();
+    private Set<SelectionKey> _selectedKeys = Collections.emptySet();
     private Selector _selector;
-    private Set<SelectionKey> _selectedKeys;
-    private Iterator<SelectionKey> _selections;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
         _selectorManager = selectorManager;
-        _strategy = new ExecutionStrategy.Iterative(this,selectorManager.getExecutor());
+        _strategy = new ExecutionStrategy.EatWhatYouKill(this, selectorManager.getExecutor());
         _id = id;
         setStopTimeout(5000);
     }
@@ -98,7 +98,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             LOG.debug("Stopped {}", this);
     }
 
-    
+
     /**
      * <p>Submits a change to be executed in the selector thread.</p>
      * <p>Changes may be submitted from any thread, and the selector thread woken up
@@ -116,9 +116,10 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         if (LOG.isDebugEnabled())
             LOG.debug("Queued change {}", change);
 
-        out: while (true)
+        out:
+        while (true)
         {
-            State state=_state.get();
+            State state = _state.get();
             switch (state)
             {
                 case PROCESSING:
@@ -129,7 +130,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                     _addChanges.add(change);
                     _state.set(State.PROCESSING);
                     break out;
-                    
+
                 case SELECTING:
                     // If we are processing
                     if (!_state.compareAndSet(State.SELECTING, State.LOCKED))
@@ -141,13 +142,13 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                     // not block and this avoids extra calls to wakeup()
                     _state.set(State.PROCESSING);
                     break out;
-                    
+
                 case LOCKED:
                     Thread.yield();
                     continue;
-                    
+
                 default:
-                    throw new IllegalStateException();    
+                    throw new IllegalStateException();
             }
         }
     }
@@ -179,34 +180,29 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     {
         try
         {
-            while (isRunning()||isStopping())
+            while (isRunning() || isStopping())
             {
-                // Do we have a selections iterator
-                if (_selections==null || !_selections.hasNext())
+                if (!_selections.hasNext())
                 {
-                    // No, so let's select again
-
-
-                    // Do we have selected Keys?
-                    if (_selectedKeys!=null)
+                    // Do we have selected keys?
+                    if (!_selectedKeys.isEmpty())
                     {
-                        // yes, then update those keys
+                        // Yes, then update those keys.
                         for (SelectionKey key : _selectedKeys)
                             updateKey(key);
                         _selectedKeys.clear();
                     }
-                    
+
                     runChangesAndSetSelecting();
-           
+
                     selectAndSetProcessing();
-                    
                 }
-                
+
                 // Process any selected keys
                 while (_selections.hasNext())
                 {
                     SelectionKey key = _selections.next();
-                    
+
                     if (key.isValid())
                     {
                         Object attachment = key.attachment();
@@ -216,7 +212,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                             {
                                 // Try to produce a task
                                 Runnable task = ((SelectableEndPoint)attachment).onSelected();
-                                if (task!=null)
+                                if (task != null)
                                     return task;
                             }
                             else if (key.isConnectable())
@@ -255,7 +251,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                     }
                 }
             }
-            return null;  
+            return null;
         }
         catch (Throwable x)
         {
@@ -263,50 +259,50 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                 LOG.warn(x);
             else
                 LOG.ignore(x);
-            return null;  
+            return null;
         }
     }
-    
+
     private void runChangesAndSetSelecting()
     {
-
         // Run the changes, and only exit if we ran all changes
-        loop: while(true)
+        loop:
+        while (true)
         {
-            State state=_state.get();
+            State state = _state.get();
             switch (state)
             {
-                case PROCESSING:    
+                case PROCESSING:
                     // We can loop on _runChanges list without lock, because only access here.
                     int size = _runChanges.size();
-                    for (int i=0;i<size;i++)
+                    for (int i = 0; i < size; i++)
                         runChange(_runChanges.get(i));
                     _runChanges.clear();
-                    
 
-                    // Do we have new changes?
                     if (!_state.compareAndSet(state, State.LOCKED))
                         continue;
+
+                    // Do we have new changes?
                     if (_addChanges.isEmpty())
                     {
-                        // No, so lets go selecting
+                        // No, so lets go selecting.
                         _state.set(State.SELECTING);
                         break loop;
                     }
-                        
-                    // We have changes, so switch add/run lists and go keep processing
-                    List<Runnable> tmp=_runChanges;
-                    _runChanges=_addChanges;
-                    _addChanges=tmp;
+
+                    // We have changes, so switch add/run lists and keep processing.
+                    List<Runnable> tmp = _runChanges;
+                    _runChanges = _addChanges;
+                    _addChanges = tmp;
                     _state.set(State.PROCESSING);
                     continue;
-                    
+
                 case LOCKED:
                     Thread.yield();
                     continue;
-                    
+
                 default:
-                    throw new IllegalStateException();    
+                    throw new IllegalStateException();
             }
         }
     }
@@ -322,32 +318,33 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 
         // We have finished selecting.  This while loop could probably be replaced with just 
         // _state.compareAndSet(State.SELECTING, State.PROCESSING)
-        // since if state is locked by submit, the resulting state will be processing anyway.
-        // but let's be thorough and do the full loop.
-        out: while(true)
+        // since if state is locked by submit, the resulting state will be PROCESSING anyway.
+        // But let's be thorough and do the full loop.
+        out:
+        while (true)
         {
             switch (_state.get())
             {
                 case SELECTING:
-                    // we were still in selecting state, so probably have
-                    // selected a key, so goto processing state to handle
+                    // We were still in selecting state, so probably have
+                    // selected a key, so goto processing state to handle.
                     if (_state.compareAndSet(State.SELECTING, State.PROCESSING))
                         continue;
                     break out;
                 case PROCESSING:
-                    // we were already in processing, so were woken up by a change being
-                    // submitted, so no state change needed - lets just process
+                    // We were already in processing, so were woken up by a change being
+                    // submitted, so no state change needed - lets just process.
                     break out;
                 case LOCKED:
-                    // A change is currently being submitted.  This does not matter
-                    // here so much, but we will spin anyway so we don't race it later nor
-                    // overwrite it's state change.
+                    // A change is currently being submitted. This does not matter
+                    // here so much, but we will spin anyway so we don't race it later
+                    // nor overwrite its state change.
                     Thread.yield();
                     continue;
                 default:
-                    throw new IllegalStateException();    
+                    throw new IllegalStateException();
             }
-        }     
+        }
 
         _selectedKeys = _selector.selectedKeys();
         _selections = _selectedKeys.iterator();
@@ -356,11 +353,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     @Override
     public void onProductionComplete()
     {
-        // TODO Auto-generated method stub
-        
     }
-    
-    
+
     private void updateKey(SelectionKey key)
     {
         Object attachment = key.attachment();
@@ -392,7 +386,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             connect.failed(x);
         }
     }
-    
+
     private void processAccept(SelectionKey key)
     {
         ServerSocketChannel server = (ServerSocketChannel)key.channel();
@@ -485,7 +479,6 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     }
 
 
-    
     @Override
     public String toString()
     {
@@ -721,4 +714,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         }
     }
 
+    private enum State
+    {
+        PROCESSING, SELECTING, LOCKED
+    }
 }
