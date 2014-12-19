@@ -187,7 +187,7 @@ public class LocalConnector extends AbstractConnector
 
         public LocalEndPoint()
         {
-            super(getScheduler(), LocalConnector.this.getIdleTimeout());
+            super(LocalConnector.this.getScheduler(), LocalConnector.this.getIdleTimeout());
             setGrowOutput(true);
         }
 

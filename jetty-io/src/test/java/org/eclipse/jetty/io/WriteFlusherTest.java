@@ -77,7 +77,7 @@ public class WriteFlusherTest
         _flusher = new WriteFlusher(_endp)
         {
             @Override
-            protected void onIncompleteFlushed()
+            protected void onIncompleteFlush()
             {
                 _flushIncomplete.set(true);
             }
@@ -275,7 +275,7 @@ public class WriteFlusherTest
         }
 
         @Override
-        protected void onIncompleteFlushed()
+        protected void onIncompleteFlush()
         {
             _scheduler.schedule(this, 1 + _random.nextInt(9), TimeUnit.MILLISECONDS);
         }
@@ -368,7 +368,7 @@ public class WriteFlusherTest
             }
 
             @Override
-            protected void onIncompleteFlushed()
+            protected void onIncompleteFlush()
             {
             }
         };
@@ -469,7 +469,7 @@ public class WriteFlusherTest
         final WriteFlusher writeFlusher = new WriteFlusher(_endPointMock)
         {
             @Override
-            protected void onIncompleteFlushed()
+            protected void onIncompleteFlush()
             {
             }
         };
@@ -529,7 +529,7 @@ public class WriteFlusherTest
         final WriteFlusher writeFlusher = new WriteFlusher(new EndPointConcurrentAccessToIncompleteWriteAndOnFailMock(writeCalledLatch, failedCalledLatch))
         {
             @Override
-            protected void onIncompleteFlushed()
+            protected void onIncompleteFlush()
             {
                 onIncompleteFlushedCalledLatch.countDown();
                 try
@@ -622,7 +622,7 @@ public class WriteFlusherTest
         final WriteFlusher writeFlusher = new WriteFlusher(endp)
         {
             @Override
-            protected void onIncompleteFlushed()
+            protected void onIncompleteFlush()
             {
                 executor.submit(new Runnable() 
                 { 

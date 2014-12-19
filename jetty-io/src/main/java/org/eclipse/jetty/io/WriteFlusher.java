@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A Utility class to help implement {@link EndPoint#write(Callback, ByteBuffer...)} by calling
  * {@link EndPoint#flush(ByteBuffer...)} until all content is written.
- * The abstract method {@link #onIncompleteFlushed()} is called when not all content has been written after a call to
+ * The abstract method {@link #onIncompleteFlush()} is called when not all content has been written after a call to
  * flush and should organise for the {@link #completeWrite()} method to be called when a subsequent call to flush
  * should  be able to make more progress.
  * <p>
@@ -275,14 +275,14 @@ abstract public class WriteFlusher
      * Abstract call to be implemented by specific WriteFlushers. It should schedule a call to {@link #completeWrite()}
      * or {@link #onFail(Throwable)} when appropriate.
      */
-    abstract protected void onIncompleteFlushed();
+    abstract protected void onIncompleteFlush();
 
     /**
      * Tries to switch state to WRITING. If successful it writes the given buffers to the EndPoint. If state transition
      * fails it'll fail the callback.
      *
      * If not all buffers can be written in one go it creates a new <code>PendingState</code> object to preserve the state
-     * and then calls {@link #onIncompleteFlushed()}. The remaining buffers will be written in {@link #completeWrite()}.
+     * and then calls {@link #onIncompleteFlush()}. The remaining buffers will be written in {@link #completeWrite()}.
      *
      * If all buffers have been written it calls callback.complete().
      *
@@ -308,7 +308,7 @@ abstract public class WriteFlusher
                     LOG.debug("flushed incomplete");
                 PendingState pending=new PendingState(buffers, callback);
                 if (updateState(__WRITING,pending))
-                    onIncompleteFlushed();
+                    onIncompleteFlush();
                 else
                     fail(pending);
                 return;
@@ -336,7 +336,7 @@ abstract public class WriteFlusher
 
 
     /**
-     * Complete a write that has not completed and that called {@link #onIncompleteFlushed()} to request a call to this
+     * Complete a write that has not completed and that called {@link #onIncompleteFlush()} to request a call to this
      * method when a call to {@link EndPoint#flush(ByteBuffer...)} is likely to be able to progress.
      *
      * It tries to switch from PENDING to COMPLETING. If state transition fails, then it does nothing as the callback
@@ -371,7 +371,7 @@ abstract public class WriteFlusher
                 if (buffers!=pending.getBuffers())
                     pending=new PendingState(buffers, pending._callback);
                 if (updateState(__COMPLETING,pending))
-                    onIncompleteFlushed();
+                    onIncompleteFlush();
                 else
                     fail(pending);
                 return;

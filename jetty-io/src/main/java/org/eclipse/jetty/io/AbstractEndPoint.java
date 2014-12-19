@@ -39,16 +39,16 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     private final FillInterest _fillInterest = new FillInterest()
     {
         @Override
-        protected boolean needsFill() throws IOException
+        protected void needsFillInterest() throws IOException
         {
-            return AbstractEndPoint.this.needsFill();
+            AbstractEndPoint.this.needsFillInterest();
         }
     };
     
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
-        protected void onIncompleteFlushed()
+        protected void onIncompleteFlush()
         {
             AbstractEndPoint.this.onIncompleteFlush();
         }
@@ -130,7 +130,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
     protected abstract void onIncompleteFlush();
 
-    protected abstract boolean needsFill() throws IOException;
+    protected abstract void needsFillInterest() throws IOException;
 
     protected FillInterest getFillInterest()
     {

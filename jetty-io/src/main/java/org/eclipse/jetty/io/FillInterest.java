@@ -60,10 +60,9 @@ public abstract class FillInterest
         }
         try
         {
-            if (needsFill())
-                fillable();
+            needsFillInterest();
         }
-        catch (IOException e)
+        catch (Throwable e)
         {
             onFail(e);
         }
@@ -119,11 +118,9 @@ public abstract class FillInterest
     /**
      * Register the read interest
      * Abstract method to be implemented by the Specific ReadInterest to
-     * enquire if a read is immediately possible and if not to schedule a future
-     * call to {@link #fillable()} or {@link #onFail(Throwable)}
+     * schedule a future call to {@link #fillable()} or {@link #onFail(Throwable)}
      *
-     * @return true if a read is possible
      * @throws IOException
      */
-    abstract protected boolean needsFill() throws IOException;
+    abstract protected void needsFillInterest() throws IOException;
 }

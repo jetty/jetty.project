@@ -227,7 +227,7 @@ public class ChannelEndPoint extends AbstractEndPoint
     }
 
     @Override
-    protected boolean needsFill() throws IOException
+    protected void needsFillInterest() throws IOException
     {
         throw new UnsupportedOperationException();
     }

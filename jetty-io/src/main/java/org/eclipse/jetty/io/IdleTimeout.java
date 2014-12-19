@@ -61,6 +61,11 @@ public abstract class IdleTimeout
         _scheduler = scheduler;
     }
 
+    public Scheduler getScheduler()
+    {
+        return _scheduler;
+    }
+    
     public long getIdleTimestamp()
     {
         return _idleTimestamp;

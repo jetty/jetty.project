@@ -19,7 +19,6 @@
 package org.eclipse.jetty.io;
 
 import static org.hamcrest.Matchers.*;
-import static org.hamcrest.Matchers.instanceOf;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertThat;
@@ -29,6 +28,7 @@ import static org.junit.Assert.fail;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.ExecutionException;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
@@ -105,7 +105,6 @@ public class ByteArrayEndPointTest
         BufferUtil.clear(buffer);
         assertEquals(4,endp.fill(buffer));
         assertEquals("more",BufferUtil.toString(buffer));
-
     }
 
     @Test
@@ -161,6 +160,7 @@ public class ByteArrayEndPointTest
         FutureCallback fcb = new FutureCallback();
 
         endp.fillInterested(fcb);
+        fcb.get(100,TimeUnit.MILLISECONDS);
         assertTrue(fcb.isDone());
         assertEquals(null, fcb.get());
         assertEquals(10, endp.fill(buffer));
@@ -168,10 +168,12 @@ public class ByteArrayEndPointTest
 
         fcb = new FutureCallback();
         endp.fillInterested(fcb);
+        Thread.sleep(100);
         assertFalse(fcb.isDone());
         assertEquals(0, endp.fill(buffer));
 
         endp.setInput(" more");
+        fcb.get(1000,TimeUnit.MILLISECONDS);
         assertTrue(fcb.isDone());
         assertEquals(null, fcb.get());
         assertEquals(5, endp.fill(buffer));
@@ -179,6 +181,7 @@ public class ByteArrayEndPointTest
 
         fcb = new FutureCallback();
         endp.fillInterested(fcb);
+        Thread.sleep(100);
         assertFalse(fcb.isDone());
         assertEquals(0, endp.fill(buffer));
 
@@ -189,6 +192,7 @@ public class ByteArrayEndPointTest
 
         fcb = new FutureCallback();
         endp.fillInterested(fcb);
+        fcb.get(1000,TimeUnit.MILLISECONDS);
         assertTrue(fcb.isDone());
         assertEquals(null, fcb.get());
         assertEquals(-1, endp.fill(buffer));
@@ -197,10 +201,9 @@ public class ByteArrayEndPointTest
 
         fcb = new FutureCallback();
         endp.fillInterested(fcb);
-        assertTrue(fcb.isDone());
         try
         {
-            fcb.get();
+            fcb.get(1000,TimeUnit.MILLISECONDS);
             fail();
         }
         catch (ExecutionException e)
@@ -278,6 +281,7 @@ public class ByteArrayEndPointTest
         FutureCallback fcb = new FutureCallback();
 
         endp.fillInterested(fcb);
+        fcb.get(100,TimeUnit.MILLISECONDS);
         assertTrue(fcb.isDone());
         assertEquals(null, fcb.get());
         assertEquals(4, endp.fill(buffer));

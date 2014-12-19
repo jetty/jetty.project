@@ -66,10 +66,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     }
 
     @Override
-    protected boolean needsFill()
+    protected void needsFillInterest()
     {
         changeInterests(SelectionKey.OP_READ);
-        return false;
     }
 
     @Override

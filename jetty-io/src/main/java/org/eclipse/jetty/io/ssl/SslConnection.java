@@ -88,6 +88,7 @@ public class SslConnection extends AbstractConnection
     private ByteBuffer _encryptedOutput;
     private final boolean _encryptedDirectBuffers = false;
     private final boolean _decryptedDirectBuffers = false;
+    private boolean _renegotiationAllowed;
     private final Runnable _runCompletWrite = new Runnable()
     {
         @Override
@@ -96,7 +97,14 @@ public class SslConnection extends AbstractConnection
             _decryptedEndPoint.getWriteFlusher().completeWrite();
         }
     };
-    private boolean _renegotiationAllowed;
+    private final Runnable _runFillable = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            _decryptedEndPoint.getFillInterest().fillable();
+        }
+    };
 
     public SslConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, SSLEngine sslEngine)
     {
@@ -401,7 +409,7 @@ public class SslConnection extends AbstractConnection
         }
 
         @Override
-        protected boolean needsFill() throws IOException
+        protected void needsFillInterest() throws IOException
         {
             // This means that the decrypted data consumer has called the fillInterested
             // method on the DecryptedEndPoint, so we have to work out if there is
@@ -411,11 +419,12 @@ public class SslConnection extends AbstractConnection
             synchronized (DecryptedEndPoint.this)
             {
                 // Do we already have some app data, then app can fill now so return true
-                if (BufferUtil.hasContent(_decryptedInput))
-                    return true;
+                boolean fillable = (BufferUtil.hasContent(_decryptedInput))
+                        // or if we have encryptedInput and have not underflowed yet, the it is worth trying a fill
+                        || BufferUtil.hasContent(_encryptedInput) && !_underFlown;
 
                 // If we have no encrypted data to decrypt OR we have some, but it is not enough
-                if (BufferUtil.isEmpty(_encryptedInput) || _underFlown)
+                if (!fillable)
                 {
                     // We are not ready to read data
 
@@ -436,23 +445,17 @@ public class SslConnection extends AbstractConnection
                             // we have already written the net data
                             // pretend we are readable so the wrap is done by next readable callback
                             _fillRequiresFlushToProgress = false;
-                            return true;
+                            fillable=true;
                         }
                     }
-                    else
-                    {
-                        // Normal readable callback
-                        // Get called back on onfillable when then is more data to fill
-                        SslConnection.this.fillInterested();
-                    }
+                }
+                
 
-                    return false;
-                }
+                if (fillable)
+                    getExecutor().execute(_runFillable);
                 else
-                {
-                    // We are ready to read data
-                    return true;
-                }
+                    SslConnection.this.fillInterested();
+                    
             }
         }
 

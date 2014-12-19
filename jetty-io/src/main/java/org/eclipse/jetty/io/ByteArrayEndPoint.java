@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -102,10 +103,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         setIdleTimeout(idleTimeoutMs);
     }
 
-
-
-
-
     /* ------------------------------------------------------------ */
     @Override
     protected void onIncompleteFlush()
@@ -115,11 +112,12 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     /* ------------------------------------------------------------ */
     @Override
-    protected boolean needsFill() throws IOException
+    protected void needsFillInterest() throws IOException
     {
         if (_closed)
             throw new ClosedChannelException();
-        return _in == null || BufferUtil.hasContent(_in);
+        if (BufferUtil.hasContent(_in) || _in==null)
+            getScheduler().schedule(new Runnable(){public void run(){getFillInterest().fillable();}},1,TimeUnit.MILLISECONDS);
     }
 
     /* ------------------------------------------------------------ */
