@@ -41,11 +41,13 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
@@ -63,6 +65,7 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -71,7 +74,7 @@ import org.eclipse.jetty.websocket.servlet.WebSocketServletFactory;
 /**
  * Factory to create WebSocket connections
  */
-public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketServletFactory, SessionListener
+public class WebSocketServerFactory extends ContainerLifeCycle implements WebSocketCreator, WebSocketContainerScope, WebSocketServletFactory, SessionListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketServerFactory.class);
 
@@ -86,6 +89,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private final EventDriverFactory eventDriverFactory;
     private final ByteBufferPool bufferPool;
     private final WebSocketExtensionFactory extensionFactory;
+    private Executor executor;
     private List<SessionFactory> sessionFactories;
     private Set<WebSocketSession> openSessions = new CopyOnWriteArraySet<>();
     private WebSocketCreator creator;
@@ -121,7 +125,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.defaultPolicy = policy;
         this.eventDriverFactory = new EventDriverFactory(defaultPolicy);
         this.bufferPool = bufferPool;
-        this.extensionFactory = new WebSocketExtensionFactory(defaultPolicy, this.bufferPool);
+        this.extensionFactory = new WebSocketExtensionFactory(this);
         
         // Bug #431459 - unregistering compression extensions till they are more stable
         this.extensionFactory.unregister("deflate-frame");
@@ -165,16 +169,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             Thread.currentThread().setContextClassLoader(contextClassloader);
             
-            // Establish the DecoratedObjectFactory thread local 
-            // for various ServiceLoader initiated components to use.
-            DecoratedObjectFactory.setCurrentInstantiator(getEnhancedInstantiator(request));
-
             // Create Servlet Specific Upgrade Request/Response objects
             ServletUpgradeRequest sockreq = new ServletUpgradeRequest(request);
             ServletUpgradeResponse sockresp = new ServletUpgradeResponse(response);
 
             Object websocketPojo = creator.createWebSocket(sockreq, sockresp);
-            websocketPojo = objectFactory.decorate(websocketPojo);
+            websocketPojo = getObjectFactory().decorate(websocketPojo);
 
             // Handle response forbidden (and similar paths)
             if (sockresp.isCommitted())
@@ -315,12 +315,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             this.objectFactory = new DecoratedObjectFactory();
         }
         
-        this.extensionFactory.setEnhancedInstantiator(this.objectFactory);
-        for(SessionFactory sessionFactory: this.sessionFactories)
-        {
-            sessionFactory.setEnhancedInstantiator(this.objectFactory);
-        }
-        
         super.doStart();
     }
 
@@ -332,52 +326,25 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     }
 
     @Override
+    public ByteBufferPool getBufferPool()
+    {
+        return this.bufferPool;
+    }
+
+    @Override
     public WebSocketCreator getCreator()
     {
         return this.creator;
     }
     
-    public DecoratedObjectFactory getEnhancedInstantiator()
+    @Override
+    public Executor getExecutor()
     {
-        return objectFactory;
+        return this.executor;
     }
 
-    public DecoratedObjectFactory getEnhancedInstantiator(HttpServletRequest request)
+    public DecoratedObjectFactory getObjectFactory()
     {
-        if (objectFactory != null)
-        {
-            return objectFactory;
-        }
-        
-        if (request == null)
-        {
-            LOG.debug("Using default DecoratedObjectFactory (HttpServletRequest is null)");
-            return new DecoratedObjectFactory();
-        }
-        
-        return getEnhancedInstantiator(request.getServletContext());
-    }
-    
-    public DecoratedObjectFactory getEnhancedInstantiator(ServletContext context)
-    {
-        if (objectFactory != null)
-        {
-            return objectFactory;
-        }
-        
-        if (context == null)
-        {
-            LOG.debug("Using default DecoratedObjectFactory (ServletContext is null)");
-            return new DecoratedObjectFactory();
-        }
-
-        objectFactory = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
-        if (objectFactory == null)
-        {
-            LOG.debug("Using default DecoratedObjectFactory (ServletContext attribute is null)");
-            objectFactory = new DecoratedObjectFactory();
-        }
-        
         return objectFactory;
     }
 
@@ -403,6 +370,15 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return defaultPolicy;
     }
 
+    @Override
+    public SslContextFactory getSslContextFactory()
+    {
+        /* Not relevant for a Server, as this is defined in the
+         * Connector configuration 
+         */
+        return null;
+    }
+
     public void init(ServletContextHandler context) throws ServletException
     {
         this.objectFactory = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
@@ -410,6 +386,8 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             this.objectFactory = new DecoratedObjectFactory();
         }
+        
+        this.executor = context.getServer().getThreadPool();
     }
     
     @Override
@@ -420,6 +398,17 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         {
             this.objectFactory = new DecoratedObjectFactory();
         }
+        
+        
+        ContextHandler handler = ContextHandler.getContextHandler(context);
+
+        if (handler == null)
+        {
+            throw new ServletException("Not running on Jetty, WebSocket support unavailable");
+        }
+
+        this.executor = handler.getServer().getThreadPool();
+        
         try
         {
             // start lifecycle

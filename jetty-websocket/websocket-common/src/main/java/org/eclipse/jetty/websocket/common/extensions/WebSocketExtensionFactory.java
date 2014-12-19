@@ -18,26 +18,21 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.websocket.api.WebSocketException;
-import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 public class WebSocketExtensionFactory extends ExtensionFactory
 {
-    private WebSocketPolicy policy;
-    private ByteBufferPool bufferPool;
-    private DecoratedObjectFactory objectFactory;
+    private WebSocketContainerScope container;
 
-    public WebSocketExtensionFactory(WebSocketPolicy policy, ByteBufferPool bufferPool)
+    public WebSocketExtensionFactory(WebSocketContainerScope container)
     {
         super();
-        this.policy = policy;
-        this.bufferPool = bufferPool;
+        this.container = container;
     }
 
     @Override
@@ -62,12 +57,11 @@ public class WebSocketExtensionFactory extends ExtensionFactory
 
         try
         {
-            Extension ext = objectFactory.createInstance(extClass);
+            Extension ext = container.getObjectFactory().createInstance(extClass);
             if (ext instanceof AbstractExtension)
             {
                 AbstractExtension aext = (AbstractExtension)ext;
-                aext.setPolicy(policy);
-                aext.setBufferPool(bufferPool);
+                aext.init(container);
                 aext.setConfig(config);
             }
             return ext;
@@ -76,10 +70,5 @@ public class WebSocketExtensionFactory extends ExtensionFactory
         {
             throw new WebSocketException("Cannot instantiate extension: " + extClass,e);
         }
-    }
-    
-    public void setEnhancedInstantiator(DecoratedObjectFactory objectFactory)
-    {
-        this.objectFactory = objectFactory;
     }
 }

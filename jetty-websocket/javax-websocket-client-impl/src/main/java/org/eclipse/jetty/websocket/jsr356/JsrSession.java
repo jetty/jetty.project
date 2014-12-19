@@ -39,7 +39,6 @@ import javax.websocket.RemoteEndpoint.Basic;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
@@ -75,9 +74,9 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
     private JsrAsyncRemote asyncRemote;
     private JsrBasicRemote basicRemote;
 
-    public JsrSession(URI requestURI, EventDriver websocket, LogicalConnection connection, ClientContainer container, String id, DecoratedObjectFactory objectFactory, SessionListener... sessionListeners)
+    public JsrSession(ClientContainer container, String id, URI requestURI, EventDriver websocket, LogicalConnection connection, SessionListener... sessionListeners)
     {
-        super(requestURI, websocket, connection, sessionListeners);
+        super(container, requestURI, websocket, connection, sessionListeners);
         if (!(websocket instanceof AbstractJsrEventDriver))
         {
             throw new IllegalArgumentException("Cannot use, not a JSR WebSocket: " + websocket);
@@ -87,8 +86,8 @@ public class JsrSession extends WebSocketSession implements javax.websocket.Sess
         this.metadata = jsr.getMetadata();
         this.container = container;
         this.id = id;
-        this.decoderFactory = new DecoderFactory(metadata.getDecoders(),container.getDecoderFactory(),objectFactory);
-        this.encoderFactory = new EncoderFactory(metadata.getEncoders(),container.getEncoderFactory(),objectFactory);
+        this.decoderFactory = new DecoderFactory(this,metadata.getDecoders(),container.getDecoderFactory());
+        this.encoderFactory = new EncoderFactory(this,metadata.getEncoders(),container.getEncoderFactory());
         this.messageHandlerFactory = new MessageHandlerFactory();
         this.wrappers = new MessageHandlerWrapper[MessageType.values().length];
         this.messageHandlerSet = new HashSet<>();

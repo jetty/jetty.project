@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.Matchers.*;
+
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -30,10 +32,12 @@ import javax.websocket.OnOpen;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidCloseIntSocket;
 import org.eclipse.jetty.websocket.jsr356.server.samples.InvalidErrorErrorSocket;
@@ -47,8 +51,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.hamcrest.Matchers.containsString;
 
 /**
  * Test {@link AnnotatedEndpointScanner} against various simple, 1 method {@link ServerEndpoint} annotated classes with invalid signatures.
@@ -95,7 +97,8 @@ public class ServerAnnotatedEndpointScanner_InvalidSignaturesTest
     @Test
     public void testScan_InvalidSignature() throws DeploymentException
     {
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(pojo,null,new DecoratedObjectFactory());
+        WebSocketContainerScope container = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,pojo,null);
         AnnotatedEndpointScanner<ServerEndpoint,ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
 
         try

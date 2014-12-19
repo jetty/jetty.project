@@ -23,7 +23,7 @@ import java.util.Map;
 
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
 
 /**
@@ -33,9 +33,9 @@ public class PathParamServerEndpointConfig extends BasicServerEndpointConfig imp
 {
     private final Map<String, String> pathParamMap;
 
-    public PathParamServerEndpointConfig(ServerEndpointConfig config, DecoratedObjectFactory objectFactory, WebSocketPathSpec pathSpec, String requestPath)
+    public PathParamServerEndpointConfig(WebSocketContainerScope containerScope, ServerEndpointConfig config, WebSocketPathSpec pathSpec, String requestPath)
     {
-        super(config, objectFactory);
+        super(containerScope, config);
 
         Map<String, String> pathMap = pathSpec.getPathParams(requestPath);
         pathParamMap = new HashMap<String, String>();

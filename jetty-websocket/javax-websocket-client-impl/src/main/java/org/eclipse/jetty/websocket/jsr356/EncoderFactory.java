@@ -28,6 +28,8 @@ import javax.websocket.EndpointConfig;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadata;
 import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadataSet;
 
@@ -71,19 +73,23 @@ public class EncoderFactory implements Configurable
     private EncoderFactory parentFactory;
     private Map<Class<?>, Wrapper> activeWrappers;
 
-    public EncoderFactory(EncoderMetadataSet metadatas)
+    public EncoderFactory(WebSocketContainerScope containerScope, EncoderMetadataSet metadatas)
     {
-        this(metadatas,null,new DecoratedObjectFactory());
+        this(containerScope,metadatas,null);
     }
 
-    public EncoderFactory(EncoderMetadataSet metadatas, EncoderFactory parentFactory, DecoratedObjectFactory objectFactory)
+    public EncoderFactory(WebSocketSessionScope sessionScope, EncoderMetadataSet metadatas, EncoderFactory parentFactory)
     {
+        this(sessionScope.getContainerScope(),metadatas,parentFactory);
+    }
+
+    protected EncoderFactory(WebSocketContainerScope containerScope, EncoderMetadataSet metadatas, EncoderFactory parentFactory)
+    {
+        Objects.requireNonNull(containerScope,"Container Scope cannot be null");
+        this.objectFactory = containerScope.getObjectFactory();
         this.metadatas = metadatas;
         this.activeWrappers = new ConcurrentHashMap<>();
         this.parentFactory = parentFactory;
-
-        Objects.requireNonNull(objectFactory,"EnhancedInitiator cannot be null");
-        this.objectFactory = objectFactory;
     }
 
     public Encoder getEncoderFor(Class<?> type)

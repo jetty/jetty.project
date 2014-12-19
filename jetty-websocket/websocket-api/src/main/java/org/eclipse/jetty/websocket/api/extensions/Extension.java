@@ -81,9 +81,4 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      *            the next outgoing extension
      */
     public void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
-    
-    // TODO: Extension should indicate if it requires boundary of fragments to be preserved
-    
-    // TODO: Extension should indicate if it uses the Extension data field of frame for its own reasons.
-    
 }

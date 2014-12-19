@@ -66,6 +66,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.junit.Assert;
 
 /**
@@ -109,7 +110,7 @@ public class BlockheadServer
             this.parser = new Parser(policy,bufferPool);
             this.parseCount = new AtomicInteger(0);
             this.generator = new Generator(policy,bufferPool,false);
-            this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
+            this.extensionRegistry = new WebSocketExtensionFactory(new SimpleContainerScope(policy,bufferPool));
         }
 
         /**

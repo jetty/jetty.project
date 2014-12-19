@@ -32,7 +32,7 @@ import javax.websocket.Extension;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
 {
@@ -46,12 +46,12 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
     private Map<String, Object> userProperties;
     private List<Extension> extensions;
 
-    public AnnotatedServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno, DecoratedObjectFactory objectFactory) throws DeploymentException
+    public AnnotatedServerEndpointConfig(WebSocketContainerScope containerScope, Class<?> endpointClass, ServerEndpoint anno) throws DeploymentException
     {
-        this(endpointClass,anno,objectFactory,null);
+        this(containerScope,endpointClass,anno,null);
     }
 
-    public AnnotatedServerEndpointConfig(Class<?> endpointClass, ServerEndpoint anno, DecoratedObjectFactory objectFactory, ServerEndpointConfig baseConfig) throws DeploymentException
+    public AnnotatedServerEndpointConfig(WebSocketContainerScope containerScope, Class<?> endpointClass, ServerEndpoint anno, ServerEndpointConfig baseConfig) throws DeploymentException
     {
         ServerEndpointConfig.Configurator configr = null;
 
@@ -111,23 +111,25 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         {
             userProperties.putAll(baseConfig.getUserProperties());
         }
+        
+        ServerEndpointConfig.Configurator cfgr;
 
         if (anno.configurator() == ServerEndpointConfig.Configurator.class)
         {
             if (configr != null)
             {
-                this.configurator = configr;
+                cfgr = configr;
             }
             else
             {
-                this.configurator = new BasicServerEndpointConfigurator(objectFactory);
+                cfgr = new BasicServerEndpointConfigurator(containerScope);
             }
         }
         else
         {
             try
             {
-                this.configurator = anno.configurator().newInstance();
+                cfgr = anno.configurator().newInstance();
             }
             catch (InstantiationException | IllegalAccessException e)
             {
@@ -139,6 +141,10 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
                 throw new DeploymentException(err.toString(),e);
             }
         }
+        
+        // Make sure all Configurators obtained are decorated
+        this.configurator = containerScope.getObjectFactory().decorate(cfgr);
+
     }
 
     @Override

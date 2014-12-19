@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.util.Collections;
 
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.Extension;
@@ -34,6 +33,8 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Parser;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.test.ByteBufferAssert;
 import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
@@ -127,8 +128,8 @@ public class ExtensionTool
     public ExtensionTool(WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
         this.policy = policy;
-        WebSocketExtensionFactory extFactory = new WebSocketExtensionFactory(policy,bufferPool);
-        extFactory.setEnhancedInstantiator(new DecoratedObjectFactory());
+        WebSocketContainerScope container = new SimpleContainerScope(policy, bufferPool);
+        WebSocketExtensionFactory extFactory = new WebSocketExtensionFactory(container);
         this.factory = extFactory;
     }
 

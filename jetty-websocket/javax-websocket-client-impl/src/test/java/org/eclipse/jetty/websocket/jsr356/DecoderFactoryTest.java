@@ -18,14 +18,16 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.nio.ByteBuffer;
 import java.util.Date;
 
 import javax.websocket.Decoder;
 
-import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.decoders.ByteArrayDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.ByteBufferDecoder;
 import org.eclipse.jetty.websocket.jsr356.decoders.DateDecoder;
@@ -57,9 +59,11 @@ public class DecoderFactoryTest
     @Before
     public void initDecoderFactory()
     {
-        DecoderFactory primitivesFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE);
+        WebSocketContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+        
+        DecoderFactory primitivesFactory = new DecoderFactory(containerScope,PrimitiveDecoderMetadataSet.INSTANCE);
         metadatas = new DecoderMetadataSet();
-        factory = new DecoderFactory(metadatas,primitivesFactory,new DecoratedObjectFactory());
+        factory = new DecoderFactory(containerScope,metadatas,primitivesFactory);
     }
 
     @Test

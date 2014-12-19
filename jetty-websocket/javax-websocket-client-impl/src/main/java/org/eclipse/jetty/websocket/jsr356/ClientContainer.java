@@ -40,6 +40,7 @@ import javax.websocket.Extension;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -47,6 +48,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
@@ -54,6 +56,8 @@ import org.eclipse.jetty.websocket.client.io.UpgradeListener;
 import org.eclipse.jetty.websocket.common.SessionFactory;
 import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
@@ -69,7 +73,7 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
  * <p>
  * This should be specific to a JVM if run in a standalone mode. or specific to a WebAppContext if running on the Jetty server.
  */
-public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, SessionListener
+public class ClientContainer extends ContainerLifeCycle implements WebSocketContainer, WebSocketContainerScope, SessionListener
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
     
@@ -90,29 +94,27 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     public ClientContainer()
     {
         // This constructor is used with Standalone JSR Client usage.
-        this(null,new DecoratedObjectFactory());
+        this(new SimpleContainerScope(WebSocketPolicy.newClientPolicy()));
         client.setDaemon(true);
     }
     
-    public ClientContainer(Executor executor, DecoratedObjectFactory objectFactory)
+    public ClientContainer(WebSocketContainerScope scope)
     {
-        this.objectFactory = objectFactory;
+        boolean trustAll = Boolean.getBoolean("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
+        
+        client = new WebSocketClient(scope, new SslContextFactory(trustAll));
+        client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
+        SessionFactory sessionFactory = new JsrSessionFactory(this,this,client);
+        client.setSessionFactory(sessionFactory);
+        addBean(client);
+
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();
-        this.decoderFactory = new DecoderFactory(PrimitiveDecoderMetadataSet.INSTANCE,null,objectFactory);
-        this.encoderFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE,null,objectFactory);
+        this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
+        this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
 
         EmptyClientEndpointConfig empty = new EmptyClientEndpointConfig();
         this.decoderFactory.init(empty);
         this.encoderFactory.init(empty);
-
-        boolean trustAll = Boolean.getBoolean("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
-        
-        client = new WebSocketClient(new SslContextFactory(trustAll), executor);
-        client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
-        SessionFactory sessionFactory = new JsrSessionFactory(this,this,client);
-        sessionFactory.setEnhancedInstantiator(objectFactory);
-        client.setSessionFactory(sessionFactory);
-        addBean(client);
 
         ShutdownThread.register(this);
     }
@@ -203,6 +205,12 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         super.doStop();
     }
 
+    @Override
+    public ByteBufferPool getBufferPool()
+    {
+        return client.getBufferPool();
+    }
+
     public WebSocketClient getClient()
     {
         return client;
@@ -287,6 +295,12 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     }
 
     @Override
+    public Executor getExecutor()
+    {
+        return client.getExecutor();
+    }
+
+    @Override
     public Set<Extension> getInstalledExtensions()
     {
         Set<Extension> ret = new HashSet<>();
@@ -300,12 +314,30 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         return ret;
     }
 
+    @Override
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return client.getObjectFactory();
+    }
+
     /**
      * Used in {@link Session#getOpenSessions()}
      */
     public Set<Session> getOpenSessions()
     {
         return Collections.unmodifiableSet(this.openSessions);
+    }
+
+    @Override
+    public WebSocketPolicy getPolicy()
+    {
+        return client.getPolicy();
+    }
+
+    @Override
+    public SslContextFactory getSslContextFactory()
+    {
+        return client.getSslContextFactory();
     }
 
     private EndpointInstance newClientEndpointInstance(Class<?> endpointClass, ClientEndpointConfig config)

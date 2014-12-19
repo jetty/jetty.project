@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.*;
 
 import java.io.Reader;
 import java.lang.reflect.Field;
@@ -34,7 +34,9 @@ import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.annotations.JsrCallable;
 import org.eclipse.jetty.websocket.jsr356.server.samples.BasicBinaryMessageByteBufferSocket;
@@ -183,7 +185,8 @@ public class ServerAnnotatedEndpointScanner_GoodSignaturesTest
     @Test
     public void testScan_Basic() throws Exception
     {
-        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(testcase.pojo,null,new DecoratedObjectFactory());
+        WebSocketContainerScope container = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+        AnnotatedServerEndpointMetadata metadata = new AnnotatedServerEndpointMetadata(container,testcase.pojo,null);
         AnnotatedEndpointScanner<ServerEndpoint, ServerEndpointConfig> scanner = new AnnotatedEndpointScanner<>(metadata);
         scanner.scan();
 

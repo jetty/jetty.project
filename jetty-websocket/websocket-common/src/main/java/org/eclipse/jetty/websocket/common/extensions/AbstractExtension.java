@@ -35,6 +35,7 @@ import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.LogicalConnection;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 @ManagedObject("Abstract Extension")
 public abstract class AbstractExtension extends ContainerLifeCycle implements Extension
@@ -66,6 +67,12 @@ public abstract class AbstractExtension extends ContainerLifeCycle implements Ex
         out.append(indent).append(" +- ");
         out.append(heading).append(" : ");
         out.append(bean.toString());
+    }
+    
+    public void init(WebSocketContainerScope container)
+    {
+        this.policy = container.getPolicy();
+        this.bufferPool = container.getBufferPool();
     }
 
     public ByteBufferPool getBufferPool()
@@ -183,7 +190,7 @@ public abstract class AbstractExtension extends ContainerLifeCycle implements Ex
     {
         this.connection = connection;
     }
-
+    
     @Override
     public void setNextIncomingFrames(IncomingFrames nextIncoming)
     {
