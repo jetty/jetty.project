@@ -68,7 +68,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
         _selectorManager = selectorManager;
-        _strategy = new ExecutionStrategy.EatWhatYouKill(this, selectorManager.getExecutor());
+        _strategy = new ExecutionStrategy.ExecuteProduceRun(this, selectorManager.getExecutor());
         _id = id;
         setStopTimeout(5000);
     }
@@ -171,7 +171,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     public void run()
     {
         while (isRunning() || isStopping())
-            _strategy.produce();
+            _strategy.execute();
     }
 
 
@@ -348,11 +348,6 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 
         _selectedKeys = _selector.selectedKeys();
         _selections = _selectedKeys.iterator();
-    }
-
-    @Override
-    public void onProductionComplete()
-    {
     }
 
     private void updateKey(SelectionKey key)

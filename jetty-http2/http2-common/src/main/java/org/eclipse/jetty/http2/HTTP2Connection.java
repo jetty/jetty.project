@@ -51,7 +51,7 @@ public class HTTP2Connection extends AbstractConnection
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.executionStrategy = new ExecutionStrategy.EatWhatYouKill(new HTTP2Producer(), executor);
+        this.executionStrategy = new ExecutionStrategy.ExecuteProduceRun(new HTTP2Producer(), executor);
     }
 
     protected ISession getSession()
@@ -79,7 +79,7 @@ public class HTTP2Connection extends AbstractConnection
     @Override
     public void onFillable()
     {
-        executionStrategy.produce();
+        executionStrategy.execute();
     }
 
     private int fill(EndPoint endPoint, ByteBuffer buffer)
@@ -176,11 +176,6 @@ public class HTTP2Connection extends AbstractConnection
                 byteBufferPool.release(buffer);
                 buffer = null;
             }
-        }
-
-        @Override
-        public void onProductionComplete()
-        {
         }
     }
 }
