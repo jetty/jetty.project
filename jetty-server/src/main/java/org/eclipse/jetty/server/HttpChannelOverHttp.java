@@ -227,7 +227,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     public void badMessage(int status, String reason)
     {
-        _httpConnection._generator.setPersistent(false);
+        _httpConnection.getGenerator().setPersistent(false);
         try
         {
             // Need to call onRequest, so RequestLog can reports as much as possible
@@ -300,7 +300,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         }
 
         if (!persistent)
-            _httpConnection._generator.setPersistent(false);
+            _httpConnection.getGenerator().setPersistent(false);
 
         onRequest(_metadata);
 
@@ -315,7 +315,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     protected void handleException(Throwable x)
     {
-        _httpConnection._generator.setPersistent(false);
+        _httpConnection.getGenerator().setPersistent(false);
         super.handleException(x);
     }
 
@@ -323,7 +323,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public void abort(Throwable failure)
     {
         super.abort(failure);
-        _httpConnection._generator.setPersistent(false);
+        _httpConnection.getGenerator().setPersistent(false);
     }
 
     @Override

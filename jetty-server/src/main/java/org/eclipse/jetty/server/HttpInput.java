@@ -247,7 +247,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             try
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} waiting for content", this);
+                    LOG.debug("{} blocking for content...", this);
                 _inputQ.wait();
             }
             catch (InterruptedException e)
@@ -275,6 +275,17 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                 if (!onAsyncRead())
                     _inputQ.notify();
             }
+        }
+    }
+    
+    public void addPoisonPillContent(PoisonPillContent pill)
+    {
+        synchronized (_inputQ)
+        {
+            if (_inputQ.isEmpty())
+                pill.succeeded();
+            else
+                _inputQ.add(pill);
         }
     }
 

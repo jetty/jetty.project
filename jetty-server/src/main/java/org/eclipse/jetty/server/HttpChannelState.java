@@ -228,7 +228,7 @@ public class HttpChannelState
                     return Action.WAIT;
 
                 default:
-                    throw new IllegalStateException(this.getStatusString());
+                    return Action.WAIT;
             }
         }
     }

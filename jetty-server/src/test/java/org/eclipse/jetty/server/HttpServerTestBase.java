@@ -1404,9 +1404,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new NoopHandler());
         final int REQS = 2;
-        char[] fill = new char[65 * 1024];
-        Arrays.fill(fill, '.');
-        String content = "This is a loooooooooooooooooooooooooooooooooo" +
+        String content = "This is a coooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
@@ -1415,8 +1413,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                "oooooooooooonnnnnnnnnnnnnnnnggggggggg content" +
-                new String(fill);
+                "oooooooooooonnnnnnnnnnnnnnnntent";
         final byte[] bytes = content.getBytes();
 
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
@@ -1447,6 +1444,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
         String resps = readResponse(client);
 
+        System.err.println(resps);
+        
         int offset = 0;
         for (int i = 0; i < (REQS + 1); i++)
         {

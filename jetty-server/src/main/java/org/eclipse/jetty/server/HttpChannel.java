@@ -273,13 +273,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         final HttpChannel last = setCurrentHttpChannel(this);
 
-        String threadName = null;
         if (LOG.isDebugEnabled())
-        {
-            threadName = Thread.currentThread().getName();
-            Thread.currentThread().setName(threadName + " - " + _request.getHttpURI());
-            LOG.debug("{} handle enter", this);
-        }
+            LOG.debug("{} handle {} ", this,_request.getHttpURI());
 
         HttpChannelState.Action action = _state.handling();
         try
@@ -446,8 +441,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         finally
         {
             setCurrentHttpChannel(last);
-            if (threadName != null && LOG.isDebugEnabled())
-                Thread.currentThread().setName(threadName);
         }
 
         if (LOG.isDebugEnabled())

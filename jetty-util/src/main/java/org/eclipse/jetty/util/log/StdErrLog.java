@@ -589,6 +589,8 @@ public class StdErrLog extends AbstractLogger
             buffer.append(".00");
         }
         buffer.append(ms).append(tag);
+        
+        int p=buffer.length();
         if (_printLongNames)
         {
             buffer.append(_name);
@@ -597,8 +599,22 @@ public class StdErrLog extends AbstractLogger
         {
             buffer.append(_abbrevname);
         }
+        p=buffer.length()-p-28;
+        if (p>0)
+            buffer.setLength(buffer.length()-p);
+        else
+            buffer.append("                                            ",0,-p);
         buffer.append(':');
-        buffer.append(Thread.currentThread().getName()).append(": ");
+        
+        p=buffer.length();
+        buffer.append(Thread.currentThread().getName());
+        p=buffer.length()-p-18;
+        if (p>0)
+            buffer.setLength(buffer.length()-p);
+        else
+            buffer.append("                                            ",0,-p);
+        buffer.append(':');
+        
         if (_source)
         {
             Throwable source = new Throwable();
