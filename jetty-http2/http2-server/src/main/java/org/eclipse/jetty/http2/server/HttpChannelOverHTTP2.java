@@ -52,9 +52,14 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
     {
-        super(connector, configuration, endPoint, transport, new HttpInputOverHTTP2());
+        super(connector, configuration, endPoint, transport);
     }
 
+    protected HttpInput newHttpInput()
+    {
+        return new HttpInputOverHTTP2(getState());
+    }
+    
     private IStream getStream()
     {
         return getHttpTransport().getStream();

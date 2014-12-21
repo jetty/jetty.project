@@ -327,8 +327,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         {
             HttpTransport transport = new PushHttpTransportOverSPDY(connector, configuration, endPoint, pushStrategy,
                     pushStream, pushRequestHeaders, this, version);
-            HttpInputOverSPDY input = new HttpInputOverSPDY();
-            return new HttpChannelOverSPDY(connector, configuration, endPoint, transport, input, pushStream);
+            return new HttpChannelOverSPDY(connector, configuration, endPoint, transport, pushStream);
         }
 
         private void pushResource(String pushResource)

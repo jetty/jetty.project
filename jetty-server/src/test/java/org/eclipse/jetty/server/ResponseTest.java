@@ -81,7 +81,6 @@ public class ResponseTest
         _server.start();
 
         AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
-        QueuedHttpInput input = new QueuedHttpInput();
         _channel = new HttpChannel(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             @Override
@@ -111,7 +110,7 @@ public class ResponseTest
             {
             }
 
-        }, input);
+        });
     }
 
     @After

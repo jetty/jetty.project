@@ -53,14 +53,23 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     private boolean _expect102Processing = false;
     
     private final MetaData.Request _metadata = new MetaData.Request();
+
+    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
+    {
+        this(httpConnection,connector,config,endPoint,transport,new HttpInputOverHTTP(httpConnection));
+    }
     
-    
-    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput input)
+    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport,HttpInput input)
     {
         super(connector,config,endPoint,transport,input);
         _httpConnection = httpConnection;
         _metadata.setFields(_fields);
         _metadata.setURI(new HttpURI());
+    }
+    
+    protected HttpInput newHttpInput()
+    {
+        throw new IllegalStateException();
     }
 
     @Override

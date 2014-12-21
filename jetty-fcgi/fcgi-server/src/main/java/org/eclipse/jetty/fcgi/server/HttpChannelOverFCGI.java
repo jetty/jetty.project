@@ -51,9 +51,9 @@ public class HttpChannelOverFCGI extends HttpChannel
     private String version;
     private HostPortHttpField hostPort;
 
-    public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
+    public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
-        super(connector, configuration, endPoint, transport, input);
+        super(connector, configuration, endPoint, transport);
         this.dispatcher = new Dispatcher(connector.getExecutor(), this);
     }
 

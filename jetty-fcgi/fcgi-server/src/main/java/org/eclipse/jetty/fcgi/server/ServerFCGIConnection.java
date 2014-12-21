@@ -32,7 +32,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.QueuedHttpInput;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -123,8 +122,7 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             // TODO: handle flags
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
-                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200),
-                    new QueuedHttpInput());
+                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200));
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
             if (existing != null)
                 throw new IllegalStateException();

@@ -31,6 +31,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.Stream;
@@ -45,10 +46,15 @@ public class HttpChannelOverSPDY extends HttpChannel
 
     private final Stream stream;
 
-    public HttpChannelOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInputOverSPDY input, Stream stream)
+    public HttpChannelOverSPDY(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, Stream stream)
     {
-        super(connector, configuration, endPoint, transport, input);
+        super(connector, configuration, endPoint, transport);
         this.stream = stream;
+    }
+    
+    protected HttpInput newHttpInput()
+    {
+        return new HttpInputOverSPDY(getState());
     }
 
     public long getIdleTimeout()

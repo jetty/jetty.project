@@ -646,7 +646,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public long getContentRead()
     {
-        return _input.getContentRead();
+        return _input.getContentConsumed();
     }
     
     /* ------------------------------------------------------------ */

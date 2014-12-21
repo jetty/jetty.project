@@ -102,6 +102,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     /** Bytes written after interception (eg after compression) */
     private long _written;
 
+    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
+    {
+        this(connector,configuration,endPoint,transport,null);
+    }
+    
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
         _connector = connector;
@@ -110,14 +115,31 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _transport = transport;
 
         _state = new HttpChannelState(this);
-        input.init(_state);
-        _request = new Request(this, input);
-        _response = new Response(this, new HttpOutput(this));
+        _request = new Request(this, input!=null?input:newHttpInput());
+        _response = new Response(this, newHttpOutput());
         _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
     }
 
+    protected HttpInput newHttpInput()
+    {
+        return new HttpInput()
+        {
+            @Override
+            protected void onReadPossible()
+            {
+                getState().onReadPossible();
+            }            
+        };
+    }
+
+    protected HttpOutput newHttpOutput()
+    {
+        return new HttpOutput(this);
+    }
+    
+    
     public HttpChannelState getState()
     {
         return _state;
@@ -525,7 +547,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} onRequestComplete", this);
-        _request.getHttpInput().messageComplete();
+        _request.getHttpInput().eof();
     }
 
     public void onCompleted()

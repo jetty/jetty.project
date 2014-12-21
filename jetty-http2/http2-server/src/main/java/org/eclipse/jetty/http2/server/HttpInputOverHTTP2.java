@@ -18,8 +18,21 @@
 
 package org.eclipse.jetty.http2.server;
 
-import org.eclipse.jetty.server.QueuedHttpInput;
+import org.eclipse.jetty.server.HttpChannelState;
+import org.eclipse.jetty.server.HttpInput;
 
-public class HttpInputOverHTTP2 extends QueuedHttpInput
+public class HttpInputOverHTTP2 extends HttpInput
 {
+    private final HttpChannelState _httpChannelState;
+    
+    public HttpInputOverHTTP2(HttpChannelState httpChannelState)
+    {
+        _httpChannelState=httpChannelState;
+    }
+    
+    @Override
+    protected void onReadPossible()
+    {
+        _httpChannelState.onReadPossible();
+    }
 }

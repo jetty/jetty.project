@@ -45,7 +45,7 @@ public class HttpWriterTest
 
         final ByteBufferPool pool = new ArrayByteBufferPool();
         
-        HttpChannel channel = new HttpChannel(null,new HttpConfiguration(),null,null,new QueuedHttpInput())
+        HttpChannel channel = new HttpChannel(null,new HttpConfiguration(),null,null)
         {
             @Override
             public ByteBufferPool getByteBufferPool()
