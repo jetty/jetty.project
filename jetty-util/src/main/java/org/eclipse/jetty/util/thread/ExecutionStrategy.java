@@ -88,18 +88,22 @@ public interface ExecutionStrategy
     
     /**
      * <p>A strategy where the caller thread produces a task, then arranges another
-     * thread to continue production, and then runs the task.</p>
-     * <p>The phrase 'eat what you kill' comes from the hunting ethic that says a person
-     * should not kill anything he or she does not plan on eating. It was taken up in its
-     * more general sense by lawyers, who used it to mean that an individual’s earnings
-     * should be based on how much business that person brings to the firm and the phrase
-     * is now quite common throughout the business world.</p>
+     * thread to continue production, and then runs the task.
+     * </p>
+     * <p>The strategy is also known by the phrase 'eat what you kill', which comes from 
+     * the hunting ethic that says a person should not kill anything he or she does not 
+     * plan on eating. It was taken up in its more general sense by lawyers, who used it 
+     * to mean that an individual’s earnings should be based on how much business that 
+     * person brings to the firm and the phrase is now quite common throughout the 
+     * business world.
+     * </p>
      * <p>In this case, the phrase is used to mean that a thread should not produce a
      * task that it does not intend to run. By making producers run the task that they
      * have just produced avoids execution delays and avoids parallel slow down by running
      * the task in the same core, with good chances of having a hot CPU cache. It also
      * avoids the creation of a queue of produced tasks that the system does not yet have
-     * capacity to consume, which can save memory and exert back pressure on producers.</p>
+     * capacity to consume, which can save memory and exert back pressure on producers.
+     * </p>
      */
     public static class ExecuteProduceRun implements ExecutionStrategy, Runnable
     {

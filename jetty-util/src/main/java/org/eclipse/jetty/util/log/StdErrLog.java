@@ -599,20 +599,20 @@ public class StdErrLog extends AbstractLogger
         {
             buffer.append(_abbrevname);
         }
-        p=buffer.length()-p-28;
+        p=buffer.length()-p-25;
         if (p>0)
             buffer.setLength(buffer.length()-p);
         else
-            buffer.append("                                            ",0,-p);
+            buffer.append("                                                 ",0,-p);
         buffer.append(':');
         
         p=buffer.length();
         buffer.append(Thread.currentThread().getName());
-        p=buffer.length()-p-18;
+        p=buffer.length()-p-20;
         if (p>0)
             buffer.setLength(buffer.length()-p);
         else
-            buffer.append("                                            ",0,-p);
+            buffer.append("                                                 ",0,-p);
         buffer.append(':');
         
         if (_source)
@@ -644,6 +644,8 @@ public class StdErrLog extends AbstractLogger
                 break;
             }
         }
+
+        buffer.append(' ');
     }
 
     private void format(StringBuilder builder, String msg, Object... args)

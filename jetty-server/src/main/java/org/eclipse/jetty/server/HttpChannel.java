@@ -294,6 +294,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     switch(action)
                     {
                         case REQUEST_DISPATCH:
+                            if (!_request.hasMetaData())
+                                throw new IllegalStateException();
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
                             _request.setDispatcherType(DispatcherType.REQUEST);

@@ -1575,7 +1575,7 @@ public class Request implements HttpServletRequest
      */
     public HttpURI getHttpURI()
     {
-        return _metadata.getURI();
+        return _metadata==null?null:_metadata.getURI();
     }
 
     /* ------------------------------------------------------------ */
@@ -1785,6 +1785,12 @@ public class Request implements HttpServletRequest
         }
         
         setPathInfo(info);
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean hasMetaData()
+    {
+        return _metadata!=null;
     }
     
     /* ------------------------------------------------------------ */

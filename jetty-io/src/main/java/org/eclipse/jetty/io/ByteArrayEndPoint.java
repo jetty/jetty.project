@@ -117,7 +117,14 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         if (_closed)
             throw new ClosedChannelException();
         if (BufferUtil.hasContent(_in) || _in==null)
-            getScheduler().schedule(new Runnable(){public void run(){getFillInterest().fillable();}},1,TimeUnit.MILLISECONDS);
+            getScheduler().schedule(new Runnable()
+            {
+                public void run()
+                {
+                    if (!_closed && _in!=null)
+                        getFillInterest().fillable();
+                }
+            },1,TimeUnit.MILLISECONDS);
     }
 
     /* ------------------------------------------------------------ */

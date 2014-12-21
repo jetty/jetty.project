@@ -37,14 +37,17 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  *
  */
+@RunWith(AdvancedRunner.class)
 public class PartialRFC2616Test
 {
     private Server server;

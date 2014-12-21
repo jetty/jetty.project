@@ -479,9 +479,7 @@ public class Server extends HandlerWrapper implements Attributes
         //remote stop commands as we are stopped already
         ShutdownMonitor.deregister(this);
         
-
         mex.ifExceptionThrow();
-
     }
 
     /* ------------------------------------------------------------ */

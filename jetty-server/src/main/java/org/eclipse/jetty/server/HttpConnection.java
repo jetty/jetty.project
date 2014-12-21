@@ -202,11 +202,20 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             while (true)
             {
+                // Fill the request buffer (if needed)
                 int filled = fillRequestBuffer();
                 
+                // Parse the request buffer
                 boolean handle = parseRequestBuffer();
                 
-                // handle
+                // Handle close parser
+                if (_parser.isClose())
+                {
+                    close();
+                    break;
+                }
+                
+                // Handle channel event
                 if (handle)
                 {
                     boolean suspended = !_channel.handle();
@@ -215,15 +224,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     if (suspended || getEndPoint().getConnection() != this )
                         break;
                 }
-                else
+                
+                // Continue or break?
+                else if (filled<=0)
                 {
-                    // we break iteration ?
-                    if (filled<=0)
-                    {
-                        if (filled==0)
-                            fillInterested();
-                        break;
-                    }
+                    if (filled==0)
+                        fillInterested();
+                    break;
                 }
             }
         }
@@ -379,7 +386,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         
         // Not in a race here with onFillable, because it has given up control before calling handle.
         // in a slight race with #completed, but not sure what to do with that anyway.
-        releaseRequestBuffer();
         if (_chunk!=null)
             _bufferPool.release(_chunk);
         _chunk=null;

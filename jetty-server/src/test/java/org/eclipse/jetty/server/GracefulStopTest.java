@@ -44,19 +44,22 @@ public class GracefulStopTest
     @Before
     public void setup() throws Exception
     {
-        server = new Server(0);
+        server = new Server(0)
+        {
+            
+        };
         StatisticsHandler stats = new StatisticsHandler();
         TestHandler test=new TestHandler();
         server.setHandler(stats);
         stats.setHandler(test);
-        server.setStopTimeout(10 * 1000);
-        
-        server.start();
     }
 
     @Test
     public void testGraceful() throws Exception
     {
+        server.setStopTimeout(10 * 1000);
+        server.start();
+        
         new Thread()
         {
             @Override
@@ -80,12 +83,16 @@ public class GracefulStopTest
             String out = IO.toString(socket.getInputStream());
             Assert.assertThat(out,Matchers.containsString("200 OK"));
         }
+        
+        server.join();
     }
     
     @Test
-    public void testGracefulTimout() throws Exception
+    public void testGracefulTimeout() throws Exception
     {
         server.setStopTimeout(100);
+        server.start();
+        
         new Thread()
         {
             @Override
@@ -96,7 +103,7 @@ public class GracefulStopTest
                     TimeUnit.SECONDS.sleep(1);
                     server.stop();
                 }
-                catch (Exception e)
+                catch (Throwable e)
                 {
                     //e.printStackTrace();
                 }
@@ -109,6 +116,8 @@ public class GracefulStopTest
             String out = IO.toString(socket.getInputStream());
             Assert.assertEquals("",out);
         }
+        
+        server.join();
     }
 
     private static class TestHandler extends AbstractHandler

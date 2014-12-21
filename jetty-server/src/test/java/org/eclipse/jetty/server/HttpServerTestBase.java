@@ -1443,8 +1443,6 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }.start();
 
         String resps = readResponse(client);
-
-        System.err.println(resps);
         
         int offset = 0;
         for (int i = 0; i < (REQS + 1); i++)
