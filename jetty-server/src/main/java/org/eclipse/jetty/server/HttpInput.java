@@ -51,7 +51,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
     private final byte[] _oneByteBuffer = new byte[1];
     private final ArrayQueue<Content> _inputQ = new ArrayQueue<>();
     private ReadListener _listener;
-    private boolean _notReady;
+    private boolean _unready;
     private State _state = STREAM;
     private long _contentConsumed;
 
@@ -77,7 +77,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                 item = _inputQ.pollUnsafe();
             }
             _listener = null;
-            _notReady = false;
+            _unready = false;
             _state = STREAM;
             _contentConsumed = 0;
         }
@@ -209,7 +209,9 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
     {
         int l = Math.min(content.remaining(), length);
         content.getContent().get(buffer, offset, l);
-        _contentConsumed+=length;
+        _contentConsumed+=l;
+        if (l>0 && !content.hasContent())
+            pollInputQ(); // hungry succeed
         return l;
     }
 
@@ -222,9 +224,13 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
      */
     protected void skip(Content content, int length)
     {
+        int l = Math.min(content.remaining(), length);
         ByteBuffer buffer = content.getContent();
-        buffer.position(buffer.position()+length);
-        _contentConsumed+=length;
+        buffer.position(buffer.position()+l);
+        _contentConsumed+=l;
+        if (l>0 && !content.hasContent())
+            pollInputQ(); // hungry succeed
+
     }
 
     /**
@@ -274,12 +280,15 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
 
     protected boolean onAsyncRead()
     {
+        boolean needReadCB=false;
         synchronized (_inputQ)
         {
             if (_listener == null)
                 return false;
+            needReadCB=_unready;
         }
-        onReadPossible();
+        if (needReadCB)
+            onReadPossible();
         return true;
     }
 
@@ -416,15 +425,15 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         boolean finished;
         synchronized (_inputQ)
         {
+            if (available() > 0)
+                return true;
             if (_state.isEOF())
                 return true;
             if (_listener == null )
                 return true;
-            if (available() > 0)
-                return true;
-            if (_notReady)
+            if (_unready)
                 return false;
-            _notReady = true;
+            _unready = true;
             finished = isFinished();
         }
         if (finished)
@@ -448,7 +457,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                 throw new IllegalStateException("state=" + _state);
             _state = ASYNC;
             _listener = readListener;
-            _notReady = true;
+            _unready = true;
         }
         onReadPossible();
     }
@@ -474,7 +483,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
 
         synchronized (_inputQ)
         {
-            if (!_notReady || _listener == null)
+            if (!_unready || _listener == null)
                 return;
 
             error = _state instanceof ErrorState?((ErrorState)_state).getError():null;
@@ -491,7 +500,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             }
 
             eof = !available && isFinished();
-            _notReady = !available && !eof;
+            _unready = !available && !eof;
         }
 
         try
