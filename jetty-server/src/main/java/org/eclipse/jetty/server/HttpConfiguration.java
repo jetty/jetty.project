@@ -256,11 +256,12 @@ public class HttpConfiguration
      * before being sent to the client.  A larger buffer can improve performance by allowing
      * a content producer to run without blocking, however larger buffers consume more memory and
      * may induce some latency before a client starts processing the content.
-     * @param responseBufferSize buffer size in bytes.
+     * @param outputBufferSize buffer size in bytes.
      */
-    public void setOutputBufferSize(int responseBufferSize)
+    public void setOutputBufferSize(int outputBufferSize)
     {
-        _outputBufferSize = responseBufferSize;
+        _outputBufferSize = outputBufferSize;
+        setOutputAggregationSize(outputBufferSize / 4);
     }
     
     /* ------------------------------------------------------------ */
