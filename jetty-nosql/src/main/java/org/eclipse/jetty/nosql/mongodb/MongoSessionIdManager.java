@@ -259,6 +259,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
      */
     protected void purge()
     {
+        __log.debug("PURGING");
         BasicDBObject invalidQuery = new BasicDBObject();
 
         invalidQuery.put(MongoSessionManager.__ACCESSED, new BasicDBObject("$lt",System.currentTimeMillis() - _purgeInvalidAge));
@@ -432,6 +433,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
                 _scavengerTask = _scheduler.schedule(new Scavenger(), _scavengePeriod, TimeUnit.MILLISECONDS);
             }
+            else if (__log.isDebugEnabled())
+                __log.debug("Scavenger disabled");
 
 
             //if purging is enabled, setup the purge thread
@@ -444,6 +447,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                 }
                 _purgerTask = _scheduler.schedule(new Purger(), _purgeDelay, TimeUnit.MILLISECONDS);
             }
+            else if (__log.isDebugEnabled())
+                __log.debug("Purger disabled");
         }
     }
 

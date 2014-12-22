@@ -102,6 +102,9 @@ public class JaspiAuthenticatorFactory extends DefaultAuthenticatorFactory
 
             Subject serviceSubject=findServiceSubject(server);
             String serverName=findServerName(server,serviceSubject);
+            String contextPath=context.getContextPath();
+            if (contextPath==null || contextPath.length()==0)
+                contextPath="/";
             String appContext = serverName + " " + context.getContextPath();
             
             AuthConfigProvider authConfigProvider = authConfigFactory.getConfigProvider(MESSAGE_LAYER,appContext,listener);
