@@ -61,6 +61,7 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -1299,5 +1300,80 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(data, response.getContent());
+    }
+
+    @Test
+    public void testRequestRetries() throws Exception
+    {
+        final int maxRetries = 3;
+        final AtomicInteger requests = new AtomicInteger();
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int count = requests.incrementAndGet();
+                if (count == maxRetries)
+                    baseRequest.setHandled(true);
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        new RetryListener(client, scheme, "localhost", connector.getLocalPort(), maxRetries)
+        {
+            @Override
+            protected void completed(Result result)
+            {
+                latch.countDown();
+            }
+        }.perform();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    public static abstract class RetryListener implements Response.CompleteListener
+    {
+        private final HttpClient client;
+        private final String scheme;
+        private final String host;
+        private final int port;
+        private final int maxRetries;
+        private int retries;
+
+        public RetryListener(HttpClient client, String scheme, String host, int port, int maxRetries)
+        {
+            this.client = client;
+            this.scheme = scheme;
+            this.host = host;
+            this.port = port;
+            this.maxRetries = maxRetries;
+        }
+
+        protected abstract void completed(Result result);
+
+        @Override
+        public void onComplete(Result result)
+        {
+            if (retries > maxRetries || result.isSucceeded() && result.getResponse().getStatus() == 200)
+                completed(result);
+            else
+                retry();
+        }
+
+        private void retry()
+        {
+            ++retries;
+            perform();
+        }
+
+        public void perform()
+        {
+            client.newRequest(host, port)
+                    .scheme(scheme)
+                    .method("POST")
+                    .param("attempt", String.valueOf(retries))
+                    .content(new StringContentProvider("0123456789ABCDEF"))
+                    .send(this);
+        }
     }
 }

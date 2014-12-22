@@ -403,7 +403,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 throw new IllegalStateException("Unable to get PackageAdmin reference to locate required Tld bundles");
 
             StringBuilder paths = new StringBuilder();         
-            String[] symbNames = requireTldBundles.split(", ");
+            String[] symbNames = requireTldBundles.split("[, ]");
 
             for (String symbName : symbNames)
             {
@@ -452,7 +452,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                         String tmp = (String)_properties.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
                         if (tmp != null)
                         {
-                            String[] filenames = tmp.split(",;");
+                            String[] filenames = tmp.split("[,;]");
                             if (filenames != null && filenames.length > 0)
                             {
                                 String filename = filenames[0]; //should only be 1 filename in this usage
