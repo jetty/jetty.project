@@ -170,10 +170,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     @Override
     public void run()
     {
-        while (isRunning() || isStopping())
-            _strategy.execute();
+        _strategy.execute();
     }
-
 
     @Override
     public Runnable produce()
