@@ -549,7 +549,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (_requestLog!=null )
             _requestLog.log(_request,_committedMetaData==null?-1:_committedMetaData.getStatus(), _written);   
-        _transport.completed();
+        _transport.onCompleted();
     }
     
     public void onEarlyEOF()

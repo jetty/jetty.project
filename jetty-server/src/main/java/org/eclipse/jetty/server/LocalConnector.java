@@ -190,6 +190,11 @@ public class LocalConnector extends AbstractConnector
             super(LocalConnector.this.getScheduler(), LocalConnector.this.getIdleTimeout());
             setGrowOutput(true);
         }
+        
+        protected void execute(Runnable task)
+        {
+            getExecutor().execute(task);
+        }
 
         public void addInput(String s)
         {

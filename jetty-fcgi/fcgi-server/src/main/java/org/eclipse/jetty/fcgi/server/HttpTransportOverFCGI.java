@@ -138,7 +138,7 @@ public class HttpTransportOverFCGI implements HttpTransport
     }
 
     @Override
-    public void completed()
+    public void onCompleted()
     {
     }
 }

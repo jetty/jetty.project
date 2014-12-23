@@ -21,6 +21,9 @@ package org.eclipse.jetty.util.thread;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
 /**
  * <p>An {@link ExecutionStrategy} executes {@link Runnable} tasks produced by a {@link Producer}.
  * The strategy to execute the task may vary depending on the implementation; the task may be
@@ -59,6 +62,7 @@ public interface ExecutionStrategy
      */
     public static class ProduceExecuteRun implements ExecutionStrategy
     {
+        private static final Logger LOG = Log.getLogger(ExecutionStrategy.class);
         private final Producer _producer;
         private final Executor _executor;
 
@@ -76,6 +80,8 @@ public interface ExecutionStrategy
             {
                 // Produce a task.
                 Runnable task = _producer.produce();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} PER produced {}",_producer,task);
 
                 if (task == null)
                     break;
@@ -107,6 +113,7 @@ public interface ExecutionStrategy
      */
     public static class ExecuteProduceRun implements ExecutionStrategy, Runnable
     {
+        private static final Logger LOG = Log.getLogger(ExecutionStrategy.class);
         private final AtomicReference<State> _state = new AtomicReference<>(State.IDLE);
         private final Producer _producer;
         private final Executor _executor;
@@ -140,6 +147,8 @@ public interface ExecutionStrategy
         @Override
         public void run()
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} EPR executed",_producer);
             // A new thread has arrived, so clear the PENDING
             // flag and try to set the PRODUCING flag.
             if (!clearPendingTryProducing())
@@ -147,8 +156,13 @@ public interface ExecutionStrategy
 
             while (true)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} EPR producing",_producer);
+                
                 // If we got here, then we are the thread that is producing.
                 Runnable task = _producer.produce();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} EPR produced {}",_producer,task);
 
                 // If no task was produced...
                 if (task == null)
@@ -163,6 +177,8 @@ public interface ExecutionStrategy
                 // and try to set the PENDING flag.
                 if (clearProducingTryPending())
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} EPR executed self",_producer);
                     // Spawn a new thread to continue production.
                     _executor.execute(this);
                 }

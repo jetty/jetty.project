@@ -224,7 +224,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void completed()
+    public void onCompleted()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Completed {}", this);
@@ -264,7 +264,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         }
 
         @Override
-        public void completed()
+        public void onCompleted()
         {
             Stream stream = getStream();
             if (LOG.isDebugEnabled())

@@ -176,7 +176,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     }
 
     @Override
-    public void completed()
+    public void onCompleted()
     {
     }
 

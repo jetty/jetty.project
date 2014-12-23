@@ -330,7 +330,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
     
     @Override
-    public void completed()
+    public void onCompleted()
     {
         // Handle connection upgrades
         if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)

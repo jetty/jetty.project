@@ -31,7 +31,7 @@ public interface HttpTransport
     
     void push(MetaData.Request request);
     
-    void completed();
+    void onCompleted();
     
     /**
      * Aborts this transport.

@@ -101,7 +101,7 @@ public class ResponseTest
             }
             
             @Override
-            public void completed()
+            public void onCompleted()
             {
             }
 

@@ -986,8 +986,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
 
             String in = new String(b, 0, i, StandardCharsets.UTF_8);
-            assertTrue(in.contains("123456789"));
-            assertTrue(in.contains("abcdefghZ"));
+            assertThat(in,containsString("123456789"));
+            assertThat(in,containsString("abcdefghZ"));
             assertFalse(in.contains("Wibble"));
 
             in = new String(b, i, b.length - i, StandardCharsets.UTF_16);
@@ -1086,9 +1086,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
 
             String in = IO.toString(is);
-            assertTrue(in.contains("123456789"));
-            assertTrue(in.contains("abcdefghi"));
-            assertTrue(in.contains("Wibble"));
+            assertThat(in,containsString("123456789"));
+            assertThat(in,containsString("abcdefghi"));
+            assertThat(in,containsString("Wibble"));
         }
     }
 
@@ -1154,7 +1154,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             assertEquals(-1, is.read()); // Closed by error!
 
-            assertTrue(in.contains("HTTP/1.1 200 OK"));
+            assertThat(in,containsString("HTTP/1.1 200 OK"));
             assertTrue(in.indexOf("Transfer-Encoding: chunked") > 0);
             assertTrue(in.indexOf("Now is the time for all good men to come to the aid of the party") > 0);
             assertThat(in, Matchers.not(Matchers.containsString("\r\n0\r\n")));

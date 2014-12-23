@@ -41,6 +41,15 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     static final Logger LOG = Log.getLogger(ByteArrayEndPoint.class);
     public final static InetSocketAddress NOIP=new InetSocketAddress(0);
 
+    private final Runnable _runFillable = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            getFillInterest().fillable();
+        }        
+    };
+    
     protected volatile ByteBuffer _in;
     protected volatile ByteBuffer _out;
     protected volatile boolean _ishut;
@@ -111,20 +120,19 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     /* ------------------------------------------------------------ */
+    protected void execute(Runnable task)
+    {
+        new Thread(task,"BAEPoint-"+Integer.toHexString(hashCode()));
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     protected void needsFillInterest() throws IOException
     {
         if (_closed)
             throw new ClosedChannelException();
         if (BufferUtil.hasContent(_in) || _in==null)
-            getScheduler().schedule(new Runnable()
-            {
-                public void run()
-                {
-                    if (!_closed && _in!=null)
-                        getFillInterest().fillable();
-                }
-            },1,TimeUnit.MILLISECONDS);
+            execute(_runFillable);
     }
 
     /* ------------------------------------------------------------ */

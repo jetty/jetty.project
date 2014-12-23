@@ -141,12 +141,12 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
-    public void completed()
+    public void onCompleted()
     {
         headers.clear();
         stream = null;
         content = null;
-        super.completed();
+        super.onCompleted();
     }
 
     @Override
@@ -275,7 +275,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
             });
 
             if (replyInfo.isClose())
-                completed();
+                onCompleted();
 
             handler.succeeded();
         }
@@ -311,7 +311,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
             });
 
             if (dataInfo.isClose())
-                completed();
+                onCompleted();
 
             handler.succeeded();
         }
