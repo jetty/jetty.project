@@ -38,6 +38,11 @@ import org.junit.Test;
  */
 public class StdErrLogTest
 {
+    static
+    {
+        StdErrLog.setTagPad(0);
+    }
+    
     @Before
     public void before()
     {

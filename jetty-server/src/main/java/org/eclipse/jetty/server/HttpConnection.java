@@ -32,6 +32,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
+import org.eclipse.jetty.server.HttpChannelState.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
@@ -197,6 +198,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             LOG.debug("{} onFillable enter {}", this, _channel.getState());
 
         final HttpConnection last=setCurrentConnection(this);
+        
+        // If the channel state is not idle, then a request is in progress and 
+        // has previously been dispatched.  Thus if this call to onFillable produces
+        // a parsed event, it will be handled by the channel mechanism and this call
+        // does not need to call fillInterested
+        final boolean handling = !_channel.getState().isIdle();
 
         try
         {
@@ -220,8 +227,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 {
                     boolean suspended = !_channel.handle();
                     
-                    // We should break iteration if we have suspended or changed connection
-                    if (suspended || getEndPoint().getConnection() != this )
+                    // We should break iteration if we have suspended or changed connection or this is not the handling thread.
+                    if (suspended || getEndPoint().getConnection() != this || handling )
                         break;
                 }
                 

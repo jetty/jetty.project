@@ -656,6 +656,13 @@ public class SslConnection extends AbstractConnection
                     }
                 }
             }
+            catch (IllegalStateException e)
+            {
+                // Some internal error in SSLEngine
+                LOG.debug(e);
+                getEndPoint().close();
+                throw new EofException(e);
+            }
             catch (Exception e)
             {
                 getEndPoint().close();

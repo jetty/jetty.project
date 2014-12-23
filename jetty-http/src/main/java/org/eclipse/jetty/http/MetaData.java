@@ -271,8 +271,8 @@ public class MetaData implements Iterable<HttpField>
         @Override
         public String toString()
         {
-            return String.format("%s %s %s%s%s",
-                    getMethod(), getURI(), getVersion(), System.lineSeparator(), super.toString());
+            return String.format("%s{u=%s,%s,h=%d}",
+                    getMethod(), getURI(), getVersion(), getFields().size());
         }
     }
 
@@ -364,7 +364,7 @@ public class MetaData implements Iterable<HttpField>
         @Override
         public String toString()
         {
-            return String.format("%s %d%s%s", getVersion(), getStatus(), System.lineSeparator(), super.toString());
+            return String.format("%s{s=%d,h=%d}", getVersion(), getStatus(), getFields().size());
         }
     }
 }

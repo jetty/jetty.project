@@ -563,6 +563,14 @@ public class HttpChannelState
             event.cancelTimeoutTask();
     }
 
+    public boolean isIdle()
+    {
+        synchronized (this)
+        {
+            return _state==State.IDLE;
+        }
+    }
+    
     public boolean isExpired()
     {
         synchronized (this)
@@ -613,6 +621,7 @@ public class HttpChannelState
         }
     }
 
+    
     public boolean isAsync()
     {
         synchronized (this)
