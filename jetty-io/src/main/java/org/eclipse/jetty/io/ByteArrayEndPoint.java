@@ -122,7 +122,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     /* ------------------------------------------------------------ */
     protected void execute(Runnable task)
     {
-        new Thread(task,"BAEPoint-"+Integer.toHexString(hashCode()));
+        new Thread(task,"BAEPoint-"+Integer.toHexString(hashCode())).start();
     }
     
     /* ------------------------------------------------------------ */
