@@ -41,16 +41,15 @@ public class HttpInputOverHTTP extends HttpInput
     }
 
     @Override
-    protected void blockForContent() throws IOException
+    protected void onBlockForContent()
     {
-        _httpConnection.fillInterested();
-        super.blockForContent();
+        _httpConnection.blockingReadFillInterested();
     }
 
     @Override
     protected void unready()
     {
-        _httpConnection.fillInterested();
+        _httpConnection.asyncReadFillInterested();
     }
 
     @Override 

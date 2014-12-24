@@ -233,6 +233,11 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
 
     }
 
+    protected void onBlockForContent()
+    {    
+    }
+    
+    
     /**
      * Blocks until some content or some end-of-file event arrives.
      *
@@ -248,7 +253,9 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} blocking for content...", this);
+                onBlockForContent();
                 _inputQ.wait();
+                produceContent();
             }
             catch (InterruptedException e)
             {
@@ -285,7 +292,17 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             if (_inputQ.isEmpty())
                 pill.succeeded();
             else
+            {
                 _inputQ.add(pill);
+            }
+        }
+    }
+
+    public void unblock()
+    {
+        synchronized (_inputQ)
+        {
+            _inputQ.notify();
         }
     }
 
@@ -481,6 +498,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                 LOG.warn(x);
             else
                 _state = new ErrorState(x);
+            _inputQ.notify();
         }
     }
 

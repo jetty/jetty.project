@@ -227,6 +227,7 @@ public class HttpInputTest
         
         assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("blockForContent"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());
         
         assertThat(_in.read(),equalTo((int)'B'));
@@ -322,6 +323,7 @@ public class HttpInputTest
         
         assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("blockForContent"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());   
     }
     
