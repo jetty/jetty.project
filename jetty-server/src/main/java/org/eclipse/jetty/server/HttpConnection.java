@@ -64,7 +64,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final BlockingReadCallback _blockingReadCallback = new BlockingReadCallback();
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
-    private final HttpInput.PoisonPillContent _recycle = new RecycleBufferContent();
+    private final HttpInput.PoisonPillContent _recycleRequestBuffer = new RecycleBufferContent();
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -319,17 +319,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         if (LOG.isDebugEnabled())
             LOG.debug("{} parse {} {}",this,BufferUtil.toDetailString(_requestBuffer));
         
-        boolean had_input=BufferUtil.hasContent(_requestBuffer);
+        boolean buffer_had_content=BufferUtil.hasContent(_requestBuffer);
         boolean handle = _parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} parsed {} {}",this,handle,_parser);
         
         // recycle buffer ?
-        if (had_input && BufferUtil.isEmpty(_requestBuffer))
+        if (buffer_had_content && BufferUtil.isEmpty(_requestBuffer))
         {
             if (_parser.inContentState())
-                _input.addPoisonPillContent(_recycle);
+                _input.addContent(_recycleRequestBuffer);
             else
                 releaseRequestBuffer();
         }

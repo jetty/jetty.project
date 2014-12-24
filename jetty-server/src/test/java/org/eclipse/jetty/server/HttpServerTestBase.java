@@ -1404,7 +1404,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new NoopHandler());
         final int REQS = 2;
-        String content = "This is a coooooooooooooooooooooooooooooooooo" +
+        final String content = "This is a coooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
@@ -1414,7 +1414,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "oooooooooooonnnnnnnnnnnnnnnntent";
-        final byte[] bytes = content.getBytes();
+        final int cl = content.getBytes().length;
 
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         final OutputStream out = client.getOutputStream();
@@ -1426,12 +1426,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             {
                 try
                 {
+                    byte[] bytes=(
+                            "GET / HTTP/1.1\r\n"+
+                                    "Host: localhost\r\n"
+                                    +"Content-Length: " + cl + "\r\n" +
+                                    "\r\n"+
+                                    content).getBytes(StandardCharsets.ISO_8859_1);
+                                    
                     for (int i = 0; i < REQS; i++)
-                    {
-                        out.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes(StandardCharsets.ISO_8859_1));
-                        out.write(("Content-Length: " + bytes.length + "\r\n" + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
                         out.write(bytes, 0, bytes.length);
-                    }
                     out.write("GET / HTTP/1.1\r\nHost: last\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
                     out.flush();
                 }
@@ -1443,7 +1446,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }.start();
 
         String resps = readResponse(client);
-        
+                
         int offset = 0;
         for (int i = 0; i < (REQS + 1); i++)
         {

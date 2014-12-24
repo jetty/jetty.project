@@ -54,7 +54,7 @@ public class HttpInputTest
                     return super.add(s);
                 }
             };
-    Queue<String> _content = new ConcurrentArrayQueue<>();
+    Queue<String> _fillAndParseSimulate = new ConcurrentArrayQueue<>();
     HttpInput _in;
     
     ReadListener _listener = new ReadListener()
@@ -116,14 +116,14 @@ public class HttpInputTest
             @Override
             protected void produceContent() throws IOException
             {
-                _history.add("produceContent "+_content.size()); 
+                _history.add("produceContent "+_fillAndParseSimulate.size()); 
                 
-                for (String s=_content.poll();s!=null;s=_content.poll())
+                for (String s=_fillAndParseSimulate.poll();s!=null;s=_fillAndParseSimulate.poll())
                 {
                     if ("_EOF_".equals(s))
                         _in.eof();
                     else
-                        _in.content(new TContent(s));
+                        _in.addContent(new TContent(s));
                 }
             }
 
@@ -157,17 +157,16 @@ public class HttpInputTest
         
         assertThat(_in.isFinished(),equalTo(false));
         assertThat(_in.isReady(),equalTo(true));
-        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());
     }
 
     @Test
     public void testRead() throws Exception
     {
-        _in.content(new TContent("AB"));
-        _in.content(new TContent("CD"));
-        _content.offer("EF");
-        _content.offer("GH");
+        _in.addContent(new TContent("AB"));
+        _in.addContent(new TContent("CD"));
+        _fillAndParseSimulate.offer("EF");
+        _fillAndParseSimulate.offer("GH");
         assertThat(_in.available(),equalTo(2));
         assertThat(_in.isFinished(),equalTo(false));
         assertThat(_in.isReady(),equalTo(true));
@@ -214,7 +213,7 @@ public class HttpInputTest
                 try
                 {
                     Thread.sleep(500);
-                    _in.content(new TContent("AB"));
+                    _in.addContent(new TContent("AB"));
                 }
                 catch(Throwable th)
                 {
@@ -227,7 +226,6 @@ public class HttpInputTest
         
         assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("blockForContent"));
-        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());
         
         assertThat(_in.read(),equalTo((int)'B'));
@@ -239,8 +237,8 @@ public class HttpInputTest
     @Test
     public void testReadEOF() throws Exception
     {
-        _in.content(new TContent("AB"));
-        _in.content(new TContent("CD"));
+        _in.addContent(new TContent("AB"));
+        _in.addContent(new TContent("CD"));
         _in.eof();
 
         assertThat(_in.isFinished(),equalTo(false));
@@ -268,8 +266,8 @@ public class HttpInputTest
     @Test
     public void testReadEarlyEOF() throws Exception
     {
-        _in.content(new TContent("AB"));
-        _in.content(new TContent("CD"));
+        _in.addContent(new TContent("AB"));
+        _in.addContent(new TContent("CD"));
         _in.earlyEOF();
 
         assertThat(_in.isFinished(),equalTo(false));
@@ -323,7 +321,6 @@ public class HttpInputTest
         
         assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("blockForContent"));
-        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());   
     }
     
@@ -331,19 +328,19 @@ public class HttpInputTest
     public void testAsyncEmpty() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_in.available(),equalTo(0));
-        assertThat(_in.isFinished(),equalTo(false));
-        assertThat(_in.read(new byte[]{0}),equalTo(0));
         assertThat(_history.poll(),equalTo("onReadPossible"));
-        assertThat(_history.poll(),equalTo("produceContent 0"));
-        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());
+        
         _in.run();
+        assertThat(_history.poll(),equalTo("onDataAvailable"));
+        assertThat(_history.poll(),nullValue());
+
+        assertThat(_in.isReady(),equalTo(false));
         assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
+        
         assertThat(_in.isReady(),equalTo(false));
-        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());
     }
     
@@ -356,12 +353,16 @@ public class HttpInputTest
         assertThat(_history.poll(),nullValue());
         
         _in.run();
+        assertThat(_history.poll(),equalTo("onDataAvailable"));
+        assertThat(_history.poll(),nullValue());
+
+        assertThat(_in.isReady(),equalTo(false));
         assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         
-        _in.content(new TContent("AB"));
-        _content.add("CD");
+        _in.addContent(new TContent("AB"));
+        _fillAndParseSimulate.add("CD");
         
         assertThat(_history.poll(),equalTo("onReadPossible"));
         assertThat(_history.poll(),nullValue());
@@ -400,20 +401,18 @@ public class HttpInputTest
     public void testAsyncEOF() throws Exception
     {
         _in.setReadListener(_listener);
-        _in.run();
         assertThat(_history.poll(),equalTo("onReadPossible"));
-        assertThat(_history.poll(),equalTo("produceContent 0"));
-        assertThat(_history.poll(),equalTo("unready"));
-        assertThat(_history.poll(),nullValue());
-        
-        _in.eof();
-        _in.run();
-        assertThat(_in.isFinished(),equalTo(true));
-        assertThat(_history.poll(),equalTo("onReadPossible"));
-        assertThat(_history.poll(),equalTo("onAllDataRead"));
         assertThat(_history.poll(),nullValue());
 
+        _in.run();
+        assertThat(_history.poll(),equalTo("onDataAvailable"));
+        assertThat(_history.poll(),nullValue());
+
+        _in.eof();
         assertThat(_in.isReady(),equalTo(true));
+        assertThat(_in.isFinished(),equalTo(false));
+        assertThat(_history.poll(),nullValue());
+
         assertThat(_in.read(),equalTo(-1));
         assertThat(_in.isFinished(),equalTo(true));
 
@@ -428,15 +427,20 @@ public class HttpInputTest
         assertThat(_history.poll(),nullValue());
         
         _in.run();
+        assertThat(_history.poll(),equalTo("onDataAvailable"));
+        assertThat(_history.poll(),nullValue());
+
+        assertThat(_in.isReady(),equalTo(false));
         assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         
-        _in.content(new TContent("AB"));
-        _content.add("_EOF_");
+        _in.addContent(new TContent("AB"));
+        _fillAndParseSimulate.add("_EOF_");
         
         assertThat(_history.poll(),equalTo("onReadPossible"));
         assertThat(_history.poll(),nullValue());
+        
         _in.run();
         assertThat(_history.poll(),equalTo("onDataAvailable"));
         assertThat(_history.poll(),nullValue());
@@ -449,21 +453,20 @@ public class HttpInputTest
 
         assertThat(_history.poll(),equalTo("Content succeeded AB"));
         assertThat(_history.poll(),nullValue());
-        
+
+        assertThat(_in.isFinished(),equalTo(false));
         assertThat(_in.isReady(),equalTo(true));
         assertThat(_history.poll(),equalTo("produceContent 1"));
-        assertThat(_history.poll(),equalTo("onReadPossible"));
         assertThat(_history.poll(),nullValue());
 
-        _in.run();
-        assertThat(_history.poll(),nullValue());
-        
-        assertThat(_in.isReady(),equalTo(true));
-        assertThat(_in.read(),equalTo(-1));
+        assertThat(_in.isFinished(),equalTo(false));
+        assertThat(_in.read(),equalTo(-1));        
         assertThat(_in.isFinished(),equalTo(true));
 
         assertThat(_history.poll(),nullValue());
-        
+        assertThat(_in.isReady(),equalTo(true));
+        assertThat(_history.poll(),nullValue());
+
     }
 
     
@@ -471,20 +474,27 @@ public class HttpInputTest
     public void testAsyncError() throws Exception
     {
         _in.setReadListener(_listener);
-        _in.run();
         assertThat(_history.poll(),equalTo("onReadPossible"));
+        assertThat(_history.poll(),nullValue());
+        _in.run();
+        assertThat(_history.poll(),equalTo("onDataAvailable"));
+        assertThat(_history.poll(),nullValue());
+
+        assertThat(_in.isReady(),equalTo(false));
         assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         
         _in.failed(new TimeoutException());
+        assertThat(_history.poll(),equalTo("onReadPossible"));
+        assertThat(_history.poll(),nullValue());
+        
         _in.run();
         assertThat(_in.isFinished(),equalTo(true));
         assertThat(_history.poll(),equalTo("onError:java.util.concurrent.TimeoutException"));
         assertThat(_history.poll(),nullValue());
 
         assertThat(_in.isReady(),equalTo(true));
-        
         try
         {
             _in.read();
@@ -513,10 +523,10 @@ public class HttpInputTest
     @Test
     public void testConsumeAll() throws Exception
     {
-        _in.content(new TContent("AB"));
-        _in.content(new TContent("CD"));
-        _content.offer("EF");
-        _content.offer("GH");
+        _in.addContent(new TContent("AB"));
+        _in.addContent(new TContent("CD"));
+        _fillAndParseSimulate.offer("EF");
+        _fillAndParseSimulate.offer("GH");
         assertThat(_in.read(),equalTo((int)'A'));
         
         assertFalse(_in.consumeAll());
@@ -534,11 +544,11 @@ public class HttpInputTest
     @Test
     public void testConsumeAllEOF() throws Exception
     {
-        _in.content(new TContent("AB"));
-        _in.content(new TContent("CD"));
-        _content.offer("EF");
-        _content.offer("GH");
-        _content.offer("_EOF_");
+        _in.addContent(new TContent("AB"));
+        _in.addContent(new TContent("CD"));
+        _fillAndParseSimulate.offer("EF");
+        _fillAndParseSimulate.offer("GH");
+        _fillAndParseSimulate.offer("_EOF_");
         assertThat(_in.read(),equalTo((int)'A'));
         
         assertTrue(_in.consumeAll());

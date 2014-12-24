@@ -535,7 +535,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.debug("{} content {}", this, content);
         
         HttpInput input = _request.getHttpInput();
-        input.content(content);
+        input.addContent(content);
     }
 
     public void onRequestComplete()
