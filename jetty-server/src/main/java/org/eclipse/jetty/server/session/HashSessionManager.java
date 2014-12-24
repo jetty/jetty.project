@@ -599,11 +599,13 @@ public class HashSessionManager extends AbstractSessionManager
                 if (isDeleteUnrestorableSessions() && file.exists() && file.getParentFile().equals(_storeDir) )
                 {
                     file.delete();
-                    LOG.warn("Deleting file for unrestorable session "+idInCuster, error);
+                    LOG.warn("Deleting file for unrestorable session {} {}",idInCuster,error);
+                    __log.debug(error);
                 }
                 else
                 {
-                    __log.warn("Problem restoring session "+idInCuster, error);
+                    __log.warn("Problem restoring session {} {}",idInCuster, error);
+                    __log.debug(error);
                 }
             }
             else
