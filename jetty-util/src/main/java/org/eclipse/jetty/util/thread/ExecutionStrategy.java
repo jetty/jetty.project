@@ -60,6 +60,37 @@ public interface ExecutionStrategy
      * <p>A strategy where the caller thread iterates over task production, submitting each
      * task to an {@link Executor} for execution.</p>
      */
+    public static class ProduceRun implements ExecutionStrategy
+    {
+        private final Producer _producer;
+
+        public ProduceRun(Producer producer)
+        {
+            this._producer = producer;
+        }
+
+        @Override
+        public void execute()
+        {
+            // Iterate until we are complete.
+            while (true)
+            {
+                // Produce a task.
+                Runnable task = _producer.produce();
+
+                if (task == null)
+                    break;
+
+                // run the task.
+                task.run();
+            }
+        }
+    }
+    
+    /**
+     * <p>A strategy where the caller thread iterates over task production, submitting each
+     * task to an {@link Executor} for execution.</p>
+     */
     public static class ProduceExecuteRun implements ExecutionStrategy
     {
         private static final Logger LOG = Log.getLogger(ExecutionStrategy.class);
