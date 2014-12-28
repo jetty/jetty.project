@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
@@ -137,14 +138,42 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         return _selectors.length;
     }
 
-    private ManagedSelector chooseSelector()
+    private ManagedSelector chooseSelector(SocketChannel channel)
     {
+        // Ideally we would like to have all connectors from the same client end
+        // up on the same selector (to try to avoid smearing the data from a single 
+        // client over all cores), but because of proxies, the remote address may not
+        // really be the client - so we have to hedge our bets to ensure that all
+        // channels don't end up on the one selector for a proxy.
+        ManagedSelector ms0=null;
+        if (channel!=null)
+        {
+            try
+            {
+                SocketAddress remote = channel.getRemoteAddress();
+                if (remote instanceof InetSocketAddress)
+                {
+                    byte[] addr = ((InetSocketAddress)remote).getAddress().getAddress();
+                    if (addr!=null && addr.length>0)
+                        ms0=_selectors[addr[addr.length-1]%getSelectorCount()];
+                }
+            }
+            catch (IOException e)
+            {
+                LOG.ignore(e);
+            }
+        }
+        
         // The ++ increment here is not atomic, but it does not matter,
         // so long as the value changes sometimes, then connections will
         // be distributed over the available selectors.
         long s = _selectorIndex++;
         int index = (int)(s % getSelectorCount());
-        return _selectors[index];
+        ManagedSelector ms1 = _selectors[index];
+        
+        if (ms0==null || ms0.size()>=ms1.size()*2)
+            return ms1;
+        return ms0;
     }
 
     /**
@@ -159,7 +188,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public void connect(SocketChannel channel, Object attachment)
     {
-        ManagedSelector set = chooseSelector();
+        ManagedSelector set = chooseSelector(channel);
         set.submit(set.new Connect(channel, attachment));
     }
 
@@ -183,7 +212,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public void accept(SocketChannel channel, Object attachment)
     {
-        final ManagedSelector selector = chooseSelector();
+        final ManagedSelector selector = chooseSelector(channel);
         selector.submit(selector.new Accept(channel, attachment));
     }
     
@@ -197,7 +226,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      */
     public void acceptor(ServerSocketChannel server)
     {
-        final ManagedSelector selector = chooseSelector();
+        final ManagedSelector selector = chooseSelector(null);
         selector.submit(selector.new Acceptor(server));
     }
     

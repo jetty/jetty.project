@@ -86,6 +86,14 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         return Selector.open();
     }
 
+    public int size()
+    {
+        Selector s = _selector;
+        if (s==null)
+            return 0;
+        return s.keys().size();
+    }
+
     @Override
     protected void doStop() throws Exception
     {
@@ -711,4 +719,5 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     {
         PROCESSING, SELECTING, LOCKED
     }
+
 }
