@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.net.URI;
@@ -43,6 +44,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -520,7 +522,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new RespondThenConsumeHandler());
 
         // Prepare a big file to upload
         Path targetTestsDir = testdir.getEmptyDir().toPath();
@@ -576,6 +578,23 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Thread.sleep(1000);
 
         Files.delete(file);
+    }
+    
+    private static class RespondThenConsumeHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response)
+                throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setContentLength(0);
+            response.setStatus(200);
+            response.flushBuffer();
+            
+            InputStream in = request.getInputStream();
+            while(in.read()>=0);
+        }
+        
     }
 
     @Test
