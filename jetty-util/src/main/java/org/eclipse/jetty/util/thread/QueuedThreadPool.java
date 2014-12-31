@@ -406,6 +406,16 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
+     * @return The number of busy threads in the pool
+     */
+    @Override
+    @ManagedAttribute("total number of busy threads in the pool")
+    public int getBusyThreads()
+    {
+        return getThreads() - getIdleThreads();
+    }
+
+    /**
      * @return True if the pool is at maxThreads and there are not more idle threads than queued jobs
      */
     @Override
