@@ -292,7 +292,7 @@ public class RequestTest
         contextHandler.setContextPath("/foo");
         contextHandler.setResourceBase(".");
         contextHandler.setHandler(new BadMultiPartRequestHandler(testTmpDir));
-        contextHandler.addEventListener(new Request.MultiPartCleanerListener()
+        contextHandler.addEventListener(new MultiPartCleanerListener()
         {
 
             @Override
