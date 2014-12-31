@@ -495,10 +495,8 @@ public class Request implements HttpServletRequest
         }
         catch (IOException | ServletException e)
         {
-            if (LOG.isDebugEnabled())
-                LOG.warn(e);
-            else
-                LOG.warn(e.toString());
+            LOG.warn(e);
+            throw new RuntimeException(e);
         }
     }
 

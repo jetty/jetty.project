@@ -696,7 +696,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             //servlet calling Request.getPart() or Request.getParts()
 
             ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
-            ch.addEventListener(new MultiPartCleanerListener());
+            ch.addEventListener(MultiPartCleanerListener.INSTANCE);
         }
     }
 

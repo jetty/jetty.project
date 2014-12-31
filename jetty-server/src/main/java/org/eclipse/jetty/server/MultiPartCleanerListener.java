@@ -28,6 +28,12 @@ import org.eclipse.jetty.util.MultiPartInputStreamParser;
 
 public class MultiPartCleanerListener implements ServletRequestListener
 {
+    public final static MultiPartCleanerListener INSTANCE = new MultiPartCleanerListener();
+    
+    protected MultiPartCleanerListener()
+    {
+    }
+    
     @Override
     public void requestDestroyed(ServletRequestEvent sre)
     {
