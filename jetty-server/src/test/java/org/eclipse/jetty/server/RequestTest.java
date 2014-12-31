@@ -276,6 +276,67 @@ public class RequestTest
         // System.err.println(responses);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
+    
+    @Test
+    public void testBadMultiPart() throws Exception
+    {        
+        //a bad multipart where one of the fields has no name
+        final File testTmpDir = File.createTempFile("badmptest", null);
+        if (testTmpDir.exists())
+            testTmpDir.delete();
+        testTmpDir.mkdir();
+        testTmpDir.deleteOnExit();
+        assertTrue(testTmpDir.list().length == 0);
+
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/foo");
+        contextHandler.setResourceBase(".");
+        contextHandler.setHandler(new BadMultiPartRequestHandler(testTmpDir));
+        contextHandler.addEventListener(new Request.MultiPartCleanerListener()
+        {
+
+            @Override
+            public void requestDestroyed(ServletRequestEvent sre)
+            {
+                MultiPartInputStreamParser m = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
+                ContextHandler.Context c = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
+                assertNotNull (m);
+                assertNotNull (c);
+                assertTrue(c == sre.getServletContext());
+                super.requestDestroyed(sre);
+                String[] files = testTmpDir.list();
+                assertTrue(files.length == 0);
+            }
+
+        });
+        _server.stop();
+        _server.setHandler(contextHandler);
+        _server.start();
+
+        String multipart =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"xxx\"\r\n"+
+        "\r\n"+
+        "Joe Blow\r\n"+
+        "--AaB03x\r\n"+
+        "content-disposition: form-data;  filename=\"foo.upload\"\r\n"+
+        "Content-Type: text/plain;charset=ISO-8859-1\r\n"+
+        "\r\n"+
+        "000000000000000000000000000000000000000000000000000\r\n"+
+        "--AaB03x--\r\n";
+
+        String request="GET /foo/x.html HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
+        "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "Connection: close\r\n"+
+        "\r\n"+
+        multipart;
+
+        String responses=_connector.getResponses(request);
+        //System.err.println(responses);
+        assertTrue(responses.startsWith("HTTP/1.1 500"));
+    }
+
 
     @Test
     public void testBadUtf8ParamExtraction() throws Exception
@@ -1286,4 +1347,38 @@ public class RequestTest
             }
         }
     }
+    
+    private class BadMultiPartRequestHandler extends AbstractHandler
+    {
+        File tmpDir;
+
+        public  BadMultiPartRequestHandler(File tmpDir)
+        {
+            this.tmpDir = tmpDir;
+        }
+
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            ((Request)request).setHandled(true);
+            try
+            {
+
+                MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(),-1, -1, 2);
+                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+
+                //We should get an error when we getParams if there was a problem parsing the multipart
+                String field1 = request.getParameter("xxx");
+                //A 200 response is actually wrong here
+            }
+            catch (RuntimeException e)
+            {
+                response.sendError(500);
+            }
+           
+        }
+    }
+    
+    
 }
