@@ -68,7 +68,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     public ManagedSelector(SelectorManager selectorManager, int id)
     {
         _selectorManager = selectorManager;
-        _strategy = new ExecutionStrategy.ExecuteProduceRun(this, selectorManager.getExecutor());
+        _strategy = ExecutionStrategy.Factory.instanceFor(this, selectorManager.getExecutor());
         _id = id;
         setStopTimeout(5000);
     }

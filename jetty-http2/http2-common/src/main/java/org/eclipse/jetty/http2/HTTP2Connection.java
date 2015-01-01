@@ -51,7 +51,7 @@ public class HTTP2Connection extends AbstractConnection
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.executionStrategy = new ExecutionStrategy.ExecuteProduceRun(new HTTP2Producer(), executor);
+        this.executionStrategy = ExecutionStrategy.Factory.instanceFor(new HTTP2Producer(), executor);
     }
 
     protected ISession getSession()

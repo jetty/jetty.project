@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.lang.reflect.Constructor;
+import java.lang.reflect.Method;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -56,6 +59,33 @@ public interface ExecutionStrategy
         Runnable produce();
     }
 
+    public static class Factory
+    {
+        private static final Logger LOG = Log.getLogger(Factory.class);
+
+        public static ExecutionStrategy instanceFor(Producer producer, Executor executor)
+        {
+            // TODO remove this mechanism before release
+            String strategy = System.getProperty(producer.getClass().getName()+".ExecutionStrategy");
+            if (strategy!=null)
+            {
+                try
+                {
+                    Class<? extends ExecutionStrategy> c = Loader.loadClass(producer.getClass(),strategy);
+                    Constructor<? extends ExecutionStrategy> m = c.getConstructor(Producer.class,Executor.class);
+                    LOG.info("Use {} for {}",c.getSimpleName(),producer.getClass().getName());
+                    return  m.newInstance(producer,executor);
+                }
+                catch(Exception e)
+                {
+                    LOG.warn(e);
+                }
+            }
+            
+            return new ExecuteProduceRun(producer,executor);
+        }
+    }
+    
     /**
      * <p>A strategy where the caller thread iterates over task production, submitting each
      * task to an {@link Executor} for execution.</p>
