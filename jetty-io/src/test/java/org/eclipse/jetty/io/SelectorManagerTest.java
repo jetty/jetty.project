@@ -94,7 +94,7 @@ public class SelectorManagerTest
             public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
             {
                 ((Callback)attachment).succeeded();
-                return new AbstractConnection(endpoint, executor, false)
+                return new AbstractConnection(endpoint, executor)
                 {
                     @Override
                     public void onFillable()

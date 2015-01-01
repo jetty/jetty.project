@@ -38,7 +38,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
 
     protected NegotiatingClientConnection(EndPoint endp, Executor executor, SSLEngine sslEngine, ClientConnectionFactory connectionFactory, Map<String, Object> context)
     {
-        super(endp, executor, false);
+        super(endp, executor);
         this.engine = sslEngine;
         this.connectionFactory = connectionFactory;
         this.context = context;

@@ -44,7 +44,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 
     public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination)
     {
-        super(endPoint, destination.getHttpClient().getExecutor(), destination.getHttpClient().isDispatchIO());
+        super(endPoint, destination.getHttpClient().getExecutor());
         this.delegate = new Delegate(destination);
         this.channel = new HttpChannelOverHTTP(this);
     }

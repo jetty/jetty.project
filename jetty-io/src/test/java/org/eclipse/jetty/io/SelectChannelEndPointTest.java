@@ -124,7 +124,7 @@ public class SelectChannelEndPointTest
 
         public TestConnection(EndPoint endp)
         {
-            super(endp, _threadPool, false);
+            super(endp, _threadPool);
         }
 
         @Override

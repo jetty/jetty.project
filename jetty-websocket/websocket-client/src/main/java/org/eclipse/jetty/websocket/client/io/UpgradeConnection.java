@@ -103,7 +103,7 @@ public class UpgradeConnection extends AbstractConnection
 
     public UpgradeConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise)
     {
-        super(endp,executor,connectPromise.getClient().isDispatchIO());
+        super(endp,executor);
         this.connectPromise = connectPromise;
         this.bufferPool = connectPromise.getClient().getBufferPool();
         this.request = connectPromise.getRequest();

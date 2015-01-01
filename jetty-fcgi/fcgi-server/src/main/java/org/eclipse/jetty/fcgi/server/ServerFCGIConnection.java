@@ -48,7 +48,7 @@ public class ServerFCGIConnection extends AbstractConnection
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
-        super(endPoint, connector.getExecutor(), false);
+        super(endPoint, connector.getExecutor());
         this.connector = connector;
         this.flusher = new Flusher(endPoint);
         this.configuration = configuration;

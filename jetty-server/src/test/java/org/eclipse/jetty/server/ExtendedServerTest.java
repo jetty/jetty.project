@@ -94,7 +94,7 @@ public class ExtendedServerTest extends HttpServerTestBase
     {
         public ExtendedHttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
         {
-            super(config,connector,endPoint,false);
+            super(config,connector,endPoint);
         }
 
         @Override

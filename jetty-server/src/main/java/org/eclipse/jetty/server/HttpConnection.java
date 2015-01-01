@@ -88,9 +88,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return last;
     }
 
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, boolean dispatchIO)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
     {
-        super(endPoint, connector.getExecutor(), dispatchIO);
+        super(endPoint, connector.getExecutor());
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();

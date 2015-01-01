@@ -33,9 +33,9 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
 {
     private final AtomicBoolean opened = new AtomicBoolean(false);
 
-    public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool, boolean dispatchIO)
+    public WebSocketServerConnection(EndPoint endp, Executor executor, Scheduler scheduler, WebSocketPolicy policy, ByteBufferPool bufferPool)
     {
-        super(endp,executor,scheduler,policy,bufferPool,dispatchIO);
+        super(endp,executor,scheduler,policy,bufferPool);
         if (policy.getIdleTimeout() > 0)
         {
             endp.setIdleTimeout(policy.getIdleTimeout());

@@ -98,7 +98,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         
         protected ProxyConnection(EndPoint endp, Connector connector, String next)
         {
-            super(endp,connector.getExecutor(),false);
+            super(endp,connector.getExecutor());
             _connector=connector;
             _next=next;
         }

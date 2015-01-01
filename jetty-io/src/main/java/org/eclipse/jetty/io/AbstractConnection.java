@@ -45,17 +45,15 @@ public abstract class AbstractConnection implements Connection
     private final EndPoint _endPoint;
     private final Executor _executor;
     private final Callback _readCallback;
-    private final boolean _dispatchIO;
     private int _inputBufferSize=2048;
 
-    protected AbstractConnection(EndPoint endp, Executor executor, boolean dispatchIO)
+    protected AbstractConnection(EndPoint endp, Executor executor)
     {
         if (executor == null)
             throw new IllegalArgumentException("Executor must not be null!");
         _endPoint = endp;
         _executor = executor;
         _readCallback = new ReadCallback();
-        _dispatchIO = dispatchIO;
     }
 
     @Override
@@ -79,35 +77,29 @@ public abstract class AbstractConnection implements Connection
         return _executor;
     }
 
+    @Deprecated
     public boolean isDispatchIO()
     {
-        return _dispatchIO;
+        return false;
     }
 
     protected void failedCallback(final Callback callback, final Throwable x)
     {
-        boolean dispatchFailure = isDispatchIO();
-        if (dispatchFailure)
+        // TODO always dispatch failure ?
+        try
         {
-            try
+            getExecutor().execute(new Runnable()
             {
-                getExecutor().execute(new Runnable()
+                @Override
+                public void run()
                 {
-                    @Override
-                    public void run()
-                    {
-                        callback.failed(x);
-                    }
-                });
-            }
-            catch(RejectedExecutionException e)
-            {
-                LOG.debug(e);
-                callback.failed(x);
-            }
+                    callback.failed(x);
+                }
+            });
         }
-        else
+        catch(RejectedExecutionException e)
         {
+            LOG.debug(e);
             callback.failed(x);
         }
     }

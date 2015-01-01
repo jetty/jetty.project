@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -152,9 +153,11 @@ public class HttpClientCustomProxyTest
 
         public CAFEBABEConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, Map<String, Object> context)
         {
-            super(endPoint, executor, true);
+            super(endPoint, executor);
             this.connectionFactory = connectionFactory;
             this.context = context;
+
+            throw new IllegalStateException("This was calling super dispatchIO=true. Needs to be reviewed");
         }
 
         @Override
@@ -211,8 +214,9 @@ public class HttpClientCustomProxyTest
 
         public CAFEBABEServerConnection(Connector connector, EndPoint endPoint, org.eclipse.jetty.server.ConnectionFactory connectionFactory)
         {
-            super(endPoint, connector.getExecutor(), true);
+            super(endPoint, connector.getExecutor());
             this.connectionFactory = connectionFactory;
+            throw new IllegalStateException("This was calling super dispatchIO=true. Needs to be reviewed");
         }
 
         @Override

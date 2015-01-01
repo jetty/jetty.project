@@ -41,7 +41,7 @@ public abstract class ProxyConnection extends AbstractConnection
 
     protected ProxyConnection(EndPoint endp, Executor executor, ByteBufferPool bufferPool, ConcurrentMap<String, Object> context)
     {
-        super(endp, executor, false);
+        super(endp, executor);
         this.bufferPool = bufferPool;
         this.context = context;
     }

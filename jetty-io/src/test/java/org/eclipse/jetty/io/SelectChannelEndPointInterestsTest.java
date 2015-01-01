@@ -79,7 +79,7 @@ public class SelectChannelEndPointInterestsTest
             @Override
             public Connection newConnection(SocketChannel channel, final EndPoint endPoint, Object attachment)
             {
-                return new AbstractConnection(endPoint, getExecutor(), false)
+                return new AbstractConnection(endPoint, getExecutor())
                 {
                     @Override
                     public void onOpen()

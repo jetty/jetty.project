@@ -65,7 +65,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
 
     public HttpConnectionOverFCGI(EndPoint endPoint, HttpDestination destination, boolean multiplexed)
     {
-        super(endPoint, destination.getHttpClient().getExecutor(), destination.getHttpClient().isDispatchIO());
+        super(endPoint, destination.getHttpClient().getExecutor());
         this.destination = destination;
         this.multiplexed = multiplexed;
         this.flusher = new Flusher(endPoint);

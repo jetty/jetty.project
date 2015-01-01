@@ -48,7 +48,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
 
     public WebSocketClientConnection(EndPoint endp, Executor executor, ConnectPromise connectPromise, WebSocketPolicy policy)
     {
-        super(endp,executor,connectPromise.getClient().getScheduler(),policy,connectPromise.getClient().getBufferPool(),connectPromise.getClient().isDispatchIO());
+        super(endp,executor,connectPromise.getClient().getScheduler(),policy,connectPromise.getClient().getBufferPool());
         this.connectPromise = connectPromise;
         this.masker = connectPromise.getMasker();
         assert (this.masker != null);

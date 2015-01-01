@@ -44,9 +44,9 @@ public class HTTP2Connection extends AbstractConnection
     private final int bufferSize;
     private final ExecutionStrategy executionStrategy; // TODO: make it pluggable from outside ?
 
-    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize, boolean dispatchIO)
+    public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
-        super(endPoint, executor, dispatchIO);
+        super(endPoint, executor);
         this.byteBufferPool = byteBufferPool;
         this.parser = parser;
         this.session = session;

@@ -66,7 +66,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Generator generator = new Generator(byteBufferPool, 4096);
         HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, new HTTP2FlowControl(FlowControl.DEFAULT_WINDOW_SIZE));
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
-        return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, false, promise, listener);
+        return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, promise, listener);
     }
 
     public int getInitialSessionWindow()
@@ -85,9 +85,9 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        public HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, boolean dispatchIO, Promise<Session> promise, Session.Listener listener)
+        public HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
         {
-            super(byteBufferPool, executor, endpoint, parser, session, bufferSize, dispatchIO);
+            super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
             this.client = client;
             this.promise = promise;
             this.listener = listener;
