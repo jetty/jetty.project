@@ -82,11 +82,13 @@ public class ServerFCGIConnection extends AbstractConnection
                 }
                 else if (read == 0)
                 {
+                    bufferPool.release(buffer);
                     fillInterested();
                     break;
                 }
                 else
                 {
+                    bufferPool.release(buffer);
                     shutdown();
                     break;
                 }
@@ -96,11 +98,8 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            // TODO: fail and close ?
-        }
-        finally
-        {
             bufferPool.release(buffer);
+            // TODO: fail and close ?
         }
     }
 

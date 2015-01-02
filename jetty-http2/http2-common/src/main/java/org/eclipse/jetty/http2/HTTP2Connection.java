@@ -154,14 +154,14 @@ public class HTTP2Connection extends AbstractConnection
 
                 if (filled == 0)
                 {
-                    fillInterested();
                     release();
+                    fillInterested();
                     return null;
                 }
                 else if (filled < 0)
                 {
-                    session.onShutdown();
                     release();
+                    session.onShutdown();
                     return null;
                 }
 

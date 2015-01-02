@@ -100,61 +100,68 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
     @Override
     public void onFillable()
     {
+        buffer = acquireBuffer();
+        process(buffer);
+    }
+
+    private ByteBuffer acquireBuffer()
+    {
         HttpClient client = destination.getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
-        process();
+        return bufferPool.acquire(client.getResponseBufferSize(), true);
     }
 
-    private void process()
+    private void releaseBuffer(ByteBuffer buffer)
     {
-        if (readAndParse())
-        {
-            HttpClient client = destination.getHttpClient();
-            ByteBufferPool bufferPool = client.getByteBufferPool();
-            bufferPool.release(buffer);
-            // Don't linger the buffer around if we are idle.
-            buffer = null;
-        }
+        assert this.buffer == buffer;
+        HttpClient client = destination.getHttpClient();
+        ByteBufferPool bufferPool = client.getByteBufferPool();
+        bufferPool.release(buffer);
+        this.buffer = null;
     }
 
-    private boolean readAndParse()
+    private void process(ByteBuffer buffer)
     {
-        EndPoint endPoint = getEndPoint();
-        ByteBuffer buffer = this.buffer;
-        while (true)
+        try
         {
-            try
+            EndPoint endPoint = getEndPoint();
+            boolean looping = false;
+            while (true)
             {
-                if (parse(buffer))
-                    return false;
+                if (!looping && parse(buffer))
+                    return;
 
                 int read = endPoint.fill(buffer);
-                if (LOG.isDebugEnabled()) // Avoid boxing of variable 'read'.
+                if (LOG.isDebugEnabled())
                     LOG.debug("Read {} bytes from {}", read, endPoint);
+
                 if (read > 0)
                 {
                     if (parse(buffer))
-                        return false;
+                        return;
                 }
                 else if (read == 0)
                 {
+                    releaseBuffer(buffer);
                     fillInterested();
-                    return true;
+                    return;
                 }
                 else
                 {
+                    releaseBuffer(buffer);
                     shutdown();
-                    return true;
+                    return;
                 }
+
+                looping = true;
             }
-            catch (Exception x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(x);
-                close(x);
-                return false;
-            }
+        }
+        catch (Exception x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            releaseBuffer(buffer);
+            close(x);
         }
     }
 
@@ -352,7 +359,7 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
                             {
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("Content consumed asynchronously, resuming processing");
-                                process();
+                                process(HttpConnectionOverFCGI.this.buffer);
                             }
 
                             @Override
