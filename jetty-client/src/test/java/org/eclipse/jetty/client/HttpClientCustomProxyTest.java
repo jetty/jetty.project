@@ -156,8 +156,6 @@ public class HttpClientCustomProxyTest
             super(endPoint, executor);
             this.connectionFactory = connectionFactory;
             this.context = context;
-
-            throw new IllegalStateException("This was calling super dispatchIO=true. Needs to be reviewed");
         }
 
         @Override
@@ -216,7 +214,6 @@ public class HttpClientCustomProxyTest
         {
             super(endPoint, connector.getExecutor());
             this.connectionFactory = connectionFactory;
-            throw new IllegalStateException("This was calling super dispatchIO=true. Needs to be reviewed");
         }
 
         @Override
