@@ -89,7 +89,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
                 output.write(kb);
         }
 
-        start(new EmptyServerHandler());
+        start(new RespondThenConsumeHandler());
 
         final AtomicLong requestTime = new AtomicLong();
         ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
