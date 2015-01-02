@@ -32,13 +32,11 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.server.HttpChannelState.State;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.omg.CORBA._IDLTypeStub;
 
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
@@ -199,9 +197,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         if (LOG.isDebugEnabled())
             LOG.debug("{} onFillable enter {}", this, _channel.getState());
 
-        final HttpConnection last=setCurrentConnection(this);
-        
-
+        HttpConnection last=setCurrentConnection(this);
         try
         {
             while (true)
@@ -225,7 +221,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     boolean suspended = !_channel.handle();
                     
                     // We should break iteration if we have suspended or changed connection or this is not the handling thread.
-                    if (suspended || getEndPoint().getConnection() != this )
+                    if (suspended || getEndPoint().getConnection() != this)
                         break;
                 }
                 
@@ -326,12 +322,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             LOG.debug("{} parsed {} {}",this,handle,_parser);
         
         // recycle buffer ?
-        if (buffer_had_content && BufferUtil.isEmpty(_requestBuffer))
+        if (buffer_had_content)
         {
-            if (_parser.inContentState())
-                _input.addContent(_recycleRequestBuffer);
-            else
-                releaseRequestBuffer();
+            if (BufferUtil.isEmpty(_requestBuffer))
+            {
+                if (_parser.inContentState())
+                    _input.addContent(_recycleRequestBuffer);
+                else
+                    releaseRequestBuffer();
+            }
+        }
+        else
+        {
+            releaseRequestBuffer();
         }
         return handle;
     }
