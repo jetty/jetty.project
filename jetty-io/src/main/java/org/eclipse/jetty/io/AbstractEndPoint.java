@@ -132,7 +132,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
     protected abstract void needsFillInterest() throws IOException;
 
-    protected FillInterest getFillInterest()
+    public FillInterest getFillInterest()
     {
         return _fillInterest;
     }

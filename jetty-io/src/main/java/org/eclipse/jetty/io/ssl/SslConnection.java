@@ -333,12 +333,6 @@ public class SslConnection extends AbstractConnection
         }
 
         @Override
-        protected FillInterest getFillInterest()
-        {
-            return super.getFillInterest();
-        }
-
-        @Override
         public void setIdleTimeout(long idleTimeout)
         {
             super.setIdleTimeout(idleTimeout);
@@ -375,7 +369,8 @@ public class SslConnection extends AbstractConnection
                 {
                     // check if we are actually read blocked in order to write
                     _flushRequiresFillToProgress = true;
-                    SslConnection.this.fillInterested();
+
+                    ensureFillInterested();
                 }
                 else
                 {
@@ -450,12 +445,10 @@ public class SslConnection extends AbstractConnection
                     }
                 }
                 
-
                 if (fillable)
                     getExecutor().execute(_runFillable);
-                else
-                    SslConnection.this.fillInterested();
-                    
+                else 
+                    ensureFillInterested();
             }
         }
 
@@ -879,9 +872,12 @@ public class SslConnection extends AbstractConnection
             {
                 try
                 {
-                    _sslEngine.closeOutbound();
-                    flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
-                    // TODO SslConnection.this.fillInterested(); // seek reply FIN or RST or close handshake
+                    synchronized (this) // TODO review synchronized boundary
+                    {
+                        _sslEngine.closeOutbound();
+                        flush(BufferUtil.EMPTY_BUFFER); // Send close handshake
+                        ensureFillInterested();
+                    }
                 }
                 catch (Exception e)
                 {
@@ -891,6 +887,12 @@ public class SslConnection extends AbstractConnection
             }
         }
 
+        private void ensureFillInterested()
+        {
+            if (!SslConnection.this.isFillInterested())
+                SslConnection.this.fillInterested();
+        }
+        
         @Override
         public boolean isOutputShutdown()
         {
