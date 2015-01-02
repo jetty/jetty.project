@@ -415,7 +415,7 @@ public class HttpInputTest
 
         assertThat(_in.read(),equalTo(-1));
         assertThat(_in.isFinished(),equalTo(true));
-
+        assertThat(_history.poll(),equalTo("onReadPossible"));
         assertThat(_history.poll(),nullValue());
     }
     
@@ -462,8 +462,9 @@ public class HttpInputTest
         assertThat(_in.isFinished(),equalTo(false));
         assertThat(_in.read(),equalTo(-1));        
         assertThat(_in.isFinished(),equalTo(true));
-
+        assertThat(_history.poll(),equalTo("onReadPossible"));
         assertThat(_history.poll(),nullValue());
+        
         assertThat(_in.isReady(),equalTo(true));
         assertThat(_history.poll(),nullValue());
 

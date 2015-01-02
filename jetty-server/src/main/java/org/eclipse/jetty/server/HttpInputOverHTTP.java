@@ -20,13 +20,8 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-
 public class HttpInputOverHTTP extends HttpInput
 {
-    private static final Logger LOG = Log.getLogger(HttpInputOverHTTP.class);
-
     private final HttpConnection _httpConnection;
 
     public HttpInputOverHTTP(HttpConnection httpConnection)

@@ -27,7 +27,6 @@ import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -187,7 +186,15 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                 LOG.debug("{} consumed {}", this, content);
 
             if (content==EOF_CONTENT)
-                _state=EOF;
+            {
+                if (_listener==null)
+                    _state=EOF;
+                else
+                {
+                    _state=AEOF;
+                    onReadPossible();
+                }
+            }
             else if (content==EARLY_EOF_CONTENT)
                 _state=EARLY_EOF;
 
@@ -376,7 +383,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            return _state.isEOF();
+            return _state instanceof EOFState;
         }
     }
     
@@ -384,14 +391,13 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
     @Override
     public boolean isReady()
     {
-        boolean finished=false;
         synchronized (_inputQ)
         {
             if (_listener == null )
                 return true;
             if (_unready)
                 return false;
-            if (_state.isEOF())
+            if (_state instanceof EOFState)
                 return true;
 
             if (_inputQ.isEmpty())
@@ -460,18 +466,20 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
     {
         final Throwable error;
         final ReadListener listener;
-        final boolean eof;
+        boolean aeof=false;
 
         synchronized (_inputQ)
         {
-            if (!_unready || _listener == null)
+            if (_state==AEOF)
+            {
+                _state=EOF;
+                aeof=true;
+            }
+            else if (!_unready)
                 return;
 
             listener = _listener;
-            
-            error = _state instanceof ErrorState?((ErrorState)_state).getError():null;
-            eof = isFinished();
-            
+            error = _state instanceof ErrorState?((ErrorState)_state).getError():null;            
             _unready=false;
         }
 
@@ -479,12 +487,20 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         {
             if (error != null)
                 listener.onError(error);
-            else if (eof)
+            else if (aeof)
                 listener.onAllDataRead();
             else
             {
                 listener.onDataAvailable();
-                if (isFinished())
+                synchronized (_inputQ)
+                {
+                    if (_state==AEOF)
+                    {
+                        _state=EOF;
+                        aeof=true;
+                    }
+                }
+                if (aeof)
                     listener.onAllDataRead();
             }
         }
@@ -549,14 +565,13 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         {
             return -1;
         }
+    }
 
-        public boolean isEOF()
-        {
-            return false;
-        }
+    protected static class EOFState extends State
+    {
     }
     
-    protected static class ErrorState extends State
+    protected static class ErrorState extends EOFState
     {
         final Throwable _error;
         ErrorState(Throwable error)
@@ -575,12 +590,6 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             if (_error instanceof IOException)
                 throw (IOException)_error;
             throw new IOException(_error);
-        }
-
-        @Override
-        public boolean isEOF()
-        {
-            return true;
         }
 
         @Override
@@ -620,19 +629,13 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             return "ASYNC";
         }
     };
-
-    protected static final State EARLY_EOF = new State()
+    
+    protected static final State EARLY_EOF = new EOFState()
     {
         @Override
         public int noContent() throws IOException
         {
             throw new EofException("Early EOF");
-        }
-
-        @Override
-        public boolean isEOF()
-        {
-            return true;
         }
 
         @Override
@@ -642,18 +645,21 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         }
     };
 
-    protected static final State EOF = new State()
+    protected static final State EOF = new EOFState()
     {
-        @Override
-        public boolean isEOF()
-        {
-            return true;
-        }
-
         @Override
         public String toString()
         {
             return "EOF";
+        }
+    };
+    
+    protected static final State AEOF = new EOFState()
+    {
+        @Override
+        public String toString()
+        {
+            return "AEOF";
         }
     };
 }
