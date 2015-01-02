@@ -1362,8 +1362,8 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslFills.get(), Matchers.lessThan(50));
-        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(100));
+        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(50));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(100));
 
         Assert.assertNull(request.get(5, TimeUnit.SECONDS));
@@ -1384,8 +1384,8 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslFills.get(), Matchers.lessThan(50));
-        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(100));
+        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(50));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(100));
 
         closeClient(client);

@@ -34,7 +34,6 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
-import org.eclipse.jetty.io.FillInterest;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.WriteFlusher;
@@ -197,7 +196,7 @@ public class SslConnection extends AbstractConnection
             if (_decryptedEndPoint._flushRequiresFillToProgress)
             {
                 _decryptedEndPoint._flushRequiresFillToProgress = false;
-                getExecutor().execute(_runCompletWrite);
+                _runCompletWrite.run();
             }
         }
 
@@ -279,7 +278,7 @@ public class SslConnection extends AbstractConnection
                 }
                 if (fillable)
                     getFillInterest().fillable();
-                getExecutor().execute(_runCompletWrite);
+                _runCompletWrite.run();
             }
 
             @Override
@@ -396,8 +395,7 @@ public class SslConnection extends AbstractConnection
                 else
                 {
                     // try to flush what is pending
-                    // because this is a special case (see above) we could probably
-                    // avoid the dispatch, but best to be sure
+                    // execute to avoid recursion
                     getExecutor().execute(_runCompletWrite);
                 }
             }
