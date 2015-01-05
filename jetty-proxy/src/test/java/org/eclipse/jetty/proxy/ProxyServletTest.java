@@ -130,7 +130,9 @@ public class ProxyServletTest
 
     private void prepareProxy(Map<String, String> initParams) throws Exception
     {
-        proxy = new Server();
+        QueuedThreadPool proxyPool = new QueuedThreadPool();
+        proxyPool.setName("proxy");
+        proxy = new Server(proxyPool);
 
         HttpConfiguration configuration = new HttpConfiguration();
         configuration.setSendDateHeader(false);
@@ -154,6 +156,9 @@ public class ProxyServletTest
     private HttpClient prepareClient() throws Exception
     {
         HttpClient result = new HttpClient();
+        QueuedThreadPool clientPool = new QueuedThreadPool();
+        clientPool.setName("client");
+        result.setExecutor(clientPool);
         result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         result.start();
         return result;
@@ -161,7 +166,9 @@ public class ProxyServletTest
 
     private void prepareServer(HttpServlet servlet) throws Exception
     {
-        server = new Server();
+        QueuedThreadPool serverPool = new QueuedThreadPool();
+        serverPool.setName("server");
+        server = new Server(serverPool);
         serverConnector = new ServerConnector(server);
         server.addConnector(serverConnector);
 
@@ -312,8 +319,19 @@ public class ProxyServletTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                if (req.getHeader("Via") != null)
-                    resp.addHeader(PROXIED_HEADER, "true");
+                try
+                {
+                    // Give some time to the proxy to
+                    // upload the content to the server.
+                    Thread.sleep(1000);
+
+                    if (req.getHeader("Via") != null)
+                        resp.addHeader(PROXIED_HEADER, "true");
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
             }
         });
 
