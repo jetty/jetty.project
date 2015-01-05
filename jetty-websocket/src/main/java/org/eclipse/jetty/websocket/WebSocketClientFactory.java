@@ -423,9 +423,31 @@ public class WebSocketClientFactory extends AggregateLifeCycle
 
                 StringBuilder request = new StringBuilder(512);
                 request.append("GET ").append(path).append(" HTTP/1.1\r\n")
-                .append("Host: ").append(_future.getURI().getHost()).append(":")
-                .append(_future.getURI().getPort()).append("\r\n")
-                .append("Upgrade: websocket\r\n")
+                .append("Host: ").append(_future.getURI().getHost()).append(":");
+                
+                int port = _future.getURI().getPort();
+                if (port <= 0)
+                {
+                    // fix it
+                    String scheme = _future.getURI().getScheme();
+
+                    if ("ws".equalsIgnoreCase(scheme))
+                    {
+                        port = 80;
+                    }
+                    else if ("wss".equalsIgnoreCase(scheme))
+                    {
+                        port = 443;
+                    }
+                    else
+                    {
+                        throw new RuntimeException("No valid port provided for scheme [" + scheme + "]");
+                    }
+                }
+
+                request.append(port).append("\r\n");
+                
+                request.append("Upgrade: websocket\r\n")
                 .append("Connection: Upgrade\r\n")
                 .append("Sec-WebSocket-Key: ")
                 .append(_key).append("\r\n");

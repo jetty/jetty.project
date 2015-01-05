@@ -36,6 +36,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
@@ -336,6 +337,8 @@ public class WebSocketClient
     {
         if (!_factory.isStarted())
             throw new IllegalStateException("Factory !started");
+        
+        __log.debug("Connecting to: {}", uri);
 
         InetSocketAddress address = toSocketAddress(uri);
 
