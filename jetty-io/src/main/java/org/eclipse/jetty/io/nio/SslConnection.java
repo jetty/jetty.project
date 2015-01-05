@@ -330,11 +330,11 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 try
                 {
                     // Read any available data
-                    if (_inbound.space()>0 && (filled=_endp.fill(_inbound))>0)
+                    if (_inbound.space() > 0 && (filled = _endp.fill(_inbound)) > 0)
                         progress = true;
 
                     // flush any output data
-                    if (_outbound.hasContent() && (flushed=_endp.flush(_outbound))>0)
+                    if (_outbound.hasContent() && (flushed=_endp.flush(_outbound)) > 0)
                         progress = true;
                 }
                 catch (IOException e)
@@ -444,7 +444,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
     {
         ByteBuffer bbuf=extractByteBuffer(buffer);
         final SSLEngineResult result;
-
+        int encrypted_produced = 0;
+        int decrypted_consumed = 0;
         synchronized(bbuf)
         {
             _outbound.compact();
@@ -455,8 +456,12 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 {
                     bbuf.position(buffer.getIndex());
                     bbuf.limit(buffer.putIndex());
+                    int decrypted_position = bbuf.position();
+
                     out_buffer.position(_outbound.putIndex());
                     out_buffer.limit(out_buffer.capacity());
+                    int encrypted_position = out_buffer.position();
+
                     result=_engine.wrap(bbuf,out_buffer);
                     if (_logger.isDebugEnabled())
                         _logger.debug("{} wrap {} {} consumed={} produced={}",
@@ -466,15 +471,25 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                             result.bytesConsumed(),
                             result.bytesProduced());
 
+                    decrypted_consumed = bbuf.position() - decrypted_position;
+                    buffer.skip(decrypted_consumed);
 
-                    buffer.skip(result.bytesConsumed());
-                    _outbound.setPutIndex(_outbound.putIndex()+result.bytesProduced());
+                    encrypted_produced = out_buffer.position() - encrypted_position;
+                    _outbound.setPutIndex(_outbound.putIndex() + encrypted_produced);
                 }
                 catch(SSLException e)
                 {
                     _logger.debug(String.valueOf(_endp), e);
                     _endp.close();
                     throw e;
+                }
+                catch (IOException x)
+                {
+                    throw x;
+                }
+                catch (Exception x)
+                {
+                    throw new IOException(x);
                 }
                 finally
                 {
@@ -510,7 +525,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
             throw new IOException(result.toString());
         }
 
-        return result.bytesConsumed()>0 || result.bytesProduced()>0;
+        return decrypted_consumed > 0 || encrypted_produced > 0;
     }
 
     private synchronized boolean unwrap(final Buffer buffer) throws IOException
@@ -520,7 +535,8 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
 
         ByteBuffer bbuf=extractByteBuffer(buffer);
         final SSLEngineResult result;
-
+        int encrypted_consumed = 0;
+        int decrypted_produced = 0;
         synchronized(bbuf)
         {
             ByteBuffer in_buffer=_inbound.getByteBuffer();
@@ -530,8 +546,11 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                 {
                     bbuf.position(buffer.putIndex());
                     bbuf.limit(buffer.capacity());
+                    int decrypted_position = bbuf.position();
+
                     in_buffer.position(_inbound.getIndex());
                     in_buffer.limit(_inbound.putIndex());
+                    int encrypted_position = in_buffer.position();
 
                     result=_engine.unwrap(in_buffer,bbuf);
                     if (_logger.isDebugEnabled())
@@ -542,15 +561,26 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
                             result.bytesConsumed(),
                             result.bytesProduced());
 
-                    _inbound.skip(result.bytesConsumed());
+                    encrypted_consumed = in_buffer.position() - encrypted_position;
+                    _inbound.skip(encrypted_consumed);
                     _inbound.compact();
-                    buffer.setPutIndex(buffer.putIndex()+result.bytesProduced());
+
+                    decrypted_produced = bbuf.position() - decrypted_position;
+                    buffer.setPutIndex(buffer.putIndex() + decrypted_produced);
                 }
                 catch(SSLException e)
                 {
                     _logger.debug(String.valueOf(_endp), e);
                     _endp.close();
                     throw e;
+                }
+                catch (IOException x)
+                {
+                    throw x;
+                }
+                catch (Exception x)
+                {
+                    throw new IOException(x);
                 }
                 finally
                 {
@@ -592,7 +622,7 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         //if (LOG.isDebugEnabled() && result.bytesProduced()>0)
         //    LOG.debug("{} unwrapped '{}'",_session,buffer);
 
-        return result.bytesConsumed()>0 || result.bytesProduced()>0;
+        return encrypted_consumed > 0 || decrypted_produced > 0;
     }
 
 
@@ -634,9 +664,16 @@ public class SslConnection extends AbstractConnection implements AsyncConnection
         {
             synchronized (SslConnection.this)
             {
-                _logger.debug("{} ssl endp.oshut {}",_session,this);
-                _engine.closeOutbound();
-                _oshut=true;
+                try
+                {
+                    _logger.debug("{} ssl endp.oshut {}",_session,this);
+                    _oshut=true;
+                    _engine.closeOutbound();
+                }
+                catch (Exception x)
+                {
+                    throw new IOException(x);
+                }
             }
             flush();
         }
