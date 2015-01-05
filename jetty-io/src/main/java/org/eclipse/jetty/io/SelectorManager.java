@@ -60,7 +60,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     protected SelectorManager(Executor executor, Scheduler scheduler, int selectors)
     {
-        if (selectors<=0)
+        if (selectors <= 0)
             throw new IllegalArgumentException("No selectors");
         this.executor = executor;
         this.scheduler = scheduler;
@@ -140,13 +140,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
 
     private ManagedSelector chooseSelector(SocketChannel channel)
     {
-        // Ideally we would like to have all connectors from the same client end
+        // Ideally we would like to have all connections from the same client end
         // up on the same selector (to try to avoid smearing the data from a single 
         // client over all cores), but because of proxies, the remote address may not
         // really be the client - so we have to hedge our bets to ensure that all
         // channels don't end up on the one selector for a proxy.
-        ManagedSelector ms0=null;
-        if (channel!=null)
+        ManagedSelector candidate1 = null;
+        if (channel != null)
         {
             try
             {
@@ -154,26 +154,29 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 if (remote instanceof InetSocketAddress)
                 {
                     byte[] addr = ((InetSocketAddress)remote).getAddress().getAddress();
-                    if (addr!=null && addr.length>0)
-                        ms0=_selectors[addr[addr.length-1]%getSelectorCount()];
+                    if (addr != null)
+                    {
+                        int s = addr[addr.length - 1] & 0xFF;
+                        candidate1 = _selectors[s % getSelectorCount()];
+                    }
                 }
             }
-            catch (IOException e)
+            catch (IOException x)
             {
-                LOG.ignore(e);
+                LOG.ignore(x);
             }
         }
-        
+
         // The ++ increment here is not atomic, but it does not matter,
         // so long as the value changes sometimes, then connections will
         // be distributed over the available selectors.
         long s = _selectorIndex++;
         int index = (int)(s % getSelectorCount());
-        ManagedSelector ms1 = _selectors[index];
-        
-        if (ms0==null || ms0.size()>=ms1.size()*2)
-            return ms1;
-        return ms0;
+        ManagedSelector candidate2 = _selectors[index];
+
+        if (candidate1 == null || candidate1.size() >= candidate2.size() * 2)
+            return candidate2;
+        return candidate1;
     }
 
     /**
@@ -207,7 +210,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * just after a non-blocking connect via {@link SocketChannel#connect(SocketAddress)} that completed
      * successfully.</p>
      *
-     * @param channel the channel to register
+     * @param channel    the channel to register
      * @param attachment the attachment object
      */
     public void accept(SocketChannel channel, Object attachment)
@@ -215,13 +218,13 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         final ManagedSelector selector = chooseSelector(channel);
         selector.submit(selector.new Accept(channel, attachment));
     }
-    
+
     /**
      * <p>Registers a server channel for accept operations.
      * When a {@link SocketChannel} is accepted from the given {@link ServerSocketChannel}
      * then the {@link #accepted(SocketChannel)} method is called, which must be
      * overridden by a derivation of this class to handle the accepted channel
-     * 
+     *
      * @param server the server channel to register
      */
     public void acceptor(ServerSocketChannel server)
@@ -229,7 +232,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         final ManagedSelector selector = chooseSelector(null);
         selector.submit(selector.new Acceptor(server));
     }
-    
+
     /**
      * Callback method when a channel is accepted from the {@link ServerSocketChannel}
      * passed to {@link #acceptor(ServerSocketChannel)}.
@@ -312,7 +315,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             if (isRunning())
                 LOG.warn("Exception while notifying connection " + connection, x);
             else
-                LOG.debug("Exception while notifying connection {}",connection, x);
+                LOG.debug("Exception while notifying connection " + connection, x);
         }
     }
 
@@ -342,8 +345,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * <p>Callback method invoked when a non-blocking connect cannot be completed.</p>
      * <p>By default it just logs with level warning.</p>
      *
-     * @param channel the channel that attempted the connect
-     * @param ex the exception that caused the connect to fail
+     * @param channel    the channel that attempted the connect
+     * @param ex         the exception that caused the connect to fail
      * @param attachment the attachment object associated at registration
      */
     protected void connectionFailed(SocketChannel channel, Throwable ex, Object attachment)
@@ -356,9 +359,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * <p>This method is invoked as a result of the registration of a channel via {@link #connect(SocketChannel, Object)}
      * or {@link #accept(SocketChannel)}.</p>
      *
-     * @param channel   the channel associated to the endpoint
-     * @param selector the selector the channel is registered to
-     * @param selectionKey      the selection key
+     * @param channel      the channel associated to the endpoint
+     * @param selector     the selector the channel is registered to
+     * @param selectionKey the selection key
      * @return a new endpoint
      * @throws IOException if the endPoint cannot be created
      * @see #newConnection(SocketChannel, EndPoint, Object)
@@ -399,6 +402,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         /**
          * Callback method invoked when a read or write events has been
          * detected by the {@link ManagedSelector} for this endpoint.
+         *
          * @return a job that may block or null
          */
         Runnable onSelected();
