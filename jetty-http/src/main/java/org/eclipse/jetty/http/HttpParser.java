@@ -1226,7 +1226,6 @@ public class HttpParser
         }
         catch(NumberFormatException|IllegalStateException e)
         {
-            e.printStackTrace();
             BufferUtil.clear(buffer);
             LOG.warn("parse exception: {} in {} for {}",e.toString(),_state,_handler);
             if (DEBUG)
