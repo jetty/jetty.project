@@ -376,10 +376,10 @@ public class ServerInstanceWrapper
 
         _deploymentManager.setUseStandardBindings(false);
         List<AppLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<AppLifeCycle.Binding>();
-        deploymentLifeCycleBindings.add(new OSGiDeployer());
+        deploymentLifeCycleBindings.add(new OSGiDeployer(this));
         deploymentLifeCycleBindings.add(new StandardStarter());
         deploymentLifeCycleBindings.add(new StandardStopper());
-        deploymentLifeCycleBindings.add(new OSGiUndeployer());
+        deploymentLifeCycleBindings.add(new OSGiUndeployer(this));
         _deploymentManager.setLifeCycleBindings(deploymentLifeCycleBindings);
         
         if (!providerClassNames.contains(BundleWebAppProvider.class.getName()))
