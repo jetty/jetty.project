@@ -268,7 +268,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 }
 
                 SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
-                SSLContext context = SSLContext.getInstance(_sslProtocol);
+                SSLContext context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
                 context.init(null, trust_managers, secureRandom);
                 _context = context;
             }
@@ -309,7 +309,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 TrustManager[] trustManagers = getTrustManagers(trustStore,crls);
 
                 SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
-                SSLContext context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol,_sslProvider);
+                SSLContext context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
                 context.init(keyManagers,trustManagers,secureRandom);
                 _context = context;
             }
