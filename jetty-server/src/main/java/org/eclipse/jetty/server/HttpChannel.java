@@ -80,10 +80,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     protected static HttpChannel setCurrentHttpChannel(HttpChannel channel)
     {
         HttpChannel last=__currentChannel.get();
-        if (channel==null)
-            __currentChannel.remove();
-        else 
-            __currentChannel.set(channel);
+        __currentChannel.set(channel);
         return last;
     }
 

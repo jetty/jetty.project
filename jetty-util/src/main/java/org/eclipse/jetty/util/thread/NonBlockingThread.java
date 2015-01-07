@@ -53,7 +53,7 @@ public class NonBlockingThread implements Runnable
         }
         finally
         {
-            __nonBlockingThread.remove();
+            __nonBlockingThread.set(Boolean.FALSE);
         }
     }
 }

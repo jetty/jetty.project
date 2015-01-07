@@ -211,7 +211,6 @@ public class ContextFactory implements ObjectFactory
         return (Context)__contextMap.get(loader);
     }
 
-
     /**
      * Associate the given Context with the current thread.
      * disassociate method should be called to reset the context.
@@ -227,9 +226,8 @@ public class ContextFactory implements ObjectFactory
 
     public static void disassociateContext(final Context ctx)
     {
-        __threadContext.remove();
+        __threadContext.set(null);
     }
-    
     
     public static ClassLoader associateClassLoader(final ClassLoader loader)
     {
@@ -238,10 +236,9 @@ public class ContextFactory implements ObjectFactory
         return prev;
     }
     
-    
     public static void disassociateClassLoader ()
     {
-        __threadClassLoader.remove();
+        __threadClassLoader.set(null);
     }
 
     public static void dump(Appendable out, String indent) throws IOException
@@ -259,5 +256,4 @@ public class ContextFactory implements ObjectFactory
             context.dump(out,indent+(last?"    ":" |  "));
         }
     }
-
 }

@@ -75,10 +75,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     protected static HttpConnection setCurrentConnection(HttpConnection connection)
     {
         HttpConnection last=__currentConnection.get();
-        if (connection==null)
-            __currentConnection.remove();
-        else 
-            __currentConnection.set(connection);
+        __currentConnection.set(connection);
         return last;
     }
 
