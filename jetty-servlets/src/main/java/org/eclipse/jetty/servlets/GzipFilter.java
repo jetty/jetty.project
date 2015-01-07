@@ -496,7 +496,7 @@ public class GzipFilter extends UserAgentFilter
                             _allocatedDeflater = new Deflater(_deflateCompressionLevel,_deflateNoWrap);
                         else
                         {
-                            _deflater.remove();
+                            _deflater.set(null);
                             _allocatedDeflater.reset();
                         }
                         

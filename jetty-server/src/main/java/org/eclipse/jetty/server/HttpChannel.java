@@ -86,10 +86,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     protected static HttpChannel<?> setCurrentHttpChannel(HttpChannel<?> channel)
     {
         HttpChannel<?> last=__currentChannel.get();
-        if (channel==null)
-            __currentChannel.remove();
-        else 
-            __currentChannel.set(channel);
+        __currentChannel.set(channel);
         return last;
     }
 

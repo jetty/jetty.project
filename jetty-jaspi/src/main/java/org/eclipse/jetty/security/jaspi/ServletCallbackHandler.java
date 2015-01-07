@@ -126,14 +126,14 @@ public class ServletCallbackHandler implements CallbackHandler
     public CallerPrincipalCallback getThreadCallerPrincipalCallback()
     {
         CallerPrincipalCallback callerPrincipalCallback = _callerPrincipals.get();
-        _callerPrincipals.remove();
+        _callerPrincipals.set(null);
         return callerPrincipalCallback;
     }
 
     public GroupPrincipalCallback getThreadGroupPrincipalCallback()
     {
         GroupPrincipalCallback groupPrincipalCallback = _groupPrincipals.get();
-        _groupPrincipals.remove();
+        _groupPrincipals.set(null);
         return groupPrincipalCallback;
     }
 }
