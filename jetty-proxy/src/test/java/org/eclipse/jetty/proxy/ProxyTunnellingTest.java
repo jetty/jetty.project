@@ -347,9 +347,9 @@ public class ProxyTunnellingTest
         startProxy(new ConnectHandler()
         {
             @Override
-            protected void handleConnect(Request jettyRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+            protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
             {
-                HttpConnection.getCurrentConnection().close();
+                ((HttpConnection)baseRequest.getHttpChannel().getHttpTransport()).close();
             }
         });
 

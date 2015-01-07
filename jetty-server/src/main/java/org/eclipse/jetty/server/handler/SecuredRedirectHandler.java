@@ -42,14 +42,14 @@ public class SecuredRedirectHandler extends AbstractHandler
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        HttpConnection connection = HttpConnection.getCurrentConnection();
-        if (baseRequest.isSecure() || (connection == null))
+        HttpChannel<?> channel = baseRequest.getHttpChannel();
+        if (baseRequest.isSecure() || (channel == null))
         {
             // nothing to do
             return;
         }
 
-        HttpConfiguration httpConfig = connection.getHttpConfiguration();
+        HttpConfiguration httpConfig = channel.getHttpConfiguration();
         if (httpConfig == null)
         {
             // no config, show error
