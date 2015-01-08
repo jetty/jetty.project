@@ -27,6 +27,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 
 import javax.security.auth.Subject;
+import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -208,9 +209,9 @@ public abstract class MappedLoginService extends AbstractLifeCycle implements Lo
 
     /* ------------------------------------------------------------ */
     /**
-     * @see org.eclipse.jetty.security.LoginService#login(java.lang.String, java.lang.Object)
+     * @see org.eclipse.jetty.security.LoginService#login(java.lang.String, java.lang.Object, ServletRequest)
      */
-    public UserIdentity login(String username, Object credentials)
+    public UserIdentity login(String username, Object credentials, ServletRequest request)
     {
         if (username == null)
             return null;

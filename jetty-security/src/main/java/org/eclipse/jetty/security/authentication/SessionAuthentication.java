@@ -71,7 +71,7 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
         if (login_service==null)
             throw new IllegalStateException("!LoginService");
 
-        _userIdentity=login_service.login(_name,_credentials);
+        _userIdentity=login_service.login(_name,_credentials, null);
         LOG.debug("Deserialized and relogged in {}",this);
     }
 
@@ -89,7 +89,7 @@ public class SessionAuthentication extends AbstractUserAuthentication implements
         if (security!=null)
             security.logout(this);
         if (_session!=null)
-            _session.removeAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED);
+            _session.removeAttribute(AbstractSession.SESSION_CREATED_SECURE);
     }
 
     @Override

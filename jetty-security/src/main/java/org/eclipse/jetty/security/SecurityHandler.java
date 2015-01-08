@@ -309,33 +309,6 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
                         getInitParameter(name)==null)
                     setInitParameter(name,context.getInitParameter(name));
             }
-            
-            //register a session listener to handle securing sessions when authentication is performed
-            context.getContextHandler().addEventListener(new HttpSessionListener()
-            {
-                @Override
-                public void sessionDestroyed(HttpSessionEvent se)
-                {
-                }
-
-                @Override
-                public void sessionCreated(HttpSessionEvent se)
-                {                    
-                    //if current request is authenticated, then as we have just created the session, mark it as secure, as it has not yet been returned to a user
-                    HttpChannel channel = HttpChannel.getCurrentHttpChannel();              
-                    
-                    if (channel == null)
-                        return;
-                    Request request = channel.getRequest();
-                    if (request == null)
-                        return;
-                    
-                    if (request.isSecure())
-                    {
-                        se.getSession().setAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
-                    }
-                }
-            });
         }
 
         // complicated resolution of login and identity service to handle

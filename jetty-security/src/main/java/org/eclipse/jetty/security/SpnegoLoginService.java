@@ -21,6 +21,7 @@ package org.eclipse.jetty.security;
 import java.util.Properties;
 
 import javax.security.auth.Subject;
+import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.B64Code;
@@ -112,7 +113,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
      * username will be null since the credentials will contain all the relevant info
      */
     @Override
-    public UserIdentity login(String username, Object credentials)
+    public UserIdentity login(String username, Object credentials, ServletRequest request)
     {
         String encodedAuthToken = (String)credentials;
 

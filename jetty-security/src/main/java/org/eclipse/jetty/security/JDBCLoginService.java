@@ -29,6 +29,8 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Properties;
 
+import javax.servlet.ServletRequest;
+
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
@@ -210,7 +212,7 @@ public class JDBCLoginService extends MappedLoginService
 
     /* ------------------------------------------------------------ */
     @Override
-    public UserIdentity login(String username, Object credentials)
+    public UserIdentity login(String username, Object credentials, ServletRequest request)
     {
         long now = System.currentTimeMillis();
         if (now - _lastHashPurge > _cacheTime || _cacheTime == 0)
@@ -220,7 +222,7 @@ public class JDBCLoginService extends MappedLoginService
             closeConnection();
         }
         
-        return super.login(username,credentials);
+        return super.login(username,credentials, request);
     }
 
     /* ------------------------------------------------------------ */

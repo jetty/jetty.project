@@ -563,6 +563,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         AbstractSession session=newSession(request);
         session.setMaxInactiveInterval(_dftMaxIdleSecs);
+        if (request.isSecure())
+            session.setAttribute(AbstractSession.SESSION_CREATED_SECURE, Boolean.TRUE);
         addSession(session,true);
         return session;
     }

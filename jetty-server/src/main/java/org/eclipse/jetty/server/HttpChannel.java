@@ -65,25 +65,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
-    private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
-
-    /**
-     * Get the current channel that this thread is dispatched to.
-     * @see Request#getAttribute(String) for a more general way to access the HttpChannel
-     * @return the current HttpChannel or null
-     */
-    public static HttpChannel getCurrentHttpChannel()
-    {
-        return __currentChannel.get();
-    }
-
-    protected static HttpChannel setCurrentHttpChannel(HttpChannel channel)
-    {
-        HttpChannel last=__currentChannel.get();
-        __currentChannel.set(channel);
-        return last;
-    }
-
     private final AtomicBoolean _committed = new AtomicBoolean();
     private final AtomicInteger _requests = new AtomicInteger();
     private final Connector _connector;
@@ -246,8 +227,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public boolean handle()
     {
-        final HttpChannel last = setCurrentHttpChannel(this);
-
         String threadName = null;
         if (LOG.isDebugEnabled())
         {
@@ -420,7 +399,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         finally
         {
-            setCurrentHttpChannel(last);
             if (threadName != null && LOG.isDebugEnabled())
                 Thread.currentThread().setName(threadName);
         }

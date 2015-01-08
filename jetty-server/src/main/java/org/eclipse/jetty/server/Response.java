@@ -80,15 +80,6 @@ public class Response implements HttpServletResponse
           return new StringBuilder(128);
        }
     };
-
-    /* ------------------------------------------------------------ */
-    public static Response getResponse(HttpServletResponse response)
-    {
-        if (response instanceof Response)
-            return (Response)response;
-        return HttpChannel.getCurrentHttpChannel().getResponse();
-    }
-    
     
     public enum OutputType
     {

@@ -74,7 +74,7 @@ public class ServletCallbackHandler implements CallbackHandler
                 PasswordValidationCallback passwordValidationCallback = (PasswordValidationCallback) callback;
                 Subject subject = passwordValidationCallback.getSubject();
 
-                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(),passwordValidationCallback.getPassword());
+                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(),passwordValidationCallback.getPassword(), null);
                 
                 if (user!=null)
                 {
@@ -91,7 +91,7 @@ public class ServletCallbackHandler implements CallbackHandler
                         credentialValidationCallback.getUsername(),
                         credentialValidationCallback.getCredential());
 
-                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(),credentialValidationCallback.getCredential());
+                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(),credentialValidationCallback.getCredential(), null);
 
                 if (user!=null)
                 {

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.security;
 
+import javax.servlet.ServletRequest;
+
 import org.eclipse.jetty.server.UserIdentity;
 
 
@@ -42,14 +44,15 @@ public interface LoginService
     /** Login a user.
      * @param username The user name
      * @param credentials The users credentials
+     * @param request TODO
      * @return A UserIdentity if the credentials matched, otherwise null
      */
-    UserIdentity login(String username,Object credentials);
+    UserIdentity login(String username,Object credentials, ServletRequest request);
     
     /* ------------------------------------------------------------ */
     /** Validate a user identity.
      * Validate that a UserIdentity previously created by a call 
-     * to {@link #login(String, Object)} is still valid.
+     * to {@link #login(String, Object, ServletRequest)} is still valid.
      * @param user The user to validate
      * @return true if authentication has not been revoked for the user.
      */

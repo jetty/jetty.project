@@ -675,7 +675,7 @@ public class ConstraintSecurityHandler extends SecurityHandler implements Constr
         if (dataConstraint == null || dataConstraint == UserDataConstraint.None)
             return true;
 
-        HttpConfiguration httpConfig = HttpChannel.getCurrentHttpChannel().getHttpConfiguration();
+        HttpConfiguration httpConfig = Request.getBaseRequest(request).getHttpChannel().getHttpConfiguration();
 
         if (dataConstraint == UserDataConstraint.Confidential || dataConstraint == UserDataConstraint.Integral)
         {

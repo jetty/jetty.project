@@ -32,6 +32,7 @@ import java.util.Locale;
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
+import javax.servlet.ServletRequest;
 import javax.sql.DataSource;
 
 import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
@@ -337,7 +338,7 @@ public class DataSourceLoginService extends MappedLoginService
     
     /* ------------------------------------------------------------ */
     @Override
-    public UserIdentity login(String username, Object credentials)
+    public UserIdentity login(String username, Object credentials, ServletRequest request)
     {
         long now = System.currentTimeMillis();
         if (now - _lastPurge > _cacheMs || _cacheMs == 0)
@@ -346,7 +347,7 @@ public class DataSourceLoginService extends MappedLoginService
             _lastPurge = now;
         }
  
-        return super.login(username,credentials);
+        return super.login(username,credentials, request);
     }
 
     /* ------------------------------------------------------------ */
