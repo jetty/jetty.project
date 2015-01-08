@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -58,7 +58,7 @@ public abstract class LoginAuthenticator implements Authenticator
     /* ------------------------------------------------------------ */
     public UserIdentity login(String username, Object password, ServletRequest request)
     {
-        UserIdentity user = _loginService.login(username,password);
+        UserIdentity user = _loginService.login(username,password, request);
         if (user!=null)
         {
             renewSession((HttpServletRequest)request, (request instanceof Request? ((Request)request).getResponse() : null));
@@ -109,14 +109,14 @@ public abstract class LoginAuthenticator implements Authenticator
             {
                 //if we should renew sessions, and there is an existing session that may have been seen by non-authenticated users
                 //(indicated by SESSION_SECURED not being set on the session) then we should change id
-                if (httpSession.getAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED)!=Boolean.TRUE)
+                if (httpSession.getAttribute(AbstractSession.SESSION_CREATED_SECURE)!=Boolean.TRUE)
                 {
                     if (httpSession instanceof AbstractSession)
                     {
                         AbstractSession abstractSession = (AbstractSession)httpSession;
                         String oldId = abstractSession.getId();
                         abstractSession.renewId(request);
-                        abstractSession.setAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
+                        abstractSession.setAttribute(AbstractSession.SESSION_CREATED_SECURE, Boolean.TRUE);
                         if (abstractSession.isIdChanged() && response != null && (response instanceof Response))
                             ((Response)response).addCookie(abstractSession.getSessionManager().getSessionCookie(abstractSession, request.getContextPath(), request.isSecure()));
                         LOG.debug("renew {}->{}",oldId,abstractSession.getId());

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -310,9 +310,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         ServletContext context = baseRequest.getServletContext();
         String path = context==null?baseRequest.getRequestURI():URIUtil.addPaths(baseRequest.getServletPath(),baseRequest.getPathInfo());
         LOG.debug("{} handle {} in {}",this,baseRequest,context);
-
-        HttpChannel channel = HttpChannel.getCurrentHttpChannel();
-        HttpOutput out = channel.getResponse().getHttpOutput();   
+        
+        HttpOutput out = baseRequest.getResponse().getHttpOutput();   
         // Are we already being gzipped?
         HttpOutput.Interceptor interceptor = out.getInterceptor();
         while (interceptor!=null)
@@ -382,7 +381,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
 
         // install interceptor and handle
-        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,channel,out.getInterceptor()));
+        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,baseRequest.getHttpChannel(),out.getInterceptor()));
         _handler.handle(target,baseRequest, request, response);
         
     }
