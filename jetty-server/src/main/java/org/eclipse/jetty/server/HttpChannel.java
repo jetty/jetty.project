@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -65,28 +65,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
-    private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
-
-    /**
-     * Get the current channel that this thread is dispatched to.
-     * @see Request#getAttribute(String) for a more general way to access the HttpChannel
-     * @return the current HttpChannel or null
-     */
-    public static HttpChannel getCurrentHttpChannel()
-    {
-        return __currentChannel.get();
-    }
-
-    protected static HttpChannel setCurrentHttpChannel(HttpChannel channel)
-    {
-        HttpChannel last=__currentChannel.get();
-        if (channel==null)
-            __currentChannel.remove();
-        else 
-            __currentChannel.set(channel);
-        return last;
-    }
-
     private final AtomicBoolean _committed = new AtomicBoolean();
     private final AtomicInteger _requests = new AtomicInteger();
     private final Connector _connector;
@@ -271,8 +249,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public boolean handle()
     {
-        final HttpChannel last = setCurrentHttpChannel(this);
-
         if (LOG.isDebugEnabled())
             LOG.debug("{} handle {} ", this,_request.getHttpURI());
 
@@ -442,7 +418,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         finally
         {
-            setCurrentHttpChannel(last);
         }
 
         if (LOG.isDebugEnabled())
