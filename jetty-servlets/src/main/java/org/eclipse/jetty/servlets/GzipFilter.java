@@ -505,9 +505,7 @@ public class GzipFilter extends UserAgentFilter
                         if (_allocatedBuffer==null)
                             _allocatedBuffer = new byte[_bufferSize];
                         else
-                        {
-                            _buffer.remove();
-                        }
+                            _buffer.set(null);
                         
                         switch (compressionType)
                         {
