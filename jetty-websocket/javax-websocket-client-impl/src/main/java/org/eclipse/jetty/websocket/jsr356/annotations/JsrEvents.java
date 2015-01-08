@@ -162,7 +162,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         onOpen.call(websocket,config);
     }
 
-    public void callPong(RemoteEndpoint.Async endpoint, Object websocket, ByteBuffer pong) throws DecodeException, IOException
+    public void callPong(RemoteEndpoint.Async endpoint, Object websocket, ByteBuffer pong)
     {
         if (onPong == null)
         {

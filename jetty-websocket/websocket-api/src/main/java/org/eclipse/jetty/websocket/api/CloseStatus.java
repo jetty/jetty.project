@@ -32,6 +32,11 @@ public class CloseStatus
      */
     public static String trimMaxReasonLength(String reason)
     {
+        if (reason == null)
+        {
+            return null;
+        }
+        
         if (reason.length() > MAX_REASON_PHRASE)
         {
             return reason.substring(0,MAX_REASON_PHRASE);

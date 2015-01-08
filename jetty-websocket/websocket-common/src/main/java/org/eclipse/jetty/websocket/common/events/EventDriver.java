@@ -49,13 +49,13 @@ public interface EventDriver extends IncomingFrames
 
     public void onFrame(Frame frame);
 
-    public void onInputStream(InputStream stream);
+    public void onInputStream(InputStream stream) throws IOException;
 
     public void onPing(ByteBuffer buffer);
     
     public void onPong(ByteBuffer buffer);
 
-    public void onReader(Reader reader);
+    public void onReader(Reader reader) throws IOException;
 
     public void onTextFrame(ByteBuffer buffer, boolean fin) throws IOException;
 

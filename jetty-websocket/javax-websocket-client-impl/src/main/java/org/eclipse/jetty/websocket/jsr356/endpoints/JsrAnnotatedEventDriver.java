@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
+
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 
@@ -123,7 +124,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
                         {
                             events.callBinaryStream(jsrsession.getAsyncRemote(),websocket,stream);
                         }
-                        catch (DecodeException | IOException e)
+                        catch (Throwable e)
                         {
                             onFatalError(e);
                         }
@@ -167,7 +168,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
             // FIN is always true here
             events.callBinary(jsrsession.getAsyncRemote(),websocket,buf,true);
         }
-        catch (DecodeException e)
+        catch (Throwable e)
         {
             onFatalError(e);
         }
@@ -188,7 +189,15 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
     @Override
     public void onError(Throwable cause)
     {
-        events.callError(websocket,cause);
+        try
+        {
+            events.callError(websocket,cause);
+        }
+        catch (Throwable e)
+        {
+            LOG.warn("Unable to call onError with cause", cause);
+            LOG.warn("Call to onError resulted in exception", e);
+        }
     }
 
     private void onFatalError(Throwable t)
@@ -203,15 +212,15 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
     }
 
     @Override
-    public void onInputStream(InputStream stream)
+    public void onInputStream(InputStream stream) throws IOException
     {
         try
         {
             events.callBinaryStream(jsrsession.getAsyncRemote(),websocket,stream);
         }
-        catch (DecodeException | IOException e)
+        catch (DecodeException e)
         {
-            onFatalError(e);
+            throw new RuntimeException("Unable decode input stream", e);
         }
     }
 
@@ -223,7 +232,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
         }
         catch (DecodeException e)
         {
-            onFatalError(e);
+            throw new RuntimeException("Unable decode partial binary message", e);
         }
     }
 
@@ -235,46 +244,33 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
         }
         catch (DecodeException e)
         {
-            onFatalError(e);
+            throw new RuntimeException("Unable decode partial text message", e);
         }
     }
 
     @Override
     public void onPing(ByteBuffer buffer)
     {
-        try
-        {
-            events.callPong(jsrsession.getAsyncRemote(),websocket,buffer);
-        }
-        catch (DecodeException | IOException e)
-        {
-            onFatalError(e);
-        }
+        // Call pong, as there is no "onPing" method in the JSR
+        events.callPong(jsrsession.getAsyncRemote(),websocket,buffer);
     }
     
     @Override
     public void onPong(ByteBuffer buffer)
     {
-        try
-        {
-            events.callPong(jsrsession.getAsyncRemote(),websocket,buffer);
-        }
-        catch (DecodeException | IOException e)
-        {
-            onFatalError(e);
-        }
+        events.callPong(jsrsession.getAsyncRemote(),websocket,buffer);
     }
 
     @Override
-    public void onReader(Reader reader)
+    public void onReader(Reader reader) throws IOException
     {
         try
         {
             events.callTextStream(jsrsession.getAsyncRemote(),websocket,reader);
         }
-        catch (DecodeException | IOException e)
+        catch (DecodeException e)
         {
-            onFatalError(e);
+            throw new RuntimeException("Unable decode reader", e);
         }
     }
 
@@ -343,7 +339,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
                         {
                             events.callTextStream(jsrsession.getAsyncRemote(),websocket,stream);
                         }
-                        catch (DecodeException | IOException e)
+                        catch (Throwable e)
                         {
                             onFatalError(e);
                         }
@@ -380,7 +376,7 @@ public class JsrAnnotatedEventDriver extends AbstractJsrEventDriver
             // FIN is always true here
             events.callText(jsrsession.getAsyncRemote(),websocket,message,true);
         }
-        catch (DecodeException e)
+        catch (Throwable e)
         {
             onFatalError(e);
         }
