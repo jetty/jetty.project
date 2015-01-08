@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
@@ -233,9 +234,11 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
      */
     public void abort(Throwable cause)
     {
-        HttpExchange exchange;
-        // Just peek(), the abort() will remove it from the queue.
-        while ((exchange = exchanges.peek()) != null)
+        // Copy the queue of exchanges and fail only those that are queued at this moment.
+        // The application may queue another request from the failure/complete listener
+        // and we don't want to fail it immediately as if it was queued before the failure.
+        // The call to Request.abort() will remove the exchange from the exchanges queue.
+        for (HttpExchange exchange : new ArrayList<>(exchanges))
             exchange.getRequest().abort(cause);
     }
 
