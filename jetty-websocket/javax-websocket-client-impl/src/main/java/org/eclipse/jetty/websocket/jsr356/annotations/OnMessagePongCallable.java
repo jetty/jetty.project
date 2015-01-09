@@ -21,8 +21,6 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
-import javax.websocket.DecodeException;
-
 import org.eclipse.jetty.websocket.jsr356.JsrPongMessage;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -45,7 +43,7 @@ public class OnMessagePongCallable extends OnMessageCallable
         super(copy);
     }
 
-    public Object call(Object endpoint, ByteBuffer buf) throws DecodeException
+    public Object call(Object endpoint, ByteBuffer buf)
     {
         super.args[idxMessageObject] = new JsrPongMessage(buf);
         return super.call(endpoint,super.args);

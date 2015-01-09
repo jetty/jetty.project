@@ -24,7 +24,6 @@ import java.util.Objects;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.common.util.ReflectUtils;
 
 /**
@@ -70,34 +69,56 @@ public class CallableMethod
         {
             return this.method.invoke(obj,args);
         }
-        catch (IllegalAccessException | IllegalArgumentException | InvocationTargetException e)
+        catch (Throwable t)
         {
-            StringBuilder err = new StringBuilder();
-            err.append("Cannot call method ");
-            err.append(ReflectUtils.toString(pojo,method));
-            err.append(" with args: [");
-
-            boolean delim = false;
-            for (Object arg : args)
-            {
-                if (delim)
-                {
-                    err.append(", ");
-                }
-                if (arg == null)
-                {
-                    err.append("<null>");
-                }
-                else
-                {
-                    err.append(arg.getClass().getName());
-                }
-                delim = true;
-            }
-            err.append("]");
-
-            throw new WebSocketException(err.toString(),e);
+            String err = formatMethodCallError(args);
+            throw unwrapRuntimeException(err,t);
         }
+    }
+
+    private RuntimeException unwrapRuntimeException(String err, final Throwable t)
+    {
+        Throwable ret = t;
+
+        while (ret instanceof InvocationTargetException)
+        {
+            ret = ((InvocationTargetException)ret).getCause();
+        }
+
+        if (ret instanceof RuntimeException)
+        {
+            return (RuntimeException)ret;
+        }
+
+        return new RuntimeException(err,ret);
+    }
+
+    public String formatMethodCallError(Object... args)
+    {
+        StringBuilder err = new StringBuilder();
+        err.append("Cannot call method ");
+        err.append(ReflectUtils.toString(pojo,method));
+        err.append(" with args: [");
+
+        boolean delim = false;
+        for (Object arg : args)
+        {
+            if (delim)
+            {
+                err.append(", ");
+            }
+            if (arg == null)
+            {
+                err.append("<null>");
+            }
+            else
+            {
+                err.append(arg.getClass().getName());
+            }
+            delim = true;
+        }
+        err.append("]");
+        return err.toString();
     }
 
     public Method getMethod()

@@ -86,7 +86,15 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
                     @Override
                     public void run()
                     {
-                        events.onBinary.call(websocket,session,msg);
+                        try
+                        {
+                            events.onBinary.call(websocket,session,msg);
+                        }
+                        catch (Throwable t)
+                        {
+                            // dispatched calls need to be reported
+                            onError(t);
+                        }
                     }
                 });
             }
@@ -188,7 +196,15 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
                     @Override
                     public void run()
                     {
-                        events.onText.call(websocket,session,msg);
+                        try
+                        {
+                            events.onText.call(websocket,session,msg);
+                        }
+                        catch (Throwable t)
+                        {
+                            // dispatched calls need to be reported
+                            onError(t);
+                        }
                     }
                 });
             }
