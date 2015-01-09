@@ -386,7 +386,7 @@ public class ProxyTunnellingTest
         {
             new Socket(proxyHost, proxyPort).close();
         }
-        catch (IOException x)
+        catch (Throwable x)
         {
             Assume.assumeNoException(x);
         }
