@@ -445,6 +445,11 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
             // Expected timeout during connect, continue the test.
             Assume.assumeTrue(true);
         }
+        catch (Throwable x)
+        {
+            // Abort if any other exception happens.
+            Assume.assumeTrue(false);
+        }
     }
 
     private class TimeoutHandler extends AbstractHandler
