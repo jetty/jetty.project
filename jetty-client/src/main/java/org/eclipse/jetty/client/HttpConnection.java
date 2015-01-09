@@ -134,10 +134,14 @@ public abstract class HttpConnection implements Connection
         CookieStore cookieStore = getHttpClient().getCookieStore();
         if (cookieStore != null)
         {
-            StringBuilder cookies = convertCookies(cookieStore.get(request.getURI()), null);
-            cookies = convertCookies(request.getCookies(), cookies);
-            if (cookies != null)
-                request.header(HttpHeader.COOKIE.asString(), cookies.toString());
+            URI uri = request.getURI();
+            if (uri != null)
+            {
+                StringBuilder cookies = convertCookies(cookieStore.get(uri), null);
+                cookies = convertCookies(request.getCookies(), cookies);
+                if (cookies != null)
+                    request.header(HttpHeader.COOKIE.asString(), cookies.toString());
+            }
         }
 
         // Authorization
