@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.log.Log;
@@ -60,7 +59,7 @@ public class HttpExchange
         return request.getConversation();
     }
 
-    public Request getRequest()
+    public HttpRequest getRequest()
     {
         return request;
     }
