@@ -17,37 +17,18 @@
 // ========================================================================
  -->
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
-  <modelVersion>4.0.0</modelVersion>
   <parent>
-    <groupId>org.eclipse.jetty</groupId>
-    <artifactId>jetty-project</artifactId>
+    <groupId>org.eclipse.jetty.tests</groupId>
+    <artifactId>tests-parent</artifactId>
     <version>9.2.8-SNAPSHOT</version>
-    <relativePath>../pom.xml</relativePath>
   </parent>
-  <groupId>org.eclipse.jetty.tests</groupId>
-  <artifactId>tests-parent</artifactId>
-  <name>Jetty Tests :: Parent</name>
-  <url>http://www.eclipse.org/jetty</url>
+  <modelVersion>4.0.0</modelVersion>
+  <artifactId>test-jmx-parent</artifactId>
   <packaging>pom</packaging>
-  <build>
-    <plugins>
-      <plugin>
-        <groupId>org.codehaus.mojo</groupId>
-        <artifactId>findbugs-maven-plugin</artifactId>
-        <configuration>
-          <!-- No Point running Findbugs on testing projects -->
-          <skip>true</skip>
-        </configuration>
-      </plugin>
-    </plugins>
-  </build>
+  <name>Jetty Tests :: JMX Parent</name>
+  <url>http://www.eclipse.org/jetty</url>
   <modules>
-    <module>test-webapps</module>
-    <module>test-sessions</module>
-    <module>test-continuation</module>
-    <module>test-loginservice</module>
-    <module>test-integration</module>
-    <module>test-quickstart</module>
-    <module>test-jmx</module>
+    <module>jmx-webapp</module>
+    <module>jmx-webapp-it</module>
   </modules>
 </project>
