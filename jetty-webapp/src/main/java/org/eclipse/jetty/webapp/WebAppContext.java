@@ -112,6 +112,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.xml.",                         // needed by javax.xml
         "org.w3c.",                         // needed by javax.xml
         "org.eclipse.jetty.jmx.",           // webapp cannot change jmx classes
+        "org.eclipse.jetty.util.annotation.",  // webapp cannot change jmx annotations
         "org.eclipse.jetty.continuation.",  // webapp cannot change continuation classes
         "org.eclipse.jetty.jndi.",          // webapp cannot change naming classes
         "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
@@ -130,6 +131,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     public final static String[] __dftServerClasses =
     {
         "-org.eclipse.jetty.jmx.",          // don't hide jmx classes
+        "-org.eclipse.jetty.util.annotation.", // don't hide jmx annotation
         "-org.eclipse.jetty.continuation.", // don't hide continuation classes
         "-org.eclipse.jetty.jndi.",         // don't hide naming classes
         "-org.eclipse.jetty.jaas.",         // don't hide jaas classes

@@ -241,7 +241,9 @@ public class ObjectMBean implements DynamicMBean
 
                 // Find list of classes that can influence the mbean
                 Class<?> o_class=_managed.getClass();
-                List<Class<?>> influences = findInfluences(new ArrayList<Class<?>>(), _managed.getClass());
+                List<Class<?>> influences = new ArrayList<Class<?>>();
+                influences.add(this.getClass()); // always add MBean itself
+                influences = findInfluences(influences, _managed.getClass());
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("Influence Count: {}", influences.size() );
@@ -560,35 +562,23 @@ public class ObjectMBean implements DynamicMBean
 
     private static List<Class<?>> findInfluences(List<Class<?>> influences, Class<?> aClass)
     {
-        if (aClass!=null)
+        if (aClass != null)
         {
-            // This class is an influence
-            influences.add(aClass);
-
-            String pName = aClass.getPackage().getName();
-            String cName = aClass.getName().substring(pName.length() + 1);
-            String mName = pName + ".jmx." + cName + "MBean";
-
-            try
+            if (!influences.contains(aClass))
             {
-                Class<?> mbeanClazz = Class.forName(mName);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("MBean Influence found for " + aClass.getSimpleName());
-                influences.add(mbeanClazz);
-            }
-            catch (ClassNotFoundException cnfe)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("No MBean Influence for " + aClass.getSimpleName());
+                // This class is a new influence
+                influences.add(aClass);
             }
 
             // So are the super classes
-            influences=findInfluences(influences,aClass.getSuperclass());
+            influences = findInfluences(influences,aClass.getSuperclass());
 
             // So are the interfaces
             Class<?>[] ifs = aClass.getInterfaces();
-            for (int i=0;ifs!=null && i<ifs.length;i++)
-                influences=findInfluences(influences,ifs[i]);
+            for (int i = 0; ifs != null && i < ifs.length; i++)
+            {
+                influences = findInfluences(influences,ifs[i]);
+            }
         }
 
         return influences;
