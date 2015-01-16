@@ -1,3 +1,34 @@
+jetty-9.2.7.v20140116 - 16 January 2015
+ + 420944 Hot Deployment of WAR when Context XML exists doesn't trigger
+   redeploy
+ + 448944 Provide m2e lifecycle mapping metadata for jetty-jspc-maven-plugin
+ + 452201 Set the container classloader for osgi during webbundle undeploy
+ + 454291 Added busy threads JMX attribute to QueuedThreadPool
+ + 454773 SSLConnection use on Android client results in loop
+ + 454954 Jetty osgi should skip fragment and required bundles that are in the
+   uninstalled state
+ + 454955 OSGi AnnotationParser should skip resources that are not in the
+   classpath and close the class inputstream when done scanning it
+ + 454983 Source bundles should not be singleton
+ + 455047 Update JASPI
+ + 455174 jetty-plus JNDI tests should use unique JNDI paths
+ + 455330 Multiple Jetty-ContextFilePath entries separated by commas doesn't
+   work
+ + 455476 Persist updated session expiry time for MongoSessionManager
+ + 455655 ensure multipart form-data parsing exception thrown to servlet
+ + 455863 Fixed jetty.sh handling of multiple JETTY_ARGS
+ + 456426 Exception on context undeploy from EnvConfiguration
+ + 456486 Jar containing ServiceContainerInitializer impl not found in TCCL in
+   osgi
+ + 456956 Reduce ThreadLocal.remove() weak reference garbage
+ + 457017 Reflective call to websocket methods that fail have ambiguous
+   exceptions
+ + 457032 Request sent from a failed CompleteListener due to connect timeout is
+   failed immediately.
+ + 457130 HTTPS request with IP host and HTTP proxy throws
+   IllegalArgumentException.
+ + 457696 JMX implementation should not be overridden by WebApp classes
+
 jetty-9.2.6.v20141205 - 05 December 2014
  + 383207 Use BundleFileLocatorHelperFactory to obtain BundleFileLocatorHelper
  + 443652 Remove dependency on java.lang.management classes
@@ -9,7 +40,6 @@ jetty-9.2.6.v20141205 - 05 December 2014
  + 452201 EnvConfiguration.destroy() should set the classloader
  + 452246 Fixed SSL hang on last chunk
  + 452261 Multiple servlets map to path *.jsp when using jsp-property-group
- + 452261 Ensure <jsp-file> works with new JettyJspServlet
  + 452424 Do not add Date header if already set
  + 452516 Make HttpOutput aggregation size configurable.
  + 453386 Jetty not working when configuring QueuedThreadPool with
