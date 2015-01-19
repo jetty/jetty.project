@@ -48,5 +48,6 @@
     <module>test-loginservice</module>
     <module>test-integration</module>
     <module>test-quickstart</module>
+    <module>test-jmx</module>
   </modules>
 </project>

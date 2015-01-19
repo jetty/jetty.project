@@ -147,7 +147,7 @@
                   <arg file="${jetty.base}"/>
                 </exec>
                 <waitfor maxwait="5" maxwaitunit="second"
-                  checkevery="100" checkeveryunit="millisecond">
+                  checkevery="500" checkeveryunit="millisecond">
                   <http url="http://localhost:58080/jmx-webapp/"/>
                 </waitfor>
                 <echo>Integration Test : Jetty is now available</echo>
