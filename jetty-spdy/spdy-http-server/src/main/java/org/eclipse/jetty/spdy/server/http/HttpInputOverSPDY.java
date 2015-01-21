@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,13 +20,27 @@ package org.eclipse.jetty.spdy.server.http;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.server.QueuedHttpInput;
+import org.eclipse.jetty.server.HttpChannelState;
+import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.spdy.api.DataInfo;
 
-public class HttpInputOverSPDY extends QueuedHttpInput
+public class HttpInputOverSPDY extends HttpInput
 {
+    private final HttpChannelState _httpChannelState;
+    
+    public HttpInputOverSPDY(HttpChannelState httpChannelState)
+    {
+        _httpChannelState=httpChannelState;
+    }
+    
     @Override
-    protected void consume(Content content, int length)
+    protected void onReadPossible()
+    {
+        _httpChannelState.onReadPossible();
+    }
+    
+    @Override
+    protected void skip(Content content, int length)
     {
         ContentOverSPDY spdyContent = (ContentOverSPDY)content;
         spdyContent.dataInfo.consume(length);

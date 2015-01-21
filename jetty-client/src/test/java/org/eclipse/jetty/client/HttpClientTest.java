@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -61,6 +62,7 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -519,7 +521,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new RespondThenConsumeHandler());
 
         // Prepare a big file to upload
         Path targetTestsDir = testdir.getEmptyDir().toPath();
@@ -576,7 +578,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Files.delete(file);
     }
-
+    
     @Test
     public void test_ExchangeIsComplete_WhenRequestFailsMidway_WithResponse() throws Exception
     {
@@ -1299,5 +1301,80 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(data, response.getContent());
+    }
+
+    @Test
+    public void testRequestRetries() throws Exception
+    {
+        final int maxRetries = 3;
+        final AtomicInteger requests = new AtomicInteger();
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int count = requests.incrementAndGet();
+                if (count == maxRetries)
+                    baseRequest.setHandled(true);
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        new RetryListener(client, scheme, "localhost", connector.getLocalPort(), maxRetries)
+        {
+            @Override
+            protected void completed(Result result)
+            {
+                latch.countDown();
+            }
+        }.perform();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    public static abstract class RetryListener implements Response.CompleteListener
+    {
+        private final HttpClient client;
+        private final String scheme;
+        private final String host;
+        private final int port;
+        private final int maxRetries;
+        private int retries;
+
+        public RetryListener(HttpClient client, String scheme, String host, int port, int maxRetries)
+        {
+            this.client = client;
+            this.scheme = scheme;
+            this.host = host;
+            this.port = port;
+            this.maxRetries = maxRetries;
+        }
+
+        protected abstract void completed(Result result);
+
+        @Override
+        public void onComplete(Result result)
+        {
+            if (retries > maxRetries || result.isSucceeded() && result.getResponse().getStatus() == 200)
+                completed(result);
+            else
+                retry();
+        }
+
+        private void retry()
+        {
+            ++retries;
+            perform();
+        }
+
+        public void perform()
+        {
+            client.newRequest(host, port)
+                    .scheme(scheme)
+                    .method("POST")
+                    .param("attempt", String.valueOf(retries))
+                    .content(new StringContentProvider("0123456789ABCDEF"))
+                    .send(this);
+        }
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -136,7 +136,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     /** 
      * Obtain the base {@link Request} instance of a {@link ServletRequest}, by
-     * coercion, unwrapping or thread local.
+     * coercion, unwrapping or special attribute.
      * @param request The request
      * @return the base {@link Request} instance of a {@link ServletRequest}.
      */
@@ -145,13 +145,17 @@ public class Request implements HttpServletRequest
         if (request instanceof Request)
             return (Request)request;
         
+        Object channel = request.getAttribute(HttpChannel.class.getName());
+        if (channel instanceof HttpChannel)
+            return ((HttpChannel)channel).getRequest();
+        
         while (request instanceof ServletRequestWrapper)
             request=((ServletRequestWrapper)request).getRequest();
 
         if (request instanceof Request)
             return (Request)request;
         
-        return HttpChannel.getCurrentHttpChannel().getRequest();
+        return null;
     }
     
     
@@ -495,10 +499,8 @@ public class Request implements HttpServletRequest
         }
         catch (IOException | ServletException e)
         {
-            if (LOG.isDebugEnabled())
-                LOG.warn(e);
-            else
-                LOG.warn(e.toString());
+            LOG.warn(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -538,11 +540,11 @@ public class Request implements HttpServletRequest
     {
         if (name.startsWith("org.eclipse.jetty"))
         {
-            if ("org.eclipse.jetty.server.Server".equals(name))
+            if (Server.class.getName().equals(name))
                 return _channel.getServer();
-            if ("org.eclipse.jetty.server.HttpChannel".equals(name))
+            if (HttpChannel.class.getName().equals(name))
                 return _channel;
-            if ("org.eclipse.jetty.server.HttpConnection".equals(name) &&
+            if (HttpConnection.class.getName().equals(name) &&
                 _channel.getHttpTransport() instanceof HttpConnection)
                 return _channel.getHttpTransport();
         }
@@ -646,7 +648,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public long getContentRead()
     {
-        return _input.getContentRead();
+        return _input.getContentConsumed();
     }
     
     /* ------------------------------------------------------------ */
@@ -1499,7 +1501,7 @@ public class Request implements HttpServletRequest
             AbstractSession abstractSession =  ((AbstractSession)session);
             abstractSession.renewId(this);
             if (getRemoteUser() != null)
-                abstractSession.setAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
+                abstractSession.setAttribute(AbstractSession.SESSION_CREATED_SECURE, Boolean.TRUE);
             if (abstractSession.isIdChanged())
                 _channel.getResponse().addCookie(_sessionManager.getSessionCookie(abstractSession, getContextPath(), isSecure()));
         }
@@ -1575,7 +1577,7 @@ public class Request implements HttpServletRequest
      */
     public HttpURI getHttpURI()
     {
-        return _metadata.getURI();
+        return _metadata==null?null:_metadata.getURI();
     }
 
     /* ------------------------------------------------------------ */
@@ -1785,6 +1787,12 @@ public class Request implements HttpServletRequest
         }
         
         setPathInfo(info);
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean hasMetaData()
+    {
+        return _metadata!=null;
     }
     
     /* ------------------------------------------------------------ */

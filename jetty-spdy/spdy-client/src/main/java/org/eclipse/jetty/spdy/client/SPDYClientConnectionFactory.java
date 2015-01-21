@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -52,7 +52,7 @@ public class SPDYClientConnectionFactory implements ClientConnectionFactory
         Parser parser = new Parser(compressionFactory.newDecompressor());
         Generator generator = new Generator(byteBufferPool, compressionFactory.newCompressor());
 
-        SPDYConnection connection = new ClientSPDYConnection(endPoint, byteBufferPool, parser, factory, client.isDispatchIO());
+        SPDYConnection connection = new ClientSPDYConnection(endPoint, byteBufferPool, parser, factory);
 
         FlowControlStrategy flowControlStrategy = client.newFlowControlStrategy();
 
@@ -75,9 +75,9 @@ public class SPDYClientConnectionFactory implements ClientConnectionFactory
     {
         private final Factory factory;
 
-        public ClientSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory, boolean dispatchIO)
+        public ClientSPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Factory factory)
         {
-            super(endPoint, bufferPool, parser, factory.getExecutor(), dispatchIO);
+            super(endPoint, bufferPool, parser, factory.getExecutor());
             this.factory = factory;
         }
 

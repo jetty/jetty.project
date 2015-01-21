@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -356,6 +356,10 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         InputStream is=client.getInputStream();
         Assert.assertFalse(client.isClosed());
 
+        OutputStream os=client.getOutputStream();
+        os.write("GET ".getBytes("utf-8"));
+        os.flush();
+
         Thread.sleep(sleepTime);
         long start = System.currentTimeMillis();
         try
@@ -365,7 +369,35 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
         catch(SSLException e)
         {
+            e.printStackTrace();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        Assert.assertTrue(System.currentTimeMillis() - start < maximumTestRuntime);
 
+    }
+
+    @Test(timeout=60000)
+    public void testMaxIdleNothingSent() throws Exception
+    {
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+        InputStream is=client.getInputStream();
+        Assert.assertFalse(client.isClosed());
+
+        Thread.sleep(sleepTime);
+        long start = System.currentTimeMillis();
+        try
+        {
+            IO.toString(is);
+            Assert.assertEquals(-1, is.read());
+        }
+        catch(SSLException e)
+        {
+            // e.printStackTrace();
         }
         catch(Exception e)
         {

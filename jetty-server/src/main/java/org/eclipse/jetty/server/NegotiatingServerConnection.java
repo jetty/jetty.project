@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -47,7 +47,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
 
     protected NegotiatingServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
-        super(endPoint, connector.getExecutor(), false);
+        super(endPoint, connector.getExecutor());
         this.connector = connector;
         this.protocols = protocols;
         this.defaultProtocol = defaultProtocol;

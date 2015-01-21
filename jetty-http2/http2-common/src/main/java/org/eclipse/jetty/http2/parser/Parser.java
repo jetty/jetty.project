@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,6 +33,7 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -94,12 +95,13 @@ public class Parser
                         if (type < 0 || type >= bodyParsers.length)
                         {
                             notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "unknown_frame_type_" + type);
+                            BufferUtil.clear(buffer);
                             return false;
                         }
                         BodyParser bodyParser = bodyParsers[type];
                         if (headerParser.getLength() == 0)
                         {
-                            boolean async = bodyParser.emptyBody();
+                            boolean async = bodyParser.emptyBody(buffer);
                             reset();
                             if (async)
                                 return true;
@@ -151,6 +153,7 @@ public class Parser
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
             notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "parser_error");
+            BufferUtil.clear(buffer);
             return false;
         }
     }

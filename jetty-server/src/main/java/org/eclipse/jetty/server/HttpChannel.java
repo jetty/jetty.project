@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -65,28 +65,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
-    private static final ThreadLocal<HttpChannel> __currentChannel = new ThreadLocal<>();
-
-    /**
-     * Get the current channel that this thread is dispatched to.
-     * @see Request#getAttribute(String) for a more general way to access the HttpChannel
-     * @return the current HttpChannel or null
-     */
-    public static HttpChannel getCurrentHttpChannel()
-    {
-        return __currentChannel.get();
-    }
-
-    protected static HttpChannel setCurrentHttpChannel(HttpChannel channel)
-    {
-        HttpChannel last=__currentChannel.get();
-        if (channel==null)
-            __currentChannel.remove();
-        else 
-            __currentChannel.set(channel);
-        return last;
-    }
-
     private final AtomicBoolean _committed = new AtomicBoolean();
     private final AtomicInteger _requests = new AtomicInteger();
     private final Connector _connector;
@@ -102,6 +80,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     /** Bytes written after interception (eg after compression) */
     private long _written;
 
+    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
+    {
+        this(connector,configuration,endPoint,transport,null);
+    }
+    
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
         _connector = connector;
@@ -110,14 +93,31 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _transport = transport;
 
         _state = new HttpChannelState(this);
-        input.init(_state);
-        _request = new Request(this, input);
-        _response = new Response(this, new HttpOutput(this));
+        _request = new Request(this, input!=null?input:newHttpInput());
+        _response = new Response(this, newHttpOutput());
         _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
     }
 
+    protected HttpInput newHttpInput()
+    {
+        return new HttpInput()
+        {
+            @Override
+            protected void onReadPossible()
+            {
+                getState().onReadPossible();
+            }            
+        };
+    }
+
+    protected HttpOutput newHttpOutput()
+    {
+        return new HttpOutput(this);
+    }
+    
+    
     public HttpChannelState getState()
     {
         return _state;
@@ -249,15 +249,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     public boolean handle()
     {
-        final HttpChannel last = setCurrentHttpChannel(this);
-
-        String threadName = null;
         if (LOG.isDebugEnabled())
-        {
-            threadName = Thread.currentThread().getName();
-            Thread.currentThread().setName(threadName + " - " + _request.getHttpURI());
-            LOG.debug("{} handle enter", this);
-        }
+            LOG.debug("{} handle {} ", this,_request.getHttpURI());
 
         HttpChannelState.Action action = _state.handling();
         try
@@ -277,6 +270,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     switch(action)
                     {
                         case REQUEST_DISPATCH:
+                            if (!_request.hasMetaData())
+                                throw new IllegalStateException();
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
                             _request.setDispatcherType(DispatcherType.REQUEST);
@@ -423,9 +418,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         finally
         {
-            setCurrentHttpChannel(last);
-            if (threadName != null && LOG.isDebugEnabled())
-                Thread.currentThread().setName(threadName);
         }
 
         if (LOG.isDebugEnabled())
@@ -518,21 +510,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.debug("{} content {}", this, content);
         
         HttpInput input = _request.getHttpInput();
-        input.content(content);
+        input.addContent(content);
     }
 
     public void onRequestComplete()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} onRequestComplete", this);
-        _request.getHttpInput().messageComplete();
+        _request.getHttpInput().eof();
     }
 
     public void onCompleted()
     {
         if (_requestLog!=null )
             _requestLog.log(_request,_committedMetaData==null?-1:_committedMetaData.getStatus(), _written);   
-        _transport.completed();
+        _transport.onCompleted();
     }
     
     public void onEarlyEOF()

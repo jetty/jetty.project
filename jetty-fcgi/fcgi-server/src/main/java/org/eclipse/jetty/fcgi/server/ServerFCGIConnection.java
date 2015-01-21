@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,7 +32,6 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpInput;
-import org.eclipse.jetty.server.QueuedHttpInput;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -49,7 +48,7 @@ public class ServerFCGIConnection extends AbstractConnection
 
     public ServerFCGIConnection(Connector connector, EndPoint endPoint, HttpConfiguration configuration, boolean sendStatus200)
     {
-        super(endPoint, connector.getExecutor(), false);
+        super(endPoint, connector.getExecutor());
         this.connector = connector;
         this.flusher = new Flusher(endPoint);
         this.configuration = configuration;
@@ -83,11 +82,13 @@ public class ServerFCGIConnection extends AbstractConnection
                 }
                 else if (read == 0)
                 {
+                    bufferPool.release(buffer);
                     fillInterested();
                     break;
                 }
                 else
                 {
+                    bufferPool.release(buffer);
                     shutdown();
                     break;
                 }
@@ -97,11 +98,8 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            // TODO: fail and close ?
-        }
-        finally
-        {
             bufferPool.release(buffer);
+            // TODO: fail and close ?
         }
     }
 
@@ -123,8 +121,7 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             // TODO: handle flags
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
-                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200),
-                    new QueuedHttpInput());
+                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200));
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
             if (existing != null)
                 throw new IllegalStateException();

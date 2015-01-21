@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -44,12 +44,12 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
     private volatile ISession session;
     private volatile boolean idle = false;
 
-    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor, boolean dispatchIO)
+    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor)
     {
-        this(endPoint, bufferPool, parser, executor, dispatchIO, 8192);
+        this(endPoint, bufferPool, parser, executor, 8192);
     }
 
-    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor, boolean dispatchIO, int bufferSize)
+    public SPDYConnection(EndPoint endPoint, ByteBufferPool bufferPool, Parser parser, Executor executor, int bufferSize)
     {
         // Since SPDY is multiplexed, onFillable() must never block while calling application code. In fact,
         // the SPDY code always dispatches to a new thread when calling application code,
@@ -57,7 +57,7 @@ public class SPDYConnection extends AbstractConnection implements Controller, Id
         // The IO operation (read, parse, etc.) will not block and will be fast in almost all cases.
         // Big uploads to a server, however, might occupy the Selector thread for a long time and
         // therefore starve other connections, so by default dispatchIO is true.
-        super(endPoint, executor, dispatchIO);
+        super(endPoint, executor);
         this.bufferPool = bufferPool;
         this.parser = parser;
         onIdle(true);

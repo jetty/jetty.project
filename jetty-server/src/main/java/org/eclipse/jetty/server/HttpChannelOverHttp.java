@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,14 +53,23 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     private boolean _expect102Processing = false;
     
     private final MetaData.Request _metadata = new MetaData.Request();
+
+    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
+    {
+        this(httpConnection,connector,config,endPoint,transport,new HttpInputOverHTTP(httpConnection));
+    }
     
-    
-    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput input)
+    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport,HttpInput input)
     {
         super(connector,config,endPoint,transport,input);
         _httpConnection = httpConnection;
         _metadata.setFields(_fields);
         _metadata.setURI(new HttpURI());
+    }
+    
+    protected HttpInput newHttpInput()
+    {
+        throw new IllegalStateException();
     }
 
     @Override
@@ -218,7 +227,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     public void badMessage(int status, String reason)
     {
-        _httpConnection._generator.setPersistent(false);
+        _httpConnection.getGenerator().setPersistent(false);
         try
         {
             // Need to call onRequest, so RequestLog can reports as much as possible
@@ -291,7 +300,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         }
 
         if (!persistent)
-            _httpConnection._generator.setPersistent(false);
+            _httpConnection.getGenerator().setPersistent(false);
 
         onRequest(_metadata);
 
@@ -306,7 +315,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     protected void handleException(Throwable x)
     {
-        _httpConnection._generator.setPersistent(false);
+        _httpConnection.getGenerator().setPersistent(false);
         super.handleException(x);
     }
 
@@ -314,7 +323,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public void abort(Throwable failure)
     {
         super.abort(failure);
-        _httpConnection._generator.setPersistent(false);
+        _httpConnection.getGenerator().setPersistent(false);
     }
 
     @Override

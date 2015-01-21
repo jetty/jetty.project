@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -185,26 +185,20 @@ public class EnvConfiguration extends AbstractConfiguration
     @Override
     public void destroy (WebAppContext context) throws Exception
     {
-        ClassLoader old_loader = Thread.currentThread().getContextClassLoader();
-        Thread.currentThread().setContextClassLoader(context.getClassLoader());
-        ContextFactory.associateClassLoader(context.getClassLoader());
-
         try
         {
-            //unbind any NamingEntries that were configured in this webapp's name space
-            
+            //unbind any NamingEntries that were configured in this webapp's name space           
             NamingContext scopeContext = (NamingContext)NamingEntryUtil.getContextForScope(context);
             scopeContext.getParent().destroySubcontext(scopeContext.getName());
         }
         catch (NameNotFoundException e)
         {
             LOG.ignore(e);
-            LOG.debug("No naming entries configured in environment for webapp "+context);
+            LOG.debug("No jndi entries scoped to webapp {}", context);
         }
-        finally
+        catch (NamingException e)
         {
-            ContextFactory.disassociateClassLoader();
-            Thread.currentThread().setContextClassLoader(old_loader);
+            LOG.debug("Error unbinding jndi entries scoped to webapp "+context, e);
         }
     }
 

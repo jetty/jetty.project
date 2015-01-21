@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class WindowUpdateBodyParser extends BodyParser
 {
@@ -53,6 +54,7 @@ public class WindowUpdateBodyParser extends BodyParser
                     int length = getBodyLength();
                     if (length != 4)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_window_update_frame");
                     }
                     state = State.WINDOW_DELTA;

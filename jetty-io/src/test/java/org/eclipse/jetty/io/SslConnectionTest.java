@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,6 @@ import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
 
-import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.BufferUtil;
@@ -170,7 +169,7 @@ public class SslConnectionTest
 
         public TestConnection(EndPoint endp)
         {
-            super(endp, _threadPool,true);
+            super(endp, _threadPool);
         }
 
         @Override
@@ -277,7 +276,6 @@ public class SslConnectionTest
         len=5;
         while(len>0)
             len-=client.getInputStream().read(buffer);
-        Assert.assertEquals(1, _dispatches.get());
 
         client.close();
     }
@@ -309,7 +307,7 @@ public class SslConnectionTest
     public void testBlockedWrite() throws Exception
     {
         Socket client = newClient();
-        client.setSoTimeout(60000);
+        client.setSoTimeout(5000);
 
         SocketChannel server = _connector.accept();
         server.configureBlocking(false);

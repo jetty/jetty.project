@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -403,7 +403,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 throw new IllegalStateException("Unable to get PackageAdmin reference to locate required Tld bundles");
 
             StringBuilder paths = new StringBuilder();         
-            String[] symbNames = requireTldBundles.split(", ");
+            String[] symbNames = requireTldBundles.split("[, ]");
 
             for (String symbName : symbNames)
             {
@@ -452,7 +452,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                         String tmp = (String)_properties.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
                         if (tmp != null)
                         {
-                            String[] filenames = tmp.split(",;");
+                            String[] filenames = tmp.split("[,;]");
                             if (filenames != null && filenames.length > 0)
                             {
                                 String filename = filenames[0]; //should only be 1 filename in this usage

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,6 +19,7 @@
 package org.eclipse.jetty.osgi.annotations;
 
 import java.io.File;
+import java.io.InputStream;
 import java.net.URI;
 import java.net.URL;
 import java.util.Comparator;
@@ -196,10 +197,21 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
                 //remove the starting '/'
                 name = path.substring(1);
             }
+            if (name == null)
+            {
+                //found some .class file in the archive that was not under one of the prefix paths
+                //or the bundle classpath wasn't simply ".", so skip it
+                continue;
+            }
             //transform into a classname to pass to the resolver
             String shortName =  name.replace('/', '.').substring(0,name.length()-6);
-            if ((resolver == null)|| (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
-                scanClass(handlers, getResource(bundle), classUrl.openStream());
+            if ((resolver == null) || (!resolver.isExcluded(shortName) && (!isParsed(shortName) || resolver.shouldOverride(shortName))))
+            {
+                try (InputStream classInputStream = classUrl.openStream())
+                {
+                    scanClass(handlers, getResource(bundle), classInputStream);
+                }
+            }
         }
     }
 }

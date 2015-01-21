@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -86,8 +86,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         Generator generator = new Generator(connector.getByteBufferPool(), compressionFactory.newCompressor());
 
         ServerSessionFrameListener listener = provideServerSessionFrameListener(connector, endPoint);
-        SPDYConnection connection = new ServerSPDYConnection(connector, endPoint, parser, listener,
-                isDispatchIO(), getInputBufferSize());
+        SPDYConnection connection = new ServerSPDYConnection(connector, endPoint, parser, listener, getInputBufferSize());
 
         FlowControlStrategy flowControlStrategy = newFlowControlStrategy(version);
 
@@ -180,10 +179,9 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         private final AtomicBoolean connected = new AtomicBoolean();
 
         private ServerSPDYConnection(Connector connector, EndPoint endPoint, Parser parser,
-                                     ServerSessionFrameListener listener, boolean dispatchIO, int bufferSize)
+                                     ServerSessionFrameListener listener, int bufferSize)
         {
-            super(endPoint, connector.getByteBufferPool(), parser, connector.getExecutor(),
-                    dispatchIO, bufferSize);
+            super(endPoint, connector.getByteBufferPool(), parser, connector.getExecutor(), bufferSize);
             this.listener = listener;
         }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -45,10 +45,11 @@ public class DataBodyParser extends BodyParser
     }
 
     @Override
-    protected boolean emptyBody()
+    protected boolean emptyBody(ByteBuffer buffer)
     {
         if (isPadding())
         {
+            BufferUtil.clear(buffer);
             notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_data_frame");
             return false;
         }
@@ -68,6 +69,7 @@ public class DataBodyParser extends BodyParser
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_data_frame");
                     }
                     length = getBodyLength();
@@ -91,6 +93,7 @@ public class DataBodyParser extends BodyParser
                     loop = length == 0;
                     if (length < 0)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_data_frame_padding");
                     }
                     break;

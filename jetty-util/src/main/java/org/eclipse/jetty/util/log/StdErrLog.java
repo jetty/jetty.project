@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -93,6 +93,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 public class StdErrLog extends AbstractLogger
 {
     private static final String EOL = System.getProperty("line.separator");
+    private static int __tagpad = Integer.getInteger("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD",50);
     private static DateCache _dateCache;
     private static final Properties __props = new Properties();
 
@@ -100,7 +101,9 @@ public class StdErrLog extends AbstractLogger
             Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.SOURCE","false")));
     private final static boolean __long = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.LONG","false"));
     private final static boolean __escape = Boolean.parseBoolean(Log.__props.getProperty("org.eclipse.jetty.util.log.stderr.ESCAPE","true"));
-
+    
+    
+    
     static
     {
         __props.putAll(Log.__props);
@@ -127,6 +130,11 @@ public class StdErrLog extends AbstractLogger
         }
     }
 
+    public static void setTagPad(int pad)
+    {
+        __tagpad=pad;
+    }
+    
     public static final int LEVEL_ALL = 0;
     public static final int LEVEL_DEBUG = 1;
     public static final int LEVEL_INFO = 2;
@@ -589,16 +597,26 @@ public class StdErrLog extends AbstractLogger
             buffer.append(".00");
         }
         buffer.append(ms).append(tag);
-        if (_printLongNames)
+        
+        String name=_printLongNames?_name:_abbrevname;
+        String tname=Thread.currentThread().getName();
+
+        int p=__tagpad>0?(name.length()+tname.length()-__tagpad):0;
+
+        if (p<0)
         {
-            buffer.append(_name);
+            buffer
+            .append(name)
+            .append(':')
+            .append("                                                  ",0,-p)
+            .append(tname);
         }
-        else
+        else if (p==0)
         {
-            buffer.append(_abbrevname);
+            buffer.append(name).append(':').append(tname);
         }
         buffer.append(':');
-        buffer.append(Thread.currentThread().getName()).append(": ");
+        
         if (_source)
         {
             Throwable source = new Throwable();
@@ -628,6 +646,8 @@ public class StdErrLog extends AbstractLogger
                 break;
             }
         }
+
+        buffer.append(' ');
     }
 
     private void format(StringBuilder builder, String msg, Object... args)

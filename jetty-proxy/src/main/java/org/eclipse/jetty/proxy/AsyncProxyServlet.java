@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+
 import javax.servlet.ReadListener;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -130,12 +131,15 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void onDataAvailable() throws IOException
         {
+            System.err.println(Thread.currentThread()+" ODA");
             iterate();
+            System.err.println(Thread.currentThread()+" !ODA");
         }
 
         @Override
         public void onAllDataRead() throws IOException
         {
+            System.err.println(Thread.currentThread()+" ON ALL DATA READ!!!!");
             if (_log.isDebugEnabled())
                 _log.debug("{} proxying content to upstream completed", getRequestId(request));
             provider.close();
@@ -150,14 +154,17 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         protected Action process() throws Exception
         {
+            System.err.println(Thread.currentThread()+" Process");
             int requestId = _log.isDebugEnabled() ? getRequestId(request) : 0;
             ServletInputStream input = request.getInputStream();
 
             // First check for isReady() because it has
             // side effects, and then for isFinished().
+            System.err.printf(Thread.currentThread()+" process isFinished=%b%n",input.isFinished());
             while (input.isReady() && !input.isFinished())
             {
                 int read = input.read(buffer);
+                System.err.printf(Thread.currentThread()+" read=%d%n",read);
                 if (_log.isDebugEnabled())
                     _log.debug("{} asynchronous read {} bytes on {}", requestId, read, input);
                 if (read > 0)
@@ -169,6 +176,8 @@ public class AsyncProxyServlet extends ProxyServlet
                 }
             }
 
+            System.err.printf(Thread.currentThread()+" processed isFinished=%b%n",input.isFinished());
+            
             if (input.isFinished())
             {
                 if (_log.isDebugEnabled())

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -39,16 +39,16 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     private final FillInterest _fillInterest = new FillInterest()
     {
         @Override
-        protected boolean needsFill() throws IOException
+        protected void needsFillInterest() throws IOException
         {
-            return AbstractEndPoint.this.needsFill();
+            AbstractEndPoint.this.needsFillInterest();
         }
     };
     
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
-        protected void onIncompleteFlushed()
+        protected void onIncompleteFlush()
         {
             AbstractEndPoint.this.onIncompleteFlush();
         }
@@ -130,9 +130,9 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
     protected abstract void onIncompleteFlush();
 
-    protected abstract boolean needsFill() throws IOException;
+    protected abstract void needsFillInterest() throws IOException;
 
-    protected FillInterest getFillInterest()
+    public FillInterest getFillInterest()
     {
         return _fillInterest;
     }
@@ -150,7 +150,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         boolean fillFailed = _fillInterest.onFail(timeout);
         boolean writeFailed = _writeFlusher.onFail(timeout);
         
-        // If the endpoint is half closed and there was no onFail handling, the close here
+        // If the endpoint is half closed and there was no fill/write handling, then close here.
         // This handles the situation where the connection has completed its close handling 
         // and the endpoint is half closed, but the other party does not complete the close.
         // This perhaps should not check for half closed, however the servlet spec case allows

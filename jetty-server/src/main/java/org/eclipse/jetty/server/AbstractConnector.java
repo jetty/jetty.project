@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -514,12 +514,12 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
     private class Acceptor implements Runnable
     {
-        private final int _acceptor;
+        private final int _id;
         private String _name;
 
         private Acceptor(int id)
         {
-            _acceptor = id;
+            _id = id;
         }
 
         @Override
@@ -527,7 +527,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         {
             final Thread thread = Thread.currentThread();
             String name=thread.getName();
-            _name=String.format("%s-acceptor-%d@%x-%s",name,_acceptor,hashCode(),AbstractConnector.this.toString());
+            _name=String.format("%s-acceptor-%d@%x-%s",name,_id,hashCode(),AbstractConnector.this.toString());
             thread.setName(_name);
             
             int priority=thread.getPriority();
@@ -536,7 +536,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
             synchronized (AbstractConnector.this)
             {
-                _acceptors[_acceptor] = thread;
+                _acceptors[_id] = thread;
             }
 
             try
@@ -545,7 +545,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 {
                     try
                     {
-                        accept(_acceptor);
+                        accept(_id);
                     }
                     catch (Throwable e)
                     {
@@ -564,7 +564,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
                 synchronized (AbstractConnector.this)
                 {
-                    _acceptors[_acceptor] = null;
+                    _acceptors[_id] = null;
                 }
                 CountDownLatch stopping=_stopping;
                 if (stopping!=null)
@@ -577,7 +577,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         {
             String name=_name;
             if (name==null)
-                return String.format("acceptor-%d@%x", _acceptor, hashCode());
+                return String.format("acceptor-%d@%x", _id, hashCode());
             return name;
         }
         

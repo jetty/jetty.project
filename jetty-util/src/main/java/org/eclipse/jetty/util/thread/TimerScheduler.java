@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -113,7 +113,7 @@ public class TimerScheduler extends AbstractLifeCycle implements Scheduler, Runn
             }
             catch (Throwable x)
             {
-                LOG.debug("Exception while executing task " + _task, x);
+                LOG.warn("Exception while executing task " + _task, x);
             }
         }
 

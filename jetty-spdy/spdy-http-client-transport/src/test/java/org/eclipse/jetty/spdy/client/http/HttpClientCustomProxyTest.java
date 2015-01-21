@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -168,7 +168,7 @@ public class HttpClientCustomProxyTest
 
         public CAFEBABEConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, Map<String, Object> context)
         {
-            super(endPoint, executor, true);
+            super(endPoint, executor);
             this.connectionFactory = connectionFactory;
             this.context = context;
         }
@@ -227,7 +227,7 @@ public class HttpClientCustomProxyTest
 
         public CAFEBABEServerConnection(Connector connector, EndPoint endPoint, org.eclipse.jetty.server.ConnectionFactory connectionFactory)
         {
-            super(endPoint, connector.getExecutor(), true);
+            super(endPoint, connector.getExecutor());
             this.connectionFactory = connectionFactory;
         }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.osgi.boot;
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.bindings.StandardDeployer;
 import org.eclipse.jetty.deploy.graph.Node;
+import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.utils.EventSender;
 
 
@@ -34,6 +35,15 @@ import org.eclipse.jetty.osgi.boot.utils.EventSender;
 public class OSGiDeployer extends StandardDeployer
 {
     
+    private ServerInstanceWrapper _server;
+
+    /* ------------------------------------------------------------ */
+    public OSGiDeployer (ServerInstanceWrapper server)
+    {
+        _server = server; 
+    }
+    
+    
     /* ------------------------------------------------------------ */
     public void processBinding(Node node, App app) throws Exception
     {
@@ -41,14 +51,14 @@ public class OSGiDeployer extends StandardDeployer
         //OSGi Enterprise Spec only wants an event sent if its a webapp bundle (ie not a ContextHandler)
         if (!(app instanceof AbstractOSGiApp))
         {
-            super.processBinding(node,app);
+           doProcessBinding(node,app);
         }
         else
         {
             EventSender.getInstance().send(EventSender.DEPLOYING_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath());
             try
             {
-                super.processBinding(node,app);
+                doProcessBinding(node,app);
                 ((AbstractOSGiApp)app).registerAsOSGiService();
                 EventSender.getInstance().send(EventSender.DEPLOYED_EVENT, ((AbstractOSGiApp)app).getBundle(), app.getContextPath());
             }
@@ -58,6 +68,21 @@ public class OSGiDeployer extends StandardDeployer
                 throw e;
             }
         }
-        
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    protected void doProcessBinding (Node node, App app) throws Exception
+    {
+        ClassLoader old = Thread.currentThread().getContextClassLoader();
+        Thread.currentThread().setContextClassLoader(_server.getParentClassLoaderForWebapps());
+        try
+        {
+            super.processBinding(node,app);
+        }
+        finally 
+        {
+            Thread.currentThread().setContextClassLoader(old);
+        }
     }
 }

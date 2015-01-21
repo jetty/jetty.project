@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,6 +40,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSocket;
@@ -53,8 +54,8 @@ import org.eclipse.jetty.client.ssl.SslBytesTest.TLSRecord.Type;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
@@ -110,7 +111,7 @@ public class SslBytesServerTest extends SslBytesTest
             @Override
             public Connection newConnection(Connector connector, EndPoint endPoint)
             {
-                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint, true)
+                return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint)
                 {
                     @Override
                     protected HttpParser newHttpParser()
@@ -1361,8 +1362,8 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslFills.get(), Matchers.lessThan(50));
-        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(100));
+        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(50));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(100));
 
         Assert.assertNull(request.get(5, TimeUnit.SECONDS));
@@ -1383,8 +1384,8 @@ public class SslBytesServerTest extends SslBytesTest
 
         // Check that we did not spin
         TimeUnit.MILLISECONDS.sleep(500);
-        Assert.assertThat(sslFills.get(), Matchers.lessThan(50));
-        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(20));
+        Assert.assertThat(sslFills.get(), Matchers.lessThan(100));
+        Assert.assertThat(sslFlushes.get(), Matchers.lessThan(50));
         Assert.assertThat(httpParses.get(), Matchers.lessThan(100));
 
         closeClient(client);

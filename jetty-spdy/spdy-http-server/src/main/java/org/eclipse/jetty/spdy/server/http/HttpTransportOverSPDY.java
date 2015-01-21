@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -224,7 +224,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void completed()
+    public void onCompleted()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Completed {}", this);
@@ -264,7 +264,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         }
 
         @Override
-        public void completed()
+        public void onCompleted()
         {
             Stream stream = getStream();
             if (LOG.isDebugEnabled())
@@ -327,8 +327,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         {
             HttpTransport transport = new PushHttpTransportOverSPDY(connector, configuration, endPoint, pushStrategy,
                     pushStream, pushRequestHeaders, this, version);
-            HttpInputOverSPDY input = new HttpInputOverSPDY();
-            return new HttpChannelOverSPDY(connector, configuration, endPoint, transport, input, pushStream);
+            return new HttpChannelOverSPDY(connector, configuration, endPoint, transport, pushStream);
         }
 
         private void pushResource(String pushResource)

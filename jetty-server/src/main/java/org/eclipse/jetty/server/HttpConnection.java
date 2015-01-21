@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -53,12 +53,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpConfiguration _config;
     private final Connector _connector;
     private final ByteBufferPool _bufferPool;
-    final HttpGenerator _generator;
+    private final HttpInput _input;
+    private final HttpGenerator _generator;
     private final HttpChannelOverHttp _channel;
     private final HttpParser _parser;
     private volatile ByteBuffer _requestBuffer = null;
     private volatile ByteBuffer _chunk = null;
+    private final BlockingReadCallback _blockingReadCallback = new BlockingReadCallback();
+    private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
+    private final HttpInput.PoisonPillContent _recycleRequestBuffer = new RecycleBufferContent();
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -75,22 +79,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     protected static HttpConnection setCurrentConnection(HttpConnection connection)
     {
         HttpConnection last=__currentConnection.get();
-        if (connection==null)
-            __currentConnection.remove();
-        else 
-            __currentConnection.set(connection);
+        __currentConnection.set(connection);
         return last;
     }
 
-    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint, boolean dispatchIO)
+    public HttpConnection(HttpConfiguration config, Connector connector, EndPoint endPoint)
     {
-        super(endPoint, connector.getExecutor(), dispatchIO);
+        super(endPoint, connector.getExecutor());
         _config = config;
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
         _generator = newHttpGenerator();
-        HttpInput input = newHttpInput();
-        _channel = newHttpChannel(input);
+        _input = newHttpInput();
+        _channel = newHttpChannel(_input);
         _parser = newHttpParser();
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
@@ -146,6 +147,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return _parser;
     }
 
+    public HttpGenerator getGenerator()
+    {
+        return _generator;
+    }
+
     @Override
     public int getMessagesIn()
     {
@@ -162,6 +168,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         if (_requestBuffer != null && !_requestBuffer.hasRemaining())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("releaseRequestBuffer {}",this);
             ByteBuffer buffer=_requestBuffer;
             _requestBuffer=null;
             _bufferPool.release(buffer);
@@ -180,152 +188,156 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return BufferUtil.isEmpty(_requestBuffer);
     }
 
-    /**
-     * <p>Parses and handles HTTP messages.</p>
-     * <p>This method is called when this {@link Connection} is ready to read bytes from the {@link EndPoint}.
-     * However, it can also be called if there is unconsumed data in the _requestBuffer, as a result of
-     * resuming a suspended request when there is a pipelined request already read into the buffer.</p>
-     * <p>This method fills bytes and parses them until either: EOF is filled; 0 bytes are filled;
-     * the HttpChannel finishes handling; or the connection has changed.</p>
-     */
     @Override
     public void onFillable()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} onFillable {}", this, _channel.getState());
+            LOG.debug("{} onFillable enter {}", this, _channel.getState());
 
-        final HttpConnection last=setCurrentConnection(this);
-        int filled=Integer.MAX_VALUE;
-        boolean suspended=false;
+        HttpConnection last=setCurrentConnection(this);
         try
         {
-            // while not suspended and not upgraded
-            while (!suspended && getEndPoint().getConnection()==this)
+            while (true)
             {
-                // Do we need some data to parse
-                if (BufferUtil.isEmpty(_requestBuffer))
+                // Fill the request buffer (if needed)
+                int filled = fillRequestBuffer();
+                
+                // Parse the request buffer
+                boolean handle = parseRequestBuffer();
+                
+                // Handle close parser
+                if (_parser.isClose())
                 {
-                    // If the previous iteration filled 0 bytes or saw a close, then break here 
-                    if (filled<=0)
-                        break;
-                        
-                    // Can we fill?
-                    if(getEndPoint().isInputShutdown())
-                    {
-                        // No pretend we read -1
-                        filled=-1;
-                        _parser.atEOF();
-                    }
-                    else
-                    {
-                        // Get a buffer
-                        // We are not in a race here for the request buffer as we have not yet received a request,
-                        // so there are not an possible legal threads calling #parseContent or #completed.
-                        _requestBuffer = getRequestBuffer();
-
-                        // fill
-                        filled = getEndPoint().fill(_requestBuffer);
-                        if (filled==0) // Do a retry on fill 0 (optimization for SSL connections)
-                            filled = getEndPoint().fill(_requestBuffer);
-                        
-                        // tell parser
-                        if (filled < 0)
-                            _parser.atEOF();
-                    }
+                    close();
+                    break;
                 }
                 
-                // Parse the buffer
-                if (_parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer))
+                // Handle channel event
+                if (handle)
                 {
-                    // The parser returned true, which indicates the channel is ready to handle a request.
-                    // Call the channel and this will either handle the request/response to completion OR,
-                    // if the request suspends, the request/response will be incomplete so the outer loop will exit.
-                    // Not that onFillable no longer manipulates the request buffer from this point and that is
-                    // left to threads calling #completed or #parseContent (which may be this thread inside handle())
-                    suspended = !_channel.handle();
-                }
-                else
-                {
-                    // We parsed what we could, recycle the request buffer
-                    // We are not in a race here for the request buffer as we have not yet received a request,
-                    // so there are not an possible legal threads calling #parseContent or #completed.
-                    releaseRequestBuffer();
+                    boolean suspended = !_channel.handle();
                     
-                    // But we may have parsed an error condition, so let's check for close
-                    if (_parser.isClose())
-                        close();
+                    // We should break iteration if we have suspended or changed connection or this is not the handling thread.
+                    if (suspended || getEndPoint().getConnection() != this)
+                        break;
+                }
+                
+                // Continue or break?
+                else if (filled<=0)
+                {
+                    if (filled==0)
+                        fillInterested();
+                    break;
                 }
             }
-        }
-        catch (EofException e)
-        {
-            LOG.debug(e);
-        }
-        catch (Exception e)
-        {
-            if (_parser.isIdle())
-                LOG.debug(e);
-            else
-                LOG.warn(this.toString(), e);
-            close();
         }
         finally
         {                        
             setCurrentConnection(last);
-            if (!suspended && getEndPoint().isOpen() && getEndPoint().getConnection() == this)
-            {
-                fillInterested();
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} onFillable exit {}", this, _channel.getState());
         }
     }
 
+    
     /* ------------------------------------------------------------ */
     /** Fill and parse data looking for content
      * @throws IOException
      */
-    protected void parseContent() throws IOException
+    protected boolean parseContent() 
     {
-        // Not in a race here for the request buffer with #onFillable because an async consumer of
-        // content would only be started after onFillable has given up control.
-        // In a little bit of a race with #completed, but then not sure if it is legal to be doing 
-        // async calls to IO and have a completed call at the same time.
-        ByteBuffer requestBuffer = getRequestBuffer();
-
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} parseContent",this);
+        boolean handled=false;
         while (_parser.inContentState())
         {
-            // Can the parser progress (even with an empty buffer)
-            boolean parsed = _parser.parseNext(requestBuffer==null?BufferUtil.EMPTY_BUFFER:requestBuffer);
+            int filled = fillRequestBuffer();
+            boolean handle = parseRequestBuffer();
+            handled|=handle;
+            if (handle || filled<=0)
+                break;
+        }
+        return handled;
+    }
+    
 
-            // No, we can we try reading some content?
-            if (BufferUtil.isEmpty(requestBuffer) && getEndPoint().isInputShutdown())
+    /* ------------------------------------------------------------ */
+    private int fillRequestBuffer() 
+    {
+        if (BufferUtil.isEmpty(_requestBuffer))
+        {
+            // Can we fill?
+            if(getEndPoint().isInputShutdown())
             {
+                // No pretend we read -1
                 _parser.atEOF();
-                if (parsed)
-                    break;
-                continue;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} filled -1",this);
+                return -1;
             }
-
-            if (parsed)
-                break;
             
-            // OK lets read some data
-            int filled=getEndPoint().fill(requestBuffer);
-            if (LOG.isDebugEnabled()) // Avoid boxing of variable 'filled'
-                LOG.debug("{} filled {}",this,filled);
-            if (filled<=0)
+            // Get a buffer
+            // We are not in a race here for the request buffer as we have not yet received a request,
+            // so there are not an possible legal threads calling #parseContent or #completed.
+            _requestBuffer = getRequestBuffer();
+
+            // fill
+            try
             {
-                if (filled<0)
-                {
+                int filled = getEndPoint().fill(_requestBuffer);
+                if (filled==0) // Do a retry on fill 0 (optimization for SSL connections)
+                    filled = getEndPoint().fill(_requestBuffer);
+
+                // tell parser
+                if (filled < 0)
                     _parser.atEOF();
-                    continue;
-                }
-                break;
+                
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} filled {}",this,filled);
+                                
+                return filled;
+            }
+            catch (IOException e)
+            {
+                LOG.debug(e);
+                return -1;
             }
         }
+        return 0;
+    }
+
+    /* ------------------------------------------------------------ */
+    private boolean parseRequestBuffer() 
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} parse {} {}",this,BufferUtil.toDetailString(_requestBuffer));
+        
+        boolean buffer_had_content=BufferUtil.hasContent(_requestBuffer);
+        boolean handle = _parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} parsed {} {}",this,handle,_parser);
+        
+        // recycle buffer ?
+        if (buffer_had_content)
+        {
+            if (BufferUtil.isEmpty(_requestBuffer))
+            {
+                if (_parser.inContentState())
+                    _input.addContent(_recycleRequestBuffer);
+                else
+                    releaseRequestBuffer();
+            }
+        }
+        else
+        {
+            releaseRequestBuffer();
+        }
+        return handle;
     }
     
     @Override
-    public void completed()
+    public void onCompleted()
     {
         // Handle connection upgrades
         if (_channel.getResponse().getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
@@ -367,7 +379,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 if (LOG.isDebugEnabled())
                     LOG.debug("unconsumed input {}", this);
                 // Complete reading the request
-                _channel.getRequest().getHttpInput().consumeAll();
+                if (!_channel.getRequest().getHttpInput().consumeAll())
+                    _channel.abort(new IOException("unconsumed input"));
             }
         }
 
@@ -380,7 +393,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         
         // Not in a race here with onFillable, because it has given up control before calling handle.
         // in a slight race with #completed, but not sure what to do with that anyway.
-        releaseRequestBuffer();
         if (_chunk!=null)
             _bufferPool.release(_chunk);
         _chunk=null;
@@ -476,6 +488,62 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _sendCallback.iterate();
     }
 
+    private final class RecycleBufferContent extends HttpInput.PoisonPillContent
+    {
+        private RecycleBufferContent()
+        {
+            super("RECYCLE");
+        }
+
+        @Override
+        public void succeeded()
+        {
+            releaseRequestBuffer();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            succeeded();
+        }
+    }
+
+    private class BlockingReadCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            _input.unblock();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            _input.failed(x);
+        }
+        
+    }
+
+    private class AsyncReadCallback implements Callback
+    {
+        @Override
+        public void succeeded()
+        {
+            if (parseContent())
+                _channel.handle();
+            else
+                asyncReadFillInterested();
+        }
+
+        @Override
+        public void failed(Throwable x)
+        {
+            _input.failed(x);
+            _channel.handle();
+        }
+    }
+    
+    
     private class SendCallback extends IteratingCallback
     {
         private MetaData.Response _info;
@@ -668,7 +736,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return false;
     }
     
-    /* ------------------------------------------------------------ */
     /**
      * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
      */
@@ -676,5 +743,16 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void push(org.eclipse.jetty.http.MetaData.Request request)
     {   
         LOG.debug("ignore push in {}",this);
+    }
+
+    public void asyncReadFillInterested()
+    {
+        getEndPoint().fillInterested(_asyncReadCallback);
+        
+    }
+
+    public void blockingReadFillInterested()
+    {
+        getEndPoint().fillInterested(_blockingReadCallback);        
     }
 }

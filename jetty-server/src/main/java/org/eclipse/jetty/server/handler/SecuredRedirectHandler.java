@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.URIUtil;
 
@@ -41,11 +42,19 @@ public class SecuredRedirectHandler extends AbstractHandler
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        HttpConfiguration httpConfig = HttpChannel.getCurrentHttpChannel().getHttpConfiguration();
-
-        if (baseRequest.isSecure())
+        HttpChannel channel = baseRequest.getHttpChannel();
+        if (baseRequest.isSecure() || (channel == null))
         {
-            return; // all done
+            // nothing to do
+            return;
+        }
+
+        HttpConfiguration httpConfig = channel.getHttpConfiguration();
+        if (httpConfig == null)
+        {
+            // no config, show error
+            response.sendError(HttpStatus.FORBIDDEN_403,"No http configuration available");
+            return;
         }
 
         if (httpConfig.getSecurePort() > 0)
@@ -61,6 +70,7 @@ public class SecuredRedirectHandler extends AbstractHandler
         {
             response.sendError(HttpStatus.FORBIDDEN_403,"Not Secure");
         }
+        
         baseRequest.setHandled(true);
     }
 }

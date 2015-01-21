@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -74,7 +74,7 @@ public class ServletCallbackHandler implements CallbackHandler
                 PasswordValidationCallback passwordValidationCallback = (PasswordValidationCallback) callback;
                 Subject subject = passwordValidationCallback.getSubject();
 
-                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(),passwordValidationCallback.getPassword());
+                UserIdentity user = _loginService.login(passwordValidationCallback.getUsername(),passwordValidationCallback.getPassword(), null);
                 
                 if (user!=null)
                 {
@@ -91,7 +91,7 @@ public class ServletCallbackHandler implements CallbackHandler
                         credentialValidationCallback.getUsername(),
                         credentialValidationCallback.getCredential());
 
-                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(),credentialValidationCallback.getCredential());
+                UserIdentity user = _loginService.login(credentialValidationCallback.getUsername(),credentialValidationCallback.getCredential(), null);
 
                 if (user!=null)
                 {
@@ -126,14 +126,14 @@ public class ServletCallbackHandler implements CallbackHandler
     public CallerPrincipalCallback getThreadCallerPrincipalCallback()
     {
         CallerPrincipalCallback callerPrincipalCallback = _callerPrincipals.get();
-        _callerPrincipals.remove();
+        _callerPrincipals.set(null);
         return callerPrincipalCallback;
     }
 
     public GroupPrincipalCallback getThreadGroupPrincipalCallback()
     {
         GroupPrincipalCallback groupPrincipalCallback = _groupPrincipals.get();
-        _groupPrincipals.remove();
+        _groupPrincipals.set(null);
         return groupPrincipalCallback;
     }
 }

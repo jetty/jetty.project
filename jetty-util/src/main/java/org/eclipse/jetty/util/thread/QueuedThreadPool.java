@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -405,6 +405,15 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
         return _threadsIdle.get();
     }
 
+    /**
+     * @return The number of busy threads in the pool
+     */
+    @ManagedAttribute("total number of busy threads in the pool")
+    public int getBusyThreads()
+    {
+        return getThreads() - getIdleThreads();
+    }
+    
     /**
      * @return True if the pool is at maxThreads and there are not more idle threads than queued jobs
      */

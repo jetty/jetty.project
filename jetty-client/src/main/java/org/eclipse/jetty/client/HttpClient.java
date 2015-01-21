@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -131,7 +131,6 @@ public class HttpClient extends ContainerLifeCycle
     private volatile long addressResolutionTimeout = 15000;
     private volatile long idleTimeout;
     private volatile boolean tcpNoDelay = true;
-    private volatile boolean dispatchIO = true;
     private volatile boolean strictEventOrdering = false;
     private volatile HttpField encodingField;
     private volatile boolean removeIdleDestinations = false;
@@ -836,9 +835,11 @@ public class HttpClient extends ContainerLifeCycle
      * @return true to dispatch I/O operations in a different thread, false to execute them in the selector thread
      * @see #setDispatchIO(boolean)
      */
+    @Deprecated
     public boolean isDispatchIO()
     {
-        return dispatchIO;
+        // TODO this did default to true, so usage needs to be evaluated.
+        return false;
     }
 
     /**
@@ -854,9 +855,9 @@ public class HttpClient extends ContainerLifeCycle
      * @param dispatchIO true to dispatch I/O operations in a different thread,
      *                   false to execute them in the selector thread
      */
+    @Deprecated
     public void setDispatchIO(boolean dispatchIO)
     {
-        this.dispatchIO = dispatchIO;
     }
 
     /**

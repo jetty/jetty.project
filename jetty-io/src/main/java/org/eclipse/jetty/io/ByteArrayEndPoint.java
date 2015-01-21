@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,6 +24,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -40,6 +41,15 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     static final Logger LOG = Log.getLogger(ByteArrayEndPoint.class);
     public final static InetSocketAddress NOIP=new InetSocketAddress(0);
 
+    private final Runnable _runFillable = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            getFillInterest().fillable();
+        }        
+    };
+    
     protected volatile ByteBuffer _in;
     protected volatile ByteBuffer _out;
     protected volatile boolean _ishut;
@@ -102,10 +112,6 @@ public class ByteArrayEndPoint extends AbstractEndPoint
         setIdleTimeout(idleTimeoutMs);
     }
 
-
-
-
-
     /* ------------------------------------------------------------ */
     @Override
     protected void onIncompleteFlush()
@@ -114,12 +120,19 @@ public class ByteArrayEndPoint extends AbstractEndPoint
     }
 
     /* ------------------------------------------------------------ */
+    protected void execute(Runnable task)
+    {
+        new Thread(task,"BAEPoint-"+Integer.toHexString(hashCode())).start();
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
-    protected boolean needsFill() throws IOException
+    protected void needsFillInterest() throws IOException
     {
         if (_closed)
             throw new ClosedChannelException();
-        return _in == null || BufferUtil.hasContent(_in);
+        if (BufferUtil.hasContent(_in) || _in==null)
+            execute(_runFillable);
     }
 
     /* ------------------------------------------------------------ */

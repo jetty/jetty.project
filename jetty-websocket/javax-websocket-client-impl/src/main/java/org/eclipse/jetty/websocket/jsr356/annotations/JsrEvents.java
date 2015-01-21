@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -162,7 +162,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
         onOpen.call(websocket,config);
     }
 
-    public void callPong(RemoteEndpoint.Async endpoint, Object websocket, ByteBuffer pong) throws DecodeException, IOException
+    public void callPong(RemoteEndpoint.Async endpoint, Object websocket, ByteBuffer pong)
     {
         if (onPong == null)
         {

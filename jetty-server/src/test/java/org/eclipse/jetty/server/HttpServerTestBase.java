@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -986,8 +986,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             }
 
             String in = new String(b, 0, i, StandardCharsets.UTF_8);
-            assertTrue(in.contains("123456789"));
-            assertTrue(in.contains("abcdefghZ"));
+            assertThat(in,containsString("123456789"));
+            assertThat(in,containsString("abcdefghZ"));
             assertFalse(in.contains("Wibble"));
 
             in = new String(b, i, b.length - i, StandardCharsets.UTF_16);
@@ -1086,9 +1086,9 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             os.flush();
 
             String in = IO.toString(is);
-            assertTrue(in.contains("123456789"));
-            assertTrue(in.contains("abcdefghi"));
-            assertTrue(in.contains("Wibble"));
+            assertThat(in,containsString("123456789"));
+            assertThat(in,containsString("abcdefghi"));
+            assertThat(in,containsString("Wibble"));
         }
     }
 
@@ -1154,7 +1154,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
 
             assertEquals(-1, is.read()); // Closed by error!
 
-            assertTrue(in.contains("HTTP/1.1 200 OK"));
+            assertThat(in,containsString("HTTP/1.1 200 OK"));
             assertTrue(in.indexOf("Transfer-Encoding: chunked") > 0);
             assertTrue(in.indexOf("Now is the time for all good men to come to the aid of the party") > 0);
             assertThat(in, Matchers.not(Matchers.containsString("\r\n0\r\n")));
@@ -1404,9 +1404,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
     {
         configureServer(new NoopHandler());
         final int REQS = 2;
-        char[] fill = new char[65 * 1024];
-        Arrays.fill(fill, '.');
-        String content = "This is a loooooooooooooooooooooooooooooooooo" +
+        final String content = "This is a coooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
@@ -1415,9 +1413,8 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
                 "ooooooooooooooooooooooooooooooooooooooooooooo" +
-                "oooooooooooonnnnnnnnnnnnnnnnggggggggg content" +
-                new String(fill);
-        final byte[] bytes = content.getBytes();
+                "oooooooooooonnnnnnnnnnnnnnnntent";
+        final int cl = content.getBytes().length;
 
         Socket client = newSocket(_serverURI.getHost(), _serverURI.getPort());
         final OutputStream out = client.getOutputStream();
@@ -1429,12 +1426,15 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
             {
                 try
                 {
+                    byte[] bytes=(
+                            "GET / HTTP/1.1\r\n"+
+                                    "Host: localhost\r\n"
+                                    +"Content-Length: " + cl + "\r\n" +
+                                    "\r\n"+
+                                    content).getBytes(StandardCharsets.ISO_8859_1);
+                                    
                     for (int i = 0; i < REQS; i++)
-                    {
-                        out.write("GET / HTTP/1.1\r\nHost: localhost\r\n".getBytes(StandardCharsets.ISO_8859_1));
-                        out.write(("Content-Length: " + bytes.length + "\r\n" + "\r\n").getBytes(StandardCharsets.ISO_8859_1));
                         out.write(bytes, 0, bytes.length);
-                    }
                     out.write("GET / HTTP/1.1\r\nHost: last\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
                     out.flush();
                 }
@@ -1446,7 +1446,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }.start();
 
         String resps = readResponse(client);
-
+                
         int offset = 0;
         for (int i = 0; i < (REQS + 1); i++)
         {

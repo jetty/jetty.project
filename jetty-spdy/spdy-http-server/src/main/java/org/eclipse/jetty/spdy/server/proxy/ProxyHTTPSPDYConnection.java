@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -68,7 +68,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
 
     public ProxyHTTPSPDYConnection(Connector connector, HttpConfiguration config, EndPoint endPoint, short version, ProxyEngineSelector proxyEngineSelector)
     {
-        super(config, connector, endPoint, true);
+        super(config, connector, endPoint);
         this.version = version;
         this.proxyEngineSelector = proxyEngineSelector;
         this.session = new HTTPSession(version, connector);
@@ -141,12 +141,12 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
     }
 
     @Override
-    public void completed()
+    public void onCompleted()
     {
         headers.clear();
         stream = null;
         content = null;
-        super.completed();
+        super.onCompleted();
     }
 
     @Override
@@ -275,7 +275,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
             });
 
             if (replyInfo.isClose())
-                completed();
+                onCompleted();
 
             handler.succeeded();
         }
@@ -311,7 +311,7 @@ public class ProxyHTTPSPDYConnection extends HttpConnection implements HttpParse
             });
 
             if (dataInfo.isClose())
-                completed();
+                onCompleted();
 
             handler.succeeded();
         }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCodes;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
+import org.eclipse.jetty.util.BufferUtil;
 
 public class GoAwayBodyParser extends BodyParser
 {
@@ -70,6 +71,7 @@ public class GoAwayBodyParser extends BodyParser
                         length -= 4;
                         if (length <= 0)
                         {
+                            BufferUtil.clear(buffer);
                             return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_go_away_frame");
                         }
                     }
@@ -88,6 +90,7 @@ public class GoAwayBodyParser extends BodyParser
                     --length;
                     if (cursor > 0 && length <= 0)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_go_away_frame");
                     }
                     if (cursor == 0)
@@ -96,6 +99,7 @@ public class GoAwayBodyParser extends BodyParser
                         state = State.ERROR;
                         if (length == 0)
                         {
+                            BufferUtil.clear(buffer);
                             return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_go_away_frame");
                         }
                     }
@@ -110,6 +114,7 @@ public class GoAwayBodyParser extends BodyParser
                         length -= 4;
                         if (length < 0)
                         {
+                            BufferUtil.clear(buffer);
                             return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_go_away_frame");
                         }
                         if (length == 0)
@@ -132,6 +137,7 @@ public class GoAwayBodyParser extends BodyParser
                     --length;
                     if (cursor > 0 && length <= 0)
                     {
+                        BufferUtil.clear(buffer);
                         return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_go_away_frame");
                     }
                     if (cursor == 0)

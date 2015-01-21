@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,7 +35,6 @@ import org.eclipse.jetty.util.annotation.Name;
 
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
-    private boolean dispatchIO = true;
     private int maxDynamicTableSize = 4096;
     private int initialStreamWindow = FlowControl.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
@@ -47,14 +46,15 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.httpConfiguration = httpConfiguration;
     }
 
+    @Deprecated
     public boolean isDispatchIO()
     {
-        return dispatchIO;
+        return false;
     }
 
+    @Deprecated
     public void setDispatchIO(boolean dispatchIO)
     {
-        this.dispatchIO = dispatchIO;
     }
 
     public int getMaxDynamicTableSize()
@@ -109,7 +109,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         
         Parser parser = newServerParser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
-                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), isDispatchIO(), listener);
+                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
 
         return configure(connection, connector, endPoint);
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -86,7 +86,15 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
                     @Override
                     public void run()
                     {
-                        events.onBinary.call(websocket,session,msg);
+                        try
+                        {
+                            events.onBinary.call(websocket,session,msg);
+                        }
+                        catch (Throwable t)
+                        {
+                            // dispatched calls need to be reported
+                            onError(t);
+                        }
                     }
                 });
             }
@@ -188,7 +196,15 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
                     @Override
                     public void run()
                     {
-                        events.onText.call(websocket,session,msg);
+                        try
+                        {
+                            events.onText.call(websocket,session,msg);
+                        }
+                        catch (Throwable t)
+                        {
+                            // dispatched calls need to be reported
+                            onError(t);
+                        }
                     }
                 });
             }

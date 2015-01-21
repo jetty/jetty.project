@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -599,11 +599,13 @@ public class HashSessionManager extends AbstractSessionManager
                 if (isDeleteUnrestorableSessions() && file.exists() && file.getParentFile().equals(_storeDir) )
                 {
                     file.delete();
-                    LOG.warn("Deleting file for unrestorable session "+idInCuster, error);
+                    LOG.warn("Deleting file for unrestorable session {} {}",idInCuster,error);
+                    __log.debug(error);
                 }
                 else
                 {
-                    __log.warn("Problem restoring session "+idInCuster, error);
+                    __log.warn("Problem restoring session {} {}",idInCuster, error);
+                    __log.debug(error);
                 }
             }
             else

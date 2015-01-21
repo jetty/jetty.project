@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,6 @@ import org.eclipse.jetty.util.annotation.Name;
 public class HttpConnectionFactory extends AbstractConnectionFactory implements HttpConfiguration.ConnectionFactory
 {
     private final HttpConfiguration _config;
-    private boolean _dispatchIO = true;
 
     public HttpConnectionFactory()
     {
@@ -51,19 +50,20 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
         return _config;
     }
 
+    @Deprecated
     public boolean isDispatchIO()
     {
-        return _dispatchIO;
+        return false;
     }
 
+    @Deprecated
     public void setDispatchIO(boolean dispatchIO)
     {
-        _dispatchIO = dispatchIO;
     }
 
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        return configure(new HttpConnection(_config, connector, endPoint, isDispatchIO()), connector, endPoint);
+        return configure(new HttpConnection(_config, connector, endPoint), connector, endPoint);
     }
 }
