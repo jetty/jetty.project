@@ -769,7 +769,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _managedAttributes = new HashMap<String, Object>();
             String[] attributes = managedAttributes.split(",");
             for (String attribute : attributes)
-                _managedAttributes.put(attribute,null);
+            {
+                _managedAttributes.put(attribute.trim(),null);
+            }
 
             Enumeration<String> e = _scontext.getAttributeNames();
             while (e.hasMoreElements())
