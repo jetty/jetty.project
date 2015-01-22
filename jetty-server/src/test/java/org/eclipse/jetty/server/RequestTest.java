@@ -1209,7 +1209,7 @@ public class RequestTest
 
 
     @Test
-    public void testHashDOS() throws Exception
+    public void testHashDOSKeys() throws Exception
     {
         ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
         LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
@@ -1263,6 +1263,52 @@ public class RequestTest
             long start=System.currentTimeMillis();
             String response = _connector.getResponses(request);
             assertTrue(response.contains("Form too many keys"));
+            long now=System.currentTimeMillis();
+            assertTrue((now-start)<5000);
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+        }
+    }
+    
+    @Test
+    public void testHashDOSSize() throws Exception
+    {
+        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+        LOG.info("Expecting maxFormSize limit and too much data exceptions...");
+        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",3396);
+        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
+
+        StringBuilder buf = new StringBuilder(4000000);
+        buf.append("a=b");
+        // we will just create a lot of keys and make sure the limit is applied
+        for (int i=0;i<500;i++)
+            buf.append("&").append("K").append(i).append("=").append("x");
+        buf.append("&c=d");
+
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
+            }
+        };
+
+        String request="POST / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
+        "Content-Length: "+buf.length()+"\r\n"+
+        "Connection: close\r\n"+
+        "\r\n"+
+        buf;
+
+        try
+        {
+            long start=System.currentTimeMillis();
+            String response = _connector.getResponses(request);
+            assertTrue(response.contains("Form too large:"));
             long now=System.currentTimeMillis();
             assertTrue((now-start)<5000);
         }
