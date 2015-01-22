@@ -123,8 +123,8 @@
             </goals>
             <configuration>
               <target>
-                <property name="jetty.home" location="${test-home-dir}/jetty-distribution-${project.version}"/>
-                <property name="jetty.base" location="${test-base-dir}"/>
+                <property name="jetty.cdi.home" location="${test-home-dir}/jetty-distribution-${project.version}"/>
+                <property name="jetty.cdi.base" location="${test-base-dir}"/>
                 <echo>Integration Test : Setup Jetty</echo>
                 <exec executable="${run.command}"
                       dir="${scripts-dir}"
@@ -132,8 +132,8 @@
                   <arg value="${run.command.xtra}"/>
                   <arg value="${setup.script}"/>
                   <arg file="${java.home}"/>
-                  <arg file="${jetty.home}"/>
-                  <arg file="${jetty.base}"/>
+                  <arg file="${jetty.cdi.home}"/>
+                  <arg file="${jetty.cdi.base}"/>
                 </exec>
 
                 <echo>Integration Test : Starting Jetty ...</echo>
@@ -143,8 +143,8 @@
                   <arg value="${run.command.xtra}"/>
                   <arg value="${start.script}"/>
                   <arg file="${java.home}"/>
-                  <arg file="${jetty.home}"/>
-                  <arg file="${jetty.base}"/>
+                  <arg file="${jetty.cdi.home}"/>
+                  <arg file="${jetty.cdi.base}"/>
                 </exec>
                 <waitfor maxwait="5" maxwaitunit="second"
                   checkevery="100" checkeveryunit="millisecond">
@@ -162,8 +162,8 @@
             </goals>
             <configuration>
               <target>
-                <property name="jetty.home" location="${test-home-dir}/jetty-distribution-${project.version}"/>
-                <property name="jetty.base" location="${test-base-dir}"/>
+                <property name="jetty.cdi.home" location="${test-home-dir}/jetty-distribution-${project.version}"/>
+                <property name="jetty.cdi.base" location="${test-base-dir}"/>
                 <echo>Integration Test : Stop Jetty</echo>
                 <exec executable="${run.command}"
                       dir="${scripts-dir}"
@@ -171,8 +171,8 @@
                   <arg value="${run.command.xtra}"/>
                   <arg value="${stop.script}"/>
                   <arg file="${java.home}"/>
-                  <arg file="${jetty.home}"/>
-                  <arg file="${jetty.base}"/>
+                  <arg file="${jetty.cdi.home}"/>
+                  <arg file="${jetty.cdi.base}"/>
                 </exec>
               </target>
             </configuration>
