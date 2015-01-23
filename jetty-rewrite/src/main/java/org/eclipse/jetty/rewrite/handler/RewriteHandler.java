@@ -170,26 +170,12 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  */
 public class RewriteHandler extends HandlerWrapper
 {
-
     private RuleContainer _rules;
 
     /* ------------------------------------------------------------ */
     public RewriteHandler()
     {
         _rules = new RuleContainer();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * To enable configuration from jetty.xml on rewriteRequestURI, rewritePathInfo and
-     * originalPathAttribute
-     *
-     * @param legacyRule old style rewrite rule
-     */
-    @Deprecated
-    public void setLegacyRule(LegacyRule legacyRule)
-    {
-        _rules.setLegacyRule(legacyRule);
     }
 
     /* ------------------------------------------------------------ */
