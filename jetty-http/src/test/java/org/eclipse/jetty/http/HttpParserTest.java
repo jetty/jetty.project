@@ -64,6 +64,27 @@ public class HttpParserTest
     }
 
     @Test
+    public void HttpMethodTest()
+    {
+        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("Wibble ")));
+        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET")));
+        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("MO")));
+        
+        assertEquals(HttpMethod.GET,HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET ")));
+        assertEquals(HttpMethod.MOVE,HttpMethod.lookAheadGet(BufferUtil.toBuffer("MOVE ")));
+        
+        ByteBuffer b = BufferUtil.allocateDirect(128);
+        BufferUtil.append(b,BufferUtil.toBuffer("GET"));
+        assertNull(HttpMethod.lookAheadGet(b));
+        
+        BufferUtil.append(b,BufferUtil.toBuffer(" "));
+        assertEquals(HttpMethod.GET,HttpMethod.lookAheadGet(b));
+        
+        
+    }
+    
+    
+    @Test
     public void testLineParse0() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer("POST /foo HTTP/1.0\015\012" + "\015\012");
