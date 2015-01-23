@@ -388,9 +388,9 @@ public class BufferUtil
     }
 
     /* ------------------------------------------------------------ */
-    /** Appends a byte to a buffer
+    /** Appends a buffer to a buffer
      * @param to Buffer is flush mode
-     * @param b bytes to append
+     * @param b buffer to append
      */
     public static int append(ByteBuffer to, ByteBuffer b)
     {
