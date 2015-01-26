@@ -93,7 +93,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 public class StdErrLog extends AbstractLogger
 {
     private static final String EOL = System.getProperty("line.separator");
-    private static int __tagpad = Integer.getInteger("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD",50);
+    // Do not change output format lightly, people rely on this output format now.
+    private static int __tagpad = Integer.parseInt(Log.__props.getProperty("org.eclipse.jetty.util.log.StdErrLog.TAG_PAD","0"));
     private static DateCache _dateCache;
     private static final Properties __props = new Properties();
 
