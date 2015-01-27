@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,7 +48,7 @@ public class URLResource extends Resource
     protected URLResource(URL url, URLConnection connection)
     {
         _url = url;
-        _urlString=_url.toExternalForm();
+        _urlString=_url.toExternalForm().replaceAll("/+|\\\\+", "/");
         _connection=connection;
     }
     

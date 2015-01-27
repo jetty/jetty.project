@@ -183,37 +183,28 @@ class JarFileResource extends JarResource
             // Do we need to look more closely?
             if (jarFile!=null && _entry==null && !_directory)
             {
-                // OK - we have a JarFile, lets look at the entries for our path
-                Enumeration<JarEntry> e=jarFile.entries();
-                while(e.hasMoreElements())
-                {
-                    JarEntry entry = e.nextElement();
-                    String name=entry.getName().replace('\\','/');
-                    
-                    // Do we have a match
-                    if (name.equals(_path))
-                    {
-                        _entry=entry;
-                        // Is the match a directory
-                        _directory=_path.endsWith("/");
-                        break;
-                    }
-                    else if (_path.endsWith("/"))
-                    {
-                        if (name.startsWith(_path))
-                        {
-                            _directory=true;
-                            break;
-                        }
-                    }
-                    else if (name.startsWith(_path) && name.length()>_path.length() && name.charAt(_path.length())=='/')
-                    {
-                        _directory=true;
-                        break;
+                // OK - we have a JarFile, lets look for the entry
+                JarEntry entry = jarFile.getJarEntry(_path);
+                if (entry == null) {
+                    // the entry does not exist
+                    _exists = false;
+                } else if (entry.isDirectory()) {
+                    _directory = true;
+                    _entry = entry;
+                } else {
+                    // Let's confirm is a file
+                    JarEntry directory = jarFile.getJarEntry(_path + '/');
+                    if (directory != null) {
+                        _directory = true;
+                        _entry = directory;
+                    } else {
+                        // OK is a file
+                      _directory = false;
+                      _entry = entry;
                     }
                 }
             }
-        }    
+        }
         
         _exists= ( _directory || _entry!=null);
         return _exists;
@@ -269,7 +260,7 @@ class JarFileResource extends JarResource
                 //So, do one retry to drop a connection and get a fresh JarFile
                 LOG.warn("Retrying list:"+e);
                 LOG.debug(e);
-                release();
+                close();
                 list = listEntries();
             }
 
@@ -403,11 +394,3 @@ class JarFileResource extends JarResource
         return url.sameFile(resource.getURL());     
     }
 }
-
-
-
-
-
-
-
-
