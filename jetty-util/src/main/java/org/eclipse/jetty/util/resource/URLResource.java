@@ -48,7 +48,7 @@ public class URLResource extends Resource
     protected URLResource(URL url, URLConnection connection)
     {
         _url = url;
-        _urlString=_url.toExternalForm();
+        _urlString=_url.toExternalForm().replaceAll("/+|\\\\+", "/");
         _connection=connection;
     }
     
