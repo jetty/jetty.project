@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.fcgi.generator;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.Charset;
+import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -54,7 +55,7 @@ public class ServerGenerator extends Generator
     {
         request &= 0xFF_FF;
 
-        Charset utf8 = Charset.forName("UTF-8");
+        final Charset utf8 = StandardCharsets.UTF_8;
         List<byte[]> bytes = new ArrayList<>(fields.size() * 2);
         int length = 0;
 

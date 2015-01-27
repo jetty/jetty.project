@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,6 @@
 package org.eclipse.jetty.util;
 
 import java.io.UnsupportedEncodingException;
-import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 import org.eclipse.jetty.util.log.Log;
@@ -48,39 +47,18 @@ public class StringUtil
     @Deprecated
     public static final String __LINE_SEPARATOR = System.lineSeparator();
        
-    public static final String __ISO_8859_1="ISO-8859-1";
-    public final static String __UTF8="UTF-8";
-    public final static String __UTF16="UTF-16";
-
-    /**
-     * @deprecated Use {@link StandardCharsets#UTF_8}
-     */
-    @Deprecated
-    public final static Charset __UTF8_CHARSET=StandardCharsets.UTF_8;
-    /**
-     * @deprecated Use {@link StandardCharsets#ISO_8859_1}
-     */
-    @Deprecated
-    public final static Charset __ISO_8859_1_CHARSET=StandardCharsets.ISO_8859_1;
-    /**
-     * @deprecated Use {@link StandardCharsets#UTF_16}
-     */
-    @Deprecated
-    public final static Charset __UTF16_CHARSET=StandardCharsets.UTF_16;
-    /**
-     * @deprecated Use {@link StandardCharsets#US_ASCII}
-     */
-    @Deprecated
-    public final static Charset __US_ASCII_CHARSET=StandardCharsets.US_ASCII;
+    public static final String __ISO_8859_1="iso-8859-1";
+    public final static String __UTF8="utf-8";
+    public final static String __UTF16="utf-16";
     
     static
     {
-        CHARSETS.put("UTF-8",__UTF8);
-        CHARSETS.put("UTF8",__UTF8);
-        CHARSETS.put("UTF-16",__UTF16);
-        CHARSETS.put("UTF16",__UTF16);
-        CHARSETS.put("ISO-8859-1",__ISO_8859_1);
-        CHARSETS.put("ISO_8859_1",__ISO_8859_1);
+        CHARSETS.put("utf-8",__UTF8);
+        CHARSETS.put("utf8",__UTF8);
+        CHARSETS.put("utf-16",__UTF16);
+        CHARSETS.put("utf16",__UTF16);
+        CHARSETS.put("iso-8859-1",__ISO_8859_1);
+        CHARSETS.put("iso_8859_1",__ISO_8859_1);
     }
     
     /* ------------------------------------------------------------ */
@@ -624,17 +602,17 @@ public class StringUtil
     /**
      * Convert String to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      * 
-     * @param string
-     *            A String containing an integer.
+     * @param string A String containing an integer.
+     * @param from The index to start parsing from
      * @return an int
      */
-    public static int toInt(String string)
+    public static int toInt(String string,int from)
     {
         int val = 0;
         boolean started = false;
         boolean minus = false;
 
-        for (int i = 0; i < string.length(); i++)
+        for (int i = from; i < string.length(); i++)
         {
             char b = string.charAt(i);
             if (b <= ' ')
@@ -659,7 +637,7 @@ public class StringUtil
             return minus?(-val):val;
         throw new NumberFormatException(string);
     }
-
+    
     /**
      * Convert String to an long. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
      * 

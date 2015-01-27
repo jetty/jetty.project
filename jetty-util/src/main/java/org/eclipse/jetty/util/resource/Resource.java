@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -113,8 +113,7 @@ public abstract class Resource implements ResourceFactory, Closeable
         {
             try
             {
-                FileResource fileResource= new FileResource(url);
-                return fileResource;
+                return new PathResource(url);
             }
             catch(Exception e)
             {
@@ -178,7 +177,7 @@ public abstract class Resource implements ResourceFactory, Closeable
                         resource=resource.substring(2);
                     
                     File file=new File(resource).getCanonicalFile();
-                    return new FileResource(file);
+                    return new PathResource(file.toPath());
                 }
                 catch(Exception e2)
                 {
@@ -199,7 +198,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /* ------------------------------------------------------------ */
     public static Resource newResource(File file)
     {
-        return new FileResource(file);
+        return new PathResource(file.toPath());
     }
 
     /* ------------------------------------------------------------ */
@@ -475,6 +474,12 @@ public abstract class Resource implements ResourceFactory, Closeable
     public void setAssociate(Object o)
     {
         _associate=o;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isAlias()
+    {
+        return getAlias()!=null;
     }
     
     /* ------------------------------------------------------------ */

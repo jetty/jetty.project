@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.security;
 import java.util.Properties;
 
 import javax.security.auth.Subject;
+import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.B64Code;
@@ -112,7 +113,7 @@ public class SpnegoLoginService extends AbstractLifeCycle implements LoginServic
      * username will be null since the credentials will contain all the relevant info
      */
     @Override
-    public UserIdentity login(String username, Object credentials)
+    public UserIdentity login(String username, Object credentials, ServletRequest request)
     {
         String encodedAuthToken = (String)credentials;
 

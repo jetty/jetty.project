@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,10 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.net.URI;
+import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -31,6 +33,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.proxy.AsyncProxyServlet;
 import org.eclipse.jetty.proxy.ProxyServlet;
@@ -125,6 +128,33 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             if (originalQuery != null)
                 originalURI += "?" + originalQuery;
             proxyRequest.attribute(REQUEST_URI_ATTRIBUTE, originalURI);
+        }
+
+        // If the Host header is missing, add it.
+        if (!proxyRequest.getHeaders().containsKey(HttpHeader.HOST.asString()))
+        {
+            String host = request.getServerName();
+            int port = request.getServerPort();
+            if (!getHttpClient().isDefaultPort(request.getScheme(), port))
+                host += ":" + port;
+            proxyRequest.header(HttpHeader.HOST, host);
+            proxyRequest.header(HttpHeader.X_FORWARDED_HOST, host);
+        }
+
+        // PHP does not like multiple Cookie headers, coalesce into one.
+        List<String> cookies = proxyRequest.getHeaders().getValuesList(HttpHeader.COOKIE.asString());
+        if (cookies.size() > 1)
+        {
+            StringBuilder builder = new StringBuilder();
+            for (int i = 0; i < cookies.size(); ++i)
+            {
+                if (i > 0)
+                    builder.append("; ");
+                String cookie = cookies.get(i);
+                builder.append(cookie);
+            }
+            proxyRequest.header(HttpHeader.COOKIE, null);
+            proxyRequest.header(HttpHeader.COOKIE, builder.toString());
         }
 
         super.customizeProxyRequest(proxyRequest, request);

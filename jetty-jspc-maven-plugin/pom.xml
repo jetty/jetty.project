@@ -2,13 +2,14 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.2.6.v20141205</version>
+    <version>9.3.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-jspc-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
   <name>Jetty :: Jetty JSPC Maven Plugin</name>
   <properties>
+    <bundle-symbolic-name>${project.groupId}.jspc.plugin</bundle-symbolic-name>
   </properties>
   <build>
     <plugins>

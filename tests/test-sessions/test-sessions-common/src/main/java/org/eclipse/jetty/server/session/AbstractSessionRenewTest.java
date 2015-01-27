@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -70,7 +70,7 @@ public abstract class AbstractSessionRenewTest
             ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
             assertEquals(HttpServletResponse.SC_OK,response.getStatus());
 
-            String sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+            String sessionCookie = response.getHeaders().get("Set-Cookie");
             assertTrue(sessionCookie != null);
             assertFalse(testListener.isCalled());
 
@@ -79,7 +79,7 @@ public abstract class AbstractSessionRenewTest
             request.header("Cookie", sessionCookie);
             ContentResponse renewResponse = request.send();
             assertEquals(HttpServletResponse.SC_OK,renewResponse.getStatus());
-            String renewSessionCookie = renewResponse.getHeaders().getStringField("Set-Cookie");
+            String renewSessionCookie = renewResponse.getHeaders().get("Set-Cookie");
             assertNotNull(renewSessionCookie);
             assertNotSame(sessionCookie, renewSessionCookie);
             assertTrue(testListener.isCalled());

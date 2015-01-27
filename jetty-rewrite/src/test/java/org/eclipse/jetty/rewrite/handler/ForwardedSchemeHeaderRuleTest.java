@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -73,11 +73,11 @@ public class ForwardedSchemeHeaderRuleTest extends AbstractRuleTestCase
         _rule.matchAndApply("/",_request,_response);
         assertEquals("https",_request.getScheme());
 
-        _request.setScheme(null);
+        _request.setScheme("other");
         // header value doesn't match rule's value
         setRequestHeader("Front-End-Https", "off");
         _rule.matchAndApply("/",_request,_response);
-        assertEquals(null,_request.getScheme());
+        assertEquals("other",_request.getScheme());
 
         _request.setScheme(null);
         // header value can be any value

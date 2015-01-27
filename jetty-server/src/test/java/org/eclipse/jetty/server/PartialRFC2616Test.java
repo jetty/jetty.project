@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,14 +37,17 @@ import java.util.concurrent.TimeUnit;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  *
  */
+@RunWith(AdvancedRunner.class)
 public class PartialRFC2616Test
 {
     private Server server;
@@ -102,7 +105,7 @@ public class PartialRFC2616Test
             assertEquals("3.3.1 RFC 850 ANSI C",d3,d2);
 
             fields.putDateField("Date",d1.getTime());
-            assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.getStringField("Date"));
+            assertEquals("3.3.1 RFC 822 preferred","Sun, 06 Nov 1994 08:49:37 GMT",fields.get("Date"));
         }
         catch (Exception e)
         {

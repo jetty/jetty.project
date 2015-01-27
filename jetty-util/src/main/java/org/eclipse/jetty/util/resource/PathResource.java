@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,13 +32,15 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
-import java.nio.file.StandardCopyOption;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -48,10 +50,44 @@ import org.eclipse.jetty.util.log.Logger;
 public class PathResource extends Resource
 {
     private static final Logger LOG = Log.getLogger(PathResource.class);
+    private final static LinkOption NO_FOLLOW_LINKS[] = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
+    private final static LinkOption FOLLOW_LINKS[] = new LinkOption[] {};
 
     private final Path path;
+    private final Path alias;
     private final URI uri;
-    private LinkOption linkOptions[] = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
+    
+    private static final Path checkAliasPath(final Path path)
+    {
+        Path abs = path;
+        if (!abs.isAbsolute())
+        {
+            abs = path.toAbsolutePath();
+        }
+
+        try
+        {
+            if (Files.isSymbolicLink(path))
+                return Files.readSymbolicLink(path);
+            if (Files.exists(path))
+            {
+                Path real = abs.toRealPath(FOLLOW_LINKS);
+                if (!abs.equals(real))
+                    return real;
+            }
+        }
+        catch (NoSuchFileException e)
+        {
+            // Ignore
+        }
+        catch (Exception e)
+        {
+            // TODO: reevaluate severity level
+            LOG.warn("bad alias ({}) for {}", e.getClass().getName(), e.getMessage());
+            return abs;
+        }
+        return null;
+    }
 
     public PathResource(File file)
     {
@@ -60,8 +96,9 @@ public class PathResource extends Resource
 
     public PathResource(Path path)
     {
-        this.path = path;
+        this.path = path.toAbsolutePath();
         this.uri = this.path.toUri();
+        this.alias = checkAliasPath(path);
     }
 
     public PathResource(URI uri) throws IOException
@@ -95,8 +132,9 @@ public class PathResource extends Resource
             throw new IOException("Unable to build Path from: " + uri,e);
         }
 
-        this.path = path;
+        this.path = path.toAbsolutePath();
         this.uri = path.toUri();
+        this.alias = checkAliasPath(path);
     }
 
     public PathResource(URL url) throws IOException, URISyntaxException
@@ -105,9 +143,24 @@ public class PathResource extends Resource
     }
 
     @Override
-    public Resource addPath(String apath) throws IOException, MalformedURLException
+    public Resource addPath(final String subpath) throws IOException, MalformedURLException
     {
-        return new PathResource(this.path.resolve(apath));
+        String cpath = URIUtil.canonicalPath(subpath);
+
+        if ((cpath == null) || (cpath.length() == 0))
+            throw new MalformedURLException();
+
+        if ("/".equals(cpath))
+            return this;
+
+        // subpaths are always under PathResource
+        // compensate for input subpaths like "/subdir"
+        // where default java.nio.file behavior would be
+        // to treat that like an absolute path
+        StringBuilder relpath = new StringBuilder();
+        relpath.append(".").append(File.separator);
+        relpath.append(cpath);
+        return new PathResource(this.path.resolve(relpath.toString()).normalize());
     }
 
     @Override
@@ -163,7 +216,7 @@ public class PathResource extends Resource
     @Override
     public boolean exists()
     {
-        return Files.exists(path,linkOptions);
+        return Files.exists(path,NO_FOLLOW_LINKS);
     }
 
     @Override
@@ -172,9 +225,9 @@ public class PathResource extends Resource
         return path.toFile();
     }
 
-    public boolean getFollowLinks()
+    public Path getPath() throws IOException
     {
-        return (linkOptions != null) && (linkOptions.length > 0) && (linkOptions[0] == LinkOption.NOFOLLOW_LINKS);
+        return path;
     }
 
     @Override
@@ -233,7 +286,7 @@ public class PathResource extends Resource
     @Override
     public boolean isDirectory()
     {
-        return Files.isDirectory(path,linkOptions);
+        return Files.isDirectory(path,NO_FOLLOW_LINKS);
     }
 
     @Override
@@ -241,7 +294,7 @@ public class PathResource extends Resource
     {
         try
         {
-            FileTime ft = Files.getLastModifiedTime(path,linkOptions);
+            FileTime ft = Files.getLastModifiedTime(path,NO_FOLLOW_LINKS);
             return ft.toMillis();
         }
         catch (IOException e)
@@ -266,24 +319,20 @@ public class PathResource extends Resource
     }
 
     @Override
+    public boolean isAlias()
+    {
+        return this.alias!=null;
+    }
+    
+    public Path getAliasPath()
+    {
+        return this.alias;
+    }
+    
+    @Override
     public URI getAlias()
     {
-        if (Files.isSymbolicLink(path))
-        {
-            try
-            {
-                return path.toRealPath().toUri();
-            }
-            catch (IOException e)
-            {
-                LOG.debug(e);
-                return null;
-            }
-        }
-        else
-        {
-            return null;
-        }
+        return this.alias==null?null:this.alias.toUri();
     }
 
     @Override
@@ -325,8 +374,8 @@ public class PathResource extends Resource
             PathResource destRes = (PathResource)dest;
             try
             {
-                Path result = Files.move(path,destRes.path,StandardCopyOption.ATOMIC_MOVE);
-                return Files.exists(result,linkOptions);
+                Path result = Files.move(path,destRes.path);
+                return Files.exists(result,NO_FOLLOW_LINKS);
             }
             catch (IOException e)
             {
@@ -340,15 +389,22 @@ public class PathResource extends Resource
         }
     }
 
-    public void setFollowLinks(boolean followLinks)
+    @Override
+    public void copyTo(File destination) throws IOException
     {
-        if (followLinks)
+        if (isDirectory())
         {
-            linkOptions = new LinkOption[0];
+            IO.copyDir(this.path.toFile(),destination);
         }
         else
         {
-            linkOptions = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
+            Files.copy(this.path,destination.toPath());
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return this.uri.toASCIIString();
     }
 }

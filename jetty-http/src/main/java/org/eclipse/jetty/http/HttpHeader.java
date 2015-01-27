@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -111,16 +111,26 @@ public enum HttpHeader
     
     X_POWERED_BY("X-Powered-By"),
 
+    /* ------------------------------------------------------------ */
+    /** HTTP2 Fields.
+     */
+    C_METHOD(":method"),
+    C_SCHEME(":scheme"),
+    C_AUTHORITY(":authority"),
+    C_PATH(":path"),
+    C_STATUS(":status"),
+    
     UNKNOWN("::UNKNOWN::");
 
 
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpHeader> CACHE= new ArrayTrie<>(512);
+    public final static Trie<HttpHeader> CACHE= new ArrayTrie<>(520);
     static
     {
         for (HttpHeader header : HttpHeader.values())
             if (header!=UNKNOWN)
-                CACHE.put(header.toString(),header);
+                if (!CACHE.put(header.toString(),header))
+                    throw new IllegalStateException();
     }
     
     private final String _string;

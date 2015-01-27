@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -202,7 +202,7 @@ public class AsyncStressTest
             long resume_after=-1;
             long complete_after=-1;
 
-            final String uri=baseRequest.getUri().toString();
+            final String uri=baseRequest.getHttpURI().toString();
 
             if (request.getParameter("read")!=null)
                 read_before=Integer.parseInt(request.getParameter("read"));
@@ -255,7 +255,7 @@ public class AsyncStressTest
                                     Request br=(Request)asyncContext.getRequest();
                                     System.err.println("\n"+e.toString());
                                     System.err.println(baseRequest+"=="+br);
-                                    System.err.println(uri+"=="+br.getUri());
+                                    System.err.println(uri+"=="+br.getHttpURI());
                                     System.err.println(asyncContext+"=="+br.getHttpChannelState());
 
                                     LOG.warn(e);

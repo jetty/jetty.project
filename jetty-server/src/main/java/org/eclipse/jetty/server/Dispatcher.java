@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.Collections;
 import java.util.Enumeration;
 import java.util.HashSet;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletException;
@@ -30,6 +31,11 @@ import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.Attributes;
 import org.eclipse.jetty.util.MultiMap;
@@ -43,27 +49,24 @@ public class Dispatcher implements RequestDispatcher
     public final static String __FORWARD_PREFIX="javax.servlet.forward.";
 
     private final ContextHandler _contextHandler;
-    private final String _uri;
-    private final String _path;
-    private final String _query;
+    private final HttpURI _uri;
+    private final String _pathInContext;
     private final String _named;
 
-    public Dispatcher(ContextHandler contextHandler, String uri, String pathInContext, String query)
+    public Dispatcher(ContextHandler contextHandler, HttpURI uri, String pathInContext)
     {
         _contextHandler=contextHandler;
         _uri=uri;
-        _path=pathInContext;
-        _query=query;
+        _pathInContext=pathInContext;
         _named=null;
     }
 
     public Dispatcher(ContextHandler contextHandler, String name) throws IllegalStateException
     {
         _contextHandler=contextHandler;
-        _named=name;
         _uri=null;
-        _path=null;
-        _query=null;
+        _pathInContext=null;
+        _named=name;
     }
 
     @Override
@@ -80,7 +83,7 @@ public class Dispatcher implements RequestDispatcher
     @Override
     public void include(ServletRequest request, ServletResponse response) throws ServletException, IOException
     {
-        Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
+        Request baseRequest=Request.getBaseRequest(request);
 
         if (!(request instanceof HttpServletRequest))
             request = new ServletRequestHttpWrapper(request);
@@ -102,17 +105,17 @@ public class Dispatcher implements RequestDispatcher
             {
                 IncludeAttributes attr = new IncludeAttributes(old_attr);
 
-                attr._requestURI=_uri;
+                attr._requestURI=_uri.getPath();
                 attr._contextPath=_contextHandler.getContextPath();
                 attr._servletPath=null; // set by ServletHandler
-                attr._pathInfo=_path;
-                attr._query=_query;
+                attr._pathInfo=_pathInContext;
+                attr._query=_uri.getQuery();
 
-                if (_query!=null)
-                    baseRequest.mergeQueryParameters(_query, false);
+                if (attr._query!=null)
+                    baseRequest.mergeQueryParameters(baseRequest.getQueryString(),attr._query, false);
                 baseRequest.setAttributes(attr);
 
-                _contextHandler.handle(_path, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
             }
         }
         finally
@@ -127,7 +130,7 @@ public class Dispatcher implements RequestDispatcher
 
     protected void forward(ServletRequest request, ServletResponse response, DispatcherType dispatch) throws ServletException, IOException
     {
-        Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
+        Request baseRequest=Request.getBaseRequest(request);                
         Response base_response=baseRequest.getResponse();
         base_response.resetForForward();
 
@@ -137,11 +140,12 @@ public class Dispatcher implements RequestDispatcher
             response = new ServletResponseHttpWrapper(response);
 
         final boolean old_handled=baseRequest.isHandled();
-        final String old_uri=baseRequest.getRequestURI();
+        
+        final HttpURI old_uri=baseRequest.getHttpURI();
         final String old_context_path=baseRequest.getContextPath();
         final String old_servlet_path=baseRequest.getServletPath();
         final String old_path_info=baseRequest.getPathInfo();
-        final String old_query=baseRequest.getQueryString();
+        
         final MultiMap<String> old_query_params=baseRequest.getQueryParameters();
         final Attributes old_attr=baseRequest.getAttributes();
         final DispatcherType old_type=baseRequest.getDispatcherType();
@@ -174,21 +178,26 @@ public class Dispatcher implements RequestDispatcher
                 else
                 {
                     attr._pathInfo=old_path_info;
-                    attr._query=old_query;
-                    attr._requestURI=old_uri;
+                    attr._query=old_uri.getQuery();
+                    attr._requestURI=old_uri.getPath();
                     attr._contextPath=old_context_path;
                     attr._servletPath=old_servlet_path;
                 }
-
-                baseRequest.setRequestURI(_uri);
+                
+                HttpURI uri = new HttpURI(old_uri.getScheme(),old_uri.getHost(),old_uri.getPort(),
+                        _uri.getPath(),_uri.getParam(),_uri.getQuery(),_uri.getFragment());
+                
+                baseRequest.setHttpURI(uri);
+                
                 baseRequest.setContextPath(_contextHandler.getContextPath());
                 baseRequest.setServletPath(null);
-                baseRequest.setPathInfo(_uri);
-                if (_query!=null)
-                    baseRequest.mergeQueryParameters(_query, true);
+                baseRequest.setPathInfo(_pathInContext);
+                if (_uri.getQuery()!=null || old_uri.getQuery()!=null)
+                    baseRequest.mergeQueryParameters(old_uri.getQuery(),_uri.getQuery(), true);
+                
                 baseRequest.setAttributes(attr);
 
-                _contextHandler.handle(_path, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
+                _contextHandler.handle(_pathInContext, baseRequest, (HttpServletRequest)request, (HttpServletResponse)response);
 
                 if (!baseRequest.getHttpChannelState().isAsync())
                     commitResponse(response,baseRequest);
@@ -197,16 +206,43 @@ public class Dispatcher implements RequestDispatcher
         finally
         {
             baseRequest.setHandled(old_handled);
-            baseRequest.setRequestURI(old_uri);
+            baseRequest.setHttpURI(old_uri);
             baseRequest.setContextPath(old_context_path);
             baseRequest.setServletPath(old_servlet_path);
             baseRequest.setPathInfo(old_path_info);
-            baseRequest.setQueryString(old_query);
             baseRequest.setQueryParameters(old_query_params);
             baseRequest.resetParameters();
             baseRequest.setAttributes(old_attr);
             baseRequest.setDispatcherType(old_type);
         }
+    }
+    
+    @Deprecated
+    public void push(ServletRequest request)
+    {
+        Request baseRequest = Request.getBaseRequest(request);
+        HttpFields fields = new HttpFields(baseRequest.getHttpFields());
+        
+        String query=baseRequest.getQueryString();
+        if (_uri.hasQuery())
+        {
+            if (query==null)
+                query=_uri.getQuery();
+            else
+                query=query+"&"+_uri.getQuery(); // TODO is this correct semantic?
+        }
+        
+        HttpURI uri = HttpURI.createHttpURI(request.getScheme(),request.getServerName(),request.getServerPort(),_uri.getPath(),baseRequest.getHttpURI().getParam(),query,null);
+        
+        MetaData.Request push = new MetaData.Request(HttpMethod.GET.asString(),uri,baseRequest.getHttpVersion(),fields);
+        
+        baseRequest.getHttpChannel().getHttpTransport().push(push);
+    }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("Dispatcher@0x%x{%s,%s}",hashCode(),_named,_uri);
     }
 
     private void commitResponse(ServletResponse response, Request baseRequest) throws IOException

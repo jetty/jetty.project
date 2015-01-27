@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,15 +28,22 @@ import java.util.EnumSet;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.eclipse.jetty.toolchain.test.TestingDir;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class PathFinderTest
 {
+    @Rule
+    public TestingDir testdir = new TestingDir();
+
     @Test
     public void testFindInis() throws IOException
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("hb.1/home");
         Path homePath = homeDir.toPath().toAbsolutePath();
+        File baseDir = testdir.getEmptyDir();
+        Path basePath = baseDir.toPath().toAbsolutePath();
 
         PathFinder finder = new PathFinder();
         finder.setFileMatcher("glob:**/*.ini");
@@ -53,7 +60,7 @@ public class PathFinderTest
         expected.add("${jetty.home}/start.ini");
         FSTest.toOsSeparators(expected);
 
-        BaseHome hb = new BaseHome(new String[] { "jetty.home=" + homePath.toString() });
+        BaseHome hb = new BaseHome(new String[] { "jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString() });
         BaseHomeTest.assertPathList(hb,"Files found",expected,finder);
     }
 
@@ -62,6 +69,8 @@ public class PathFinderTest
     {
         File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
         Path homePath = homeDir.toPath().toAbsolutePath();
+        File baseDir = testdir.getEmptyDir();
+        Path basePath = baseDir.toPath().toAbsolutePath();
 
         List<String> expected = new ArrayList<>();
         File modulesDir = new File(homeDir,"modules");
@@ -82,7 +91,7 @@ public class PathFinderTest
         
         Files.walkFileTree(modulesPath,EnumSet.of(FileVisitOption.FOLLOW_LINKS),1,finder);
 
-        BaseHome hb = new BaseHome(new String[] { "jetty.home=" + homePath.toString() });
+        BaseHome hb = new BaseHome(new String[] { "jetty.home=" + homePath.toString(), "jetty.base=" + basePath.toString() });
         BaseHomeTest.assertPathList(hb,"Files found",expected,finder);
     }
 }

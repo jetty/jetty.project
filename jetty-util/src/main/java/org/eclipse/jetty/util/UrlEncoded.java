@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -87,19 +87,19 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     
     public UrlEncoded(String query)
     {
-        decodeTo(query,this,ENCODING,-1);
+        decodeTo(query,this,ENCODING);
     }
 
     /* ----------------------------------------------------------------- */
     public void decode(String query)
     {
-        decodeTo(query,this,ENCODING,-1);
+        decodeTo(query,this,ENCODING);
     }
     
     /* ----------------------------------------------------------------- */
     public void decode(String query,Charset charset)
     {
-        decodeTo(query,this,charset,-1);
+        decodeTo(query,this,charset);
     }
     
     /* -------------------------------------------------------------- */
@@ -191,20 +191,26 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     /** Decoded parameters to Map.
      * @param content the string containing the encoded parameters
      */
-    public static void decodeTo(String content, MultiMap<String> map, String charset, int maxKeys)
+    public static void decodeTo(String content, MultiMap<String> map, String charset)
     {
-        decodeTo(content,map,charset==null?null:Charset.forName(charset),maxKeys);
+        decodeTo(content,map,charset==null?null:Charset.forName(charset));
     }
     
     /* -------------------------------------------------------------- */
     /** Decoded parameters to Map.
      * @param content the string containing the encoded parameters
      */
-    public static void decodeTo(String content, MultiMap<String> map, Charset charset, int maxKeys)
+    public static void decodeTo(String content, MultiMap<String> map, Charset charset)
     {
         if (charset==null)
             charset=ENCODING;
 
+        if (charset==StandardCharsets.UTF_8)
+        {
+            decodeUtf8To(content,0,content.length(),map);
+            return;
+        }
+        
         synchronized(map)
         {
             String key = null;
@@ -232,8 +238,6 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                       }
                       key = null;
                       value=null;
-                      if (maxKeys>0 && map.size()>maxKeys)
-                          throw new IllegalStateException("Form too many keys");
                       break;
                   case '=':
                       if (key!=null)
@@ -271,13 +275,19 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     }
 
     /* -------------------------------------------------------------- */
+    public static void decodeUtf8To(String query, MultiMap<String> map)
+    {
+        decodeUtf8To(query,0,query.length(),map);
+    }
+    
+    /* -------------------------------------------------------------- */
     /** Decoded parameters to Map.
      * @param raw the byte[] containing the encoded parameters
      * @param offset the offset within raw to decode from
      * @param length the length of the section to decode
      * @param map the {@link MultiMap} to populate
      */
-    public static void decodeUtf8To(byte[] raw,int offset, int length, MultiMap<String> map)
+    public static void decodeUtf8To(String query,int offset, int length, MultiMap<String> map)
     {
         Utf8StringBuilder buffer = new Utf8StringBuilder();
         synchronized(map)
@@ -288,10 +298,10 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
             int end=offset+length;
             for (int i=offset;i<end;i++)
             {
-                byte b=raw[i];
+                char c=query.charAt(i);
                 try
                 {
-                    switch ((char)(0xff&b))
+                    switch (c)
                     {
                         case '&':
                             value = buffer.toReplacedString();
@@ -311,7 +321,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         case '=':
                             if (key!=null)
                             {
-                                buffer.append(b);
+                                buffer.append(c);
                                 break;
                             }
                             key = buffer.toReplacedString();
@@ -325,15 +335,15 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                         case '%':
                             if (i+2<end)
                             {
-                                if ('u'==raw[i+1])
+                                if ('u'==query.charAt(i+1))
                                 {
                                     i++;
                                     if (i+4<end)
                                     {
-                                        byte top=raw[++i];
-                                        byte hi=raw[++i];
-                                        byte lo=raw[++i];
-                                        byte bot=raw[++i];
+                                        char top=query.charAt(++i);
+                                        char hi=query.charAt(++i);
+                                        char lo=query.charAt(++i);
+                                        char bot=query.charAt(++i);
                                         buffer.getStringBuilder().append(Character.toChars((convertHexDigit(top)<<12) +(convertHexDigit(hi)<<8) + (convertHexDigit(lo)<<4) +convertHexDigit(bot)));
                                     }
                                     else
@@ -344,8 +354,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                                 }
                                 else
                                 {
-                                    byte hi=raw[++i];
-                                    byte lo=raw[++i];
+                                    char hi=query.charAt(++i);
+                                    char lo=query.charAt(++i);
                                     buffer.append((byte)((convertHexDigit(hi)<<4) + convertHexDigit(lo)));
                                 }
                             }
@@ -357,7 +367,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                             break;
                             
                         default:
-                            buffer.append(b);
+                            buffer.append(c);
                             break;
                     }
                 }
@@ -620,7 +630,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
         StringWriter buf = new StringWriter(8192);
         IO.copy(input,buf,maxLength);
         
-        decodeTo(buf.getBuffer().toString(),map,StandardCharsets.UTF_16,maxKeys);
+        // TODO implement maxKeys
+        decodeTo(buf.getBuffer().toString(),map,StandardCharsets.UTF_16);
     }
 
     /* -------------------------------------------------------------- */
@@ -768,6 +779,16 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
                     map.add(output.toString(charset),"");
             }
         }
+    }
+
+    /* -------------------------------------------------------------- */
+    /** Decode String with % encoding.
+     * This method makes the assumption that the majority of calls
+     * will need no decoding.
+     */
+    public static String decodeString(String encoded)
+    {
+        return decodeString(encoded,0,encoded.length(),ENCODING);
     }
     
     /* -------------------------------------------------------------- */

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,11 +37,12 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.npn.server.NPNServerConnectionFactory;
 import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.servlets.gzip.GzipHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.spdy.api.DataInfo;
 import org.eclipse.jetty.spdy.api.HeadersInfo;
 import org.eclipse.jetty.spdy.api.PushInfo;
@@ -57,7 +58,6 @@ import org.eclipse.jetty.spdy.api.StreamFrameListener;
 import org.eclipse.jetty.spdy.api.StreamStatus;
 import org.eclipse.jetty.spdy.api.SynInfo;
 import org.eclipse.jetty.spdy.http.HTTPSPDYHeader;
-import org.eclipse.jetty.spdy.server.NPNServerConnectionFactory;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
 import org.eclipse.jetty.util.Promise;
@@ -221,7 +221,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         assertThat("Main request reply and/or data received", mainStreamLatch.await(5, TimeUnit.SECONDS), is(true));
         assertThat("Not more than one push is received", pushDataLatch.await(1, TimeUnit.SECONDS), is(false));
         assertThat("Push push headers valid", pushSynHeadersValid.await(5, TimeUnit.SECONDS), is(true));
-        assertThat("Push response headers are valid", pushResponseHeaders.await(5, TimeUnit.SECONDS), is(true));
+        assertThat("Push response headers are valid", pushResponseHeaders.await(500, TimeUnit.SECONDS), is(true));
     }
 
     @Test
@@ -441,6 +441,8 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
                     output.print("body { background: #FFF; }");
                 else if (url.endsWith(".js"))
                     output.print("function(){}();");
+                else
+                    output.print("DATA");
                 baseRequest.setHandled(true);
             }
         });
@@ -475,9 +477,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
 
                 assertThat("Stream is unidirectional", stream.isUnidirectional(), is(true));
                 assertThat("URI header ends with css", pushInfo.getHeaders().get(HTTPSPDYHeader.URI.name(version))
-                        .getValue().endsWith
-                                ("" +
-                                        ".css"),
+                        .getValue().endsWith(".css"),
                         is(true));
                 if (resetPush)
                     stream.getSession().rst(new RstInfo(stream.getId(), StreamStatus.REFUSED_STREAM), new Callback.Adapter());
@@ -1093,7 +1093,7 @@ public class ReferrerPushStrategyTest extends AbstractHTTPSPDYTest
         Fields.Field header = headers.get(name);
         if (header != null && expectedValue.equals(header.getValue()))
             return true;
-        System.out.println(name + " not valid! Expected: " + expectedValue + " headers received:" + headers);
+        System.out.println(name + " not valid! Expected: " + expectedValue + ", headers received:" + headers);
         return false;
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,6 +37,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -84,6 +85,7 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _stopAtShutdown;
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
+    private RequestLog _requestLog;
     
     private volatile DateField _dateField;
     
@@ -120,8 +122,6 @@ public class Server extends HandlerWrapper implements Attributes
         setConnectors(new Connector[]{connector});
     }
 
-
-
     /* ------------------------------------------------------------ */
     public Server(@Name("threadpool") ThreadPool pool)
     {
@@ -130,6 +130,18 @@ public class Server extends HandlerWrapper implements Attributes
         setServer(this);
     }
 
+    /* ------------------------------------------------------------ */
+    public RequestLog getRequestLog()
+    {
+        return _requestLog;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setRequestLog(RequestLog requestLog)
+    {
+        updateBean(_requestLog,requestLog);
+        _requestLog = requestLog;
+    }
 
     /* ------------------------------------------------------------ */
     @ManagedAttribute("version of this server")
@@ -299,7 +311,7 @@ public class Server extends HandlerWrapper implements Attributes
                 df = _dateField;
                 if (df==null || df._seconds!=seconds)
                 {
-                    HttpField field=new HttpGenerator.CachedHttpField(HttpHeader.DATE,DateGenerator.formatDate(now));
+                    HttpField field=new PreEncodedHttpField(HttpHeader.DATE,DateGenerator.formatDate(now));
                     _dateField=new DateField(seconds,field);
                     return field;
                 }
@@ -467,9 +479,7 @@ public class Server extends HandlerWrapper implements Attributes
         //remote stop commands as we are stopped already
         ShutdownMonitor.deregister(this);
         
-
         mex.ifExceptionThrow();
-
     }
 
     /* ------------------------------------------------------------ */
@@ -478,7 +488,7 @@ public class Server extends HandlerWrapper implements Attributes
      * or after the entire request has been received (for short requests of known length), or
      * on the dispatch of an async request.
      */
-    public void handle(HttpChannel<?> connection) throws IOException, ServletException
+    public void handle(HttpChannel connection) throws IOException, ServletException
     {
         final String target=connection.getRequest().getPathInfo();
         final Request request=connection.getRequest();
@@ -519,7 +529,7 @@ public class Server extends HandlerWrapper implements Attributes
      * or after the entire request has been received (for short requests of known length), or
      * on the dispatch of an async request.
      */
-    public void handleAsync(HttpChannel<?> connection) throws IOException, ServletException
+    public void handleAsync(HttpChannel connection) throws IOException, ServletException
     {
         final HttpChannelState state = connection.getRequest().getHttpChannelState();
         final AsyncContextEvent event = state.getAsyncContextEvent();
@@ -531,12 +541,12 @@ public class Server extends HandlerWrapper implements Attributes
         {
             // this is a dispatch with a path
             ServletContext context=event.getServletContext();
-            HttpURI uri = new HttpURI(URIUtil.addPaths(context==null?null:context.getContextPath(), path));            
-            baseRequest.setUri(uri);
-            baseRequest.setRequestURI(null);
+            String query=baseRequest.getQueryString();
+            baseRequest.setURIPathQuery(URIUtil.addPaths(context==null?null:context.getContextPath(), path));
+            HttpURI uri = baseRequest.getHttpURI();
             baseRequest.setPathInfo(uri.getDecodedPath());
             if (uri.getQuery()!=null)
-                baseRequest.mergeQueryParameters(uri.getQuery(), true); //we have to assume dispatch path and query are UTF8
+                baseRequest.mergeQueryParameters(query,uri.getQuery(), true); //we have to assume dispatch path and query are UTF8
         }
 
         final String target=baseRequest.getPathInfo();

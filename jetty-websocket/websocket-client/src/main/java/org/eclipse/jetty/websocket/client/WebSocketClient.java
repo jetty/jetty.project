@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,9 +22,7 @@ import java.io.IOException;
 import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -45,7 +43,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.util.thread.ShutdownThread;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
-import org.eclipse.jetty.websocket.api.extensions.Extension;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
 import org.eclipse.jetty.websocket.client.io.ConnectPromise;
@@ -82,6 +79,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     private Masker masker;
     private SocketAddress bindAddress;
     private long connectTimeout = SelectorManager.DEFAULT_CONNECT_TIMEOUT;
+    private boolean dispatchIO = true;
 
     public WebSocketClient()
     {
@@ -184,7 +182,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
             LOG.debug("connect websocket {} to {}",websocket,toUri);
 
         // Grab Connection Manager
-        initialiseClient();
+        initializeClient();
         ConnectionManager manager = getConnectionManager();
 
         // Setup Driver for user provided websocket
@@ -280,6 +278,11 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
 
         if (LOG.isDebugEnabled())
             LOG.debug("Stopped {}",this);
+    }
+
+    public boolean isDispatchIO()
+    {
+        return dispatchIO;
     }
 
     /**
@@ -416,29 +419,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         return sslContextFactory;
     }
 
-    public List<Extension> initExtensions(List<ExtensionConfig> requested)
-    {
-        List<Extension> extensions = new ArrayList<Extension>();
-
-        for (ExtensionConfig cfg : requested)
-        {
-            Extension extension = extensionRegistry.newInstance(cfg);
-
-            if (extension == null)
-            {
-                continue;
-            }
-
-            if (LOG.isDebugEnabled())
-                LOG.debug("added {}",extension);
-            extensions.add(extension);
-        }
-        if (LOG.isDebugEnabled())
-            LOG.debug("extensions={}",extensions);
-        return extensions;
-    }
-
-    private synchronized void initialiseClient() throws IOException
+    private synchronized void initializeClient() throws IOException
     {
         if (!ShutdownThread.isRegistered(this))
         {
@@ -496,7 +477,16 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         this.policy.setAsyncWriteTimeout(ms);
     }
 
+    /**
+     * @deprecated use {@link #setBindAddress(SocketAddress)} instead
+     */
+    @Deprecated
     public void setBindAdddress(SocketAddress bindAddress)
+    {
+        setBindAddress(bindAddress);
+    }
+
+    public void setBindAddress(SocketAddress bindAddress)
     {
         this.bindAddress = bindAddress;
     }
@@ -529,6 +519,11 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     public void setDaemon(boolean daemon)
     {
         this.daemon = daemon;
+    }
+
+    public void setDispatchIO(boolean dispatchIO)
+    {
+        this.dispatchIO = dispatchIO;
     }
 
     public void setEventDriverFactory(EventDriverFactory factory)

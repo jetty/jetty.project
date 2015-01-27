@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.embedded;
 
+import org.eclipse.jetty.http.HttpVersion;
 import java.io.File;
 import java.io.FileNotFoundException;
 
@@ -103,7 +104,7 @@ public class ManyConnectors
         // we just made along with the previously created ssl context factory.
         // Next we set the port and a longer idle timeout.
         ServerConnector https = new ServerConnector(server,
-                new SslConnectionFactory(sslContextFactory, "http/1.1"),
+            new SslConnectionFactory(sslContextFactory,HttpVersion.HTTP_1_1.asString()),
                 new HttpConnectionFactory(https_config));
         https.setPort(8443);
         https.setIdleTimeout(500000);

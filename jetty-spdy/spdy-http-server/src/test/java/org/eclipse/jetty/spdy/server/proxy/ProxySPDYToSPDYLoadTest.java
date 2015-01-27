@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,10 @@
 //
 
 package org.eclipse.jetty.spdy.server.proxy;
+
+import static junit.framework.Assert.fail;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayOutputStream;
 import java.net.InetSocketAddress;
@@ -59,10 +63,6 @@ import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
-
-import static junit.framework.Assert.fail;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 @RunWith(value = Parameterized.class)
 public abstract class ProxySPDYToSPDYLoadTest

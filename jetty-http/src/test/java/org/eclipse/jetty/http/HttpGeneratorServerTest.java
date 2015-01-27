@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,18 +18,17 @@
 
 package org.eclipse.jetty.http;
 
-import java.nio.ByteBuffer;
-
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
-import org.eclipse.jetty.util.BufferUtil;
-import org.junit.Assert;
-import org.junit.Test;
-
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.not;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
+
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.util.BufferUtil;
+import org.junit.Assert;
+import org.junit.Test;
 
 public class HttpGeneratorServerTest
 { 
@@ -46,9 +45,9 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), 10, 200, null, false);
-        info.getHttpFields().add("Content-Type", "test/data");
-        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 10);
+        info.getFields().add("Content-Type", "test/data");
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
 
         result = gen.generateResponse(info, null, null, content, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -81,9 +80,9 @@ public class HttpGeneratorServerTest
 
         HttpGenerator gen = new HttpGenerator();
         
-        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), 10, 204, "Foo", false);
-        info.getHttpFields().add("Content-Type", "test/data");
-        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 204, "Foo", new HttpFields(), 10);
+        info.getFields().add("Content-Type", "test/data");
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
 
         HttpGenerator.Result result = gen.generateResponse(info, header, null, content, true);
      
@@ -118,9 +117,9 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), 10, 200, null, false);
-        info.getHttpFields().add("Content-Type", "test/data;\r\nextra=value");
-        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 10);
+        info.getFields().add("Content-Type", "test/data;\r\nextra=value");
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
 
         result = gen.generateResponse(info, null, null, content, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -150,11 +149,11 @@ public class HttpGeneratorServerTest
     public void testSendServerXPoweredBy() throws Exception
     {
         ByteBuffer header = BufferUtil.allocate(8096);
-        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), -1, 200, null, false);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
         HttpFields fields = new HttpFields();
         fields.add(HttpHeader.SERVER, "SomeServer");
         fields.add(HttpHeader.X_POWERED_BY, "SomePower");
-        ResponseInfo infoF = new ResponseInfo(HttpVersion.HTTP_1_1, fields, -1, 200, null, false);
+        MetaData.Response infoF = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, fields, -1);
         String head;
 
         HttpGenerator gen = new HttpGenerator(true, true);
@@ -205,8 +204,8 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), -1, 200, null, false);
-        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
 
         result = gen.generateResponse(info, null, null, null, true);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
@@ -238,10 +237,10 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), -1, 101, null, false);
-        info.getHttpFields().add("Upgrade", "WebSocket");
-        info.getHttpFields().add("Connection", "Upgrade");
-        info.getHttpFields().add("Sec-WebSocket-Accept", "123456789==");
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 101, null, new HttpFields(), -1);
+        info.getFields().add("Upgrade", "WebSocket");
+        info.getFields().add("Connection", "Upgrade");
+        info.getFields().add("Sec-WebSocket-Accept", "123456789==");
 
         result = gen.generateResponse(info, header, null, null, true);
         assertEquals(HttpGenerator.Result.FLUSH, result);
@@ -273,8 +272,8 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), -1, 200, null, false);
-        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), -1);
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
         result = gen.generateResponse(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -333,8 +332,8 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), 59, 200, null, false);
-        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 59);
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
         result = gen.generateResponse(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -396,8 +395,8 @@ public class HttpGeneratorServerTest
         assertEquals(HttpGenerator.Result.NEED_INFO, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
 
-        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_1, new HttpFields(), 59, 200, null, false);
-        info.getHttpFields().add("Last-Modified", DateGenerator.__01Jan1970);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_1, 200, null, new HttpFields(), 59);
+        info.getFields().add("Last-Modified", DateGenerator.__01Jan1970);
         result = gen.generateResponse(info, null, null, content0, false);
         assertEquals(HttpGenerator.Result.NEED_HEADER, result);
         assertEquals(HttpGenerator.State.START, gen.getState());
@@ -441,7 +440,7 @@ public class HttpGeneratorServerTest
         fields.put(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
         String customValue = "test";
         fields.add(HttpHeader.CONNECTION, customValue);
-        ResponseInfo info = new ResponseInfo(HttpVersion.HTTP_1_0, fields, -1, 200, "OK", false);
+        MetaData.Response info = new MetaData.Response(HttpVersion.HTTP_1_0, 200, "OK", fields, -1);
         ByteBuffer header = BufferUtil.allocate(4096);
         HttpGenerator.Result result = generator.generateResponse(info, header, null, null, true);
         Assert.assertSame(HttpGenerator.Result.FLUSH, result);

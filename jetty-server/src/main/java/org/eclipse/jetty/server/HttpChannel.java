@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,26 +22,21 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
-import java.nio.charset.StandardCharsets;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 
-import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpGenerator.ResponseInfo;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.ChannelEndPoint;
 import org.eclipse.jetty.io.EndPoint;
@@ -49,17 +44,16 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.HttpChannelState.Action;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback.Blocker;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 
-/* ------------------------------------------------------------ */
-/** HttpChannel.
- * Represents a single endpoint for HTTP semantic processing.
+/**
+ * HttpChannel represents a single endpoint for HTTP semantic processing.
  * The HttpChannel is both a HttpParser.RequestHandler, where it passively receives events from
  * an incoming HTTP request, and a Runnable, where it actively takes control of the request/response
  * life cycle and calls the application (perhaps suspending and resuming with multiple calls to run).
@@ -68,72 +62,67 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * HttpTransport.completed().
  *
  */
-public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, HttpParser.ProxyHandler
+public class HttpChannel implements Runnable, HttpOutput.Interceptor
 {
     private static final Logger LOG = Log.getLogger(HttpChannel.class);
-    private static final ThreadLocal<HttpChannel<?>> __currentChannel = new ThreadLocal<>();
-
-    /* ------------------------------------------------------------ */
-    /** Get the current channel that this thread is dispatched to.
-     * @see Request#getAttribute(String) for a more general way to access the HttpChannel
-     * @return the current HttpChannel or null
-     */
-    public static HttpChannel<?> getCurrentHttpChannel()
-    {
-        return __currentChannel.get();
-    }
-
-    protected static HttpChannel<?> setCurrentHttpChannel(HttpChannel<?> channel)
-    {
-        HttpChannel<?> last=__currentChannel.get();
-        if (channel==null)
-            __currentChannel.remove();
-        else 
-            __currentChannel.set(channel);
-        return last;
-    }
-
     private final AtomicBoolean _committed = new AtomicBoolean();
     private final AtomicInteger _requests = new AtomicInteger();
     private final Connector _connector;
     private final HttpConfiguration _configuration;
     private final EndPoint _endPoint;
     private final HttpTransport _transport;
-    private final HttpURI _uri;
     private final HttpChannelState _state;
     private final Request _request;
     private final Response _response;
-    private HttpVersion _version = HttpVersion.HTTP_1_1;
-    private boolean _expect = false;
-    private boolean _expect100Continue = false;
-    private boolean _expect102Processing = false;
+    private MetaData.Response _committedMetaData;
+    private RequestLog _requestLog;
+    
+    /** Bytes written after interception (eg after compression) */
+    private long _written;
 
-    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<T> input)
+    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
+    {
+        this(connector,configuration,endPoint,transport,null);
+    }
+    
+    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
     {
         _connector = connector;
         _configuration = configuration;
         _endPoint = endPoint;
         _transport = transport;
 
-        _uri = new HttpURI(URIUtil.__CHARSET);
         _state = new HttpChannelState(this);
-        input.init(_state);
-        _request = new Request(this, input);
-        _response = new Response(this, new HttpOutput(this));
-        
+        _request = new Request(this, input!=null?input:newHttpInput());
+        _response = new Response(this, newHttpOutput());
+        _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
     }
 
+    protected HttpInput newHttpInput()
+    {
+        return new HttpInput()
+        {
+            @Override
+            protected void onReadPossible()
+            {
+                getState().onReadPossible();
+            }            
+        };
+    }
+
+    protected HttpOutput newHttpOutput()
+    {
+        return new HttpOutput(this);
+    }
+    
+    
     public HttpChannelState getState()
     {
         return _state;
     }
 
-    public HttpVersion getHttpVersion()
-    {
-        return _version;
-    }
     /**
      * @return the number of requests handled by this connection
      */
@@ -150,6 +139,21 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     public HttpTransport getHttpTransport()
     {
         return _transport;
+    }
+
+    public RequestLog getRequestLog()
+    {
+        return _requestLog;
+    }
+
+    public void setRequestLog(RequestLog requestLog)
+    {
+        _requestLog = requestLog;
+    }
+
+    public MetaData.Response getCommittedInfo()
+    {
+        return _committedMetaData;
     }
 
     /**
@@ -212,12 +216,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         return _endPoint.getRemoteAddress();
     }
 
-    @Override
-    public int getHeaderCacheSize()
-    {
-        return _configuration.getHeaderCacheSize();
-    }
-
     /**
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
@@ -227,35 +225,17 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
      */
     public void continue100(int available) throws IOException
     {
-        // If the client is expecting 100 CONTINUE, then send it now.
-        // TODO: consider using an AtomicBoolean ?
-        if (isExpecting100Continue())
-        {
-            _expect100Continue = false;
-
-            // is content missing?
-            if (available == 0)
-            {
-                if (_response.isCommitted())
-                    throw new IOException("Committed before 100 Continues");
-
-                // TODO: break this dependency with HttpGenerator
-                boolean committed = sendResponse(HttpGenerator.CONTINUE_100_INFO, null, false);
-                if (!committed)
-                    throw new IOException("Concurrent commit while trying to send 100-Continue");
-            }
-        }
+        throw new UnsupportedOperationException();
     }
 
-    public void reset()
+    public void recycle()
     {
         _committed.set(false);
-        _expect = false;
-        _expect100Continue = false;
-        _expect102Processing = false;
         _request.recycle();
         _response.recycle();
-        _uri.clear();
+        _committedMetaData=null;
+        _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
+        _written=0;
     }
 
     @Override
@@ -264,23 +244,13 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         handle();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return True if the channel is ready to continue handling (ie it is not suspended)
      */
     public boolean handle()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} handle enter", this);
-
-        final HttpChannel<?>last = setCurrentHttpChannel(this);
-
-        String threadName = null;
-        if (LOG.isDebugEnabled())
-        {
-            threadName = Thread.currentThread().getName();
-            Thread.currentThread().setName(threadName + " - " + _uri);
-        }
+            LOG.debug("{} handle {} ", this,_request.getHttpURI());
 
         HttpChannelState.Action action = _state.handling();
         try
@@ -300,6 +270,8 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                     switch(action)
                     {
                         case REQUEST_DISPATCH:
+                            if (!_request.hasMetaData())
+                                throw new IllegalStateException();
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
                             _request.setDispatcherType(DispatcherType.REQUEST);
@@ -383,19 +355,24 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                     else
                     {
                         error=true;
-                        LOG.warn(String.valueOf(_uri), e);
+                        LOG.warn(String.valueOf(_request.getHttpURI()), e);
                         _state.error(e);
                         _request.setHandled(true);
                         handleException(e);
                     }
                 }
+                catch (EofException|QuietServletException e)
+                {
+                    error=true;
+                    LOG.debug(e);
+                    _state.error(e);
+                    _request.setHandled(true);
+                    handleException(e);
+                }
                 catch (Exception e)
                 {
                     error=true;
-                    if (e instanceof EofException)
-                        LOG.debug(e);
-                    else
-                        LOG.warn(String.valueOf(_uri), e);
+                    LOG.warn(String.valueOf(_request.getHttpURI()), e);
                     _state.error(e);
                     _request.setHandled(true);
                     handleException(e);
@@ -435,15 +412,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                 finally
                 {
                     _request.setHandled(true);
-                    _transport.completed();
+                    onCompleted();
                 }
             }
         }
         finally
         {
-            setCurrentHttpChannel(last);
-            if (threadName != null && LOG.isDebugEnabled())
-                Thread.currentThread().setName(threadName);
         }
 
         if (LOG.isDebugEnabled())
@@ -471,15 +445,15 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
             {
                 HttpFields fields = new HttpFields();
                 fields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
-                ResponseInfo info = new ResponseInfo(_request.getHttpVersion(), fields, 0, HttpStatus.INTERNAL_SERVER_ERROR_500, null, _request.isHead());
-                boolean committed = sendResponse(info, null, true);
+                MetaData.Response info = new MetaData.Response(_request.getHttpVersion(), HttpStatus.INTERNAL_SERVER_ERROR_500, null, fields, 0);
+                boolean committed = sendResponse(info,null, true);
                 if (!committed)
                     LOG.warn("Could not send response error 500: "+x);
                 _request.getAsyncContext().complete();
             }
             else if (isCommitted())
             {
-                abort();
+                abort(x);
                 if (!(x instanceof EofException))
                     LOG.warn("Could not send response error 500: "+x);
             }
@@ -498,12 +472,12 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
 
     public boolean isExpecting100Continue()
     {
-        return _expect100Continue;
+        return false;
     }
 
     public boolean isExpecting102Processing()
     {
-        return _expect102Processing;
+        return false;
     }
 
     @Override
@@ -519,205 +493,46 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
             );
     }
 
-    @Override
-    public void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort)
-    {
-        _request.setAttribute("PROXY", protocol);
-        _request.setServerName(sAddr);
-        _request.setServerPort(dPort);
-        _request.setRemoteAddr(InetSocketAddress.createUnresolved(sAddr,sPort));
-    }
-    
-    @Override
-    public boolean startRequest(HttpMethod httpMethod, String method, ByteBuffer uri, HttpVersion version)
-    {
-        _expect = false;
-        _expect100Continue = false;
-        _expect102Processing = false;
-
-        _request.setTimeStamp(System.currentTimeMillis());
-        _request.setMethod(httpMethod, method);
-
-        if (httpMethod == HttpMethod.CONNECT)
-            _uri.parseConnect(uri.array(),uri.arrayOffset()+uri.position(),uri.remaining());
-        else
-            _uri.parse(uri.array(),uri.arrayOffset()+uri.position(),uri.remaining());
-        _request.setUri(_uri);
-
-        String path;
-        try
-        {
-            path = _uri.getDecodedPath();
-        }
-        catch (Exception e)
-        {
-            LOG.warn("Failed UTF-8 decode for request path, trying ISO-8859-1");
-            LOG.ignore(e);
-            path = _uri.getDecodedPath(StandardCharsets.ISO_8859_1);
-        }
-        
-        String info = URIUtil.canonicalPath(path);
-
-        if (info == null)
-        {
-            if( path==null && _uri.getScheme()!=null &&_uri.getHost()!=null)
-            {
-                info = "/";
-                _request.setRequestURI("");
-            }
-            else
-            {
-                badMessage(400,null);
-                return true;
-            }
-        }
-        _request.setPathInfo(info);
-        _version = version == null ? HttpVersion.HTTP_0_9 : version;
-        _request.setHttpVersion(_version);
-
-        return false;
-    }
-
-    @Override
-    public boolean parsedHeader(HttpField field)
-    {
-        HttpHeader header=field.getHeader();
-        String value=field.getValue();
-        if (value == null)
-            value = "";
-        if (header != null)
-        {
-            switch (header)
-            {
-                case EXPECT:
-                    if (_version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
-                    {
-                        HttpHeaderValue expect = HttpHeaderValue.CACHE.get(value);
-                        switch (expect == null ? HttpHeaderValue.UNKNOWN : expect)
-                        {
-                            case CONTINUE:
-                                _expect100Continue = true;
-                                break;
-
-                            case PROCESSING:
-                                _expect102Processing = true;
-                                break;
-
-                            default:
-                                String[] values = value.split(",");
-                                for (int i = 0; i < values.length; i++)
-                                {
-                                    expect = HttpHeaderValue.CACHE.get(values[i].trim());
-                                    if (expect == null)
-                                        _expect = true;
-                                    else
-                                    {
-                                        switch (expect)
-                                        {
-                                            case CONTINUE:
-                                                _expect100Continue = true;
-                                                break;
-                                            case PROCESSING:
-                                                _expect102Processing = true;
-                                                break;
-                                            default:
-                                                _expect = true;
-                                        }
-                                    }
-                                }
-                        }
-                    }
-                    break;
-
-                case CONTENT_TYPE:
-                    MimeTypes.Type mime = MimeTypes.CACHE.get(value);
-                    String charset = (mime == null || mime.getCharset() == null) ? MimeTypes.getCharsetFromContentType(value) : mime.getCharset().toString();
-                    if (charset != null)
-                        _request.setCharacterEncodingUnchecked(charset);
-                    break;
-                default:
-            }
-        }
-
-        if (field.getName()!=null)
-            _request.getHttpFields().add(field);
-        return false;
-    }
-
-    @Override
-    public boolean parsedHostHeader(String host, int port)
-    {
-        if (_uri.getHost()==null)
-        {
-            _request.setServerName(host);
-            _request.setServerPort(port);
-        }
-        return false;
-    }
-
-    @Override
-    public boolean headerComplete()
+    public void onRequest(MetaData.Request request)
     {
         _requests.incrementAndGet();
+        _request.setTimeStamp(System.currentTimeMillis());
         HttpFields fields = _response.getHttpFields();
-        switch (_version)
-        {
-            case HTTP_0_9:
-                break;
-
-            case HTTP_1_0:
-                if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
-                    _response.getHttpFields().add(_connector.getServer().getDateField());
-                break;
-
-            case HTTP_1_1:
-                if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
-                    _response.getHttpFields().add(_connector.getServer().getDateField());
-
-                if (_expect)
-                {
-                    badMessage(HttpStatus.EXPECTATION_FAILED_417,null);
-                    return true;
-                }
-
-                break;
-
-            default:
-                throw new IllegalStateException();
-        }
-
-        return true;
+        if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
+            fields.put(_connector.getServer().getDateField());
+        
+        _request.setMetaData(request);
     }
 
-    @Override
-    public boolean content(T item)
+    public void onContent(HttpInput.Content content)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} content {}", this, item);
-        @SuppressWarnings("unchecked")
-        HttpInput<T> input = (HttpInput<T>)_request.getHttpInput();
-        input.content(item);
-
-        return false;
+            LOG.debug("{} content {}", this, content);
+        
+        HttpInput input = _request.getHttpInput();
+        input.addContent(content);
     }
 
-    @Override
-    public boolean messageComplete()
+    public void onRequestComplete()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} messageComplete", this);
-        _request.getHttpInput().messageComplete();
-        return true;
+            LOG.debug("{} onRequestComplete", this);
+        _request.getHttpInput().eof();
     }
 
-    @Override
-    public void earlyEOF()
+    public void onCompleted()
+    {
+        if (_requestLog!=null )
+            _requestLog.log(_request,_committedMetaData==null?-1:_committedMetaData.getStatus(), _written);   
+        _transport.onCompleted();
+    }
+    
+    public void onEarlyEOF()
     {
         _request.getHttpInput().earlyEOF();
     }
 
-    @Override
-    public void badMessage(int status, String reason)
+    public void onBadMessage(int status, String reason)
     {
         if (status < 400 || status > 599)
             status = HttpStatus.BAD_REQUEST_400;
@@ -733,7 +548,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                 if (handler!=null)
                     content=handler.badMessageError(status,reason,fields);
 
-                sendResponse(new ResponseInfo(HttpVersion.HTTP_1_1,fields,0,status,reason,false),content ,true);
+                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1,status,reason,fields,0),content ,true);
             }
         }
         catch (IOException e)
@@ -746,29 +561,31 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
                 _state.completed();
             else 
                 throw new IllegalStateException();
+            onCompleted();
         }
     }
 
-    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete, final Callback callback)
+    protected boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete, final Callback callback)
     {
         boolean committing = _committed.compareAndSet(false, true);
         if (committing)
         {
             // We need an info to commit
             if (info==null)
-                info = _response.newResponseInfo();
-
+                info = _response.newResponseMetaData();
+            commit(info);
+            
             // wrap callback to process 100 responses
             final int status=info.getStatus();
             final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback);
 
             // committing write
-            _transport.send(info, content, complete, committed);
+            _transport.send(info, _request.isHead(), content, complete, committed);
         }
         else if (info==null)
         {
             // This is a normal write
-            _transport.send(content, complete, callback);
+            _transport.send(null,_request.isHead(), content, complete, callback);
         }
         else
         {
@@ -777,7 +594,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         return committing;
     }
 
-    protected boolean sendResponse(ResponseInfo info, ByteBuffer content, boolean complete) throws IOException
+    protected boolean sendResponse(MetaData.Response info, ByteBuffer content, boolean complete) throws IOException
     {
         try(Blocker blocker = _response.getHttpOutput().acquireWriteBlockingCallback())
         {
@@ -785,6 +602,20 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
             blocker.block();
             return committing;
         }
+        catch (Throwable failure)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(failure);
+            abort(failure);
+            throw failure;
+        }
+    }
+    
+    protected void commit (MetaData.Response info)
+    {
+        _committedMetaData=info;
+        if (LOG.isDebugEnabled())
+            LOG.debug("Commit {} to {}",info,this);
     }
 
     public boolean isCommitted()
@@ -794,14 +625,21 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
 
     /**
      * <p>Non-Blocking write, committing the response if needed.</p>
-     *
+     * Called as last link in HttpOutput.Filter chain
      * @param content  the content buffer to write
      * @param complete whether the content is complete for the response
      * @param callback Callback when complete or failed
      */
-    protected void write(ByteBuffer content, boolean complete, Callback callback)
+    @Override
+    public void write(ByteBuffer content, boolean complete, Callback callback)
     {
+        _written+=BufferUtil.length(content);
         sendResponse(null,content,complete,callback);
+    }
+    
+    public HttpOutput.Interceptor getNextInterceptor()
+    {
+        return null;
     }
 
     protected void execute(Runnable task)
@@ -814,7 +652,6 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
         return _connector.getScheduler();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return true if the HttpChannel can efficiently use direct buffer (typically this means it is not over SSL or a multiplexed protocol)
      */
@@ -824,12 +661,16 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
     }
 
     /**
-     * If a write or similar to this channel fails this method should be called. The standard implementation
-     * is to call {@link HttpTransport#abort()}
+     * If a write or similar operation to this channel fails,
+     * then this method should be called.
+     * <p />
+     * The standard implementation calls {@link HttpTransport#abort(Throwable)}.
+     *
+     * @param failure the failure that caused the abort.
      */
-    public void abort()
+    public void abort(Throwable failure)
     {
-        _transport.abort();
+        _transport.abort(failure);
     }
 
     private class CommitCallback implements Callback
@@ -858,8 +699,9 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
             }
             else
             {
+                _committed.set(false);
                 LOG.warn("Commit failed",x);
-                _transport.send(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
+                sendResponse(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
                 {
                     @Override
                     public void succeeded()

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -47,37 +47,6 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 @ManagedObject("SPDY Server Connection Factory")
 public class SPDYServerConnectionFactory extends AbstractConnectionFactory
 {
-    /**
-     * @deprecated use {@link #checkProtocolNegotiationAvailable()} instead.
-     */
-    @Deprecated
-    public static void checkNPNAvailable()
-    {
-        checkProtocolNegotiationAvailable();
-    }
-
-    public static void checkProtocolNegotiationAvailable()
-    {
-        if (!isAvailableInBootClassPath("org.eclipse.jetty.alpn.ALPN") &&
-                !isAvailableInBootClassPath("org.eclipse.jetty.npn.NextProtoNego"))
-            throw new IllegalStateException("No ALPN nor NPN classes available");
-    }
-
-    private static boolean isAvailableInBootClassPath(String className)
-    {
-        try
-        {
-            Class<?> klass = ClassLoader.getSystemClassLoader().loadClass(className);
-            if (klass.getClassLoader() != null)
-                throw new IllegalStateException(className + " must be on JVM boot classpath");
-            return true;
-        }
-        catch (ClassNotFoundException x)
-        {
-            return false;
-        }
-    }
-
     private final Queue<Session> sessions = new ConcurrentLinkedQueue<>();
     private final short version;
     private final ServerSessionFrameListener listener;
@@ -117,8 +86,7 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         Generator generator = new Generator(connector.getByteBufferPool(), compressionFactory.newCompressor());
 
         ServerSessionFrameListener listener = provideServerSessionFrameListener(connector, endPoint);
-        SPDYConnection connection = new ServerSPDYConnection(connector, endPoint, parser, listener,
-                isDispatchIO(), getInputBufferSize());
+        SPDYConnection connection = new ServerSPDYConnection(connector, endPoint, parser, listener, getInputBufferSize());
 
         FlowControlStrategy flowControlStrategy = newFlowControlStrategy(version);
 
@@ -211,10 +179,9 @@ public class SPDYServerConnectionFactory extends AbstractConnectionFactory
         private final AtomicBoolean connected = new AtomicBoolean();
 
         private ServerSPDYConnection(Connector connector, EndPoint endPoint, Parser parser,
-                                     ServerSessionFrameListener listener, boolean dispatchIO, int bufferSize)
+                                     ServerSessionFrameListener listener, int bufferSize)
         {
-            super(endPoint, connector.getByteBufferPool(), parser, connector.getExecutor(),
-                    dispatchIO, bufferSize);
+            super(endPoint, connector.getByteBufferPool(), parser, connector.getExecutor(), bufferSize);
             this.listener = listener;
         }
 

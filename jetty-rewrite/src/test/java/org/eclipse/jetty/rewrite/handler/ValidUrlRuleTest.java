@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,7 +41,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     public void testValidUrl() throws Exception
     {
         _rule.setCode("404");
-        _request.setRequestURI("/valid/uri.html");
+        _request.setURIPathQuery("/valid/uri.html");
         
         _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -52,7 +52,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     public void testInvalidUrl() throws Exception
     {
         _rule.setCode("404");
-        _request.setRequestURI("/invalid%0c/uri.html");
+        _request.setURIPathQuery("/invalid%0c/uri.html");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -64,7 +64,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setReason("foo");
-        _request.setRequestURI("/%00/");
+        _request.setURIPathQuery("/%00/");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -77,7 +77,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setReason("foo");
-        _request.setRequestURI("/jsp/bean1.jsp%00");
+        _request.setURIPathQuery("/jsp/bean1.jsp%00");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -91,7 +91,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setReason("foo");
-        _request.setRequestURI("/jsp/shamrock-%00%E2%98%98.jsp");
+        _request.setURIPathQuery("/jsp/shamrock-%00%E2%98%98.jsp");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 
@@ -105,7 +105,7 @@ public class ValidUrlRuleTest extends AbstractRuleTestCase
     {
         _rule.setCode("405");
         _rule.setReason("foo");
-        _request.setRequestURI("/jsp/shamrock-%E2%98%98.jsp");
+        _request.setURIPathQuery("/jsp/shamrock-%E2%98%98.jsp");
         
         String result = _rule.matchAndApply(_request.getRequestURI(), _request, _response);
 

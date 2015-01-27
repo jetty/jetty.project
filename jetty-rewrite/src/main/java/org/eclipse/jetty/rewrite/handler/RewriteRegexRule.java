@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -100,7 +100,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
     {
         if (_query==null)
         {
-            request.setRequestURI(newURI);
+            request.setURIPathQuery(newURI);
         }
         else
         {
@@ -108,9 +108,7 @@ public class RewriteRegexRule extends RegexRule  implements Rule.ApplyURI
             
             if (!_queryGroup && request.getQueryString()!=null)
                 query=request.getQueryString()+"&"+query;
-            HttpURI uri=new HttpURI(newURI+"?"+query);
-            request.setUri(uri);
-            request.setRequestURI(newURI);
+            request.setURIPathQuery(newURI);
             request.setQueryString(query);
         }
     }

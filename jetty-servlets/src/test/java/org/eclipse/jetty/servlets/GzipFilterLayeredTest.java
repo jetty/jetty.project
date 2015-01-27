@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,15 +32,16 @@ import javax.servlet.DispatcherType;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.handler.gzip.AsyncManipFilter;
+import org.eclipse.jetty.server.handler.gzip.AsyncScheduledDispatchWrite;
+import org.eclipse.jetty.server.handler.gzip.AsyncTimeoutCompleteWrite;
+import org.eclipse.jetty.server.handler.gzip.AsyncTimeoutDispatchWrite;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipTester;
+import org.eclipse.jetty.server.handler.gzip.GzipTester.ContentMetadata;
+import org.eclipse.jetty.server.handler.gzip.TestDirContentServlet;
+import org.eclipse.jetty.server.handler.gzip.TestServletLengthStreamTypeWrite;
 import org.eclipse.jetty.servlet.FilterHolder;
-import org.eclipse.jetty.servlets.gzip.AsyncManipFilter;
-import org.eclipse.jetty.servlets.gzip.AsyncScheduledDispatchWrite;
-import org.eclipse.jetty.servlets.gzip.AsyncTimeoutCompleteWrite;
-import org.eclipse.jetty.servlets.gzip.AsyncTimeoutDispatchWrite;
-import org.eclipse.jetty.servlets.gzip.GzipTester;
-import org.eclipse.jetty.servlets.gzip.GzipTester.ContentMetadata;
-import org.eclipse.jetty.servlets.gzip.TestDirContentServlet;
-import org.eclipse.jetty.servlets.gzip.TestServletLengthStreamTypeWrite;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Ignore;
@@ -64,7 +65,7 @@ public class GzipFilterLayeredTest
     private static final HttpConfiguration defaultHttp = new HttpConfiguration();
     private static final int LARGE = defaultHttp.getOutputBufferSize() * 8;
     private static final int SMALL = defaultHttp.getOutputBufferSize() / 4;
-    private static final int TINY = AsyncGzipFilter.DEFAULT_MIN_GZIP_SIZE / 2;
+    private static final int TINY = GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2;
     private static final boolean EXPECT_COMPRESSED = true;
 
     @Parameters(name = "{0} bytes - {1} - compressed({2}) - filter({3}) - servlet({4}")
@@ -115,7 +116,7 @@ public class GzipFilterLayeredTest
     @Test
     public void testGzipDos() throws Exception
     {
-        GzipTester tester = new GzipTester(testingdir, GzipFilter.GZIP);
+        GzipTester tester = new GzipTester(testingdir, GzipHandler.GZIP);
         
         // Add Gzip Filter first
         FilterHolder gzipHolder = new FilterHolder(gzipFilterClass);
@@ -146,7 +147,7 @@ public class GzipFilterLayeredTest
             if (expectCompressed)
             {
                 // Must be gzip compressed
-                assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipFilter.GZIP));
+                assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipHandler.GZIP));
             }
             
             // Uncompressed content Size
@@ -162,7 +163,7 @@ public class GzipFilterLayeredTest
     @Test
     public void testDosGzip() throws Exception
     {
-        GzipTester tester = new GzipTester(testingdir, GzipFilter.GZIP);
+        GzipTester tester = new GzipTester(testingdir, GzipHandler.GZIP);
         
         // Add (DoSFilter-like) manip filter
         FilterHolder manipHolder = new FilterHolder(AsyncManipFilter.class);
@@ -193,10 +194,10 @@ public class GzipFilterLayeredTest
             if (expectCompressed)
             {
                 // Must be gzip compressed
-                assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipFilter.GZIP));
+                assertThat("Content-Encoding",response.get("Content-Encoding"),containsString(GzipHandler.GZIP));
             } else
             {
-                assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(GzipFilter.GZIP)));
+                assertThat("Content-Encoding",response.get("Content-Encoding"),not(containsString(GzipHandler.GZIP)));
             }
             
             // Uncompressed content Size

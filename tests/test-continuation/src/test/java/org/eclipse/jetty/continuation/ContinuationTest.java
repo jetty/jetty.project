@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,7 +26,6 @@ import java.util.List;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
@@ -77,10 +76,10 @@ public class ContinuationTest extends ContinuationBase
     @After
     public void tearDown() throws Exception
     {
+        _server.stop();
         Assert.assertEquals(1,_log.size());
         Assert.assertTrue(_log.get(0).startsWith("200 "));
         Assert.assertTrue(_log.get(0).endsWith(" /"));
-        _server.stop();
     }
     
     @Test
@@ -194,9 +193,9 @@ public class ContinuationTest extends ContinuationBase
     class Log extends AbstractLifeCycle implements RequestLog
     {
         @Override
-        public void log(Request request, Response response)
+        public void log(Request request, int status, long written)
         {
-            _log.add(response.getStatus()+" "+response.getContentCount()+" "+request.getRequestURI());
+            _log.add(status+" "+written+" "+request.getRequestURI());
         }
         
     }

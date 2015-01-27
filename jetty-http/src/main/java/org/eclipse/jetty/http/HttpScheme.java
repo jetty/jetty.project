@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -61,7 +61,7 @@ public enum HttpScheme
     /* ------------------------------------------------------------ */
     public boolean is(String s)
     {
-        return _string.equalsIgnoreCase(s);
+        return s!=null && _string.equalsIgnoreCase(s);
     }
 
     public String asString()

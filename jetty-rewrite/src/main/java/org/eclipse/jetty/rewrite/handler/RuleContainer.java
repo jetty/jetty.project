@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -216,7 +216,7 @@ public class RuleContainer extends Rule
                     if (rule instanceof Rule.ApplyURI)
                         ((Rule.ApplyURI)rule).applyURI((Request)request,((Request)request).getRequestURI(), encoded);
                     else
-                        ((Request)request).setRequestURI(encoded);
+                        ((Request)request).setURIPathQuery(encoded);
                 }
 
                 if (_rewritePathInfo)
@@ -227,7 +227,7 @@ public class RuleContainer extends Rule
                 if (rule.isHandling())
                 {
                     LOG.debug("handling {}",rule);
-                    (request instanceof Request?(Request)request:HttpChannel.getCurrentHttpChannel().getRequest()).setHandled(true);
+                    Request.getBaseRequest(request).setHandled(true);
                 }
 
                 if (rule.isTerminating())

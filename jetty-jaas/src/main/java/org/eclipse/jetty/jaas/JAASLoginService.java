@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,14 +34,13 @@ import javax.security.auth.callback.PasswordCallback;
 import javax.security.auth.callback.UnsupportedCallbackException;
 import javax.security.auth.login.LoginContext;
 import javax.security.auth.login.LoginException;
+import javax.servlet.ServletRequest;
 
 import org.eclipse.jetty.jaas.callback.ObjectCallback;
 import org.eclipse.jetty.jaas.callback.RequestParameterCallback;
 import org.eclipse.jetty.security.DefaultIdentityService;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -181,7 +180,8 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
     }
 
     /* ------------------------------------------------------------ */
-    public UserIdentity login(final String username,final Object credentials)
+    @Override
+    public UserIdentity login(final String username,final Object credentials, final ServletRequest request)
     {
         try
         {
@@ -210,17 +210,9 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
                             }
                             else if (callback instanceof RequestParameterCallback)
                             {
-                                HttpChannel channel = HttpChannel.getCurrentHttpChannel();
-
-                                if (channel == null)
-                                    return;
-                                Request request = channel.getRequest();
-
-                                if (request != null)
-                                {
-                                    RequestParameterCallback rpc = (RequestParameterCallback)callback;
+                                RequestParameterCallback rpc = (RequestParameterCallback)callback;
+                                if (request!=null)
                                     rpc.setParameterValues(Arrays.asList(request.getParameterValues(rpc.getParameterName())));
-                                }
                             }
                             else
                                 throw new UnsupportedCallbackException(callback);
@@ -230,7 +222,7 @@ public class JAASLoginService extends AbstractLifeCycle implements LoginService
             }
             else
             {
-                Class clazz = Loader.loadClass(getClass(), _callbackHandlerClass);
+                Class<?> clazz = Loader.loadClass(getClass(), _callbackHandlerClass);
                 callbackHandler = (CallbackHandler)clazz.newInstance();
             }
             //set up the login context

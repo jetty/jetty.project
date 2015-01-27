@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,12 +18,8 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.net.MalformedURLException;
@@ -37,6 +33,7 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.AfterClass;
+import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.BeforeClass;
 import org.junit.Test;
@@ -89,6 +86,8 @@ public class ContextHandlerGetResourceTest
         
         server = new Server();
         context =new ContextHandler("/");
+        context.clearAliasChecks();
+        context.addAliasCheck(new ContextHandler.ApproveNonExistentDirectoryAliases());
         context.setBaseResource(Resource.newResource(docroot));
         context.addAliasCheck(new ContextHandler.AliasCheck()
         {
@@ -122,7 +121,7 @@ public class ContextHandlerGetResourceTest
         try
         {
             context.getResource(path);
-            fail();
+            fail("Expected " + MalformedURLException.class);
         }
         catch(MalformedURLException e)
         {
@@ -131,7 +130,7 @@ public class ContextHandlerGetResourceTest
         try
         {
             context.getServletContext().getResource(path);
-            fail();
+            fail("Expected " + MalformedURLException.class);
         }
         catch(MalformedURLException e)
         {
@@ -300,17 +299,20 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testSlashSlash() throws Exception
     {
+        File expected = new File(docroot, OS.separators("subdir/data.txt"));
+        URL expectedUrl = expected.toURI().toURL();
+        
         String path="//subdir/data.txt";
         Resource resource=context.getResource(path);
-        assertNull(resource);
+        assertThat("Resource: " + resource, resource.getFile(), is(expected));
         URL url=context.getServletContext().getResource(path);
-        assertNull(url);
+        assertThat("Resource: " + url, url, is(expectedUrl));
         
         path="/subdir//data.txt";
         resource=context.getResource(path);
-        assertNull(resource);
+        assertThat("Resource: " + resource, resource.getFile(), is(expected));
         url=context.getServletContext().getResource(path);
-        assertNull(url);
+        assertThat("Resource: " + url, url, is(expectedUrl));
     }
 
     @Test
@@ -353,8 +355,8 @@ public class ContextHandlerGetResourceTest
     @Test
     public void testSymlinkKnown() throws Exception
     {
-        if (!OS.IS_UNIX)
-            return;
+        Assume.assumeTrue(OS.IS_UNIX);
+        
         try
         {
             allowSymlinks.set(true);

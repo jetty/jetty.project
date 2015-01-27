@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -157,21 +157,12 @@ public abstract class IteratingCallback implements Callback
     protected abstract Action process() throws Exception;
 
     /**
-     * @deprecated Use {@link #onCompleteSuccess()} instead.
-     */
-    @Deprecated
-    protected void completed()
-    {
-    }
-
-    /**
      * Invoked when the overall task has completed successfully.
      *
      * @see #onCompleteFailure(Throwable)
      */
     protected void onCompleteSuccess()
     {
-        completed();
     }
     
     /**

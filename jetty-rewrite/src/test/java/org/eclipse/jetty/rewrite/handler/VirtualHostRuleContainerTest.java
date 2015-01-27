@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,7 +49,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
         _fooContainerRule.setRules(new Rule[] { _fooRule });
 
         start(false);
-        _request.setRequestURI("/cheese/bar");
+        _request.setURIPathQuery("/cheese/bar");
         
         _handler.setServer(_server);
         _handler.start();
@@ -58,7 +58,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testArbitraryHost() throws Exception
     {
-        _request.setServerName("cheese.com");
+        _request.setAuthority("cheese.com",0);
         _handler.setRules(new Rule[] { _rule, _fooContainerRule });
         handleRequest();
         assertEquals("{_rule, _fooContainerRule, Host: cheese.com}: applied _rule", "/rule/bar", _request.getRequestURI());
@@ -67,7 +67,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testVirtualHost() throws Exception
     {
-        _request.setServerName("foo.com");
+        _request.setAuthority("foo.com",0);
         _handler.setRules(new Rule[] { _fooContainerRule });
         handleRequest();
         assertEquals("{_fooContainerRule, Host: foo.com}: applied _fooRule", "/cheese/fooRule", _request.getRequestURI());
@@ -76,8 +76,8 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testCascadingRules() throws Exception
     {
-        _request.setServerName("foo.com");
-        _request.setRequestURI("/cheese/bar");
+        _request.setAuthority("foo.com",0);
+        _request.setURIPathQuery("/cheese/bar");
 
         _rule.setTerminating(false);
         _fooRule.setTerminating(false);
@@ -87,17 +87,17 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
         handleRequest();
         assertEquals("{_rule, _fooContainerRule}: applied _rule, didn't match _fooRule", "/rule/bar", _request.getRequestURI());
 
-        _request.setRequestURI("/cheese/bar");
+        _request.setURIPathQuery("/cheese/bar");
         _handler.setRules(new Rule[] { _fooContainerRule, _rule });
         handleRequest();
         assertEquals("{_fooContainerRule, _rule}: applied _fooRule, _rule","/rule/fooRule", _request.getRequestURI());
 
-        _request.setRequestURI("/cheese/bar");
+        _request.setURIPathQuery("/cheese/bar");
         _fooRule.setTerminating(true);
         handleRequest();
         assertEquals("{_fooContainerRule, _rule}: (_fooRule is terminating); applied _fooRule, _rule", "/rule/fooRule", _request.getRequestURI());
 
-        _request.setRequestURI("/cheese/bar");
+        _request.setURIPathQuery("/cheese/bar");
         _fooRule.setTerminating(false);
         _fooContainerRule.setTerminating(true);
         handleRequest();
@@ -107,7 +107,7 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testCaseInsensitiveHostname() throws Exception
     {
-        _request.setServerName("Foo.com");
+        _request.setAuthority("Foo.com",0);
         _fooContainerRule.setVirtualHosts(new String[] {"foo.com"} );
 
         _handler.setRules(new Rule[]{ _fooContainerRule });
@@ -118,21 +118,21 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testEmptyVirtualHost() throws Exception
     {
-        _request.setServerName("cheese.com");
+        _request.setAuthority("cheese.com",0);
 
         _handler.setRules(new Rule[] { _fooContainerRule });
         _fooContainerRule.setVirtualHosts(null);
         handleRequest();
         assertEquals("{_fooContainerRule: virtual hosts array is null, Host: cheese.com}: apply _fooRule", "/cheese/fooRule", _request.getRequestURI());
 
-        _request.setRequestURI("/cheese/bar");
-        _request.setRequestURI("/cheese/bar");
+        _request.setURIPathQuery("/cheese/bar");
+        _request.setURIPathQuery("/cheese/bar");
         _fooContainerRule.setVirtualHosts(new String[] {});
         handleRequest();
         assertEquals("{_fooContainerRule: virtual hosts array is empty, Host: cheese.com}: apply _fooRule", "/cheese/fooRule", _request.getRequestURI());
 
-        _request.setRequestURI("/cheese/bar");
-        _request.setRequestURI("/cheese/bar");
+        _request.setURIPathQuery("/cheese/bar");
+        _request.setURIPathQuery("/cheese/bar");
         _fooContainerRule.setVirtualHosts(new String[] {null});
         handleRequest();
         assertEquals("{_fooContainerRule: virtual host is null, Host: cheese.com}: apply _fooRule", "/cheese/fooRule", _request.getRequestURI());
@@ -142,14 +142,14 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
     @Test
     public void testMultipleVirtualHosts() throws Exception
     {
-        _request.setServerName("foo.com");
+        _request.setAuthority("foo.com",0);
         _handler.setRules(new Rule[] {_fooContainerRule });
 
         _fooContainerRule.setVirtualHosts(new String[]{ "cheese.com" });
         handleRequest();
         assertEquals("{_fooContainerRule: vhosts[cheese.com], Host: foo.com}: no effect", "/cheese/bar", _request.getRequestURI());
 
-        _request.setRequestURI("/cheese/bar");
+        _request.setURIPathQuery("/cheese/bar");
         _fooContainerRule.addVirtualHost( "foo.com" );
         handleRequest();
         assertEquals("{_fooContainerRule: vhosts[cheese.com, foo.com], Host: foo.com}: apply _fooRule", "/cheese/fooRule", _request.getRequestURI());
@@ -182,8 +182,8 @@ public class VirtualHostRuleContainerTest extends AbstractRuleTestCase
 
         for(String host: requestHosts)
         {
-            _request.setServerName(host);
-            _request.setRequestURI("/cheese/bar");
+            _request.setAuthority(host,0);
+            _request.setURIPathQuery("/cheese/bar");
             handleRequest();
             if(succeed)
                 assertEquals("{_fooContainerRule, Host: "+host+"}: should apply _fooRule", "/cheese/fooRule", _request.getRequestURI());

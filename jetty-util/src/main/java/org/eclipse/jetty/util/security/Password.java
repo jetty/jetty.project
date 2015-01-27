@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -253,7 +253,7 @@ public class Password extends Credential
     {
         if (arg.length != 1 && arg.length != 2)
         {
-            System.err.println("Usage - java org.eclipse.jetty.security.Password [<user>] <password>");
+            System.err.println("Usage - java " + Password.class.getName() + " [<user>] <password>");
             System.err.println("If the password is ?, the user will be prompted for the password");
             System.exit(1);
         }

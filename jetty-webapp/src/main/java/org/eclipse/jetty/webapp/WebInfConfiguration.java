@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -402,7 +402,7 @@ public class WebInfConfiguration extends AbstractConfiguration
                 throw new IllegalStateException("No resourceBase or war set for context");
 
             // Accept aliases for WAR files
-            if (web_app.getAlias() != null)
+            if (web_app.isAlias())
             {
                 LOG.debug(web_app + " anti-aliased to " + web_app.getAlias());
                 web_app = context.newResource(web_app.getAlias());

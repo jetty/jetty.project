@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,7 +41,7 @@ public class DispatcherForwardTest
     private LocalConnector connector;
     private HttpServlet servlet1;
     private HttpServlet servlet2;
-    private List<Exception> failures = new ArrayList<>();
+    private List<Throwable> failures = new ArrayList<>();
 
     public void prepare() throws Exception
     {
@@ -57,9 +57,9 @@ public class DispatcherForwardTest
     }
 
     @After
-    public void dispose() throws Exception
+    public void dispose() throws Throwable
     {
-        for (Exception failure : failures)
+        for (Throwable failure : failures)
             throw failure;
         server.stop();
     }
@@ -67,8 +67,14 @@ public class DispatcherForwardTest
     // Replacement for Assert that allows to check failures after the response has been sent.
     private <S> void checkThat(S item, Matcher<S> matcher)
     {
-        if (!matcher.matches(item))
-            failures.add(new Exception());
+        try
+        {
+            Assert.assertThat(item,matcher);
+        }
+        catch(Throwable th)
+        {
+            failures.add(th);
+        }
     }
 
     @Test
@@ -85,12 +91,12 @@ public class DispatcherForwardTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
 
                 req.getRequestDispatcher("/two").forward(req, resp);
 
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
-                checkThat("1", Matchers.equalTo(req.getParameter("a")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
             }
         };
         servlet2 = new HttpServlet()
@@ -98,8 +104,8 @@ public class DispatcherForwardTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
-                checkThat("1", Matchers.equalTo(req.getParameter("a")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
             }
         };
 
@@ -130,13 +136,13 @@ public class DispatcherForwardTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
 
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
-                checkThat("1", Matchers.equalTo(req.getParameter("a")));
-                checkThat("2", Matchers.equalTo(req.getParameter("b")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
             }
         };
         servlet2 = new HttpServlet()
@@ -144,9 +150,9 @@ public class DispatcherForwardTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query3, Matchers.equalTo(req.getQueryString()));
-                checkThat("3", Matchers.equalTo(req.getParameter("a")));
-                checkThat("2", Matchers.equalTo(req.getParameter("b")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query3));
+                checkThat(req.getParameter("a"),Matchers.equalTo("3"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
             }
         };
 
@@ -177,12 +183,12 @@ public class DispatcherForwardTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
 
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
-                checkThat("1", Matchers.equalTo(req.getParameter("a")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
             }
         };
         servlet2 = new HttpServlet()
@@ -190,9 +196,9 @@ public class DispatcherForwardTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query3, Matchers.equalTo(req.getQueryString()));
-                checkThat("1", Matchers.equalTo(req.getParameter("a")));
-                checkThat("2", Matchers.equalTo(req.getParameter("b")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query3));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
             }
         };
 
@@ -222,11 +228,11 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
 
                 req.getRequestDispatcher("/two").forward(req, resp);
 
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
                 String[] values = req.getParameterValues("a");
                 checkThat(values, Matchers.notNullValue());
                 checkThat(2, Matchers.equalTo(values.length));
@@ -238,7 +244,7 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
                 String[] values = req.getParameterValues("a");
                 checkThat(values, Matchers.notNullValue());
                 checkThat(2, Matchers.equalTo(values.length));
@@ -276,11 +282,11 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
 
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
                 String[] values = req.getParameterValues("a");
                 checkThat(values, Matchers.notNullValue());
                 checkThat(2, Matchers.equalTo(values.length));
@@ -292,7 +298,7 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query2, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query2));
                 String[] values = req.getParameterValues("a");
                 checkThat(values, Matchers.notNullValue());
                 checkThat(3, Matchers.equalTo(values.length));
@@ -331,13 +337,13 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
 
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
-                checkThat("1", Matchers.equalTo(req.getParameter("a")));
-                checkThat("2", Matchers.equalTo(req.getParameter("b")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
                 checkThat(req.getParameter("c"), Matchers.nullValue());
             }
         };
@@ -346,10 +352,10 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query3, Matchers.equalTo(req.getQueryString()));
-                checkThat("1", Matchers.equalTo(req.getParameter("a")));
-                checkThat("2", Matchers.equalTo(req.getParameter("b")));
-                checkThat("3", Matchers.equalTo(req.getParameter("c")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query3));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
+                checkThat(req.getParameter("c"),Matchers.equalTo("3"));
             }
         };
 
@@ -385,15 +391,15 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
-                checkThat("1", Matchers.equalTo(req.getParameter("a")));
-                checkThat("2", Matchers.equalTo(req.getParameter("b")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
 
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
-                checkThat("1", Matchers.equalTo(req.getParameter("a")));
-                checkThat("2", Matchers.equalTo(req.getParameter("b")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
                 checkThat(req.getParameter("c"), Matchers.nullValue());
             }
         };
@@ -402,10 +408,10 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query3, Matchers.equalTo(req.getQueryString()));
-                checkThat("1", Matchers.equalTo(req.getParameter("a")));
-                checkThat("2", Matchers.equalTo(req.getParameter("b")));
-                checkThat("3", Matchers.equalTo(req.getParameter("c")));
+                checkThat(req.getQueryString(),Matchers.equalTo(query3));
+                checkThat(req.getParameter("a"),Matchers.equalTo("1"));
+                checkThat(req.getParameter("b"),Matchers.equalTo("2"));
+                checkThat(req.getParameter("c"),Matchers.equalTo("3"));
             }
         };
 
@@ -433,11 +439,11 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
 
                 req.getRequestDispatcher("/two").forward(req, resp);
 
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
                 checkThat(req.getParameter("c"), Matchers.nullValue());
             }
         };
@@ -446,7 +452,7 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
                 ServletInputStream input = req.getInputStream();
                 for (int i = 0; i < form.length(); ++i)
                     checkThat(form.charAt(i) & 0xFFFF, Matchers.equalTo(input.read()));
@@ -479,11 +485,11 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
 
                 req.getRequestDispatcher("/two?" + query2).forward(req, resp);
 
-                checkThat(query1, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query1));
                 checkThat(req.getParameter("c"), Matchers.nullValue());
             }
         };
@@ -492,7 +498,7 @@ public class DispatcherForwardTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                checkThat(query3, Matchers.equalTo(req.getQueryString()));
+                checkThat(req.getQueryString(),Matchers.equalTo(query3));
                 ServletInputStream input = req.getInputStream();
                 for (int i = 0; i < form.length(); ++i)
                     checkThat(form.charAt(i) & 0xFFFF, Matchers.equalTo(input.read()));

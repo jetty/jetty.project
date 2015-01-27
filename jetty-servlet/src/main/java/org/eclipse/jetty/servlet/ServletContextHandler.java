@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -57,6 +57,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
@@ -80,6 +81,7 @@ public class ServletContextHandler extends ContextHandler
 {
     public final static int SESSIONS=1;
     public final static int SECURITY=2;
+    public final static int GZIP=4;
     public final static int NO_SESSIONS=0;
     public final static int NO_SECURITY=0;
     
@@ -90,6 +92,7 @@ public class ServletContextHandler extends ContextHandler
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
     protected ServletHandler _servletHandler;
+    protected GzipHandler _gzipHandler;
     protected int _options;
     protected JspConfigDescriptor _jspConfig;
 
@@ -135,6 +138,7 @@ public class ServletContextHandler extends ContextHandler
         this(parent,contextPath,sessionHandler,securityHandler,servletHandler,errorHandler,0);
     }
     
+    /* ------------------------------------------------------------ */
     public ServletContextHandler(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler,int options)
     {
         super((ContextHandler.Context)null);
@@ -166,43 +170,82 @@ public class ServletContextHandler extends ContextHandler
     {
         HandlerWrapper handler=this;
         
-        // Skip any injected handlers
-        while (handler.getHandler() instanceof HandlerWrapper)
-        {
-            HandlerWrapper wrapper = (HandlerWrapper)handler.getHandler();
-            if (wrapper instanceof SessionHandler ||
-                wrapper instanceof SecurityHandler ||
-                wrapper instanceof ServletHandler)
-                break;
-            handler=wrapper;
-        }
-        
+        // link session handler
         if (getSessionHandler()!=null)
         {
-            if (handler==this)
-                super.setHandler(_sessionHandler);
-            else
-                handler.setHandler(_sessionHandler);
+            
+            while (!(handler.getHandler() instanceof SessionHandler) && 
+                   !(handler.getHandler() instanceof SecurityHandler) && 
+                   !(handler.getHandler() instanceof GzipHandler) && 
+                   !(handler.getHandler() instanceof ServletHandler) && 
+                   handler.getHandler() instanceof HandlerWrapper)
+                handler=(HandlerWrapper)handler.getHandler();
+            
+            if (handler.getHandler()!=_sessionHandler)
+            {
+                if (handler== this)
+                    super.setHandler(_sessionHandler);
+                else
+                    handler.setHandler(_sessionHandler);
+            }
             handler=_sessionHandler;
         }
-
+        
+        // link security handler
         if (getSecurityHandler()!=null)
         {
-            if (handler==this)
-                super.setHandler(_securityHandler);
-            else
-                handler.setHandler(_securityHandler);
+            while (!(handler.getHandler() instanceof SecurityHandler) && 
+                   !(handler.getHandler() instanceof GzipHandler) && 
+                   !(handler.getHandler() instanceof ServletHandler) && 
+                   handler.getHandler() instanceof HandlerWrapper)
+                handler=(HandlerWrapper)handler.getHandler();
+
+            if (handler.getHandler()!=_securityHandler)
+            {
+                if (handler== this)
+                    super.setHandler(_securityHandler);
+                else
+                    handler.setHandler(_securityHandler);
+            }
             handler=_securityHandler;
         }
 
+        // link gzip handler
+        if (getGzipHandler()!=null)
+        {
+            while (!(handler.getHandler() instanceof GzipHandler) && 
+                   !(handler.getHandler() instanceof ServletHandler) && 
+                   handler.getHandler() instanceof HandlerWrapper)
+                handler=(HandlerWrapper)handler.getHandler();
+
+            if (handler.getHandler()!=_gzipHandler)
+            {
+                if (handler== this)
+                    super.setHandler(_gzipHandler);
+                else
+                    handler.setHandler(_gzipHandler);
+            }
+            handler=_gzipHandler;
+        }
+
+        
+        // link servlet handler
         if (getServletHandler()!=null)
         {
-            if (handler==this)
-                super.setHandler(_servletHandler);
-            else
-                handler.setHandler(_servletHandler);
+            while (!(handler.getHandler() instanceof ServletHandler) && 
+                   handler.getHandler() instanceof HandlerWrapper)
+                handler=(HandlerWrapper)handler.getHandler();
+
+            if (handler.getHandler()!=_servletHandler)
+            {
+                if (handler== this)
+                    super.setHandler(_servletHandler);
+                else
+                    handler.setHandler(_servletHandler);
+            }
             handler=_servletHandler;
-        } 
+        }
+        
     }
     
     /* ------------------------------------------------------------ */
@@ -336,6 +379,18 @@ public class ServletContextHandler extends ContextHandler
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return Returns the gzipHandler.
+     */
+    @ManagedAttribute(value="context gzip handler", readonly=true)
+    public GzipHandler getGzipHandler()
+    {
+        if (_gzipHandler==null && (_options&GZIP)!=0 && !isStarted())
+            _gzipHandler=new GzipHandler();
+        return _gzipHandler;
+    }
+    
+    /* ------------------------------------------------------------ */
     /** conveniance method to add a servlet.
      */
     public ServletHolder addServlet(String className,String pathSpec)
@@ -457,6 +512,23 @@ public class ServletContextHandler extends ContextHandler
         super.callContextDestroyed(l, e);
     }
 
+    private boolean replaceHandler(Handler handler,Handler replace)
+    {
+        HandlerWrapper wrapper=this;
+        while(true)
+        {
+            if (wrapper.getHandler()==handler)
+            {
+                wrapper.setHandler(replace);
+                return true;
+            }
+            
+            if (!(wrapper.getHandler() instanceof HandlerWrapper))
+                return false;
+            wrapper = (HandlerWrapper)wrapper.getHandler();
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param sessionHandler The sessionHandler to set.
@@ -466,10 +538,17 @@ public class ServletContextHandler extends ContextHandler
         if (isStarted())
             throw new IllegalStateException("STARTED");
 
+        Handler next=null;
         if (_sessionHandler!=null)
+        {
+            next=_sessionHandler.getHandler();
             _sessionHandler.setHandler(null);
+            replaceHandler(_sessionHandler,sessionHandler);
+        }
 
         _sessionHandler = sessionHandler;
+        if (next!=null && _sessionHandler.getHandler()==null)
+            _sessionHandler.setHandler(next);
         relinkHandlers();
     }
 
@@ -482,12 +561,44 @@ public class ServletContextHandler extends ContextHandler
         if (isStarted())
             throw new IllegalStateException("STARTED");
 
+        Handler next=null;
         if (_securityHandler!=null)
+        {
+            next=_securityHandler.getHandler();
             _securityHandler.setHandler(null);
+            replaceHandler(_securityHandler,securityHandler);
+        }
+        
         _securityHandler = securityHandler;
+        if (next!=null && _securityHandler.getHandler()==null)
+            _securityHandler.setHandler(next);
         relinkHandlers();
     }
 
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param gzipHandler The {@link GzipHandler} to set on this context.
+     */
+    public void setGzipHandler(GzipHandler gzipHandler)
+    {
+        if (isStarted())
+            throw new IllegalStateException("STARTED");
+
+        Handler next=null;
+        if (_gzipHandler!=null)
+        {
+            next=_gzipHandler.getHandler();
+            _gzipHandler.setHandler(null);
+            replaceHandler(_gzipHandler,gzipHandler);
+        }
+        
+        _gzipHandler = gzipHandler;
+        if (next!=null && _gzipHandler.getHandler()==null)
+            _gzipHandler.setHandler(next);
+        relinkHandlers();
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param servletHandler The servletHandler to set.
@@ -502,29 +613,12 @@ public class ServletContextHandler extends ContextHandler
         {
             next=_servletHandler.getHandler();
             _servletHandler.setHandler(null);
+            replaceHandler(_servletHandler,servletHandler);
         }
         _servletHandler = servletHandler;
+        if (next!=null && _servletHandler.getHandler()==null)
+            _servletHandler.setHandler(next);
         relinkHandlers();
-        _servletHandler.setHandler(next);
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    public void setHandler(Handler handler)
-    {
-        if (handler instanceof ServletHandler)
-            setServletHandler((ServletHandler) handler);
-        else if (handler instanceof SessionHandler)
-            setSessionHandler((SessionHandler) handler);
-        else if (handler instanceof SecurityHandler)
-            setSecurityHandler((SecurityHandler)handler);
-        else if (handler == null || handler instanceof HandlerWrapper)
-        {
-            super.setHandler(handler);
-            relinkHandlers();
-        }
-        else
-            throw new IllegalArgumentException();
     }
     
     

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,10 +20,12 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
+import java.net.ServerSocket;
 import java.net.Socket;
 import java.net.SocketException;
 import java.nio.channels.Channel;
 import java.nio.channels.SelectionKey;
+import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
@@ -32,9 +34,10 @@ import java.util.concurrent.Future;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.Name;
@@ -225,9 +228,16 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("factories") ConnectionFactory... factories)
     {
         super(server,executor,scheduler,bufferPool,acceptors,factories);
-        _manager = new ServerConnectorManager(getExecutor(), getScheduler(), 
+        _manager = newSelectorManager(getExecutor(), getScheduler(),
             selectors>0?selectors:Math.max(1,Math.min(4,Runtime.getRuntime().availableProcessors()/2)));
         addBean(_manager, true);
+        setSelectorPriorityDelta(-1);
+        setAcceptorPriorityDelta(-2);
+    }
+
+    protected SelectorManager newSelectorManager(Executor executor, Scheduler scheduler, int selectors)
+    {
+        return new ServerConnectorManager(executor, scheduler, selectors);
     }
 
     @Override
@@ -480,9 +490,9 @@ public class ServerConnector extends AbstractNetworkConnector
         _reuseAddress = reuseAddress;
     }
 
-    private final class ServerConnectorManager extends SelectorManager
+    protected class ServerConnectorManager extends SelectorManager
     {
-        private ServerConnectorManager(Executor executor, Scheduler scheduler, int selectors)
+        public ServerConnectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
             super(executor, scheduler, selectors);
         }
@@ -518,7 +528,5 @@ public class ServerConnector extends AbstractNetworkConnector
             onEndPointClosed(endpoint);
             super.endPointClosed(endpoint);
         }
-        
-        
     }
 }

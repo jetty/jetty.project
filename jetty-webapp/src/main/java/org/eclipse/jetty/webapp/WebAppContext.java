@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -119,7 +119,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.servlet.ServletContextHandler.Decorator", // for CDI / weld use
         "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
         "org.eclipse.jetty.jsp.JettyJspServlet", //webapp cannot change jetty jsp servlet
-        "org.eclipse.jetty.servlets.AsyncGzipFilter" // special case for AsyncGzipFilter
+        "org.eclipse.jetty.servlets.PushCacheFilter" //must be loaded by container classpath
     } ;
 
     // Server classes are classes that are hidden from being

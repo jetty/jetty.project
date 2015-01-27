@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,6 +41,8 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.HttpChannel;
+import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
@@ -50,6 +52,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -73,9 +76,9 @@ public class RequestLogHandlerTest
         public List<String> captured = new ArrayList<>();
 
         @Override
-        public void log(Request request, Response response)
+        public void log(Request request, int status, long written)
         {
-            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),response.getStatus()));
+            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),status));
         }
     }
 
@@ -660,9 +663,9 @@ public class RequestLogHandlerTest
         server.addBean(errorDispatcher);
         
         ContextHandlerCollection contexts = new ContextHandlerCollection();
-        ContextHandler errorContext = new ContextHandler("errorok");
+        ContextHandler errorContext = new ContextHandler("/errorok");
         errorContext.setHandler(new OKErrorHandler());
-        ContextHandler testContext = new ContextHandler("test");
+        ContextHandler testContext = new ContextHandler("/test");
         testContext.setHandler(testHandler);
         contexts.addHandler(errorContext);
         contexts.addHandler(testContext);
@@ -737,6 +740,8 @@ public class RequestLogHandlerTest
 
         try
         {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(HttpChannelState.class)).setHideStacks(true);
             server.start();
 
             String host = connector.getHost();
@@ -775,6 +780,8 @@ public class RequestLogHandlerTest
         finally
         {
             server.stop();
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpChannelState.class)).setHideStacks(false);
         }
     }
 

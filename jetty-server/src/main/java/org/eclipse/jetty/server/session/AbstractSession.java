@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class AbstractSession implements AbstractSessionManager.SessionIf
 {
     final static Logger LOG = SessionHandler.LOG;
-    public final static String SESSION_KNOWN_ONLY_TO_AUTHENTICATED="org.eclipse.jetty.security.sessionKnownOnlytoAuthenticated";
+    public final static String SESSION_CREATED_SECURE="org.eclipse.jetty.security.sessionCreatedSecure";
     private  String _clusterId; // ID without any node (ie "worker") id appended
     private  String _nodeId;    // ID of session with node(ie "worker") id appended
     private final AbstractSessionManager _manager;

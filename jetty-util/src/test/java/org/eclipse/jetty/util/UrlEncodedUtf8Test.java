@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,7 +40,7 @@ public class UrlEncodedUtf8Test
         String test=new String(bytes,StandardCharsets.UTF_8);
         String expected = "c"+Utf8Appendable.REPLACEMENT;
 
-        fromByteArray(test,bytes,"ab",expected,false);
+        fromString(test,test,"ab",expected,false);
         fromInputStream(test,bytes,"ab",expected,false);
     }
 
@@ -51,7 +51,7 @@ public class UrlEncodedUtf8Test
         String test=new String(bytes,StandardCharsets.UTF_8);
         String expected = ""+Utf8Appendable.REPLACEMENT;
 
-        fromByteArray(test,bytes,"ab",expected,false);
+        fromString(test,test,"ab",expected,false);
         fromInputStream(test,bytes,"ab",expected,false);
         
     }
@@ -64,7 +64,7 @@ public class UrlEncodedUtf8Test
         String name = "e"+Utf8Appendable.REPLACEMENT;
         String value = "fg";
 
-        fromByteArray(test,bytes,name,value,false);
+        fromString(test,test,name,value,false);
         fromInputStream(test,bytes,name,value,false);
     }
     
@@ -76,9 +76,8 @@ public class UrlEncodedUtf8Test
         String name = "ef";
         String value = "g"+Utf8Appendable.REPLACEMENT;
 
-        fromByteArray(test,bytes,name,value,false);
+        fromString(test,test,name,value,false);
         fromInputStream(test,bytes,name,value,false);
-        
     }
 
     @Test
@@ -90,9 +89,8 @@ public class UrlEncodedUtf8Test
         String name = "a";
         String value = "a";
 
-        fromByteArray(test,bytes,name,value,false);
+        fromString(test,test,name,value,false);
         fromInputStream(test,bytes,name,value,false);
-        
     }
     
     @Test
@@ -104,9 +102,8 @@ public class UrlEncodedUtf8Test
         String name = "a";
         String value = ""+Utf8Appendable.REPLACEMENT;
 
-        fromByteArray(test,bytes,name,value,false);
+        fromString(test,test,name,value,false);
         fromInputStream(test,bytes,name,value,false);
-        
     }
     
     @Test
@@ -118,18 +115,16 @@ public class UrlEncodedUtf8Test
         String name = "a";
         String value = ""+Utf8Appendable.REPLACEMENT;
 
-        fromByteArray(test,bytes,name,value,false);
+        fromString(test,test,name,value,false);
         fromInputStream(test,bytes,name,value,false);
-        
     }
 
-    static void fromByteArray(String test,byte[] b,String field,String expected,boolean thrown) throws Exception
+    static void fromString(String test,String s,String field,String expected,boolean thrown) throws Exception
     {
         MultiMap<String> values=new MultiMap<>();
         try
         {
-            //safeDecodeUtf8To(b, 0, b.length, values);
-            UrlEncoded.decodeUtf8To(b, 0, b.length, values);
+            UrlEncoded.decodeUtf8To(s, 0, s.length(), values);
             if (thrown)
                 Assert.fail();
             Assert.assertEquals(test, expected, values.getString(field));
@@ -148,8 +143,7 @@ public class UrlEncodedUtf8Test
         MultiMap<String> values=new MultiMap<>();
         try
         {
-            //safeDecodeUtf8To(is, values, 1000000, 10000000);
-            UrlEncoded.decodeUtf8To(is, values, 1000000, 10000000);
+            UrlEncoded.decodeUtf8To(is, values, 1000000,-1);
             if (thrown)
                 Assert.fail();
             Assert.assertEquals(test, expected, values.getString(field));

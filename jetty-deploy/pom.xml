@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.2.6.v20141205</version>
+    <version>9.3.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>jetty-deploy</artifactId>
@@ -25,41 +25,12 @@
             </goals>
             <configuration>
               <instructions>
-                <Import-Package>org.eclipse.jetty.jmx.*;version="9.1";resolution:=optional,*</Import-Package>
+                <Import-Package>org.eclipse.jetty.jmx.*;resolution:=optional,*</Import-Package>
                 <_nouses>true</_nouses>
               </instructions>
             </configuration>
            </execution>
         </executions>
-      </plugin>
-      <plugin>
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <executions>
-          <execution>
-            <phase>package</phase>
-            <goals>
-              <goal>single</goal>
-            </goals>
-            <configuration>
-              <descriptorRefs>
-                <descriptorRef>config</descriptorRef>
-              </descriptorRefs>
-            </configuration>
-          </execution>
-        </executions>
-      </plugin>
-      <plugin>
-        <!--
-        Required for OSGI
-        -->
-        <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-jar-plugin</artifactId>
-        <configuration>
-          <archive>
-            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
-          </archive>
-        </configuration>
       </plugin>
       <plugin>
         <groupId>org.codehaus.mojo</groupId>

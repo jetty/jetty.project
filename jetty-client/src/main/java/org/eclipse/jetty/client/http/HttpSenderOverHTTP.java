@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,8 @@ import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Callback;
@@ -57,7 +59,7 @@ public class HttpSenderOverHTTP extends HttpSender
         String query = request.getQuery();
         if (query != null)
             path += "?" + query;
-        HttpGenerator.RequestInfo requestInfo = new HttpGenerator.RequestInfo(request.getVersion(), request.getHeaders(), contentLength, request.getMethod(), path);
+        MetaData.Request requestInfo = new MetaData.Request(request.getMethod(), new HttpURI(path), request.getVersion(), request.getHeaders(), contentLength);
 
         try
         {
@@ -180,7 +182,7 @@ public class HttpSenderOverHTTP extends HttpSender
                 }
             }
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);

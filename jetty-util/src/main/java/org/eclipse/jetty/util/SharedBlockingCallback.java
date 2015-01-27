@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,32 +29,26 @@ import java.util.concurrent.locks.ReentrantLock;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.NonBlockingThread;
 
-
-/* ------------------------------------------------------------ */
-/** Provides a reusable BlockingCallback.
+/**
+ * Provides a reusable {@link Callback} that can block the thread
+ * while waiting to be completed.
+ * <p />
  * A typical usage pattern is:
  * <pre>
  * void someBlockingCall(Object... args) throws IOException
  * {
- *   try(Blocker blocker=sharedBlockingCallback.acquire())
- *   {
- *     someAsyncCall(args,blocker);
- *     blocker.block();
- *   }
+ *     try(Blocker blocker = sharedBlockingCallback.acquire())
+ *     {
+ *         someAsyncCall(args, blocker);
+ *         blocker.block();
+ *     }
  * }
  * </pre>
  */
 public class SharedBlockingCallback
 {
     static final Logger LOG = Log.getLogger(SharedBlockingCallback.class);
-
-    final ReentrantLock _lock = new ReentrantLock();
-    final Condition _idle = _lock.newCondition();
-    final Condition _complete = _lock.newCondition();
-
-    
     private static Throwable IDLE = new Throwable()
     {
         @Override
@@ -63,7 +57,6 @@ public class SharedBlockingCallback
             return "IDLE";
         }
     };
-
     private static Throwable SUCCEEDED = new Throwable()
     {
         @Override
@@ -72,7 +65,6 @@ public class SharedBlockingCallback
             return "SUCCEEDED";
         }
     };
-    
     private static Throwable FAILED = new Throwable()
     {
         @Override
@@ -82,12 +74,10 @@ public class SharedBlockingCallback
         }
     };
 
-    Blocker _blocker;
-    
-    public SharedBlockingCallback()
-    {
-        _blocker=new Blocker();
-    }
+    private final ReentrantLock _lock = new ReentrantLock();
+    private final Condition _idle = _lock.newCondition();
+    private final Condition _complete = _lock.newCondition();
+    private Blocker _blocker = new Blocker();
     
     protected long getIdleTimeout()
     {
@@ -131,13 +121,13 @@ public class SharedBlockingCallback
             LOG.debug(new Throwable());
     }
     
-    /* ------------------------------------------------------------ */
-    /** A Closeable Callback.
+    /**
+     * A Closeable Callback.
      * Uses the auto close mechanism to check block has been called OK.
      */
     public class Blocker implements Callback, Closeable
     {
-        Throwable _state = IDLE;
+        private Throwable _state = IDLE;
         
         protected Blocker()
         {
@@ -198,9 +188,6 @@ public class SharedBlockingCallback
          */
         public void block() throws IOException
         {
-            if (NonBlockingThread.isNonBlockingThread())
-                LOG.warn("Blocking a NonBlockingThread: ",new Throwable());
-            
             _lock.lock();
             long idle = getIdleTimeout();
             try
@@ -216,7 +203,9 @@ public class SharedBlockingCallback
                             _state=new BlockerTimeoutException();
                     }
                     else
+                    {
                         _complete.await();
+                    }
                 }
 
                 if (_state == SUCCEEDED)
@@ -245,12 +234,9 @@ public class SharedBlockingCallback
         
         /**
          * Check the Callback has succeeded or failed and after the return leave in the state to allow reuse.
-         * 
-         * @throws IOException
-         *             if exception was caught during blocking, or callback was cancelled
          */
         @Override
-        public void close() throws IOException
+        public void close()
         {
             _lock.lock();
             try

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +43,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
-import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.IO;
@@ -72,9 +71,9 @@ public class BadRequestLogHandlerTest
         public List<String> captured = new ArrayList<>();
 
         @Override
-        public void log(Request request, Response response)
+        public void log(Request request, int status, long written)
         {
-            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getUri().toString(),request.getProtocol(),response.getStatus()));
+            captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getHttpURI(),request.getProtocol(),status));
         }
     }
     

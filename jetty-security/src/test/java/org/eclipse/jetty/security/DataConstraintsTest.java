@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,9 @@ package org.eclipse.jetty.security;
 
 import java.io.IOException;
 import java.util.Arrays;
+
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -375,10 +377,10 @@ public class DataConstraintsTest
         response = _connectorS.getResponses("GET /ctx/restricted/info HTTP/1.0\r\n\r\n");
         Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
-        response = _connector.getResponses("GET /ctx/restricted/info HTTP/1.0\r\n Authorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connector.getResponses("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
-        response = _connectorS.getResponses("GET /ctx/restricted/info HTTP/1.0\r\n Authorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
+        response = _connectorS.getResponses("GET /ctx/restricted/info HTTP/1.0\r\nAuthorization: Basic YWRtaW46cGFzc3dvcmQ=\r\n\r\n");
         Assert.assertThat(response, Matchers.containsString("HTTP/1.1 403 Forbidden"));
 
     }
@@ -436,7 +438,7 @@ public class DataConstraintsTest
         }
 
         @Override
-        public UserIdentity login(String username, Object credentials)
+        public UserIdentity login(String username, Object credentials, ServletRequest request)
         {
             if("admin".equals(username) && "password".equals(credentials))
                     return new DefaultUserIdentity(null,null,new String[] { "admin" } );

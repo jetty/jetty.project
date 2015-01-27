@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,13 +49,13 @@ public interface EventDriver extends IncomingFrames
 
     public void onFrame(Frame frame);
 
-    public void onInputStream(InputStream stream);
+    public void onInputStream(InputStream stream) throws IOException;
 
     public void onPing(ByteBuffer buffer);
     
     public void onPong(ByteBuffer buffer);
 
-    public void onReader(Reader reader);
+    public void onReader(Reader reader) throws IOException;
 
     public void onTextFrame(ByteBuffer buffer, boolean fin) throws IOException;
 

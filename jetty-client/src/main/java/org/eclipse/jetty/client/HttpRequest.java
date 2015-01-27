@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.UnsupportedEncodingException;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.net.URISyntaxException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -57,6 +58,8 @@ import org.eclipse.jetty.util.Fields;
 
 public class HttpRequest implements Request
 {
+    private static final URI NULL_URI = URI.create("null:0");
+
     private final HttpFields headers = new HttpFields();
     private final Fields params = new Fields(true);
     private final List<Response.ResponseListener> responseListeners = new ArrayList<>();
@@ -158,22 +161,30 @@ public class HttpRequest implements Request
     @Override
     public Request path(String path)
     {
-        URI uri = URI.create(path);
-        String rawPath = uri.getRawPath();
-        if (uri.isOpaque())
-            rawPath = path;
-        if (rawPath == null)
-            rawPath = "";
-        this.path = rawPath;
-        String query = uri.getRawQuery();
-        if (query != null)
+        URI uri = newURI(path);
+        if (uri == null)
         {
-            this.query = query;
-            params.clear();
-            extractParams(query);
+            this.path = path;
+            this.query = null;
         }
-        if (uri.isAbsolute())
-            this.path = buildURI(false).toString();
+        else
+        {
+            String rawPath = uri.getRawPath();
+            if (uri.isOpaque())
+                rawPath = path;
+            if (rawPath == null)
+                rawPath = "";
+            this.path = rawPath;
+            String query = uri.getRawQuery();
+            if (query != null)
+            {
+                this.query = query;
+                params.clear();
+                extractParams(query);
+            }
+            if (uri.isAbsolute())
+                this.path = buildURI(false).toString();
+        }
         this.uri = null;
         return this;
     }
@@ -187,9 +198,9 @@ public class HttpRequest implements Request
     @Override
     public URI getURI()
     {
-        if (uri != null)
-            return uri;
-        return uri = buildURI(true);
+        if (uri == null)
+            uri = buildURI(true);
+        return uri == NULL_URI ? null : uri;
     }
 
     @Override
@@ -492,7 +503,7 @@ public class HttpRequest implements Request
                     listener.onContent(response, content);
                     callback.succeeded();
                 }
-                catch (Exception x)
+                catch (Throwable x)
                 {
                     callback.failed(x);
                 }
@@ -714,7 +725,7 @@ public class HttpRequest implements Request
         if (value == null)
             return "";
 
-        String encoding = "UTF-8";
+        String encoding = "utf-8";
         try
         {
             return URLEncoder.encode(value, encoding);
@@ -745,7 +756,7 @@ public class HttpRequest implements Request
 
     private String urlDecode(String value)
     {
-        String charset = "UTF-8";
+        String charset = "utf-8";
         try
         {
             return URLDecoder.decode(value, charset);
@@ -762,10 +773,26 @@ public class HttpRequest implements Request
         String query = getQuery();
         if (query != null && withQuery)
             path += "?" + query;
-        URI result = URI.create(path);
+        URI result = newURI(path);
+        if (result == null)
+            return NULL_URI;
         if (!result.isAbsolute() && !result.isOpaque())
             result = URI.create(new Origin(getScheme(), getHost(), getPort()).asString() + path);
         return result;
+    }
+
+    private URI newURI(String uri)
+    {
+        try
+        {
+            return new URI(uri);
+        }
+        catch (URISyntaxException x)
+        {
+            // The "path" of a HTTP request may not be a URI,
+            // for example for CONNECT 127.0.0.1:8080 or OPTIONS *.
+            return null;
+        }
     }
 
     @Override

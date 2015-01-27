@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,6 +46,7 @@ import javax.servlet.UnavailableException;
 
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.RunAsToken;
+import org.eclipse.jetty.server.MultiPartCleanerListener;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.server.handler.ContextHandler;
@@ -695,7 +696,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             //servlet calling Request.getPart() or Request.getParts()
 
             ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
-            ch.addEventListener(new Request.MultiPartCleanerListener());
+            ch.addEventListener(MultiPartCleanerListener.INSTANCE);
         }
     }
 

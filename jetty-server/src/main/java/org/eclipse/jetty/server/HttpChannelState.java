@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -84,7 +84,7 @@ public class HttpChannelState
     }
 
     private final boolean DEBUG=LOG.isDebugEnabled();
-    private final HttpChannel<?> _channel;
+    private final HttpChannel _channel;
 
     private List<AsyncListener> _asyncListeners;
     private State _state;
@@ -95,7 +95,7 @@ public class HttpChannelState
     private long _timeoutMs=DEFAULT_TIMEOUT;
     private AsyncContextEvent _event;
 
-    protected HttpChannelState(HttpChannel<?> channel)
+    protected HttpChannelState(HttpChannel channel)
     {
         _channel=channel;
         _state=State.IDLE;
@@ -228,7 +228,7 @@ public class HttpChannelState
                     return Action.WAIT;
 
                 default:
-                    throw new IllegalStateException(this.getStatusString());
+                    return Action.WAIT;
             }
         }
     }
@@ -563,6 +563,14 @@ public class HttpChannelState
             event.cancelTimeoutTask();
     }
 
+    public boolean isIdle()
+    {
+        synchronized (this)
+        {
+            return _state==State.IDLE;
+        }
+    }
+    
     public boolean isExpired()
     {
         synchronized (this)
@@ -613,6 +621,7 @@ public class HttpChannelState
         }
     }
 
+    
     public boolean isAsync()
     {
         synchronized (this)
@@ -626,7 +635,7 @@ public class HttpChannelState
         return _channel.getRequest();
     }
 
-    public HttpChannel<?> getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }
@@ -690,6 +699,7 @@ public class HttpChannelState
         }
 
         if (handle)
+            // TODO, do we need to execute or just run?
             _channel.execute(_channel);
     }
     

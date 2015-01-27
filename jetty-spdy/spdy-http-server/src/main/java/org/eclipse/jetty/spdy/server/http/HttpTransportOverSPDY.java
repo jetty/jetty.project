@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.Connector;
@@ -89,16 +90,8 @@ public class HttpTransportOverSPDY implements HttpTransport
         return requestHeaders;
     }
 
-
     @Override
-    public void send(ByteBuffer responseBodyContent, boolean lastContent, Callback callback)
-    {
-        // TODO can this be more efficient?
-        send(null, responseBodyContent, lastContent, callback);
-    }
-
-    @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, final Callback callback)
+    public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, final Callback callback)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Sending {} {} {} {} last={}", this, stream, info, BufferUtil.toDetailString(content), lastContent);
@@ -165,10 +158,28 @@ public class HttpTransportOverSPDY implements HttpTransport
         }
         else if (!lastContent && !hasContent && info == null)
             throw new IllegalStateException("not lastContent, no content and no responseInfo!");
-
     }
 
-    private void sendReply(HttpGenerator.ResponseInfo info, Callback callback, boolean close)
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public boolean isPushSupported()
+    {
+        return false;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
+     */
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {   
+        LOG.warn("NOT YET IMPLEMENTED push in {}",this);
+    }
+    
+    
+    private void sendReply(MetaData.Response info, Callback callback, boolean close)
     {
         Fields headers = new Fields();
 
@@ -187,7 +198,7 @@ public class HttpTransportOverSPDY implements HttpTransport
             LOG.debug("HTTP < {} {}", httpVersion, httpStatus);
 
         // TODO merge the two Field classes into one
-        HttpFields fields = info.getHttpFields();
+        HttpFields fields = info.getFields();
         if (fields != null)
         {
             for (int i = 0; i < fields.size(); ++i)
@@ -213,7 +224,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void completed()
+    public void onCompleted()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Completed {}", this);
@@ -253,7 +264,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         }
 
         @Override
-        public void completed()
+        public void onCompleted()
         {
             Stream stream = getStream();
             if (LOG.isDebugEnabled())
@@ -316,8 +327,7 @@ public class HttpTransportOverSPDY implements HttpTransport
         {
             HttpTransport transport = new PushHttpTransportOverSPDY(connector, configuration, endPoint, pushStrategy,
                     pushStream, pushRequestHeaders, this, version);
-            HttpInputOverSPDY input = new HttpInputOverSPDY();
-            return new HttpChannelOverSPDY(connector, configuration, endPoint, transport, input, pushStream);
+            return new HttpChannelOverSPDY(connector, configuration, endPoint, transport, pushStream);
         }
 
         private void pushResource(String pushResource)
@@ -416,7 +426,7 @@ public class HttpTransportOverSPDY implements HttpTransport
     }
 
     @Override
-    public void abort()
+    public void abort(Throwable failure)
     {
         // TODO close the stream in a way to indicate an incomplete response?
     }

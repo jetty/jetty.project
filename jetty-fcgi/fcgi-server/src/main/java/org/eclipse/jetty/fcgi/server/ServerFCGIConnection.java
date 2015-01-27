@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,9 +29,9 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.server.ByteBufferQueuedHttpInput;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -82,11 +82,13 @@ public class ServerFCGIConnection extends AbstractConnection
                 }
                 else if (read == 0)
                 {
+                    bufferPool.release(buffer);
                     fillInterested();
                     break;
                 }
                 else
                 {
+                    bufferPool.release(buffer);
                     shutdown();
                     break;
                 }
@@ -96,11 +98,8 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            // TODO: fail and close ?
-        }
-        finally
-        {
             bufferPool.release(buffer);
+            // TODO: fail and close ?
         }
     }
 
@@ -122,8 +121,7 @@ public class ServerFCGIConnection extends AbstractConnection
         {
             // TODO: handle flags
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(connector, configuration, getEndPoint(),
-                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200),
-                    new ByteBufferQueuedHttpInput());
+                    new HttpTransportOverFCGI(connector.getByteBufferPool(), flusher, request, sendStatus200));
             HttpChannelOverFCGI existing = channels.putIfAbsent(request, channel);
             if (existing != null)
                 throw new IllegalStateException();
@@ -149,8 +147,8 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} headers on {}", request, channel);
             if (channel != null)
             {
-                if (channel.headerComplete())
-                    channel.dispatch();
+                channel.onRequest();
+                channel.dispatch();
             }
         }
 
@@ -162,8 +160,9 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} {} content {} on {}", request, stream, buffer, channel);
             if (channel != null)
             {
-                if (channel.content(buffer))
-                    channel.dispatch();
+                ByteBuffer copy = ByteBuffer.allocate(buffer.remaining());
+                copy.put(buffer).flip();
+                channel.onContent(new HttpInput.Content(copy));
             }
             return false;
         }
@@ -176,8 +175,8 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} end on {}", request, channel);
             if (channel != null)
             {
-                if (channel.messageComplete())
-                    channel.dispatch();
+                channel.onRequestComplete();
+                channel.dispatch();
             }
         }
 
@@ -189,7 +188,7 @@ public class ServerFCGIConnection extends AbstractConnection
                 LOG.debug("Request {} failure on {}: {}", request, channel, failure);
             if (channel != null)
             {
-                channel.badMessage(400, failure.toString());
+                channel.onBadMessage(400, failure.toString());
             }
         }
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -26,6 +26,7 @@ import org.eclipse.jetty.fcgi.generator.ServerGenerator;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
@@ -48,10 +49,52 @@ public class HttpTransportOverFCGI implements HttpTransport
     }
 
     @Override
-    public void send(HttpGenerator.ResponseInfo info, ByteBuffer content, boolean lastContent, Callback callback)
+    public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
-        boolean head = this.head = info.isHead();
-        boolean shutdown = this.shutdown = info.getHttpFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
+        if (info!=null)
+            commit(info,head,content,lastContent,callback);
+        else
+        {
+            if (head)
+            {
+                if (lastContent)
+                {
+                    Generator.Result result = generateResponseContent(BufferUtil.EMPTY_BUFFER, true, callback);
+                    flusher.flush(result);
+                }
+                else
+                {
+                    // Skip content generation
+                    callback.succeeded();
+                }
+            }
+            else
+            {
+                Generator.Result result = generateResponseContent(content, lastContent, callback);
+                flusher.flush(result);
+            }
+
+            if (lastContent && shutdown)
+                flusher.shutdown();
+        }
+    }
+
+    @Override
+    public boolean isPushSupported()
+    {
+        return false;
+    }
+    
+    @Override
+    public void push(org.eclipse.jetty.http.MetaData.Request request)
+    {   
+        // LOG.debug("ignore push in {}",this);
+    }
+    
+    private void commit(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
+    {
+        this.head = head;
+        boolean shutdown = this.shutdown = info.getFields().contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
 
         if (head)
         {
@@ -78,35 +121,9 @@ public class HttpTransportOverFCGI implements HttpTransport
             flusher.shutdown();
     }
 
-    @Override
-    public void send(ByteBuffer content, boolean lastContent, Callback callback)
+    protected Generator.Result generateResponseHeaders(MetaData.Response info, Callback callback)
     {
-        if (head)
-        {
-            if (lastContent)
-            {
-                Generator.Result result = generateResponseContent(BufferUtil.EMPTY_BUFFER, true, callback);
-                flusher.flush(result);
-            }
-            else
-            {
-                // Skip content generation
-                callback.succeeded();
-            }
-        }
-        else
-        {
-            Generator.Result result = generateResponseContent(content, lastContent, callback);
-            flusher.flush(result);
-        }
-
-        if (lastContent && shutdown)
-            flusher.shutdown();
-    }
-
-    protected Generator.Result generateResponseHeaders(HttpGenerator.ResponseInfo info, Callback callback)
-    {
-        return generator.generateResponseHeaders(request, info.getStatus(), info.getReason(), info.getHttpFields(), callback);
+        return generator.generateResponseHeaders(request, info.getStatus(), info.getReason(), info.getFields(), callback);
     }
 
     protected Generator.Result generateResponseContent(ByteBuffer buffer, boolean lastContent, Callback callback)
@@ -115,13 +132,13 @@ public class HttpTransportOverFCGI implements HttpTransport
     }
 
     @Override
-    public void abort()
+    public void abort(Throwable failure)
     {
         aborted = true;
     }
 
     @Override
-    public void completed()
+    public void onCompleted()
     {
     }
 }

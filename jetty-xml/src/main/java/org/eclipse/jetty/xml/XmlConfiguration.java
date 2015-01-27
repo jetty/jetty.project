@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -150,7 +150,7 @@ public class XmlConfiguration
      */
     public XmlConfiguration(String configuration) throws SAXException, IOException
     {
-        configuration = "<?xml version=\"1.0\" encoding=\"UTF-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
+        configuration = "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n<!DOCTYPE Configure PUBLIC \"-//Jetty//Configure//EN\" \"http://eclipse.org/jetty/configure.dtd\">"
                 + configuration;
         InputSource source = new InputSource(new StringReader(configuration));
         synchronized (__parser)
@@ -346,7 +346,7 @@ public class XmlConfiguration
                 }
                 catch (NoSuchMethodException x)
                 {
-                    throw new IllegalStateException("No suitable constructor on " + oClass, x);
+                    throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s",oClass,arguments,namedArgMap,_url));
                 }
             }
             _configuration.initializeDefaults(obj);
@@ -1199,14 +1199,9 @@ public class XmlConfiguration
                     // If no start.config properties, use clean slate
                     if (properties == null)
                     {
-                        properties = new Properties();
                         // Add System Properties
-                        Enumeration<?> ensysprop = System.getProperties().propertyNames();
-                        while (ensysprop.hasMoreElements())
-                        {
-                            String name = (String)ensysprop.nextElement();
-                            properties.put(name,System.getProperty(name));
-                        }
+                        properties = new Properties();
+                        properties.putAll(System.getProperties());
                     }
 
                     // For all arguments, load properties

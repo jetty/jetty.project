@@ -35,6 +35,12 @@ detected.
     <Arg type="Boolean">true</Arg>
   </Call>
   
+  <Set name="gzipHandler">
+    <New class="org.eclipse.jetty.server.handler.gzip.GzipHandler">
+      <Set name="minGzipSize">2048</Set>      
+    </New>
+  </Set>
+  
   <!-- Enable symlinks 
   <Call name="addAliasCheck">
     <Arg><New class="org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker"/></Arg>

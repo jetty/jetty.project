@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,6 +46,7 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
 import org.eclipse.jetty.quickstart.QuickStartDescriptorGenerator;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -257,9 +258,11 @@ public class JettyRunForkedMojo extends JettyRunMojo
             printSystemProperties();
 
             //do NOT apply the jettyXml configuration - as the jvmArgs may be needed for it to work 
+            if (server == null)
+                server = new Server();
 
             //ensure handler structure enabled
-            server.configureHandlers();
+            ServerSupport.configureHandlers(server, null);
                    
             //ensure config of the webapp based on settings in plugin
             configureWebApplication();
@@ -280,7 +283,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
             webApp.setQuickStartWebDescriptor(Resource.newResource(forkWebXml));
             
             //add webapp to our fake server instance
-            server.addWebApplication(webApp);
+            ServerSupport.addWebApplication(server, webApp);
                        
             //if our server has a thread pool associated we can do annotation scanning multithreaded,
             //otherwise scanning will be single threaded

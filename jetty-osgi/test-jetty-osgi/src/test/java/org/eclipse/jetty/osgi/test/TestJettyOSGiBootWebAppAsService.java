@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -72,7 +72,7 @@ public class TestJettyOSGiBootWebAppAsService
     {
         ArrayList<Option> options = new ArrayList<Option>();
         options.add(CoreOptions.junitBundles());
-        options.addAll(configureJettyHomeAndPort("jetty-selector.xml"));
+        options.addAll(configureJettyHomeAndPort("jetty-http.xml"));
         options.add(CoreOptions.bootDelegationPackages("org.xml.sax", "org.xml.*", "org.w3c.*", "javax.xml.*"));
         options.add(CoreOptions.systemPackages("com.sun.org.apache.xalan.internal.res","com.sun.org.apache.xml.internal.utils",
                                                "com.sun.org.apache.xml.internal.utils", "com.sun.org.apache.xpath.internal",
@@ -102,7 +102,8 @@ public class TestJettyOSGiBootWebAppAsService
                 + "/jetty-deployer.xml;"
                 + etc
                 + "/jetty-testrealm.xml"));
-        options.add(systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT)));
+        options.add(systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
+        options.add(systemProperty("ssl.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_SSL_PORT)));
         options.add(systemProperty("jetty.home").value(etcFolder.getParentFile().getAbsolutePath()));
         return options;
     }
@@ -137,7 +138,7 @@ public class TestJettyOSGiBootWebAppAsService
         {
             client.start();
 
-            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_JETTY_HTTP_PORT + "/acme/index.html");
+            ContentResponse response = client.GET("http://127.0.0.1:" + TestJettyOSGiBootCore.DEFAULT_HTTP_PORT + "/acme/index.html");
             assertEquals(HttpStatus.OK_200, response.getStatus());
 
             String content = new String(response.getContent());

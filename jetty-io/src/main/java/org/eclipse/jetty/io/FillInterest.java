@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,109 +27,100 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-/* ------------------------------------------------------------ */
-/** 
+/**
  * A Utility class to help implement {@link EndPoint#fillInterested(Callback)}
  * by keeping state and calling the context and callback objects.
- * 
  */
 public abstract class FillInterest
 {
     private final static Logger LOG = Log.getLogger(FillInterest.class);
     private final AtomicReference<Callback> _interested = new AtomicReference<>(null);
 
-    /* ------------------------------------------------------------ */
     protected FillInterest()
     {
     }
 
-    /* ------------------------------------------------------------ */
-    /** Call to register interest in a callback when a read is possible.
-     * The callback will be called either immediately if {@link #needsFill()} 
+    /**
+     * Call to register interest in a callback when a read is possible.
+     * The callback will be called either immediately if {@link #needsFill()}
      * returns true or eventually once {@link #fillable()} is called.
-     * @param callback
+     *
+     * @param callback the callback to register
      * @throws ReadPendingException
      */
-    public <C> void register(Callback callback) throws ReadPendingException
+    public void register(Callback callback) throws ReadPendingException
     {
-        if (callback==null)
+        if (callback == null)
             throw new IllegalArgumentException();
-        
-        if (!_interested.compareAndSet(null,callback))
+
+        if (!_interested.compareAndSet(null, callback))
         {
-            LOG.warn("Read pending for "+_interested.get()+" prevented "+callback);
+            LOG.warn("Read pending for {} prevented {}", _interested, callback);
             throw new ReadPendingException();
         }
         try
         {
-            if (needsFill())
-                fillable();
+            needsFillInterest();
         }
-        catch(IOException e)
+        catch (Throwable e)
         {
             onFail(e);
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /** Call to signal that a read is now possible.
+    /**
+     * Call to signal that a read is now possible.
      */
     public void fillable()
     {
-        Callback callback=_interested.get();
-        if (callback!=null && _interested.compareAndSet(callback,null))
+        Callback callback = _interested.get();
+        if (callback != null && _interested.compareAndSet(callback, null))
             callback.succeeded();
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * @return True if a read callback has been registered
      */
     public boolean isInterested()
     {
-        return _interested.get()!=null;
+        return _interested.get() != null;
     }
     
-    /* ------------------------------------------------------------ */
-    /** Call to signal a failure to a registered interest
+    /**
+     * Call to signal a failure to a registered interest
+     *
      * @return true if the cause was passed to a {@link Callback} instance
      */
     public boolean onFail(Throwable cause)
     {
-        Callback callback=_interested.get();
-        if (callback!=null && _interested.compareAndSet(callback,null))
+        Callback callback = _interested.get();
+        if (callback != null && _interested.compareAndSet(callback, null))
         {
             callback.failed(cause);
             return true;
         }
         return false;
     }
-    
-    /* ------------------------------------------------------------ */
+
     public void onClose()
     {
-        Callback callback=_interested.get();
-        if (callback!=null && _interested.compareAndSet(callback,null))
+        Callback callback = _interested.get();
+        if (callback != null && _interested.compareAndSet(callback, null))
             callback.failed(new ClosedChannelException());
     }
-    
-    /* ------------------------------------------------------------ */
+
     @Override
     public String toString()
     {
-        return String.format("FillInterest@%x{%b,%s}",hashCode(),_interested.get(),_interested.get());
+        return String.format("FillInterest@%x{%b,%s}", hashCode(), _interested.get(), _interested.get());
     }
     
-    /* ------------------------------------------------------------ */
-    /** Register the read interest 
+    /**
+     * Register the read interest
      * Abstract method to be implemented by the Specific ReadInterest to
-     * enquire if a read is immediately possible and if not to schedule a future
-     * call to {@link #fillable()} or {@link #onFail(Throwable)}
-     * @return true if a read is possible
+     * schedule a future call to {@link #fillable()} or {@link #onFail(Throwable)}
+     *
      * @throws IOException
      */
-    abstract protected boolean needsFill() throws IOException;
-    
-    
+    abstract protected void needsFillInterest() throws IOException;
 }

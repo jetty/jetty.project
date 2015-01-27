@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -355,6 +355,19 @@ public class TypeUtil
         if (b<0 || b>15)
             throw new NumberFormatException("!hex "+c);
         return b;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param c An ASCII encoded character 0-9 a-f A-F
+     * @return The byte value of the character 0-16.
+     */
+    public static int convertHexDigit( char c )
+    {
+        int d= ((c & 0x1f) + ((c >> 6) * 0x19) - 0x10);
+        if (d<0 || d>15)
+            throw new NumberFormatException("!hex "+c);
+        return d;
     }
     
     /* ------------------------------------------------------------ */

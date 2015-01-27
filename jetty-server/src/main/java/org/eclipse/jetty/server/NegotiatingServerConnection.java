@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,6 +34,11 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(NegotiatingServerConnection.class);
 
+    public interface CipherDiscriminator
+    {
+        boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher);
+    }
+    
     private final Connector connector;
     private final SSLEngine engine;
     private final List<String> protocols;
@@ -59,6 +64,11 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
         return defaultProtocol;
     }
 
+    protected Connector getConnector()
+    {
+        return connector;
+    }
+    
     protected SSLEngine getSSLEngine()
     {
         return engine;
@@ -109,9 +119,8 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
                 ConnectionFactory connectionFactory = connector.getConnectionFactory(protocol);
                 if (connectionFactory == null)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} application selected protocol '{}', but no correspondent {} has been configured",
-                            this, protocol, ConnectionFactory.class.getName());
+                    LOG.info("{} application selected protocol '{}', but no correspondent {} has been configured",
+                             this, protocol, ConnectionFactory.class.getName());
                     close();
                 }
                 else
@@ -131,7 +140,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
         {
             // Something went bad, we need to close.
             if (LOG.isDebugEnabled())
-                LOG.debug("{} closing on client close", this);
+                LOG.debug("{} detected close on client side", this);
             close();
         }
         else

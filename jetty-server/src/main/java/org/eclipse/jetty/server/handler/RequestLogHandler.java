@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,59 +28,28 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.AsyncContextState;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-
 /**
  * RequestLogHandler.
  * This handler can be used to wrap an individual context for context logging.
+ * To set a {@link RequestLog} instance for the entire {@link Server}, use 
+ * {@link Server#setRequestLog(RequestLog)} instead of this handler.
  *
- *
+ * @see Server#setRequestLog(RequestLog)
  * @org.apache.xbean.XBean
  */
 public class RequestLogHandler extends HandlerWrapper
 {
-    private static final Logger LOG = Log.getLogger(RequestLogHandler.class);
     private RequestLog _requestLog;
-    private final AsyncListener _listener = new AsyncListener()
-    {
-        
-        @Override
-        public void onTimeout(AsyncEvent event) throws IOException
-        {
-            
-        }
-        
-        @Override
-        public void onStartAsync(AsyncEvent event) throws IOException
-        {
-            event.getAsyncContext().addListener(this);
-        }
-        
-        @Override
-        public void onError(AsyncEvent event) throws IOException
-        {
-            HttpServletResponse response = (HttpServletResponse)event.getAsyncContext().getResponse();
-            if (!response.isCommitted())
-                response.setStatus(500);
-            
-        }
-        
-        @Override
-        public void onComplete(AsyncEvent event) throws IOException
-        {
-            AsyncContextState context = (AsyncContextState)event.getAsyncContext();
-            Request request=context.getHttpChannelState().getBaseRequest();
-            Response response=request.getResponse();
-            _requestLog.log(request,response);
-        }
-    };
 
     /* ------------------------------------------------------------ */
     /*
@@ -90,29 +59,9 @@ public class RequestLogHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
-        try
-        {
-            super.handle(target, baseRequest, request, response);
-        }
-        catch(Error|IOException|ServletException|RuntimeException e)
-        {
-            if (!response.isCommitted() && !baseRequest.getHttpChannelState().isAsync())
-                response.setStatus(500);
-            throw e;
-        }
-        finally
-        {
-            if (_requestLog != null && baseRequest.getDispatcherType().equals(DispatcherType.REQUEST))
-            {
-                if (baseRequest.getHttpChannelState().isAsync())
-                {
-                    if (baseRequest.getHttpChannelState().isInitial())
-                        baseRequest.getAsyncContext().addListener(_listener);
-                }
-                else
-                    _requestLog.log(baseRequest, (Response)response);
-            }
-        }
+        baseRequest.getHttpChannel().setRequestLog(_requestLog);
+        if (_handler!=null)
+            _handler.handle(target,baseRequest, request, response);
     }
 
     /* ------------------------------------------------------------ */
@@ -128,35 +77,5 @@ public class RequestLogHandler extends HandlerWrapper
         return _requestLog;
     }
     
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStart() throws Exception
-    {
-        if (_requestLog==null)
-        {
-            LOG.warn("!RequestLog");
-            _requestLog=new NullRequestLog();
-        }
-        super.doStart();
-    }
-    
-    /* ------------------------------------------------------------ */
-    @Override
-    protected void doStop() throws Exception
-    {
-        super.doStop();
-        if (_requestLog instanceof NullRequestLog)
-            _requestLog=null;
-    }
 
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    private static class NullRequestLog extends AbstractLifeCycle implements RequestLog
-    {
-        @Override
-        public void log(Request request, Response response)
-        {            
-        }
-    }
 }

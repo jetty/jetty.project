@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,7 +46,6 @@ import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 public class ClientUpgradeRequest extends UpgradeRequest
 {
     private static final Logger LOG = Log.getLogger(ClientUpgradeRequest.class);
-    private static final int MAX_KEYS = -1; // maximum number of parameter keys to decode
     private static final Set<String> FORBIDDEN_HEADERS;
 
     static
@@ -239,7 +238,7 @@ public class ClientUpgradeRequest extends UpgradeRequest
         if (StringUtil.isNotBlank(query))
         {
             MultiMap<String> params = new MultiMap<String>();
-            UrlEncoded.decodeTo(uri.getQuery(),params,StandardCharsets.UTF_8,MAX_KEYS);
+            UrlEncoded.decodeTo(uri.getQuery(),params,StandardCharsets.UTF_8);
 
             for (String key : params.keySet())
             {

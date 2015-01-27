@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,18 +18,18 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Locale;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.fcgi.FCGI;
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
-import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannel;
@@ -39,20 +39,21 @@ import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
+public class HttpChannelOverFCGI extends HttpChannel
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverFCGI.class);
 
-    private final List<HttpField> fields = new ArrayList<>();
+    private final HttpFields fields = new HttpFields();
     private final Dispatcher dispatcher;
     private String method;
     private String path;
     private String query;
     private String version;
+    private HostPortHttpField hostPort;
 
-    public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput<ByteBuffer> input)
+    public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
-        super(connector, configuration, endPoint, transport, input);
+        super(connector, configuration, endPoint, transport);
         this.dispatcher = new Dispatcher(connector.getExecutor(), this);
     }
 
@@ -67,26 +68,27 @@ public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
         else if (FCGI.Headers.SERVER_PROTOCOL.equalsIgnoreCase(field.getName()))
             version = field.getValue();
         else
-            fields.add(field);
+            processField(field);
     }
 
-    @Override
-    public boolean headerComplete()
+    private void processField(HttpField field)
+    {
+        HttpField httpField = convertHeader(field);
+        if (httpField != null)
+        {
+            fields.add(httpField);
+            if (HttpHeader.HOST.is(httpField.getName()))
+                hostPort = (HostPortHttpField)httpField;
+        }
+    }
+
+    public void onRequest()
     {
         String uri = path;
         if (query != null && query.length() > 0)
             uri += "?" + query;
-        startRequest(HttpMethod.fromString(method), method, ByteBuffer.wrap(uri.getBytes(StandardCharsets.UTF_8)),
-                HttpVersion.fromString(version));
-
-        for (HttpField fcgiField : fields)
-        {
-            HttpField httpField = convertHeader(fcgiField);
-            if (httpField != null)
-                parsedHeader(httpField);
-        }
-
-        return super.headerComplete();
+        // TODO https?
+        onRequest(new MetaData.Request(method, HttpScheme.HTTP.asString(), hostPort, uri, HttpVersion.fromString(version), fields,Long.MIN_VALUE));
     }
 
     private HttpField convertHeader(HttpField field)
@@ -105,7 +107,11 @@ public class HttpChannelOverFCGI extends HttpChannel<ByteBuffer>
                 httpName.append(Character.toUpperCase(part.charAt(0)));
                 httpName.append(part.substring(1).toLowerCase(Locale.ENGLISH));
             }
-            return new HttpField(httpName.toString(), field.getValue());
+            String headerName = httpName.toString();
+            if (HttpHeader.HOST.is(headerName))
+                return new HostPortHttpField(field.getValue());
+            else
+                return new HttpField(httpName.toString(), field.getValue());
         }
         return null;
     }

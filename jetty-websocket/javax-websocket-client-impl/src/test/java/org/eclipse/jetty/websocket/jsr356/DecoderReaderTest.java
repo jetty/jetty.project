@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -135,13 +135,14 @@ public class DecoderReaderTest
         }
 
         @OnMessage
-        public void onMessage(Quotes msg)
+        public synchronized void onMessage(Quotes msg)
         {
+            Integer h=hashCode();
             messageQueue.add(msg);
-            System.out.printf("Quotes from: %s%n",msg.author);
+            System.out.printf("%x: Quotes from: %s%n",h,msg.author);
             for (String quote : msg.quotes)
             {
-                System.out.printf(" - %s%n",quote);
+                System.out.printf("%x: - %s%n",h,quote);
             }
         }
 
@@ -271,8 +272,8 @@ public class DecoderReaderTest
     }
 
     // TODO analyse and fix 
-    @Ignore
     @Test
+    @Ignore ("Quotes appear to be able to arrive in any order?")
     public void testTwoQuotes() throws Exception
     {
         QuotesSocket quoter = new QuotesSocket();

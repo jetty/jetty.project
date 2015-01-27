@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -103,7 +103,7 @@ public class MaxInactiveMigrationTest
         ContentResponse response = request.send();
         assertEquals(HttpServletResponse.SC_OK, response.getStatus());
 
-        sessionCookie = response.getHeaders().getStringField("Set-Cookie");
+        sessionCookie = response.getHeaders().get("Set-Cookie");
         assertTrue( sessionCookie != null );
         // Mangle the cookie, replacing Path with $Path, etc.
         sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,8 +28,10 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
 import org.junit.Before;
+import org.junit.Rule;
 import org.junit.Test;
 
 public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
@@ -100,15 +102,17 @@ public class SelectChannelTimeoutTest extends ConnectorTimeoutTest
     private String getResponse(String request) throws UnsupportedEncodingException, IOException, InterruptedException
     {
         ServerConnector connector = (ServerConnector)_connector;
-        Socket socket = new Socket((String)null,connector.getLocalPort());
-        socket.setSoTimeout(10 * MAX_IDLE_TIME);
-        socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
-        InputStream inputStream = socket.getInputStream();
-        long start = System.currentTimeMillis();
-        String response = IO.toString(inputStream);
-        long timeElapsed = System.currentTimeMillis() - start;
-        assertTrue("Time elapsed should be at least MAX_IDLE_TIME",timeElapsed > MAX_IDLE_TIME);
-        return response;
-    }
 
+        try (Socket socket = new Socket((String)null,connector.getLocalPort()))
+        {
+            socket.setSoTimeout(10 * MAX_IDLE_TIME);
+            socket.getOutputStream().write(request.getBytes(StandardCharsets.UTF_8));
+            InputStream inputStream = socket.getInputStream();
+            long start = System.currentTimeMillis();
+            String response = IO.toString(inputStream);
+            long timeElapsed = System.currentTimeMillis() - start;
+            assertTrue("Time elapsed should be at least MAX_IDLE_TIME",timeElapsed > MAX_IDLE_TIME);
+            return response;
+        }
+    }
 }

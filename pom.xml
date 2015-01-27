@@ -6,7 +6,7 @@
     <version>23</version>
   </parent>
   <artifactId>jetty-project</artifactId>
-  <version>9.2.6.v20141205</version>
+  <version>9.3.0-SNAPSHOT</version>
   <name>Jetty :: Project</name>
   <url>http://www.eclipse.org/jetty</url>
   <packaging>pom</packaging>
@@ -26,13 +26,14 @@
     <connection>scm:git:http://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</connection>
     <developerConnection>scm:git:ssh://git.eclipse.org/gitroot/jetty/org.eclipse.jetty.project.git</developerConnection>
     <url>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree</url>
-    <tag>jetty-9.2.6.v20141205</tag>
+    <tag>HEAD</tag>
   </scm>
   <build>
     <defaultGoal>install</defaultGoal>
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.2</version>
         <configuration>
           <source>1.7</source>
           <target>1.7</target>
@@ -80,7 +81,7 @@
                 <manifestEntries>
                   <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
                   <Bundle-Name>${project.name}</Bundle-Name>
-                  <Bundle-SymbolicName>${bundle-symbolic-name}.source;singleton:=true</Bundle-SymbolicName>
+                  <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
                   <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
                   <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
                   <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
@@ -211,7 +212,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-             <copyright-range>${project.inceptionYear}-2014</copyright-range>
+             <copyright-range>${project.inceptionYear}-2015</copyright-range>
           </properties>
           <mapping>
             <java>DOUBLESLASH_STYLE</java>
@@ -236,6 +237,27 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+        <groupId>org.apache.felix</groupId>
+        <artifactId>maven-bundle-plugin</artifactId>
+        <executions>
+          <execution>
+            <goals>
+              <goal>manifest</goal>
+            </goals>
+           </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-jar-plugin</artifactId>
+        <configuration>
+         <archive>
+            <manifestFile>${project.build.outputDirectory}/META-INF/MANIFEST.MF</manifestFile>
+         </archive>
+        </configuration>
+     </plugin>
+
     </plugins>
     <pluginManagement>
       <plugins>
@@ -243,6 +265,14 @@
           <groupId>org.eclipse.jetty.toolchain</groupId>
           <artifactId>jetty-version-maven-plugin</artifactId>
           <version>1.0.10</version>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.8.2</version>
+          <configuration>
+            <retryFailedDeploymentCount>10</retryFailedDeploymentCount>
+          </configuration>
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
@@ -284,8 +314,13 @@
           <artifactId>maven-bundle-plugin</artifactId>
           <extensions>true</extensions>
           <configuration>
+            <supportedProjectTypes>
+              <supportedProjectType>jar</supportedProjectType>
+              <supportedProjectType>maven-plugin</supportedProjectType>
+            </supportedProjectTypes>
             <instructions>
               <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
+	      <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
               <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
@@ -422,6 +457,7 @@
     <module>jetty-jmx</module>
     <module>jetty-io</module>
     <module>jetty-http</module>
+    <module>jetty-http2</module>
     <module>jetty-continuation</module>
     <module>jetty-server</module>
     <module>jetty-xml</module>
@@ -460,6 +496,7 @@
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
+    <module>jetty-npn</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>
@@ -697,6 +734,35 @@
    -->
   <profiles>
     <profile>
+      <id>config</id>
+      <activation>
+        <file>
+          <exists>src/main/config</exists>
+        </file>
+      </activation>
+      <build>
+        <plugins>
+          <plugin>
+            <groupId>org.apache.maven.plugins</groupId>
+            <artifactId>maven-assembly-plugin</artifactId>
+            <executions>
+              <execution>
+                <phase>package</phase>
+                <goals>
+                  <goal>single</goal>
+                </goals>
+                <configuration>
+                  <descriptorRefs>
+                    <descriptorRef>config</descriptorRef>
+                  </descriptorRefs>
+                </configuration>
+              </execution>
+            </executions>
+          </plugin>
+        </plugins>
+      </build>
+    </profile>
+    <profile>
       <id>eclipse-release</id>
       <modules>
         <module>aggregates/jetty-all</module>
@@ -804,6 +870,12 @@
           </plugin>
         </plugins>
       </build>
+    </profile>
+    <profile>
+      <id>compact3</id>
+      <modules>
+        <module>aggregates/jetty-all-compact3</module>
+      </modules>
     </profile>
     <profile>
       <id>api-change</id>

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,7 +31,7 @@ public enum HttpVersion
     HTTP_0_9("HTTP/0.9",9),
     HTTP_1_0("HTTP/1.0",10),
     HTTP_1_1("HTTP/1.1",11),
-    HTTP_2_0("HTTP/2.0",20);
+    HTTP_2("HTTP/2",20);
 
     /* ------------------------------------------------------------ */
     public final static Trie<HttpVersion> CACHE= new ArrayTrie<HttpVersion>();
@@ -74,7 +74,7 @@ public enum HttpVersion
                     switch(bytes[position+7])
                     {
                         case '0':
-                            return HTTP_2_0;
+                            return HTTP_2;
                     }
                     break;
             }

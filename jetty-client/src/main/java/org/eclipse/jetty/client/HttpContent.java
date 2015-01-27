@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -178,7 +178,7 @@ public class HttpContent implements Callback, Closeable
             if (iterator instanceof Closeable)
                 ((Closeable)iterator).close();
         }
-        catch (Exception x)
+        catch (Throwable x)
         {
             LOG.ignore(x);
         }

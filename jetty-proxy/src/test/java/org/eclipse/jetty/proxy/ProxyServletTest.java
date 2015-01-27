@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -130,7 +130,9 @@ public class ProxyServletTest
 
     private void prepareProxy(Map<String, String> initParams) throws Exception
     {
-        proxy = new Server();
+        QueuedThreadPool proxyPool = new QueuedThreadPool();
+        proxyPool.setName("proxy");
+        proxy = new Server(proxyPool);
 
         HttpConfiguration configuration = new HttpConfiguration();
         configuration.setSendDateHeader(false);
@@ -154,6 +156,9 @@ public class ProxyServletTest
     private HttpClient prepareClient() throws Exception
     {
         HttpClient result = new HttpClient();
+        QueuedThreadPool clientPool = new QueuedThreadPool();
+        clientPool.setName("client");
+        result.setExecutor(clientPool);
         result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         result.start();
         return result;
@@ -161,7 +166,9 @@ public class ProxyServletTest
 
     private void prepareServer(HttpServlet servlet) throws Exception
     {
-        server = new Server();
+        QueuedThreadPool serverPool = new QueuedThreadPool();
+        serverPool.setName("server");
+        server = new Server(serverPool);
         serverConnector = new ServerConnector(server);
         server.addConnector(serverConnector);
 
@@ -312,8 +319,19 @@ public class ProxyServletTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                if (req.getHeader("Via") != null)
-                    resp.addHeader(PROXIED_HEADER, "true");
+                try
+                {
+                    // Give some time to the proxy to
+                    // upload the content to the server.
+                    Thread.sleep(1000);
+
+                    if (req.getHeader("Via") != null)
+                        resp.addHeader(PROXIED_HEADER, "true");
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
             }
         });
 
@@ -640,6 +658,48 @@ public class ProxyServletTest
     {
         final String target = "/test";
         final String query = "a=1&b=2";
+        prepareServer(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                if (req.getHeader("Via") != null)
+                    resp.addHeader(PROXIED_HEADER, "true");
+
+                if (target.equals(req.getRequestURI()))
+                {
+                    if (query.equals(req.getQueryString()))
+                    {
+                        resp.setStatus(200);
+                        return;
+                    }
+                }
+                resp.setStatus(404);
+            }
+        });
+
+        String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
+        String prefix = "/proxy";
+        proxyServlet = new ProxyServlet.Transparent();
+        Map<String, String> params = new HashMap<>();
+        params.put("proxyTo", proxyTo);
+        params.put("prefix", prefix);
+        prepareProxy(params);
+
+        // Make the request to the proxy, it should transparently forward to the server
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort())
+                .path(prefix + target + "?" + query)
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+        Assert.assertEquals(200, response.getStatus());
+        Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
+    }
+    
+    @Test
+    public void testTransparentProxyWithQueryWithSpaces() throws Exception
+    {
+        final String target = "/test";
+        final String query = "a=1&b=2&c=1234%205678&d=hello+world";
         prepareServer(new HttpServlet()
         {
             @Override

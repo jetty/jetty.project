@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.FileResource;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 
 
@@ -318,8 +318,7 @@ public class ResourceHandler extends HandlerWrapper
         {
             path=URIUtil.canonicalPath(path);
             Resource r = base.addPath(path);
-            
-            if (r!=null && r.getAlias()!=null && (_context==null || !_context.checkAlias(path, r)))
+            if (r!=null && r.isAlias() && (_context==null || !_context.checkAlias(path, r)))
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("resource={} alias={}",r,r.getAlias());
@@ -544,7 +543,7 @@ public class ResourceHandler extends HandlerWrapper
                 if (_minMemoryMappedContentLength>0 && 
                     resource.length()>_minMemoryMappedContentLength &&
                     resource.length()<Integer.MAX_VALUE &&
-                    resource instanceof FileResource)
+                    resource instanceof PathResource)
                 {
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer,callback);
@@ -564,7 +563,7 @@ public class ResourceHandler extends HandlerWrapper
                 // Can we use a memory mapped file?
                 if (_minMemoryMappedContentLength>0 && 
                     resource.length()>_minMemoryMappedContentLength &&
-                    resource instanceof FileResource)
+                    resource instanceof PathResource)
                 {
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());
                     ((HttpOutput)out).sendContent(buffer);
@@ -588,7 +587,7 @@ public class ResourceHandler extends HandlerWrapper
         if (_directory)
         {
             String listing = resource.getListHTML(request.getRequestURI(),request.getPathInfo().lastIndexOf("/") > 0);
-            response.setContentType("text/html; charset=UTF-8");
+            response.setContentType("text/html;charset=utf-8");
             response.getWriter().println(listing);
         }
         else

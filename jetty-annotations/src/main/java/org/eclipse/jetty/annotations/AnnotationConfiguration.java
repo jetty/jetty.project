@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.annotations;
 import java.io.IOException;
 import java.net.MalformedURLException;
 import java.net.URI;
+import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Comparator;
@@ -726,7 +727,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
     public Resource getJarFor (ServletContainerInitializer service) 
     throws MalformedURLException, IOException
     {
-        String loadingJarName = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class").toString();
+        //try the thread context classloader to get the jar that loaded the class
+        URL jarURL = Thread.currentThread().getContextClassLoader().getResource(service.getClass().getName().replace('.','/')+".class");
+        
+        //if for some reason that failed (eg we're in osgi and the TCCL does not know about the service) try the classloader that
+        //loaded the class
+        if (jarURL == null)
+            jarURL = service.getClass().getClassLoader().getResource(service.getClass().getName().replace('.','/')+".class");
+  
+        String loadingJarName = jarURL.toString();
 
         int i = loadingJarName.indexOf(".jar");
         if (i < 0)
@@ -830,7 +839,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
     {
         ArrayList<ServletContainerInitializer> nonExcludedInitializers = new ArrayList<ServletContainerInitializer>();
 
-        
         //We use the ServiceLoader mechanism to find the ServletContainerInitializer classes to inspect
         long start = 0;
 

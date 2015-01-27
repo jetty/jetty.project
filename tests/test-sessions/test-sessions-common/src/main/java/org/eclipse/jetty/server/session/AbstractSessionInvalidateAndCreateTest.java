@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -119,7 +119,7 @@ public abstract class AbstractSessionInvalidateAndCreateTest
                 // Create the session
                 ContentResponse response1 = client.GET(url + "?action=init");
                 assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
-                String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
+                String sessionCookie = response1.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
                 // Mangle the cookie, replacing Path with $Path, etc.
                 sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -1632,7 +1632,7 @@ public class ServletHandler extends ScopedHandler
         public void doFilter(ServletRequest request, ServletResponse response)
             throws IOException, ServletException
         {
-            final Request baseRequest=(request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest();
+            final Request baseRequest=Request.getBaseRequest(request);
 
             // pass to next filter
             if (_filterHolder!=null)
@@ -1734,7 +1734,7 @@ public class ServletHandler extends ScopedHandler
             // Call servlet
             HttpServletRequest srequest = (HttpServletRequest)request;
             if (_servletHolder == null)
-                notFound((request instanceof Request)?((Request)request):HttpChannel.getCurrentHttpChannel().getRequest(), srequest, (HttpServletResponse)response);
+                notFound(Request.getBaseRequest(request), srequest, (HttpServletResponse)response);
             else
             {
                 if (LOG.isDebugEnabled())

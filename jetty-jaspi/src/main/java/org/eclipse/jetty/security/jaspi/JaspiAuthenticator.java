@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.security.jaspi;
 
+import java.io.IOException;
 import java.security.Principal;
 import java.util.Map;
 import java.util.Set;
@@ -32,6 +33,7 @@ import javax.security.auth.message.config.ServerAuthContext;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.security.IdentityService;
@@ -119,7 +121,7 @@ public class JaspiAuthenticator extends LoginAuthenticator
     @Override
     public UserIdentity login(String username, Object password, ServletRequest request)
     { 
-        UserIdentity user = _loginService.login(username, password);
+        UserIdentity user = _loginService.login(username, password, request);
         if (user != null)
         {
             renewSession((HttpServletRequest)request, null);
@@ -192,10 +194,16 @@ public class JaspiAuthenticator extends LoginAuthenticator
                 // we are processing a message in a secureResponse dialog.
                 return Authentication.SEND_SUCCESS;
             }
+            if (authStatus == AuthStatus.FAILURE)
+            {
+                HttpServletResponse response = (HttpServletResponse) messageInfo.getResponseMessage();
+                response.sendError(HttpServletResponse.SC_FORBIDDEN);
+                return Authentication.SEND_FAILURE;
+            }
             // should not happen
-            throw new NullPointerException("No AuthStatus returned");
+            throw new IllegalStateException("No AuthStatus returned");
         }
-        catch (AuthException e)
+        catch (IOException|AuthException e)
         {
             throw new ServerAuthException(e);
         }

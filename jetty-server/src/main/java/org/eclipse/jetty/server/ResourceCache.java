@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,7 +33,12 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpContent;
+import org.eclipse.jetty.http.HttpField;
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -49,7 +54,7 @@ public class ResourceCache
 {
     private static final Logger LOG = Log.getLogger(ResourceCache.class);
 
-    private final ConcurrentMap<String,Content> _cache;
+    private final ConcurrentMap<String,CachedHttpContent> _cache;
     private final AtomicInteger _cachedSize;
     private final AtomicInteger _cachedFiles;
     private final ResourceFactory _factory;
@@ -69,7 +74,7 @@ public class ResourceCache
     public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer,boolean etags)
     {
         _factory = factory;
-        _cache=new ConcurrentHashMap<String,Content>();
+        _cache=new ConcurrentHashMap<String,CachedHttpContent>();
         _cachedSize=new AtomicInteger();
         _cachedFiles=new AtomicInteger();
         _mimeTypes=mimeTypes;
@@ -150,7 +155,7 @@ public class ResourceCache
             {
                 for (String path : _cache.keySet())
                 {
-                    Content content = _cache.remove(path);
+                    CachedHttpContent content = _cache.remove(path);
                     if (content!=null)
                         content.invalidate();
                 }
@@ -165,7 +170,7 @@ public class ResourceCache
      * @param pathInContext The key into the cache
      * @return The entry matching <code>pathInContext</code>, or a new entry 
      * if no matching entry was found. If the content exists but is not cachable, 
-     * then a {@link ResourceAsHttpContent} instance is return. If 
+     * then a {@link ResourceHttpContent} instance is return. If 
      * the resource does not exist, then null is returned.
      * @throws IOException Problem loading the resource
      */
@@ -173,7 +178,7 @@ public class ResourceCache
         throws IOException
     {
         // Is the content in this cache?
-        Content content =_cache.get(pathInContext);
+        CachedHttpContent content =_cache.get(pathInContext);
         if (content!=null && (content).isValid())
             return content;
        
@@ -211,7 +216,7 @@ public class ResourceCache
     private HttpContent load(String pathInContext, Resource resource)
         throws IOException
     {
-        Content content=null;
+        CachedHttpContent content=null;
         
         if (resource==null || !resource.exists())
             return null;
@@ -220,13 +225,13 @@ public class ResourceCache
         if (!resource.isDirectory() && isCacheable(resource))
         {   
             // Create the Content (to increment the cache sizes before adding the content 
-            content = new Content(pathInContext,resource);
+            content = new CachedHttpContent(pathInContext,resource);
 
             // reduce the cache to an acceptable size.
             shrinkCache();
 
             // Add it to the cache.
-            Content added = _cache.putIfAbsent(pathInContext,content);
+            CachedHttpContent added = _cache.putIfAbsent(pathInContext,content);
             if (added!=null)
             {
                 content.invalidate();
@@ -236,7 +241,7 @@ public class ResourceCache
             return content;
         }
         
-        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize(),_etagSupported);
+        return new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize(),_etagSupported);
         
     }
     
@@ -247,10 +252,10 @@ public class ResourceCache
         while (_cache.size()>0 && (_cachedFiles.get()>_maxCachedFiles || _cachedSize.get()>_maxCacheSize))
         {
             // Scan the entire cache and generate an ordered list by last accessed time.
-            SortedSet<Content> sorted= new TreeSet<Content>(
-                    new Comparator<Content>()
+            SortedSet<CachedHttpContent> sorted= new TreeSet<CachedHttpContent>(
+                    new Comparator<CachedHttpContent>()
                     {
-                        public int compare(Content c1, Content c2)
+                        public int compare(CachedHttpContent c1, CachedHttpContent c2)
                         {
                             if (c1._lastAccessed<c2._lastAccessed)
                                 return -1;
@@ -258,17 +263,17 @@ public class ResourceCache
                             if (c1._lastAccessed>c2._lastAccessed)
                                 return 1;
 
-                            if (c1._length<c2._length)
+                            if (c1._contentLengthValue<c2._contentLengthValue)
                                 return -1;
                             
                             return c1._key.compareTo(c2._key);
                         }
                     });
-            for (Content content : _cache.values())
+            for (CachedHttpContent content : _cache.values())
                 sorted.add(content);
             
             // Invalidate least recently used first
-            for (Content content : sorted)
+            for (CachedHttpContent content : sorted)
             {
                 if (_cachedFiles.get()<=_maxCachedFiles && _cachedSize.get()<=_maxCacheSize)
                     break;
@@ -320,38 +325,47 @@ public class ResourceCache
     /* ------------------------------------------------------------ */
     /** MetaData associated with a context Resource.
      */
-    public class Content implements HttpContent
+    public class CachedHttpContent implements HttpContent
     {
-        final Resource _resource;
-        final int _length;
         final String _key;
-        final long _lastModified;
-        final ByteBuffer _lastModifiedBytes;
-        final ByteBuffer _contentType;
-        final String _etag;
+        final Resource _resource;
+        final int _contentLengthValue;
+        final HttpField _contentType;
+        final String _characterEncoding;
+        final MimeTypes.Type _mimeType;
+        final HttpField _contentLength;
+        final HttpField _lastModified;
+        final long _lastModifiedValue;
+        final HttpField _etag;
         
         volatile long _lastAccessed;
         AtomicReference<ByteBuffer> _indirectBuffer=new AtomicReference<ByteBuffer>();
         AtomicReference<ByteBuffer> _directBuffer=new AtomicReference<ByteBuffer>();
 
         /* ------------------------------------------------------------ */
-        Content(String pathInContext,Resource resource)
+        CachedHttpContent(String pathInContext,Resource resource)
         {
             _key=pathInContext;
             _resource=resource;
 
-            String mimeType = _mimeTypes.getMimeByExtension(_resource.toString());
-            _contentType=(mimeType==null?null:BufferUtil.toBuffer(mimeType));
-            boolean exists=resource.exists();
-            _lastModified=exists?resource.lastModified():-1;
-            _lastModifiedBytes=_lastModified<0?null:BufferUtil.toBuffer(DateGenerator.formatDate(_lastModified));
+            String contentType = _mimeTypes.getMimeByExtension(_resource.toString());
+            _contentType=contentType==null?null:new PreEncodedHttpField(HttpHeader.CONTENT_TYPE,contentType);
+            _characterEncoding = _contentType==null?null:MimeTypes.getCharsetFromContentType(contentType);
+            _mimeType = _contentType==null?null:MimeTypes.CACHE.get(MimeTypes.getContentTypeWithoutCharset(contentType));
             
-            _length=exists?(int)resource.length():0;
-            _cachedSize.addAndGet(_length);
+            boolean exists=resource.exists();
+            _lastModifiedValue=exists?resource.lastModified():-1L;
+            _lastModified=_lastModifiedValue==-1?null
+                :new PreEncodedHttpField(HttpHeader.LAST_MODIFIED,DateGenerator.formatDate(_lastModifiedValue));
+            
+            _contentLengthValue=exists?(int)resource.length():0;
+            _contentLength=new PreEncodedHttpField(HttpHeader.CONTENT_LENGTH,Long.toString(_contentLengthValue));
+            
+            _cachedSize.addAndGet(_contentLengthValue);
             _cachedFiles.incrementAndGet();
             _lastAccessed=System.currentTimeMillis();
             
-            _etag=ResourceCache.this._etagSupported?resource.getWeakETag():null;
+            _etag=ResourceCache.this._etagSupported?new PreEncodedHttpField(HttpHeader.ETAG,resource.getWeakETag()):null;
         }
 
 
@@ -382,15 +396,22 @@ public class ResourceCache
 
         /* ------------------------------------------------------------ */
         @Override
-        public String getETag()
+        public HttpField getETag()
         {
             return _etag;
+        }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public String getETagValue()
+        {
+            return _etag.getValue();
         }
         
         /* ------------------------------------------------------------ */
         boolean isValid()
         {
-            if (_lastModified==_resource.lastModified() && _length==_resource.length())
+            if (_lastModifiedValue==_resource.lastModified() && _contentLengthValue==_resource.length())
             {
                 _lastAccessed=System.currentTimeMillis();
                 return true;
@@ -405,24 +426,54 @@ public class ResourceCache
         protected void invalidate()
         {
             // Invalidate it
-            _cachedSize.addAndGet(-_length);
+            _cachedSize.addAndGet(-_contentLengthValue);
             _cachedFiles.decrementAndGet();
             _resource.close(); 
         }
 
         /* ------------------------------------------------------------ */
         @Override
-        public String getLastModified()
+        public HttpField getLastModified()
         {
-            return BufferUtil.toString(_lastModifiedBytes);
+            return _lastModified;
+        }
+        
+        /* ------------------------------------------------------------ */
+        @Override
+        public String getLastModifiedValue()
+        {
+            return _lastModified==null?null:_lastModified.getValue();
+        }
+
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public HttpField getContentType()
+        {
+            return _contentType;
+        }
+        
+        /* ------------------------------------------------------------ */
+        @Override
+        public String getContentTypeValue()
+        {
+            return _contentType==null?null:_contentType.getValue();
+        }
+        
+        /* ------------------------------------------------------------ */
+        @Override
+        public String getCharacterEncoding()
+        {
+            return _characterEncoding;
         }
 
         /* ------------------------------------------------------------ */
         @Override
-        public String getContentType()
+        public Type getMimeType()
         {
-            return BufferUtil.toString(_contentType);
+            return _mimeType;
         }
+
 
         /* ------------------------------------------------------------ */
         @Override
@@ -473,12 +524,19 @@ public class ResourceCache
                 return null;
             return buffer.asReadOnlyBuffer();
         }
+
+        /* ------------------------------------------------------------ */
+        @Override
+        public HttpField getContentLength()
+        {
+            return _contentLength;
+        }
         
         /* ------------------------------------------------------------ */
         @Override
-        public long getContentLength()
+        public long getContentLengthValue()
         {
-            return _length;
+            return _contentLengthValue;
         }
 
         /* ------------------------------------------------------------ */
@@ -504,7 +562,7 @@ public class ResourceCache
         @Override
         public String toString()
         {
-            return String.format("CachedContent@%x{r=%s,e=%b,lm=%s,ct=%s}",hashCode(),_resource,_resource.exists(),BufferUtil.toString(_lastModifiedBytes),_contentType);
+            return String.format("CachedContent@%x{r=%s,e=%b,lm=%s,ct=%s}",hashCode(),_resource,_resource.exists(),_lastModified,_contentType);
         }   
     }
 }

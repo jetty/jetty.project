@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+
+import java.util.List;
 
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -42,9 +44,15 @@ public interface ConnectionFactory
 {
     /* ------------------------------------------------------------ */
     /**
-     * @return A string representing the protocol name.
+     * @return A string representing the primary protocol name.
      */
     public String getProtocol();
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return A list of alternative protocol names/versions including the primary protocol.
+     */
+    public List<String> getProtocols();
     
     /**
      * <p>Creates a new {@link Connection} with the given parameters</p>

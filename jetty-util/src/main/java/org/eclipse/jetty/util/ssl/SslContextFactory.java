@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -41,9 +41,11 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -120,7 +122,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /** Excluded cipher suites. */
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
     /** Included cipher suites. */
-    private Set<String> _includeCipherSuites = null;
+    private List<String> _includeCipherSuites = null;
 
     /** Keystore path. */
     private String _keyStorePath;
@@ -224,7 +226,15 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         setTrustAll(trustAll);
         addExcludeProtocols("SSL", "SSLv2", "SSLv2Hello", "SSLv3");
-    }
+        setExcludeCipherSuites(
+                "SSL_RSA_WITH_DES_CBC_SHA",
+                "SSL_DHE_RSA_WITH_DES_CBC_SHA",
+                "SSL_DHE_DSS_WITH_DES_CBC_SHA",
+                "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
+                "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
+                "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
+}
 
     /**
      * Construct an instance of SslContextFactory
@@ -258,7 +268,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 }
 
                 SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
-                SSLContext context = SSLContext.getInstance(_sslProtocol);
+                SSLContext context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
                 context.init(null, trust_managers, secureRandom);
                 _context = context;
             }
@@ -299,7 +309,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 TrustManager[] trustManagers = getTrustManagers(trustStore,crls);
 
                 SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
-                SSLContext context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol,_sslProvider);
+                SSLContext context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
                 context.init(keyManagers,trustManagers,secureRandom);
                 _context = context;
             }
@@ -419,7 +429,7 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setIncludeCipherSuites(String... cipherSuites)
     {
         checkNotStarted();
-        _includeCipherSuites = new LinkedHashSet<>(Arrays.asList(cipherSuites));
+        _includeCipherSuites = new CopyOnWriteArrayList<>(Arrays.asList(cipherSuites));
     }
 
     /**
@@ -1064,7 +1074,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public String[] selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
     {
-        Set<String> selected_ciphers = new CopyOnWriteArraySet<>();
+        List<String> selected_ciphers = new CopyOnWriteArrayList<>(); // TODO is this the most efficient?
 
         // Set the starting ciphers - either from the included or enabled list
         if (_includeCipherSuites!=null)
@@ -1074,13 +1084,15 @@ public class SslContextFactory extends AbstractLifeCycle
 
         removeExcludedCipherSuites(selected_ciphers);
 
+        // TODO could we cache these results?
         return selected_ciphers.toArray(new String[selected_ciphers.size()]);
     }
 
-    private void processIncludeCipherSuites(String[] supportedCipherSuites, Set<String> selected_ciphers)
+    private void processIncludeCipherSuites(String[] supportedCipherSuites, List<String> selected_ciphers)
     {
         for (String cipherSuite : _includeCipherSuites)
         {
+            // TODO precompile these patterns to make accepting faster
             Pattern p = Pattern.compile(cipherSuite);
             for (String supportedCipherSuite : supportedCipherSuites)
             {
@@ -1091,7 +1103,7 @@ public class SslContextFactory extends AbstractLifeCycle
         }
     }
 
-    private void removeExcludedCipherSuites(Set<String> selected_ciphers)
+    private void removeExcludedCipherSuites(List<String> selected_ciphers)
     {
         for (String excludeCipherSuite : _excludeCipherSuites)
         {

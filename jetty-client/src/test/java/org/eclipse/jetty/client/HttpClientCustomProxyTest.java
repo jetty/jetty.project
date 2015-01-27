@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -93,7 +93,7 @@ public class HttpClientCustomProxyTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                if (!URI.create(baseRequest.getUri().toString()).isAbsolute())
+                if (!URI.create(baseRequest.getHttpURI().toString()).isAbsolute())
                     response.setStatus(HttpServletResponse.SC_USE_PROXY);
                 else if (serverHost.equals(request.getServerName()))
                     response.setStatus(status);

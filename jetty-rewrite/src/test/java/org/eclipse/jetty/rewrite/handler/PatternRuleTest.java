@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -25,6 +25,10 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.server.Request;
 import org.junit.After;
 import org.junit.Before;
@@ -138,7 +142,7 @@ public class PatternRuleTest
         new Request(null,null)
         {
             {
-                setRequestURI(uri);
+                setMetaData(new MetaData.Request("GET",new HttpURI(uri),HttpVersion.HTTP_1_0,new HttpFields()));
             }
         }, null
         );

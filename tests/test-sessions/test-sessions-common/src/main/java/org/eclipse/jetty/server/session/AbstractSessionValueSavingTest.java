@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -72,7 +72,7 @@ public abstract class AbstractSessionValueSavingTest
 
                     sessionTestValue = Long.parseLong(response1.getContentAsString());
 
-                    String sessionCookie = response1.getHeaders().getStringField("Set-Cookie");
+                    String sessionCookie = response1.getHeaders().get("Set-Cookie");
                     assertTrue( sessionCookie != null );
                     // Mangle the cookie, replacing Path with $Path, etc.
                     sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
@@ -95,7 +95,7 @@ public abstract class AbstractSessionValueSavingTest
                         assertTrue(sessionTestValue < Long.parseLong(response2.getContentAsString()));
                         sessionTestValue = Long.parseLong(response2.getContentAsString());
 
-                        String setCookie = response1.getHeaders().getStringField("Set-Cookie");
+                        String setCookie = response1.getHeaders().get("Set-Cookie");
                         if (setCookie!=null)
                             sessionCookie = setCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -455,7 +455,7 @@ public class CrossOriginFilterTest
                 "Upgrade: WebSocket\r\n" +
                 "Origin: http://localhost\r\n" +
                 "\r\n";
-        String response = tester.getResponses(request);
+        String response = tester.getResponses(request,1,TimeUnit.SECONDS);
         Assert.assertTrue(response.contains("HTTP/1.1 200"));
         Assert.assertFalse(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_ORIGIN_HEADER));
         Assert.assertFalse(response.contains(CrossOriginFilter.ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER));

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,9 +24,8 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.SharedBlockingCallback;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 
-
-/* ------------------------------------------------------------ */
-/** extend a SharedlBlockingCallback to an websocket WriteCallback
+/**
+ * Extends a {@link SharedBlockingCallback} to a WebSocket {@link WriteCallback}
  */
 public class BlockingWriteCallback extends SharedBlockingCallback
 {
@@ -41,9 +40,9 @@ public class BlockingWriteCallback extends SharedBlockingCallback
     
     public static class WriteBlocker implements WriteCallback, Callback, AutoCloseable
     {
-        Blocker blocker;
+        private final Blocker blocker;
         
-        WriteBlocker(Blocker blocker)
+        protected WriteBlocker(Blocker blocker)
         {
             this.blocker=blocker;
         }
@@ -73,7 +72,7 @@ public class BlockingWriteCallback extends SharedBlockingCallback
         }
         
         @Override
-        public void close() throws IOException
+        public void close()
         {
             blocker.close();
         }

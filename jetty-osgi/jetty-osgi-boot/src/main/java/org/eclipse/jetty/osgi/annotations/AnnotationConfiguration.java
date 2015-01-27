@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -103,6 +103,10 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
             //index and scan fragments
             for (Bundle bundle : fragAndRequiredBundles)
             {
+                //skip bundles that have been uninstalled since we discovered them
+                if (bundle.getState() == Bundle.UNINSTALLED)
+                    continue;
+                
                 Resource bundleRes = oparser.indexBundle(bundle);
                 if (!context.getMetaData().getWebInfJars().contains(bundleRes))
                 {
@@ -127,6 +131,10 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
             //scan the required bundles
             for (Bundle requiredBundle : fragAndRequiredBundles)
             {
+                //skip bundles that have been uninstalled since we discovered them
+                if (requiredBundle.getState() == Bundle.UNINSTALLED)
+                    continue;
+                
                 if (requiredBundle.getHeaders().get(Constants.FRAGMENT_HOST) == null)
                 {
                     //a bundle indeed:

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -88,6 +88,22 @@ public class HandlerWrapper extends AbstractHandlerContainer
         updateBean(old,_handler);
     }
 
+    /* ------------------------------------------------------------ */
+    /** Replace the current handler with another HandlerWrapper
+     * linked to the current handler.  This is equivalent to:<pre>
+     *   wrapper.setHandler(getHandler());
+     *   setHandler(wrapper);
+     * </pre>
+     * @param wrapper
+     */
+    public void insertHandler(HandlerWrapper wrapper)
+    {
+        if (wrapper==null || wrapper.getHandler()!=null)
+            throw new IllegalArgumentException();
+        wrapper.setHandler(getHandler());
+        setHandler(wrapper);
+    }
+    
     /* ------------------------------------------------------------ */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -27,7 +27,7 @@ import java.util.TimeZone;
  * ThreadLocal data parsers for HTTP style dates
  *
  */
-class DateParser
+public class DateParser
 {
     private static final TimeZone __GMT = TimeZone.getTimeZone("GMT");
     static

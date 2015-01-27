@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.net.InetSocketAddress;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
@@ -46,7 +47,7 @@ import org.eclipse.jetty.server.HttpConfiguration.Customizer;
  */
 public class ForwardedRequestCustomizer implements Customizer
 {
-    private String _hostHeader;
+    private HostPortHttpField _hostHeader;
     private String _forwardedHostHeader = HttpHeader.X_FORWARDED_HOST.toString();
     private String _forwardedServerHeader = HttpHeader.X_FORWARDED_SERVER.toString();
     private String _forwardedForHeader = HttpHeader.X_FORWARDED_FOR.toString();
@@ -58,7 +59,7 @@ public class ForwardedRequestCustomizer implements Customizer
     /* ------------------------------------------------------------ */
     public String getHostHeader()
     {
-        return _hostHeader;
+        return _hostHeader.getValue();
     }
 
     /* ------------------------------------------------------------ */
@@ -70,7 +71,7 @@ public class ForwardedRequestCustomizer implements Customizer
      */
     public void setHostHeader(String hostHeader)
     {
-        _hostHeader = hostHeader;
+        _hostHeader = new HostPortHttpField(hostHeader);
     }
 
     /* ------------------------------------------------------------ */
@@ -201,13 +202,13 @@ public class ForwardedRequestCustomizer implements Customizer
         // Do SSL first
         if (getForwardedCipherSuiteHeader()!=null)
         {
-            String cipher_suite=httpFields.getStringField(getForwardedCipherSuiteHeader());
+            String cipher_suite=httpFields.get(getForwardedCipherSuiteHeader());
             if (cipher_suite!=null)
                 request.setAttribute("javax.servlet.request.cipher_suite",cipher_suite);
         }
         if (getForwardedSslSessionIdHeader()!=null)
         {
-            String ssl_session_id=httpFields.getStringField(getForwardedSslSessionIdHeader());
+            String ssl_session_id=httpFields.get(getForwardedSslSessionIdHeader());
             if(ssl_session_id!=null)
             {
                 request.setAttribute("javax.servlet.request.ssl_session_id", ssl_session_id);
@@ -224,23 +225,20 @@ public class ForwardedRequestCustomizer implements Customizer
         if (_hostHeader != null)
         {
             // Update host header
-            httpFields.put(HttpHeader.HOST.toString(),_hostHeader);
-            request.setServerName(null);
-            request.setServerPort(-1);
-            request.getServerName();
+            httpFields.put(_hostHeader);
+            request.setAuthority(_hostHeader.getHost(),_hostHeader.getPort());
         }
         else if (forwardedHost != null)
         {
             // Update host header
-            httpFields.put(HttpHeader.HOST.toString(),forwardedHost);
-            request.setServerName(null);
-            request.setServerPort(-1);
-            request.getServerName();
+            HostPortHttpField auth = new HostPortHttpField(forwardedHost);
+            httpFields.put(auth);
+            request.setAuthority(auth.getHost(),auth.getPort());
         }
         else if (forwardedServer != null)
         {
             // Use provided server name
-            request.setServerName(forwardedServer);
+            request.setAuthority(forwardedServer,request.getServerPort());
         }
 
         if (forwardedFor != null)
@@ -262,7 +260,7 @@ public class ForwardedRequestCustomizer implements Customizer
         if (header == null)
             return null;
 
-        String headerValue = fields.getStringField(header);
+        String headerValue = fields.get(header);
 
         if (headerValue == null)
             return null;

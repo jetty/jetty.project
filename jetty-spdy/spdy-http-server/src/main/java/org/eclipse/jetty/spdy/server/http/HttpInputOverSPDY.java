@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,32 +18,42 @@
 
 package org.eclipse.jetty.spdy.server.http;
 
-import org.eclipse.jetty.server.QueuedHttpInput;
+import java.nio.ByteBuffer;
+
+import org.eclipse.jetty.server.HttpChannelState;
+import org.eclipse.jetty.server.HttpInput;
 import org.eclipse.jetty.spdy.api.DataInfo;
 
-public class HttpInputOverSPDY extends QueuedHttpInput<DataInfo>
+public class HttpInputOverSPDY extends HttpInput
 {
-    @Override
-    protected int remaining(DataInfo item)
+    private final HttpChannelState _httpChannelState;
+    
+    public HttpInputOverSPDY(HttpChannelState httpChannelState)
     {
-        return item.available();
-    }
-
-    @Override
-    protected int get(DataInfo item, byte[] buffer, int offset, int length)
-    {
-        return item.readInto(buffer, offset, length);
+        _httpChannelState=httpChannelState;
     }
     
     @Override
-    protected void consume(DataInfo item, int length)
+    protected void onReadPossible()
     {
-        item.consume(length);
+        _httpChannelState.onReadPossible();
+    }
+    
+    @Override
+    protected void skip(Content content, int length)
+    {
+        ContentOverSPDY spdyContent = (ContentOverSPDY)content;
+        spdyContent.dataInfo.consume(length);
     }
 
-    @Override
-    protected void onContentConsumed(DataInfo dataInfo)
+    protected static class ContentOverSPDY extends Content
     {
-        dataInfo.consume(dataInfo.length());
+        private final DataInfo dataInfo;
+
+        protected ContentOverSPDY(ByteBuffer content, DataInfo dataInfo)
+        {
+            super(content);
+            this.dataInfo = dataInfo;
+        }
     }
 }

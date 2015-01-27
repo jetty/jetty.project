@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -197,7 +197,7 @@ public class HttpConnectionTest
     public void testBadPathDotDotPath() throws Exception
     {
         String response=connector.getResponses("GET /ooops/../../path HTTP/1.0\nHost: localhost:80\n\n");
-        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+        checkContains(response,0,"HTTP/1.1 400 Bad URI");
     }
     
     @Test
@@ -212,28 +212,28 @@ public class HttpConnectionTest
     public void testBadPathEncodedDotDotPath() throws Exception
     {
         String response=connector.getResponses("GET /ooops/%2e%2e/%2e%2e/path HTTP/1.0\nHost: localhost:80\n\n");
-        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+        checkContains(response,0,"HTTP/1.1 400 Bad URI");
     }
     
     @Test
     public void testBadDotDotPath() throws Exception
     {
         String response=connector.getResponses("GET ../path HTTP/1.0\nHost: localhost:80\n\n");
-        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+        checkContains(response,0,"HTTP/1.1 400 Bad URI");
     }
     
     @Test
     public void testBadSlashDotDotPath() throws Exception
     {
         String response=connector.getResponses("GET /../path HTTP/1.0\nHost: localhost:80\n\n");
-        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+        checkContains(response,0,"HTTP/1.1 400 Bad URI");
     }
 
     @Test
     public void testEncodedBadDotDotPath() throws Exception
     {
         String response=connector.getResponses("GET %2e%2e/path HTTP/1.0\nHost: localhost:80\n\n");
-        checkContains(response,0,"HTTP/1.1 400 Bad Request");
+        checkContains(response,0,"HTTP/1.1 400 Bad URI");
     }
 
     @Test
@@ -417,7 +417,7 @@ public class HttpConnectionTest
                                            "12345\015\012"+
                                            "0;\015\012\015\012");
             offset = checkContains(response,offset,"HTTP/1.1 200");
-            offset = checkContains(response,offset,"encoding=ISO-8859-1");
+            offset = checkContains(response,offset,"encoding=iso-8859-1");
             offset = checkContains(response,offset,"/R1");
             offset = checkContains(response,offset,"12345");
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -201,7 +201,7 @@ public class IPAccessHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         // Get the real remote IP (not the one set by the forwarded headers (which may be forged))
-        HttpChannel<?> channel = baseRequest.getHttpChannel();
+        HttpChannel channel = baseRequest.getHttpChannel();
         if (channel!=null)
         {
             EndPoint endp=channel.getEndPoint();
