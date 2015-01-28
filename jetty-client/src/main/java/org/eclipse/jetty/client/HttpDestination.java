@@ -251,7 +251,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out, this + " - requests queued: " + exchanges.size());
+        ContainerLifeCycle.dumpObject(out, toString());
     }
 
     public String asString()
