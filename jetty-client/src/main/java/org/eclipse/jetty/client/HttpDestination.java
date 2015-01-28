@@ -262,9 +262,10 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
     @Override
     public String toString()
     {
-        return String.format("%s[%s]%s,queue=%d",
+        return String.format("%s[%s]%x%s,queue=%d",
                 HttpDestination.class.getSimpleName(),
                 asString(),
+                hashCode(),
                 proxy == null ? "" : "(via " + proxy + ")",
                 exchanges.size());
     }
