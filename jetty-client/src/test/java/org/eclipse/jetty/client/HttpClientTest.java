@@ -80,6 +80,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.CREATE;
+import static org.junit.Assert.assertTrue;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
@@ -763,6 +764,37 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(headerName));
+    }
+
+    @Test
+    public void testAllHeadersDiscarded() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        int count = 10;
+        final CountDownLatch latch = new CountDownLatch(count);
+        for (int i = 0; i < count; ++i)
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .send(new Response.Listener.Adapter()
+                    {
+                        @Override
+                        public boolean onHeader(Response response, HttpField field)
+                        {
+                            return false;
+                        }
+
+                        @Override
+                        public void onComplete(Result result)
+                        {
+                            if (result.isSucceeded())
+                                latch.countDown();
+                        }
+                    });
+        }
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
