@@ -50,14 +50,18 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
     {
         List<String> serverProtocols = getProtocols();
         String negotiated = null;
-        for (String clientProtocol : clientProtocols)
+
+        // RFC 7301 states that the server picks the protocol
+        // that it prefers that is also supported by the client.
+        for (String serverProtocol : serverProtocols)
         {
-            if (serverProtocols.contains(clientProtocol))
+            if (clientProtocols.contains(serverProtocol))
             {
-                negotiated = clientProtocol;
+                negotiated = serverProtocol;
                 break;
             }
         }
+
         if (negotiated == null)
         {
             negotiated = getDefaultProtocol();
