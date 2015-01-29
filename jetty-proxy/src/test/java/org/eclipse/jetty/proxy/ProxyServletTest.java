@@ -104,7 +104,8 @@ public class ProxyServletTest
     {
         return Arrays.asList(new Object[][]{
                 {ProxyServlet.class},
-                {AsyncProxyServlet.class}
+                {AsyncProxyServlet.class},
+                {AsyncMiddleManServlet.class}
         });
     }
 
@@ -114,13 +115,13 @@ public class ProxyServletTest
     private Server proxy;
     private ServerConnector proxyConnector;
     private ServletContextHandler proxyContext;
-    private ProxyServlet proxyServlet;
+    private AbstractProxyServlet proxyServlet;
     private Server server;
     private ServerConnector serverConnector;
 
     public ProxyServletTest(Class<?> proxyServletClass) throws Exception
     {
-        this.proxyServlet = (ProxyServlet)proxyServletClass.newInstance();
+        this.proxyServlet = (AbstractProxyServlet)proxyServletClass.newInstance();
     }
 
     private void prepareProxy() throws Exception
@@ -823,12 +824,12 @@ public class ProxyServletTest
             }
 
             @Override
-            protected void onResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
+            protected void onProxyResponseSuccess(HttpServletRequest request, HttpServletResponse response, Response proxyResponse)
             {
                 byte[] content = temp.remove(request.getRequestURI()).toByteArray();
                 ContentResponse cached = new HttpContentResponse(proxyResponse, content, null, null);
                 cache.put(request.getRequestURI(), cached);
-                super.onResponseSuccess(request, response, proxyResponse);
+                super.onProxyResponseSuccess(request, response, proxyResponse);
             }
         };
         prepareProxy();

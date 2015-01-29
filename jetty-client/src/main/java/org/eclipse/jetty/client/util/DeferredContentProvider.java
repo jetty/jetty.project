@@ -94,6 +94,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
     private final AtomicReference<Listener> listener = new AtomicReference<>();
     private final DeferredContentProviderIterator iterator = new DeferredContentProviderIterator();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private long length = -1;
     private int size;
     private Throwable failure;
 
@@ -114,12 +115,23 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
         if (!this.listener.compareAndSet(null, listener))
             throw new IllegalStateException(String.format("The same %s instance cannot be used in multiple requests",
                     AsyncContentProvider.class.getName()));
+
+        if (isClosed())
+        {
+            synchronized (lock)
+            {
+                long total = 0;
+                for (AsyncChunk chunk : chunks)
+                    total += chunk.buffer.remaining();
+                length = total;
+            }
+        }
     }
 
     @Override
     public long getLength()
     {
-        return -1;
+        return length;
     }
 
     /**
@@ -198,6 +210,11 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
     {
         if (closed.compareAndSet(false, true))
             offer(CLOSE);
+    }
+
+    public boolean isClosed()
+    {
+        return closed.get();
     }
 
     @Override

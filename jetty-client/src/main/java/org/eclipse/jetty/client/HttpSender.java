@@ -160,35 +160,27 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     public void send(HttpExchange exchange)
     {
         Request request = exchange.getRequest();
-        Throwable cause = request.getAbortCause();
-        if (cause != null)
-        {
-            exchange.abort(cause);
-        }
-        else
-        {
-            if (!queuedToBegin(request))
-                throw new IllegalStateException();
+        if (!queuedToBegin(request))
+            return;
 
-            ContentProvider contentProvider = request.getContent();
-            HttpContent content = this.content = new HttpContent(contentProvider);
+        ContentProvider contentProvider = request.getContent();
+        HttpContent content = this.content = new HttpContent(contentProvider);
 
-            SenderState newSenderState = SenderState.SENDING;
-            if (expects100Continue(request))
-                newSenderState = content.hasContent() ? SenderState.EXPECTING_WITH_CONTENT : SenderState.EXPECTING;
-            if (!updateSenderState(SenderState.IDLE, newSenderState))
-                throw illegalSenderState(SenderState.IDLE);
+        SenderState newSenderState = SenderState.SENDING;
+        if (expects100Continue(request))
+            newSenderState = content.hasContent() ? SenderState.EXPECTING_WITH_CONTENT : SenderState.EXPECTING;
+        if (!updateSenderState(SenderState.IDLE, newSenderState))
+            throw illegalSenderState(SenderState.IDLE);
 
-            // Setting the listener may trigger calls to onContent() by other
-            // threads so we must set it only after the sender state has been updated
-            if (contentProvider instanceof AsyncContentProvider)
-                ((AsyncContentProvider)contentProvider).setListener(this);
+        // Setting the listener may trigger calls to onContent() by other
+        // threads so we must set it only after the sender state has been updated
+        if (contentProvider instanceof AsyncContentProvider)
+            ((AsyncContentProvider)contentProvider).setListener(this);
 
-            if (!beginToHeaders(request))
-                return;
+        if (!beginToHeaders(request))
+            return;
 
-            sendHeaders(exchange, content, commitCallback);
-        }
+        sendHeaders(exchange, content, commitCallback);
     }
 
     protected boolean expects100Continue(Request request)
