@@ -392,6 +392,9 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     protected void copyHeaders(HttpServletRequest clientRequest, Request proxyRequest)
     {
+        // First clear possibly existing headers, as we are going to copy those from the client request.
+        proxyRequest.getHeaders().clear();
+
         Set<String> headersToRemove = findConnectionHeaders(clientRequest);
 
         for (Enumeration<String> headerNames = clientRequest.getHeaderNames(); headerNames.hasMoreElements();)
