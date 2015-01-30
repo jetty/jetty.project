@@ -25,6 +25,7 @@ import java.util.List;
 import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
+import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -137,7 +138,13 @@ public class JsrCreator implements WebSocketCreator
         try
         {
             Class<?> endpointClass = config.getEndpointClass();
-            Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
+            Configurator configr = config.getConfigurator();
+            Object endpoint = configr.getEndpointInstance(endpointClass);
+            if (configr instanceof ContainerDefaultConfigurator)
+            {
+                // default impl always decorates (custom ones do not)
+                endpoint = containerScope.getObjectFactory().decorate(endpoint);
+            }
             PathSpec pathSpec = hsreq.getRequestPathSpec();
             if (pathSpec instanceof WebSocketPathSpec)
             {

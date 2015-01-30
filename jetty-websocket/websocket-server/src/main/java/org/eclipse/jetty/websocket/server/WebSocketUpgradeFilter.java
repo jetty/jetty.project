@@ -257,7 +257,8 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
 
         try
         {
-            factory.init(config.getServletContext());
+            ServletContext ctx = config.getServletContext();
+            factory.init(ctx);
             WebSocketPolicy policy = factory.getPolicy();
 
             String max = config.getInitParameter("maxIdleTime");
@@ -291,7 +292,7 @@ public class WebSocketUpgradeFilter extends ContainerLifeCycle implements Filter
                 key = WebSocketUpgradeFilter.class.getName();
             }
             
-            setToAttribute(config.getServletContext(), key);
+            setToAttribute(ctx, key);
             
             factory.start();
         }

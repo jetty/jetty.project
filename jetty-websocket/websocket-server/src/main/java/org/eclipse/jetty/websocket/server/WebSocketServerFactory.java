@@ -381,7 +381,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
     public void init(ServletContextHandler context) throws ServletException
     {
-        this.objectFactory = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
+        this.objectFactory = (DecoratedObjectFactory)context.getServletContext().getAttribute(DecoratedObjectFactory.ATTR);
         if (this.objectFactory == null)
         {
             this.objectFactory = new DecoratedObjectFactory();

@@ -16,26 +16,22 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.cdi.weld;
+package org.eclipse.jetty.cdi.producers;
 
-import org.jboss.weld.context.bound.BoundRequestContext;
+import javax.enterprise.inject.Produces;
+import javax.enterprise.inject.spi.InjectionPoint;
 
-public class WeldRequestContext
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+
+/**
+ * CDI Producer of Jetty Logging instances.
+ */
+public class JettyLogFactory
 {
-    public static void activate(BoundRequestContext boundRequestContext)
+    @Produces
+    public Logger createLogger(InjectionPoint injectionPoint)
     {
-        // TODO Auto-generated method stub
-    }
-
-    public static void deactivate()
-    {
-        // TODO Auto-generated method stub
-        
-    }
-
-    public static void invalidate()
-    {
-        // TODO Auto-generated method stub
-        
+        return Log.getLogger(injectionPoint.getMember().getDeclaringClass());
     }
 }

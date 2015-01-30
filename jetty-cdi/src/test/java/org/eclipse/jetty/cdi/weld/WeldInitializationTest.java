@@ -47,9 +47,9 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class WeldScopeInitializerTest
+public class WeldInitializationTest
 {
-    private static final Logger LOG = Log.getLogger(WeldScopeInitializerTest.class);
+    private static final Logger LOG = Log.getLogger(WeldInitializationTest.class);
     private static Server server;
     private static URI serverHttpURI;
     private static URI serverWebsocketURI;

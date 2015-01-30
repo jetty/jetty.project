@@ -88,7 +88,7 @@ public class ServletContextHandler extends ContextHandler
     
     public interface ServletContainerInitializerCaller extends LifeCycle {};
 
-    protected final DecoratedObjectFactory _instantiator= new DecoratedObjectFactory();
+    protected final DecoratedObjectFactory _objFactory = new DecoratedObjectFactory();
     protected Class<? extends SecurityHandler> _defaultSecurityHandlerClass=org.eclipse.jetty.security.ConstraintSecurityHandler.class;
     protected SessionHandler _sessionHandler;
     protected SecurityHandler _securityHandler;
@@ -252,7 +252,7 @@ public class ServletContextHandler extends ContextHandler
     @Override
     protected void doStart() throws Exception
     {
-        setAttribute(DecoratedObjectFactory.ATTR, _instantiator);
+        getServletContext().setAttribute(DecoratedObjectFactory.ATTR, _objFactory);
         super.doStart();
     }
     
@@ -264,7 +264,7 @@ public class ServletContextHandler extends ContextHandler
     protected void doStop() throws Exception
     {
         super.doStop();
-        _instantiator.clear();
+        _objFactory.clear();
     }
 
     /* ------------------------------------------------------------ */
@@ -331,7 +331,7 @@ public class ServletContextHandler extends ContextHandler
             {
                 for (ListenerHolder holder:_servletHandler.getListeners())
                 {             
-                    _instantiator.decorate(holder.getListener());
+                    _objFactory.decorate(holder.getListener());
                 }
             }
         }
@@ -647,17 +647,28 @@ public class ServletContextHandler extends ContextHandler
         h.setHandler(handler);
         relinkHandlers();
     }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * The DecoratedObjectFactory for use by IoC containers (weld / spring / etc)
+     * 
+     * @return The DecoratedObjectFactory
+     */
+    public DecoratedObjectFactory getObjectFactory()
+    {
+        return _objFactory;
+    }
 
     /* ------------------------------------------------------------ */
     /**
      * @return The decorator list used to resource inject new Filters, Servlets and EventListeners
-     * @deprecated use getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") instead
+     * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
      */
     @Deprecated
     public List<Decorator> getDecorators()
     {
         List<Decorator> ret = new ArrayList<ServletContextHandler.Decorator>();
-        for (org.eclipse.jetty.util.Decorator decorator : _instantiator)
+        for (org.eclipse.jetty.util.Decorator decorator : _objFactory)
         {
             ret.add(new LegacyDecorator(decorator));
         }
@@ -667,31 +678,35 @@ public class ServletContextHandler extends ContextHandler
     /* ------------------------------------------------------------ */
     /**
      * @param decorators The list of {@link Decorator}s
+     * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
      */
+    @Deprecated
     public void setDecorators(List<Decorator> decorators)
     {
-        _instantiator.setDecorators(decorators);
+        _objFactory.setDecorators(decorators);
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @param decorator The decorator to add
+     * @deprecated use the {@link DecoratedObjectFactory} from getAttribute("org.eclipse.jetty.util.DecoratedObjectFactory") or {@link #getObjectFactory()} instead
      */
+    @Deprecated
     public void addDecorator(Decorator decorator)
     {
-        _instantiator.addDecorator(decorator);
+        _objFactory.addDecorator(decorator);
     }
 
     /* ------------------------------------------------------------ */
     void destroyServlet(Servlet servlet)
     {
-        _instantiator.destroy(servlet);
+        _objFactory.destroy(servlet);
     }
 
     /* ------------------------------------------------------------ */
     void destroyFilter(Filter filter)
     {
-        _instantiator.destroy(filter);
+        _objFactory.destroy(filter);
     }
 
     /* ------------------------------------------------------------ */
@@ -1244,7 +1259,7 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T f = createInstance(c);
-                f = _instantiator.decorate(f);
+                f = _objFactory.decorate(f);
                 return f;
             }
             catch (Exception e)
@@ -1260,7 +1275,7 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T s = createInstance(c);
-                s = _instantiator.decorate(s);
+                s = _objFactory.decorate(s);
                 return s;
             }
             catch (Exception e)
@@ -1403,7 +1418,7 @@ public class ServletContextHandler extends ContextHandler
             try
             {
                 T l = createInstance(clazz);
-                l = _instantiator.decorate(l);
+                l = _objFactory.decorate(l);
                 return l;
             }            
             catch (Exception e)

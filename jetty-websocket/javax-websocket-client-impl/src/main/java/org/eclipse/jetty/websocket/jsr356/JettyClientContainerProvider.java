@@ -22,16 +22,24 @@ import javax.websocket.ContainerProvider;
 import javax.websocket.WebSocketContainer;
 
 /**
- * Client {@link ContainerProvider} implementation
+ * Client {@link ContainerProvider} implementation.
+ * <p>
+ * Created by a {@link java.util.ServiceLoader} call in the
+ * {@link javax.websocket.ContainerProvider#getWebSocketContainer()} call.
  */
 public class JettyClientContainerProvider extends ContainerProvider
 {
+    /**
+     * Used by {@link ContainerProvider#getWebSocketContainer()} to get a new instance
+     * of the Client {@link WebSocketContainer}.
+     */
     @Override
     protected WebSocketContainer getContainer()
     {
         ClientContainer container = new ClientContainer();
         try
         {
+            // We need to start this container properly.
             container.start();
             return container;
         }

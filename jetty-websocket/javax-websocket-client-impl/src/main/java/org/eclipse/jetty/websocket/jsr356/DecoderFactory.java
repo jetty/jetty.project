@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -76,7 +75,7 @@ public class DecoderFactory implements Configurable
     private static final Logger LOG = Log.getLogger(DecoderFactory.class);
 
     private final DecoderMetadataSet metadatas;
-    private final DecoratedObjectFactory objectFactory;
+    private final WebSocketContainerScope containerScope;
     private DecoderFactory parentFactory;
     private Map<Class<?>, Wrapper> activeWrappers;
 
@@ -93,7 +92,7 @@ public class DecoderFactory implements Configurable
     protected DecoderFactory(WebSocketContainerScope containerScope, DecoderMetadataSet metadatas, DecoderFactory parentFactory)
     {
         Objects.requireNonNull(containerScope,"Container Scope cannot be null");
-        this.objectFactory = containerScope.getObjectFactory();
+        this.containerScope = containerScope;
         this.metadatas = metadatas;
         this.activeWrappers = new ConcurrentHashMap<>();
         this.parentFactory = parentFactory;
@@ -186,7 +185,7 @@ public class DecoderFactory implements Configurable
         Class<? extends Decoder> decoderClass = metadata.getCoderClass();
         try
         {
-            Decoder decoder = objectFactory.createInstance(decoderClass);
+            Decoder decoder = containerScope.getObjectFactory().createInstance(decoderClass);
             return new Wrapper(decoder,metadata);
         }
         catch (InstantiationException | IllegalAccessException e)
