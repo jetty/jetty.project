@@ -114,6 +114,7 @@ public class SimpleServletServer
 
         ServletContextHandler context = new ServletContextHandler();
         context.setContextPath("/");
+        configureServletContextHandler(context);
         server.setHandler(context);
 
         // Serve capture servlet
@@ -136,6 +137,10 @@ public class SimpleServletServer
         {
             LOG.debug(server.dump());
         }
+    }
+
+    protected void configureServletContextHandler(ServletContextHandler context)
+    {
     }
 
     public void stop()

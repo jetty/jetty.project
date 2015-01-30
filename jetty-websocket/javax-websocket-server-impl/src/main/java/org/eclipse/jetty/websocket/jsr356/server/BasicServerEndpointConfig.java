@@ -51,7 +51,7 @@ public class BasicServerEndpointConfig implements ServerEndpointConfig
         this.subprotocols = new ArrayList<>();
         this.extensions = new ArrayList<>();
         this.userProperties = new HashMap<>();
-        this.configurator = new BasicServerEndpointConfigurator(containerScope);
+        this.configurator = new ContainerDefaultConfigurator();
     }
 
     public BasicServerEndpointConfig(WebSocketContainerScope containerScope, ServerEndpointConfig copy)
@@ -73,7 +73,7 @@ public class BasicServerEndpointConfig implements ServerEndpointConfig
         }
         else
         {
-            cfgr = new BasicServerEndpointConfigurator(containerScope);
+            cfgr = new ContainerDefaultConfigurator();
         }
 
         // Make sure all Configurators obtained are decorated

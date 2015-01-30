@@ -122,7 +122,7 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
             }
             else
             {
-                cfgr = new BasicServerEndpointConfigurator(containerScope);
+                cfgr = new ContainerDefaultConfigurator();
             }
         }
         else
@@ -144,7 +144,6 @@ public class AnnotatedServerEndpointConfig implements ServerEndpointConfig
         
         // Make sure all Configurators obtained are decorated
         this.configurator = containerScope.getObjectFactory().decorate(cfgr);
-
     }
 
     @Override

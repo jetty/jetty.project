@@ -62,7 +62,7 @@ public class DecoratedObjectFactory implements Iterable<Decorator>
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Creating Instance: " + clazz,new Throwable("Creation Stack"));
+            LOG.debug("Creating Instance: " + clazz);
         }
         T o = clazz.newInstance();
         return decorate(o);
@@ -105,5 +105,15 @@ public class DecoratedObjectFactory implements Iterable<Decorator>
         {
             this.decorators.addAll(decorators);
         }
+    }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder str = new StringBuilder();
+        str.append(this.getClass().getName()).append("[decorators=");
+        str.append(Integer.toString(decorators.size()));
+        str.append("]");
+        return str.toString();
     }
 }

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import javax.websocket.DeploymentException;
@@ -43,16 +45,19 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
 
     private final MappedWebSocketCreator mappedCreator;
     private final WebSocketServerFactory webSocketServerFactory;
+    private List<Class<?>> deferredEndpointClasses;
+    private List<ServerEndpointConfig> deferredEndpointConfigs;
 
     public ServerContainer(MappedWebSocketCreator creator, WebSocketServerFactory factory, Executor executor)
     {
-        super();
+        super(factory);
         this.mappedCreator = creator;
         this.webSocketServerFactory = factory;
         EventDriverFactory eventDriverFactory = this.webSocketServerFactory.getEventDriverFactory();
         eventDriverFactory.addImplementation(new JsrServerEndpointImpl());
         eventDriverFactory.addImplementation(new JsrServerExtendsEndpointImpl());
         this.webSocketServerFactory.addSessionFactory(new JsrSessionFactory(this,this));
+        addBean(webSocketServerFactory);
     }
     
     public EndpointInstance newClientEndpointInstance(Object endpoint, ServerEndpointConfig config, String path)
@@ -76,11 +81,22 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void addEndpoint(Class<?> endpointClass) throws DeploymentException
     {
-        ServerEndpointMetadata metadata = getServerEndpointMetadata(endpointClass,null);
-        addEndpoint(metadata);
+        if (isStarted() || isStarting())
+        {
+            ServerEndpointMetadata metadata = getServerEndpointMetadata(endpointClass,null);
+            addEndpoint(metadata);
+        }
+        else
+        {
+            if (deferredEndpointClasses == null)
+            {
+                deferredEndpointClasses = new ArrayList<Class<?>>();
+            }
+            deferredEndpointClasses.add(endpointClass);
+        }
     }
 
-    public void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
+    private void addEndpoint(ServerEndpointMetadata metadata) throws DeploymentException
     {
         JsrCreator creator = new JsrCreator(this,metadata,webSocketServerFactory.getExtensionFactory());
         mappedCreator.addMapping(new WebSocketPathSpec(metadata.getPath()),creator);
@@ -89,12 +105,50 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
     @Override
     public void addEndpoint(ServerEndpointConfig config) throws DeploymentException
     {
-        if (LOG.isDebugEnabled())
+        if (isStarted() || isStarting())
         {
-            LOG.debug("addEndpoint({}) path={} endpoint={}",config,config.getPath(),config.getEndpointClass());
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("addEndpoint({}) path={} endpoint={}",config,config.getPath(),config.getEndpointClass());
+            }
+            ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(),config);
+            addEndpoint(metadata);
         }
-        ServerEndpointMetadata metadata = getServerEndpointMetadata(config.getEndpointClass(),config);
-        addEndpoint(metadata);
+        else
+        {
+            if (deferredEndpointConfigs == null)
+            {
+                deferredEndpointConfigs = new ArrayList<ServerEndpointConfig>();
+            }
+            deferredEndpointConfigs.add(config);
+        }
+    }
+    
+    @Override
+    protected void doStart() throws Exception
+    {
+        // Proceed with Normal Startup
+        super.doStart();
+        
+        // Process Deferred Endpoints
+        if (deferredEndpointClasses != null)
+        {
+            for (Class<?> endpointClass : deferredEndpointClasses)
+            {
+                addEndpoint(endpointClass);
+            }
+        }
+        
+        if (deferredEndpointConfigs != null)
+        {
+            for (ServerEndpointConfig config : deferredEndpointConfigs)
+            {
+                addEndpoint(config);
+            }
+        }
+        
+        deferredEndpointClasses.clear();
+        deferredEndpointConfigs.clear();
     }
 
     public ServerEndpointMetadata getServerEndpointMetadata(final Class<?> endpoint, final ServerEndpointConfig config) throws DeploymentException

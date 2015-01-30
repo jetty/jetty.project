@@ -25,7 +25,6 @@ import java.util.concurrent.ConcurrentHashMap;
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
-import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
@@ -69,7 +68,7 @@ public class EncoderFactory implements Configurable
     private static final Logger LOG = Log.getLogger(EncoderFactory.class);
 
     private final EncoderMetadataSet metadatas;
-    private final DecoratedObjectFactory objectFactory;
+    private final WebSocketContainerScope containerScope;
     private EncoderFactory parentFactory;
     private Map<Class<?>, Wrapper> activeWrappers;
 
@@ -86,7 +85,7 @@ public class EncoderFactory implements Configurable
     protected EncoderFactory(WebSocketContainerScope containerScope, EncoderMetadataSet metadatas, EncoderFactory parentFactory)
     {
         Objects.requireNonNull(containerScope,"Container Scope cannot be null");
-        this.objectFactory = containerScope.getObjectFactory();
+        this.containerScope = containerScope;
         this.metadatas = metadatas;
         this.activeWrappers = new ConcurrentHashMap<>();
         this.parentFactory = parentFactory;
@@ -179,7 +178,7 @@ public class EncoderFactory implements Configurable
         Class<? extends Encoder> encoderClass = metadata.getCoderClass();
         try
         {
-            Encoder encoder = objectFactory.createInstance(encoderClass);
+            Encoder encoder = containerScope.getObjectFactory().createInstance(encoderClass);
             return new Wrapper(encoder,metadata);
         }
         catch (InstantiationException | IllegalAccessException e)

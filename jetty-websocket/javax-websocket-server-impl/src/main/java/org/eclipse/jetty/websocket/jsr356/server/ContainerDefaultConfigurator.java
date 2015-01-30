@@ -35,7 +35,7 @@ import org.eclipse.jetty.websocket.api.util.QuoteUtil;
  * 
  * @see ServiceLoader behavior of {@link ServerEndpointConfig.Configurator}
  */
-public class ContainerDefaultConfigurator extends Configurator
+public final class ContainerDefaultConfigurator extends Configurator
 {
     private static final Logger LOG = Log.getLogger(ContainerDefaultConfigurator.class);
     private static final String NO_SUBPROTOCOL = "";

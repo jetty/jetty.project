@@ -58,7 +58,6 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
 
         // Create the Jetty ServerContainer implementation
-        filter.getFactory().init(context);
         ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),context.getServer().getThreadPool());
         context.addBean(jettyContainer);
 
@@ -79,7 +78,6 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
         WebSocketUpgradeFilter filter = WebSocketUpgradeFilter.configureContext(context);
 
         // Create the Jetty ServerContainer implementation
-        filter.getFactory().init(context);
         ServerContainer jettyContainer = new ServerContainer(filter,filter.getFactory(),jettyContext.getServer().getThreadPool());
         jettyContext.addBean(jettyContainer);
 

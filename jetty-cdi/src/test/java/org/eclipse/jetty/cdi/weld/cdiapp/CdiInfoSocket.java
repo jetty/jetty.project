@@ -47,11 +47,6 @@ public class CdiInfoSocket
 
     private Session session;
     
-    public CdiInfoSocket()
-    {
-        Thread.dumpStack();
-    }
-
     @OnOpen
     public void onOpen(Session session)
     {
@@ -76,8 +71,8 @@ public class CdiInfoSocket
         {
             case "info":
                 out.printf("websocketSession is %s%n",asPresent(session));
-                out.printf("httpSession: %s%n",asPresent(httpSession));
-                out.printf("servletContext: %s%n",asPresent(servletContext));
+                out.printf("httpSession is %s%n",asPresent(httpSession));
+                out.printf("servletContext is %s%n",asPresent(servletContext));
                 break;
         }
 

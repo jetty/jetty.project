@@ -77,6 +77,8 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 {
     private static final Logger LOG = Log.getLogger(ClientContainer.class);
     
+    /** The delegated Container Scope */
+    private final WebSocketContainerScope scopeDelegate;
     /** Tracking all primitive decoders for the container */
     private final DecoderFactory decoderFactory;
     /** Tracking all primitive encoders for the container */
@@ -89,8 +91,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     /** The jetty websocket client in use for this container */
     private WebSocketClient client;
 
-    protected DecoratedObjectFactory objectFactory;
-
     public ClientContainer()
     {
         // This constructor is used with Standalone JSR Client usage.
@@ -102,6 +102,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         boolean trustAll = Boolean.getBoolean("org.eclipse.jetty.websocket.jsr356.ssl-trust-all");
         
+        this.scopeDelegate = scope;
         client = new WebSocketClient(scope, new SslContextFactory(trustAll));
         client.setEventDriverFactory(new JsrEventDriverFactory(client.getPolicy()));
         SessionFactory sessionFactory = new JsrSessionFactory(this,this,client);
@@ -111,10 +112,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this.endpointClientMetadataCache = new ConcurrentHashMap<>();
         this.decoderFactory = new DecoderFactory(this,PrimitiveDecoderMetadataSet.INSTANCE);
         this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
-
-        EmptyClientEndpointConfig empty = new EmptyClientEndpointConfig();
-        this.decoderFactory.init(empty);
-        this.encoderFactory.init(empty);
 
         ShutdownThread.register(this);
     }
@@ -196,7 +193,18 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         EndpointInstance instance = newClientEndpointInstance(endpoint,null);
         return connect(instance,path);
     }
-
+    
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        
+        // Initialize the default decoder / encoder factories
+        EmptyClientEndpointConfig empty = new EmptyClientEndpointConfig();
+        this.decoderFactory.init(empty);
+        this.encoderFactory.init(empty);
+    }
+    
     @Override
     protected void doStop() throws Exception
     {
@@ -208,7 +216,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public ByteBufferPool getBufferPool()
     {
-        return client.getBufferPool();
+        return scopeDelegate.getBufferPool();
     }
 
     public WebSocketClient getClient()
@@ -297,7 +305,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public Executor getExecutor()
     {
-        return client.getExecutor();
+        return scopeDelegate.getExecutor();
     }
 
     @Override
@@ -317,7 +325,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public DecoratedObjectFactory getObjectFactory()
     {
-        return client.getObjectFactory();
+        return scopeDelegate.getObjectFactory();
     }
 
     /**
@@ -331,13 +339,13 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     @Override
     public WebSocketPolicy getPolicy()
     {
-        return client.getPolicy();
+        return scopeDelegate.getPolicy();
     }
 
     @Override
     public SslContextFactory getSslContextFactory()
     {
-        return client.getSslContextFactory();
+        return scopeDelegate.getSslContextFactory();
     }
 
     private EndpointInstance newClientEndpointInstance(Class<?> endpointClass, ClientEndpointConfig config)
