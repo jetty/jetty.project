@@ -16,22 +16,29 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.scopes;
+package org.eclipse.jetty.cdi.weld;
 
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import org.jboss.weld.manager.BeanManagerImpl;
 
-/**
- * Defined Scope for a WebSocketSession (active connection)
- */
-public interface WebSocketSessionScope
+public class WeldSessionContext
 {
-    /**
-     * Active {@link WebSocketSession} associated with this scope.
-     */
-    WebSocketSession getWebSocketSession();
 
-    /**
-     * The parent {@link WebSocketContainerScope} for this session scope.
-     */
-    WebSocketContainerScope getContainerScope();
+    public static void activate(BeanManagerImpl beanManager)
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    public static void deactivate()
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
+    public static void invalidate()
+    {
+        // TODO Auto-generated method stub
+        
+    }
+
 }

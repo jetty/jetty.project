@@ -393,13 +393,14 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     @Override
     public void init(ServletContext context) throws ServletException
     {
+        // Setup ObjectFactory
         this.objectFactory = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
         if (this.objectFactory == null)
         {
             this.objectFactory = new DecoratedObjectFactory();
         }
         
-        
+        // Validate Environment
         ContextHandler handler = ContextHandler.getContextHandler(context);
 
         if (handler == null)

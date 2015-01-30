@@ -16,22 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.scopes;
+package org.eclipse.jetty.cdi.weld.cdiapp;
 
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import java.io.IOException;
+import java.io.PrintWriter;
 
-/**
- * Defined Scope for a WebSocketSession (active connection)
- */
-public interface WebSocketSessionScope
+public interface Dumper
 {
-    /**
-     * Active {@link WebSocketSession} associated with this scope.
-     */
-    WebSocketSession getWebSocketSession();
-
-    /**
-     * The parent {@link WebSocketContainerScope} for this session scope.
-     */
-    WebSocketContainerScope getContainerScope();
+    public void dump(PrintWriter out) throws IOException;
 }

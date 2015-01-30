@@ -16,22 +16,25 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.scopes;
+package org.eclipse.jetty.cdi.weld;
 
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import java.util.Map;
 
-/**
- * Defined Scope for a WebSocketSession (active connection)
- */
-public interface WebSocketSessionScope
+import org.jboss.weld.context.bound.BoundRequest;
+
+public class WebSocketBoundRequest implements BoundRequest
 {
-    /**
-     * Active {@link WebSocketSession} associated with this scope.
-     */
-    WebSocketSession getWebSocketSession();
+    @Override
+    public Map<String, Object> getRequestMap()
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 
-    /**
-     * The parent {@link WebSocketContainerScope} for this session scope.
-     */
-    WebSocketContainerScope getContainerScope();
+    @Override
+    public Map<String, Object> getSessionMap(boolean create)
+    {
+        // TODO Auto-generated method stub
+        return null;
+    }
 }

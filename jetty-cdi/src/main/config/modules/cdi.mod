@@ -11,10 +11,10 @@ jsp
 
 [files]
 lib/weld/
-maven://org.jboss.weld.servlet/weld-servlet/2.2.5.Final|lib/weld/weld-servlet-2.2.5.Final.jar
+maven://org.jboss.weld.servlet/weld-servlet/2.2.9.Final|lib/weld/weld-servlet-2.2.9.Final.jar
 
 [lib]
-lib/weld/weld-servlet-2.2.5.Final.jar
+lib/weld/weld-servlet-2.2.9.Final.jar
 lib/jetty-cdi-${jetty.version}.jar
 
 [xml]
