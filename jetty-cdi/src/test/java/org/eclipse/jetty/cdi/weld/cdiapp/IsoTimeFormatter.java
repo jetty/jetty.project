@@ -16,22 +16,24 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.scopes;
+package org.eclipse.jetty.cdi.weld.cdiapp;
 
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import java.text.DateFormat;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
+import java.util.Locale;
+import java.util.TimeZone;
 
-/**
- * Defined Scope for a WebSocketSession (active connection)
- */
-public interface WebSocketSessionScope
+import javax.inject.Named;
+
+@Named("iso")
+public class IsoTimeFormatter implements TimeFormatter
 {
-    /**
-     * Active {@link WebSocketSession} associated with this scope.
-     */
-    WebSocketSession getWebSocketSession();
-
-    /**
-     * The parent {@link WebSocketContainerScope} for this session scope.
-     */
-    WebSocketContainerScope getContainerScope();
+    @Override
+    public String format(Calendar cal)
+    {
+        DateFormat dateFormat = new SimpleDateFormat("yyyy-MM-dd'T'HH:mm:ss'Z'",Locale.US);
+        dateFormat.setTimeZone(TimeZone.getTimeZone("UTC"));
+        return dateFormat.format(cal.getTime());
+    }
 }

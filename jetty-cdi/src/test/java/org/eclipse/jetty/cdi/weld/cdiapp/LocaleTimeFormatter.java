@@ -16,22 +16,23 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.scopes;
+package org.eclipse.jetty.cdi.weld.cdiapp;
 
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import java.text.SimpleDateFormat;
+import java.util.Calendar;
 
-/**
- * Defined Scope for a WebSocketSession (active connection)
- */
-public interface WebSocketSessionScope
+import javax.enterprise.inject.Default;
+import javax.inject.Named;
+
+@Named("locale")
+@Default
+public class LocaleTimeFormatter implements TimeFormatter
 {
-    /**
-     * Active {@link WebSocketSession} associated with this scope.
-     */
-    WebSocketSession getWebSocketSession();
+    public static final TimeFormatter INSTANCE = new LocaleTimeFormatter();
 
-    /**
-     * The parent {@link WebSocketContainerScope} for this session scope.
-     */
-    WebSocketContainerScope getContainerScope();
+    @Override
+    public String format(Calendar cal)
+    {
+        return new SimpleDateFormat().format(cal.getTime());
+    }
 }

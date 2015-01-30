@@ -16,22 +16,30 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.scopes;
+package org.eclipse.jetty.cdi.weld.cdiapp;
 
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import javax.enterprise.util.AnnotationLiteral;
+import javax.inject.Named;
 
-/**
- * Defined Scope for a WebSocketSession (active connection)
- */
-public interface WebSocketSessionScope
+@SuppressWarnings("serial")
+public class NamedLiteral extends AnnotationLiteral<Named> implements Named
 {
-    /**
-     * Active {@link WebSocketSession} associated with this scope.
-     */
-    WebSocketSession getWebSocketSession();
+    private final String value;
 
-    /**
-     * The parent {@link WebSocketContainerScope} for this session scope.
-     */
-    WebSocketContainerScope getContainerScope();
+    public String value()
+    {
+        return value;
+    }
+
+    public NamedLiteral(String name)
+    {
+        if (name == null)
+        {
+            this.value = "";
+        }
+        else
+        {
+            this.value = name;
+        }
+    }
 }

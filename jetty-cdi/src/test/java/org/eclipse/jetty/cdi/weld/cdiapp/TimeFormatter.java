@@ -16,22 +16,11 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.scopes;
+package org.eclipse.jetty.cdi.weld.cdiapp;
 
-import org.eclipse.jetty.websocket.common.WebSocketSession;
+import java.util.Calendar;
 
-/**
- * Defined Scope for a WebSocketSession (active connection)
- */
-public interface WebSocketSessionScope
+public interface TimeFormatter
 {
-    /**
-     * Active {@link WebSocketSession} associated with this scope.
-     */
-    WebSocketSession getWebSocketSession();
-
-    /**
-     * The parent {@link WebSocketContainerScope} for this session scope.
-     */
-    WebSocketContainerScope getContainerScope();
+    public String format(Calendar cal);
 }
