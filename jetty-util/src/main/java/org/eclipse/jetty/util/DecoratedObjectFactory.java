@@ -32,7 +32,9 @@ import org.eclipse.jetty.util.log.Logger;
  * Consistent single location for all Decorator behavior, with equal behavior in a ServletContext and also for a stand
  * alone client.
  * <p>
- * Used by WebAppContext, WebSocketServerFactory, or WebSocketClient.
+ * Used by ServletContextHandler, WebAppContext, WebSocketServerFactory, and WebSocketClient.
+ * <p>
+ * Can be found in the ServletContext Attributes at the {@link #ATTR DecoratedObjectFactory.ATTR} key.
  */
 public class DecoratedObjectFactory implements Iterable<Decorator>
 {
