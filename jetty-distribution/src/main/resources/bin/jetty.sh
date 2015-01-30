@@ -166,7 +166,7 @@ then
   ETC=$HOME/etc
 fi
 
-for CONFIG in $ETC/default/${NAME}{,9} $HOME/.${NAME}rc; do
+for CONFIG in {/etc,~/etc}/default/${NAME}{,9} $HOME/.${NAME}rc; do
   if [ -f "$CONFIG" ] ; then 
     readConfig "$CONFIG"
   fi
