@@ -20,7 +20,6 @@ package org.eclipse.jetty.alpn.server;
 
 import java.util.Collections;
 import java.util.List;
-
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.alpn.ALPN;
@@ -54,31 +53,38 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
         List<String> serverProtocols = getProtocols();
         String tlsProtocol = sslEngine.getHandshakeSession().getProtocol();
         String tlsCipher = sslEngine.getHandshakeSession().getCipherSuite();
-                
         String negotiated = null;
-        for (String clientProtocol : clientProtocols)
+
+        // RFC 7301 states that the server picks the protocol
+        // that it prefers that is also supported by the client.
+        for (String serverProtocol : serverProtocols)
         {
-            if (serverProtocols.contains(clientProtocol))
+            if (clientProtocols.contains(serverProtocol))
             {
-                ConnectionFactory factory = getConnector().getConnectionFactory(clientProtocol);
-                
-                if (factory instanceof CipherDiscriminator && !((CipherDiscriminator)factory).isAcceptable(clientProtocol,tlsProtocol,tlsCipher))
+                ConnectionFactory factory = getConnector().getConnectionFactory(serverProtocol);
+                if (factory instanceof CipherDiscriminator && !((CipherDiscriminator)factory).isAcceptable(serverProtocol, tlsProtocol, tlsCipher))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("{} protocol {} not acceptable to {} for {}/{}", this, clientProtocol,factory,tlsProtocol,tlsCipher);
+                        LOG.debug("{} protocol {} not acceptable to {} for {}/{}", this, serverProtocol, factory, tlsProtocol, tlsCipher);
                     continue;
                 }
-                
-                negotiated = clientProtocol;
+
+                negotiated = serverProtocol;
                 break;
             }
         }
         if (negotiated == null)
         {
             if (clientProtocols.isEmpty())
-                negotiated=getDefaultProtocol();
+            {
+                negotiated = getDefaultProtocol();
+            }
             else
-                throw new IllegalStateException("No acceptable protocol");
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} could not negotiate protocol: C[{}] | S[{}]", this, clientProtocols, serverProtocols);
+                throw new IllegalStateException();
+            }
         }
         if (LOG.isDebugEnabled())
             LOG.debug("{} protocol selected {}", this, negotiated);
