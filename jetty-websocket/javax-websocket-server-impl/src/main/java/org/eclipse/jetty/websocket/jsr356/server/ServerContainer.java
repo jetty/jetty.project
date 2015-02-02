@@ -137,6 +137,7 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             {
                 addEndpoint(endpointClass);
             }
+            deferredEndpointClasses.clear();
         }
         
         if (deferredEndpointConfigs != null)
@@ -145,10 +146,8 @@ public class ServerContainer extends ClientContainer implements javax.websocket.
             {
                 addEndpoint(config);
             }
+            deferredEndpointConfigs.clear();
         }
-        
-        deferredEndpointClasses.clear();
-        deferredEndpointConfigs.clear();
     }
 
     public ServerEndpointMetadata getServerEndpointMetadata(final Class<?> endpoint, final ServerEndpointConfig config) throws DeploymentException
