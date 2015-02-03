@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -406,6 +407,92 @@ public class AsyncIOServletTest
             assertThat(line, not(containsString(" ")));
             line=in.readLine();
             assertThat(line, containsString("discontent. How Now Brown Cow. The "));
+        }
+        
+        if (!latch.await(5, TimeUnit.SECONDS))
+            Assert.fail();
+    }
+    
+
+    @Test
+    public void testIsNotReadyAtEOF() throws Exception
+    {
+        final CountDownLatch latch = new CountDownLatch(1);
+        String text = "Now is the winter of our discontent. How Now Brown Cow. The quick brown fox jumped over the lazy dog.\n";
+        final byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
+        
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            {
+                response.flushBuffer();
+                
+                final AsyncContext async = request.startAsync();
+                final ServletInputStream in = request.getInputStream();
+                final ServletOutputStream out = response.getOutputStream();
+                
+                in.setReadListener(new ReadListener()
+                {
+                    transient int _i=0;
+                    transient boolean _minusOne=false;;
+                    transient boolean _finished=false;;
+                    
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        t.printStackTrace();
+                        async.complete();
+                    }
+                    
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while(in.isReady())
+                        {
+                            int b = in.read();
+                            if (b==-1)
+                                _minusOne=true;
+                            else if (data[_i++]!=b)
+                                throw new IllegalStateException();
+                        }
+                        
+                        if (in.isFinished())
+                            _finished=true;
+                    }
+                    
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        out.write(String.format("i=%d eof=%b finished=%b",_i,_minusOne,_finished).getBytes(StandardCharsets.ISO_8859_1));
+                        async.complete();                        
+                    }
+                });
+            }
+        });
+
+        String request = "GET " + path + " HTTP/1.1\r\n" +
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "Content-Type: text/plain\r\n"+
+                "Content-Length: "+data.length+"\r\n" +
+                "\r\n";
+
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = client.getOutputStream();
+            output.write(request.getBytes("UTF-8"));
+            output.write(data);
+            output.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            String line=in.readLine();
+            assertThat(line, containsString("200 OK"));
+            while (line.length()>0)
+                line=in.readLine();
+            line=in.readLine();
+            assertThat(line, not(containsString(" ")));
+            line=in.readLine();
+            assertThat(line, containsString("i="+data.length+" eof=false finished=true"));
         }
         
         if (!latch.await(5, TimeUnit.SECONDS))
