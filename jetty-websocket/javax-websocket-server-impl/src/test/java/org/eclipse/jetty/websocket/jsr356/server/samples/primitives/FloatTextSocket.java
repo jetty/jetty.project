@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.primitives;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -46,7 +47,7 @@ public class FloatTextSocket
     @OnMessage
     public void onMessage(float f) throws IOException
     {
-        String msg = String.format("%.4f",f);
+        String msg = String.format(Locale.US, "%.4f",f);
         session.getAsyncRemote().sendText(msg);
     }
 
