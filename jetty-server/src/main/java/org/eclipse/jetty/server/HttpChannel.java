@@ -348,19 +348,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     }
                 }
-                catch (Error e)
-                {
-                    if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
-                        LOG.ignore(e);
-                    else
-                    {
-                        error=true;
-                        LOG.warn(String.valueOf(_request.getHttpURI()), e);
-                        _state.error(e);
-                        _request.setHandled(true);
-                        handleException(e);
-                    }
-                }
                 catch (EofException|QuietServletException e)
                 {
                     error=true;
@@ -376,6 +363,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     _state.error(e);
                     _request.setHandled(true);
                     handleException(e);
+                }
+                catch (Throwable e)
+                {
+                    if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
+                        LOG.ignore(e);
+                    else
+                    {
+                        error=true;
+                        LOG.warn(String.valueOf(_request.getHttpURI()), e);
+                        _state.error(e);
+                        _request.setHandled(true);
+                        handleException(e);
+                    }
                 }
                 finally
                 {

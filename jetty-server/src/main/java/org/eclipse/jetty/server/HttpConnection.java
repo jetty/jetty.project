@@ -531,7 +531,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             if (parseContent())
                 _channel.handle();
-            else
+            else if (!_input.isFinished())
                 asyncReadFillInterested();
         }
 

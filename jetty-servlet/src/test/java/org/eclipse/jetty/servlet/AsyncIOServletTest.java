@@ -27,6 +27,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -39,11 +40,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -52,6 +55,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+@RunWith (AdvancedRunner.class)
 public class AsyncIOServletTest
 {
     private Server server;
@@ -63,6 +67,7 @@ public class AsyncIOServletTest
     {
         server = new Server();
         connector = new ServerConnector(server);
+        connector.setIdleTimeout(30000);
         server.addConnector(connector);
 
         context = new ServletContextHandler(server, "/", false, false);
@@ -410,5 +415,176 @@ public class AsyncIOServletTest
         
         if (!latch.await(5, TimeUnit.SECONDS))
             Assert.fail();
+    }
+    
+
+    @Test
+    public void testIsReadyAtEOF() throws Exception
+    {
+        String text = "TEST\n";
+        final byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
+        
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            {
+                response.flushBuffer();
+                
+                final AsyncContext async = request.startAsync();
+                final ServletInputStream in = request.getInputStream();
+                final ServletOutputStream out = response.getOutputStream();
+                
+                in.setReadListener(new ReadListener()
+                {
+                    transient int _i=0;
+                    transient boolean _minusOne=false;;
+                    transient boolean _finished=false;;
+                    
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        t.printStackTrace();
+                        async.complete();
+                    }
+                    
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        while(in.isReady() && !in.isFinished())
+                        {
+                            int b = in.read();
+                            if (b==-1)
+                                _minusOne=true;
+                            else if (data[_i++]!=b)
+                                throw new IllegalStateException();
+                        }
+                        
+                        if (in.isFinished())
+                            _finished=true;
+                    }
+                    
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        out.write(String.format("i=%d eof=%b finished=%b",_i,_minusOne,_finished).getBytes(StandardCharsets.ISO_8859_1));
+                        async.complete();                        
+                    }
+                });
+            }
+        });
+
+        String request = "GET " + path + " HTTP/1.1\r\n" +
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "Content-Type: text/plain\r\n"+
+                "Content-Length: "+data.length+"\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = client.getOutputStream();
+            output.write(request.getBytes("UTF-8"));
+            output.write(data);
+            output.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            String line=in.readLine();
+            assertThat(line, containsString("200 OK"));
+            while (line.length()>0)
+                line=in.readLine();
+            line=in.readLine();
+            assertThat(line, containsString("i="+data.length+" eof=true finished=true"));
+        }
+    }
+    
+
+    @Test
+    public void testOtherThreadOnAllDataRead() throws Exception
+    {
+        String text = "X";
+        final byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
+        
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            {
+                response.flushBuffer();
+                
+                final AsyncContext async = request.startAsync();
+                final ServletInputStream in = request.getInputStream();
+                final ServletOutputStream out = response.getOutputStream();
+                
+                in.setReadListener(new ReadListener()
+                {
+                    transient int _i=0;
+                    
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        t.printStackTrace();
+                        async.complete();
+                    }
+                    
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        new Thread()
+                        {
+                            public void run()
+                            {
+                                try
+                                {
+                                    Thread.sleep(1000);
+                                    if (!in.isReady())
+                                        throw new IllegalStateException();
+                                    if (in.read()!='X')
+                                        throw new IllegalStateException();
+                                    if (!in.isReady())
+                                        throw new IllegalStateException();
+                                    if (in.read()!=-1)
+                                        throw new IllegalStateException();
+                                }
+                                catch(Exception e)
+                                {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }.start();
+                    }
+                    
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        out.write("OK\n".getBytes(StandardCharsets.ISO_8859_1));
+                        async.complete();                        
+                    }
+                });
+            }
+        });
+
+        String request = "GET " + path + " HTTP/1.1\r\n" +
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "Content-Type: text/plain\r\n"+
+                "Content-Length: "+data.length+"\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = client.getOutputStream();
+            output.write(request.getBytes("UTF-8"));
+            output.write(data);
+            output.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            String line=in.readLine();
+            assertThat(line, containsString("200 OK"));
+            while (line.length()>0)
+                line=in.readLine();
+            line=in.readLine();
+            assertThat(line, containsString("OK"));
+        }
     }
 }

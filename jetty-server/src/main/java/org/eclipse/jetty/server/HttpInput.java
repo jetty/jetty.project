@@ -470,6 +470,9 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
 
         synchronized (_inputQ)
         {
+            if (_state==EOF)
+                return;
+            
             if (_state==AEOF)
             {
                 _state=EOF;
