@@ -417,7 +417,7 @@ public class AsyncIOServletTest
     @Test
     public void testIsNotReadyAtEOF() throws Exception
     {
-        String text = "Now is the winter of our discontent. How Now Brown Cow. The quick brown fox jumped over the lazy dog.\n";
+        String text = "Test\n";
         final byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
         
         startServer(new HttpServlet()
@@ -474,6 +474,7 @@ public class AsyncIOServletTest
                 "Host: localhost:" + connector.getLocalPort() + "\r\n" +
                 "Content-Type: text/plain\r\n"+
                 "Content-Length: "+data.length+"\r\n" +
+                "Connection: close\r\n" +
                 "\r\n";
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
@@ -488,8 +489,6 @@ public class AsyncIOServletTest
             assertThat(line, containsString("200 OK"));
             while (line.length()>0)
                 line=in.readLine();
-            line=in.readLine();
-            assertThat(line, not(containsString(" ")));
             line=in.readLine();
             assertThat(line, containsString("i="+data.length+" eof=false finished=true"));
         }
