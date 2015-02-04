@@ -26,6 +26,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
@@ -518,8 +519,6 @@ public class AsyncIOServletTest
                 
                 in.setReadListener(new ReadListener()
                 {
-                    transient int _i=0;
-                    
                     @Override
                     public void onError(Throwable t)
                     {
@@ -575,6 +574,8 @@ public class AsyncIOServletTest
         {
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));
+            output.flush();
+            Thread.sleep(100);
             output.write(data);
             output.flush();
 

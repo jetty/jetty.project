@@ -80,6 +80,12 @@ public class HttpTransportOverSPDY implements HttpTransport
         this.version = session.getVersion();
     }
 
+    @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return false;
+    }
+
     protected Stream getStream()
     {
         return stream;

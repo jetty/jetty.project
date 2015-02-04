@@ -237,5 +237,10 @@ public interface EndPoint extends Closeable
      */
     void onClose();
 
+    /** Is the endpoint optimized for DirectBuffer usage
+     * @return True if direct buffers can be used optimally.
+     */
+    boolean isOptimizedForDirectBuffers();
+
     
 }

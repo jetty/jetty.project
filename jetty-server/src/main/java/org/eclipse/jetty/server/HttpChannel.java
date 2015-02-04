@@ -186,6 +186,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _configuration;
     }
 
+    @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return getHttpTransport().isOptimizedForDirectBuffers();
+    }
+
     public Server getServer()
     {
         return _connector.getServer();

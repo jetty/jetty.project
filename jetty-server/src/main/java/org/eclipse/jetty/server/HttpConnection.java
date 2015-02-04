@@ -153,6 +153,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     }
 
     @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return getEndPoint().isOptimizedForDirectBuffers();
+    }
+
+    @Override
     public int getMessagesIn()
     {
         return getHttpChannel().getRequests();

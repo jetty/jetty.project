@@ -92,6 +92,12 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return false;
+    }
+
+    @Override
     public void onOpen()
     {
         if (LOG.isDebugEnabled())

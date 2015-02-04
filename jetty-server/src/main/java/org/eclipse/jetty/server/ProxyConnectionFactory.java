@@ -232,6 +232,12 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             _remote=remote;
             _local=local;
         }
+
+        @Override
+        public boolean isOptimizedForDirectBuffers()
+        {
+            return _endp.isOptimizedForDirectBuffers();
+        }
         
         public InetSocketAddress getLocalAddress()
         {

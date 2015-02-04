@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -51,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A Handler that can dynamically GZIP compress responses.   Unlike 
  * previous and 3rd party GzipFilters, this mechanism works with asynchronously
- * generated responses and does not need to wrap the response or it's ownput
+ * generated responses and does not need to wrap the response or it's output
  * stream.  Instead it uses the efficient {@link HttpOutput.Interceptor} mechanism.
  * <p>
  * The handler can be applied to the entire server (a gzip.mod is included in
