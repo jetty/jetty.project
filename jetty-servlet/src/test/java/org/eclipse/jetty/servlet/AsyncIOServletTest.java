@@ -40,11 +40,13 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.instanceOf;
@@ -53,6 +55,7 @@ import static org.hamcrest.Matchers.not;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
+@RunWith (AdvancedRunner.class)
 public class AsyncIOServletTest
 {
     private Server server;
@@ -64,6 +67,7 @@ public class AsyncIOServletTest
     {
         server = new Server();
         connector = new ServerConnector(server);
+        connector.setIdleTimeout(30000);
         server.addConnector(connector);
 
         context = new ServletContextHandler(server, "/", false, false);
@@ -417,7 +421,7 @@ public class AsyncIOServletTest
     @Test
     public void testIsNotReadyAtEOF() throws Exception
     {
-        String text = "Test\n";
+        String text = "TEST\n";
         final byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
         
         startServer(new HttpServlet()
@@ -490,7 +494,7 @@ public class AsyncIOServletTest
             while (line.length()>0)
                 line=in.readLine();
             line=in.readLine();
-            assertThat(line, containsString("i="+data.length+" eof=false finished=true"));
+            assertThat(line, containsString("i="+data.length+" eof=true finished=true"));
         }
     }
 }
