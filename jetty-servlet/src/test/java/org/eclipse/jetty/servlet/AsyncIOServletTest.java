@@ -417,7 +417,6 @@ public class AsyncIOServletTest
     @Test
     public void testIsNotReadyAtEOF() throws Exception
     {
-        final CountDownLatch latch = new CountDownLatch(1);
         String text = "Now is the winter of our discontent. How Now Brown Cow. The quick brown fox jumped over the lazy dog.\n";
         final byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
         
@@ -448,7 +447,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onDataAvailable() throws IOException
                     {
-                        while(in.isReady())
+                        while(in.isReady() && !in.isFinished())
                         {
                             int b = in.read();
                             if (b==-1)
@@ -494,8 +493,5 @@ public class AsyncIOServletTest
             line=in.readLine();
             assertThat(line, containsString("i="+data.length+" eof=false finished=true"));
         }
-        
-        if (!latch.await(5, TimeUnit.SECONDS))
-            Assert.fail();
     }
 }
