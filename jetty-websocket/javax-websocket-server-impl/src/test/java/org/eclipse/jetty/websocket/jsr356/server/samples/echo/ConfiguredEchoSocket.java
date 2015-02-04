@@ -23,6 +23,7 @@ import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.List;
+import java.util.Locale;
 import java.util.Objects;
 
 import javax.websocket.EndpointConfig;
@@ -67,9 +68,9 @@ public class ConfiguredEchoSocket
         switch (msg)
         {
             case "text-max":
-                return String.format("%,d",session.getMaxTextMessageBufferSize());
+                return String.format(Locale.US, "%,d",session.getMaxTextMessageBufferSize());
             case "binary-max":
-                return String.format("%,d",session.getMaxBinaryMessageBufferSize());
+                return String.format(Locale.US, "%,d",session.getMaxBinaryMessageBufferSize());
             case "decoders":
                 return join(config.getDecoders(),", ");
             case "encoders":
