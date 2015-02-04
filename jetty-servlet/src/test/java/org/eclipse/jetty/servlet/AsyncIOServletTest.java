@@ -419,7 +419,7 @@ public class AsyncIOServletTest
     
 
     @Test
-    public void testIsNotReadyAtEOF() throws Exception
+    public void testIsReadyAtEOF() throws Exception
     {
         String text = "TEST\n";
         final byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
@@ -495,6 +495,96 @@ public class AsyncIOServletTest
                 line=in.readLine();
             line=in.readLine();
             assertThat(line, containsString("i="+data.length+" eof=true finished=true"));
+        }
+    }
+    
+
+    @Test
+    public void testOtherThreadOnAllDataRead() throws Exception
+    {
+        String text = "X";
+        final byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
+        
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            {
+                response.flushBuffer();
+                
+                final AsyncContext async = request.startAsync();
+                final ServletInputStream in = request.getInputStream();
+                final ServletOutputStream out = response.getOutputStream();
+                
+                in.setReadListener(new ReadListener()
+                {
+                    transient int _i=0;
+                    
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        t.printStackTrace();
+                        async.complete();
+                    }
+                    
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        new Thread()
+                        {
+                            public void run()
+                            {
+                                try
+                                {
+                                    Thread.sleep(1000);
+                                    if (!in.isReady())
+                                        throw new IllegalStateException();
+                                    if (in.read()!='X')
+                                        throw new IllegalStateException();
+                                    if (!in.isReady())
+                                        throw new IllegalStateException();
+                                    if (in.read()!=-1)
+                                        throw new IllegalStateException();
+                                }
+                                catch(Exception e)
+                                {
+                                    e.printStackTrace();
+                                }
+                            }
+                        }.start();
+                    }
+                    
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        out.write("OK\n".getBytes(StandardCharsets.ISO_8859_1));
+                        async.complete();                        
+                    }
+                });
+            }
+        });
+
+        String request = "GET " + path + " HTTP/1.1\r\n" +
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "Content-Type: text/plain\r\n"+
+                "Content-Length: "+data.length+"\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = client.getOutputStream();
+            output.write(request.getBytes("UTF-8"));
+            output.write(data);
+            output.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            String line=in.readLine();
+            assertThat(line, containsString("200 OK"));
+            while (line.length()>0)
+                line=in.readLine();
+            line=in.readLine();
+            assertThat(line, containsString("OK"));
         }
     }
 }
