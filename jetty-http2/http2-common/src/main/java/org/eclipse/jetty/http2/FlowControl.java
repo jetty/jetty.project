@@ -32,7 +32,7 @@ public interface FlowControl
 
     public void onDataReceived(ISession session, IStream stream, int length);
 
-    public void onDataConsumed(IStream stream, int length);
+    public void onDataConsumed(ISession session, IStream stream, int length);
 
     public void onDataSending(IStream stream, int length);
 

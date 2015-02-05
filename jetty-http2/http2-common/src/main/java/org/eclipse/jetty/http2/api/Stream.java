@@ -63,7 +63,9 @@ public interface Stream
 
         public void onData(Stream stream, DataFrame frame, Callback callback);
 
-        public void onFailure(Stream stream, Throwable x);
+        public void onReset(Stream stream, ResetFrame frame);
+
+        public void onTimeout(Stream stream, Throwable x);
 
         public static class Adapter implements Listener
         {
@@ -85,7 +87,12 @@ public interface Stream
             }
 
             @Override
-            public void onFailure(Stream stream, Throwable x)
+            public void onReset(Stream stream, ResetFrame frame)
+            {
+            }
+
+            @Override
+            public void onTimeout(Stream stream, Throwable x)
             {
             }
         }

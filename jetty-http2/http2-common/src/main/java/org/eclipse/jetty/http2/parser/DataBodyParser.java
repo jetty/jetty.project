@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -50,7 +50,7 @@ public class DataBodyParser extends BodyParser
         if (isPadding())
         {
             BufferUtil.clear(buffer);
-            notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_data_frame");
+            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_data_frame");
             return false;
         }
         return onData(BufferUtil.EMPTY_BUFFER, false, 0);
@@ -70,7 +70,7 @@ public class DataBodyParser extends BodyParser
                     if (getStreamId() == 0)
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_data_frame");
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_data_frame");
                     }
                     length = getBodyLength();
                     if (isPadding())
@@ -94,7 +94,7 @@ public class DataBodyParser extends BodyParser
                     if (length < 0)
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_data_frame_padding");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR.code, "invalid_data_frame_padding");
                     }
                     break;
                 }

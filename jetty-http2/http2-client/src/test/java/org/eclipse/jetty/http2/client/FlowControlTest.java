@@ -33,7 +33,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControl;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.ISession;
@@ -636,7 +636,7 @@ public class FlowControlTest extends AbstractTest
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
-                if (frame.getError() == ErrorCodes.FLOW_CONTROL_ERROR)
+                if (frame.getError() == ErrorCode.FLOW_CONTROL_ERROR.code)
                     closeLatch.countDown();
             }
         });
@@ -694,7 +694,7 @@ public class FlowControlTest extends AbstractTest
             @Override
             public void onClose(Session session, GoAwayFrame frame)
             {
-                if (frame.getError() == ErrorCodes.FLOW_CONTROL_ERROR)
+                if (frame.getError() == ErrorCode.FLOW_CONTROL_ERROR.code)
                     closeLatch.countDown();
             }
         });

@@ -61,6 +61,7 @@ public interface Session
 
         public void onClose(Session session, GoAwayFrame frame);
 
+        // TODO: how come this is not called ???
         public void onFailure(Session session, Throwable failure);
 
         public static class Adapter implements Session.Listener

@@ -55,7 +55,6 @@ public class HTTP2ClientSession extends HTTP2Session
         }
         else
         {
-            stream.updateClose(frame.isEndStream(), false);
             stream.process(frame, Callback.Adapter.INSTANCE);
             notifyHeaders(stream, frame);
             if (stream.isClosed())
@@ -96,7 +95,6 @@ public class HTTP2ClientSession extends HTTP2Session
         else
         {
             IStream pushStream = createRemoteStream(pushStreamId);
-            pushStream.updateClose(true, true);
             pushStream.process(frame, Callback.Adapter.INSTANCE);
             Stream.Listener listener = notifyPush(stream, pushStream, frame);
             pushStream.setListener(listener);

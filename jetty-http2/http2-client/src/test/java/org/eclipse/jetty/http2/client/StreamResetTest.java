@@ -35,7 +35,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -62,7 +62,7 @@ public class StreamResetTest extends AbstractTest
         FuturePromise<Stream> promise = new FuturePromise<>();
         client.newStream(requestFrame, promise, new Stream.Listener.Adapter());
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCodes.CANCEL_STREAM_ERROR);
+        ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code);
         FutureCallback resetCallback = new FutureCallback();
         stream.reset(resetFrame, resetCallback);
         resetCallback.get(5, TimeUnit.SECONDS);
@@ -78,13 +78,19 @@ public class StreamResetTest extends AbstractTest
         startServer(new ServerSessionListener.Adapter()
         {
             @Override
-            public void onReset(Session session, ResetFrame frame)
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                Stream stream = session.getStream(frame.getStreamId());
-                Assert.assertNotNull(stream);
-                Assert.assertTrue(stream.isReset());
-                streamRef.set(stream);
-                resetLatch.countDown();
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onReset(Stream stream, ResetFrame frame)
+                    {
+                        Assert.assertNotNull(stream);
+                        Assert.assertTrue(stream.isReset());
+                        streamRef.set(stream);
+                        resetLatch.countDown();
+                    }
+                };
             }
         });
 
@@ -94,7 +100,7 @@ public class StreamResetTest extends AbstractTest
         FuturePromise<Stream> promise = new FuturePromise<>();
         client.newStream(requestFrame, promise, new Stream.Listener.Adapter());
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCodes.CANCEL_STREAM_ERROR);
+        ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code);
         stream.reset(resetFrame, Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
@@ -129,22 +135,21 @@ public class StreamResetTest extends AbstractTest
                         stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.Adapter.INSTANCE);
                         serverDataLatch.countDown();
                     }
-                };
-            }
 
-            @Override
-            public void onReset(Session session, ResetFrame frame)
-            {
-                Stream stream = session.getStream(frame.getStreamId());
-                // Simulate that there is pending data to send.
-                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback.Adapter()
-                {
                     @Override
-                    public void failed(Throwable x)
+                    public void onReset(Stream stream, ResetFrame frame)
                     {
-                        serverResetLatch.countDown();
+                        // Simulate that there is pending data to send.
+                        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback.Adapter()
+                        {
+                            @Override
+                            public void failed(Throwable x)
+                            {
+                                serverResetLatch.countDown();
+                            }
+                        });
                     }
-                });
+                };
             }
         });
 
@@ -185,7 +190,7 @@ public class StreamResetTest extends AbstractTest
         });
         Stream stream2 = promise2.get(5, TimeUnit.SECONDS);
 
-        ResetFrame resetFrame = new ResetFrame(stream1.getId(), ErrorCodes.CANCEL_STREAM_ERROR);
+        ResetFrame resetFrame = new ResetFrame(stream1.getId(), ErrorCode.CANCEL_STREAM_ERROR.code);
         stream1.reset(resetFrame, Callback.Adapter.INSTANCE);
 
         Assert.assertTrue(serverResetLatch.await(5, TimeUnit.SECONDS));
@@ -249,7 +254,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                stream.reset(new ResetFrame(stream.getId(), ErrorCodes.CANCEL_STREAM_ERROR), Callback.Adapter.INSTANCE);
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
                 resetLatch.countDown();
             }
         });
@@ -328,7 +333,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                stream.reset(new ResetFrame(stream.getId(), ErrorCodes.CANCEL_STREAM_ERROR), Callback.Adapter.INSTANCE);
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
                 resetLatch.countDown();
             }
         });

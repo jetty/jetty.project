@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -86,13 +86,17 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
+        connect(sslContextFactory, address, listener, promise, new HashMap<String, Object>());
+    }
+
+    public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    {
         try
         {
             SocketChannel channel = SocketChannel.open();
             channel.socket().setTcpNoDelay(true);
             channel.configureBlocking(false);
 
-            Map<String, Object> context = new HashMap<>();
             context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
             context.put(HTTP2ClientConnectionFactory.SESSION_LISTENER_CONTEXT_KEY, listener);
             context.put(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY, promise);
@@ -115,7 +119,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private void closeConnections()
     {
         for (ISession session : sessions)
-            session.close(ErrorCodes.NO_ERROR, null, Callback.Adapter.INSTANCE);
+            session.close(ErrorCode.NO_ERROR.code, null, Callback.Adapter.INSTANCE);
         sessions.clear();
     }
 

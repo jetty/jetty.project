@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2;
 
-import java.io.EOFException;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
@@ -73,7 +72,7 @@ public class HTTP2Flusher extends IteratingCallback
         }
     }
 
-    public void prepend(Entry entry)
+    public boolean prepend(Entry entry)
     {
         boolean fail = false;
         synchronized (this)
@@ -91,9 +90,10 @@ public class HTTP2Flusher extends IteratingCallback
         }
         if (fail)
             closed(entry, new ClosedChannelException());
+        return !fail;
     }
 
-    public void append(Entry entry)
+    public boolean append(Entry entry)
     {
         boolean fail = false;
         synchronized (this)
@@ -111,6 +111,7 @@ public class HTTP2Flusher extends IteratingCallback
         }
         if (fail)
             closed(entry, new ClosedChannelException());
+        return !fail;
     }
 
     public int getQueueSize()
@@ -189,7 +190,7 @@ public class HTTP2Flusher extends IteratingCallback
                 --size;
 
                 // If the stream has been reset, don't send the frame.
-                if (stream != null && stream.isReset())
+                if (stream != null && stream.isReset() && !entry.isProtocol())
                 {
                     reset.add(entry);
                     continue;
@@ -354,6 +355,21 @@ public class HTTP2Flusher extends IteratingCallback
         public void failed(Throwable x)
         {
             callback.failed(x);
+        }
+
+        public boolean isProtocol()
+        {
+            switch (frame.getType())
+            {
+                case PRIORITY:
+                case RST_STREAM:
+                case GO_AWAY:
+                case WINDOW_UPDATE:
+                case DISCONNECT:
+                    return true;
+                default:
+                    return false;
+            }
         }
 
         @Override

@@ -43,6 +43,6 @@ public class WindowUpdateFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s,delta=%d", super.toString(), windowDelta);
+        return String.format("%s#%d,delta=%d", super.toString(), streamId, windowDelta);
     }
 }

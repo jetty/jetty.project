@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -55,7 +55,7 @@ public class WindowUpdateBodyParser extends BodyParser
                     if (length != 4)
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_window_update_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR.code, "invalid_window_update_frame");
                     }
                     state = State.WINDOW_DELTA;
                     break;

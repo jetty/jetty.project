@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -94,7 +94,7 @@ public class Parser
                             LOG.debug("Parsing {} frame", FrameType.from(type));
                         if (type < 0 || type >= bodyParsers.length)
                         {
-                            notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "unknown_frame_type_" + type);
+                            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unknown_frame_type_" + type);
                             BufferUtil.clear(buffer);
                             return false;
                         }
@@ -152,7 +152,7 @@ public class Parser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "parser_error");
+            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
             BufferUtil.clear(buffer);
             return false;
         }

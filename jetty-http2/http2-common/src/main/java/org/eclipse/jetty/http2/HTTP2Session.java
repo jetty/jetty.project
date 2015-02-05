@@ -49,6 +49,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.GatheringCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -155,20 +156,26 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
         if (stream != null)
         {
-            stream.updateClose(frame.isEndStream(), false);
-
             if (getRecvWindow() < 0)
             {
-                close(ErrorCodes.FLOW_CONTROL_ERROR, "session_window_exceeded", Callback.Adapter.INSTANCE);
+                close(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", Callback.Adapter.INSTANCE);
                 return false;
             }
 
-            boolean result = stream.process(frame, new Callback.Adapter()
+            boolean result = stream.process(frame, new Callback()
             {
                 @Override
                 public void succeeded()
                 {
-                    flowControl.onDataConsumed(stream, flowControlLength);
+                    flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
+                }
+
+                @Override
+                public void failed(Throwable x)
+                {
+                    // Consume also in case of failures, to free the
+                    // session flow control window for other streams.
+                    flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
                 }
             });
 
@@ -180,6 +187,9 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Ignoring {}, stream #{} not found", frame, streamId);
+            // We must enlarge the session flow control window,
+            // otherwise other requests will be stalled.
+            flowControl.onDataConsumed(this, null, flowControlLength);
             return false;
         }
     }
@@ -202,8 +212,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         IStream stream = getStream(frame.getStreamId());
         if (stream != null)
             stream.process(frame, Callback.Adapter.INSTANCE);
-
-        notifyReset(this, frame);
+        else
+            notifyReset(this, frame);
 
         if (stream != null)
             removeStream(stream, false);
@@ -236,7 +246,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     // SPEC: check the value is sane.
                     if (value != 0 && value != 1)
                     {
-                        onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_enable_push");
+                        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_enable_push");
                         return false;
                     }
                     pushEnabled = value == 1;
@@ -263,7 +273,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     // SPEC: check the max frame size is sane.
                     if (value < Frame.DEFAULT_MAX_LENGTH || value > Frame.MAX_MAX_LENGTH)
                     {
-                        onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_max_frame_size");
+                        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_frame_size");
                         return false;
                     }
                     generator.setMaxFrameSize(value);
@@ -400,6 +410,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         // Synchronization is necessary to atomically create
         // the stream id and enqueue the frame to be sent.
+        boolean queued;
         synchronized (this)
         {
             int streamId = streamIds.getAndAdd(2);
@@ -414,10 +425,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             stream.setListener(listener);
 
             ControlEntry entry = new ControlEntry(frame, stream, new PromiseCallback<>(promise, stream));
-            flusher.append(entry);
+            queued = flusher.append(entry);
         }
         // Iterate outside the synchronized block.
-        flusher.iterate();
+        if (queued)
+            flusher.iterate();
     }
 
     @Override
@@ -425,6 +437,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         // Synchronization is necessary to atomically create
         // the stream id and enqueue the frame to be sent.
+        boolean queued;
         synchronized (this)
         {
             int streamId = streamIds.getAndAdd(2);
@@ -436,10 +449,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             pushStream.updateClose(true, false);
 
             ControlEntry entry = new ControlEntry(frame, pushStream, new PromiseCallback<>(promise, pushStream));
-            flusher.append(entry);
+            queued = flusher.append(entry);
         }
         // Iterate outside the synchronized block.
-        flusher.iterate();
+        if (queued)
+            flusher.iterate();
     }
 
     @Override
@@ -530,11 +544,23 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void control(IStream stream, Callback callback, Frame frame, Frame... frames)
     {
-        // We want to generate as late as possible to allow re-prioritization.
+        // We want to generate as late as possible to allow re-prioritization;
+        // generation will happen while processing the entries.
+
+        // The callback needs to be notified only when the last frame completes.
+
         int length = frames.length;
-        frame(new ControlEntry(frame, stream, callback), length == 0);
-        for (int i = 1; i <= length; ++i)
-            frame(new ControlEntry(frames[i - 1], stream, callback), i == length);
+        if (length == 0)
+        {
+            frame(new ControlEntry(frame, stream, callback), true);
+        }
+        else
+        {
+            callback = new GatheringCallback(callback, 1 + length);
+            frame(new ControlEntry(frame, stream, callback), false);
+            for (int i = 1; i <= length; ++i)
+                frame(new ControlEntry(frames[i - 1], stream, callback), i == length);
+        }
     }
 
     @Override
@@ -549,11 +575,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (LOG.isDebugEnabled())
             LOG.debug("Sending {}", entry.frame);
         // Ping frames are prepended to process them as soon as possible.
-        if (entry.frame.getType() == FrameType.PING)
-            flusher.prepend(entry);
-        else
-            flusher.append(entry);
-        if (flush)
+        boolean queued = entry.frame.getType() == FrameType.PING ? flusher.prepend(entry) : flusher.append(entry);
+        if (queued && flush)
             flusher.iterate();
     }
 
@@ -597,7 +620,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             int maxCount = getMaxRemoteStreams();
             if (maxCount >= 0 && remoteCount >= maxCount)
             {
-                reset(new ResetFrame(streamId, ErrorCodes.REFUSED_STREAM_ERROR), Callback.Adapter.INSTANCE);
+                reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
                 return null;
             }
             if (remoteStreamCount.compareAndSet(remoteCount, remoteCount + 1))
@@ -618,7 +641,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         else
         {
-            close(ErrorCodes.PROTOCOL_ERROR, "duplicate_stream", Callback.Adapter.INSTANCE);
+            close(ErrorCode.PROTOCOL_ERROR.code, "duplicate_stream", Callback.Adapter.INSTANCE);
             return null;
         }
     }
@@ -788,7 +811,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             case NOT_CLOSED:
             {
                 // Real idle timeout, just close.
-                close(ErrorCodes.NO_ERROR, "idle_timeout", Callback.Adapter.INSTANCE);
+                close(ErrorCode.NO_ERROR.code, "idle_timeout", Callback.Adapter.INSTANCE);
                 break;
             }
             case LOCALLY_CLOSED:

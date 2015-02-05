@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.PingFrame;
 import org.eclipse.jetty.util.BufferUtil;
@@ -56,13 +56,13 @@ public class PingBodyParser extends BodyParser
                     if (getStreamId() != 0)
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_ping_frame");
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_ping_frame");
                     }
                     // SPEC: wrong body length is treated as connection error.
                     if (getBodyLength() != 8)
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_ping_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR.code, "invalid_ping_frame");
                     }
                     state = State.PAYLOAD;
                     break;

@@ -21,7 +21,7 @@ package org.eclipse.jetty.http2.server;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
@@ -30,6 +30,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -129,7 +130,13 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onFailure(Stream stream, Throwable x)
+        public void onReset(Stream stream, ResetFrame frame)
+        {
+            // TODO:
+        }
+
+        @Override
+        public void onTimeout(Stream stream, Throwable x)
         {
             // TODO
         }
@@ -137,7 +144,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         private void close(Stream stream, String reason)
         {
             final Session session = stream.getSession();
-            session.close(ErrorCodes.PROTOCOL_ERROR, reason, Callback.Adapter.INSTANCE);
+            session.close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.Adapter.INSTANCE);
         }
 
     }

@@ -22,7 +22,7 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControl;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
@@ -75,7 +75,6 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             IStream stream = createRemoteStream(frame.getStreamId());
             if (stream != null)
             {
-                stream.updateClose(frame.isEndStream(), false);
                 stream.process(frame, Callback.Adapter.INSTANCE);
                 Stream.Listener listener = notifyNewStream(stream, frame);
                 stream.setListener(listener);
@@ -86,7 +85,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         }
         else
         {
-            onConnectionFailure(ErrorCodes.INTERNAL_ERROR, "invalid_request");
+            onConnectionFailure(ErrorCode.INTERNAL_ERROR.code, "invalid_request");
         }
         return false;
     }
@@ -94,7 +93,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
     @Override
     public boolean onPushPromise(PushPromiseFrame frame)
     {
-        onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "push_promise");
+        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "push_promise");
         return false;
     }
 

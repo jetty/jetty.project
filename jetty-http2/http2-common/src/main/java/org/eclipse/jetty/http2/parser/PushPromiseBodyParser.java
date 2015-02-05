@@ -21,7 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.util.BufferUtil;
@@ -64,14 +64,14 @@ public class PushPromiseBodyParser extends BodyParser
                     if (getStreamId() == 0)
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_push_promise_frame");
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_push_promise_frame");
                     }
 
                     // For now we don't support PUSH_PROMISE frames that don't have END_HEADERS.
                     if (!hasFlag(Flags.END_HEADERS))
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.INTERNAL_ERROR, "unsupported_push_promise_frame");
+                        return notifyConnectionFailure(ErrorCode.INTERNAL_ERROR.code, "unsupported_push_promise_frame");
                     }
 
                     length = getBodyLength();
@@ -95,7 +95,7 @@ public class PushPromiseBodyParser extends BodyParser
                     if (length < 4)
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_push_promise_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR.code, "invalid_push_promise_frame");
                     }
                     break;
                 }
@@ -125,7 +125,7 @@ public class PushPromiseBodyParser extends BodyParser
                     if (cursor > 0 && length <= 0)
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_push_promise_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR.code, "invalid_push_promise_frame");
                     }
                     if (cursor == 0)
                     {

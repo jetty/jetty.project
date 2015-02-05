@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -57,13 +57,13 @@ public class PriorityBodyParser extends BodyParser
                     if (getStreamId() == 0)
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_priority_frame");
+                        return notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_priority_frame");
                     }
                     int length = getBodyLength();
                     if (length != 5)
                     {
                         BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_priority_frame");
+                        return notifyConnectionFailure(ErrorCode.FRAME_SIZE_ERROR.code, "invalid_priority_frame");
                     }
                     state = State.EXCLUSIVE;
                     break;

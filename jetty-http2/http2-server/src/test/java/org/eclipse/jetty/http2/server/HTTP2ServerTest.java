@@ -33,7 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -235,7 +235,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 @Override
                 public boolean onGoAway(GoAwayFrame frame)
                 {
-                    Assert.assertEquals(ErrorCodes.FRAME_SIZE_ERROR, frame.getError());
+                    Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, frame.getError());
                     latch.countDown();
                     return false;
                 }
@@ -272,7 +272,7 @@ public class HTTP2ServerTest extends AbstractServerTest
                 @Override
                 public boolean onGoAway(GoAwayFrame frame)
                 {
-                    Assert.assertEquals(ErrorCodes.PROTOCOL_ERROR, frame.getError());
+                    Assert.assertEquals(ErrorCode.PROTOCOL_ERROR.code, frame.getError());
                     latch.countDown();
                     return false;
                 }

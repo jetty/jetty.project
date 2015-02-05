@@ -82,36 +82,42 @@ public class HTTP2FlowControl implements FlowControl
     {
         int oldSize = session.updateRecvWindow(-length);
         if (LOG.isDebugEnabled())
-            LOG.debug("Updated session recv window {} -> {} for {}", oldSize, oldSize - length, session);
+            LOG.debug("Data received, updated session recv window {} -> {} for {}", oldSize, oldSize - length, session);
 
         if (stream != null)
         {
             oldSize = stream.updateRecvWindow(-length);
             if (LOG.isDebugEnabled())
-                LOG.debug("Updated stream recv window {} -> {} for {}", oldSize, oldSize - length, stream);
+                LOG.debug("Data received, updated stream recv window {} -> {} for {}", oldSize, oldSize - length, stream);
         }
     }
 
     @Override
-    public void onDataConsumed(IStream stream, int length)
+    public void onDataConsumed(ISession session, IStream stream, int length)
     {
         // This is the algorithm for flow control.
         // This method is called when a whole flow controlled frame has been consumed.
         // We currently send a WindowUpdate every time, even if the frame was very small.
         // Other policies may send the WindowUpdate only upon reaching a threshold.
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("Data consumed, increasing windows by {} for {}", length, stream);
-
         if (length > 0)
         {
-            ISession session = stream.getSession();
+            WindowUpdateFrame sessionFrame = new WindowUpdateFrame(0, length);
             session.updateRecvWindow(length);
-            stream.updateRecvWindow(length);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Data consumed, increased session recv window by {} for {}", length, session);
 
-            // Negative streamId allow for generation of bytes for both stream and session.
-            WindowUpdateFrame frame = new WindowUpdateFrame(-stream.getId(), length);
-            session.control(stream, Callback.Adapter.INSTANCE, frame, Frame.EMPTY_ARRAY);
+            Frame[] streamFrame = null;
+            if (stream != null)
+            {
+                streamFrame = new Frame[1];
+                streamFrame[0] = new WindowUpdateFrame(stream.getId(), length);
+                stream.updateRecvWindow(length);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Data consumed, increased stream recv window by {} for {}", length, stream);
+            }
+
+            session.control(stream, Callback.Adapter.INSTANCE, sessionFrame, streamFrame == null ? Frame.EMPTY_ARRAY : streamFrame);
         }
     }
 

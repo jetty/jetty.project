@@ -377,7 +377,7 @@ public class IdleTimeoutTest extends AbstractTest
             }
 
             @Override
-            public void onFailure(Stream stream, Throwable x)
+            public void onTimeout(Stream stream, Throwable x)
             {
                 assertThat(x, instanceOf(TimeoutException.class));
                 timeoutLatch.countDown();
@@ -407,7 +407,7 @@ public class IdleTimeoutTest extends AbstractTest
                 return new Stream.Listener.Adapter()
                 {
                     @Override
-                    public void onFailure(Stream stream, Throwable x)
+                    public void onTimeout(Stream stream, Throwable x)
                     {
                         timeoutLatch.countDown();
                     }
@@ -416,18 +416,18 @@ public class IdleTimeoutTest extends AbstractTest
         });
 
         final CountDownLatch resetLatch = new CountDownLatch(1);
-        Session session = newClient(new Session.Listener.Adapter()
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        // Stream does not end here, but we won't send any DATA frame.
+        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
+        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
-            public void onReset(Session session, ResetFrame frame)
+            public void onReset(Stream stream, ResetFrame frame)
             {
                 resetLatch.countDown();
             }
         });
-        MetaData.Request metaData = newRequest("GET", new HttpFields());
-        // Stream does not end here, but we won't send any DATA frame.
-        HeadersFrame requestFrame = new HeadersFrame(0, metaData, null, false);
-        session.newStream(requestFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter());
 
         Assert.assertTrue(timeoutLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
@@ -451,7 +451,7 @@ public class IdleTimeoutTest extends AbstractTest
                 return new Stream.Listener.Adapter()
                 {
                     @Override
-                    public void onFailure(Stream stream, Throwable x)
+                    public void onTimeout(Stream stream, Throwable x)
                     {
                         timeoutLatch.countDown();
                     }

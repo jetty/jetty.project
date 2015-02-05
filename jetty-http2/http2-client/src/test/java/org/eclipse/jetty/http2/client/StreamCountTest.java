@@ -149,14 +149,7 @@ public class StreamCountTest extends AbstractTest
             }
         });
 
-        Session session = newClient(new Session.Listener.Adapter()
-        {
-            @Override
-            public void onReset(Session session, ResetFrame frame)
-            {
-                resetLatch.countDown();
-            }
-        });
+        Session session = newClient(new Session.Listener.Adapter());
 
         HttpFields fields = new HttpFields();
         MetaData.Request metaData = newRequest("GET", fields);
@@ -177,7 +170,14 @@ public class StreamCountTest extends AbstractTest
 
         HeadersFrame frame2 = new HeadersFrame(3, metaData, null, false);
         FuturePromise<Stream> streamPromise2 = new FuturePromise<>();
-        session.newStream(frame2, streamPromise2, new Stream.Listener.Adapter());
+        session.newStream(frame2, streamPromise2, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onReset(Stream stream, ResetFrame frame)
+            {
+                resetLatch.countDown();
+            }
+        });
 
         streamPromise2.get(5, TimeUnit.SECONDS);
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));

@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -136,7 +136,7 @@ public class CloseTest extends AbstractServerTest
         generator.control(lease, new PrefaceFrame());
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
-        generator.control(lease, new GoAwayFrame(1, ErrorCodes.NO_ERROR, "OK".getBytes("UTF-8")));
+        generator.control(lease, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes("UTF-8")));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
@@ -192,7 +192,7 @@ public class CloseTest extends AbstractServerTest
                 sessionRef.set(stream.getSession());
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.Adapter.INSTANCE);
-                stream.getSession().close(ErrorCodes.NO_ERROR, "OK", Callback.Adapter.INSTANCE);
+                stream.getSession().close(ErrorCode.NO_ERROR.code, "OK", Callback.Adapter.INSTANCE);
                 return null;
             }
         });
