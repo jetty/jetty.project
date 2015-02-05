@@ -54,7 +54,7 @@ public class HttpConfiguration
     private boolean _sendServerVersion = true;
     private boolean _sendXPoweredBy = false;
     private boolean _sendDateHeader = true;
-    private boolean _delayDispatchUntilContent = false; // TODO change to true
+    private boolean _delayDispatchUntilContent = true;
 
     /* ------------------------------------------------------------ */
     /** 
