@@ -296,19 +296,6 @@ public class HttpChannelState
                     throw new IllegalStateException(this.getStatusString());
             }
 
-            if (_asyncRead)
-            {
-                _state=State.ASYNC_IO;
-                _asyncRead=false;
-                return Action.READ_CALLBACK;
-            }
-            
-            if (_asyncWrite)
-            {
-                _asyncWrite=false;
-                _state=State.ASYNC_IO;
-                return Action.WRITE_CALLBACK;
-            }
 
             if (_async!=null)
             {
@@ -327,8 +314,25 @@ public class HttpChannelState
                         _state=State.DISPATCHED;
                         _async=null;
                         return Action.ASYNC_EXPIRED;
-                    case EXPIRING:
                     case STARTED:
+                        if (_asyncRead)
+                        {
+                            _state=State.ASYNC_IO;
+                            _asyncRead=false;
+                            return Action.READ_CALLBACK;
+                        }
+                        
+                        if (_asyncWrite)
+                        {
+                            _asyncWrite=false;
+                            _state=State.ASYNC_IO;
+                            return Action.WRITE_CALLBACK;
+                        }
+                        scheduleTimeout();
+                        _state=State.ASYNC_WAIT;
+                        return Action.WAIT;
+
+                    case EXPIRING:
                         scheduleTimeout();
                         _state=State.ASYNC_WAIT;
                         return Action.WAIT;
