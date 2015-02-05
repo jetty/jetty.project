@@ -223,7 +223,8 @@ public class AsyncServletIOTest
         .append("Host: localhost\r\n")
         .append("Content-Type: text/plain\r\n")
         .append("Content-Length: 10\r\n")
-        .append("\r\n");
+        .append("\r\n")
+        .append("0");
         
         int port=_port;
         try (Socket socket = new Socket("localhost",port))
