@@ -37,8 +37,9 @@ public class ExampleServer
         server.setConnectors(new Connector[] { connector });
 
         ServletContextHandler context = new ServletContextHandler();
-        context.setContextPath("/hello");
-        context.addServlet(HelloServlet.class, "/");
+        context.setContextPath("/");
+        context.addServlet(HelloServlet.class, "/hello");
+        context.addServlet(AsyncEchoServlet.class, "/echo/*");
 
         HandlerCollection handlers = new HandlerCollection();
         handlers.setHandlers(new Handler[] { context, new DefaultHandler() });
