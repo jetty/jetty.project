@@ -43,6 +43,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.Callback;
@@ -728,5 +729,56 @@ public class FlowControlTest extends AbstractTest
 
         // Expect the connection to be closed.
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testFlowControlWhenServerResetsStream() throws Exception
+    {
+        // On server, we don't consume the data and we immediately reset.
+        startServer(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+                return null;
+            }
+        });
+
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request metaData = newRequest("POST", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(0, metaData, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        final CountDownLatch resetLatch = new CountDownLatch(1);
+        session.newStream(frame, streamPromise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onReset(Stream stream, ResetFrame frame)
+            {
+                resetLatch.countDown();
+            }
+        });
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+        // Perform a big upload that will stall the flow control windows.
+        ByteBuffer data = ByteBuffer.allocate(5 * FlowControl.DEFAULT_WINDOW_SIZE);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        stream.data(new DataFrame(stream.getId(), data, true), new Callback.Adapter()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                dataLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(555, TimeUnit.SECONDS));
+
+        // Wait a little more for the window updates to be processed.
+        Thread.sleep(1000);
+
+        // At this point the session window should be fully available.
+        HTTP2Session http2Session = (HTTP2Session)session;
+        Assert.assertEquals(FlowControl.DEFAULT_WINDOW_SIZE, http2Session.getSendWindow());
     }
 }

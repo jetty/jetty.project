@@ -682,12 +682,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         return streams.get(streamId);
     }
 
-    protected int getSendWindow()
+    public int getSendWindow()
     {
         return sendWindow.get();
     }
 
-    protected int getRecvWindow()
+    public int getRecvWindow()
     {
         return recvWindow.get();
     }
