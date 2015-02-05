@@ -365,16 +365,29 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
     @Override
     public void setReadListener(ReadListener readListener)
     {
-        readListener = Objects.requireNonNull(readListener);
-        synchronized (lock())
+        try
         {
-            if (_contentState != STREAM)
-                throw new IllegalStateException("state=" + _contentState);
-            _contentState = ASYNC;
-            _listener = readListener;
-            _notReady = true;
+            readListener = Objects.requireNonNull(readListener);
+            boolean content;
+            synchronized (lock())
+            {
+                if (_contentState != STREAM)
+                    throw new IllegalStateException("state=" + _contentState);
+                _contentState = ASYNC;
+                _listener = readListener;
+                _notReady = true;
+
+                content = getNextContent()!=null;
+            }
+            if (content)
+                _channelState.onReadPossible();
+            else
+                unready();
         }
-        _channelState.onReadPossible();
+        catch(IOException e)
+        {
+            throw new RuntimeIOException(e);
+        }
     }
 
     public void failed(Throwable x)
