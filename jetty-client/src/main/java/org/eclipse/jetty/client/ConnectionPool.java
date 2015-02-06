@@ -54,6 +54,11 @@ public class ConnectionPool implements Closeable, Dumpable
         this.activeConnections = new BlockingArrayQueue<>(maxConnections);
     }
 
+    public int getConnectionCount()
+    {
+        return connectionCount.get();
+    }
+
     public BlockingQueue<Connection> getIdleConnections()
     {
         return idleConnections;
@@ -76,7 +81,7 @@ public class ConnectionPool implements Closeable, Dumpable
     {
         while (true)
         {
-            int current = connectionCount.get();
+            int current = getConnectionCount();
             final int next = current + 1;
 
             if (next > maxConnections)
