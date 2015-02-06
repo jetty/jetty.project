@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.http2.client;
 
-import org.eclipse.jetty.http2.FlowControl;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
@@ -35,7 +35,7 @@ public class HTTP2ClientSession extends HTTP2Session
 {
     private static final Logger LOG = Log.getLogger(HTTP2ClientSession.class);
 
-    public HTTP2ClientSession(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl)
+    public HTTP2ClientSession(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControlStrategy flowControl)
     {
         super(scheduler, endPoint, generator, listener, flowControl, 1);
     }

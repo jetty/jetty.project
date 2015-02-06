@@ -71,14 +71,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final EndPoint endPoint;
     private final Generator generator;
     private final Listener listener;
-    private final FlowControl flowControl;
+    private final FlowControlStrategy flowControl;
     private final HTTP2Flusher flusher;
     private int maxLocalStreams;
     private int maxRemoteStreams;
     private long streamIdleTimeout;
     private boolean pushEnabled;
 
-    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int initialStreamId)
+    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
         this.scheduler = scheduler;
         this.endPoint = endPoint;
@@ -90,12 +90,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         this.maxRemoteStreams = -1;
         this.streamIds.set(initialStreamId);
         this.streamIdleTimeout = endPoint.getIdleTimeout();
-        this.sendWindow.set(FlowControl.DEFAULT_WINDOW_SIZE);
-        this.recvWindow.set(FlowControl.DEFAULT_WINDOW_SIZE);
+        this.sendWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.pushEnabled = true; // SPEC: by default, push is enabled.
     }
 
-    public FlowControl getFlowControl()
+    public FlowControlStrategy getFlowControlStrategy()
     {
         return flowControl;
     }
@@ -263,7 +263,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Update initial window size to {}", value);
-                    flowControl.updateInitialStreamWindow(this, value);
+                    flowControl.updateInitialStreamWindow(this, value, false);
                     break;
                 }
                 case SettingsFrame.MAX_FRAME_SIZE:
@@ -663,6 +663,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             else
                 remoteStreamCount.decrementAndGet();
 
+            flowControl.onStreamTerminated(stream);
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Removed {}", stream);
         }
@@ -973,6 +975,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 {
                     if (stream != null)
                         removeStream(stream, true);
+                    break;
+                }
+                case SETTINGS:
+                {
+                    SettingsFrame settings = (SettingsFrame)frame;
+                    Integer initialWindow = settings.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
+                    if (initialWindow != null)
+                        flowControl.updateInitialStreamWindow(HTTP2Session.this, initialWindow, true);
                     break;
                 }
                 case GO_AWAY:

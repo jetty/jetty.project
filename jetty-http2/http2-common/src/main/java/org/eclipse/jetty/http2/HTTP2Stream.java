@@ -387,7 +387,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     @Override
     public String toString()
     {
-        return String.format("%s@%x{id=%d,sendWindow=%s,recvWindow=%s,reset=%b,%s}", getClass().getSimpleName(),
+        return String.format("%s@%x#%d{sendWindow=%s,recvWindow=%s,reset=%b,%s}", getClass().getSimpleName(),
                 hashCode(), getId(), sendWindow, recvWindow, isReset(), closeState);
     }
 }

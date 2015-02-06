@@ -20,13 +20,15 @@ package org.eclipse.jetty.http2;
 
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 
-public interface FlowControl
+public interface FlowControlStrategy
 {
     public static int DEFAULT_WINDOW_SIZE = 65535;
 
     public void onNewStream(IStream stream);
 
-    public void updateInitialStreamWindow(ISession session, int initialStreamWindow);
+    public void onStreamTerminated(IStream stream);
+
+    public void updateInitialStreamWindow(ISession session, int initialStreamWindow, boolean local);
 
     public void onWindowUpdate(ISession session, IStream stream, WindowUpdateFrame frame);
 

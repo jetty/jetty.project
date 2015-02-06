@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import org.eclipse.jetty.http2.ErrorCode;
+
 public class ResetFrame extends Frame
 {
     private final int streamId;
@@ -43,6 +45,8 @@ public class ResetFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s#%d,error=%d", super.toString(), streamId, error);
+        ErrorCode errorCode = ErrorCode.from(error);
+        String reason = errorCode == null ? "error=" + error : errorCode.name().toLowerCase();
+        return String.format("%s#%d{%s}", super.toString(), streamId, reason);
     }
 }

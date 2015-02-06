@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.http2.client;
 
+import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.List;
@@ -30,11 +31,13 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.FlowControl;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
@@ -43,23 +46,75 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
-import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
 
-public class FlowControlTest extends AbstractTest
+public abstract class FlowControlStrategyTest
 {
-    @Override
+    protected ServerConnector connector;
+    protected HTTP2Client client;
+    protected Server server;
+
+    protected abstract FlowControlStrategy newFlowControlStrategy();
+
+    protected void start(ServerSessionListener listener) throws Exception
+    {
+        QueuedThreadPool serverExecutor = new QueuedThreadPool();
+        serverExecutor.setName("server");
+        server = new Server(serverExecutor);
+        connector = new ServerConnector(server, new RawHTTP2ServerConnectionFactory(new HttpConfiguration(), listener)
+        {
+            @Override
+            protected FlowControlStrategy newFlowControlStrategy()
+            {
+                return FlowControlStrategyTest.this.newFlowControlStrategy();
+            }
+        });
+        server.addConnector(connector);
+        server.start();
+
+        QueuedThreadPool clientExecutor = new QueuedThreadPool();
+        clientExecutor.setName("client");
+        client = new HTTP2Client(clientExecutor);
+        client.start();
+    }
+
+    protected Session newClient(Session.Listener listener) throws Exception
+    {
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        InetSocketAddress address = new InetSocketAddress(host, port);
+        FuturePromise<Session> promise = new FuturePromise<>();
+        client.connect(address, listener, promise);
+        return promise.get(5, TimeUnit.SECONDS);
+    }
+
+    protected MetaData.Request newRequest(String method, HttpFields fields)
+    {
+        String host = "localhost";
+        int port = connector.getLocalPort();
+        String authority = host + ":" + port;
+        return new MetaData.Request(method, HttpScheme.HTTP, new HostPortHttpField(authority), "/", HttpVersion.HTTP_2, fields);
+    }
+
+    @After
     public void dispose() throws Exception
     {
         // Allow WINDOW_UPDATE frames to be sent/received to avoid exception stack traces.
         Thread.sleep(1000);
-        super.dispose();
+        client.stop();
+        server.stop();
     }
 
     @Test
@@ -74,7 +129,7 @@ public class FlowControlTest extends AbstractTest
         // after the flow control window has been reduced.
         final CountDownLatch dataLatch = new CountDownLatch(3);
         final AtomicReference<Callback> callbackRef = new AtomicReference<>();
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
@@ -147,7 +202,7 @@ public class FlowControlTest extends AbstractTest
         final int windowSize = 1536;
         final int length = 5 * windowSize;
         final CountDownLatch settingsLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -237,7 +292,7 @@ public class FlowControlTest extends AbstractTest
         final Exchanger<Callback> exchanger = new Exchanger<>();
         final CountDownLatch settingsLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -342,7 +397,7 @@ public class FlowControlTest extends AbstractTest
     public void testSessionStalledStallsNewStreams() throws Exception
     {
         final int windowSize = 1024;
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
@@ -351,7 +406,7 @@ public class FlowControlTest extends AbstractTest
                 if ("POST".equalsIgnoreCase(request.getMethod()))
                 {
                     // Send data to consume the session window.
-                    ByteBuffer data = ByteBuffer.allocate(FlowControl.DEFAULT_WINDOW_SIZE - windowSize);
+                    ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE - windowSize);
                     DataFrame dataFrame = new DataFrame(stream.getId(), data, true);
                     stream.data(dataFrame, Callback.Adapter.INSTANCE);
                     return null;
@@ -446,7 +501,7 @@ public class FlowControlTest extends AbstractTest
         final byte[] data = new byte[1024 * 1024];
         new Random().nextBytes(data);
 
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
@@ -500,7 +555,7 @@ public class FlowControlTest extends AbstractTest
 
         final AtomicReference<CountDownLatch> settingsLatch = new AtomicReference<>(new CountDownLatch(1));
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public void onSettings(Session session, SettingsFrame frame)
@@ -557,7 +612,7 @@ public class FlowControlTest extends AbstractTest
     @Test
     public void testClientSendingInitialSmallWindow() throws Exception
     {
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -629,7 +684,7 @@ public class FlowControlTest extends AbstractTest
     public void testClientExceedingSessionWindow() throws Exception
     {
         // On server, we don't consume the data.
-        startServer(new ServerSessionListener.Adapter());
+        start(new ServerSessionListener.Adapter());
 
         final CountDownLatch closeLatch = new CountDownLatch(1);
         Session session = newClient(new Session.Listener.Adapter()
@@ -648,7 +703,7 @@ public class FlowControlTest extends AbstractTest
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter());
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.allocate(FlowControl.DEFAULT_WINDOW_SIZE);
+        ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(new DataFrame(stream.getId(), data, false), new Callback.Adapter()
         {
@@ -678,13 +733,13 @@ public class FlowControlTest extends AbstractTest
     public void testClientExceedingStreamWindow() throws Exception
     {
         // On server, we don't consume the data.
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
             {
                 // Enlarge the session window.
-                ((ISession)session).updateRecvWindow(FlowControl.DEFAULT_WINDOW_SIZE);
+                ((ISession)session).updateRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
                 return super.onPreface(session);
             }
         });
@@ -706,7 +761,7 @@ public class FlowControlTest extends AbstractTest
         FuturePromise<Stream> streamPromise = new FuturePromise<>();
         session.newStream(requestFrame, streamPromise, new Stream.Listener.Adapter());
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        ByteBuffer data = ByteBuffer.allocate(FlowControl.DEFAULT_WINDOW_SIZE);
+        ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         final CountDownLatch dataLatch = new CountDownLatch(1);
         stream.data(new DataFrame(stream.getId(), data, false), new Callback.Adapter()
         {
@@ -717,6 +772,10 @@ public class FlowControlTest extends AbstractTest
             }
         });
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
+
+        // Wait for a while to allow flow control window frames
+        // to be exchanged before doing the "sneaky" write below.
+        Thread.sleep(1000);
 
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
@@ -729,56 +788,5 @@ public class FlowControlTest extends AbstractTest
 
         // Expect the connection to be closed.
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
-    }
-
-    @Test
-    public void testFlowControlWhenServerResetsStream() throws Exception
-    {
-        // On server, we don't consume the data and we immediately reset.
-        startServer(new ServerSessionListener.Adapter()
-        {
-            @Override
-            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
-            {
-                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
-                return null;
-            }
-        });
-
-        Session session = newClient(new Session.Listener.Adapter());
-        MetaData.Request metaData = newRequest("POST", new HttpFields());
-        HeadersFrame frame = new HeadersFrame(0, metaData, null, false);
-        FuturePromise<Stream> streamPromise = new FuturePromise<>();
-        final CountDownLatch resetLatch = new CountDownLatch(1);
-        session.newStream(frame, streamPromise, new Stream.Listener.Adapter()
-        {
-            @Override
-            public void onReset(Stream stream, ResetFrame frame)
-            {
-                resetLatch.countDown();
-            }
-        });
-        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
-        // Perform a big upload that will stall the flow control windows.
-        ByteBuffer data = ByteBuffer.allocate(5 * FlowControl.DEFAULT_WINDOW_SIZE);
-        final CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, true), new Callback.Adapter()
-        {
-            @Override
-            public void failed(Throwable x)
-            {
-                dataLatch.countDown();
-            }
-        });
-
-        Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(555, TimeUnit.SECONDS));
-
-        // Wait a little more for the window updates to be processed.
-        Thread.sleep(1000);
-
-        // At this point the session window should be fully available.
-        HTTP2Session http2Session = (HTTP2Session)session;
-        Assert.assertEquals(FlowControl.DEFAULT_WINDOW_SIZE, http2Session.getSendWindow());
     }
 }

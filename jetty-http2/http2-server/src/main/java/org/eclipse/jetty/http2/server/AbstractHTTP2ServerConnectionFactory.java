@@ -18,9 +18,9 @@
 
 package org.eclipse.jetty.http2.server;
 
-import org.eclipse.jetty.http2.FlowControl;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
-import org.eclipse.jetty.http2.HTTP2FlowControl;
+import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.annotation.Name;
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
     private int maxDynamicTableSize = 4096;
-    private int initialStreamWindow = FlowControl.DEFAULT_WINDOW_SIZE;
+    private int initialStreamWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
     private final HttpConfiguration httpConfiguration;
     
@@ -98,8 +98,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
         Generator generator = new Generator(connector.getByteBufferPool(), getMaxDynamicTableSize());
-        HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener,
-                new HTTP2FlowControl(getInitialStreamWindow()));
+        FlowControlStrategy flowControl = newFlowControlStrategy();
+        HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
         session.setMaxRemoteStreams(getMaxConcurrentStreams());
         long idleTimeout = endPoint.getIdleTimeout();
@@ -112,6 +112,11 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
                         endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
 
         return configure(connection, connector, endPoint);
+    }
+
+    protected FlowControlStrategy newFlowControlStrategy()
+    {
+        return new SimpleFlowControlStrategy(getInitialStreamWindow());
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
