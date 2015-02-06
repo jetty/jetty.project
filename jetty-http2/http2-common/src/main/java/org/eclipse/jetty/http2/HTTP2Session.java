@@ -971,6 +971,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             switch (frame.getType())
             {
+                case HEADERS:
+                {
+                    HeadersFrame headersFrame = (HeadersFrame)frame;
+                    stream.updateClose(headersFrame.isEndStream(), true);
+                    if (stream.isClosed())
+                        removeStream(stream, true);
+                    break;
+                }
                 case RST_STREAM:
                 {
                     if (stream != null)
@@ -979,8 +987,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 }
                 case SETTINGS:
                 {
-                    SettingsFrame settings = (SettingsFrame)frame;
-                    Integer initialWindow = settings.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
+                    SettingsFrame settingsFrame = (SettingsFrame)frame;
+                    Integer initialWindow = settingsFrame.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
                     if (initialWindow != null)
                         flowControl.updateInitialStreamWindow(HTTP2Session.this, initialWindow, true);
                     break;

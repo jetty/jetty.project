@@ -46,7 +46,7 @@ public class StreamCountTest extends AbstractTest
     @Test
     public void testServersAllowsOneStreamEnforcedByClient() throws Exception
     {
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Map<Integer, Integer> onPreface(Session session)
@@ -125,7 +125,7 @@ public class StreamCountTest extends AbstractTest
     public void testServersAllowsOneStreamEnforcedByServer() throws Exception
     {
         final CountDownLatch resetLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)

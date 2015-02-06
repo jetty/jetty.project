@@ -54,7 +54,7 @@ public class StreamResetTest extends AbstractTest
     @Test
     public void testStreamSendingResetIsRemoved() throws Exception
     {
-        startServer(new ServerSessionListener.Adapter());
+        start(new ServerSessionListener.Adapter());
 
         Session client = newClient(new Session.Listener.Adapter());
         MetaData.Request request = newRequest("GET", new HttpFields());
@@ -75,7 +75,7 @@ public class StreamResetTest extends AbstractTest
     {
         final AtomicReference<Stream> streamRef = new AtomicReference<>();
         final CountDownLatch resetLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -118,7 +118,7 @@ public class StreamResetTest extends AbstractTest
     {
         final CountDownLatch serverResetLatch = new CountDownLatch(1);
         final CountDownLatch serverDataLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
@@ -208,7 +208,7 @@ public class StreamResetTest extends AbstractTest
     {
         final CountDownLatch resetLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        startServer(new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -267,7 +267,7 @@ public class StreamResetTest extends AbstractTest
     {
         final CountDownLatch resetLatch = new CountDownLatch(1);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        startServer(new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException

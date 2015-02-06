@@ -48,7 +48,7 @@ public class AbstractTest
     protected HTTP2Client client;
     private Server server;
 
-    protected void startServer(HttpServlet servlet) throws Exception
+    protected void start(HttpServlet servlet) throws Exception
     {
         prepareServer(new HTTP2ServerConnectionFactory(new HttpConfiguration()));
 
@@ -66,7 +66,7 @@ public class AbstractTest
     {
     }
 
-    protected void startServer(ServerSessionListener listener) throws Exception
+    protected void start(ServerSessionListener listener) throws Exception
     {
         prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(),listener));
         prepareClient();

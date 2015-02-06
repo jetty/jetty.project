@@ -60,7 +60,7 @@ public class PushCacheFilterTest extends AbstractTest
         final String primaryResource = "/primary.html";
         final String secondaryResource = "/secondary.png";
         final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
-        startServer(new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
@@ -145,7 +145,7 @@ public class PushCacheFilterTest extends AbstractTest
         final String primaryResource = "/primary.html";
         final String secondaryResource = "/secondary.png";
         final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
-        startServer(new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException

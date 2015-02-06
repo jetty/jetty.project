@@ -56,7 +56,7 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerEnforcingIdleTimeout() throws Exception
     {
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame requestFrame)
@@ -100,7 +100,7 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerEnforcingIdleTimeoutWithUnrespondedStream() throws Exception
     {
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -140,7 +140,7 @@ public class IdleTimeoutTest extends AbstractTest
     @Test
     public void testServerNotEnforcingIdleTimeoutWithinCallback() throws Exception
     {
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -203,7 +203,7 @@ public class IdleTimeoutTest extends AbstractTest
     public void testClientEnforcingIdleTimeout() throws Exception
     {
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -244,7 +244,7 @@ public class IdleTimeoutTest extends AbstractTest
     public void testClientEnforcingIdleTimeoutWithUnrespondedStream() throws Exception
     {
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -281,7 +281,7 @@ public class IdleTimeoutTest extends AbstractTest
     public void testClientNotEnforcingIdleTimeoutWithinCallback() throws Exception
     {
         final CountDownLatch closeLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -339,7 +339,7 @@ public class IdleTimeoutTest extends AbstractTest
     public void testClientEnforcingStreamIdleTimeout() throws Exception
     {
         final int idleTimeout = 1000;
-        startServer(new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
@@ -398,7 +398,7 @@ public class IdleTimeoutTest extends AbstractTest
     public void testServerEnforcingStreamIdleTimeout() throws Exception
     {
         final CountDownLatch timeoutLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -442,7 +442,7 @@ public class IdleTimeoutTest extends AbstractTest
     public void testStreamIdleTimeoutIsNotEnforcedWhenReceiving() throws Exception
     {
         final CountDownLatch timeoutLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
@@ -496,7 +496,7 @@ public class IdleTimeoutTest extends AbstractTest
     public void testStreamIdleTimeoutIsNotEnforcedWhenSending() throws Exception
     {
         final CountDownLatch resetLatch = new CountDownLatch(1);
-        startServer(new ServerSessionListener.Adapter()
+        start(new ServerSessionListener.Adapter()
         {
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
