@@ -24,8 +24,13 @@ import java.util.Date;
 import java.util.EnumSet;
 
 import javax.servlet.DispatcherType;
+import javax.servlet.Filter;
+import javax.servlet.FilterChain;
+import javax.servlet.FilterConfig;
 import javax.servlet.Servlet;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
+import javax.servlet.ServletResponse;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -37,6 +42,7 @@ import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
@@ -58,13 +64,12 @@ public class Http2Server
         Server server = new Server();
 
         ServletContextHandler context = new ServletContextHandler(server, "/",ServletContextHandler.SESSIONS);
-        context.setResourceBase("/tmp");
-        context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST))
-        .setInitParameter("ports","443,6443,8443");
+        context.setResourceBase("src/test/docroot");
+        context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
+        context.addFilter(PushedTilesFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         context.addServlet(new ServletHolder(servlet), "/test/*");
         context.addServlet(DefaultServlet.class, "/").setInitParameter("maxCacheSize","81920");
         server.setHandler(context);
-
 
         // HTTP Configuration
         HttpConfiguration http_config = new HttpConfiguration();
@@ -89,7 +94,6 @@ public class Http2Server
         HttpConfiguration https_config = new HttpConfiguration(http_config);
         https_config.addCustomizer(new SecureRequestCustomizer());
         
-        
         // HTTP2 factory
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
         
@@ -113,6 +117,33 @@ public class Http2Server
         server.join();
     }
     
+    public static class PushedTilesFilter implements Filter
+    {
+        @Override
+        public void init(FilterConfig filterConfig) throws ServletException
+        {            
+        }
+        
+        @Override
+        public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
+        {
+            Request baseRequest = Request.getBaseRequest(request);
+            
+            if (baseRequest.isPush() && baseRequest.getRequestURI().contains("tiles") )
+            {
+                String uri = baseRequest.getRequestURI().replace("tiles","pushed").substring(baseRequest.getContextPath().length());
+                request.getRequestDispatcher(uri).forward(request,response);
+                return;
+            }
+            
+            chain.doFilter(request,response);
+        }
+        
+        @Override
+        public void destroy()
+        {
+        }
+    };
     
     static Servlet servlet = new HttpServlet()
     {

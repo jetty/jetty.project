@@ -82,6 +82,16 @@ public class PushSessionCacheFilter implements Filter
                 target._etag=response.getHttpFields().get(HttpHeader.ETAG);
                 target._lastModified=response.getHttpFields().get(HttpHeader.LAST_MODIFIED);
                 
+                // Don't associate pushes
+                if (request.isPush())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Pushed {} for {}",request.getResponse().getStatus(),request.getRequestURI());
+                    return;
+                } 
+                else if (LOG.isDebugEnabled())
+                    LOG.debug("Served {} for {}",request.getResponse().getStatus(),request.getRequestURI());
+                
                 // Does this request have a referer?
                 String referer = request.getHttpFields().get(HttpHeader.REFERER);
                 
@@ -158,13 +168,13 @@ public class PushSessionCacheFilter implements Filter
         if (baseRequest.isPushSupported() && target._associated.size()>0)
         {
             PushBuilder builder = baseRequest.getPushBuilder();
-            if (!session.isNew())
-                builder.setConditional(true);
             for (Target associated : target._associated.values())
             {
+                String path = associated._path;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("PUSH {}->{}",uri,associated);
-                builder.push(associated._path,associated._etag,associated._lastModified);
+                    LOG.debug("PUSH {} <- {}",path,uri);
+                
+                builder.push(path,associated._etag,associated._lastModified);
             }
         }
 

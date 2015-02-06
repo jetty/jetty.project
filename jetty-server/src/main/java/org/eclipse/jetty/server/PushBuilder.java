@@ -18,23 +18,27 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Collection;
 import java.util.Set;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
 /** 
- * 
  */
 public class PushBuilder
 {    
+    private static final Logger LOG = Log.getLogger(PushBuilder.class);
+
+    private final static HttpField JettyPush = new HttpField("x-http2-push","PushBuilder");
+    
     private final Request _request;
     private final HttpFields _fields;
     private String _method;
@@ -51,6 +55,9 @@ public class PushBuilder
         _queryString = queryString;
         _sessionId = sessionId;
         _conditional = conditional;
+        _fields.add(JettyPush);
+        if (LOG.isDebugEnabled())
+            LOG.debug("PushBuilder({} {}?{} s={} c={})",_method,_request.getRequestURI(),_queryString,_sessionId,_conditional);
     }
 
     public String getMethod()
@@ -170,6 +177,10 @@ public class PushBuilder
         
         HttpURI uri = HttpURI.createHttpURI(_request.getScheme(),_request.getServerName(),_request.getServerPort(),path,param,query,null);
         MetaData.Request push = new MetaData.Request(_method,uri,_request.getHttpVersion(),_fields);
+        
+        if (LOG.isDebugEnabled())
+            LOG.debug("Push {} {} inm={} ims={}",_method,uri,_fields.get(HttpHeader.IF_NONE_MATCH),_fields.get(HttpHeader.IF_MODIFIED_SINCE));
+        
         _request.getHttpChannel().getHttpTransport().push(push);
     }
 }
