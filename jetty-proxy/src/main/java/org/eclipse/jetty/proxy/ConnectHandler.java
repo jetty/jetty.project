@@ -251,16 +251,13 @@ public class ConnectHandler extends HandlerWrapper
             SocketChannel channel = SocketChannel.open();
             channel.socket().setTcpNoDelay(true);
             channel.configureBlocking(false);
-            InetSocketAddress address = new InetSocketAddress(host, port);
 
             AsyncContext asyncContext = request.startAsync();
             asyncContext.setTimeout(0);
 
-            if (LOG.isDebugEnabled())
-                LOG.debug("Connecting to {}", address);
-            
             HttpTransport transport = baseRequest.getHttpChannel().getHttpTransport();
             
+            // TODO Handle CONNECT over HTTP2!
             if (!(transport instanceof HttpConnection))
             {
                 if (LOG.isDebugEnabled())
@@ -268,7 +265,10 @@ public class ConnectHandler extends HandlerWrapper
                 sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
                 return;
             }
-            
+
+            InetSocketAddress address = newConnectAddress(host, port);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connecting to {}", address);
             ConnectContext connectContext = new ConnectContext(request, response, asyncContext, (HttpConnection)transport);
             if (channel.connect(address))
                 selector.accept(channel, connectContext);
@@ -281,6 +281,17 @@ public class ConnectHandler extends HandlerWrapper
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /** Create the address the connect channel will connect to.
+     * @param host The host from the connect request
+     * @param port The port from the connect request
+     * @return The InetSocketAddress to connect to.
+     */
+    protected InetSocketAddress newConnectAddress(String host, int port)
+    {
+        return new InetSocketAddress(host, port);
+    }
+    
     protected void onConnectSuccess(ConnectContext connectContext, UpstreamConnection upstreamConnection)
     {
         HttpConnection httpConnection = connectContext.getHttpConnection();
