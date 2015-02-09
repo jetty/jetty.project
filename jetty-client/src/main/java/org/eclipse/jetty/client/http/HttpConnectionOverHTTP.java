@@ -152,11 +152,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     public String toString()
     {
-        return String.format("%s@%h(l:%s <-> r:%s)",
+        return String.format("%s@%h(l:%s <-> r:%s)[%s]",
                 getClass().getSimpleName(),
                 this,
                 getEndPoint().getLocalAddress(),
-                getEndPoint().getRemoteAddress());
+                getEndPoint().getRemoteAddress(),
+                channel);
     }
 
     private class Delegate extends HttpConnection

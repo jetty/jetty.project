@@ -527,6 +527,15 @@ public abstract class HttpReceiver
         return updated;
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x(rcv=%s)",
+                getClass().getSimpleName(),
+                hashCode(),
+                responseState);
+    }
+
     /**
      * The request states {@link HttpReceiver} goes through when receiving a response.
      */
