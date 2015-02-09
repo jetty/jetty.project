@@ -102,10 +102,11 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
         session.setMaxRemoteStreams(getMaxConcurrentStreams());
-        long idleTimeout = endPoint.getIdleTimeout();
-        if (idleTimeout > 0)
-            idleTimeout /= 2;
-        session.setStreamIdleTimeout(idleTimeout);
+        // For a single stream in a connection, there will be a race between
+        // the stream idle timeout and the connection idle timeout. However,
+        // the typical case is that the connection will be busier and the
+        // stream idle timeout will expire earlier that the connection's.
+        session.setStreamIdleTimeout(endPoint.getIdleTimeout());
         
         Parser parser = newServerParser(connector.getByteBufferPool(), session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
