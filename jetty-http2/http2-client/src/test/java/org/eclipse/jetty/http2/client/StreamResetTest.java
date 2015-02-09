@@ -338,6 +338,6 @@ public class StreamResetTest extends AbstractTest
             }
         });
 
-        Assert.assertTrue(dataLatch.await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 }

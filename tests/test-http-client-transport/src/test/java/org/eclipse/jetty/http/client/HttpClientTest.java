@@ -217,7 +217,7 @@ public class HttpClientTest extends AbstractTest
             ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
                     .method(HttpMethod.POST)
                     .content(new BytesContentProvider(bytes))
-                    .timeout(555, TimeUnit.SECONDS)
+                    .timeout(5, TimeUnit.SECONDS)
                     .send();
 
             Assert.assertEquals(500, response.getStatus());
@@ -255,7 +255,7 @@ public class HttpClientTest extends AbstractTest
         FutureResponseListener listener = new FutureResponseListener(request);
         request.method(HttpMethod.POST)
                 .content(content)
-                .timeout(555, TimeUnit.SECONDS)
+                .timeout(5, TimeUnit.SECONDS)
                 .send(listener);
 
         content.offer(ByteBuffer.wrap(chunk1));

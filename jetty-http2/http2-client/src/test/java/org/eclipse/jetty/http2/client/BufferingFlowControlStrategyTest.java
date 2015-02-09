@@ -89,7 +89,7 @@ public class BufferingFlowControlStrategyTest extends FlowControlStrategyTest
         });
 
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(dataLatch.await(555, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 
         // Wait a little more for the window updates to be processed.
         Thread.sleep(1000);

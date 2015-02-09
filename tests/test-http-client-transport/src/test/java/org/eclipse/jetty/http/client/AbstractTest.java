@@ -51,7 +51,7 @@ public abstract class AbstractTest
     {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("h2-client");
-        http2Client = new HTTP2Client(clientThreads);
+        http2Client = HTTP2Client.builder().executor(clientThreads).build();
     }
 
     @Parameterized.Parameters(name = "{index}: mod:{0}")

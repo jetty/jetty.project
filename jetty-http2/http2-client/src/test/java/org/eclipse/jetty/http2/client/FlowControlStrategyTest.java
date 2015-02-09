@@ -40,6 +40,7 @@ import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
@@ -84,9 +85,19 @@ public abstract class FlowControlStrategyTest
         server.addConnector(connector);
         server.start();
 
+        client = new HTTP2Client();
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
-        client = new HTTP2Client(clientExecutor);
+        client.setExecutor(clientExecutor);
+        client.setClientConnectionFactory(new HTTP2ClientConnectionFactory()
+        {
+            @Override
+            protected FlowControlStrategy newFlowControlStrategy()
+            {
+//                return FlowControlStrategyTest.this.newFlowControlStrategy();
+                return new SimpleFlowControlStrategy();
+            }
+        });
         client.start();
     }
 

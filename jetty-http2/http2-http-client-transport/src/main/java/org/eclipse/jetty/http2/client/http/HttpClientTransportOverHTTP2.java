@@ -36,7 +36,6 @@ import org.eclipse.jetty.util.Promise;
 public class HttpClientTransportOverHTTP2 implements HttpClientTransport
 {
     private final HTTP2Client client;
-//    private final ClientConnectionFactory connectionFactory;
     private HttpClient httpClient;
 
     public HttpClientTransportOverHTTP2(HTTP2Client client)
