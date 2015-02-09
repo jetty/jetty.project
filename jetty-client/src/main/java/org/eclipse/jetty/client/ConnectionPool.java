@@ -106,6 +106,8 @@ public class ConnectionPool implements Closeable, Dumpable
                             LOG.debug("Connection {}/{} creation succeeded {}", next, maxConnections, connection);
                         if (activate(connection))
                             connectionPromise.succeeded(connection);
+                        else
+                            connectionPromise.failed(new IllegalStateException("Active connection overflow"));
                     }
 
                     @Override

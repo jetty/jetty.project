@@ -71,6 +71,11 @@ public abstract class IdleTimeout
         return _idleTimestamp;
     }
 
+    public long getIdleFor()
+    {
+        return System.currentTimeMillis() - getIdleTimestamp();
+    }
+
     public long getIdleTimeout()
     {
         return _idleTimeout;
