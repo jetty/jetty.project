@@ -410,7 +410,7 @@ then
   echo "JETTY_ARGS     =  ${JETTY_ARGS[*]}"
   echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
   echo "JAVA           =  $JAVA"
-  echo "RUN_CMD        =  ${RUN_CMD}"
+  echo "RUN_CMD        =  ${RUN_CMD[*]}"
 fi
 
 ##################################################
