@@ -210,6 +210,12 @@ public class HttpSenderOverHTTP extends HttpSender
         getHttpChannel().getHttpConnection().getEndPoint().shutdownOutput();
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s[%s]", super.toString(), generator);
+    }
+
     private class ByteBufferRecyclerCallback implements Callback
     {
         private final Callback callback;

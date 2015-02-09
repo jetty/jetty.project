@@ -308,6 +308,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     @Override
     public String toString()
     {
-        return String.format("%s@%x on %s", getClass().getSimpleName(), hashCode(), getHttpConnection());
+        return String.format("%s[%s]", super.toString(), parser);
     }
 }

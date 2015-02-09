@@ -547,6 +547,16 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         return new IllegalStateException("Expected " + current + " found " + senderState.get() + " instead");
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x(req=%s,snd=%s)",
+                getClass().getSimpleName(),
+                hashCode(),
+                requestState,
+                senderState);
+    }
+
     /**
      * The request states {@link HttpSender} goes through when sending a request.
      */

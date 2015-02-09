@@ -105,6 +105,10 @@ public class HttpChannelOverHTTP extends HttpChannel
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x(send=%s,recv=%s)",
+                getClass().getSimpleName(),
+                hashCode(),
+                sender,
+                receiver);
     }
 }
