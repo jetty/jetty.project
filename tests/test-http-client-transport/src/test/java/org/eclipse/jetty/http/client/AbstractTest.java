@@ -55,11 +55,10 @@ public abstract class AbstractTest
         http2Client.setExecutor(clientThreads);
     }
 
-    @Parameterized.Parameters(name = "{index}: mod:{0}")
+    @Parameterized.Parameters(name = "transport: {0}")
     public static List<Object[]> parameters() throws Exception
     {
         HttpConfiguration httpConfiguration = new HttpConfiguration();
-
         return Arrays.asList(
                 new Object[]{new HttpClientTransportOverHTTP(), new HttpConnectionFactory(httpConfiguration)},
                 new Object[]{new HttpClientTransportOverHTTP2(http2Client), new HTTP2ServerConnectionFactory(httpConfiguration)}
