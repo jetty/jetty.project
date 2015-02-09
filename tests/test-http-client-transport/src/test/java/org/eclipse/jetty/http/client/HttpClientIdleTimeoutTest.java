@@ -26,10 +26,8 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
-import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
@@ -39,9 +37,9 @@ public class HttpClientIdleTimeoutTest extends AbstractTest
 {
     private long idleTimeout = 1000;
 
-    public HttpClientIdleTimeoutTest(HttpClientTransport httpClientTransport, ConnectionFactory serverConnectionFactory)
+    public HttpClientIdleTimeoutTest(Transport transport)
     {
-        super(httpClientTransport, serverConnectionFactory);
+        super(transport);
     }
 
     @Test

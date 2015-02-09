@@ -27,13 +27,11 @@ import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
-import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.Assert;
@@ -41,9 +39,9 @@ import org.junit.Test;
 
 public class HttpClientTest extends AbstractTest
 {
-    public HttpClientTest(HttpClientTransport httpClientTransport, ConnectionFactory serverConnectionFactory)
+    public HttpClientTest(Transport transport)
     {
-        super(httpClientTransport, serverConnectionFactory);
+        super(transport);
     }
 
     @Test

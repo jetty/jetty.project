@@ -32,8 +32,9 @@ import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public class HttpClientTransportOverHTTP2 implements HttpClientTransport
+public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements HttpClientTransport
 {
     private final HTTP2Client client;
     private HttpClient httpClient;
@@ -41,6 +42,20 @@ public class HttpClientTransportOverHTTP2 implements HttpClientTransport
     public HttpClientTransportOverHTTP2(HTTP2Client client)
     {
         this.client = client;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        addBean(client);
+        super.doStart();
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        removeBean(client);
     }
 
     @Override

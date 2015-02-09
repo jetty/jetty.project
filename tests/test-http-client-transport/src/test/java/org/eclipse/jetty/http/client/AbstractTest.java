@@ -20,6 +20,7 @@ package org.eclipse.jetty.http.client;
 
 import java.util.Arrays;
 import java.util.List;
+import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpClientTransport;
@@ -36,8 +37,6 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
-import org.junit.AfterClass;
-import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -45,51 +44,23 @@ import org.junit.runners.Parameterized;
 @RunWith(Parameterized.class)
 public abstract class AbstractTest
 {
-    private static final HTTP2Client http2Client;
-
-    static
-    {
-        http2Client = new HTTP2Client();
-        QueuedThreadPool clientThreads = new QueuedThreadPool();
-        clientThreads.setName("h2-client");
-        http2Client.setExecutor(clientThreads);
-    }
-
     @Parameterized.Parameters(name = "transport: {0}")
     public static List<Object[]> parameters() throws Exception
     {
-        HttpConfiguration httpConfiguration = new HttpConfiguration();
-        return Arrays.asList(
-                new Object[]{new HttpClientTransportOverHTTP(), new HttpConnectionFactory(httpConfiguration)},
-                new Object[]{new HttpClientTransportOverHTTP2(http2Client), new HTTP2ServerConnectionFactory(httpConfiguration)}
-        );
-    }
-
-    @BeforeClass
-    public static void prepare() throws Exception
-    {
-        http2Client.start();
-    }
-
-    @AfterClass
-    public static void dispose() throws Exception
-    {
-        http2Client.stop();
+        return Arrays.asList(new Object[]{Transport.HTTP}, new Object[]{Transport.HTTP2});
     }
 
     @Rule
     public final TestTracker tracker = new TestTracker();
 
-    private final HttpClientTransport httpClientTransport;
-    private final ConnectionFactory serverConnectionFactory;
+    private final Transport transport;
     protected Server server;
     protected ServerConnector connector;
     protected HttpClient client;
 
-    public AbstractTest(HttpClientTransport httpClientTransport, ConnectionFactory serverConnectionFactory)
+    public AbstractTest(Transport transport)
     {
-        this.httpClientTransport = httpClientTransport;
-        this.serverConnectionFactory = serverConnectionFactory;
+        this.transport = transport;
     }
 
     public void start(Handler handler) throws Exception
@@ -97,16 +68,50 @@ public abstract class AbstractTest
         QueuedThreadPool serverThreads = new QueuedThreadPool();
         serverThreads.setName("server");
         server = new Server(serverThreads);
-        connector = new ServerConnector(server, serverConnectionFactory);
+        connector = new ServerConnector(server, provideServerConnectionFactory(transport));
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
 
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(httpClientTransport, null);
+        client = new HttpClient(provideClientTransport(transport, clientThreads), null);
         client.setExecutor(clientThreads);
         client.start();
+    }
+
+    private ConnectionFactory provideServerConnectionFactory(Transport transport)
+    {
+        switch (transport)
+        {
+            case HTTP:
+                return new HttpConnectionFactory(new HttpConfiguration());
+            case HTTP2:
+                return new HTTP2ServerConnectionFactory(new HttpConfiguration());
+            default:
+                throw new IllegalArgumentException();
+        }
+    }
+
+    private HttpClientTransport provideClientTransport(Transport transport, Executor clientThreads)
+    {
+        switch (transport)
+        {
+            case HTTP:
+            {
+                return new HttpClientTransportOverHTTP(1);
+            }
+            case HTTP2:
+            {
+                HTTP2Client http2Client = new HTTP2Client();
+                http2Client.setExecutor(clientThreads);
+                return new HttpClientTransportOverHTTP2(http2Client);
+            }
+            default:
+            {
+                throw new IllegalArgumentException();
+            }
+        }
     }
 
     @After
@@ -114,5 +119,10 @@ public abstract class AbstractTest
     {
         client.stop();
         server.stop();
+    }
+
+    protected enum Transport
+    {
+        HTTP, HTTP2
     }
 }
