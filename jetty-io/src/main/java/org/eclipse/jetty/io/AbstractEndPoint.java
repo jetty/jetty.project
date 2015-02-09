@@ -166,7 +166,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d,%s}",
+        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d/%d,%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 getRemoteAddress(),
@@ -176,6 +176,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                 isOutputShutdown()?"OSHUT":"out",
                 _fillInterest.isInterested()?"R":"-",
                 _writeFlusher.isInProgress()?"W":"-",
+                getIdleFor(),
                 getIdleTimeout(),
                 getConnection()==null?null:getConnection().getClass().getSimpleName());
     }
