@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http.client;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -31,7 +30,6 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.HttpClientTransport;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.util.BytesContentProvider;
-import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
@@ -192,79 +190,5 @@ public class HttpClientTest extends AbstractTest
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertEquals(0, response.getContent().length);
-    }
-
-    @Test
-    public void testUploadLargeWithExceptionThrownWhileReadingOnServer() throws Exception
-    {
-        final byte[] bytes = new byte[1024 * 1024];
-        new Random().nextBytes(bytes);
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-                ServletInputStream input = request.getInputStream();
-                byte[] buffer = new byte[512];
-                input.read(buffer);
-                throw new IOException();
-            }
-        });
-
-        try
-        {
-            ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                    .method(HttpMethod.POST)
-                    .content(new BytesContentProvider(bytes))
-                    .timeout(5, TimeUnit.SECONDS)
-                    .send();
-
-            Assert.assertEquals(500, response.getStatus());
-        }
-        catch (Exception e)
-        {
-            Thread.sleep(1000);
-        }
-
-    }
-
-    @Test
-    public void testUploadChunkedWithExceptionThrownWhileReadingOnServer() throws Exception
-    {
-        final byte[] chunk1 = new byte[512];
-        final byte[] chunk2 = new byte[512];
-        Random random = new Random();
-        random.nextBytes(chunk1);
-        random.nextBytes(chunk2);
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-                ServletInputStream input = request.getInputStream();
-                byte[] buffer = new byte[512];
-                input.read(buffer);
-                throw new IOException();
-            }
-        });
-
-        org.eclipse.jetty.client.api.Request request = client.newRequest("localhost", connector.getLocalPort());
-        DeferredContentProvider content = new DeferredContentProvider();
-        FutureResponseListener listener = new FutureResponseListener(request);
-        request.method(HttpMethod.POST)
-                .content(content)
-                .timeout(5, TimeUnit.SECONDS)
-                .send(listener);
-
-        content.offer(ByteBuffer.wrap(chunk1));
-
-        ContentResponse response = listener.get();
-
-//        content.offer(ByteBuffer.wrap(chunk2));
-//        content.close();
-
-        Assert.assertEquals(500, response.getStatus());
     }
 }

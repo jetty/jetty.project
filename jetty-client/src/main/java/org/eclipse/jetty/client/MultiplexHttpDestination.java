@@ -88,6 +88,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
     public void failed(Throwable x)
     {
         connect.set(ConnectState.DISCONNECTED);
+        abort(x);
     }
 
     protected boolean process(final C connection, boolean dispatch)

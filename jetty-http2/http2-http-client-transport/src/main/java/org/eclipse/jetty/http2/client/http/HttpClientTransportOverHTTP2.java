@@ -58,6 +58,8 @@ public class HttpClientTransportOverHTTP2 implements HttpClientTransport
     @Override
     public void connect(SocketAddress address, Map<String, Object> context)
     {
+        client.setConnectTimeout(httpClient.getConnectTimeout());
+
         final HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
         @SuppressWarnings("unchecked")
         final Promise<Connection> connection = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
@@ -85,6 +87,7 @@ public class HttpClientTransportOverHTTP2 implements HttpClientTransport
                 connection.failed(failure);
             }
         };
+
         client.connect(httpClient.getSslContextFactory(), (InetSocketAddress)address, listener, promise, context);
     }
 

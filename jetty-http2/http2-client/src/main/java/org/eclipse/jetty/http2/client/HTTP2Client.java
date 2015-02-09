@@ -176,6 +176,9 @@ public class HTTP2Client extends ContainerLifeCycle
     public void setConnectTimeout(long connectTimeout)
     {
         this.connectTimeout = connectTimeout;
+        SelectorManager selector = this.selector;
+        if (selector != null)
+            selector.setConnectTimeout(connectTimeout);
     }
 
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
@@ -264,6 +267,22 @@ public class HTTP2Client extends ContainerLifeCycle
             }
 
             return factory.newConnection(endpoint, context);
+        }
+
+        @Override
+        protected void connectionFailed(SocketChannel channel, Throwable failure, Object attachment)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> context = (Map<String, Object>)attachment;
+            if (LOG.isDebugEnabled())
+            {
+                Object host = context.get(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY);
+                Object port = context.get(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY);
+                LOG.debug("Could not connect to {}:{}", host, port);
+            }
+            @SuppressWarnings("unchecked")
+            Promise<Session> promise = (Promise<Session>)context.get(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY);
+            promise.failed(failure);
         }
     }
 }
