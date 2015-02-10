@@ -49,7 +49,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.GatheringCallback;
+import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -556,7 +556,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         else
         {
-            callback = new GatheringCallback(callback, 1 + length);
+            callback = new CountingCallback(callback, 1 + length);
             frame(new ControlEntry(frame, stream, callback), false);
             for (int i = 1; i <= length; ++i)
                 frame(new ControlEntry(frames[i - 1], stream, callback), i == length);
