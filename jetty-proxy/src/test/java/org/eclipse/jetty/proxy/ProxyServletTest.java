@@ -99,7 +99,7 @@ public class ProxyServletTest
 {
     private static final String PROXIED_HEADER = "X-Proxied";
 
-    @Parameterized.Parameters
+    @Parameterized.Parameters(name = "{0}")
     public static Iterable<Object[]> data()
     {
         return Arrays.asList(new Object[][]{
