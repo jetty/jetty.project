@@ -967,24 +967,31 @@ public class ProxyServletTest
         Assert.assertEquals(value1, cookies.get(0).getValue());
 
         HttpClient client2 = prepareClient();
-        String value2 = "2";
-        ContentResponse response2 = client2.newRequest("localhost", serverConnector.getLocalPort())
-                .header(name, value2)
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
-        Assert.assertEquals(200, response2.getStatus());
-        Assert.assertTrue(response2.getHeaders().containsKey(PROXIED_HEADER));
-        cookies = client2.getCookieStore().getCookies();
-        Assert.assertEquals(1, cookies.size());
-        Assert.assertEquals(name, cookies.get(0).getName());
-        Assert.assertEquals(value2, cookies.get(0).getValue());
+        try
+        {
+            String value2 = "2";
+            ContentResponse response2 = client2.newRequest("localhost", serverConnector.getLocalPort())
+                    .header(name, value2)
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+            Assert.assertEquals(200, response2.getStatus());
+            Assert.assertTrue(response2.getHeaders().containsKey(PROXIED_HEADER));
+            cookies = client2.getCookieStore().getCookies();
+            Assert.assertEquals(1, cookies.size());
+            Assert.assertEquals(name, cookies.get(0).getName());
+            Assert.assertEquals(value2, cookies.get(0).getValue());
 
-        // Make a third request to be sure the proxy does not mix cookies
-        ContentResponse response3 = client.newRequest("localhost", serverConnector.getLocalPort())
-                .timeout(5, TimeUnit.SECONDS)
-                .send();
-        Assert.assertEquals(200, response3.getStatus());
-        Assert.assertTrue(response3.getHeaders().containsKey(PROXIED_HEADER));
+            // Make a third request to be sure the proxy does not mix cookies
+            ContentResponse response3 = client.newRequest("localhost", serverConnector.getLocalPort())
+                    .timeout(5, TimeUnit.SECONDS)
+                    .send();
+            Assert.assertEquals(200, response3.getStatus());
+            Assert.assertTrue(response3.getHeaders().containsKey(PROXIED_HEADER));
+        }
+        finally
+        {
+            client2.stop();
+        }
     }
 
     @Test
@@ -1027,7 +1034,6 @@ public class ProxyServletTest
             }
         });
 
-        HttpClient client = prepareClient();
         InputStreamResponseListener listener = new InputStreamResponseListener();
         int port = serverConnector.getLocalPort();
         client.newRequest("localhost", port).send(listener);
@@ -1099,7 +1105,6 @@ public class ProxyServletTest
             }
         });
 
-        HttpClient client = prepareClient();
         InputStreamResponseListener listener = new InputStreamResponseListener();
         int port = serverConnector.getLocalPort();
         client.newRequest("localhost", port).send(listener);
@@ -1159,7 +1164,6 @@ public class ProxyServletTest
         proxyContext.start();
         prepareServer(new EmptyHttpServlet());
 
-        HttpClient client = prepareClient();
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort()).send();
 
         Assert.assertEquals(200, response.getStatus());
@@ -1192,7 +1196,6 @@ public class ProxyServletTest
             }
         });
 
-        HttpClient client = prepareClient();
         Request request = client.newRequest("localhost", serverConnector.getLocalPort());
         for (Map.Entry<String, String> entry : hopHeaders.entrySet())
             request.header(entry.getKey(), entry.getValue());

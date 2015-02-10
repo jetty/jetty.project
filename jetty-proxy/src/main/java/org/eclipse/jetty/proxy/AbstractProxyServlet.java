@@ -402,7 +402,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
             String headerName = headerNames.nextElement();
             String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
 
-            if (_hostHeader != null && HttpHeader.HOST.is(headerName))
+            if (HttpHeader.HOST.is(headerName))
                 continue;
 
             // Remove hop-by-hop headers.
