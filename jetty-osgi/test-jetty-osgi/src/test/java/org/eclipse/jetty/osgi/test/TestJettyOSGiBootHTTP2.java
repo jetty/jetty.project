@@ -19,8 +19,8 @@
 package org.eclipse.jetty.osgi.test;
 
 import static org.ops4j.pax.exam.CoreOptions.mavenBundle;
-import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 import static org.ops4j.pax.exam.CoreOptions.options;
+import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -33,18 +33,16 @@ import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
+import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.CoreOptions;
 import org.ops4j.pax.exam.Option;
-import org.ops4j.pax.exam.Configuration;
 import org.ops4j.pax.exam.junit.PaxExam;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
  * HTTP2 setup.
  */
 @RunWith(PaxExam.class)
-//@Ignore
 public class TestJettyOSGiBootHTTP2
 {
     private static final String LOG_LEVEL = "WARN";
@@ -69,8 +67,6 @@ public class TestJettyOSGiBootHTTP2
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.util.component.LEVEL").value("DEBUG"))));
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.server.LEVEL").value("DEBUG"))));
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.xml.LEVEL").value("INFO"))));
-        // options.addAll(Arrays.asList(options(systemProperty("osgi.console").value("6666"))));
-        // options.addAll(Arrays.asList(options(systemProperty("osgi.console.enable.builtin").value("true"))));
         return options.toArray(new Option[options.size()]);
     }
 
@@ -90,12 +86,12 @@ public class TestJettyOSGiBootHTTP2
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
 
-        res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-hpack").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-common").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-hpack").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-server").versionAsInProject().noStart());
         return res;
     }
-
+ 
     @Test
     public void checkALPNBootOnBootstrapClasspath() throws Exception
     {
@@ -103,20 +99,18 @@ public class TestJettyOSGiBootHTTP2
         Assert.assertNotNull(alpn);
         Assert.assertNull(alpn.getClassLoader());
     }
-
+    
     @Ignore
     @Test
-    public void assertAllBundlesActiveOrResolved()
+    public void assertAllBundlesActiveOrResolved() throws Exception
     {
-        // TestOSGiUtil.debugBundles(bundleContext);
         TestOSGiUtil.assertAllBundlesActiveOrResolved(bundleContext);
     }
 
+    
     @Test
     public void testHTTP2OnHttpService() throws Exception
     {
-        // TestOSGiUtil.debugBundles(bundleContext);
-        // Thread.sleep(2000000000);
         TestOSGiUtil.testHttpServiceGreetings(bundleContext, "https", TestJettyOSGiBootCore.DEFAULT_SSL_PORT);
     }
 

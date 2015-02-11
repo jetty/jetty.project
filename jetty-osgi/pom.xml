@@ -26,7 +26,7 @@
     <module>test-jetty-osgi-webapp</module>
     <module>test-jetty-osgi-context</module>
     <module>jetty-osgi-alpn</module>
-    <!-- TODO fix this module>test-jetty-osgi</module -->
+    <module>test-jetty-osgi</module>
   </modules>
   <build>
     <resources>
