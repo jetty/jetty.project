@@ -1,5 +1,5 @@
 # ALPN is provided via a -Xbootclasspath that modifies the secure connections
-# in java to support the ALPN layer needed for SPDY (and eventually HTTP/2)
+# in java to support the ALPN layer needed for HTTP/2
 #
 # This modification has a tight dependency on specific recent updates of
 # Java 1.7 and Java 1.8

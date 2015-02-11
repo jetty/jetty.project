@@ -357,7 +357,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
     /**
      * Resolve a node just in time.
      * <p>
-     * Useful for nodes that are virtual/transient in nature (such as the npn/alpn modules)
+     * Useful for nodes that are virtual/transient in nature (such as the jsp/jstl/alpn modules)
      */
     public abstract T resolveNode(String name);
 

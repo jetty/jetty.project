@@ -24,112 +24,66 @@ import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Various Home + Base use cases
  */
+@RunWith(Parameterized.class)
 public class TestUseCases
 {
-    private void assertUseCase(String homeName, String baseName, String assertName, String... cmdLineArgs) throws Exception
+    @Parameters(name = "{0}")
+    public static List<Object[]> getCases()
     {
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/" + homeName);
-        File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + baseName);
+        List<Object[]> ret = new ArrayList<>();
+
+        ret.add(new String[] {"barebones", null});
+        ret.add(new String[] {"include-jetty-dir-logging", null});
+        ret.add(new String[] {"jmx", null});
+        ret.add(new String[] {"logging", null});
+        ret.add(new String[] {"jsp", null});
+        ret.add(new String[] {"database", null});
+        ret.add(new String[] {"deep-ext", null});
+        
+        // Ones with command lines
+        ret.add(new Object[] {"http2", new String[]{"java.version=1.7.0_60"}});
+        ret.add(new Object[] {"basic-properties", new String[]{"port=9090"}});
+        ret.add(new Object[] {"agent-properties", new String[]{"java.vm.specification.version=1.6"}});
+        
+        return ret;
+    }
+
+    @Parameter(0)
+    public String caseName;
+
+    @Parameter(1)
+    public String[] commandLineArgs;
+
+    @Test
+    public void testUseCase() throws Exception
+    {
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
+        File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName);
 
         Main main = new Main();
         List<String> cmdLine = new ArrayList<>();
         cmdLine.add("jetty.home=" + homeDir.getAbsolutePath());
         cmdLine.add("jetty.base=" + baseDir.getAbsolutePath());
         // cmdLine.add("--debug");
-        for (String arg : cmdLineArgs)
+
+        if (commandLineArgs != null)
         {
-            cmdLine.add(arg);
+            for (String arg : commandLineArgs)
+            {
+                cmdLine.add(arg);
+            }
         }
+
         StartArgs args = main.processCommandLine(cmdLine);
         BaseHome baseHome = main.getBaseHome();
-        ConfigurationAssert.assertConfiguration(baseHome,args,"usecases/" + assertName);
-    }
-
-    @Test
-    public void testBarebones() throws Exception
-    {
-        assertUseCase("home","base.barebones","assert-barebones.txt");
-    }
-
-    @Test
-    public void testJMX() throws Exception
-    {
-        assertUseCase("home","base.jmx","assert-jmx.txt");
-    }
-    
-    @Test
-    public void testWithLogging() throws Exception
-    {
-        assertUseCase("home","base.logging","assert-logging.txt");
-    }
-
-    @Test
-    public void testWithIncludeJettyDir_Logging() throws Exception
-    {
-        assertUseCase("home","base.with.include.jetty.dirs","assert-include-jetty-dir-logging.txt");
-    }
-
-    @Test
-    public void testWithJspDefault() throws Exception
-    {
-        assertUseCase("home","base.with.jsp.default","assert-jsp-apache.txt");
-    }
-
-    @Test
-    public void testWithJspApache() throws Exception
-    {
-        assertUseCase("home","base.with.jsp.apache","assert-jsp-apache.txt");
-    }
-    
-    @Test
-    public void testWithJspGlassfish() throws Exception
-    {
-        assertUseCase("home","base.with.jsp.glassfish","assert-jsp-glassfish.txt");
-    }
-
-    @Test
-    public void testWithJspGlassfishCmdLine() throws Exception
-    {
-        assertUseCase("home","base.with.jsp.default","assert-jsp-glassfish.txt","jsp-impl=glassfish");
-    }
-
-    @Test
-    public void testWithMissingNpnVersion() throws Exception
-    {
-        assertUseCase("home","base.missing.npn.version","assert-missing-npn-version.txt","java.version=1.7.0_01");
-    }
-    
-    @Test
-    public void testWithSpdy() throws Exception
-    {
-        assertUseCase("home","base.enable.spdy","assert-enable-spdy.txt","java.version=1.7.0_60");
-    }
-    
-    @Test
-    public void testWithDatabase() throws Exception
-    {
-        assertUseCase("home","base.with.db","assert-with-db.txt");
-    }
-
-    @Test
-    public void testWithDeepExt() throws Exception
-    {
-        assertUseCase("home","base.with.ext","assert-with.ext.txt");
-    }
-    
-    @Test
-    public void testWithPropsBasic() throws Exception
-    {
-        assertUseCase("home","base.props.basic","assert-props.basic.txt","port=9090");
-    }
-    
-    @Test
-    public void testWithPropsAgent() throws Exception
-    {
-        assertUseCase("home","base.props.agent","assert-props.agent.txt","java.vm.specification.version=1.6");
+        ConfigurationAssert.assertConfiguration(baseHome,args,"usecases/" + caseName + ".assert.txt");
     }
 }

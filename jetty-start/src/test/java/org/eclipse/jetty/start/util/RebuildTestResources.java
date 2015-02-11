@@ -129,7 +129,7 @@ public class RebuildTestResources
         FS.ensureDirExists(libsDir.toFile());
 
         PathMatcher matcher = getPathMatcher("glob:**.jar");
-        Renamer renamer = new RegexRenamer("-9\\.[0-9.]*(v[0-9]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?","-TEST");
+        Renamer renamer = new RegexRenamer("-9\\.[0-9.]*(v[0-9-]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?","-TEST");
         FileCopier copier = new TouchFileCopier();
         copyDir(srcDir.resolve("lib"),libsDir,matcher,renamer,copier);
     }

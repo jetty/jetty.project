@@ -83,7 +83,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create base
         File base = testdir.getFile("base");
@@ -107,7 +107,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create common
         File common = testdir.getFile("common");
@@ -136,7 +136,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create common
         File common = testdir.getFile("common");
@@ -177,7 +177,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create opt
         File opt = testdir.getFile("opt");
@@ -223,7 +223,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create opt
         File opt = testdir.getFile("opt");
@@ -272,7 +272,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create common
         File common = testdir.getFile("common");
@@ -307,7 +307,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create common
         File common = testdir.getFile("common");
@@ -350,7 +350,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create corp
         File corp = testdir.getFile("corp");
@@ -396,7 +396,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create corp
         File corp = testdir.getFile("corp");
@@ -445,7 +445,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create devops
         File devops = testdir.getFile("devops");
@@ -502,7 +502,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create corp
         File corp = testdir.getFile("corp");
@@ -551,7 +551,7 @@ public class ConfigSourcesTest
         // Create home
         File home = testdir.getFile("home");
         FS.ensureEmpty(home);
-        TestEnv.copyTestDir("usecases/home",home);
+        TestEnv.copyTestDir("dist-home",home);
 
         // Create common
         File common = testdir.getFile("common");

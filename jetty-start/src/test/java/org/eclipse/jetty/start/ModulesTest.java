@@ -51,7 +51,7 @@ public class ModulesTest
     public void testLoadAllModules() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyDir();
         String cmdLine[] = new String[] { "jetty.version=TEST" };
 
@@ -75,8 +75,8 @@ public class ModulesTest
         List<String> moduleNames = new ArrayList<>();
         for (Module mod : modules)
         {
-            // skip npn-boot in this test (as its behavior is jdk specific)
-            if (mod.getName().equals("npn-boot"))
+            // skip alpn-boot in this test (as its behavior is jdk specific)
+            if (mod.getName().equals("alpn-boot"))
             {
                 continue;
             }
@@ -86,8 +86,25 @@ public class ModulesTest
         List<String> expected = new ArrayList<>();
         expected.add("jmx");
         expected.add("client");
+        expected.add("cdi");
+        expected.add("continuation");
+        expected.add("gzip");
+        expected.add("hawtio");
+        expected.add("jamon");
+        expected.add("jaspi");
+        expected.add("jminix");
+        expected.add("jmx-remote");
+        expected.add("jolokia");
+        expected.add("jstl");
+        expected.add("jvm");
+        expected.add("quickstart");
+        expected.add("servlets");
+        expected.add("setuid");
+        expected.add("spring");
+        expected.add("home-base-warning");
+        expected.add("http2");
+        expected.add("fcgi");
         expected.add("stats");
-        expected.add("spdy");
         expected.add("deploy");
         expected.add("debug");
         expected.add("security");
@@ -106,13 +123,11 @@ public class ModulesTest
         expected.add("jsp");
         // (only present if enabled) expected.add("jsp-impl");
         expected.add("monitor");
-        expected.add("xml");
         expected.add("ssl");
         expected.add("protonego");
         expected.add("servlet");
         expected.add("jaas");
         expected.add("http");
-        expected.add("base");
         expected.add("server");
         expected.add("annotations");
         expected.add("resources");
@@ -170,7 +185,7 @@ public class ModulesTest
     public void testEnableRegexSimple() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyDir();
         String cmdLine[] = new String[] { "jetty.version=TEST", "java.version=1.7.0_60" };
 
@@ -197,21 +212,30 @@ public class ModulesTest
         List<String> expected = new ArrayList<>();
         expected.add("jmx");
         expected.add("stats");
-        expected.add("spdy");
         expected.add("security");
         expected.add("jndi");
         expected.add("jsp");
         expected.add("servlet");
+        expected.add("servlets");
         expected.add("jaas");
         expected.add("server");
+        expected.add("setuid");
+        expected.add("spring");
+        expected.add("jaspi");
+        expected.add("jminix");
+        expected.add("jolokia");
+        expected.add("jamon");
+        expected.add("jstl");
+        expected.add("jmx-remote");
+        expected.add("jvm");
         // transitive
-        expected.add("base");
         expected.add("ssl");
-        expected.add("protonego");
-        expected.add("protonego-boot");
-        expected.add("protonego-impl");
-        expected.add("xml");
         expected.add("jsp-impl");
+        expected.add("jstl-impl");
+        expected.add("webapp");
+        expected.add("deploy");
+        expected.add("plus");
+        expected.add("annotations");
 
         List<String> resolved = new ArrayList<>();
         for (Module module : modules.getSelected())
@@ -226,7 +250,7 @@ public class ModulesTest
     public void testResolve_ServerHttp() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyDir();
         String cmdLine[] = new String[] { "jetty.version=TEST" };
 
@@ -258,8 +282,6 @@ public class ModulesTest
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
-        expectedNames.add("base");
-        expectedNames.add("xml");
         expectedNames.add("server");
         expectedNames.add("http");
 
@@ -273,14 +295,13 @@ public class ModulesTest
 
         // Assert Library List
         List<String> expectedLibs = new ArrayList<>();
-        expectedLibs.add("lib/jetty-util-${jetty.version}.jar");
-        expectedLibs.add("lib/jetty-io-${jetty.version}.jar");
-        expectedLibs.add("lib/jetty-xml-${jetty.version}.jar");
         expectedLibs.add("lib/servlet-api-3.1.jar");
         expectedLibs.add("lib/jetty-schemas-3.1.jar");
         expectedLibs.add("lib/jetty-http-${jetty.version}.jar");
-        expectedLibs.add("lib/jetty-continuation-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-server-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-xml-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-util-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-io-${jetty.version}.jar");
 
         List<String> actualLibs = modules.normalizeLibs(active);
         assertThat("Resolved Libs: " + actualLibs,actualLibs,contains(expectedLibs.toArray()));
@@ -298,7 +319,7 @@ public class ModulesTest
     public void testResolve_WebSocket() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyDir();
         String cmdLine[] = new String[] { "jetty.version=TEST" };
 
@@ -331,12 +352,12 @@ public class ModulesTest
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
-        expectedNames.add("base");
-        expectedNames.add("xml");
         expectedNames.add("server");
         expectedNames.add("http");
         expectedNames.add("jndi");
         expectedNames.add("security");
+        expectedNames.add("servlet");
+        expectedNames.add("webapp");
         expectedNames.add("plus");
         expectedNames.add("annotations");
         expectedNames.add("websocket");
@@ -351,17 +372,18 @@ public class ModulesTest
 
         // Assert Library List
         List<String> expectedLibs = new ArrayList<>();
-        expectedLibs.add("lib/jetty-util-${jetty.version}.jar");
-        expectedLibs.add("lib/jetty-io-${jetty.version}.jar");
-        expectedLibs.add("lib/jetty-xml-${jetty.version}.jar");
         expectedLibs.add("lib/servlet-api-3.1.jar");
         expectedLibs.add("lib/jetty-schemas-3.1.jar");
         expectedLibs.add("lib/jetty-http-${jetty.version}.jar");
-        expectedLibs.add("lib/jetty-continuation-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-server-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-xml-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-util-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-io-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-jndi-${jetty.version}.jar");
         expectedLibs.add("lib/jndi/*.jar");
         expectedLibs.add("lib/jetty-security-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-servlet-${jetty.version}.jar");
+        expectedLibs.add("lib/jetty-webapp-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-plus-${jetty.version}.jar");
         expectedLibs.add("lib/jetty-annotations-${jetty.version}.jar");
         expectedLibs.add("lib/annotations/*.jar");
@@ -376,7 +398,6 @@ public class ModulesTest
         expectedXmls.add("etc/jetty-http.xml");
         expectedXmls.add("etc/jetty-plus.xml");
         expectedXmls.add("etc/jetty-annotations.xml");
-        expectedXmls.add("etc/jetty-websockets.xml");
 
         List<String> actualXmls = modules.normalizeXmls(active);
         assertThat("Resolved XMLs: " + actualXmls,actualXmls,contains(expectedXmls.toArray()));
@@ -386,7 +407,7 @@ public class ModulesTest
     public void testResolve_Alt() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyDir();
         String cmdLine[] = new String[] { "jetty.version=TEST" };
 
@@ -424,19 +445,17 @@ public class ModulesTest
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
-        expectedNames.add("base");
         expectedNames.add("jsp-impl");
-        expectedNames.add("xml");
         expectedNames.add("server");
         expectedNames.add("http");
         expectedNames.add("jndi");
         expectedNames.add("security");
         expectedNames.add("servlet");
-        expectedNames.add("jsp");
-        expectedNames.add("plus");
         expectedNames.add("webapp");
-        expectedNames.add("annotations");
         expectedNames.add("deploy");
+        expectedNames.add("plus");
+        expectedNames.add("annotations");
+        expectedNames.add("jsp");
         expectedNames.add("websocket");
 
         List<String> actualNames = new ArrayList<>();
