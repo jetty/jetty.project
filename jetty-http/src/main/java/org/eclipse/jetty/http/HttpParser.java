@@ -1046,7 +1046,18 @@ public class HttpParser
                     
                     if (ch==HttpTokens.SPACE || ch==HttpTokens.TAB)
                         break;
-                    
+
+                    if (ch==HttpTokens.LINE_FEED)
+                    {
+                        _value=null;
+                        _string.setLength(0);
+                        _valueString=null;
+                        _length=-1;
+                        
+                        parsedHeader();
+                        setState(State.HEADER);
+                        break;
+                    }
                     throw new IllegalCharacter(ch,buffer);
 
                 case HEADER_IN_VALUE:
