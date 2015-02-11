@@ -1166,8 +1166,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
         String location = node.getString("location", false, true);
         ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
-        
-        switch (context.getMetaData().getOrigin("error."+error))
+        String originName = "error."+error;
+        switch (context.getMetaData().getOrigin(originName))
         {
             case NotSet:
             {
@@ -1183,19 +1183,19 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             case WebDefaults:
             case WebOverride:
             {
-                //an error page setup was set in web.xml, only allow other web xml descriptors to override it
+                //an error page setup was set in web.xml/webdefault.xml/web-override.xml, only allow other web xml descriptors to override it
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
-                    if (descriptor instanceof OverrideDescriptor || descriptor instanceof DefaultsDescriptor)
-                    {
-                        if (code>0)
-                            handler.addErrorPage(code,location);
-                        else
-                            handler.addErrorPage(error,location);
-                        context.getMetaData().setOrigin("error."+error, descriptor);
-                    }
+                    //if set twice in the same descriptor, its an error
+                    Descriptor originDescriptor = context.getMetaData().getOriginDescriptor(originName);
+                    if (descriptor == originDescriptor)
+                        throw new IllegalStateException("Duplicate error-page "+error+" at "+location);
+
+                    if (code>0)
+                        handler.addErrorPage(code,location);
                     else
-                        throw new IllegalStateException("Duplicate global error-page "+location);
+                        handler.addErrorPage(error,location);
+                    context.getMetaData().setOrigin("error."+error, descriptor);
                 }
                 break;
             }
