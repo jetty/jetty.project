@@ -500,7 +500,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
      * @see #onIdleTimeout()
      */
     @Override
-    public void close(int error, String reason, Callback callback)
+    public boolean close(int error, String reason, Callback callback)
     {
         while (true)
         {
@@ -516,7 +516,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                         if (LOG.isDebugEnabled())
                             LOG.debug("Sending {}", frame);
                         control(null, callback, frame);
-                        return;
+                        return true;
                     }
                     break;
                 }
@@ -524,7 +524,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Ignoring close {}/{}, already closed", error, reason);
-                    return;
+                    callback.succeeded();
+                    return false;
                 }
             }
         }

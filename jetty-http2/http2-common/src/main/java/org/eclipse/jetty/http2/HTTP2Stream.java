@@ -96,9 +96,9 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     @Override
     public void reset(ResetFrame frame, Callback callback)
     {
-        notIdle();
         if (isReset())
             return;
+        notIdle();
         localReset = true;
         session.control(this, callback, frame, Frame.EMPTY_ARRAY);
     }
