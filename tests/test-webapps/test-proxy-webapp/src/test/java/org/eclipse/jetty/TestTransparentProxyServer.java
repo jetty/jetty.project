@@ -20,8 +20,9 @@ package org.eclipse.jetty;
 
 import java.lang.management.ManagementFactory;
 
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
-import org.eclipse.jetty.npn.server.NPNServerConnectionFactory;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -34,9 +35,6 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnectionFactory;
-import org.eclipse.jetty.spdy.server.http.PushStrategy;
-import org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -71,7 +69,6 @@ public class TestTransparentProxyServer
         HttpConfiguration config = new HttpConfiguration();
         config.setSecurePort(8443);
         config.addCustomizer(new ForwardedRequestCustomizer());
-        config.addCustomizer(new SecureRequestCustomizer());
         config.setSendDateHeader(true);
         config.setSendServerVersion(true);
         
@@ -100,23 +97,26 @@ public class TestTransparentProxyServer
                 "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
         
+
+        // HTTPS Configuration
+        HttpConfiguration https_config = new HttpConfiguration(config);
+        https_config.addCustomizer(new SecureRequestCustomizer());
         
-        // Spdy Connector
+        // HTTP2 factory
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
         NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
-        PushStrategy push = new ReferrerPushStrategy();
-        HTTPSPDYServerConnectionFactory spdy2 = new HTTPSPDYServerConnectionFactory(2,config,push);
-        spdy2.setInputBufferSize(8192);
-        spdy2.setInitialWindowSize(32768);
-        HTTPSPDYServerConnectionFactory spdy3 = new HTTPSPDYServerConnectionFactory(3,config,push);
-        spdy2.setInputBufferSize(8192);
-        NPNServerConnectionFactory npn = new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getProtocol());
-        npn.setDefaultProtocol(http.getProtocol());
-        npn.setInputBufferSize(1024); 
-        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol()); 
-        ServerConnector spdyConnector = new ServerConnector(server,ssl,npn,spdy3,spdy2,http);
-        spdyConnector.setPort(8443);
-        spdyConnector.setIdleTimeout(15000);
-        server.addConnector(spdyConnector);
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(h2.getProtocol());
+        
+        // SSL Factory
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,alpn.getProtocol());
+        
+        // HTTP2 Connector
+        ServerConnector http2Connector = 
+            new ServerConnector(server,ssl,alpn,h2,new HttpConnectionFactory(https_config));
+        http2Connector.setPort(8443);
+        http2Connector.setIdleTimeout(15000);
+        server.addConnector(http2Connector);
         
         // Handlers
         HandlerCollection handlers = new HandlerCollection();

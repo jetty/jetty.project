@@ -41,11 +41,11 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleContext;
 
 /**
- * SPDY setup.
+ * HTTP2 setup.
  */
 @RunWith(PaxExam.class)
 //@Ignore
-public class TestJettyOSGiBootSpdy
+public class TestJettyOSGiBootHTTP2
 {
     private static final String LOG_LEVEL = "WARN";
 
@@ -57,9 +57,9 @@ public class TestJettyOSGiBootSpdy
     public Option[] config()
     {
         ArrayList<Option> options = new ArrayList<Option>();
-        options.addAll(TestJettyOSGiBootWithJsp.configureJettyHomeAndPort(true,"jetty-spdy.xml"));
+        options.addAll(TestJettyOSGiBootWithJsp.configureJettyHomeAndPort(true,"jetty-http2.xml"));
         options.addAll(TestJettyOSGiBootCore.coreJettyDependencies());
-        options.addAll(spdyJettyDependencies());
+        options.addAll(http2JettyDependencies());
         options.add(CoreOptions.junitBundles());
         options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
@@ -74,7 +74,7 @@ public class TestJettyOSGiBootSpdy
         return options.toArray(new Option[options.size()]);
     }
 
-    public static List<Option> spdyJettyDependencies()
+    public static List<Option> http2JettyDependencies()
     {
         List<Option> res = new ArrayList<Option>();
         res.add(CoreOptions.systemProperty("jetty.port").value(String.valueOf(TestJettyOSGiBootCore.DEFAULT_HTTP_PORT)));
@@ -90,11 +90,9 @@ public class TestJettyOSGiBootSpdy
         res.add(mavenBundle().groupId("org.eclipse.jetty.osgi").artifactId("jetty-osgi-alpn").versionAsInProject().noStart());
         res.add(mavenBundle().groupId("org.eclipse.jetty").artifactId("jetty-alpn-server").versionAsInProject().start());
 
-        res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-core").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-client").versionAsInProject().start());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-server").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-http-common").versionAsInProject().noStart());
-        res.add(mavenBundle().groupId("org.eclipse.jetty.spdy").artifactId("spdy-http-server").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-hpack").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-common").versionAsInProject().noStart());
+        res.add(mavenBundle().groupId("org.eclipse.jetty.http2").artifactId("http2-server").versionAsInProject().noStart());
         return res;
     }
 
@@ -115,7 +113,7 @@ public class TestJettyOSGiBootSpdy
     }
 
     @Test
-    public void testSpdyOnHttpService() throws Exception
+    public void testHTTP2OnHttpService() throws Exception
     {
         // TestOSGiUtil.debugBundles(bundleContext);
         // Thread.sleep(2000000000);

@@ -17,7 +17,7 @@
 //
 
 
-package org.eclipse.jetty.http2.server;
+package org.eclipse.jetty.embedded;
 
 import java.io.IOException;
 import java.util.Date;
@@ -39,6 +39,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
@@ -64,7 +65,7 @@ public class Http2Server
         Server server = new Server();
 
         ServletContextHandler context = new ServletContextHandler(server, "/",ServletContextHandler.SESSIONS);
-        context.setResourceBase("src/test/docroot");
+        context.setResourceBase("src/main/resources/docroot");
         context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         context.addFilter(PushedTilesFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
         context.addServlet(new ServletHolder(servlet), "/test/*");
