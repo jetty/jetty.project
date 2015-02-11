@@ -4,13 +4,12 @@
 
 [depend]
 ssl
-protonego
+alpn
 
 [lib]
 lib/http2/*.jar
 
 [xml]
-etc/protonego-${protonego}.xml
 etc/jetty-http2.xml
 
 [ini-template]

@@ -17,18 +17,26 @@
 # http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
 
 [name]
-protonego-impl
+alpn
 
 [depend]
-protonego-impl/alpn-${java.version}
+alpn-impl/alpn-${java.version}
 
 [lib]
 lib/jetty-alpn-client-${jetty.version}.jar
 lib/jetty-alpn-server-${jetty.version}.jar
 
+[xml]
+etc/jetty-alpn.xml
+
 [files]
 lib/
 lib/alpn/
+
+[ini-template]
+# Configuration for ALPN
+# alpn.protocols=h2-14,http/1.1
+# alpn.defaultProtocol=http/1.1
 
 [license]
 ALPN is a hosted at github under the GPL v2 with ClassPath Exception.
