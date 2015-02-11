@@ -31,8 +31,8 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
  * <em>how</em> a HTTP exchange is carried over the network depends on implementations of this class.
  * <p/>
  * The default implementation uses the HTTP protocol to carry over the network the HTTP exchange,
- * but the HTTP exchange may also be carried using the SPDY protocol or the FCGI protocol or, in future,
- * other protocols.
+ * but the HTTP exchange may also be carried using the FCGI protocol, the HTTP/2 protocol or,
+ * in future, other protocols.
  */
 public interface HttpClientTransport extends ClientConnectionFactory
 {
@@ -54,7 +54,7 @@ public interface HttpClientTransport extends ClientConnectionFactory
      * Creates a new, transport-specific, {@link HttpDestination} object.
      * <p />
      * {@link HttpDestination} controls the destination-connection cardinality: protocols like
-     * HTTP have 1-N cardinality, while multiplexed protocols like SPDY have a 1-1 cardinality.
+     * HTTP have 1-N cardinality, while multiplexed protocols like HTTP/2 have a 1-1 cardinality.
      *
      * @param origin the destination origin
      * @return a new, transport-specific, {@link HttpDestination} object

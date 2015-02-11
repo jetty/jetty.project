@@ -21,7 +21,6 @@ package org.eclipse.jetty;
 import java.io.File;
 import java.io.IOException;
 import java.lang.management.ManagementFactory;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -93,43 +92,7 @@ public class TestServer
         httpConnector.setIdleTimeout(30000);
         server.addConnector(httpConnector);
 
-        /*
-        // SSL configurations
-        SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
-        sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        sslContextFactory.setTrustStorePath(jetty_root + "/jetty-server/src/main/config/etc/keystore");
-        sslContextFactory.setTrustStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
-        sslContextFactory.setExcludeCipherSuites(
-                "SSL_RSA_WITH_DES_CBC_SHA",
-                "SSL_DHE_RSA_WITH_DES_CBC_SHA",
-                "SSL_DHE_DSS_WITH_DES_CBC_SHA",
-                "SSL_RSA_EXPORT_WITH_RC4_40_MD5",
-                "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
-                "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-        
-        
-        // Spdy Connector
-        SPDYServerConnectionFactory.checkNPNAvailable();
-        PushStrategy push = new ReferrerPushStrategy();
-        HTTPSPDYServerConnectionFactory spdy2 = new HTTPSPDYServerConnectionFactory(2,config,push);
-        spdy2.setInputBufferSize(8192);
-        spdy2.setInitialWindowSize(32768);
-        HTTPSPDYServerConnectionFactory spdy3 = new HTTPSPDYServerConnectionFactory(3,config,push);
-        spdy2.setInputBufferSize(8192);
-        NPNServerConnectionFactory npn = new NPNServerConnectionFactory(spdy3.getProtocol(),spdy2.getProtocol(),http.getProtocol());
-        npn.setDefaultProtocol(http.getProtocol());
-        npn.setInputBufferSize(1024); 
-        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,npn.getProtocol()); 
-        ServerConnector spdyConnector = new ServerConnector(server,ssl,npn,spdy3,spdy2,http);
-        spdyConnector.setPort(8443);
-        spdyConnector.setIdleTimeout(15000);
-        server.addConnector(spdyConnector);
-        
-        */
-        
+
         // Handlers
         HandlerCollection handlers = new HandlerCollection();
         ContextHandlerCollection contexts = new ContextHandlerCollection();

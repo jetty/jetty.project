@@ -53,8 +53,6 @@ public interface Stream
 
     public void setIdleTimeout(long idleTimeout);
 
-    // TODO: see SPDY's Stream
-
     public interface Listener
     {
         public void onHeaders(Stream stream, HeadersFrame frame);

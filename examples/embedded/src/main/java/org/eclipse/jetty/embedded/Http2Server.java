@@ -22,7 +22,6 @@ package org.eclipse.jetty.embedded;
 import java.io.IOException;
 import java.util.Date;
 import java.util.EnumSet;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -79,12 +78,12 @@ public class Http2Server
         http_config.setSendXPoweredBy(true);
         http_config.setSendServerVersion(true);
 
-        // HTTP connector
+        // HTTP Connector
         ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config));        
         http.setPort(8080);
         server.addConnector(http);
  
-        // SSL Context Factory for HTTPS and SPDY
+        // SSL Context Factory for HTTPS and HTTP/2
         String jetty_distro = System.getProperty("jetty.distro","../../jetty-distribution/target/distribution");
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_distro + "/etc/keystore");
@@ -95,17 +94,17 @@ public class Http2Server
         HttpConfiguration https_config = new HttpConfiguration(http_config);
         https_config.addCustomizer(new SecureRequestCustomizer());
         
-        // HTTP2 factory
+        // HTTP/2 Connection Factory
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
         
         NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(http.getDefaultProtocol());
         
-        // SSL Factory
+        // SSL Connection Factory
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,alpn.getProtocol());
         
-        // HTTP2 Connector
+        // HTTP/2 Connector
         ServerConnector http2Connector = 
             new ServerConnector(server,ssl,alpn,h2,new HttpConnectionFactory(https_config));
         http2Connector.setPort(8443);

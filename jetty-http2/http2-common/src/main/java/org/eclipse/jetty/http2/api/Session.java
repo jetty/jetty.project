@@ -45,8 +45,6 @@ public interface Session
 
     public Stream getStream(int streamId);
 
-    // TODO: remote and local address, etc. see SPDY's Session
-
     public interface Listener
     {
         public Map<Integer,Integer> onPreface(Session session);

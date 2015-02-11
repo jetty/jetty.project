@@ -69,7 +69,7 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 # JETTY_ARGS
 #   The default arguments to pass to jetty.
 #   For example
-#      JETTY_ARGS=jetty.port=8080 jetty.spdy.port=8443 jetty.secure.port=443
+#      JETTY_ARGS=jetty.port=8080 jetty.secure.port=443
 #
 # JETTY_USER
 #   if set, then used as a username to run the server as
