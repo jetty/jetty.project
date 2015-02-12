@@ -3,9 +3,9 @@ XML|${jetty.base}/etc/home-base-warning.xml
 XML|${jetty.base}/etc/jetty.xml
 XML|${jetty.base}/etc/jetty-http.xml
 XML|${jetty.base}/etc/jetty-ssl.xml
-XML|${jetty.base}/etc/protonego-alpn.xml
-XML|${jetty.base}/etc/jetty-http2.xml
+XML|${jetty.base}/etc/jetty-alpn.xml
 XML|${jetty.base}/etc/jetty-deploy.xml
+XML|${jetty.base}/etc/jetty-http2.xml
 XML|${jetty.base}/etc/jetty-plus.xml
 XML|${jetty.base}/etc/jetty-annotations.xml
 
@@ -57,7 +57,6 @@ PROP|jetty.keystore.password=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 PROP|jetty.secure.port=8443
 PROP|jetty.truststore=etc/keystore
 PROP|jetty.truststore.password=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
-PROP|protonego=alpn
 PROP|ssl.port=8443
 PROP|ssl.timeout=30000
 # (these are the ones set by default from jetty.home modules)

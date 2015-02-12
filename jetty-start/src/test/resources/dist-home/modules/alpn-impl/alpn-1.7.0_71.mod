@@ -1,5 +1,5 @@
 [name]
-protonego-boot
+alpn-boot
 
 [files]
 maven://org.mortbay.jetty.alpn/alpn-boot/7.1.2.v20141202|lib/alpn/alpn-boot-7.1.2.v20141202.jar

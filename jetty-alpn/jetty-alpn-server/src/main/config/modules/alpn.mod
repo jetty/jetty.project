@@ -4,7 +4,7 @@
 # This modification has a tight dependency on specific recent updates of
 # Java 1.7 and Java 1.8 (Java versions prior to 1.7u40 are not supported).
 #
-# The alpn protonego module will use an appropriate alpn-boot jar for your
+# The alpn module will use an appropriate alpn-boot jar for your
 # specific version of Java.
 #
 # IMPORTANT: Versions of Java that exist after this module was created are

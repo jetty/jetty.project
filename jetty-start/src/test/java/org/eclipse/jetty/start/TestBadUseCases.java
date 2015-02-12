@@ -53,8 +53,8 @@ public class TestBadUseCases
                 null});
 
         ret.add(new Object[]{ "http2", 
-                "Missing referenced dependency: protonego-impl/alpn-1.7.0_01", 
-                new String[]{"java.version=1.7.0_01", "protonego=alpn"}});
+                "Missing referenced dependency: alpn-impl/alpn-1.7.0_01", 
+                new String[]{"java.version=1.7.0_01"}});
         
         return ret;
     }

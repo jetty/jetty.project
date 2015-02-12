@@ -14,7 +14,7 @@
   
   <Call name="addConnectionFactory">
     <Arg>
-      <New id="protonego" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
+      <New id="alpn" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
         <Arg type="String">
           <Property name="alpn.protocols" default="" />
         </Arg>

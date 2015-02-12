@@ -3,7 +3,7 @@ XML|${jetty.home}/etc/jetty.xml
 XML|${jetty.home}/etc/jetty-http.xml
 XML|${jetty.home}/etc/jetty-jmx.xml
 XML|${jetty.home}/etc/jetty-ssl.xml
-XML|${jetty.home}/etc/protonego-alpn.xml
+XML|${jetty.home}/etc/jetty-alpn.xml
 XML|${jetty.home}/etc/jetty-http2.xml
 
 
@@ -31,7 +31,6 @@ PROP|jetty.keymanager.password=icecream
 PROP|jetty.truststore=etc/keystore
 PROP|jetty.truststore.password=sundae
 PROP|java.version=1.7.0_60
-PROP|protonego=alpn
 PROP|ssl.port=8443
 PROP|ssl.timeout=30000
 # (these are the ones set by default from jetty.home modules)
