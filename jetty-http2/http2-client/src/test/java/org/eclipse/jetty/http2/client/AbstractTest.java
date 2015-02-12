@@ -116,7 +116,13 @@ public class AbstractTest
     @After
     public void dispose() throws Exception
     {
-        client.stop();
-        server.stop();
+        if (client != null)
+        {
+            client.stop();
+        }
+        if (server != null)
+        {
+            server.stop();
+        }
     }
 }
