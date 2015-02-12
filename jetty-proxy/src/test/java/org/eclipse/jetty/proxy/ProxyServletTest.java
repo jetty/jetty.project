@@ -694,7 +694,7 @@ public class ProxyServletTest
     {
         final String target = "/test";
         final String query = "a=1&b=2&c=1234%205678&d=hello+world";
-        prepareServer(new HttpServlet()
+        startServer(new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
