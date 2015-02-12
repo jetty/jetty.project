@@ -27,7 +27,6 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
-import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPOutputStream;
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
@@ -315,17 +314,18 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         }
     }
 
-    protected class ProxyResponseListener extends Response.Listener.Adapter
+    protected class ProxyResponseListener extends Response.Listener.Adapter implements Callback
     {
         private final String WRITE_LISTENER_ATTRIBUTE = AsyncMiddleManServlet.class.getName() + ".writeListener";
 
+        private final Callback complete = new CountingCallback(this, 2);
         private final List<ByteBuffer> buffers = new ArrayList<>();
-        private final AtomicBoolean complete = new AtomicBoolean();
         private final HttpServletRequest clientRequest;
         private final HttpServletResponse proxyResponse;
         private boolean hasContent;
         private long contentLength;
         private long length;
+        private Response response;
 
         protected ProxyResponseListener(HttpServletRequest clientRequest, HttpServletResponse proxyResponse)
         {
@@ -381,7 +381,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 int size = buffers.size();
                 if (size > 0)
                 {
-                    CountingCallback counter = new CountingCallback(callback, size);
+                    Callback counter = size == 1 ? callback : new CountingCallback(callback, size);
                     for (int i = 0; i < size; ++i)
                     {
                         ByteBuffer buffer = buffers.get(i);
@@ -390,15 +390,19 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                     }
                     buffers.clear();
                 }
+                else
+                {
+                    proxyWriter.offer(BufferUtil.EMPTY_BUFFER, callback);
+                }
+                if (finished)
+                    proxyWriter.offer(BufferUtil.EMPTY_BUFFER, complete);
+
                 if (_log.isDebugEnabled())
                     _log.debug("{} downstream content transformation {} -> {} bytes", getRequestId(clientRequest), contentBytes, newContentBytes);
 
                 if (committed)
                 {
-                    if (size == 0)
-                        callback.succeeded();
-                    else
-                        proxyWriter.onWritePossible();
+                    proxyWriter.onWritePossible();
                 }
                 else
                 {
@@ -411,9 +415,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                     // we run into a race where the different thread calls
                     // onWritePossible() and succeeding the callback causes
                     // this method to be called again, which also may call
-                    // onWritePossible(). We use a poison pill for this case.
-                    if (size == 0)
-                        proxyWriter.offer(BufferUtil.EMPTY_BUFFER, callback);
+                    // onWritePossible().
                     proxyResponse.getOutputStream().setWriteListener(proxyWriter);
                 }
             }
@@ -428,61 +430,72 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             try
             {
-                // If we had unknown length content, we need to call the
-                // transformer to signal that the content is finished.
-                if (contentLength < 0 && hasContent)
+                if (hasContent)
                 {
-                    ProxyWriter proxyWriter = (ProxyWriter)clientRequest.getAttribute(WRITE_LISTENER_ATTRIBUTE);
-                    ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER);
-
-                    transformer.transform(BufferUtil.EMPTY_BUFFER, true, buffers);
-
-                    long newContentBytes = 0;
-                    int size = buffers.size();
-                    if (size > 0)
+                    // If we had unknown length content, we need to call the
+                    // transformer to signal that the content is finished.
+                    if (contentLength < 0)
                     {
-                        Callback callback = new Callback.Adapter()
-                        {
-                            @Override
-                            public void failed(Throwable x)
-                            {
-                                if (complete.compareAndSet(false, true))
-                                    onProxyResponseFailure(clientRequest, proxyResponse, serverResponse, x);
-                            }
-                        };
-                        for (int i = 0; i < size; ++i)
-                        {
-                            ByteBuffer buffer = buffers.get(i);
-                            newContentBytes += buffer.remaining();
-                            proxyWriter.offer(buffer, callback);
-                        }
-                        buffers.clear();
-                    }
-                    if (_log.isDebugEnabled())
-                        _log.debug("{} downstream content transformation to {} bytes", getRequestId(clientRequest), newContentBytes);
+                        ProxyWriter proxyWriter = (ProxyWriter)clientRequest.getAttribute(WRITE_LISTENER_ATTRIBUTE);
+                        ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER);
 
-                    proxyWriter.onWritePossible();
+                        transformer.transform(BufferUtil.EMPTY_BUFFER, true, buffers);
+
+                        long newContentBytes = 0;
+                        int size = buffers.size();
+                        if (size > 0)
+                        {
+                            Callback callback = size == 1 ? complete : new CountingCallback(complete, size);
+                            for (int i = 0; i < size; ++i)
+                            {
+                                ByteBuffer buffer = buffers.get(i);
+                                newContentBytes += buffer.remaining();
+                                proxyWriter.offer(buffer, callback);
+                            }
+                            buffers.clear();
+                        }
+                        else
+                        {
+                            proxyWriter.offer(BufferUtil.EMPTY_BUFFER, complete);
+                        }
+
+                        if (_log.isDebugEnabled())
+                            _log.debug("{} downstream content transformation to {} bytes", getRequestId(clientRequest), newContentBytes);
+
+                        proxyWriter.onWritePossible();
+                    }
+                }
+                else
+                {
+                    complete.succeeded();
                 }
             }
             catch (Throwable x)
             {
-                if (complete.compareAndSet(false, true))
-                    onProxyResponseFailure(clientRequest, proxyResponse, serverResponse, x);
+                complete.failed(x);
             }
         }
 
         @Override
         public void onComplete(Result result)
         {
-            if (complete.compareAndSet(false, true))
-            {
-                if (result.isSucceeded())
-                    onProxyResponseSuccess(clientRequest, proxyResponse, result.getResponse());
-                else
-                    onProxyResponseFailure(clientRequest, proxyResponse, result.getResponse(), result.getFailure());
-            }
-            if (_log.isDebugEnabled())
-                _log.debug("{} proxying complete", getRequestId(clientRequest));
+            response = result.getResponse();
+            if (result.isSucceeded())
+                complete.succeeded();
+            else
+                complete.failed(result.getFailure());
+        }
+
+        @Override
+        public void succeeded()
+        {
+            onProxyResponseSuccess(clientRequest, proxyResponse, response);
+        }
+
+        @Override
+        public void failed(Throwable failure)
+        {
+            onProxyResponseFailure(clientRequest, proxyResponse, response, failure);
         }
     }
 
@@ -503,7 +516,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         public boolean offer(ByteBuffer content, Callback callback)
         {
             if (_log.isDebugEnabled())
-                _log.debug("{} proxying content to downstream: {} bytes", getRequestId(clientRequest), content.remaining());
+                _log.debug("{} proxying content to downstream: {} bytes {}", getRequestId(clientRequest), content.remaining(), callback);
             return chunks.offer(new DeferredContentProvider.Chunk(content, callback));
         }
 
