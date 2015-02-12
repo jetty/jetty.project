@@ -6,7 +6,7 @@
   <Call name="addConnectionFactory">
     <Arg>
       <New class="org.eclipse.jetty.server.SslConnectionFactory">
-        <Arg name="next"><Property name="protonego"/></Arg>
+        <Arg name="next">alpn</Arg>
         <Arg name="sslContextFactory"><Ref refid="sslContextFactory"/></Arg>
       </New>
     </Arg>

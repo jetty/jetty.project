@@ -20,6 +20,7 @@
 alpn
 
 [depend]
+ssl
 alpn-impl/alpn-${java.version}
 
 [lib]
