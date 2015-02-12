@@ -628,6 +628,12 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
 
     public void sendStandardRequest() throws IOException
     {
+        StringBuilder req = generateUpgradeRequest();
+        writeRaw(req.toString());
+    }
+
+    public StringBuilder generateUpgradeRequest()
+    {
         StringBuilder req = new StringBuilder();
         req.append("GET ").append(getRequestPath()).append(" HTTP/1.1\r\n");
         req.append("Host: ").append(getRequestHost()).append("\r\n");
@@ -651,7 +657,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         }
         req.append("Sec-WebSocket-Version: ").append(version).append("\r\n");
         req.append("\r\n");
-        writeRaw(req.toString());
+        return req;
     }
 
     public void setConnectionValue(String connectionValue)
