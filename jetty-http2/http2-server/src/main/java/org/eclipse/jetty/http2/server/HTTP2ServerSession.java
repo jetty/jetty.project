@@ -54,7 +54,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
     }
 
     @Override
-    public boolean onPreface()
+    public void onPreface()
     {
         // SPEC: send a SETTINGS frame upon receiving the preface.
         Map<Integer, Integer> settings = notifyPreface(this);
@@ -63,11 +63,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         SettingsFrame frame = new SettingsFrame(settings, false);
         // TODO: consider sending a WINDOW_UPDATE to enlarge the session send window of the client.
         control(null, Callback.Adapter.INSTANCE, frame, Frame.EMPTY_ARRAY);
-        return false;
     }
 
     @Override
-    public boolean onHeaders(HeadersFrame frame)
+    public void onHeaders(HeadersFrame frame)
     {
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest())
@@ -87,14 +86,12 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         {
             onConnectionFailure(ErrorCode.INTERNAL_ERROR.code, "invalid_request");
         }
-        return false;
     }
 
     @Override
-    public boolean onPushPromise(PushPromiseFrame frame)
+    public void onPushPromise(PushPromiseFrame frame)
     {
         onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "push_promise");
-        return false;
     }
 
     private Map<Integer, Integer> notifyPreface(Session session)

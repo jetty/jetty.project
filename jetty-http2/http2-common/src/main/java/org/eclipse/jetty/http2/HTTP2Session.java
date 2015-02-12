@@ -141,7 +141,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     }
 
     @Override
-    public boolean onData(final DataFrame frame)
+    public void onData(final DataFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -159,29 +159,28 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             if (getRecvWindow() < 0)
             {
                 close(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", Callback.Adapter.INSTANCE);
-                return false;
             }
-
-            boolean result = stream.process(frame, new Callback()
+            else
             {
-                @Override
-                public void succeeded()
+                stream.process(frame, new Callback()
                 {
-                    flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
-                }
+                    @Override
+                    public void succeeded()
+                    {
+                        flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
+                    }
 
-                @Override
-                public void failed(Throwable x)
-                {
-                    // Consume also in case of failures, to free the
-                    // session flow control window for other streams.
-                    flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
-                }
-            });
-
-            if (stream.isClosed())
-                removeStream(stream, false);
-            return result;
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        // Consume also in case of failures, to free the
+                        // session flow control window for other streams.
+                        flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
+                    }
+                });
+                if (stream.isClosed())
+                    removeStream(stream, false);
+            }
         }
         else
         {
@@ -190,21 +189,19 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             // We must enlarge the session flow control window,
             // otherwise other requests will be stalled.
             flowControl.onDataConsumed(this, null, flowControlLength);
-            return false;
         }
     }
 
     @Override
-    public abstract boolean onHeaders(HeadersFrame frame);
+    public abstract void onHeaders(HeadersFrame frame);
 
     @Override
-    public boolean onPriority(PriorityFrame frame)
+    public void onPriority(PriorityFrame frame)
     {
-        return false;
     }
 
     @Override
-    public boolean onReset(ResetFrame frame)
+    public void onReset(ResetFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -217,15 +214,13 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
         if (stream != null)
             removeStream(stream, false);
-
-        return false;
     }
 
     @Override
-    public boolean onSettings(SettingsFrame frame)
+    public void onSettings(SettingsFrame frame)
     {
         if (frame.isReply())
-            return false;
+            return;
 
         // Iterate over all settings
         for (Map.Entry<Integer, Integer> entry : frame.getSettings().entrySet())
@@ -247,7 +242,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     if (value != 0 && value != 1)
                     {
                         onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_enable_push");
-                        return false;
+                        return;
                     }
                     pushEnabled = value == 1;
                     break;
@@ -274,7 +269,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     if (value < Frame.DEFAULT_MAX_LENGTH || value > Frame.MAX_MAX_LENGTH)
                     {
                         onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_frame_size");
-                        return false;
+                        return;
                     }
                     generator.setMaxFrameSize(value);
                     break;
@@ -297,11 +292,10 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         // SPEC: SETTINGS frame MUST be replied.
         SettingsFrame reply = new SettingsFrame(Collections.<Integer, Integer>emptyMap(), true);
         settings(reply, Callback.Adapter.INSTANCE);
-        return false;
     }
 
     @Override
-    public boolean onPing(PingFrame frame)
+    public void onPing(PingFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -314,7 +308,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             PingFrame reply = new PingFrame(frame.getPayload(), true);
             control(null, Callback.Adapter.INSTANCE, reply);
         }
-        return false;
     }
 
     /**
@@ -330,13 +323,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
      *   performing their actions.
      *
      * @param frame the GO_AWAY frame that has been received.
-     * @return whether the parsing will be resumed asynchronously
      * @see #close(int, String, Callback)
      * @see #onShutdown()
      * @see #onIdleTimeout()
      */
     @Override
-    public boolean onGoAway(final GoAwayFrame frame)
+    public void onGoAway(final GoAwayFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -366,7 +358,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                                 notifyClose(HTTP2Session.this, frame);
                             }
                         }, new DisconnectFrame());
-                        return false;
+                        return;
                     }
                     break;
                 }
@@ -374,14 +366,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Ignored {}, already closed", frame);
-                    return false;
+                    return;
                 }
             }
         }
     }
 
     @Override
-    public boolean onWindowUpdate(WindowUpdateFrame frame)
+    public void onWindowUpdate(WindowUpdateFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -396,7 +388,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             onWindowUpdate(null, frame);
         }
-        return false;
     }
 
     @Override

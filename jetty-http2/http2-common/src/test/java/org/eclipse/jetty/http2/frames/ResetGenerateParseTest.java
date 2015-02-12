@@ -43,10 +43,9 @@ public class ResetGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onReset(ResetFrame frame)
+            public void onReset(ResetFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -84,10 +83,9 @@ public class ResetGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onReset(ResetFrame frame)
+            public void onReset(ResetFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

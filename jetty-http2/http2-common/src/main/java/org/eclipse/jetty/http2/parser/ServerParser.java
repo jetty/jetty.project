@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -41,7 +42,7 @@ public class ServerParser extends Parser
     }
 
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public void parse(ByteBuffer buffer)
     {
         try
         {
@@ -55,16 +56,16 @@ public class ServerParser extends Parser
                     case PREFACE:
                     {
                         if (!prefaceParser.parse(buffer))
-                            return false;
-                        if (onPreface())
-                            return true;
+                            return;
+                        onPreface();
                         state = State.FRAMES;
                         break;
                     }
                     case FRAMES:
                     {
                         // Stay forever in the FRAMES state.
-                        return super.parse(buffer);
+                        super.parse(buffer);
+                        return;
                     }
                     default:
                     {
@@ -76,39 +77,37 @@ public class ServerParser extends Parser
         catch (Throwable x)
         {
             LOG.debug(x);
+            BufferUtil.clear(buffer);
             notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
-            return false;
         }
     }
 
-    protected boolean onPreface()
+    protected void onPreface()
     {
-        return notifyPreface();
+        notifyPreface();
     }
 
-    private boolean notifyPreface()
+    private void notifyPreface()
     {
         try
         {
-            return listener.onPreface();
+            listener.onPreface();
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
     public interface Listener extends Parser.Listener
     {
-        public boolean onPreface();
+        public void onPreface();
 
         public static class Adapter extends Parser.Listener.Adapter implements Listener
         {
             @Override
-            public boolean onPreface()
+            public void onPreface()
             {
-                return false;
             }
         }
     }

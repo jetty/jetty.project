@@ -44,10 +44,9 @@ public class GoAwayGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onGoAway(GoAwayFrame frame)
+            public void onGoAway(GoAwayFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -86,10 +85,9 @@ public class GoAwayGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onGoAway(GoAwayFrame frame)
+            public void onGoAway(GoAwayFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

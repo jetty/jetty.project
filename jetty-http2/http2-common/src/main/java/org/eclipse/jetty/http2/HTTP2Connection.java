@@ -133,10 +133,7 @@ public class HTTP2Connection extends AbstractConnection
                 if (looping)
                 {
                     while (buffer.hasRemaining())
-                    {
-                        if (parser.parse(buffer))
-                            break;
-                    }
+                        parser.parse(buffer);
 
                     task = tasks.poll();
                     if (LOG.isDebugEnabled())

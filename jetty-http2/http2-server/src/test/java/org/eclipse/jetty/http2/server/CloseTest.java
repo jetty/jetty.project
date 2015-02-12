@@ -39,6 +39,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.Assert;
@@ -88,7 +89,7 @@ public class CloseTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public void onHeaders(HeadersFrame frame)
                 {
                     try
                     {
@@ -96,11 +97,10 @@ public class CloseTest extends AbstractServerTest
                         // receiving the response headers.
                         client.close();
                         closeLatch.countDown();
-                        return false;
                     }
                     catch (IOException x)
                     {
-                        return false;
+                        throw new RuntimeIOException(x);
                     }
                 }
             }, 4096, 8192);
@@ -152,12 +152,11 @@ public class CloseTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public void onHeaders(HeadersFrame frame)
                 {
                     // Even if we sent the GO_AWAY immediately after the
                     // HEADERS, the server is able to send us the response.
                     responseLatch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
@@ -216,17 +215,15 @@ public class CloseTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public void onHeaders(HeadersFrame frame)
                 {
                     responseLatch.countDown();
-                    return false;
                 }
 
                 @Override
-                public boolean onGoAway(GoAwayFrame frame)
+                public void onGoAway(GoAwayFrame frame)
                 {
                     closeLatch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 

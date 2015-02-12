@@ -45,8 +45,8 @@ public class PrefaceParser
             int currByte = buffer.get();
             if (currByte != PrefaceFrame.PREFACE_BYTES[cursor])
             {
-                notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_preface");
                 BufferUtil.clear(buffer);
+                notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_preface");
                 return false;
             }
             ++cursor;

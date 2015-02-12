@@ -44,10 +44,9 @@ public class PingGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onPing(PingFrame frame)
+            public void onPing(PingFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -85,10 +84,9 @@ public class PingGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onPing(PingFrame frame)
+            public void onPing(PingFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

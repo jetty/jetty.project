@@ -41,7 +41,7 @@ public class HTTP2ClientSession extends HTTP2Session
     }
 
     @Override
-    public boolean onHeaders(HeadersFrame frame)
+    public void onHeaders(HeadersFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -60,7 +60,6 @@ public class HTTP2ClientSession extends HTTP2Session
             if (stream.isClosed())
                 removeStream(stream, false);
         }
-        return false;
     }
 
     private void notifyHeaders(IStream stream, HeadersFrame frame)
@@ -79,7 +78,7 @@ public class HTTP2ClientSession extends HTTP2Session
     }
 
     @Override
-    public boolean onPushPromise(PushPromiseFrame frame)
+    public void onPushPromise(PushPromiseFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -101,7 +100,6 @@ public class HTTP2ClientSession extends HTTP2Session
             if (pushStream.isClosed())
                 removeStream(pushStream, false);
         }
-        return false;
     }
 
     private Stream.Listener notifyPush(IStream stream, IStream pushStream, PushPromiseFrame frame)

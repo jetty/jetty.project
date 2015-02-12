@@ -43,10 +43,9 @@ public class WindowUpdateGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onWindowUpdate(WindowUpdateFrame frame)
+            public void onWindowUpdate(WindowUpdateFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -84,10 +83,9 @@ public class WindowUpdateGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onWindowUpdate(WindowUpdateFrame frame)
+            public void onWindowUpdate(WindowUpdateFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

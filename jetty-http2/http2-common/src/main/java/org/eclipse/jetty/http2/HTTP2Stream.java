@@ -193,26 +193,30 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     }
 
     @Override
-    public boolean process(Frame frame, Callback callback)
+    public void process(Frame frame, Callback callback)
     {
         notIdle();
         switch (frame.getType())
         {
             case HEADERS:
             {
-                return onHeaders((HeadersFrame)frame, callback);
+                onHeaders((HeadersFrame)frame, callback);
+                break;
             }
             case DATA:
             {
-                return onData((DataFrame)frame, callback);
+                onData((DataFrame)frame, callback);
+                break;
             }
             case RST_STREAM:
             {
-                return onReset((ResetFrame)frame, callback);
+                onReset((ResetFrame)frame, callback);
+                break;
             }
             case PUSH_PROMISE:
             {
-                return onPush((PushPromiseFrame)frame, callback);
+                onPush((PushPromiseFrame)frame, callback);
+                break;
             }
             default:
             {
@@ -221,21 +225,19 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         }
     }
 
-    private boolean onHeaders(HeadersFrame frame, Callback callback)
+    private void onHeaders(HeadersFrame frame, Callback callback)
     {
         updateClose(frame.isEndStream(), false);
         callback.succeeded();
-        return false;
     }
 
-    private boolean onData(DataFrame frame, Callback callback)
+    private void onData(DataFrame frame, Callback callback)
     {
         if (getRecvWindow() < 0)
         {
             // It's a bad client, it does not deserve to be
             // treated gently by just resetting the stream.
             session.close(ErrorCode.FLOW_CONTROL_ERROR.code, "stream_window_exceeded", callback);
-            return true;
         }
 
         // SPEC: remotely closed streams must be replied with a reset.
@@ -243,34 +245,29 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         {
             reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.Adapter.INSTANCE);
             callback.failed(new EOFException("stream_closed"));
-            return true;
         }
 
         if (isReset())
         {
             // Just drop the frame.
             callback.failed(new IOException("stream_reset"));
-            return true;
         }
 
         updateClose(frame.isEndStream(), false);
         notifyData(this, frame, callback);
-        return false;
     }
 
-    private boolean onReset(ResetFrame frame, Callback callback)
+    private void onReset(ResetFrame frame, Callback callback)
     {
         remoteReset = true;
         callback.succeeded();
         notifyReset(this, frame);
-        return false;
     }
 
-    private boolean onPush(PushPromiseFrame frame, Callback callback)
+    private void onPush(PushPromiseFrame frame, Callback callback)
     {
         updateClose(true, true);
         callback.succeeded();
-        return false;
     }
 
     @Override
@@ -337,8 +334,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         return recvWindow.getAndAdd(delta);
     }
 
-    @Override
-    public void close()
+    private void close()
     {
         closeState.set(CloseState.CLOSED);
         onClose();

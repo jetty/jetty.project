@@ -76,10 +76,9 @@ public class SettingsGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onSettings(SettingsFrame frame)
+            public void onSettings(SettingsFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -145,10 +144,9 @@ public class SettingsGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onSettings(SettingsFrame frame)
+            public void onSettings(SettingsFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

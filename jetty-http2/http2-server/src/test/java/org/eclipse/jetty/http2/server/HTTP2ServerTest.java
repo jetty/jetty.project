@@ -70,10 +70,9 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onGoAway(GoAwayFrame frame)
+                public void onGoAway(GoAwayFrame frame)
                 {
                     latch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
@@ -113,18 +112,16 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onSettings(SettingsFrame frame)
+                public void onSettings(SettingsFrame frame)
                 {
                     latch.countDown();
-                    return false;
                 }
 
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public void onHeaders(HeadersFrame frame)
                 {
                     frameRef.set(frame);
                     latch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
@@ -172,26 +169,23 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onSettings(SettingsFrame frame)
+                public void onSettings(SettingsFrame frame)
                 {
                     latch.countDown();
-                    return false;
                 }
 
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public void onHeaders(HeadersFrame frame)
                 {
                     headersRef.set(frame);
                     latch.countDown();
-                    return false;
                 }
 
                 @Override
-                public boolean onData(DataFrame frame)
+                public void onData(DataFrame frame)
                 {
                     dataRef.set(frame);
                     latch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
@@ -233,11 +227,10 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onGoAway(GoAwayFrame frame)
+                public void onGoAway(GoAwayFrame frame)
                 {
                     Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, frame.getError());
                     latch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
@@ -270,11 +263,10 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onGoAway(GoAwayFrame frame)
+                public void onGoAway(GoAwayFrame frame)
                 {
                     Assert.assertEquals(ErrorCode.PROTOCOL_ERROR.code, frame.getError());
                     latch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
