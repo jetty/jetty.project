@@ -64,10 +64,8 @@ public class CountingCallback implements Callback
             if (count.compareAndSet(current, current - 1))
             {
                 if (current == 1)
-                {
                     callback.succeeded();
-                    return;
-                }
+                return;
             }
         }
     }
@@ -90,5 +88,11 @@ public class CountingCallback implements Callback
                 return;
             }
         }
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
 }
