@@ -145,7 +145,7 @@ public class ProxyServlet extends AbstractProxyServlet
 
     // TODO: remove in Jetty 9.3, only here for backward compatibility.
     @Override
-    protected String filterServerResponseHeader(HttpServletRequest clientRequest, String headerName, String headerValue)
+    protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
     {
         return filterResponseHeader(clientRequest, headerName, headerValue);
     }
