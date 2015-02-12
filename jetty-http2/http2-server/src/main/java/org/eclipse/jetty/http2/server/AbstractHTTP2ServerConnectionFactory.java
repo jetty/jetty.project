@@ -42,7 +42,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        super("h2-15","h2-14");
+        super("h2-17","h2-16","h2-15","h2-14","h2");
         this.httpConfiguration = httpConfiguration;
     }
 

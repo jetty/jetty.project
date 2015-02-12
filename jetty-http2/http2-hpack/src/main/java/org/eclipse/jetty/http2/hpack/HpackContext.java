@@ -35,6 +35,15 @@ import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+
+/* ------------------------------------------------------------ */
+/** HPACK - Header Compression for HTTP/2
+ * <p>This class maintains the compression context for a single HTTP/2
+ * connection. Specifically it holds the static and dynamic Header Field Tables
+ * and the associated sizes and limits.
+ * </p>
+ * <p>It is compliant with draft 11 of the specification</p>
+ */
 public class HpackContext
 {
     public static final Logger LOG = Log.getLogger(HpackContext.class);

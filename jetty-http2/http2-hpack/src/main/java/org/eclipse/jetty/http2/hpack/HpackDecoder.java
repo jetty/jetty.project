@@ -34,7 +34,8 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
- * This is not thread safe. May only be called by 1 thread at a time
+ * Hpack Decoder
+ * <p>This is not thread safe and may only be called by 1 thread at a time
  */
 public class HpackDecoder
 {
@@ -46,11 +47,21 @@ public class HpackDecoder
     private final MetaDataBuilder _builder;
     private int _localMaxDynamicTableSize;
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @param localMaxDynamicTableSize  The maximum allowed size of the local dynamic header field table.
+     * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters.
+     */
     public HpackDecoder(int localMaxDynamicTableSize, int maxHeaderSize)
     {
         _context=new HpackContext(localMaxDynamicTableSize);
         _localMaxDynamicTableSize=localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
+    }
+    
+    public HpackContext getHpackContext()
+    {
+        return _context;
     }
     
     public void setLocalMaxDynamicTableSize(int localMaxdynamciTableSize)
