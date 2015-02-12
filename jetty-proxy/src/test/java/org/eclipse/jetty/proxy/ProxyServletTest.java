@@ -173,7 +173,10 @@ public class ProxyServletTest
 
     private HttpClient prepareClient() throws Exception
     {
+        QueuedThreadPool clientPool = new QueuedThreadPool();
+        clientPool.setName("client");
         HttpClient result = new HttpClient();
+        result.setExecutor(clientPool);
         result.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
         result.start();
         return result;
@@ -305,8 +308,19 @@ public class ProxyServletTest
             @Override
             protected void doPost(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                if (req.getHeader("Via") != null)
-                    resp.addHeader(PROXIED_HEADER, "true");
+                try
+                {
+                    // Give some time to the proxy to
+                    // upload the content to the server.
+                    Thread.sleep(1000);
+
+                    if (req.getHeader("Via") != null)
+                        resp.addHeader(PROXIED_HEADER, "true");
+                }
+                catch (InterruptedException x)
+                {
+                    throw new InterruptedIOException();
+                }
             }
         });
         startProxy();
