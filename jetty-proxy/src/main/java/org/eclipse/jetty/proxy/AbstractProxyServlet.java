@@ -523,7 +523,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
             if (HOP_HEADERS.contains(lowerHeaderName))
                 continue;
 
-            String newHeaderValue = filterServerResponseHeader(clientRequest, headerName, field.getValue());
+            String newHeaderValue = filterServerResponseHeader(clientRequest, serverResponse, headerName, field.getValue());
             if (newHeaderValue == null || newHeaderValue.trim().length() == 0)
                 continue;
 
@@ -559,7 +559,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
         }
     }
 
-    protected String filterServerResponseHeader(HttpServletRequest clientRequest, String headerName, String headerValue)
+    protected String filterServerResponseHeader(HttpServletRequest clientRequest, Response serverResponse, String headerName, String headerValue)
     {
         return headerValue;
     }
