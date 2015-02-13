@@ -215,7 +215,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private WebSocketSession session;
     private List<ExtensionConfig> extensions;
     private boolean isFilling;
-    private ByteBuffer buffer;
+    private ByteBuffer prefillBuffer;
     private ReadMode readMode = ReadMode.PARSE;
     private IOState ioState;
     private Stats stats = new Stats();
@@ -424,14 +424,22 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         switch (state)
         {
             case OPEN:
-                if (BufferUtil.isEmpty(buffer))
+                if (BufferUtil.hasContent(prefillBuffer))
                 {
                     if (LOG.isDebugEnabled())
-                        LOG.debug("fillInterested");
-                    fillInterested();
+                    {
+                        LOG.debug("OPEN: has prefill - onFillable called");
+                    }
+                    onFillable();
                 }
                 else
-                    onFillable();
+                {
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("OPEN: normal fillInterested");
+                    }
+                    fillInterested();
+                }
                 break;
             case CLOSED:
                 if (ioState.wasAbnormalClose())
@@ -465,8 +473,9 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         if (LOG.isDebugEnabled())
             LOG.debug("{} onFillable()",policy.getBehavior());
         stats.countOnFillableEvents.incrementAndGet();
-        if (buffer==null)
-            buffer = bufferPool.acquire(getInputBufferSize(),true);
+        
+        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
+        
         try
         {
             isFilling = true;
@@ -483,7 +492,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         finally
         {
             bufferPool.release(buffer);
-            buffer=null;
         }
 
         if ((readMode != ReadMode.EOF) && (suspendToken.get() == false))
@@ -506,9 +514,18 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         super.onFillInterestedFailed(cause);
     }
 
-    protected void prefill(ByteBuffer prefilled)
+    /**
+     * Extra bytes from the initial HTTP upgrade that need to
+     * be processed by the websocket parser before starting
+     * to read bytes from the connection
+     */
+    protected void setInitialBuffer(ByteBuffer prefilled)
     {
-        buffer=prefilled;
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("set Initial Buffer - {}",BufferUtil.toDetailString(prefilled));
+        }
+        prefillBuffer = prefilled;
     }
     
     @Override
@@ -606,27 +623,52 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         EndPoint endPoint = getEndPoint();
         try
         {
-            while (true) // TODO: should this honor the LogicalConnection.suspend() ?
+            // Process any prefill first
+            while (BufferUtil.hasContent(prefillBuffer))
+            {
+                if (BufferUtil.hasContent(prefillBuffer))
+                {
+                    int pos = BufferUtil.flipToFill(buffer);
+                    int size = BufferUtil.put(prefillBuffer,buffer);
+                    BufferUtil.flipToFlush(buffer,pos);
+                    if (LOG.isDebugEnabled())
+                    {
+                        LOG.debug("Filled {} bytes of Upgrade prefill buffer for parse ({} remaining)",size,prefillBuffer.remaining());
+                    }
+
+                    if (!prefillBuffer.hasRemaining())
+                    {
+                        prefillBuffer = null;
+                    }
+                }
+
+                if (buffer.hasRemaining())
+                {
+                    parser.parse(buffer);
+                }
+            }
+            
+            // Process the content from the Endpoint next
+            while(true)  // TODO: should this honor the LogicalConnection.suspend() ?
             {
                 int filled = endPoint.fill(buffer);
-                if (filled == 0)
-                {
-                    return ReadMode.PARSE;
-                }
-                else if (filled < 0)
+                if (filled < 0)
                 {
                     LOG.debug("read - EOF Reached (remote: {})",getRemoteAddress());
                     ioState.onReadFailure(new EOFException("Remote Read EOF"));
                     return ReadMode.EOF;
                 }
-                else
+                else if (filled == 0)
                 {
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
-                    }
-                    parser.parse(buffer);
+                    // Done reading, wait for next onFillable
+                    return ReadMode.PARSE;
                 }
+                
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Filled {} bytes - {}",filled,BufferUtil.toDetailString(buffer));
+                }
+                parser.parse(buffer);
             }
         }
         catch (IOException e)
@@ -649,7 +691,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             return ReadMode.DISCARD;
         }
     }
-
+    
     @Override
     public void resume()
     {
