@@ -34,6 +34,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -48,7 +50,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     private final HttpConnection _httpConnection;
     private final HttpFields _fields = new HttpFields();
     private HttpField _connection;
-    private boolean _expect = false;
+    private boolean _unknownExpectation = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     
@@ -76,7 +78,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public void recycle()
     {
         super.recycle();
-        _expect = false;
+        _unknownExpectation = false;
         _expect100Continue = false;
         _expect102Processing = false;
         _metadata.recycle();
@@ -102,7 +104,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         _metadata.setMethod(method);
         _metadata.getURI().parse(uri);
         _metadata.setHttpVersion(version);
-        _expect = false;
+        _unknownExpectation = false;
         _expect100Continue = false;
         _expect102Processing = false;
         return false;
@@ -150,7 +152,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                                 {
                                     expect = HttpHeaderValue.CACHE.get(values[i].trim());
                                     if (expect == null)
-                                        _expect = true;
+                                        _unknownExpectation = true;
                                     else
                                     {
                                         switch (expect)
@@ -162,7 +164,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                                                 _expect102Processing = true;
                                                 break;
                                             default:
-                                                _expect = true;
+                                                _unknownExpectation = true;
                                         }
                                     }
                                 }
@@ -270,10 +272,10 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
             
             case HTTP_1_1:
             {
-                if (_expect)
+                if (_unknownExpectation)
                 {
                     badMessage(HttpStatus.EXPECTATION_FAILED_417,null);
-                    return true;
+                    return false;
                 }
                 
                 if (_connection!=null)
@@ -293,6 +295,37 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                 break;
             }
             
+            case HTTP_2:
+            {
+                // Allow sneaky "upgrade" to HTTP_2_0 only if the connector supports h2, but not protocol negotiation
+                ConnectionFactory h2=null;
+                if (!(getConnector().getDefaultConnectionFactory() instanceof NegotiatingServerConnectionFactory))
+                    for (ConnectionFactory factory : getConnector().getConnectionFactories())
+                        if (factory.getProtocols().contains("h2c"))
+                            h2=factory;
+                
+                // If now a sneaky "upgrade" then a real upgrade is required 
+                if (h2==null ||
+                    _metadata.getMethod()!=HttpMethod.PRI.asString() ||
+                    !"*".equals(_metadata.getURI().toString()) ||
+                    _fields.size()>0)
+                {
+                    badMessage(HttpStatus.UPGRADE_REQUIRED_426,null);
+                    return false;
+                }                    
+                
+                // Do a direct upgrade. Even though this is a HTTP/1 connector, we have seen a
+                // HTTP/2.0 prefix, so let the request through
+                Connection old_connection=getEndPoint().getConnection();
+                Connection new_connection = h2.newConnection(getConnector(),getEndPoint());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Direct Upgrade from {} to {}", old_connection,new_connection);
+                getResponse().setStatus(101); // This will not get sent
+                getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,new_connection);
+                getHttpTransport().onCompleted();                
+                return true;
+            }
+                
             default:
             {
                 throw new IllegalStateException();

@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -41,6 +42,20 @@ public class ServerParser extends Parser
         this.prefaceParser = new PrefaceParser(listener);
     }
 
+    /* ------------------------------------------------------------ */
+    /** Unsafe upgrade is an unofficial upgrade from HTTP/1.0 to HTTP/2.0
+     * initiated when a the {@link HttpConnection} sees a PRI * HTTP/2.0 prefix
+     * that indicates a HTTP/2.0 client is attempting a h2c direct connection.
+     * This is not a standard HTTP/1.1 Upgrade path.
+     */
+    public void directUpgrade()
+    {
+        if (state!=State.PREFACE)
+            throw new IllegalStateException();
+        prefaceParser.directUpgrade();
+    }
+    
+    
     @Override
     public void parse(ByteBuffer buffer)
     {

@@ -42,19 +42,13 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        super("h2-17","h2-16","h2-15","h2-14","h2");
+        this(httpConfiguration,"h2-17","h2-16","h2-15","h2-14","h2");
+    }
+    
+    protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration,String... protocols)
+    {
+        super(protocols);
         this.httpConfiguration = httpConfiguration;
-    }
-
-    @Deprecated
-    public boolean isDispatchIO()
-    {
-        return false;
-    }
-
-    @Deprecated
-    public void setDispatchIO(boolean dispatchIO)
-    {
     }
 
     public int getMaxDynamicTableSize()
@@ -108,7 +102,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         // stream idle timeout will expire earlier that the connection's.
         session.setStreamIdleTimeout(endPoint.getIdleTimeout());
         
-        Parser parser = newServerParser(connector.getByteBufferPool(), session);
+        Parser parser = newServerParser(connector, session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
                         endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
 
@@ -122,5 +116,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
 
-    protected abstract ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener);
+    protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener)
+    {
+        return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
+    }
 }

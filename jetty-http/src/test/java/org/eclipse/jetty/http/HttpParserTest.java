@@ -1604,7 +1604,7 @@ public class HttpParserTest
                 "SM\015\012"+
                 "\015\012");
         
-        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser.RequestHandler handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
 

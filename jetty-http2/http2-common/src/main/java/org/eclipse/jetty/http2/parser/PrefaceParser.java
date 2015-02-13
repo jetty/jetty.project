@@ -38,6 +38,20 @@ public class PrefaceParser
         this.listener = listener;
     }
 
+    /* ------------------------------------------------------------ */
+    /** Unsafe upgrade is an unofficial upgrade from HTTP/1.0 to HTTP/2.0
+     * initiated when a the {@link HttpConnection} sees a PRI * HTTP/2.0 prefix
+     * that indicates a HTTP/2.0 client is attempting a h2c direct connection.
+     * This is not a standard HTTP/1.1 Upgrade path.
+     */
+    public void directUpgrade()
+    {
+        if (cursor!=0)
+            throw new IllegalStateException();
+        cursor=18;
+    }
+    
+    
     public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())

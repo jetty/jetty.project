@@ -18,24 +18,36 @@
 
 package org.eclipse.jetty.http2.server;
 
-import org.eclipse.jetty.http2.api.server.ServerSessionListener;
-import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
 
-public class RawHTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory
+public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory
 {
-    private final ServerSessionListener listener;
-
-    public RawHTTP2ServerConnectionFactory(HttpConfiguration httpConfiguration,ServerSessionListener listener)
+    public HTTP2CServerConnectionFactory(HttpConfiguration httpConfiguration)
     {
-        super(httpConfiguration);
-        this.listener = listener;
+        super(httpConfiguration,"h2c");
     }
-
+    
     @Override
-    protected ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint)
+    public boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher)
     {
-        return listener;
+        // Never use TLS with h2c
+        return false;
+    }
+    
+    protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener)
+    {
+        ServerParser parser = super.newServerParser(connector,listener);
+        
+        if (connector.getDefaultConnectionFactory() instanceof HttpConnectionFactory)
+        {
+            // This must be a sneaky upgrade from HTTP/1
+            // So advance the parsers pointer until after the PRI * HTTP/2.0 request.
+            parser.directUpgrade();
+        }
+        
+        return parser;
     }
 }

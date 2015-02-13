@@ -363,6 +363,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
             if (connection != null)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Upgrade from {} to {}", this, connection);
                 _channel.getState().upgrade();
                 getEndPoint().upgrade(connection);
                 _channel.recycle();
@@ -535,12 +537,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public void failed(Throwable x)
         {
             _input.failed(x);
-                }
-                case HTTP_2:
-                {
-                    persistent=false;
-                    badMessage(400,null);
-                    return true;
         }
         
     }

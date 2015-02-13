@@ -51,17 +51,16 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     {
         super(httpConfiguration);
     }
+    
+    protected HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration,String... protocols)
+    {
+        super(httpConfiguration,protocols);
+    }
 
     @Override
     protected ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint)
     {
         return new HTTPServerSessionListener(connector, endPoint);
-    }
-
-    @Override
-    protected ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener)
-    {
-        return new ServerParser(byteBufferPool, listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
     }
 
     @Override
