@@ -1594,6 +1594,30 @@ public class HttpParserTest
         assertEquals("unknown",_val[4]);
     }
     
+
+    @Test
+    public void testHTTP2Preface() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "PRI * HTTP/2.0\015\012" +
+                "\015\012" +
+                "SM\015\012"+
+                "\015\012");
+        
+        HttpParser.RequestHandler<ByteBuffer> handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("PRI", _methodOrVersion);
+        assertEquals("*", _uriOrStatus);
+        assertEquals("HTTP/2.0", _versionOrReason);
+        assertEquals(-1, _headers);
+        assertEquals(null, _bad);
+    }
+    
+    
     @Before
     public void init()
     {

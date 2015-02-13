@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;

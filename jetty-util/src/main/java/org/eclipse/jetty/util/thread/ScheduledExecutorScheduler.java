@@ -92,7 +92,16 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     @Override
     public Task schedule(Runnable task, long delay, TimeUnit unit)
     {
-        ScheduledFuture<?> result = scheduler.schedule(task, delay, unit);
+        ScheduledThreadPoolExecutor s = scheduler;
+        if (s==null)
+            return new Task(){
+                @Override
+                public boolean cancel()
+                {
+                    return false;
+                }};
+
+        ScheduledFuture<?> result = s.schedule(task, delay, unit);
         return new ScheduledFutureTask(result);
     }
 

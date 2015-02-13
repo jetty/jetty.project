@@ -31,7 +31,7 @@ public enum HttpVersion
     HTTP_0_9("HTTP/0.9",9),
     HTTP_1_0("HTTP/1.0",10),
     HTTP_1_1("HTTP/1.1",11),
-    HTTP_2("HTTP/2",20);
+    HTTP_2("HTTP/2.0",20);
 
     /* ------------------------------------------------------------ */
     public final static Trie<HttpVersion> CACHE= new ArrayTrie<HttpVersion>();
@@ -166,6 +166,7 @@ public enum HttpVersion
             case 9: return HttpVersion.HTTP_0_9;
             case 10: return HttpVersion.HTTP_1_0;
             case 11: return HttpVersion.HTTP_1_1;
+            case 20: return HttpVersion.HTTP_2;
             default: throw new IllegalArgumentException();
         }
     }

@@ -265,6 +265,7 @@ public class UpgradeConnection extends AbstractConnection
         connectPromise.getClient().addManaged(session);
 
         // Now swap out the connection
+        // TODO use endp.upgrade ???
         endp.setConnection(connection);
         connection.onOpen();
     }

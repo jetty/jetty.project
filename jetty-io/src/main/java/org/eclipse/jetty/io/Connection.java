@@ -19,11 +19,12 @@
 package org.eclipse.jetty.io;
 
 import java.io.Closeable;
+import java.nio.ByteBuffer;
 
 /**
  * <p>A {@link Connection} is associated to an {@link EndPoint} so that I/O events
  * happening on the {@link EndPoint} can be processed by the {@link Connection}.</p>
- * <p>A typical implementation of {@link Connection} overrides {@link #onOpen()} to
+ * <p>A typical implementation of {@link Connection} overrides {@link #onOpen(ByteBuffer)} to
  * {@link EndPoint#fillInterested(Callback) set read interest} on the {@link EndPoint},
  * and when the {@link EndPoint} signals read readyness, this {@link Connection} can
  * read bytes from the network and interpret them.</p>
@@ -32,10 +33,6 @@ public interface Connection extends Closeable
 {
     public void addListener(Listener listener);
 
-    /**
-     * <p>Callback method invoked when this {@link Connection} is opened.</p>
-     * <p>Creators of the connection implementation are responsible for calling this method.</p>
-     */
     public void onOpen();
 
     /**
@@ -48,7 +45,7 @@ public interface Connection extends Closeable
      * @return the {@link EndPoint} associated with this {@link Connection}
      */
     public EndPoint getEndPoint();
-
+    
     /**
      * <p>Performs a logical close of this connection.</p>
      * <p>For simple connections, this may just mean to delegate the close to the associated
@@ -64,6 +61,30 @@ public interface Connection extends Closeable
     public long getBytesOut();
     public long getCreatedTimeStamp();
     
+    public interface UpgradeFrom extends Connection
+    {
+        /* ------------------------------------------------------------ */
+        /** Take the input buffer from the connection on upgrade.
+         * <p>This method is used to take any unconsumed input from
+         * a connection during an upgrade.
+         * @return A buffer of unconsumed input. The caller must return the buffer
+         * to the bufferpool when consumed and this connection must not.
+         */
+        ByteBuffer onUpgradeFrom();
+    }
+    
+    public interface UpgradeTo extends Connection
+    {
+        /**
+         * <p>Callback method invoked when this {@link Connection} is upgraded.</p>
+         * <p>This must be called before {@link #onOpen()}.</p>
+         * @param prefilledBuffer An optional buffer that can contain prefilled data. Typically this
+         * results from an upgrade of one protocol to the other where the old connection has buffered
+         * data destined for the new connection.  The new connection must take ownership of the buffer
+         * and is responsible for returning it to the buffer pool
+         */
+        void onUpgradeTo(ByteBuffer prefilled);
+    }
     
     public interface Listener
     {
