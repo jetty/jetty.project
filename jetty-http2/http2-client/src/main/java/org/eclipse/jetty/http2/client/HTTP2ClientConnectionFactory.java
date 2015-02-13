@@ -19,7 +19,6 @@
 package org.eclipse.jetty.http2.client;
 
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executor;
