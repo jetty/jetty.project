@@ -179,7 +179,12 @@ public interface Session
          */
         public void onClose(Session session, GoAwayFrame frame);
 
-        // TODO: how come this is not called ???
+        /**
+         * <p>Callback method invoked when a failure has been detected for this session.</p>
+         *
+         * @param session the session
+         * @param failure the failure
+         */
         public void onFailure(Session session, Throwable failure);
 
         /**

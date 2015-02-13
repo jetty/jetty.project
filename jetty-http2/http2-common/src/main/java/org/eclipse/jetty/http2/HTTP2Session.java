@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -394,6 +397,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     public void onConnectionFailure(int error, String reason)
     {
         close(error, reason, Callback.Adapter.INSTANCE);
+        notifyFailure(this, new IOException(String.format("%d/%s", error, reason)));
     }
 
     @Override
@@ -754,7 +758,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 // The other peer did not send a GO_AWAY, no need to be gentle.
                 if (LOG.isDebugEnabled())
                     LOG.debug("Abrupt close for {}", this);
-                terminate();
+                abort(new ClosedChannelException());
                 break;
             }
             case LOCALLY_CLOSED:
@@ -811,7 +815,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             case LOCALLY_CLOSED:
             case REMOTELY_CLOSED:
             {
-                terminate();
+                abort(new TimeoutException());
                 break;
             }
             default:
@@ -854,6 +858,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 }
             }
         }
+    }
+
+    protected void abort(Throwable failure)
+    {
+        terminate();
+        notifyFailure(this, failure);
     }
 
     public boolean isDisconnected()
@@ -920,6 +930,18 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         try
         {
             listener.onClose(session, frame);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
+    }
+
+    protected void notifyFailure(Session session, Throwable failure)
+    {
+        try
+        {
+            listener.onFailure(session, failure);
         }
         catch (Throwable x)
         {
