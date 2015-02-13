@@ -19,6 +19,7 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 
 import org.eclipse.jetty.util.log.Log;
@@ -51,7 +52,7 @@ public interface ClientConnectionFactory
          * {@link EndPoint} associated with {@code oldConnection}, performing connection lifecycle management.
          * <p />
          * The {@code oldConnection} will be closed by invoking {@link org.eclipse.jetty.io.Connection#onClose()}
-         * and the {@code newConnection} will be opened by invoking {@link org.eclipse.jetty.io.Connection#onOpen()}.
+         * and the {@code newConnection} will be opened by invoking {@link org.eclipse.jetty.io.Connection#onOpen(ByteBuffer)}.
          * @param oldConnection the old connection to replace
          * @param newConnection the new connection replacement
          */

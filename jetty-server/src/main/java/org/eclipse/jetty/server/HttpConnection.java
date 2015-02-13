@@ -45,7 +45,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * <p>A {@link Connection} that handles the HTTP protocol.</p>
  */
-public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport
+public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport, Connection.UpgradeFrom
 {
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = "org.eclipse.jetty.server.HttpConnection.UPGRADE";
     private static final boolean REQUEST_BUFFER_DIRECT=false;
@@ -161,6 +161,18 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public int getMessagesOut()
     {
         return getHttpChannel().getRequests();
+    }
+
+    @Override
+    public ByteBuffer onUpgradeFrom()
+    {
+        if (BufferUtil.hasContent(_requestBuffer))
+        {
+            ByteBuffer buffer = _requestBuffer;
+            _requestBuffer=null;
+            return buffer;
+        }
+        return null;
     }
 
     void releaseRequestBuffer()
@@ -329,11 +341,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             Connection connection = (Connection)_channel.getRequest().getAttribute(UPGRADE_CONNECTION_ATTRIBUTE);
             if (connection != null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Upgrade from {} to {}", this, connection);
-                onClose();
-                getEndPoint().setConnection(connection);
-                connection.onOpen();
+                _channel.getState().upgrade();
+                getEndPoint().upgrade(connection);
                 _channel.reset();
                 _parser.reset();
                 _generator.reset();
@@ -532,6 +541,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     if (!persistent)
                         getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
                     break;
+                }
+                case HTTP_2:
+                {
+                    persistent=false;
+                    badMessage(400,null);
+                    return true;
                 }
                 default:
                 {

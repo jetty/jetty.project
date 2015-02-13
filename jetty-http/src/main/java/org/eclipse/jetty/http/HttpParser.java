@@ -990,7 +990,7 @@ public class HttpParser
                                 // End of headers!
 
                                 // Was there a required host header?
-                                if (!_host && _version!=HttpVersion.HTTP_1_0 && _requestHandler!=null)
+                                if (!_host && _version==HttpVersion.HTTP_1_1 && _requestHandler!=null)
                                 {
                                     throw new BadMessage(HttpStatus.BAD_REQUEST_400,"No Host");
                                 }

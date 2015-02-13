@@ -215,6 +215,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     private WebSocketSession session;
     private List<ExtensionConfig> extensions;
     private boolean isFilling;
+    private ByteBuffer buffer;
     private ReadMode readMode = ReadMode.PARSE;
     private IOState ioState;
     private Stats stats = new Stats();
@@ -250,7 +251,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
 
     /**
      * Close the connection.
-     * <p>
+     * <p>                    fillInterested();
+
      * This can result in a close handshake over the network, or a simple local abnormal close
      * 
      * @param statusCode
@@ -422,9 +424,14 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         switch (state)
         {
             case OPEN:
-                if (LOG.isDebugEnabled())
-                    LOG.debug("fillInterested");
-                fillInterested();
+                if (BufferUtil.isEmpty(buffer))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("fillInterested");
+                    fillInterested();
+                }
+                else
+                    onFillable();
                 break;
             case CLOSED:
                 if (ioState.wasAbnormalClose())
@@ -458,7 +465,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         if (LOG.isDebugEnabled())
             LOG.debug("{} onFillable()",policy.getBehavior());
         stats.countOnFillableEvents.incrementAndGet();
-        ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),true);
+        if (buffer==null)
+            buffer = bufferPool.acquire(getInputBufferSize(),true);
         try
         {
             isFilling = true;
@@ -466,7 +474,8 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
             if(readMode == ReadMode.PARSE)
             {
                 readMode = readParse(buffer);
-            } else
+            } 
+            else
             {
                 readMode = readDiscard(buffer);
             }
@@ -474,6 +483,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         finally
         {
             bufferPool.release(buffer);
+            buffer=null;
         }
 
         if ((readMode != ReadMode.EOF) && (suspendToken.get() == false))
@@ -496,6 +506,11 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         super.onFillInterestedFailed(cause);
     }
 
+    protected void prefill(ByteBuffer prefilled)
+    {
+        buffer=prefilled;
+    }
+    
     @Override
     public void onOpen()
     {

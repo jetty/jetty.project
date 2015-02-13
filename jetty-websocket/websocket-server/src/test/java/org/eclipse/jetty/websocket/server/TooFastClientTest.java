@@ -85,7 +85,7 @@ public class TooFastClientTest
             Generator generator = new Generator(WebSocketPolicy.newClientPolicy(),
                     new LeakTrackingBufferPool("Generator",new MappedByteBufferPool()));
             String msg1 = "Echo 1";
-            String msg2 = "This is also an echo ... cho ... ho ... o";
+            String msg2 = "This is also an echooooo!";
             
             generator.generateWholeFrame(new TextFrame().setPayload(msg1),initialPacket);
             generator.generateWholeFrame(new TextFrame().setPayload(msg2),initialPacket);
