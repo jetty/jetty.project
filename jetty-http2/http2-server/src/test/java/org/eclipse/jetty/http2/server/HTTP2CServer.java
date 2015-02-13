@@ -22,10 +22,8 @@ import java.io.IOException;
 import java.util.Date;
 
 import javax.servlet.ServletException;
-import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -34,25 +32,28 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 
-public class HTTP2CServer
+public class HTTP2CServer extends Server
 {
-    public static void main( String[] args ) throws Exception
+    public HTTP2CServer(int port)
     {
-        // The Server
-        Server server = new Server();
-
         // HTTP connector
         HttpConfiguration config = new HttpConfiguration();
-        ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(config), new HTTP2CServerConnectionFactory(config));
+        ServerConnector http = new ServerConnector(this,new HttpConnectionFactory(config), new HTTP2CServerConnectionFactory(config));
         http.setHost("localhost");
-        http.setPort(8080);
+        http.setPort(port);
         http.setIdleTimeout(30000);
 
         // Set the connector
-        server.addConnector(http);
+        addConnector(http);
 
         // Set a handler
-        server.setHandler(new SimpleHandler());
+        setHandler(new SimpleHandler());
+    }
+    
+    public static void main(String... args ) throws Exception
+    {
+        // The Server
+        HTTP2CServer server = new HTTP2CServer(8080);
 
         // Start the server
         server.start();

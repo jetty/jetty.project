@@ -63,6 +63,8 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
 
     public void onUpgradeTo(ByteBuffer prefilled)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDebugString(prefilled));
         producer.prefill(prefilled);
     }
     
@@ -131,7 +133,7 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
             if (task != null)
                 return task;
 
-            boolean looping = false;
+            boolean looping = BufferUtil.hasContent(buffer);
             while (true)
             {
                 if (buffer == null)

@@ -89,7 +89,8 @@ public class AbstractServerTest
     @After
     public void dispose() throws Exception
     {
-        server.stop();
+        if (server!=null)
+            server.stop();
     }
 
     protected boolean parseResponse(Socket client, Parser parser) throws IOException
