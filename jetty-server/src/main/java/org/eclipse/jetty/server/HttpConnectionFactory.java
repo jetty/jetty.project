@@ -41,6 +41,8 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     {
         super(HttpVersion.HTTP_1_1.asString());
         _config=config;
+        if (config==null)
+            throw new IllegalArgumentException("Null HttpConfiguration");
         addBean(_config);
     }
 
@@ -48,17 +50,6 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     public HttpConfiguration getHttpConfiguration()
     {
         return _config;
-    }
-
-    @Deprecated
-    public boolean isDispatchIO()
-    {
-        return false;
-    }
-
-    @Deprecated
-    public void setDispatchIO(boolean dispatchIO)
-    {
     }
 
     @Override

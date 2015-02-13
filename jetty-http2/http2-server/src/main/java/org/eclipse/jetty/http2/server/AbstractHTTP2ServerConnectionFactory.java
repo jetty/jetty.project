@@ -47,6 +47,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration,String... protocols)
     {
         super(protocols);
+        if (httpConfiguration==null)
+            throw new IllegalArgumentException("Null HttpConfiguration");
         this.httpConfiguration = httpConfiguration;
     }
 
