@@ -165,7 +165,6 @@ public class HeadersBodyParser extends BodyParser
                     MetaData metaData = headerBlockParser.parse(buffer, length);
                     if (metaData != null)
                     {
-                        // TODO: optimize of paddingLength==0: reset() here.
                         state = State.PADDING;
                         loop = paddingLength == 0;
                         onHeaders(streamId, weight, exclusive, metaData);
