@@ -69,8 +69,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     {
         boolean sendAborted = sender.abort(cause);
         boolean receiveAborted = receiver.abort(cause);
-        // Variables cannot be inlined, otherwise abort
-        // calls may not be executed due to short-circuit.
         return sendAborted || receiveAborted;
     }
 

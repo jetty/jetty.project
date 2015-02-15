@@ -197,7 +197,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
         notifier.notifyBegin(request);
         if (!updateRequestState(RequestState.TRANSIENT, RequestState.BEGIN))
-            terminateRequest(getHttpExchange(), failure, false);
+            terminateRequest(getHttpExchange(), failure);
         return true;
     }
 
@@ -210,7 +210,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
         notifier.notifyHeaders(request);
         if (!updateRequestState(RequestState.TRANSIENT, RequestState.HEADERS))
-            terminateRequest(getHttpExchange(), failure, false);
+            terminateRequest(getHttpExchange(), failure);
         return true;
     }
 
@@ -223,7 +223,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
         notifier.notifyCommit(request);
         if (!updateRequestState(RequestState.TRANSIENT, RequestState.COMMIT))
-            terminateRequest(getHttpExchange(), failure, true);
+            terminateRequest(getHttpExchange(), failure);
         return true;
     }
 
@@ -242,7 +242,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
                 notifier.notifyContent(request, content);
                 if (!updateRequestState(RequestState.TRANSIENT_CONTENT, RequestState.CONTENT))
-                    terminateRequest(getHttpExchange(), failure, true);
+                    terminateRequest(getHttpExchange(), failure);
                 return true;
             }
             default:
@@ -281,7 +281,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 HttpDestination destination = getHttpChannel().getHttpDestination();
                 destination.getRequestNotifier().notifySuccess(exchange.getRequest());
 
-                terminateRequest(exchange, null, true, result);
+                terminateRequest(exchange, null, result);
 
                 return true;
             }
@@ -333,7 +333,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
         if (fail)
         {
-            terminateRequest(exchange, failure, !isBeforeCommit(current), result);
+            terminateRequest(exchange, failure, result);
         }
         else
         {
@@ -344,34 +344,32 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         return true;
     }
 
-    private void terminateRequest(HttpExchange exchange, Throwable failure, boolean committed)
+    private void terminateRequest(HttpExchange exchange, Throwable failure)
     {
         if (exchange != null)
         {
             Result result = exchange.terminateRequest(failure);
-            terminateRequest(exchange, failure, committed, result);
+            terminateRequest(exchange, failure, result);
         }
     }
 
-    private void terminateRequest(HttpExchange exchange, Throwable failure, boolean committed, Result result)
+    private void terminateRequest(HttpExchange exchange, Throwable failure, Result result)
     {
         Request request = exchange.getRequest();
 
         if (LOG.isDebugEnabled())
             LOG.debug("Terminating request {}", request);
 
-        if (failure != null && !committed && result == null && request.getAbortCause() == null)
+        if (result == null)
         {
-            // Complete the response from here
-            if (exchange.responseComplete())
+            if (failure != null)
             {
-                result = exchange.terminateResponse(failure);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Failed response from request {}", exchange);
+                    LOG.debug("Response failure from request {}", exchange);
+                getHttpChannel().abortResponse(failure);
             }
         }
-
-        if (result != null)
+        else
         {
             HttpDestination destination = getHttpChannel().getHttpDestination();
             boolean ordered = destination.getHttpClient().isStrictEventOrdering();

@@ -297,9 +297,12 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
             {
                 failure = x;
                 // Transfer all chunks to fail them all.
+                Chunk chunk = current;
+                current = null;
+                if (chunk != null)
+                    chunks.add(chunk);
                 chunks.addAll(DeferredContentProvider.this.chunks);
                 clear();
-                current = null;
                 lock.notify();
             }
             for (Chunk chunk : chunks)

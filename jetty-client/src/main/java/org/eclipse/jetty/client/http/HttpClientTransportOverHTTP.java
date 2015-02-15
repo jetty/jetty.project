@@ -50,10 +50,15 @@ public class HttpClientTransportOverHTTP extends AbstractHttpClientTransport
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        HttpConnectionOverHTTP connection = new HttpConnectionOverHTTP(endPoint, destination);
+        HttpConnectionOverHTTP connection = newHttpConnection(endPoint, destination);
         @SuppressWarnings("unchecked")
         Promise<Connection> promise = (Promise<Connection>)context.get(HTTP_CONNECTION_PROMISE_CONTEXT_KEY);
         promise.succeeded(connection);
         return connection;
+    }
+
+    protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination)
+    {
+        return new HttpConnectionOverHTTP(endPoint, destination);
     }
 }

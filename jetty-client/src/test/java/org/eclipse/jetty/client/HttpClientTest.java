@@ -456,7 +456,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Slow
     @Test
     public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection() throws Exception
     {
@@ -518,7 +517,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
-    @Slow
     @Test
     public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete() throws Exception
     {

@@ -63,10 +63,14 @@ public class HttpChannelOverHTTP extends HttpChannel
     @Override
     public boolean abort(Throwable cause)
     {
-        // We want the return value to be that of the response
-        // because if the response has already successfully
-        // arrived then we failed to abort the exchange
-        sender.abort(cause);
+        boolean sendAborted = sender.abort(cause);
+        boolean receiveAborted = abortResponse(cause);
+        return sendAborted || receiveAborted;
+    }
+
+    @Override
+    public boolean abortResponse(Throwable cause)
+    {
         return receiver.abort(cause);
     }
 

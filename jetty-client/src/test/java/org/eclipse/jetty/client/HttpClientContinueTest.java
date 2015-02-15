@@ -40,13 +40,10 @@ import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
@@ -425,35 +422,25 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
             }
         });
 
-        try
+        byte[] content = new byte[1024];
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+        .scheme(scheme)
+        .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
+        .content(new BytesContentProvider(content))
+        .send(new BufferingResponseListener()
         {
-            Log.getLogger(HttpChannel.class).info("Expecting Close warning...");
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
-
-            byte[] content = new byte[1024];
-            final CountDownLatch latch = new CountDownLatch(1);
-            client.newRequest("localhost", connector.getLocalPort())
-            .scheme(scheme)
-            .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
-            .content(new BytesContentProvider(content))
-            .send(new BufferingResponseListener()
+            @Override
+            public void onComplete(Result result)
             {
-                @Override
-                public void onComplete(Result result)
-                {
-                    Assert.assertTrue(result.isFailed());
-                    Assert.assertNotNull(result.getRequestFailure());
-                    Assert.assertNotNull(result.getResponseFailure());
-                    latch.countDown();
-                }
-            });
+                Assert.assertTrue(result.isFailed());
+                Assert.assertNotNull(result.getRequestFailure());
+                Assert.assertNotNull(result.getResponseFailure());
+                latch.countDown();
+            }
+        });
 
-            Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        }
-        finally
-        {
-            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
-        }
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
 
     @Slow
