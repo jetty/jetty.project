@@ -32,9 +32,9 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
+import org.eclipse.jetty.client.http.HttpDestinationOverHTTP;
 import org.eclipse.jetty.client.util.ByteBufferContentProvider;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
@@ -86,9 +86,19 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 Assert.assertSame(cause, x.getCause());
             Assert.assertFalse(begin.get());
         }
+
+        // The request send triggered a connection creation
+        // that is not awaited before failing the exchange.
+        Thread.sleep(1000);
+
+        // However, the connection has not been used, so it's a good one.
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
+        ConnectionPool connectionPool = destination.getConnectionPool();
+        Assert.assertEquals(1, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(1, connectionPool.getIdleConnections().size());
     }
 
-    @Slow
     @Test
     public void testAbortOnBegin() throws Exception
     {
@@ -128,9 +138,14 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 Assert.assertSame(cause, x.getCause());
             Assert.assertFalse(committed.await(1, TimeUnit.SECONDS));
         }
+
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
+        ConnectionPool connectionPool = destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
-    @Slow
     @Test
     public void testAbortOnHeaders() throws Exception
     {
@@ -170,6 +185,12 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
                 Assert.assertSame(cause, x.getCause());
             Assert.assertFalse(committed.await(1, TimeUnit.SECONDS));
         }
+
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
+        ConnectionPool connectionPool = destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
     @Test
@@ -207,6 +228,12 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             if (aborted.get())
                 Assert.assertSame(cause, x.getCause());
         }
+
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
+        ConnectionPool connectionPool = destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
     @Test
@@ -265,6 +292,12 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             if (aborted.get())
                 Assert.assertSame(cause, x.getCause());
         }
+
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
+        ConnectionPool connectionPool = destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
     @Test
@@ -314,9 +347,14 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             if (aborted.get())
                 Assert.assertSame(cause, x.getCause());
         }
+
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
+        ConnectionPool connectionPool = destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
-    @Slow
     @Test(expected = InterruptedException.class)
     public void testInterrupt() throws Exception
     {
@@ -363,7 +401,6 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         request.send();
     }
 
-    @Slow
     @Test
     public void testAbortLongPoll() throws Exception
     {
@@ -420,9 +457,14 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             if (aborted.get())
                 Assert.assertSame(cause, x.getCause());
         }
+
+        HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
+        ConnectionPool connectionPool = destination.getConnectionPool();
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
-    @Slow
     @Test
     public void testAbortLongPollAsync() throws Exception
     {

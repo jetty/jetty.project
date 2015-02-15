@@ -76,6 +76,8 @@ public abstract class HttpChannel
 
     public abstract boolean abort(Throwable cause);
 
+    public abstract boolean abortResponse(Throwable cause);
+
     public void exchangeTerminated(Result result)
     {
         disassociate();
