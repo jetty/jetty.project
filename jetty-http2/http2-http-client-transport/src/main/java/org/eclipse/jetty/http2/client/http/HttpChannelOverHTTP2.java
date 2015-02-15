@@ -68,8 +68,14 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     public boolean abort(Throwable cause)
     {
         boolean sendAborted = sender.abort(cause);
-        boolean receiveAborted = receiver.abort(cause);
+        boolean receiveAborted = abortResponse(cause);
         return sendAborted || receiveAborted;
+    }
+
+    @Override
+    public boolean abortResponse(Throwable cause)
+    {
+        return receiver.abort(cause);
     }
 
     @Override
