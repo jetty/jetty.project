@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -136,7 +136,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     /** 
      * Obtain the base {@link Request} instance of a {@link ServletRequest}, by
-     * coercion, unwrapping or thread local.
+     * coercion, unwrapping or special attribute.
      * @param request The request
      * @return the base {@link Request} instance of a {@link ServletRequest}.
      */
@@ -145,13 +145,17 @@ public class Request implements HttpServletRequest
         if (request instanceof Request)
             return (Request)request;
         
+        Object channel = request.getAttribute(HttpChannel.class.getName());
+        if (channel instanceof HttpChannel)
+            return ((HttpChannel)channel).getRequest();
+        
         while (request instanceof ServletRequestWrapper)
             request=((ServletRequestWrapper)request).getRequest();
 
         if (request instanceof Request)
             return (Request)request;
         
-        return HttpChannel.getCurrentHttpChannel().getRequest();
+        return null;
     }
     
     
@@ -212,6 +216,125 @@ public class Request implements HttpServletRequest
     public HttpInput getHttpInput()
     {
         return _input;
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isPush()
+    {
+        return Boolean.TRUE.equals(getAttribute("org.eclipse.jetty.pushed"));
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isPushSupported()
+    {
+        return getHttpChannel().getHttpTransport().isPushSupported();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Get a PushBuilder associated with this request initialized as follows:<ul>
+     * <li>The method is initialized to "GET"</li>
+     * <li>The headers from this request are copied to the Builder, except for:<ul>
+     *   <li>Conditional headers (eg. If-Modified-Since)
+     *   <li>Range headers
+     *   <li>Expect headers
+     *   <li>Authorization headers
+     *   <li>Referrer headers
+     * </ul></li>
+     * <li>If the request was Authenticated, an Authorization header will 
+     * be set with a container generated token that will result in equivalent
+     * Authorization</li>
+     * <li>The query string from {@link #getQueryString()}
+     * <li>The {@link #getRequestedSessionId()} value, unless at the time
+     * of the call {@link #getSession(boolean)}
+     * has previously been called to create a new {@link HttpSession}, in 
+     * which case the new session ID will be used as the PushBuilders 
+     * requested session ID.</li>
+     * <li>The source of the requested session id will be the same as for
+     * this request</li>
+     * <li>The builders Referer header will be set to {@link #getRequestURL()} 
+     * plus any {@link #getQueryString()} </li>
+     * <li>If {@link HttpServletResponse#addCookie(Cookie)} has been called
+     * on the associated response, then a corresponding Cookie header will be added
+     * to the PushBuilder, unless the {@link Cookie#getMaxAge()} is <=0, in which
+     * case the Cookie will be removed from the builder.</li>
+     * <li>If this request has has the conditional headers If-Modified-Since or
+     * If-None-Match then the {@link PushBuilder#isConditional()} header is set
+     * to true. 
+     * </ul>
+     * 
+     * <p>Each call to getPushBuilder() will return a new instance
+     * of a PushBuilder based off this Request.  Any mutations to the
+     * returned PushBuilder are not reflected on future returns.
+     * @return A new PushBuilder or null if push is not supported
+     */
+    public PushBuilder getPushBuilder()
+    {
+        if (!isPushSupported())
+            throw new IllegalStateException();
+        
+        HttpFields fields = new HttpFields(getHttpFields().size()+5);
+        boolean conditional=false;
+        UserIdentity user_identity=null;
+        Authentication authentication=null;
+        
+        for (HttpField field : getHttpFields())
+        {
+            HttpHeader header = field.getHeader();
+            if (header==null)
+                fields.add(field);
+            else
+            {
+                switch(header)
+                {
+                    case IF_MATCH:
+                    case IF_RANGE:
+                    case IF_UNMODIFIED_SINCE:
+                    case RANGE:
+                    case EXPECT:
+                    case REFERER:
+                    case COOKIE:
+                        continue;
+                        
+                    case AUTHORIZATION:
+                        user_identity=getUserIdentity();
+                        authentication=_authentication;
+                        continue;
+
+                    case IF_NONE_MATCH:
+                    case IF_MODIFIED_SINCE:
+                        conditional=true;
+                        continue;
+            
+                    default:
+                        fields.add(field);
+                }
+            }
+        }
+        
+        String id=null;
+        try
+        {
+            HttpSession session = getSession();
+            if (session!=null)
+            {
+                session.getLastAccessedTime(); // checks if session is valid
+                id=session.getId();
+            }
+            else
+                id=getRequestedSessionId();
+        }
+        catch(IllegalStateException e)
+        {
+            id=getRequestedSessionId();
+        }
+        
+        PushBuilder builder = new PushBuilder(this,fields,getMethod(),getQueryString(),id,conditional);
+        builder.addHeader("referer",getRequestURL().toString());
+        
+        // TODO process any set cookies
+        // TODO process any user_identity
+        
+        return builder;
     }
 
     /* ------------------------------------------------------------ */
@@ -376,10 +499,8 @@ public class Request implements HttpServletRequest
         }
         catch (IOException | ServletException e)
         {
-            if (LOG.isDebugEnabled())
-                LOG.warn(e);
-            else
-                LOG.warn(e.toString());
+            LOG.warn(e);
+            throw new RuntimeException(e);
         }
     }
 
@@ -419,11 +540,11 @@ public class Request implements HttpServletRequest
     {
         if (name.startsWith("org.eclipse.jetty"))
         {
-            if ("org.eclipse.jetty.server.Server".equals(name))
+            if (Server.class.getName().equals(name))
                 return _channel.getServer();
-            if ("org.eclipse.jetty.server.HttpChannel".equals(name))
+            if (HttpChannel.class.getName().equals(name))
                 return _channel;
-            if ("org.eclipse.jetty.server.HttpConnection".equals(name) &&
+            if (HttpConnection.class.getName().equals(name) &&
                 _channel.getHttpTransport() instanceof HttpConnection)
                 return _channel.getHttpTransport();
         }
@@ -527,7 +648,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     public long getContentRead()
     {
-        return _input.getContentRead();
+        return _input.getContentConsumed();
     }
     
     /* ------------------------------------------------------------ */
@@ -1380,7 +1501,7 @@ public class Request implements HttpServletRequest
             AbstractSession abstractSession =  ((AbstractSession)session);
             abstractSession.renewId(this);
             if (getRemoteUser() != null)
-                abstractSession.setAttribute(AbstractSession.SESSION_KNOWN_ONLY_TO_AUTHENTICATED, Boolean.TRUE);
+                abstractSession.setAttribute(AbstractSession.SESSION_CREATED_SECURE, Boolean.TRUE);
             if (abstractSession.isIdChanged())
                 _channel.getResponse().addCookie(_sessionManager.getSessionCookie(abstractSession, getContextPath(), isSecure()));
         }
@@ -1456,7 +1577,7 @@ public class Request implements HttpServletRequest
      */
     public HttpURI getHttpURI()
     {
-        return _metadata.getURI();
+        return _metadata==null?null:_metadata.getURI();
     }
 
     /* ------------------------------------------------------------ */
@@ -1666,6 +1787,12 @@ public class Request implements HttpServletRequest
         }
         
         setPathInfo(info);
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean hasMetaData()
+    {
+        return _metadata!=null;
     }
     
     /* ------------------------------------------------------------ */

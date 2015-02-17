@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -33,7 +33,6 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.StatusCode;
-import org.eclipse.jetty.websocket.api.WebSocketException;
 import org.eclipse.jetty.websocket.client.ClientUpgradeRequest;
 import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
@@ -101,20 +100,6 @@ public class ConnectionManager extends ContainerLifeCycle
                 // notify the future
                 failed(t);
             }
-        }
-    }
-
-    private class VirtualConnect extends ConnectPromise
-    {
-        public VirtualConnect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
-        {
-            super(client,driver,request);
-        }
-
-        @Override
-        public void run()
-        {
-            failed(new WebSocketException("MUX Not yet supported"));
         }
     }
 
@@ -187,14 +172,6 @@ public class ConnectionManager extends ContainerLifeCycle
 
     public ConnectPromise connect(WebSocketClient client, EventDriver driver, ClientUpgradeRequest request)
     {
-        URI toUri = request.getRequestURI();
-        String hostname = toUri.getHost();
-
-        if (isVirtualConnectionPossibleTo(hostname))
-        {
-            return new VirtualConnect(client,driver,request);
-        }
-
         return new PhysicalConnect(client,driver,request);
     }
 
@@ -226,12 +203,6 @@ public class ConnectionManager extends ContainerLifeCycle
     public Collection<WebSocketSession> getSessions()
     {
         return Collections.unmodifiableCollection(sessions);
-    }
-
-    public boolean isVirtualConnectionPossibleTo(String hostname)
-    {
-        // TODO Auto-generated method stub
-        return false;
     }
 
     /**

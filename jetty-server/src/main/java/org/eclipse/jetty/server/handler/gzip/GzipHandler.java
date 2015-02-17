@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,6 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
@@ -51,7 +50,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A Handler that can dynamically GZIP compress responses.   Unlike 
  * previous and 3rd party GzipFilters, this mechanism works with asynchronously
- * generated responses and does not need to wrap the response or it's ownput
+ * generated responses and does not need to wrap the response or it's output
  * stream.  Instead it uses the efficient {@link HttpOutput.Interceptor} mechanism.
  * <p>
  * The handler can be applied to the entire server (a gzip.mod is included in
@@ -310,7 +309,21 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         ServletContext context = baseRequest.getServletContext();
         String path = context==null?baseRequest.getRequestURI():URIUtil.addPaths(baseRequest.getServletPath(),baseRequest.getPathInfo());
         LOG.debug("{} handle {} in {}",this,baseRequest,context);
-
+        
+        HttpOutput out = baseRequest.getResponse().getHttpOutput();   
+        // Are we already being gzipped?
+        HttpOutput.Interceptor interceptor = out.getInterceptor();
+        while (interceptor!=null)
+        {
+            if (interceptor instanceof GzipHttpOutputInterceptor)
+            {
+                LOG.debug("{} already intercepting {}",this,request);
+                _handler.handle(target,baseRequest, request, response);
+                return;
+            }
+            interceptor=interceptor.getNextInterceptor();
+        }
+        
         // If not a supported method - no Vary because no matter what client, this URI is always excluded
         if (!_includedMethods.contains(baseRequest.getMethod()))
         {
@@ -366,12 +379,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
                 request.setAttribute(ETAG,etag.replace(ETAG_GZIP,""));
         }
 
-        HttpChannel channel = HttpChannel.getCurrentHttpChannel();
-        HttpOutput out = channel.getResponse().getHttpOutput();   
-        HttpOutput.Interceptor interceptor = out.getInterceptor();
-        if (!(interceptor instanceof GzipHttpOutputInterceptor))
-            out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,channel,interceptor));
-
+        // install interceptor and handle
+        out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,baseRequest.getHttpChannel(),out.getInterceptor()));
         _handler.handle(target,baseRequest, request, response);
         
     }

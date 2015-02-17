@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -39,16 +40,16 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     private final FillInterest _fillInterest = new FillInterest()
     {
         @Override
-        protected boolean needsFill() throws IOException
+        protected void needsFillInterest() throws IOException
         {
-            return AbstractEndPoint.this.needsFill();
+            AbstractEndPoint.this.needsFillInterest();
         }
     };
     
     private final WriteFlusher _writeFlusher = new WriteFlusher(this)
     {
         @Override
-        protected void onIncompleteFlushed()
+        protected void onIncompleteFlush()
         {
             AbstractEndPoint.this.onIncompleteFlush();
         }
@@ -92,6 +93,12 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return false;
+    }
+
+    @Override
     public void onOpen()
     {
         if (LOG.isDebugEnabled())
@@ -130,9 +137,9 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
 
     protected abstract void onIncompleteFlush();
 
-    protected abstract boolean needsFill() throws IOException;
+    protected abstract void needsFillInterest() throws IOException;
 
-    protected FillInterest getFillInterest()
+    public FillInterest getFillInterest()
     {
         return _fillInterest;
     }
@@ -150,7 +157,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
         boolean fillFailed = _fillInterest.onFail(timeout);
         boolean writeFailed = _writeFlusher.onFail(timeout);
         
-        // If the endpoint is half closed and there was no onFail handling, the close here
+        // If the endpoint is half closed and there was no fill/write handling, then close here.
         // This handles the situation where the connection has completed its close handling 
         // and the endpoint is half closed, but the other party does not complete the close.
         // This perhaps should not check for half closed, however the servlet spec case allows
@@ -164,9 +171,30 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
+    public void upgrade(Connection newConnection)
+    {
+        Connection old_connection = getConnection();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} upgradeing from {} to {}", this, old_connection, newConnection);
+        
+        ByteBuffer prefilled = (old_connection instanceof Connection.UpgradeFrom)
+                ?((Connection.UpgradeFrom)old_connection).onUpgradeFrom():null;
+        old_connection.onClose();
+        old_connection.getEndPoint().setConnection(newConnection);
+
+        if (newConnection instanceof Connection.UpgradeTo)
+            ((Connection.UpgradeTo)newConnection).onUpgradeTo(prefilled);
+        else if (BufferUtil.hasContent(prefilled))
+            throw new IllegalStateException();
+
+        newConnection.onOpen();
+    }
+    
+    @Override
     public String toString()
     {
-        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d,%s}",
+        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d/%d,%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 getRemoteAddress(),
@@ -176,6 +204,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                 isOutputShutdown()?"OSHUT":"out",
                 _fillInterest.isInterested()?"R":"-",
                 _writeFlusher.isInProgress()?"W":"-",
+                getIdleFor(),
                 getIdleTimeout(),
                 getConnection()==null?null:getConnection().getClass().getSimpleName());
     }

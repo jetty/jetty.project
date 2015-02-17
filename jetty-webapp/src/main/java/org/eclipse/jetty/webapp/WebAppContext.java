@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -111,6 +111,8 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "javax.",                           // Java SE classes (per servlet spec v2.5 / SRV.9.7.2)
         "org.xml.",                         // needed by javax.xml
         "org.w3c.",                         // needed by javax.xml
+        "org.eclipse.jetty.jmx.",           // webapp cannot change jmx classes
+        "org.eclipse.jetty.util.annotation.",  // webapp cannot change jmx annotations
         "org.eclipse.jetty.continuation.",  // webapp cannot change continuation classes
         "org.eclipse.jetty.jndi.",          // webapp cannot change naming classes
         "org.eclipse.jetty.jaas.",          // webapp cannot change jaas classes
@@ -118,6 +120,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         "org.eclipse.jetty.util.log.",      // webapp should use server log
         "org.eclipse.jetty.servlet.ServletContextHandler.Decorator", // for CDI / weld use
         "org.eclipse.jetty.servlet.DefaultServlet", // webapp cannot change default servlets
+        "org.eclipse.jetty.jsp.JettyJspServlet", //webapp cannot change jetty jsp servlet
         "org.eclipse.jetty.servlets.PushCacheFilter" //must be loaded by container classpath
     } ;
 
@@ -127,11 +130,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     // it has to include them in its distribution.
     public final static String[] __dftServerClasses =
     {
+        "-org.eclipse.jetty.jmx.",          // don't hide jmx classes
+        "-org.eclipse.jetty.util.annotation.", // don't hide jmx annotation
         "-org.eclipse.jetty.continuation.", // don't hide continuation classes
         "-org.eclipse.jetty.jndi.",         // don't hide naming classes
         "-org.eclipse.jetty.jaas.",         // don't hide jaas classes
         "-org.eclipse.jetty.servlets.",     // don't hide jetty servlets
         "-org.eclipse.jetty.servlet.DefaultServlet", // don't hide default servlet
+        "-org.eclipse.jetty.jsp.",          //don't hide jsp servlet
         "-org.eclipse.jetty.servlet.listener.", // don't hide useful listeners
         "-org.eclipse.jetty.websocket.",    // don't hide websocket classes from webapps (allow webapp to use ones from system classloader)
         "-org.eclipse.jetty.apache.",       // don't hide jetty apache impls

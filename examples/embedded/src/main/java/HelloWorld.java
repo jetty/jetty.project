@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,23 +29,30 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 public class HelloWorld extends AbstractHandler
 {
     @Override
-    public void handle(String target,
-                       Request baseRequest,
-                       HttpServletRequest request,
-                       HttpServletResponse response) 
-        throws IOException, ServletException
+    public void handle( String target,
+                        Request baseRequest,
+                        HttpServletRequest request,
+                        HttpServletResponse response ) throws IOException,
+                                                      ServletException
     {
-        response.setContentType("text/html;charset=utf-8");
+        // Declare response encoding and types
+        response.setContentType("text/html; charset=utf-8");
+
+        // Declare response status code
         response.setStatus(HttpServletResponse.SC_OK);
-        baseRequest.setHandled(true);
+
+        // Write back response
         response.getWriter().println("<h1>Hello World</h1>");
+
+        // Inform jetty that this request has now been handled
+        baseRequest.setHandled(true);
     }
 
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
         Server server = new Server(8080);
         server.setHandler(new HelloWorld());
- 
+
         server.start();
         server.join();
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.io.OutputStream;
 
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.MimeTypes;
+import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
@@ -136,7 +137,7 @@ public class ResourceCacheTest
         cache.setMaxCachedFiles(4);
 
         assertTrue(cache.lookup("does not exist")==null);
-        assertTrue(cache.lookup(names[9]) instanceof HttpContent.ResourceAsHttpContent);
+        assertTrue(cache.lookup(names[9]) instanceof ResourceHttpContent);
 
         HttpContent content;
         content=cache.lookup(names[8]);

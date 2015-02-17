@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -515,7 +515,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
 
         // Setup websocket connection
-        WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool, http.isDispatchIO());
+        WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool);
 
         extensionStack.setPolicy(driver.getPolicy());
         extensionStack.configure(wsConnection.getParser());

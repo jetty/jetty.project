@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.annotations;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertTrue;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -38,12 +36,9 @@ import org.junit.Test;
 
 /**
  * TestServletAnnotations
- *
- *
  */
 public class TestServletAnnotations
 {
-    
     public class TestWebServletAnnotationHandler extends WebServletAnnotationHandler
     {
         List<DiscoveredAnnotation> _list = null;
@@ -60,10 +55,8 @@ public class TestServletAnnotations
             super.addAnnotation(a);
             _list.add(a);
         }
-        
-        
-        
     }
+    
     @Test
     public void testServletAnnotation() throws Exception
     {
@@ -98,16 +91,21 @@ public class TestServletAnnotations
         ServletHolder[] holders = wac.getServletHandler().getServlets();
         assertNotNull(holders);
         assertEquals(1, holders.length);
-        assertEquals("CServlet", holders[0].getName());
+        
+        // Verify servlet annotations
+        ServletHolder cholder = holders[0];
+        assertThat("Servlet Name", cholder.getName(), is("CServlet"));
+        assertThat("InitParameter[x]", cholder.getInitParameter("x"), is("y"));
+        assertThat("Init Order", cholder.getInitOrder(), is(2));
+        assertThat("Async Supported", cholder.isAsyncSupported(), is(false));
+        
+        // Verify mappings
         ServletMapping[] mappings = wac.getServletHandler().getServletMappings();
         assertNotNull(mappings);
         assertEquals(1, mappings.length);
         String[] paths = mappings[0].getPathSpecs();
         assertNotNull(paths);
         assertEquals(2, paths.length);
-        assertEquals("y", holders[0].getInitParameter("x"));
-        assertEquals(2,holders[0].getInitOrder());
-        assertFalse(holders[0].isAsyncSupported());
     }
 
     public void testDeclareRoles ()

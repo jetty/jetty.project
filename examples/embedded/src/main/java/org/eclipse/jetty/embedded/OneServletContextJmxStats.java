@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,25 +23,29 @@ import java.lang.management.ManagementFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ConnectorStatistics;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 
 public class OneServletContextJmxStats
 {
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
-        Server server = new Server(8080);        
-        server.addBean(new MBeanContainer(ManagementFactory.getPlatformMBeanServer()));
+        Server server = new Server(8080);
+        // Add JMX tracking to Server
+        server.addBean(new MBeanContainer(ManagementFactory
+                .getPlatformMBeanServer()));
 
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(
+                ServletContextHandler.SESSIONS);
         context.setContextPath("/");
         server.setHandler(context);
 
-        context.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class,"/");
-        context.addServlet(new ServletHolder(new DumpServlet()),"/dump/*");
+        context.addServlet(DumpServlet.class, "/dump/*");
+        context.addServlet(DefaultServlet.class, "/");
 
+        // Add Connector Statistics tracking to all connectors
         ConnectorStatistics.addToAllConnectors(server);
-        
+
         server.start();
         server.join();
     }

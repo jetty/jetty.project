@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -33,9 +33,15 @@ import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 import org.eclipse.jetty.http2.hpack.HpackDecoder;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * <p>The HTTP/2 protocol parser.</p>
+ * <p>This parser makes use of the {@link HeaderParser} and of
+ * {@link BodyParser}s to parse HTTP/2 frames.</p>
+ */
 public class Parser
 {
     private static final Logger LOG = Log.getLogger(Parser.class);
@@ -45,13 +51,13 @@ public class Parser
     private final BodyParser[] bodyParsers;
     private State state = State.HEADER;
 
-    public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxHeaderTableSize, int maxHeaderSize)
+    public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
     {
         this.listener = listener;
         this.headerParser = new HeaderParser();
         this.bodyParsers = new BodyParser[FrameType.values().length];
 
-        HeaderBlockParser headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder(maxHeaderTableSize, maxHeaderSize));
+        HeaderBlockParser headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize));
 
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
         bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser);
@@ -71,7 +77,18 @@ public class Parser
         state = State.HEADER;
     }
 
-    public boolean parse(ByteBuffer buffer)
+    /**
+     * <p>Parses the given {@code buffer} bytes and emit events to a {@link Listener}.</p>
+     * <p>When this method returns, the buffer may not be fully consumed, so invocations
+     * to this method should be wrapped in a loop:</p>
+     * <pre>
+     * while (buffer.hasRemaining())
+     *     parser.parse(buffer);
+     * </pre>
+     *
+     * @param buffer the buffer to parse
+     */
+    public void parse(ByteBuffer buffer)
     {
         try
         {
@@ -82,7 +99,7 @@ public class Parser
                     case HEADER:
                     {
                         if (!headerParser.parse(buffer))
-                            return false;
+                            return;
                         state = State.BODY;
                         break;
                     }
@@ -93,49 +110,25 @@ public class Parser
                             LOG.debug("Parsing {} frame", FrameType.from(type));
                         if (type < 0 || type >= bodyParsers.length)
                         {
-                            notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "unknown_frame_type_" + type);
-                            return false;
+                            BufferUtil.clear(buffer);
+                            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unknown_frame_type_" + type);
+                            return;
                         }
                         BodyParser bodyParser = bodyParsers[type];
                         if (headerParser.getLength() == 0)
                         {
-                            boolean async = bodyParser.emptyBody();
+                            bodyParser.emptyBody(buffer);
                             reset();
-                            if (async)
-                                return true;
                             if (!buffer.hasRemaining())
-                                return false;
+                                return;
                         }
                         else
                         {
-                            BodyParser.Result result = bodyParser.parse(buffer);
-                            switch (result)
-                            {
-                                case PENDING:
-                                {
-                                    // Not enough bytes.
-                                    return false;
-                                }
-                                case ASYNC:
-                                {
-                                    // The content will be processed asynchronously, stop parsing;
-                                    // the asynchronous operation will eventually resume parsing.
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("Parsed  {} frame, asynchronous processing", FrameType.from(type));
-                                    return true;
-                                }
-                                case COMPLETE:
-                                {
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("Parsed  {} frame, synchronous processing", FrameType.from(type));
-                                    reset();
-                                    break;
-                                }
-                                default:
-                                {
-                                    throw new IllegalStateException();
-                                }
-                            }
+                            if (!bodyParser.parse(buffer))
+                                return;
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Parsed {} frame", FrameType.from(type));
+                            reset();
                         }
                         break;
                     }
@@ -150,8 +143,8 @@ public class Parser
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
-            notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "parser_error");
-            return false;
+            BufferUtil.clear(buffer);
+            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
         }
     }
 
@@ -169,80 +162,71 @@ public class Parser
 
     public interface Listener
     {
-        public boolean onData(DataFrame frame);
+        public void onData(DataFrame frame);
 
-        public boolean onHeaders(HeadersFrame frame);
+        public void onHeaders(HeadersFrame frame);
 
-        public boolean onPriority(PriorityFrame frame);
+        public void onPriority(PriorityFrame frame);
 
-        public boolean onReset(ResetFrame frame);
+        public void onReset(ResetFrame frame);
 
-        public boolean onSettings(SettingsFrame frame);
+        public void onSettings(SettingsFrame frame);
 
-        public boolean onPushPromise(PushPromiseFrame frame);
+        public void onPushPromise(PushPromiseFrame frame);
 
-        public boolean onPing(PingFrame frame);
+        public void onPing(PingFrame frame);
 
-        public boolean onGoAway(GoAwayFrame frame);
+        public void onGoAway(GoAwayFrame frame);
 
-        public boolean onWindowUpdate(WindowUpdateFrame frame);
+        public void onWindowUpdate(WindowUpdateFrame frame);
 
         public void onConnectionFailure(int error, String reason);
 
         public static class Adapter implements Listener
         {
             @Override
-            public boolean onData(DataFrame frame)
+            public void onData(DataFrame frame)
             {
-                return false;
             }
 
             @Override
-            public boolean onHeaders(HeadersFrame frame)
+            public void onHeaders(HeadersFrame frame)
             {
-                return false;
             }
 
             @Override
-            public boolean onPriority(PriorityFrame frame)
+            public void onPriority(PriorityFrame frame)
             {
-                return false;
             }
 
             @Override
-            public boolean onReset(ResetFrame frame)
+            public void onReset(ResetFrame frame)
             {
-                return false;
             }
 
             @Override
-            public boolean onSettings(SettingsFrame frame)
+            public void onSettings(SettingsFrame frame)
             {
-                return false;
             }
 
             @Override
-            public boolean onPushPromise(PushPromiseFrame frame)
+            public void onPushPromise(PushPromiseFrame frame)
             {
-                return false;
             }
 
             @Override
-            public boolean onPing(PingFrame frame)
+            public void onPing(PingFrame frame)
             {
-                return false;
             }
 
             @Override
-            public boolean onGoAway(GoAwayFrame frame)
+            public void onGoAway(GoAwayFrame frame)
             {
-                return false;
             }
 
             @Override
-            public boolean onWindowUpdate(WindowUpdateFrame frame)
+            public void onWindowUpdate(WindowUpdateFrame frame)
             {
-                return false;
             }
 
             @Override

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,7 +24,6 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.io.SelectorManager.ManagedSelector;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -46,7 +45,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
      * true if {@link ManagedSelector#destroyEndPoint(EndPoint)} has not been called
      */
     private final AtomicBoolean _open = new AtomicBoolean();
-    private final SelectorManager.ManagedSelector _selector;
+    private final ManagedSelector _selector;
     private final SelectionKey _key;
     /**
      * The desired value for {@link SelectionKey#interestOps()}
@@ -54,6 +53,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     private int _interestOps;
     
     private final Runnable _runUpdateKey = new Runnable() { public void run() { updateKey(); } };
+    private final Runnable _runFillable = new Runnable() { public void run() { getFillInterest().fillable(); } };
+    private final Runnable _runCompleteWrite = new Runnable() { public void run() { getWriteFlusher().completeWrite(); } };
+    private final Runnable _runFillableCompleteWrite = new Runnable() { public void run() {  getFillInterest().fillable(); getWriteFlusher().completeWrite(); } };
 
     public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout)
     {
@@ -64,10 +66,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     }
 
     @Override
-    protected boolean needsFill()
+    protected void needsFillInterest()
     {
         changeInterests(SelectionKey.OP_READ);
-        return false;
     }
 
     @Override
@@ -77,13 +78,11 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
     }
 
     @Override
-    public void onSelected()
+    public Runnable onSelected()
     {
         /**
          * This method may run concurrently with {@link #changeInterests(int)}.
          */
-
-        assert _selector.isSelectorThread();
 
         while (true)
         {
@@ -118,11 +117,15 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                     }
                     
                     if ((readyOps & SelectionKey.OP_READ) != 0)
-                        getFillInterest().fillable();
+                    {
+                        if ((readyOps & SelectionKey.OP_WRITE) != 0)
+                            return _runFillableCompleteWrite;
+                        return _runFillable;
+                    }
                     if ((readyOps & SelectionKey.OP_WRITE) != 0)
-                        getWriteFlusher().completeWrite();
+                        return _runCompleteWrite;
 
-                    return;
+                    return null;
                 }
                 case LOCKED:
                 {
@@ -251,10 +254,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
         {
             int oldInterestOps = _key.interestOps();
             int newInterestOps = _interestOps;
-            if (LOG.isDebugEnabled())
-                LOG.debug("Key interests update {} -> {} for {}", oldInterestOps, newInterestOps, this);
             if (oldInterestOps != newInterestOps)
                 _key.interestOps(newInterestOps);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Key interests updated {} -> {} on {}", oldInterestOps, newInterestOps, this);
         }
         catch (CancelledKeyException x)
         {

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -125,7 +125,7 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
         //bundle defines JETTY_CONTEXT_FILE_PATH header,
         //a comma separated list of context xml files that each define a ContextHandler
         //TODO: (could be WebAppContexts)       
-        String[] tmp = contextFiles.split(",;");
+        String[] tmp = contextFiles.split("[,;]");
         for (String contextFile : tmp)
         {
             String originId = bundle.getSymbolicName() + "-" + bundle.getVersion().toString() + "-"+contextFile;

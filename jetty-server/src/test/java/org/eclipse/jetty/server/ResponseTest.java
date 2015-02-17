@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -29,6 +29,7 @@ import java.util.Collections;
 import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Locale;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.Cookie;
@@ -80,7 +81,6 @@ public class ResponseTest
         _server.start();
 
         AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
-        QueuedHttpInput input = new QueuedHttpInput();
         _channel = new HttpChannel(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
             @Override
@@ -90,12 +90,18 @@ public class ResponseTest
             }
 
             @Override
+            public boolean isPushSupported()
+            {
+                return false;
+            }
+            
+            @Override
             public void push(org.eclipse.jetty.http.MetaData.Request request)
             {   
             }
             
             @Override
-            public void completed()
+            public void onCompleted()
             {
             }
 
@@ -104,7 +110,12 @@ public class ResponseTest
             {
             }
 
-        }, input);
+            @Override
+            public boolean isOptimizedForDirectBuffers()
+            {
+                return false;
+            }
+        });
     }
 
     @After
@@ -146,9 +157,9 @@ public class ResponseTest
         response.setContentType("text/html");
         assertEquals("text/html", response.getContentType());
         response.getWriter();
-        assertEquals("text/html;charset=iso-8859-1", response.getContentType());
+        assertEquals("text/html;charset=utf-8", response.getContentType());
         response.setContentType("foo2/bar2");
-        assertEquals("foo2/bar2;charset=iso-8859-1", response.getContentType());
+        assertEquals("foo2/bar2;charset=utf-8", response.getContentType());
 
         response.recycle();
         response.setContentType("text/xml;charset=ISO-8859-7");

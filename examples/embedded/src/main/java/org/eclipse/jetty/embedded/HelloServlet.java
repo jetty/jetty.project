@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,22 +28,26 @@ import javax.servlet.http.HttpServletResponse;
 @SuppressWarnings("serial")
 public class HelloServlet extends HttpServlet
 {
-    String greeting = "Hello";
+    final String greeting;
 
     public HelloServlet()
     {
+        this("Hello");
     }
 
-    public HelloServlet(String hi)
+    public HelloServlet( String greeting )
     {
-        greeting = hi;
+        this.greeting = greeting;
     }
 
     @Override
-    protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+    protected void doGet( HttpServletRequest request,
+                          HttpServletResponse response ) throws ServletException,
+                                                        IOException
     {
         response.setContentType("text/html");
         response.setStatus(HttpServletResponse.SC_OK);
-        response.getWriter().println("<h1>" + greeting + " from HelloServlet</h1>");
+        response.getWriter().println(
+                "<h1>" + greeting + " from HelloServlet</h1>");
     }
 }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -160,35 +160,27 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     public void send(HttpExchange exchange)
     {
         Request request = exchange.getRequest();
-        Throwable cause = request.getAbortCause();
-        if (cause != null)
-        {
-            exchange.abort(cause);
-        }
-        else
-        {
-            if (!queuedToBegin(request))
-                throw new IllegalStateException();
+        if (!queuedToBegin(request))
+            return;
 
-            ContentProvider contentProvider = request.getContent();
-            HttpContent content = this.content = new HttpContent(contentProvider);
+        ContentProvider contentProvider = request.getContent();
+        HttpContent content = this.content = new HttpContent(contentProvider);
 
-            SenderState newSenderState = SenderState.SENDING;
-            if (expects100Continue(request))
-                newSenderState = content.hasContent() ? SenderState.EXPECTING_WITH_CONTENT : SenderState.EXPECTING;
-            if (!updateSenderState(SenderState.IDLE, newSenderState))
-                throw illegalSenderState(SenderState.IDLE);
+        SenderState newSenderState = SenderState.SENDING;
+        if (expects100Continue(request))
+            newSenderState = content.hasContent() ? SenderState.EXPECTING_WITH_CONTENT : SenderState.EXPECTING;
+        if (!updateSenderState(SenderState.IDLE, newSenderState))
+            throw illegalSenderState(SenderState.IDLE);
 
-            // Setting the listener may trigger calls to onContent() by other
-            // threads so we must set it only after the sender state has been updated
-            if (contentProvider instanceof AsyncContentProvider)
-                ((AsyncContentProvider)contentProvider).setListener(this);
+        // Setting the listener may trigger calls to onContent() by other
+        // threads so we must set it only after the sender state has been updated
+        if (contentProvider instanceof AsyncContentProvider)
+            ((AsyncContentProvider)contentProvider).setListener(this);
 
-            if (!beginToHeaders(request))
-                return;
+        if (!beginToHeaders(request))
+            return;
 
-            sendHeaders(exchange, content, commitCallback);
-        }
+        sendHeaders(exchange, content, commitCallback);
     }
 
     protected boolean expects100Continue(Request request)
@@ -205,7 +197,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
         notifier.notifyBegin(request);
         if (!updateRequestState(RequestState.TRANSIENT, RequestState.BEGIN))
-            terminateRequest(getHttpExchange(), failure, false);
+            terminateRequest(getHttpExchange(), failure);
         return true;
     }
 
@@ -218,7 +210,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
         notifier.notifyHeaders(request);
         if (!updateRequestState(RequestState.TRANSIENT, RequestState.HEADERS))
-            terminateRequest(getHttpExchange(), failure, false);
+            terminateRequest(getHttpExchange(), failure);
         return true;
     }
 
@@ -231,7 +223,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
         notifier.notifyCommit(request);
         if (!updateRequestState(RequestState.TRANSIENT, RequestState.COMMIT))
-            terminateRequest(getHttpExchange(), failure, true);
+            terminateRequest(getHttpExchange(), failure);
         return true;
     }
 
@@ -250,7 +242,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
                 notifier.notifyContent(request, content);
                 if (!updateRequestState(RequestState.TRANSIENT_CONTENT, RequestState.CONTENT))
-                    terminateRequest(getHttpExchange(), failure, true);
+                    terminateRequest(getHttpExchange(), failure);
                 return true;
             }
             default:
@@ -289,7 +281,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 HttpDestination destination = getHttpChannel().getHttpDestination();
                 destination.getRequestNotifier().notifySuccess(exchange.getRequest());
 
-                terminateRequest(exchange, null, true, result);
+                terminateRequest(exchange, null, result);
 
                 return true;
             }
@@ -341,7 +333,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
         if (fail)
         {
-            terminateRequest(exchange, failure, !isBeforeCommit(current), result);
+            terminateRequest(exchange, failure, result);
         }
         else
         {
@@ -352,34 +344,32 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         return true;
     }
 
-    private void terminateRequest(HttpExchange exchange, Throwable failure, boolean committed)
+    private void terminateRequest(HttpExchange exchange, Throwable failure)
     {
         if (exchange != null)
         {
             Result result = exchange.terminateRequest(failure);
-            terminateRequest(exchange, failure, committed, result);
+            terminateRequest(exchange, failure, result);
         }
     }
 
-    private void terminateRequest(HttpExchange exchange, Throwable failure, boolean committed, Result result)
+    private void terminateRequest(HttpExchange exchange, Throwable failure, Result result)
     {
         Request request = exchange.getRequest();
 
         if (LOG.isDebugEnabled())
             LOG.debug("Terminating request {}", request);
 
-        if (failure != null && !committed && result == null && request.getAbortCause() == null)
+        if (result == null)
         {
-            // Complete the response from here
-            if (exchange.responseComplete())
+            if (failure != null)
             {
-                result = exchange.terminateResponse(failure);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Failed response from request {}", exchange);
+                    LOG.debug("Response failure from request {}", exchange);
+                getHttpChannel().abortResponse(failure);
             }
         }
-
-        if (result != null)
+        else
         {
             HttpDestination destination = getHttpChannel().getHttpDestination();
             boolean ordered = destination.getHttpClient().isStrictEventOrdering();
@@ -553,6 +543,16 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     private RuntimeException illegalSenderState(SenderState current)
     {
         return new IllegalStateException("Expected " + current + " found " + senderState.get() + " instead");
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x(req=%s,snd=%s)",
+                getClass().getSimpleName(),
+                hashCode(),
+                requestState,
+                senderState);
     }
 
     /**

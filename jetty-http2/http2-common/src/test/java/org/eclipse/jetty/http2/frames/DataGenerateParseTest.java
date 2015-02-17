@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -93,10 +93,9 @@ public class DataGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onData(DataFrame frame)
+            public void onData(DataFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -125,10 +124,9 @@ public class DataGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onData(DataFrame frame)
+            public void onData(DataFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

@@ -28,7 +28,7 @@
             <configuration>
               <excludes>**/MANIFEST.MF,javax/**</excludes>
               <excludeArtifactIds>javax</excludeArtifactIds>
-              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.mortbay.jetty.npn,org.slf4j,org.ow2.asm</excludeGroupIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.mortbay.jetty.alpn,org.slf4j,org.ow2.asm</excludeGroupIds>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -46,7 +46,7 @@
               <excludes>META-INF/**,**/Servlet3Continuation*,**/Jetty6Continuation*</excludes>
               <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.websocket</includeGroupIds>
               <excludeArtifactIds>javax</excludeArtifactIds>
-              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.mortbay.jetty.npn,org.slf4j,org.ow2.asm</excludeGroupIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.mortbay.jetty.alpn,org.slf4j,org.ow2.asm</excludeGroupIds>
               <outputDirectory>${project.build.directory}/sources</outputDirectory>
               <overWriteReleases>true</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -137,12 +137,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>websocket-client</artifactId>
-      <version>${project.version}</version>
-      <scope>provided</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-http-server</artifactId>
       <version>${project.version}</version>
       <scope>provided</scope>
     </dependency>

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -62,7 +63,7 @@ public class AbstractServerTest
 
     protected void startServer(ServerSessionListener listener) throws Exception
     {
-        prepareServer(new RawHTTP2ServerConnectionFactory(listener));
+        prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(),listener));
         server.start();
     }
 
@@ -89,7 +90,8 @@ public class AbstractServerTest
     @After
     public void dispose() throws Exception
     {
-        server.stop();
+        if (server!=null)
+            server.stop();
     }
 
     protected boolean parseResponse(Socket client, Parser parser) throws IOException

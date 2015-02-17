@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -44,7 +45,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
 
     public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination)
     {
-        super(endPoint, destination.getHttpClient().getExecutor(), destination.getHttpClient().isDispatchIO());
+        super(endPoint, destination.getHttpClient().getExecutor());
         this.delegate = new Delegate(destination);
         this.channel = new HttpChannelOverHTTP(this);
     }
@@ -152,11 +153,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     @Override
     public String toString()
     {
-        return String.format("%s@%h(l:%s <-> r:%s)",
+        return String.format("%s@%h(l:%s <-> r:%s)[%s]",
                 getClass().getSimpleName(),
                 this,
                 getEndPoint().getLocalAddress(),
-                getEndPoint().getRemoteAddress());
+                getEndPoint().getRemoteAddress(),
+                channel);
     }
 
     private class Delegate extends HttpConnection

@@ -11,13 +11,12 @@
   <description>Jetty OSGi Integration test</description>
   <url>http://www.eclipse.org/jetty</url>
   <properties>
-    <bundle-symbolic-name>${project.groupId}.boot.test.spdy</bundle-symbolic-name>
+    <bundle-symbolic-name>${project.groupId}.boot.test.osgi</bundle-symbolic-name>
     <jetty-orbit-url>http://download.eclipse.org/jetty/orbit/</jetty-orbit-url>
     <assembly-directory>target/distribution</assembly-directory>
-    <exam.version>3.4.0</exam.version>
+    <exam.version>3.5.0</exam.version>
     <url.version>1.5.2</url.version>
     <injection.bundle.version>1.0</injection.bundle.version>
-    <runner.version>1.8.5</runner.version>
   </properties>
   <dependencies>
     <!-- Pax Exam Dependencies -->
@@ -36,7 +35,7 @@
     </dependency>
     
 
-    <!-- use the forked container so we can pass it system properties eg for npn/alpn -->
+    <!-- use the forked container so we can pass it system properties eg for alpn -->
     <dependency>
         <groupId>org.ops4j.pax.exam</groupId>
         <artifactId>pax-exam-container-forked</artifactId>
@@ -87,7 +86,7 @@
     <dependency>
       <groupId>org.eclipse</groupId>
       <artifactId>osgi</artifactId>
-      <version>3.9.1-v20140110-1610</version>
+      <version>3.10.0-v20140606-1445</version>
       <scope>test</scope>
     </dependency>
     <dependency>
@@ -141,7 +140,7 @@
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
       <artifactId>jetty-osgi-servlet-api</artifactId>
-      <version>3.1.0.M0</version>
+      <version>3.1.0.M3</version>
     </dependency>
 
     <dependency>
@@ -280,28 +279,9 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-core</artifactId>
+      <groupId>org.eclipse.jetty.http2</groupId>
+      <artifactId>http2-server</artifactId>
       <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-server</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-http-server</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.spdy</groupId>
-      <artifactId>spdy-client</artifactId>
-      <version>${project.version}</version>
-      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.mortbay.jetty.alpn</groupId>

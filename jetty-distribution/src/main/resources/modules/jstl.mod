@@ -1,5 +1,5 @@
 #
-# Jetty JSP Module
+# Jetty JSTL Module
 #
 
 [depend]

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,8 +21,8 @@ package org.eclipse.jetty.http2.server;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -30,50 +30,55 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.parser.ServerParser;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory
+public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionFactory implements CipherDiscriminator
 {
     private static final Logger LOG = Log.getLogger(HTTP2ServerConnectionFactory.class);
 
-    private final HttpConfiguration httpConfiguration;
-
     public HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        this.httpConfiguration = httpConfiguration;
+        super(httpConfiguration);
+    }
+    
+    protected HTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration,String... protocols)
+    {
+        super(httpConfiguration,protocols);
     }
 
     @Override
     protected ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint)
     {
-        return new HTTPServerSessionListener(connector, httpConfiguration, endPoint);
+        return new HTTPServerSessionListener(connector, endPoint);
     }
 
     @Override
-    protected ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener)
+    public boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher)
     {
-        return new ServerParser(byteBufferPool, listener, getMaxHeaderTableSize(), httpConfiguration.getRequestHeaderSize());
+        // Implement 9.2.2
+        if (HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher))
+            return false;
+
+        return true;
     }
 
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
         private final Connector connector;
-        private final HttpConfiguration httpConfiguration;
         private final EndPoint endPoint;
 
-        public HTTPServerSessionListener(Connector connector, HttpConfiguration httpConfiguration, EndPoint endPoint)
+        public HTTPServerSessionListener(Connector connector, EndPoint endPoint)
         {
             this.connector = connector;
-            this.httpConfiguration = httpConfiguration;
             this.endPoint = endPoint;
         }
 
@@ -81,7 +86,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         public Map<Integer, Integer> onPreface(Session session)
         {
             Map<Integer, Integer> settings = new HashMap<>();
-            settings.put(SettingsFrame.HEADER_TABLE_SIZE, getMaxHeaderTableSize());
+            settings.put(SettingsFrame.HEADER_TABLE_SIZE, getMaxDynamicTableSize());
             settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, getInitialStreamWindow());
             int maxConcurrentStreams = getMaxConcurrentStreams();
             if (maxConcurrentStreams >= 0)
@@ -92,18 +97,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Processing {} on {}", frame, stream);
-
-            MetaData.Request request = (MetaData.Request)frame.getMetaData();
-            HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, httpConfiguration, endPoint, (IStream)stream, request);
-            HttpInputOverHTTP2 input = new HttpInputOverHTTP2();
-            // TODO pool HttpChannels per connection - maybe associate with thread?
-            HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport, input, stream);
-            stream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
-
-            channel.onRequest(frame);
-
+            ((HTTP2ServerConnection)endPoint.getConnection()).onNewStream(connector, (IStream)stream, frame);
             return frame.isEndStream() ? null : this;
         }
 
@@ -133,7 +127,13 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         }
 
         @Override
-        public void onFailure(Stream stream, Throwable x)
+        public void onReset(Stream stream, ResetFrame frame)
+        {
+            // TODO:
+        }
+
+        @Override
+        public void onTimeout(Stream stream, Throwable x)
         {
             // TODO
         }
@@ -141,7 +141,8 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         private void close(Stream stream, String reason)
         {
             final Session session = stream.getSession();
-            session.close(ErrorCodes.PROTOCOL_ERROR, reason, Callback.Adapter.INSTANCE);
+            session.close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.Adapter.INSTANCE);
         }
+
     }
 }

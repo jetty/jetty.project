@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -72,7 +72,7 @@ public class ResourceHandler extends HandlerWrapper
     String _cacheControl;
     boolean _directory;
     boolean _etags;
-    int _minMemoryMappedContentLength=-1;
+    int _minMemoryMappedContentLength=1024;
     int _minAsyncContentLength=0;
 
     /* ------------------------------------------------------------ */
@@ -521,6 +521,7 @@ public class ResourceHandler extends HandlerWrapper
                 resource.length()>=min_async_size)
             {
                 final AsyncContext async = request.startAsync();
+                async.setTimeout(0);
                 Callback callback = new Callback()
                 {
                     @Override
@@ -541,6 +542,7 @@ public class ResourceHandler extends HandlerWrapper
                 // Can we use a memory mapped file?
                 if (_minMemoryMappedContentLength>0 && 
                     resource.length()>_minMemoryMappedContentLength &&
+                    resource.length()<Integer.MAX_VALUE &&
                     resource instanceof PathResource)
                 {
                     ByteBuffer buffer = BufferUtil.toMappedBuffer(resource.getFile());

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -276,6 +276,67 @@ public class RequestTest
         // System.err.println(responses);
         assertTrue(responses.startsWith("HTTP/1.1 200"));
     }
+    
+    @Test
+    public void testBadMultiPart() throws Exception
+    {        
+        //a bad multipart where one of the fields has no name
+        final File testTmpDir = File.createTempFile("badmptest", null);
+        if (testTmpDir.exists())
+            testTmpDir.delete();
+        testTmpDir.mkdir();
+        testTmpDir.deleteOnExit();
+        assertTrue(testTmpDir.list().length == 0);
+
+        ContextHandler contextHandler = new ContextHandler();
+        contextHandler.setContextPath("/foo");
+        contextHandler.setResourceBase(".");
+        contextHandler.setHandler(new BadMultiPartRequestHandler(testTmpDir));
+        contextHandler.addEventListener(new MultiPartCleanerListener()
+        {
+
+            @Override
+            public void requestDestroyed(ServletRequestEvent sre)
+            {
+                MultiPartInputStreamParser m = (MultiPartInputStreamParser)sre.getServletRequest().getAttribute(Request.__MULTIPART_INPUT_STREAM);
+                ContextHandler.Context c = (ContextHandler.Context)sre.getServletRequest().getAttribute(Request.__MULTIPART_CONTEXT);
+                assertNotNull (m);
+                assertNotNull (c);
+                assertTrue(c == sre.getServletContext());
+                super.requestDestroyed(sre);
+                String[] files = testTmpDir.list();
+                assertTrue(files.length == 0);
+            }
+
+        });
+        _server.stop();
+        _server.setHandler(contextHandler);
+        _server.start();
+
+        String multipart =  "--AaB03x\r\n"+
+        "content-disposition: form-data; name=\"xxx\"\r\n"+
+        "\r\n"+
+        "Joe Blow\r\n"+
+        "--AaB03x\r\n"+
+        "content-disposition: form-data;  filename=\"foo.upload\"\r\n"+
+        "Content-Type: text/plain;charset=ISO-8859-1\r\n"+
+        "\r\n"+
+        "000000000000000000000000000000000000000000000000000\r\n"+
+        "--AaB03x--\r\n";
+
+        String request="GET /foo/x.html HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: multipart/form-data; boundary=\"AaB03x\"\r\n"+
+        "Content-Length: "+multipart.getBytes().length+"\r\n"+
+        "Connection: close\r\n"+
+        "\r\n"+
+        multipart;
+
+        String responses=_connector.getResponses(request);
+        //System.err.println(responses);
+        assertTrue(responses.startsWith("HTTP/1.1 500"));
+    }
+
 
     @Test
     public void testBadUtf8ParamExtraction() throws Exception
@@ -1148,7 +1209,7 @@ public class RequestTest
 
 
     @Test
-    public void testHashDOS() throws Exception
+    public void testHashDOSKeys() throws Exception
     {
         ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
         LOG.info("Expecting maxFormKeys limit and Closing HttpParser exceptions...");
@@ -1202,6 +1263,52 @@ public class RequestTest
             long start=System.currentTimeMillis();
             String response = _connector.getResponses(request);
             assertTrue(response.contains("Form too many keys"));
+            long now=System.currentTimeMillis();
+            assertTrue((now-start)<5000);
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+        }
+    }
+    
+    @Test
+    public void testHashDOSSize() throws Exception
+    {
+        ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+        LOG.info("Expecting maxFormSize limit and too much data exceptions...");
+        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormContentSize",3396);
+        _server.setAttribute("org.eclipse.jetty.server.Request.maxFormKeys",1000);
+
+        StringBuilder buf = new StringBuilder(4000000);
+        buf.append("a=b");
+        // we will just create a lot of keys and make sure the limit is applied
+        for (int i=0;i<500;i++)
+            buf.append("&").append("K").append(i).append("=").append("x");
+        buf.append("&c=d");
+
+        _handler._checker = new RequestTester()
+        {
+            @Override
+            public boolean check(HttpServletRequest request,HttpServletResponse response)
+            {
+                return "b".equals(request.getParameter("a")) && request.getParameter("c")==null;
+            }
+        };
+
+        String request="POST / HTTP/1.1\r\n"+
+        "Host: whatever\r\n"+
+        "Content-Type: "+MimeTypes.Type.FORM_ENCODED.asString()+"\r\n"+
+        "Content-Length: "+buf.length()+"\r\n"+
+        "Connection: close\r\n"+
+        "\r\n"+
+        buf;
+
+        try
+        {
+            long start=System.currentTimeMillis();
+            String response = _connector.getResponses(request);
+            assertTrue(response.contains("Form too large:"));
             long now=System.currentTimeMillis();
             assertTrue((now-start)<5000);
         }
@@ -1286,4 +1393,38 @@ public class RequestTest
             }
         }
     }
+    
+    private class BadMultiPartRequestHandler extends AbstractHandler
+    {
+        File tmpDir;
+
+        public  BadMultiPartRequestHandler(File tmpDir)
+        {
+            this.tmpDir = tmpDir;
+        }
+
+
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            ((Request)request).setHandled(true);
+            try
+            {
+
+                MultipartConfigElement mpce = new MultipartConfigElement(tmpDir.getAbsolutePath(),-1, -1, 2);
+                request.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+
+                //We should get an error when we getParams if there was a problem parsing the multipart
+                String field1 = request.getParameter("xxx");
+                //A 200 response is actually wrong here
+            }
+            catch (RuntimeException e)
+            {
+                response.sendError(500);
+            }
+           
+        }
+    }
+    
+    
 }

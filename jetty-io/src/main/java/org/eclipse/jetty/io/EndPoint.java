@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -222,6 +222,7 @@ public interface EndPoint extends Closeable
     /**
      * @param connection the {@link Connection} associated with this {@link EndPoint}
      * @see #getConnection()
+     * @see #upgrade(Connection)
      */
     void setConnection(Connection connection);
 
@@ -237,5 +238,18 @@ public interface EndPoint extends Closeable
      */
     void onClose();
 
-    
+    /** Is the endpoint optimized for DirectBuffer usage
+     * @return True if direct buffers can be used optimally.
+     */
+    boolean isOptimizedForDirectBuffers();
+
+
+    /** Upgrade connections.
+     * Close the old connection, update the endpoint and open the new connection.
+     * If the oldConnection is an instance of {@link Connection.UpgradeFrom} then
+     * a prefilled buffer is requested and passed to the newConnection if it is an instance
+     * of {@link Connection.UpgradeTo}
+     * @param newConnection The connection to upgrade to
+     */
+    public void upgrade(Connection newConnection);
 }

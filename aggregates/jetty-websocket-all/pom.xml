@@ -24,7 +24,7 @@
             </goals>
             <configuration>
               <excludes>**/MANIFEST.MF</excludes>
-              <excludeGroupIds>org.slf4j,org.eclipse.jetty.orbit,org.mortbay.jetty.npn</excludeGroupIds>
+              <excludeGroupIds>org.slf4j,org.eclipse.jetty.orbit,org.mortbay.jetty.alpn</excludeGroupIds>
               <outputDirectory>${project.build.directory}/classes</outputDirectory>
               <overWriteReleases>false</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>
@@ -42,7 +42,7 @@
               <excludes>META-INF/**,**/Servlet3Continuation*,**/Jetty6Continuation*</excludes>
               <includeGroupIds>org.eclipse.jetty,org.eclipse.jetty.websocket</includeGroupIds>
               <excludeArtifactIds>javax</excludeArtifactIds>
-              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.mortbay.jetty.npn</excludeGroupIds>
+              <excludeGroupIds>javax,org.eclipse.jetty.orbit,org.mortbay.jetty.alpn</excludeGroupIds>
               <outputDirectory>${project.build.directory}/sources</outputDirectory>
               <overWriteReleases>true</overWriteReleases>
               <overWriteSnapshots>true</overWriteSnapshots>

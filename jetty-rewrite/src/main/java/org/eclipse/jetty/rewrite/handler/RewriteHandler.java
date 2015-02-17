@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -170,26 +170,12 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  */
 public class RewriteHandler extends HandlerWrapper
 {
-
     private RuleContainer _rules;
 
     /* ------------------------------------------------------------ */
     public RewriteHandler()
     {
         _rules = new RuleContainer();
-    }
-
-    /* ------------------------------------------------------------ */
-    /**
-     * To enable configuration from jetty.xml on rewriteRequestURI, rewritePathInfo and
-     * originalPathAttribute
-     *
-     * @param legacyRule old style rewrite rule
-     */
-    @Deprecated
-    public void setLegacyRule(LegacyRule legacyRule)
-    {
-        _rules.setLegacyRule(legacyRule);
     }
 
     /* ------------------------------------------------------------ */

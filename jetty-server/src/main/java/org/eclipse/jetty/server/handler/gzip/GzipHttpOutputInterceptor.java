@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -79,6 +79,18 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         _bufferSize=bufferSize;
     }
 
+    public HttpOutput.Interceptor getNextInterceptor()
+    {
+        return _interceptor;
+    }
+    
+    @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return false; // No point as deflator is in user space.
+    }
+    
+    
     @Override
     public void write(ByteBuffer content, boolean complete, Callback callback)
     {
@@ -128,12 +140,7 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
     private void gzip(ByteBuffer content, boolean complete, final Callback callback)
     {
         if (content.hasRemaining() || complete)
-        {
-            if (content.hasArray())
-                new GzipArrayCB(content,complete,callback).iterate();
-            else
-                new GzipBufferCB(content,complete,callback).iterate();
-        }
+            new GzipBufferCB(content,complete,callback).iterate();
         else
             callback.succeeded();
     }
@@ -204,8 +211,12 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
             _channel.getResponse().setContentLength(-1);
             String etag=fields.get(HttpHeader.ETAG);
             if (etag!=null)
-                fields.put(HttpHeader.ETAG,etag.substring(0,etag.length()-1)+GzipHandler.ETAG_GZIP+ '"');
-
+            {
+                int end = etag.length()-1;
+                etag=(etag.charAt(end)=='"')?etag.substring(0,end)+GzipHandler.ETAG_GZIP+'"':etag+GzipHandler.ETAG_GZIP;
+                fields.put(HttpHeader.ETAG,etag);
+            }
+            
             LOG.debug("{} compressing {}",this,_deflater);
             _state.set(GZState.COMPRESSING);
             
@@ -256,67 +267,19 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         }
     }
     
-    private class GzipArrayCB extends IteratingNestedCallback
-    {        
-        private final boolean _complete;
-        public GzipArrayCB(ByteBuffer content, boolean complete, Callback callback)
-        {
-            super(callback);
-            _complete=complete;
-
-             byte[] array=content.array();
-             int off=content.arrayOffset()+content.position();
-             int len=content.remaining();
-             _crc.update(array,off,len);
-             _deflater.setInput(array,off,len);
-             if (complete)
-                 _deflater.finish();
-             content.position(content.limit());
-        }
-
-        @Override
-        protected Action process() throws Exception
-        {
-            if (_deflater.needsInput())
-            {
-                if (_deflater.finished())
-                {
-                    _factory.recycle(_deflater);
-                    _deflater=null;
-                    _channel.getByteBufferPool().release(_buffer);
-                    _buffer=null;
-                    return Action.SUCCEEDED;
-                }
-
-                if (!_complete)
-                    return Action.SUCCEEDED;
-                
-                _deflater.finish();
-            }
-
-            BufferUtil.compact(_buffer);
-            int off=_buffer.arrayOffset()+_buffer.limit();
-            int len=_buffer.capacity()-_buffer.limit()- (_complete?8:0);
-            int produced=_deflater.deflate(_buffer.array(),off,len,Deflater.NO_FLUSH);
-            _buffer.limit(_buffer.limit()+produced);
-            boolean complete=_deflater.finished();
-            if (complete)
-                addTrailer();
-            
-            _interceptor.write(_buffer,complete,this);
-            return Action.SCHEDULED;
-        }
+    public boolean mightCompress()
+    {
+        return _state.get()==GZState.MIGHT_COMPRESS;
     }
     
     private class GzipBufferCB extends IteratingNestedCallback
     {        
-        private final ByteBuffer _input;
+        private ByteBuffer _copy;
         private final ByteBuffer _content;
         private final boolean _last;
         public GzipBufferCB(ByteBuffer content, boolean complete, Callback callback)
         {
             super(callback);
-            _input=_channel.getByteBufferPool().acquire(Math.min(_bufferSize,content.remaining()),false);
             _content=content;
             _last=complete;
         }
@@ -334,6 +297,11 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                         _deflater=null;
                         _channel.getByteBufferPool().release(_buffer);
                         _buffer=null;
+                        if (_copy!=null)
+                        {
+                            _channel.getByteBufferPool().release(_copy);
+                            _copy=null;
+                        }
                         return Action.SUCCEEDED;
                     }
                     
@@ -344,17 +312,31 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
                     
                     _deflater.finish();
                 }
+                else if (_content.hasArray())
+                {
+                    byte[] array=_content.array();
+                    int off=_content.arrayOffset()+_content.position();
+                    int len=_content.remaining();
+                    BufferUtil.clear(_content);
+                    
+                    _crc.update(array,off,len);
+                    _deflater.setInput(array,off,len);                
+                    if (_last)
+                        _deflater.finish();
+                }
                 else
                 {
-                    BufferUtil.clearToFill(_input);
-                    int took=BufferUtil.put(_content,_input);
-                    BufferUtil.flipToFlush(_input,0);
+                    if (_copy==null)
+                        _copy=_channel.getByteBufferPool().acquire(_bufferSize,false);
+                    BufferUtil.clearToFill(_copy);
+                    int took=BufferUtil.put(_content,_copy);
+                    BufferUtil.flipToFlush(_copy,0);
                     if (took==0)
                         throw new IllegalStateException();
                    
-                    byte[] array=_input.array();
-                    int off=_input.arrayOffset()+_input.position();
-                    int len=_input.remaining();
+                    byte[] array=_copy.array();
+                    int off=_copy.arrayOffset()+_copy.position();
+                    int len=_copy.remaining();
 
                     _crc.update(array,off,len);
                     _deflater.setInput(array,off,len);                

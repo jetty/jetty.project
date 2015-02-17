@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -136,6 +136,7 @@ class JarFileResource extends JarResource
      * Returns true if the represented resource exists.
      */
     @Override
+
     public boolean exists()
     {
         if (_exists)
@@ -161,10 +162,11 @@ class JarFileResource extends JarResource
         else 
         {
             // Can we find a file for it?
-            JarFile jarFile=null;
+            boolean close_jar_file= false;
+            JarFile jar_file=null;
             if (check)
                 // Yes
-                jarFile=_jarFile;
+                jar_file=_jarFile;
             else
             {
                 // No - so lets look if the root entry exists.
@@ -172,7 +174,8 @@ class JarFileResource extends JarResource
                 {
                     JarURLConnection c=(JarURLConnection)((new URL(_jarUrl)).openConnection());
                     c.setUseCaches(getUseCaches());
-                    jarFile=c.getJarFile();
+                    jar_file=c.getJarFile();
+                    close_jar_file = !getUseCaches();
                 }
                 catch(Exception e)
                 {
@@ -181,10 +184,10 @@ class JarFileResource extends JarResource
             }
 
             // Do we need to look more closely?
-            if (jarFile!=null && _entry==null && !_directory)
+            if (jar_file!=null && _entry==null && !_directory)
             {
                 // OK - we have a JarFile, lets look at the entries for our path
-                Enumeration<JarEntry> e=jarFile.entries();
+                Enumeration<JarEntry> e=jar_file.entries();
                 while(e.hasMoreElements())
                 {
                     JarEntry entry = e.nextElement();
@@ -211,6 +214,18 @@ class JarFileResource extends JarResource
                         _directory=true;
                         break;
                     }
+                }
+            }
+
+            if(close_jar_file && jar_file!=null) 
+            {
+                try 
+                {
+                    jar_file.close();
+                } 
+                catch (IOException ioe) 
+                {
+                    LOG.ignore(ioe);
                 }
             }
         }    

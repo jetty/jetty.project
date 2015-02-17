@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.PingFrame;
 
@@ -43,7 +43,7 @@ public class PingBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -53,14 +53,10 @@ public class PingBodyParser extends BodyParser
                 {
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() != 0)
-                    {
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_ping_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_ping_frame");
                     // SPEC: wrong body length is treated as connection error.
                     if (getBodyLength() != 8)
-                    {
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_ping_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_ping_frame");
                     state = State.PAYLOAD;
                     break;
                 }
@@ -84,9 +80,7 @@ public class PingBodyParser extends BodyParser
                     payload[8 - cursor] = buffer.get();
                     --cursor;
                     if (cursor == 0)
-                    {
                         return onPing(payload);
-                    }
                     break;
                 }
                 default:
@@ -95,14 +89,15 @@ public class PingBodyParser extends BodyParser
                 }
             }
         }
-        return Result.PENDING;
+        return false;
     }
 
-    private Result onPing(byte[] payload)
+    private boolean onPing(byte[] payload)
     {
         PingFrame frame = new PingFrame(payload, hasFlag(Flags.ACK));
         reset();
-        return notifyPing(frame) ? Result.ASYNC : Result.COMPLETE;
+        notifyPing(frame);
+        return true;
     }
 
     private enum State

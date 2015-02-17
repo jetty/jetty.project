@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,8 +28,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.net.ssl.SSLEngine;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -57,7 +55,6 @@ import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Assume;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
@@ -301,73 +298,6 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         }
     }
 
-    @Ignore
-    @Slow
-    @Test
-    public void testConnectTimeoutFailsRequest() throws Exception
-    {
-        String host = "10.255.255.1";
-        int port = 80;
-        int connectTimeout = 1000;
-        assumeConnectTimeout(host, port, connectTimeout);
-
-        start(new EmptyServerHandler());
-        client.stop();
-        client.setConnectTimeout(connectTimeout);
-        client.start();
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        Request request = client.newRequest(host, port);
-        request.scheme(scheme)
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isFailed())
-                            latch.countDown();
-                    }
-                });
-
-        Assert.assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
-        Assert.assertNotNull(request.getAbortCause());
-    }
-
-    @Ignore
-    @Slow
-    @Test
-    public void testConnectTimeoutIsCancelledByShorterTimeout() throws Exception
-    {
-        String host = "10.255.255.1";
-        int port = 80;
-        int connectTimeout = 2000;
-        assumeConnectTimeout(host, port, connectTimeout);
-
-        start(new EmptyServerHandler());
-        client.stop();
-        client.setConnectTimeout(connectTimeout);
-        client.start();
-
-        final AtomicInteger completes = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(2);
-        Request request = client.newRequest(host, port);
-        request.scheme(scheme)
-                .timeout(connectTimeout / 2, TimeUnit.MILLISECONDS)
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        completes.incrementAndGet();
-                        latch.countDown();
-                    }
-                });
-
-        Assert.assertFalse(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
-        Assert.assertEquals(1, completes.get());
-        Assert.assertNotNull(request.getAbortCause());
-    }
-
     @Test
     public void testVeryShortTimeout() throws Exception
     {
@@ -405,6 +335,11 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         {
             // Expected timeout during connect, continue the test.
             Assume.assumeTrue(true);
+        }
+        catch (Throwable x)
+        {
+            // Abort if any other exception happens.
+            Assume.assumeTrue(false);
         }
     }
 

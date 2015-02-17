@@ -64,14 +64,14 @@
     <!-- =========================================================== -->
     <!-- Http Configuration.                                         -->
     <!-- This is a common configuration instance used by all         -->
-    <!-- connectors that can carry HTTP semantics (HTTP, HTTPS, SPDY)-->
+    <!-- connectors that can carry HTTP semantics (HTTP, HTTPS, etc.)-->
     <!-- It configures the non wire protocol aspects of the HTTP     -->
     <!-- semantic.                                                   -->
     <!--                                                             -->
     <!-- This configuration is only defined here and is used by      -->
-    <!-- reference from the jetty-http.xml, jetty-https.xml and      -->
-    <!-- jetty-spdy.xml configuration files which instantiate the    -->
-    <!-- connectors.                                                 -->
+    <!-- reference from other XML files such as jetty-http.xml,      -->
+    <!-- jetty-https.xml and other configuration files which         -->
+    <!-- instantiate the connectors.                                 -->
     <!--                                                             -->
     <!-- Consult the javadoc of o.e.j.server.HttpConfiguration       -->
     <!-- for all configuration that may be set here.                 -->

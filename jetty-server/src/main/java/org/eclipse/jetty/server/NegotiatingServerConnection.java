@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,7 +19,9 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 
@@ -34,6 +36,11 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
 {
     private static final Logger LOG = Log.getLogger(NegotiatingServerConnection.class);
 
+    public interface CipherDiscriminator
+    {
+        boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher);
+    }
+    
     private final Connector connector;
     private final SSLEngine engine;
     private final List<String> protocols;
@@ -42,7 +49,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
 
     protected NegotiatingServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol)
     {
-        super(endPoint, connector.getExecutor(), false);
+        super(endPoint, connector.getExecutor());
         this.connector = connector;
         this.protocols = protocols;
         this.defaultProtocol = defaultProtocol;
@@ -59,6 +66,11 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
         return defaultProtocol;
     }
 
+    protected Connector getConnector()
+    {
+        return connector;
+    }
+    
     protected SSLEngine getSSLEngine()
     {
         return engine;
@@ -116,13 +128,8 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
                 else
                 {
                     EndPoint endPoint = getEndPoint();
-                    Connection oldConnection = endPoint.getConnection();
                     Connection newConnection = connectionFactory.newConnection(connector, endPoint);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} switching from {} to {}", this, oldConnection, newConnection);
-                    oldConnection.onClose();
-                    endPoint.setConnection(newConnection);
-                    getEndPoint().getConnection().onOpen();
+                    endPoint.upgrade(newConnection);
                 }
             }
         }

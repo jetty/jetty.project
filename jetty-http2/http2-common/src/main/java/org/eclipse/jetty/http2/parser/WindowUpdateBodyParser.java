@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.WindowUpdateFrame;
 
 public class WindowUpdateBodyParser extends BodyParser
@@ -42,7 +42,7 @@ public class WindowUpdateBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -52,9 +52,7 @@ public class WindowUpdateBodyParser extends BodyParser
                 {
                     int length = getBodyLength();
                     if (length != 4)
-                    {
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_window_update_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_window_update_frame");
                     state = State.WINDOW_DELTA;
                     break;
                 }
@@ -90,14 +88,15 @@ public class WindowUpdateBodyParser extends BodyParser
                 }
             }
         }
-        return Result.PENDING;
+        return false;
     }
 
-    private Result onWindowUpdate(int windowDelta)
+    private boolean onWindowUpdate(int windowDelta)
     {
         WindowUpdateFrame frame = new WindowUpdateFrame(getStreamId(), windowDelta);
         reset();
-        return notifyWindowUpdate(frame) ? Result.ASYNC : Result.COMPLETE;
+        notifyWindowUpdate(frame);
+        return true;
     }
 
     private enum State

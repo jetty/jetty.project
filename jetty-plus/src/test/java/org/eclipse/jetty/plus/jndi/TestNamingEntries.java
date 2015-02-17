@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -246,14 +246,14 @@ public class TestNamingEntries
     {
         ScopeA scope = new ScopeA();
         InitialContext icontext = new InitialContext();
-        Link link = new Link ("resourceA", "resourceB");
-        NamingEntry ne = NamingEntryUtil.lookupNamingEntry(null, "resourceA");
+        Link link = new Link ("linked-resourceA", "resourceB");
+        NamingEntry ne = NamingEntryUtil.lookupNamingEntry(null, "linked-resourceA");
         assertNotNull(ne);
         assertTrue(ne instanceof Link);
-        assertEquals(icontext.lookup("resourceA"), "resourceB");
+        assertEquals(icontext.lookup("linked-resourceA"), "resourceB");
 
-        link = new Link (scope, "jdbc/resourceX", "jdbc/resourceY");
-        ne = NamingEntryUtil.lookupNamingEntry(scope, "jdbc/resourceX");
+        link = new Link (scope, "jdbc/linked-resourceX", "jdbc/linked-resourceY");
+        ne = NamingEntryUtil.lookupNamingEntry(scope, "jdbc/linked-resourceX");
         assertNotNull(ne);
         assertTrue(ne instanceof Link);
     }

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,11 @@ public class CloseStatus
      */
     public static String trimMaxReasonLength(String reason)
     {
+        if (reason == null)
+        {
+            return null;
+        }
+        
         if (reason.length() > MAX_REASON_PHRASE)
         {
             return reason.substring(0,MAX_REASON_PHRASE);

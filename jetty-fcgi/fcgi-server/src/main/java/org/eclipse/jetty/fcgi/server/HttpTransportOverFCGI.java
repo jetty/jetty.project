@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -49,6 +49,12 @@ public class HttpTransportOverFCGI implements HttpTransport
     }
 
     @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return false;
+    }
+    
+    @Override
     public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (info!=null)
@@ -79,10 +85,12 @@ public class HttpTransportOverFCGI implements HttpTransport
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.server.HttpTransport#push(org.eclipse.jetty.http.MetaData.Request)
-     */
+    @Override
+    public boolean isPushSupported()
+    {
+        return false;
+    }
+    
     @Override
     public void push(org.eclipse.jetty.http.MetaData.Request request)
     {   
@@ -136,7 +144,7 @@ public class HttpTransportOverFCGI implements HttpTransport
     }
 
     @Override
-    public void completed()
+    public void onCompleted()
     {
     }
 }

@@ -1,0 +1,17 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+
+<!-- ============================================================= -->
+<!-- Configure a HTTP2 on the ssl connector.                       -->
+<!-- ============================================================= -->
+<Configure id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
+  <Call name="addConnectionFactory">
+    <Arg>
+      <New class="org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory">
+        <Arg name="config"><Ref refid="sslHttpConfig"/></Arg>
+        <Set name="maxConcurrentStreams"><Property name="http2.maxConcurrentStreams" default="1024"/></Set>
+      </New>
+    </Arg>
+  </Call>
+</Configure>
+

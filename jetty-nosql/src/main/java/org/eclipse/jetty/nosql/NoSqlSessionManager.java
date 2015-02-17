@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -100,7 +100,7 @@ public abstract class NoSqlSessionManager extends AbstractSessionManager impleme
                     __log.debug("session loaded ", idInCluster);
                 
                 //check if the session we just loaded has actually expired, maybe while we weren't running
-                if (getMaxInactiveInterval() > 0 && session.getAccessed() > 0 && ((getMaxInactiveInterval()*1000)+session.getAccessed()) < System.currentTimeMillis())
+                if (getMaxInactiveInterval() > 0 && session.getAccessed() > 0 && ((getMaxInactiveInterval()*1000L)+session.getAccessed()) < System.currentTimeMillis())
                 {
                     __log.debug("session expired ", idInCluster);
                     expire(idInCluster);

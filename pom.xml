@@ -16,10 +16,8 @@
     <build-support-version>1.1</build-support-version>
     <slf4j-version>1.6.6</slf4j-version>
     <jetty-test-policy-version>1.2</jetty-test-policy-version>
-    <npn.api.version>1.1.1.v20141010</npn.api.version>
     <alpn.api.version>1.1.0.v20141014</alpn.api.version>
     <!-- default values are unsupported, but required to be defined for reactor sanity reasons -->
-    <npn.version>undefined</npn.version>
     <alpn.version>undefined</alpn.version>
   </properties>
   <scm>
@@ -33,6 +31,7 @@
     <plugins>
       <plugin>
         <artifactId>maven-compiler-plugin</artifactId>
+        <version>3.2</version>
         <configuration>
           <source>1.7</source>
           <target>1.7</target>
@@ -80,7 +79,7 @@
                 <manifestEntries>
                   <Bundle-ManifestVersion>2</Bundle-ManifestVersion>
                   <Bundle-Name>${project.name}</Bundle-Name>
-                  <Bundle-SymbolicName>${bundle-symbolic-name}.source;singleton:=true</Bundle-SymbolicName>
+                  <Bundle-SymbolicName>${bundle-symbolic-name}.source</Bundle-SymbolicName>
                   <Bundle-Vendor>Eclipse.org - Jetty</Bundle-Vendor>
                   <Bundle-Version>${parsedVersion.osgiVersion}</Bundle-Version>
                   <Eclipse-SourceBundle>${bundle-symbolic-name};version="${parsedVersion.osgiVersion}";roots:="."</Eclipse-SourceBundle>
@@ -211,7 +210,7 @@
           <aggregate>true</aggregate>
           <strictCheck>true</strictCheck>
           <properties>
-             <copyright-range>${project.inceptionYear}-2014</copyright-range>
+             <copyright-range>${project.inceptionYear}-2015</copyright-range>
           </properties>
           <mapping>
             <java>DOUBLESLASH_STYLE</java>
@@ -267,6 +266,14 @@
         </plugin>
         <plugin>
           <groupId>org.apache.maven.plugins</groupId>
+          <artifactId>maven-deploy-plugin</artifactId>
+          <version>2.8.2</version>
+          <configuration>
+            <retryFailedDeploymentCount>10</retryFailedDeploymentCount>
+          </configuration>
+        </plugin>
+        <plugin>
+          <groupId>org.apache.maven.plugins</groupId>
           <artifactId>maven-jar-plugin</artifactId>
           <configuration>
             <archive>
@@ -317,7 +324,7 @@
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
               <Bundle-Classpath>.</Bundle-Classpath>
               <Export-Package>${bundle-symbolic-name}.*;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-              <Bundle-Copyright>Copyright (c) 2008-2014 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
+              <Bundle-Copyright>Copyright (c) 2008-2015 Mort Bay Consulting Pty. Ltd.</Bundle-Copyright>
               <_versionpolicy>[$(version;==;$(@)),$(version;+;$(@)))</_versionpolicy>
             </instructions>
           </configuration>
@@ -455,7 +462,6 @@
     <module>jetty-security</module>
     <module>jetty-servlet</module>
     <module>jetty-webapp</module>
-    <module>jetty-spdy</module>
     <module>jetty-fcgi</module>
     <module>jetty-websocket</module>
     <module>jetty-servlets</module>
@@ -487,7 +493,6 @@
     <module>jetty-http-spi</module>
     <module>jetty-osgi</module>
     <module>jetty-alpn</module>
-    <module>jetty-npn</module>
 
     <!-- modules that need fixed and added back, or simply dropped and not maintained
     <module>jetty-rhttp</module>
@@ -753,7 +758,6 @@
         </plugins>
       </build>
     </profile>
-    
     <profile>
       <id>eclipse-release</id>
       <modules>
@@ -864,6 +868,12 @@
       </build>
     </profile>
     <profile>
+      <id>compact3</id>
+      <modules>
+        <module>aggregates/jetty-all-compact3</module>
+      </modules>
+    </profile>
+    <profile>
       <id>api-change</id>
       <build>
         <plugins>
@@ -897,7 +907,6 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.6.v20130911</npn.version>
         <alpn.version>7.1.0.v20141016</alpn.version>
       </properties>
     </profile>
@@ -910,7 +919,6 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.6.v20130911</npn.version>
         <alpn.version>7.1.0.v20141016</alpn.version>
       </properties>
     </profile>
@@ -923,7 +931,6 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.6.v20130911</npn.version>
         <alpn.version>7.1.0.v20141016</alpn.version>
       </properties>
     </profile>
@@ -936,7 +943,6 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.8.v20141013</npn.version>
         <alpn.version>7.1.0.v20141016</alpn.version>
       </properties>
     </profile>
@@ -949,7 +955,6 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.8.v20141013</npn.version>
         <alpn.version>7.1.0.v20141016</alpn.version>
       </properties>
     </profile>
@@ -962,7 +967,6 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.8.v20141013</npn.version>
         <alpn.version>7.1.0.v20141016</alpn.version>
       </properties>
     </profile>
@@ -975,7 +979,6 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.8.v20141013</npn.version>
         <alpn.version>7.1.0.v20141016</alpn.version>
       </properties>
     </profile>
@@ -988,8 +991,7 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.9.v20141016</npn.version>
-        <alpn.version>7.1.1.v20141016</alpn.version>
+        <alpn.version>7.1.2.v20141202</alpn.version>
       </properties>
     </profile>
     <profile>
@@ -1001,8 +1003,31 @@
         </property>
       </activation>
       <properties>
-        <npn.version>1.1.9.v20141016</npn.version>
-        <alpn.version>7.1.1.v20141016</alpn.version>
+        <alpn.version>7.1.2.v20141202</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u75</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_75</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>7.1.3.v20150130</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u76</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_76</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>7.1.3.v20150130</alpn.version>
       </properties>
     </profile>
     <profile>
@@ -1062,9 +1087,20 @@
         </property>
       </activation>
       <properties>
-        <alpn.version>8.1.1.v20141016</alpn.version>
+        <alpn.version>8.1.2.v20141202</alpn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>8u31</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.8.0_31</value>
+        </property>
+      </activation>
+      <properties>
+        <alpn.version>8.1.3.v20150130</alpn.version>
       </properties>
     </profile>
   </profiles>
 </project>
-

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A Utility class to help implement {@link EndPoint#write(Callback, ByteBuffer...)} by calling
  * {@link EndPoint#flush(ByteBuffer...)} until all content is written.
- * The abstract method {@link #onIncompleteFlushed()} is called when not all content has been written after a call to
+ * The abstract method {@link #onIncompleteFlush()} is called when not all content has been written after a call to
  * flush and should organise for the {@link #completeWrite()} method to be called when a subsequent call to flush
  * should  be able to make more progress.
  * <p>
@@ -46,7 +46,7 @@ abstract public class WriteFlusher
 {
     private static final Logger LOG = Log.getLogger(WriteFlusher.class);
     private static final boolean DEBUG = LOG.isDebugEnabled(); // Easy for the compiler to remove the code if DEBUG==false
-    private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[0];
+    private static final ByteBuffer[] EMPTY_BUFFERS = new ByteBuffer[]{BufferUtil.EMPTY_BUFFER};
     private static final EnumMap<StateType, Set<StateType>> __stateTransitions = new EnumMap<>(StateType.class);
     private static final State __IDLE = new IdleState();
     private static final State __WRITING = new WritingState();
@@ -245,7 +245,7 @@ abstract public class WriteFlusher
         private PendingState(ByteBuffer[] buffers, Callback callback)
         {
             super(StateType.PENDING);
-            _buffers = compact(buffers);
+            _buffers = buffers;
             _callback = callback;
         }
 
@@ -269,55 +269,20 @@ abstract public class WriteFlusher
             if (_callback!=null)
                 _callback.succeeded();
         }
-
-        /**
-         * Compacting the buffers is needed because the semantic of WriteFlusher is
-         * to write the buffers and if the caller sees that the buffer is consumed,
-         * then it can recycle it.
-         * If we do not compact, then it is possible that we store a consumed buffer,
-         * which is then recycled and refilled; when the WriteFlusher is invoked to
-         * complete the write, it will write the refilled bytes, garbling the content.
-         *
-         * @param buffers the buffers to compact
-         * @return the compacted buffers
-         */
-        private ByteBuffer[] compact(ByteBuffer[] buffers)
-        {
-            int length = buffers.length;
-
-            // Just one element, no need to compact
-            if (length < 2)
-                return buffers;
-
-            // How many still have content ?
-            int consumed = 0;
-            while (consumed < length && BufferUtil.isEmpty(buffers[consumed]))
-                ++consumed;
-
-            // All of them still have content, no need to compact
-            if (consumed == 0)
-                return buffers;
-
-            // None has content, return empty
-            if (consumed == length)
-                return EMPTY_BUFFERS;
-
-            return Arrays.copyOfRange(buffers,consumed,length);
-        }
     }
 
     /**
      * Abstract call to be implemented by specific WriteFlushers. It should schedule a call to {@link #completeWrite()}
      * or {@link #onFail(Throwable)} when appropriate.
      */
-    abstract protected void onIncompleteFlushed();
+    abstract protected void onIncompleteFlush();
 
     /**
      * Tries to switch state to WRITING. If successful it writes the given buffers to the EndPoint. If state transition
      * fails it'll fail the callback.
      *
      * If not all buffers can be written in one go it creates a new <code>PendingState</code> object to preserve the state
-     * and then calls {@link #onIncompleteFlushed()}. The remaining buffers will be written in {@link #completeWrite()}.
+     * and then calls {@link #onIncompleteFlush()}. The remaining buffers will be written in {@link #completeWrite()}.
      *
      * If all buffers have been written it calls callback.complete().
      *
@@ -343,7 +308,7 @@ abstract public class WriteFlusher
                     LOG.debug("flushed incomplete");
                 PendingState pending=new PendingState(buffers, callback);
                 if (updateState(__WRITING,pending))
-                    onIncompleteFlushed();
+                    onIncompleteFlush();
                 else
                     fail(pending);
                 return;
@@ -371,7 +336,7 @@ abstract public class WriteFlusher
 
 
     /**
-     * Complete a write that has not completed and that called {@link #onIncompleteFlushed()} to request a call to this
+     * Complete a write that has not completed and that called {@link #onIncompleteFlush()} to request a call to this
      * method when a call to {@link EndPoint#flush(ByteBuffer...)} is likely to be able to progress.
      *
      * It tries to switch from PENDING to COMPLETING. If state transition fails, then it does nothing as the callback
@@ -406,7 +371,7 @@ abstract public class WriteFlusher
                 if (buffers!=pending.getBuffers())
                     pending=new PendingState(buffers, pending._callback);
                 if (updateState(__COMPLETING,pending))
-                    onIncompleteFlushed();
+                    onIncompleteFlush();
                 else
                     fail(pending);
                 return;
@@ -436,36 +401,45 @@ abstract public class WriteFlusher
      */
     protected ByteBuffer[] flush(ByteBuffer[] buffers) throws IOException
     {
-        // try the simple direct flush first, which also ensures that any null buffer
-        // flushes are passed through (for commits etc.)
-        if (_endPoint.flush(buffers))
-            return null;
-        
-        // We were not fully flushed, so let's try again iteratively while we can make
-        // some progress
         boolean progress=true;
-        while(true)
+        while(progress && buffers!=null)
         {
-            // Compact buffers array?
-            int not_empty=0;
-            while(not_empty<buffers.length && BufferUtil.isEmpty(buffers[not_empty]))
-                not_empty++;
-            if (not_empty==buffers.length)
+            int before=buffers.length==0?0:buffers[0].remaining();
+            boolean flushed=_endPoint.flush(buffers);
+            int r=buffers.length==0?0:buffers[0].remaining();
+            
+            if (LOG.isDebugEnabled())
+                LOG.debug("Flushed={} {}/{}+{} {}",flushed,before-r,before,buffers.length-1,this);
+            
+            if (flushed)
                 return null;
+            
+            progress=before!=r;
+            
+            int not_empty=0;
+            while(r==0)
+            {
+                if (++not_empty==buffers.length)
+                {
+                    buffers=null;
+                    not_empty=0;
+                    break;
+                }
+                progress=true;
+                r=buffers[not_empty].remaining();
+            }
+
             if (not_empty>0)
                 buffers=Arrays.copyOfRange(buffers,not_empty,buffers.length);
-            
-            if (!progress)
-                break;
-            
-            // try to flush the remainder
-            int r=buffers[0].remaining();
-            if (_endPoint.flush(buffers))
-                return null;
-            progress=r!=buffers[0].remaining();
-        }
+        }        
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("!fully flushed {}",this);
         
-        return buffers;
+        // If buffers is null, then flush has returned false but has consumed all the data!
+        // This is probably SSL being unable to flush the encrypted buffer, so return EMPTY_BUFFERS
+        // and that will keep this WriteFlusher pending.
+        return buffers==null?EMPTY_BUFFERS:buffers;
     }
     
     /* ------------------------------------------------------------ */

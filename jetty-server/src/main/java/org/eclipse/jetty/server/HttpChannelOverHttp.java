@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -35,6 +34,8 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -42,36 +43,45 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * A HttpChannel customized to be transported over the HTTP/1 protocol
  */
-class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler, HttpParser.ProxyHandler
+class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
     
     private final HttpConnection _httpConnection;
     private final HttpFields _fields = new HttpFields();
     private HttpField _connection;
-    private boolean _expect = false;
+    private boolean _unknownExpectation = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
     
     private final MetaData.Request _metadata = new MetaData.Request();
+
+    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
+    {
+        this(httpConnection,connector,config,endPoint,transport,new HttpInputOverHTTP(httpConnection));
+    }
     
-    
-    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport, HttpInput input)
+    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport,HttpInput input)
     {
         super(connector,config,endPoint,transport,input);
         _httpConnection = httpConnection;
         _metadata.setFields(_fields);
         _metadata.setURI(new HttpURI());
     }
+    
+    protected HttpInput newHttpInput()
+    {
+        throw new IllegalStateException();
+    }
 
     @Override
     public void recycle()
     {
         super.recycle();
-        _expect = false;
+        _unknownExpectation = false;
         _expect100Continue = false;
         _expect102Processing = false;
-        _metadata.getURI().clear();
+        _metadata.recycle();
         _connection=null;
         _fields.clear();
     }
@@ -94,20 +104,10 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         _metadata.setMethod(method);
         _metadata.getURI().parse(uri);
         _metadata.setHttpVersion(version);
-        _expect = false;
+        _unknownExpectation = false;
         _expect100Continue = false;
         _expect102Processing = false;
         return false;
-    }
-    
-    @Override
-    public void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort)
-    {
-        _metadata.setMethod(HttpMethod.CONNECT.asString());
-        Request request = getRequest();
-        request.setAttribute("PROXY", protocol);
-        request.setAuthority(sAddr,dPort);
-        request.setRemoteAddr(InetSocketAddress.createUnresolved(sAddr,sPort));
     }
 
     @Override
@@ -152,7 +152,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                                 {
                                     expect = HttpHeaderValue.CACHE.get(values[i].trim());
                                     if (expect == null)
-                                        _expect = true;
+                                        _unknownExpectation = true;
                                     else
                                     {
                                         switch (expect)
@@ -164,7 +164,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                                                 _expect102Processing = true;
                                                 break;
                                             default:
-                                                _expect = true;
+                                                _unknownExpectation = true;
                                         }
                                     }
                                 }
@@ -229,7 +229,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     public void badMessage(int status, String reason)
     {
-        _httpConnection._generator.setPersistent(false);
+        _httpConnection.getGenerator().setPersistent(false);
         try
         {
             // Need to call onRequest, so RequestLog can reports as much as possible
@@ -272,10 +272,10 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
             
             case HTTP_1_1:
             {
-                if (_expect)
+                if (_unknownExpectation)
                 {
                     badMessage(HttpStatus.EXPECTATION_FAILED_417,null);
-                    return true;
+                    return false;
                 }
                 
                 if (_connection!=null)
@@ -295,6 +295,37 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                 break;
             }
             
+            case HTTP_2:
+            {
+                // Allow sneaky "upgrade" to HTTP_2_0 only if the connector supports h2, but not protocol negotiation
+                ConnectionFactory h2=null;
+                if (!(getConnector().getDefaultConnectionFactory() instanceof NegotiatingServerConnectionFactory))
+                    for (ConnectionFactory factory : getConnector().getConnectionFactories())
+                        if (factory.getProtocols().contains("h2c"))
+                            h2=factory;
+                
+                // If now a sneaky "upgrade" then a real upgrade is required 
+                if (h2==null ||
+                    _metadata.getMethod()!=HttpMethod.PRI.asString() ||
+                    !"*".equals(_metadata.getURI().toString()) ||
+                    _fields.size()>0)
+                {
+                    badMessage(HttpStatus.UPGRADE_REQUIRED_426,null);
+                    return false;
+                }                    
+                
+                // Do a direct upgrade. Even though this is a HTTP/1 connector, we have seen a
+                // HTTP/2.0 prefix, so let the request through
+                Connection old_connection=getEndPoint().getConnection();
+                Connection new_connection = h2.newConnection(getConnector(),getEndPoint());
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Direct Upgrade from {} to {}", old_connection,new_connection);
+                getResponse().setStatus(101); // This will not get sent
+                getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,new_connection);
+                getHttpTransport().onCompleted();                
+                return true;
+            }
+                
             default:
             {
                 throw new IllegalStateException();
@@ -302,16 +333,22 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         }
 
         if (!persistent)
-            _httpConnection._generator.setPersistent(false);
+            _httpConnection.getGenerator().setPersistent(false);
 
         onRequest(_metadata);
+
+        // Should we delay dispatch until we have some content?
+        // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
+        if (getHttpConfiguration().isDelayDispatchUntilContent() && _httpConnection.getParser().getContentLength()>0 && !isExpecting100Continue() && !isCommitted() && _httpConnection.isRequestBufferEmpty())
+            return false;
+            
         return true;
     }
 
     @Override
     protected void handleException(Throwable x)
     {
-        _httpConnection._generator.setPersistent(false);
+        _httpConnection.getGenerator().setPersistent(false);
         super.handleException(x);
     }
 
@@ -319,7 +356,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public void abort(Throwable failure)
     {
         super.abort(failure);
-        _httpConnection._generator.setPersistent(false);
+        _httpConnection.getGenerator().setPersistent(false);
     }
 
     @Override

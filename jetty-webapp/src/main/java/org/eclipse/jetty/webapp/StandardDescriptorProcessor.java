@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.webapp;
 
-import java.io.File;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.EnumSet;
@@ -34,21 +33,20 @@ import java.util.Set;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.MultipartConfigElement;
+import javax.servlet.ServletException;
 import javax.servlet.SessionTrackingMode;
 
 import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.authentication.FormAuthenticator;
+import org.eclipse.jetty.servlet.BaseHolder.Source;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
-import org.eclipse.jetty.servlet.BaseHolder.Source;
-import org.eclipse.jetty.servlet.JspPropertyGroupServlet;
 import org.eclipse.jetty.servlet.ListenerHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.servlet.ServletContextHandler.JspPropertyGroup;
 import org.eclipse.jetty.servlet.ServletContextHandler.TagLib;
-import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
 import org.eclipse.jetty.util.ArrayUtil;
@@ -1168,8 +1166,8 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
         String location = node.getString("location", false, true);
         ErrorPageErrorHandler handler = (ErrorPageErrorHandler)context.getErrorHandler();
-        
-        switch (context.getMetaData().getOrigin("error."+error))
+        String originName = "error."+error;
+        switch (context.getMetaData().getOrigin(originName))
         {
             case NotSet:
             {
@@ -1185,19 +1183,19 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             case WebDefaults:
             case WebOverride:
             {
-                //an error page setup was set in web.xml, only allow other web xml descriptors to override it
+                //an error page setup was set in web.xml/webdefault.xml/web-override.xml, only allow other web xml descriptors to override it
                 if (!(descriptor instanceof FragmentDescriptor))
                 {
-                    if (descriptor instanceof OverrideDescriptor || descriptor instanceof DefaultsDescriptor)
-                    {
-                        if (code>0)
-                            handler.addErrorPage(code,location);
-                        else
-                            handler.addErrorPage(error,location);
-                        context.getMetaData().setOrigin("error."+error, descriptor);
-                    }
+                    //if set twice in the same descriptor, its an error
+                    Descriptor originDescriptor = context.getMetaData().getOriginDescriptor(originName);
+                    if (descriptor == originDescriptor)
+                        throw new IllegalStateException("Duplicate error-page "+error+" at "+location);
+
+                    if (code>0)
+                        handler.addErrorPage(code,location);
                     else
-                        throw new IllegalStateException("Duplicate global error-page "+location);
+                        handler.addErrorPage(error,location);
+                    context.getMetaData().setOrigin("error."+error, descriptor);
                 }
                 break;
             }
@@ -1398,10 +1396,10 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         List<String> paths = new ArrayList<String>();
         while (iter.hasNext())
         {
+
             JspPropertyGroup jpg = new JspPropertyGroup();
             config.addJspPropertyGroup(jpg);
             XmlParser.Node group = iter.next();
-
             //url-patterns
             Iterator<XmlParser.Node> iter2 = group.iterator("url-pattern");
             while (iter2.hasNext())
@@ -1440,19 +1438,11 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             if (LOG.isDebugEnabled()) LOG.debug(config.toString());
         }
 
+        //add mappings to the jsp servlet from the property-group mappings
         if (paths.size() > 0)
         {
-            ServletHandler handler = context.getServletHandler();
-            ServletHolder jsp_pg_servlet = _servletHolderMap.get(JspPropertyGroupServlet.NAME);
-            if (jsp_pg_servlet==null)
-            {
-                jsp_pg_servlet=new ServletHolder(JspPropertyGroupServlet.NAME,new JspPropertyGroupServlet(context,handler));
-                _servletHolderMap.put(JspPropertyGroupServlet.NAME,jsp_pg_servlet);
-                _servletHolders.add(jsp_pg_servlet);
-            }
-
             ServletMapping mapping = new ServletMapping();
-            mapping.setServletName(JspPropertyGroupServlet.NAME);
+            mapping.setServletName("jsp");
             mapping.setPathSpecs(paths.toArray(new String[paths.size()]));
             _servletMappings.add(mapping);
         }

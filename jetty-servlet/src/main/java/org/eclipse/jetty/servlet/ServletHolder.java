@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -696,7 +696,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             //servlet calling Request.getPart() or Request.getParts()
 
             ContextHandler ch = ContextHandler.getContextHandler(getServletHandler().getServletContext());
-            ch.addEventListener(new MultiPartCleanerListener());
+            ch.addEventListener(MultiPartCleanerListener.INSTANCE);
         }
     }
 
@@ -746,9 +746,26 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     protected void prepare (Request baseRequest, ServletRequest request, ServletResponse response)
     throws ServletException, UnavailableException
     {
+        ensureInstance();
         MultipartConfigElement mpce = ((Registration)getRegistration()).getMultipartConfig();
         if (mpce != null)
             baseRequest.setAttribute(Request.__MULTIPART_CONFIG_ELEMENT, mpce);
+    }
+    
+    public synchronized Servlet ensureInstance()
+    throws ServletException, UnavailableException
+    {
+        if (_class==null)
+            throw new UnavailableException("Servlet Not Initialized");
+        Servlet servlet=_servlet;
+        if (!isStarted())
+            throw new UnavailableException("Servlet not initialized", -1);
+        if (_unavailable!=0 || (!_initOnStartup && servlet==null))
+            servlet=getServlet();
+        if (servlet==null)
+            throw new UnavailableException("Could not instantiate "+_class);    
+        
+        return servlet;
     }
 
     /* ------------------------------------------------------------ */
@@ -770,16 +787,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         if (_class==null)
             throw new UnavailableException("Servlet Not Initialized");
 
-        Servlet servlet=_servlet;
-        synchronized(this)
-        {
-            if (!isStarted())
-                throw new UnavailableException("Servlet not initialized", -1);
-            if (_unavailable!=0 || (!_initOnStartup && servlet==null))
-                servlet=getServlet();
-            if (servlet==null)
-                throw new UnavailableException("Could not instantiate "+_class);
-        }
+        Servlet servlet = ensureInstance();
 
         // Service the request
         boolean servlet_error=true;

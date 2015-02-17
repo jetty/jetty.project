@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -38,6 +38,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -53,7 +54,7 @@ public class ResourceCache
 {
     private static final Logger LOG = Log.getLogger(ResourceCache.class);
 
-    private final ConcurrentMap<String,Content> _cache;
+    private final ConcurrentMap<String,CachedHttpContent> _cache;
     private final AtomicInteger _cachedSize;
     private final AtomicInteger _cachedFiles;
     private final ResourceFactory _factory;
@@ -62,9 +63,9 @@ public class ResourceCache
     private final boolean _etagSupported;
     private final boolean  _useFileMappedBuffer;
     
-    private int _maxCachedFileSize =4*1024*1024;
+    private int _maxCachedFileSize =128*1024*1024;
     private int _maxCachedFiles=2048;
-    private int _maxCacheSize =32*1024*1024;
+    private int _maxCacheSize =256*1024*1024;
     
     /* ------------------------------------------------------------ */
     /** Constructor.
@@ -73,7 +74,7 @@ public class ResourceCache
     public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer,boolean etags)
     {
         _factory = factory;
-        _cache=new ConcurrentHashMap<String,Content>();
+        _cache=new ConcurrentHashMap<String,CachedHttpContent>();
         _cachedSize=new AtomicInteger();
         _cachedFiles=new AtomicInteger();
         _mimeTypes=mimeTypes;
@@ -154,7 +155,7 @@ public class ResourceCache
             {
                 for (String path : _cache.keySet())
                 {
-                    Content content = _cache.remove(path);
+                    CachedHttpContent content = _cache.remove(path);
                     if (content!=null)
                         content.invalidate();
                 }
@@ -169,7 +170,7 @@ public class ResourceCache
      * @param pathInContext The key into the cache
      * @return The entry matching <code>pathInContext</code>, or a new entry 
      * if no matching entry was found. If the content exists but is not cachable, 
-     * then a {@link ResourceAsHttpContent} instance is return. If 
+     * then a {@link ResourceHttpContent} instance is return. If 
      * the resource does not exist, then null is returned.
      * @throws IOException Problem loading the resource
      */
@@ -177,7 +178,7 @@ public class ResourceCache
         throws IOException
     {
         // Is the content in this cache?
-        Content content =_cache.get(pathInContext);
+        CachedHttpContent content =_cache.get(pathInContext);
         if (content!=null && (content).isValid())
             return content;
        
@@ -215,7 +216,7 @@ public class ResourceCache
     private HttpContent load(String pathInContext, Resource resource)
         throws IOException
     {
-        Content content=null;
+        CachedHttpContent content=null;
         
         if (resource==null || !resource.exists())
             return null;
@@ -224,13 +225,13 @@ public class ResourceCache
         if (!resource.isDirectory() && isCacheable(resource))
         {   
             // Create the Content (to increment the cache sizes before adding the content 
-            content = new Content(pathInContext,resource);
+            content = new CachedHttpContent(pathInContext,resource);
 
             // reduce the cache to an acceptable size.
             shrinkCache();
 
             // Add it to the cache.
-            Content added = _cache.putIfAbsent(pathInContext,content);
+            CachedHttpContent added = _cache.putIfAbsent(pathInContext,content);
             if (added!=null)
             {
                 content.invalidate();
@@ -240,7 +241,7 @@ public class ResourceCache
             return content;
         }
         
-        return new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize(),_etagSupported);
+        return new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),getMaxCachedFileSize(),_etagSupported);
         
     }
     
@@ -251,10 +252,10 @@ public class ResourceCache
         while (_cache.size()>0 && (_cachedFiles.get()>_maxCachedFiles || _cachedSize.get()>_maxCacheSize))
         {
             // Scan the entire cache and generate an ordered list by last accessed time.
-            SortedSet<Content> sorted= new TreeSet<Content>(
-                    new Comparator<Content>()
+            SortedSet<CachedHttpContent> sorted= new TreeSet<CachedHttpContent>(
+                    new Comparator<CachedHttpContent>()
                     {
-                        public int compare(Content c1, Content c2)
+                        public int compare(CachedHttpContent c1, CachedHttpContent c2)
                         {
                             if (c1._lastAccessed<c2._lastAccessed)
                                 return -1;
@@ -268,11 +269,11 @@ public class ResourceCache
                             return c1._key.compareTo(c2._key);
                         }
                     });
-            for (Content content : _cache.values())
+            for (CachedHttpContent content : _cache.values())
                 sorted.add(content);
             
             // Invalidate least recently used first
-            for (Content content : sorted)
+            for (CachedHttpContent content : sorted)
             {
                 if (_cachedFiles.get()<=_maxCachedFiles && _cachedSize.get()<=_maxCacheSize)
                     break;
@@ -301,7 +302,7 @@ public class ResourceCache
     {
         try
         {
-            if (_useFileMappedBuffer && resource.getFile()!=null) 
+            if (_useFileMappedBuffer && resource.getFile()!=null && resource.length()<Integer.MAX_VALUE) 
                 return BufferUtil.toMappedBuffer(resource.getFile());
             
             return BufferUtil.toBuffer(resource,true);
@@ -324,7 +325,7 @@ public class ResourceCache
     /* ------------------------------------------------------------ */
     /** MetaData associated with a context Resource.
      */
-    public class Content implements HttpContent
+    public class CachedHttpContent implements HttpContent
     {
         final String _key;
         final Resource _resource;
@@ -342,7 +343,7 @@ public class ResourceCache
         AtomicReference<ByteBuffer> _directBuffer=new AtomicReference<ByteBuffer>();
 
         /* ------------------------------------------------------------ */
-        Content(String pathInContext,Resource resource)
+        CachedHttpContent(String pathInContext,Resource resource)
         {
             _key=pathInContext;
             _resource=resource;

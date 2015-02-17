@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,7 +23,6 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
-import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.log.Log;
@@ -60,7 +59,7 @@ public class HttpExchange
         return request.getConversation();
     }
 
-    public Request getRequest()
+    public HttpRequest getRequest()
     {
         return request;
     }
@@ -199,7 +198,7 @@ public class HttpExchange
 
             boolean aborted = channel.abort(cause);
             if (LOG.isDebugEnabled())
-                LOG.debug("Aborted while active ({}) {}: {}", aborted, this, cause);
+                LOG.debug("Aborted ({}) while active {}: {}", aborted, this, cause);
             return aborted;
         }
     }

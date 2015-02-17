@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,7 +34,8 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
- * This is not thread safe. May only be called by 1 thread at a time
+ * Hpack Decoder
+ * <p>This is not thread safe and may only be called by 1 thread at a time
  */
 public class HpackDecoder
 {
@@ -44,18 +45,28 @@ public class HpackDecoder
     
     private final HpackContext _context;
     private final MetaDataBuilder _builder;
-    private int _localMaxHeaderTableSize;
+    private int _localMaxDynamicTableSize;
 
-    public HpackDecoder(int localMaxHeaderTableSize, int maxHeaderSize)
+    /* ------------------------------------------------------------ */
+    /**
+     * @param localMaxDynamicTableSize  The maximum allowed size of the local dynamic header field table.
+     * @param maxHeaderSize The maximum allowed size of a headers block, expressed as total of all name and value characters.
+     */
+    public HpackDecoder(int localMaxDynamicTableSize, int maxHeaderSize)
     {
-        _context=new HpackContext(localMaxHeaderTableSize);
-        _localMaxHeaderTableSize=localMaxHeaderTableSize;
+        _context=new HpackContext(localMaxDynamicTableSize);
+        _localMaxDynamicTableSize=localMaxDynamicTableSize;
         _builder = new MetaDataBuilder(maxHeaderSize);
     }
     
-    public void setLocalMaxHeaderTableSize(int localMaxHeaderTableSize)
+    public HpackContext getHpackContext()
     {
-        _localMaxHeaderTableSize=localMaxHeaderTableSize; 
+        return _context;
+    }
+    
+    public void setLocalMaxDynamicTableSize(int localMaxdynamciTableSize)
+    {
+        _localMaxDynamicTableSize=localMaxdynamciTableSize; 
     }
     
     public MetaData decode(ByteBuffer buffer)
@@ -73,6 +84,7 @@ public class HpackDecoder
             if (LOG.isDebugEnabled())
             {                
                 int l=Math.min(buffer.remaining(),16);
+                // TODO: not guaranteed the buffer has a backing array !
                 LOG.debug("decode  "+TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+buffer.position(),l)+(l<buffer.remaining()?"...":""));
             }
             
@@ -123,7 +135,7 @@ public class HpackDecoder
                         int size = NBitInteger.decode(buffer,5);
                         if (LOG.isDebugEnabled())
                             LOG.debug("decode resize="+size);
-                        if (size>_localMaxHeaderTableSize)
+                        if (size>_localMaxDynamicTableSize)
                             throw new IllegalArgumentException();
                         _context.resize(size);
                         continue;
@@ -232,7 +244,7 @@ public class HpackDecoder
                 // if indexed
                 if (indexed)
                 {
-                    // add to header table
+                    // add to dynamic table
                     _context.add(field);
                 }
 

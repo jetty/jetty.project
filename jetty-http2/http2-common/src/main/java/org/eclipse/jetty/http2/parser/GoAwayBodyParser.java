@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 
 public class GoAwayBodyParser extends BodyParser
@@ -48,7 +48,7 @@ public class GoAwayBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -69,9 +69,7 @@ public class GoAwayBodyParser extends BodyParser
                         state = State.ERROR;
                         length -= 4;
                         if (length <= 0)
-                        {
-                            return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_go_away_frame");
-                        }
+                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                     }
                     else
                     {
@@ -87,17 +85,13 @@ public class GoAwayBodyParser extends BodyParser
                     lastStreamId += currByte << (8 * cursor);
                     --length;
                     if (cursor > 0 && length <= 0)
-                    {
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_go_away_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                     if (cursor == 0)
                     {
                         lastStreamId &= 0x7F_FF_FF_FF;
                         state = State.ERROR;
                         if (length == 0)
-                        {
-                            return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_go_away_frame");
-                        }
+                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                     }
                     break;
                 }
@@ -109,13 +103,9 @@ public class GoAwayBodyParser extends BodyParser
                         state = State.PAYLOAD;
                         length -= 4;
                         if (length < 0)
-                        {
-                            return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_go_away_frame");
-                        }
+                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                         if (length == 0)
-                        {
                             return onGoAway(lastStreamId, error, null);
-                        }
                     }
                     else
                     {
@@ -131,16 +121,12 @@ public class GoAwayBodyParser extends BodyParser
                     error += currByte << (8 * cursor);
                     --length;
                     if (cursor > 0 && length <= 0)
-                    {
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_go_away_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_go_away_frame");
                     if (cursor == 0)
                     {
                         state = State.PAYLOAD;
                         if (length == 0)
-                        {
                             return onGoAway(lastStreamId, error, null);
-                        }
                     }
                     break;
                 }
@@ -164,9 +150,7 @@ public class GoAwayBodyParser extends BodyParser
                     payload[payload.length - cursor] = buffer.get();
                     --cursor;
                     if (cursor == 0)
-                    {
                         return onGoAway(lastStreamId, error, payload);
-                    }
                     break;
                 }
                 default:
@@ -175,14 +159,15 @@ public class GoAwayBodyParser extends BodyParser
                 }
             }
         }
-        return Result.PENDING;
+        return false;
     }
 
-    private Result onGoAway(int lastStreamId, int error, byte[] payload)
+    private boolean onGoAway(int lastStreamId, int error, byte[] payload)
     {
         GoAwayFrame frame = new GoAwayFrame(lastStreamId, error, payload);
         reset();
-        return notifyGoAway(frame) ? Result.ASYNC : Result.COMPLETE;
+        notifyGoAway(frame);
+        return true;
     }
 
     private enum State

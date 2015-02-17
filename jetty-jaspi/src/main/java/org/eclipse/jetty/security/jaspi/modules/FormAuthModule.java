@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -150,7 +150,8 @@ public class FormAuthModule extends BaseAuthModule
         HttpSession session = request.getSession(mandatory);
         
         // not mandatory or its the login or login error page don't authenticate
-        if (!mandatory || isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()))) return AuthStatus.SUCCESS;
+        if (!mandatory || isLoginOrErrorPage(URIUtil.addPaths(request.getServletPath(),request.getPathInfo()))) 
+            return AuthStatus.SUCCESS;  // TODO return null for do nothing?
 
         try
         {

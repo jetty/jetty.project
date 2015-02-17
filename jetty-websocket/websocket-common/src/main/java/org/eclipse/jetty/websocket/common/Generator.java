@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -344,10 +344,12 @@ public class Generator
     /**
      * Generate the whole frame (header + payload copy) into a single ByteBuffer.
      * <p>
-     * Note: THIS IS SLOW. Only use this if you must.
+     * Note: This is slow, moves lots of memory around. Only use this if you must (such as in unit testing).
      * 
      * @param frame
      *            the frame to generate
+     * @param buf
+     *            the buffer to output the generated frame to
      */
     public void generateWholeFrame(Frame frame, ByteBuffer buf)
     {

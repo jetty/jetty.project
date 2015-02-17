@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -17,6 +17,8 @@
 //
 
 package org.eclipse.jetty.http2.frames;
+
+import org.eclipse.jetty.http2.ErrorCode;
 
 public class ResetFrame extends Frame
 {
@@ -43,6 +45,8 @@ public class ResetFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s#%d,error=%d", super.toString(), streamId, error);
+        ErrorCode errorCode = ErrorCode.from(error);
+        String reason = errorCode == null ? "error=" + error : errorCode.name().toLowerCase();
+        return String.format("%s#%d{%s}", super.toString(), streamId, reason);
     }
 }

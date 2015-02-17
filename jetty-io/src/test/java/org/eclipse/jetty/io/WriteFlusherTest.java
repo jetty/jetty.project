@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -77,7 +77,7 @@ public class WriteFlusherTest
         _flusher = new WriteFlusher(_endp)
         {
             @Override
-            protected void onIncompleteFlushed()
+            protected void onIncompleteFlush()
             {
                 _flushIncomplete.set(true);
             }
@@ -275,7 +275,7 @@ public class WriteFlusherTest
         }
 
         @Override
-        protected void onIncompleteFlushed()
+        protected void onIncompleteFlush()
         {
             _scheduler.schedule(this, 1 + _random.nextInt(9), TimeUnit.MILLISECONDS);
         }
@@ -368,7 +368,7 @@ public class WriteFlusherTest
             }
 
             @Override
-            protected void onIncompleteFlushed()
+            protected void onIncompleteFlush()
             {
             }
         };
@@ -469,7 +469,7 @@ public class WriteFlusherTest
         final WriteFlusher writeFlusher = new WriteFlusher(_endPointMock)
         {
             @Override
-            protected void onIncompleteFlushed()
+            protected void onIncompleteFlush()
             {
             }
         };
@@ -529,7 +529,7 @@ public class WriteFlusherTest
         final WriteFlusher writeFlusher = new WriteFlusher(new EndPointConcurrentAccessToIncompleteWriteAndOnFailMock(writeCalledLatch, failedCalledLatch))
         {
             @Override
-            protected void onIncompleteFlushed()
+            protected void onIncompleteFlush()
             {
                 onIncompleteFlushedCalledLatch.countDown();
                 try
@@ -622,7 +622,7 @@ public class WriteFlusherTest
         final WriteFlusher writeFlusher = new WriteFlusher(endp)
         {
             @Override
-            protected void onIncompleteFlushed()
+            protected void onIncompleteFlush()
             {
                 executor.submit(new Runnable() 
                 { 

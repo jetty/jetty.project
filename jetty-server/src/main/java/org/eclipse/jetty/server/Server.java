@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -479,9 +479,7 @@ public class Server extends HandlerWrapper implements Attributes
         //remote stop commands as we are stopped already
         ShutdownMonitor.deregister(this);
         
-
         mex.ifExceptionThrow();
-
     }
 
     /* ------------------------------------------------------------ */
@@ -497,7 +495,7 @@ public class Server extends HandlerWrapper implements Attributes
         final Response response=connection.getResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug(request.getDispatcherType()+" "+target+" on "+connection);
+            LOG.debug(request.getDispatcherType()+" "+request.getMethod()+" "+target+" on "+connection);
 
         if ("*".equals(target))
         {
@@ -557,7 +555,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (LOG.isDebugEnabled())
         {
-            LOG.debug(request.getDispatcherType()+" "+target+" on "+connection);
+            LOG.debug(request.getDispatcherType()+" "+request.getMethod()+" "+target+" on "+connection);
             handle(target, baseRequest, request, response);
             LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus());
         }

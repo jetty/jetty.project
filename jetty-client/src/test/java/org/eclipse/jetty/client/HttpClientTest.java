@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,6 +43,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
+import java.util.concurrent.atomic.AtomicReference;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -61,6 +62,7 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
+import org.eclipse.jetty.client.util.StringContentProvider;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
@@ -79,6 +81,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.CREATE;
+import static org.junit.Assert.assertTrue;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {
@@ -453,7 +456,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertTrue(successLatch.await(5, TimeUnit.SECONDS));
     }
 
-    @Slow
     @Test
     public void test_QueuedRequest_IsSent_WhenPreviousRequestClosedConnection() throws Exception
     {
@@ -515,11 +517,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertTrue(latch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
     }
 
-    @Slow
     @Test
     public void test_ExchangeIsComplete_OnlyWhenBothRequestAndResponseAreComplete() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new RespondThenConsumeHandler());
 
         // Prepare a big file to upload
         Path targetTestsDir = testdir.getEmptyDir().toPath();
@@ -762,6 +763,37 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertNotNull(response);
         Assert.assertEquals(200, response.getStatus());
         Assert.assertFalse(response.getHeaders().containsKey(headerName));
+    }
+
+    @Test
+    public void testAllHeadersDiscarded() throws Exception
+    {
+        start(new EmptyServerHandler());
+
+        int count = 10;
+        final CountDownLatch latch = new CountDownLatch(count);
+        for (int i = 0; i < count; ++i)
+        {
+            client.newRequest("localhost", connector.getLocalPort())
+                    .scheme(scheme)
+                    .send(new Response.Listener.Adapter()
+                    {
+                        @Override
+                        public boolean onHeader(Response response, HttpField field)
+                        {
+                            return false;
+                        }
+
+                        @Override
+                        public void onComplete(Result result)
+                        {
+                            if (result.isSucceeded())
+                                latch.countDown();
+                        }
+                    });
+        }
+
+        assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1299,5 +1331,129 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(data, response.getContent());
+    }
+
+    @Test
+    public void testRequestRetries() throws Exception
+    {
+        final int maxRetries = 3;
+        final AtomicInteger requests = new AtomicInteger();
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                int count = requests.incrementAndGet();
+                if (count == maxRetries)
+                    baseRequest.setHandled(true);
+            }
+        });
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        new RetryListener(client, scheme, "localhost", connector.getLocalPort(), maxRetries)
+        {
+            @Override
+            protected void completed(Result result)
+            {
+                latch.countDown();
+            }
+        }.perform();
+
+        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+    
+    @Test
+    public void testCompleteNotInvokedUntilContentConsumed() throws Exception
+    {
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                ServletOutputStream output = response.getOutputStream();
+                output.write(new byte[1024]);
+            }
+        });
+
+        final AtomicReference<Callback> callbackRef = new AtomicReference<>();
+        final CountDownLatch contentLatch = new CountDownLatch(1);
+        final CountDownLatch completeLatch = new CountDownLatch(1);
+        client.newRequest("localhost", connector.getLocalPort())
+                .scheme(scheme)
+                .send(new Response.Listener.Adapter()
+                {
+                    @Override
+                    public void onContent(Response response, ByteBuffer content, Callback callback)
+                    {
+                        // Do not notify the callback yet.
+                        callbackRef.set(callback);
+                        contentLatch.countDown();
+                    }
+
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        if (result.isSucceeded())
+                            completeLatch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(contentLatch.await(5, TimeUnit.SECONDS));
+
+        // Make sure the complete event is not emitted.
+        Assert.assertFalse(completeLatch.await(1, TimeUnit.SECONDS));
+
+        // Consume the content.
+        callbackRef.get().succeeded();
+
+        // Now the complete event is emitted.
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    public static abstract class RetryListener implements Response.CompleteListener
+    {
+        private final HttpClient client;
+        private final String scheme;
+        private final String host;
+        private final int port;
+        private final int maxRetries;
+        private int retries;
+
+        public RetryListener(HttpClient client, String scheme, String host, int port, int maxRetries)
+        {
+            this.client = client;
+            this.scheme = scheme;
+            this.host = host;
+            this.port = port;
+            this.maxRetries = maxRetries;
+        }
+
+        protected abstract void completed(Result result);
+
+        @Override
+        public void onComplete(Result result)
+        {
+            if (retries > maxRetries || result.isSucceeded() && result.getResponse().getStatus() == 200)
+                completed(result);
+            else
+                retry();
+        }
+
+        private void retry()
+        {
+            ++retries;
+            perform();
+        }
+
+        public void perform()
+        {
+            client.newRequest(host, port)
+                    .scheme(scheme)
+                    .method("POST")
+                    .param("attempt", String.valueOf(retries))
+                    .content(new StringContentProvider("0123456789ABCDEF"))
+                    .send(this);
+        }
     }
 }

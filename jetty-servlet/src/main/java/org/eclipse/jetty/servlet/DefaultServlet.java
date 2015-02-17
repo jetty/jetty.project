@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -48,6 +48,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PathMap.MappedEntry;
+import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.InclusiveByteRange;
@@ -71,6 +72,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
 
 /* ------------------------------------------------------------ */
 /** The default servlet.
+ * 
  * This servlet, normally mapped to /, provides the handling for static
  * content, OPTION and TRACE methods for the context.
  * The following initParameters are supported, these can be set either
@@ -125,7 +127,8 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *                    If set to true, it will use mapped file buffer to serve static content
  *                    when using NIO connector. Setting this value to false means that
  *                    a direct buffer will be used instead of a mapped file buffer.
- *                    By default, this is set to true.
+ *                    This is set to false by default by this class, but may be overridden
+ *                    by eg webdefault.xml 
  *
  *  cacheControl      If set, all static content will have this value set as the cache-control
  *                    header.
@@ -519,7 +522,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 {
                     // ensure we have content
                     if (content==null)
-                        content=new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),response.getBufferSize(),_etags);
+                        content=new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),response.getBufferSize(),_etags);
 
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                     {
@@ -591,7 +594,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 }
                 else
                 {
-                    content=new HttpContent.ResourceAsHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),_etags);
+                    content=new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),_etags);
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                         sendDirectory(request,response,resource,pathInContext);
                 }
@@ -952,6 +955,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 if (request.isAsyncSupported())
                 {
                     final AsyncContext context = request.startAsync();
+                    context.setTimeout(0);
 
                     ((HttpOutput)out).sendContent(content,new Callback()
                     {

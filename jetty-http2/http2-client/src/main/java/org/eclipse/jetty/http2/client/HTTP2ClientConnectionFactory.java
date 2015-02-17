@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,10 +23,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
-import org.eclipse.jetty.http2.FlowControl;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
-import org.eclipse.jetty.http2.HTTP2FlowControl;
 import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
@@ -50,7 +50,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public static final String SESSION_LISTENER_CONTEXT_KEY = "http2.client.sessionListener";
     public static final String SESSION_PROMISE_CONTEXT_KEY = "http2.client.sessionPromise";
 
-    private int initialSessionWindow = FlowControl.DEFAULT_WINDOW_SIZE;
+    private int initialSessionWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
 
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
@@ -64,9 +64,15 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         Promise<Session> promise = (Promise<Session>)context.get(SESSION_PROMISE_CONTEXT_KEY);
 
         Generator generator = new Generator(byteBufferPool, 4096);
-        HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, new HTTP2FlowControl(FlowControl.DEFAULT_WINDOW_SIZE));
+        FlowControlStrategy flowControl = newFlowControlStrategy();
+        HTTP2ClientSession session = new HTTP2ClientSession(scheduler, endPoint, generator, listener, flowControl);
         Parser parser = new Parser(byteBufferPool, session, 4096, 8192);
-        return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, false, promise, listener);
+        return new HTTP2ClientConnection(client, byteBufferPool, executor, endPoint, parser, session, 8192, promise, listener);
+    }
+
+    protected FlowControlStrategy newFlowControlStrategy()
+    {
+        return new SimpleFlowControlStrategy();
     }
 
     public int getInitialSessionWindow()
@@ -85,9 +91,9 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         private final Promise<Session> promise;
         private final Session.Listener listener;
 
-        public HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, boolean dispatchIO, Promise<Session> promise, Session.Listener listener)
+        public HTTP2ClientConnection(HTTP2Client client, ByteBufferPool byteBufferPool, Executor executor, EndPoint endpoint, Parser parser, ISession session, int bufferSize, Promise<Session> promise, Session.Listener listener)
         {
-            super(byteBufferPool, executor, endpoint, parser, session, bufferSize, dispatchIO);
+            super(byteBufferPool, executor, endpoint, parser, session, bufferSize);
             this.client = client;
             this.promise = promise;
             this.listener = listener;
@@ -103,7 +109,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
-            int windowDelta = getInitialSessionWindow() - FlowControl.DEFAULT_WINDOW_SIZE;
+            int windowDelta = getInitialSessionWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
             if (windowDelta > 0)
                 getSession().control(null, this, prefaceFrame, settingsFrame, new WindowUpdateFrame(0, windowDelta));
             else

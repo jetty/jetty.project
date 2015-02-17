@@ -69,7 +69,7 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 # JETTY_ARGS
 #   The default arguments to pass to jetty.
 #   For example
-#      JETTY_ARGS=jetty.port=8080 jetty.spdy.port=8443 jetty.secure.port=443
+#      JETTY_ARGS=jetty.port=8080 jetty.secure.port=443
 #
 # JETTY_USER
 #   if set, then used as a username to run the server as
@@ -284,8 +284,7 @@ CYGWIN*) JETTY_STATE="`cygpath -w $JETTY_STATE`";;
 esac
 
 
-JETTY_ARGS+=("jetty.state=$JETTY_STATE")
-rm -f $JETTY_STATE
+JETTY_ARGS=(${JETTY_ARGS[*]} "jetty.state=$JETTY_STATE")
 
 ##################################################
 # Get the list of config.xml files from jetty.conf
@@ -307,14 +306,14 @@ then
       do
         if [ -r "$XMLFILE" ] && [ -f "$XMLFILE" ] 
         then
-          JETTY_ARGS+=("$XMLFILE")
+          JETTY_ARGS=(${JETTY_ARGS[*]} "$XMLFILE")
         else
           echo "** WARNING: Cannot read '$XMLFILE' specified in '$JETTY_CONF'" 
         fi
       done
     else
       # assume it's a command line parameter (let start.jar deal with its validity)
-      JETTY_ARGS+=("$CONF")
+      JETTY_ARGS=(${JETTY_ARGS[*]} "$CONF")
     fi
   done < "$JETTY_CONF"
 fi
@@ -329,7 +328,7 @@ fi
 
 if [ -z "$JAVA" ]
 then
-  echo "Cannot find a Java JDK. Please set either set JAVA or put java (>=1.5) in your PATH." 2>&2
+  echo "Cannot find a Java JDK. Please set either set JAVA or put java (>=1.5) in your PATH." >&2
   exit 1
 fi
 
@@ -351,7 +350,7 @@ then
   CYGWIN*) JETTY_LOGS="`cygpath -w $JETTY_LOGS`";;
   esac
 
-  JAVA_OPTIONS+=("-Djetty.logs=$JETTY_LOGS")
+  JAVA_OPTIONS=(${JAVA_OPTIONS[*]} "-Djetty.logs=$JETTY_LOGS")
 fi
 
 #####################################################
@@ -375,7 +374,7 @@ TMPDIR="`cygpath -w $TMPDIR`"
 ;;
 esac
 
-JAVA_OPTIONS+=("-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
+JAVA_OPTIONS=(${JAVA_OPTIONS[*]} "-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.tmpdir=$TMPDIR")
 
 #####################################################
 # This is how the Jetty server will be started
@@ -383,9 +382,10 @@ JAVA_OPTIONS+=("-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY_BASE" "-Djava.io.
 
 JETTY_START=$JETTY_HOME/start.jar
 START_INI=$JETTY_BASE/start.ini
-if [ ! -f "$START_INI" ]
+START_D=$JETTY_BASE/start.d
+if [ ! -f "$START_INI" -a ! -d "$START_D" ]
 then
-  echo "Cannot find a start.ini in your JETTY_BASE directory: $JETTY_BASE" 2>&2
+  echo "Cannot find a start.ini file or a start.d directory in your JETTY_BASE directory: $JETTY_BASE" >&2
   exit 1
 fi
 
@@ -403,6 +403,7 @@ RUN_CMD=("$JAVA" ${RUN_ARGS[@]})
 if (( DEBUG ))
 then
   echo "START_INI      =  $START_INI"
+  echo "START_D        =  $START_D"
   echo "JETTY_HOME     =  $JETTY_HOME"
   echo "JETTY_BASE     =  $JETTY_BASE"
   echo "JETTY_CONF     =  $JETTY_CONF"
@@ -411,7 +412,7 @@ then
   echo "JETTY_ARGS     =  ${JETTY_ARGS[*]}"
   echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
   echo "JAVA           =  $JAVA"
-  echo "RUN_CMD        =  ${RUN_CMD}"
+  echo "RUN_CMD        =  ${RUN_CMD[*]}"
 fi
 
 ##################################################
@@ -495,9 +496,6 @@ case "$ACTION" in
 
         sleep 1
       done
-
-      rm -f "$JETTY_PID"
-      echo OK
     else
       if [ ! -f "$JETTY_PID" ] ; then
         echo "ERROR: no pid found at $JETTY_PID"
@@ -519,10 +517,11 @@ case "$ACTION" in
 
         sleep 1
       done
-
-      rm -f "$JETTY_PID"
-      echo OK
     fi
+
+    rm -f "$JETTY_PID"
+    rm -f "$JETTY_STATE"
+    echo OK
 
     ;;
 
@@ -565,12 +564,14 @@ case "$ACTION" in
   check|status)
     echo "Checking arguments to Jetty: "
     echo "START_INI      =  $START_INI"
+    echo "START_D        =  $START_D"
     echo "JETTY_HOME     =  $JETTY_HOME"
     echo "JETTY_BASE     =  $JETTY_BASE"
     echo "JETTY_CONF     =  $JETTY_CONF"
     echo "JETTY_PID      =  $JETTY_PID"
     echo "JETTY_START    =  $JETTY_START"
     echo "JETTY_LOGS     =  $JETTY_LOGS"
+    echo "JETTY_STATE    =  $JETTY_STATE"
     echo "CLASSPATH      =  $CLASSPATH"
     echo "JAVA           =  $JAVA"
     echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"

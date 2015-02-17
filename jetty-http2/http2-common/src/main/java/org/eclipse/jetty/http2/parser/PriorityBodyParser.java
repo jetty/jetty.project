@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
 
 public class PriorityBodyParser extends BodyParser
@@ -44,7 +44,7 @@ public class PriorityBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -54,14 +54,10 @@ public class PriorityBodyParser extends BodyParser
                 {
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
-                    {
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_priority_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_priority_frame");
                     int length = getBodyLength();
                     if (length != 5)
-                    {
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_priority_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_priority_frame");
                     state = State.EXCLUSIVE;
                     break;
                 }
@@ -112,14 +108,15 @@ public class PriorityBodyParser extends BodyParser
                 }
             }
         }
-        return Result.PENDING;
+        return false;
     }
 
-    private Result onPriority(int streamId, int weight, boolean exclusive)
+    private boolean onPriority(int streamId, int weight, boolean exclusive)
     {
         PriorityFrame frame = new PriorityFrame(streamId, getStreamId(), weight, exclusive);
         reset();
-        return notifyPriority(frame) ? Result.ASYNC : Result.COMPLETE;
+        notifyPriority(frame);
+        return true;
     }
 
     private enum State

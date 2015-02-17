@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -43,7 +43,7 @@ public class ModuleGraphWriterTest
     public void testGenerate_NothingEnabled() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyDir();
         String cmdLine[] = new String[] {"jetty.version=TEST"};
         

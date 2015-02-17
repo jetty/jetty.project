@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,20 +21,17 @@ package org.eclipse.jetty.http2.server;
 import java.nio.ByteBuffer;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.http.HttpGenerator;
-import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
-import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -49,25 +46,44 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     private final AtomicBoolean commit = new AtomicBoolean();
     private final Callback commitCallback = new CommitCallback();
     private final Connector connector;
-    private final HttpConfiguration httpConfiguration;
-    private final EndPoint endPoint;
-    private final IStream stream;
-    private final MetaData.Request request;
+    private final HTTP2ServerConnection connection;
+    private IStream stream;
 
-    public HttpTransportOverHTTP2(Connector connector, HttpConfiguration httpConfiguration, EndPoint endPoint, IStream stream, MetaData.Request request)
+    public HttpTransportOverHTTP2(Connector connector, HTTP2ServerConnection connection)
     {
         this.connector = connector;
-        this.httpConfiguration = httpConfiguration;
-        this.endPoint = endPoint;
-        this.stream = stream;
-        this.request = request;
+        this.connection = connection;
     }
 
     @Override
-    public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
+    public boolean isOptimizedForDirectBuffers()
     {
-        boolean isHeadRequest = head;
+        // Because sent buffers are passed directly to the endpoint without
+        // copying we can defer to the endpoint
+        return connection.getEndPoint().isOptimizedForDirectBuffers();
+    }
+    
+    public IStream getStream()
+    {
+        return stream;
+    }
 
+    public void setStream(IStream stream)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} setStream {}", this, stream.getId());
+        this.stream = stream;
+    }
+
+    public void recycle()
+    {
+        this.stream = null;
+        commit.set(false);
+    }
+
+    @Override
+    public void send(MetaData.Response info, boolean isHeadRequest, ByteBuffer content, boolean lastContent, Callback callback)
+    {
         // info != null | content != 0 | last = true => commit + send/end
         // info != null | content != 0 | last = false => commit + send
         // info != null | content == 0 | last = true => commit/end
@@ -112,6 +128,12 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     }
 
     @Override
+    public boolean isPushSupported()
+    {
+        return stream.getSession().isPushEnabled();
+    }
+
+    @Override
     public void push(final MetaData.Request request)
     {
         if (!stream.getSession().isPushEnabled())
@@ -121,17 +143,15 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             return;
         }
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP/2 Push {}",request);
+        
         stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<Stream>()
         {
             @Override
             public void succeeded(Stream pushStream)
             {
-                HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, httpConfiguration, endPoint, (IStream)pushStream, request);
-                HttpInputOverHTTP2 input = new HttpInputOverHTTP2();
-                HttpChannelOverHTTP2 channel = new HttpChannelOverHTTP2(connector, httpConfiguration, endPoint, transport, input, pushStream);
-                pushStream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
-
-                channel.onPushRequest(request);
+                connection.onPush(connector, (IStream)pushStream, request);
             }
 
             @Override
@@ -142,7 +162,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             }
         });
     }
-    
+
     private void commit(MetaData.Response info, boolean endStream, Callback callback)
     {
         if (LOG.isDebugEnabled())
@@ -155,7 +175,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         HeadersFrame frame = new HeadersFrame(stream.getId(), info, null, endStream);
         stream.headers(frame, callback);
     }
-    
+
     private void send(ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (LOG.isDebugEnabled())
@@ -167,10 +187,19 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         stream.data(frame, callback);
     }
 
-
     @Override
-    public void completed()
+    public void onCompleted()
     {
+        if (!stream.isClosed())
+        {
+            // If the stream is not closed, it is still reading the request content.
+            // Send a reset to the other end so that it stops sending data.
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+            // Now that this stream is reset, in-flight data frames will be consumed and discarded.
+            // Consume the existing queued data frames to avoid stalling the flow control.
+            HttpChannel channel = (HttpChannel)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+            channel.getRequest().getHttpInput().consumeAll();
+        }
     }
 
     @Override
@@ -178,8 +207,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Response #{} aborted", stream.getId());
-        if (!stream.isReset())
-            stream.reset(new ResetFrame(stream.getId(), ErrorCodes.INTERNAL_ERROR), Callback.Adapter.INSTANCE);
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.Adapter.INSTANCE);
     }
 
     private class CommitCallback implements Callback

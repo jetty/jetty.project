@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,52 +18,48 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.util.concurrent.Executor;
-
-import org.eclipse.jetty.http2.FlowControl;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
-import org.eclipse.jetty.http2.HTTP2FlowControl;
-import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.ServerParser;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.util.annotation.Name;
 
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
-    private boolean dispatchIO = true;
-    private int maxHeaderTableSize = 4096;
-    private int initialStreamWindow = FlowControl.DEFAULT_WINDOW_SIZE;
+    private int maxDynamicTableSize = 4096;
+    private int initialStreamWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
-
-    public AbstractHTTP2ServerConnectionFactory()
+    private final HttpConfiguration httpConfiguration;
+    
+    public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        super("h2-14");
+        this(httpConfiguration,"h2-17","h2-16","h2-15","h2-14","h2");
+    }
+    
+    protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration,String... protocols)
+    {
+        super(protocols);
+        if (httpConfiguration==null)
+            throw new IllegalArgumentException("Null HttpConfiguration");
+        this.httpConfiguration = httpConfiguration;
     }
 
-    public boolean isDispatchIO()
+    public int getMaxDynamicTableSize()
     {
-        return dispatchIO;
-    }
-
-    public void setDispatchIO(boolean dispatchIO)
-    {
-        this.dispatchIO = dispatchIO;
-    }
-
-    public int getMaxHeaderTableSize()
-    {
-        return maxHeaderTableSize;
+        return maxDynamicTableSize;
     }
 
     public void setMaxHeaderTableSize(int maxHeaderTableSize)
     {
-        this.maxHeaderTableSize = maxHeaderTableSize;
+        this.maxDynamicTableSize = maxHeaderTableSize;
     }
 
     public int getInitialStreamWindow()
@@ -86,59 +82,43 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxConcurrentStreams = maxConcurrentStreams;
     }
 
+    public HttpConfiguration getHttpConfiguration()
+    {
+        return httpConfiguration;
+    }
+    
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
-        Generator generator = new Generator(connector.getByteBufferPool(), getMaxHeaderTableSize());
-        HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener,
-                new HTTP2FlowControl(getInitialStreamWindow()));
+        Generator generator = new Generator(connector.getByteBufferPool(), getMaxDynamicTableSize());
+        FlowControlStrategy flowControl = newFlowControlStrategy();
+        HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
         session.setMaxRemoteStreams(getMaxConcurrentStreams());
-        long idleTimeout = endPoint.getIdleTimeout();
-        if (idleTimeout > 0)
-            idleTimeout /= 2;
-        session.setStreamIdleTimeout(idleTimeout);
-
-        Parser parser = newServerParser(connector.getByteBufferPool(), session);
+        // For a single stream in a connection, there will be a race between
+        // the stream idle timeout and the connection idle timeout. However,
+        // the typical case is that the connection will be busier and the
+        // stream idle timeout will expire earlier that the connection's.
+        session.setStreamIdleTimeout(endPoint.getIdleTimeout());
+        
+        Parser parser = newServerParser(connector, session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
-                        endPoint, parser, session, getInputBufferSize(), isDispatchIO(), listener);
+                        endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
 
         return configure(connection, connector, endPoint);
     }
 
+    protected FlowControlStrategy newFlowControlStrategy()
+    {
+        return new SimpleFlowControlStrategy(getInitialStreamWindow());
+    }
+
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);
 
-    protected abstract ServerParser newServerParser(ByteBufferPool byteBufferPool, ServerParser.Listener listener);
-
-    private static class HTTP2ServerConnection extends HTTP2Connection
+    protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener)
     {
-        private final ServerSessionListener listener;
-
-        private HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int inputBufferSize, boolean dispatchIO, ServerSessionListener listener)
-        {
-            super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize, dispatchIO);
-            this.listener = listener;
-        }
-
-        @Override
-        public void onOpen()
-        {
-            super.onOpen();
-            notifyConnect(getSession());
-        }
-
-        private void notifyConnect(ISession session)
-        {
-            try
-            {
-                listener.onAccept(session);
-            }
-            catch (Throwable x)
-            {
-                LOG.info("Failure while notifying listener " + listener, x);
-            }
-        }
+        return new ServerParser(connector.getByteBufferPool(), listener, getMaxDynamicTableSize(), getHttpConfiguration().getRequestHeaderSize());
     }
 }

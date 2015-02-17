@@ -4,7 +4,7 @@
 <!-- ============================================================= -->
 <!-- Base SSL configuration                                        -->
 <!-- This configuration needs to be used together with 1 or more   -->
-<!-- of jetty-https.xml, jetty-spdy.xml and/or jetty-http2.xml     --> 
+<!-- of jetty-https.xml and/or jetty-http2.xml                     --> 
 <!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 

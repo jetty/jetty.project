@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -63,10 +63,14 @@ public class HttpChannelOverHTTP extends HttpChannel
     @Override
     public boolean abort(Throwable cause)
     {
-        // We want the return value to be that of the response
-        // because if the response has already successfully
-        // arrived then we failed to abort the exchange
-        sender.abort(cause);
+        boolean sendAborted = sender.abort(cause);
+        boolean receiveAborted = abortResponse(cause);
+        return sendAborted || receiveAborted;
+    }
+
+    @Override
+    public boolean abortResponse(Throwable cause)
+    {
         return receiver.abort(cause);
     }
 
@@ -105,6 +109,10 @@ public class HttpChannelOverHTTP extends HttpChannel
     @Override
     public String toString()
     {
-        return String.format("%s@%x", getClass().getSimpleName(), hashCode());
+        return String.format("%s@%x(send=%s,recv=%s)",
+                getClass().getSimpleName(),
+                hashCode(),
+                sender,
+                receiver);
     }
 }

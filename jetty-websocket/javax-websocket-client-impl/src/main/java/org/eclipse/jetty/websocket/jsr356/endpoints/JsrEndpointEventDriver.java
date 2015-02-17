@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 import java.util.Map;
+
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.MessageHandler;
@@ -134,20 +135,23 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
         {
             LOG.debug("onConnect({}, {})",jsrsession,config);
         }
-        try
-        {
-            endpoint.onOpen(jsrsession,config);
-        }
-        catch (Throwable t)
-        {
-            LOG.warn("Uncaught exception",t);
-        }
+
+        // Let unhandled exceptions flow out
+        endpoint.onOpen(jsrsession,config);
     }
 
     @Override
     public void onError(Throwable cause)
     {
-        endpoint.onError(jsrsession,cause);
+        LOG.warn(cause);
+        try
+        {
+            endpoint.onError(jsrsession,cause);
+        }
+        catch (Throwable t)
+        {
+            LOG.warn("Unable to report to onError due to exception",t);
+        }
     }
 
     @Override

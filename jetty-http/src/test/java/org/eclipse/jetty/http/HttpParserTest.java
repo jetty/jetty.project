@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,6 +32,7 @@ import org.junit.Test;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -66,6 +67,25 @@ public class HttpParserTest
         }
     }
 
+    @Test
+    public void HttpMethodTest()
+    {
+        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("Wibble ")));
+        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET")));
+        assertNull(HttpMethod.lookAheadGet(BufferUtil.toBuffer("MO")));
+        
+        assertEquals(HttpMethod.GET,HttpMethod.lookAheadGet(BufferUtil.toBuffer("GET ")));
+        assertEquals(HttpMethod.MOVE,HttpMethod.lookAheadGet(BufferUtil.toBuffer("MOVE ")));
+        
+        ByteBuffer b = BufferUtil.allocateDirect(128);
+        BufferUtil.append(b,BufferUtil.toBuffer("GET"));
+        assertNull(HttpMethod.lookAheadGet(b));
+        
+        BufferUtil.append(b,BufferUtil.toBuffer(" "));
+        assertEquals(HttpMethod.GET,HttpMethod.lookAheadGet(b));
+    }
+    
+    
     @Test
     public void testLineParse0() throws Exception
     {
@@ -249,8 +269,37 @@ public class HttpParserTest
         
     }
     
-    
-    
+
+    @Test
+    public void testNoValue() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012" +
+                "Host: localhost\015\012" +
+                "Name0: \015\012"+
+                "Name1: \015\012"+
+                "Connection: close\015\012" +
+                "\015\012");
+        
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Name0", _hdr[1]);
+        assertEquals(null, _val[1]);
+        assertEquals("Name1", _hdr[2]);
+        assertEquals(null, _val[2]);
+        assertEquals("Connection", _hdr[3]);
+        assertEquals("close", _val[3]);
+        assertEquals(3, _headers);
+    }
 
     @Test
     public void testHeaderParseDirect() throws Exception
@@ -1497,63 +1546,6 @@ public class HttpParserTest
     }
 
     @Test
-    public void testProxyProtocol() throws Exception
-    {
-        ByteBuffer buffer=BufferUtil
-            .toBuffer("PROXY TCP4 107.47.45.254 10.0.1.116 27689 80\015\012"
-                +"GET / HTTP/1.1\015\012"
-                +"Host: localhost \015\012"
-                +"Connection: close\015\012"+"\015\012"+"\015\012");
-
-        Handler handler=new Handler();
-        HttpParser parser=new HttpParser((HttpParser.RequestHandler)handler);
-        parseAll(parser, buffer);
-
-        assertTrue(_headerCompleted);
-        assertTrue(_messageCompleted);
-        assertEquals("GET", _methodOrVersion);
-        assertEquals("/", _uriOrStatus);
-        assertEquals("HTTP/1.1", _versionOrReason);
-        assertEquals("PROXY TCP4 107.47.45.254 10.0.1.116 27689 80", handler._proxy);
-        assertEquals("Host", _hdr[0]);
-        assertEquals("localhost", _val[0]);
-        assertEquals("Connection", _hdr[1]);
-        assertEquals("close", _val[1]);
-        assertEquals(1, _headers);
-    }
-
-    @Test
-    public void testSplitProxyHeaderParseTest() throws Exception
-    {
-        Handler handler=new Handler();
-        HttpParser parser=new HttpParser((HttpParser.RequestHandler)handler);
-
-        ByteBuffer buffer=BufferUtil.toBuffer("PROXY TCP4 207.47.45.254 10.0.1.116 27689 80\015\012");
-        parser.parseNext(buffer);
-
-        buffer=BufferUtil.toBuffer(
-            "GET / HTTP/1.1\015\012"
-                +"Host: localhost \015\012"
-                +"Connection: close\015\012"
-                +"\015\012"
-                +"\015\012");
-
-        parser.parseNext(buffer);
-        assertTrue(_headerCompleted);
-        assertTrue(_messageCompleted);
-        assertEquals("GET", _methodOrVersion);
-        assertEquals("/", _uriOrStatus);
-        assertEquals("HTTP/1.1", _versionOrReason);
-        assertEquals("PROXY TCP4 207.47.45.254 10.0.1.116 27689 80", handler._proxy);
-        assertEquals("Host", _hdr[0]);
-        assertEquals("localhost", _val[0]);
-        assertEquals("Connection", _hdr[1]);
-        assertEquals("close", _val[1]);
-        assertEquals(1, _headers);
-    }
-    
-
-    @Test
     public void testFolded() throws Exception
     {
         ByteBuffer buffer= BufferUtil.toBuffer(
@@ -1602,6 +1594,30 @@ public class HttpParserTest
         assertEquals("unknown",_val[4]);
     }
     
+
+    @Test
+    public void testHTTP2Preface() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "PRI * HTTP/2.0\015\012" +
+                "\015\012" +
+                "SM\015\012"+
+                "\015\012");
+        
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("PRI", _methodOrVersion);
+        assertEquals("*", _uriOrStatus);
+        assertEquals("HTTP/2.0", _versionOrReason);
+        assertEquals(-1, _headers);
+        assertEquals(null, _bad);
+    }
+    
+    
     @Before
     public void init()
     {
@@ -1633,7 +1649,7 @@ public class HttpParserTest
     private boolean _headerCompleted;
     private boolean _messageCompleted;
 
-    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler, HttpParser.ProxyHandler
+    private class Handler implements HttpParser.RequestHandler, HttpParser.ResponseHandler
     {
         private HttpFields fields;
         String _proxy;
@@ -1741,12 +1757,6 @@ public class HttpParserTest
         public int getHeaderCacheSize()
         {
             return 512;
-        }
-
-        @Override
-        public void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort)
-        {
-            _proxy="PROXY "+protocol+" "+sAddr+" "+dAddr+" "+sPort+" "+dPort;
         }
     }
 }

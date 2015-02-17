@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -87,13 +87,14 @@ import org.eclipse.jetty.util.Callback;
  */
 public class DeferredContentProvider implements AsyncContentProvider, Callback, Closeable
 {
-    private static final AsyncChunk CLOSE = new AsyncChunk(BufferUtil.EMPTY_BUFFER, Callback.Adapter.INSTANCE);
+    private static final Chunk CLOSE = new Chunk(BufferUtil.EMPTY_BUFFER, Callback.Adapter.INSTANCE);
 
     private final Object lock = this;
-    private final Queue<AsyncChunk> chunks = new ArrayQueue<>(4, 64, lock);
+    private final Queue<Chunk> chunks = new ArrayQueue<>(4, 64, lock);
     private final AtomicReference<Listener> listener = new AtomicReference<>();
     private final DeferredContentProviderIterator iterator = new DeferredContentProviderIterator();
     private final AtomicBoolean closed = new AtomicBoolean();
+    private long length = -1;
     private int size;
     private Throwable failure;
 
@@ -114,12 +115,23 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
         if (!this.listener.compareAndSet(null, listener))
             throw new IllegalStateException(String.format("The same %s instance cannot be used in multiple requests",
                     AsyncContentProvider.class.getName()));
+
+        if (isClosed())
+        {
+            synchronized (lock)
+            {
+                long total = 0;
+                for (Chunk chunk : chunks)
+                    total += chunk.buffer.remaining();
+                length = total;
+            }
+        }
     }
 
     @Override
     public long getLength()
     {
-        return -1;
+        return length;
     }
 
     /**
@@ -136,10 +148,10 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
 
     public boolean offer(ByteBuffer buffer, Callback callback)
     {
-        return offer(new AsyncChunk(buffer, callback));
+        return offer(new Chunk(buffer, callback));
     }
 
-    private boolean offer(AsyncChunk chunk)
+    private boolean offer(Chunk chunk)
     {
         Throwable failure;
         boolean result = false;
@@ -200,6 +212,11 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
             offer(CLOSE);
     }
 
+    public boolean isClosed()
+    {
+        return closed.get();
+    }
+
     @Override
     public void succeeded()
     {
@@ -226,7 +243,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
 
     private class DeferredContentProviderIterator implements Iterator<ByteBuffer>, Callback
     {
-        private AsyncChunk current;
+        private Chunk current;
 
         @Override
         public boolean hasNext()
@@ -242,7 +259,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
         {
             synchronized (lock)
             {
-                AsyncChunk chunk = current = chunks.poll();
+                Chunk chunk = current = chunks.poll();
                 if (chunk == CLOSE)
                     throw new NoSuchElementException();
                 return chunk == null ? null : chunk.buffer;
@@ -258,7 +275,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
         @Override
         public void succeeded()
         {
-            AsyncChunk chunk;
+            Chunk chunk;
             synchronized (lock)
             {
                 chunk = current;
@@ -275,30 +292,39 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
         @Override
         public void failed(Throwable x)
         {
-            List<AsyncChunk> chunks = new ArrayList<>();
+            List<Chunk> chunks = new ArrayList<>();
             synchronized (lock)
             {
                 failure = x;
                 // Transfer all chunks to fail them all.
+                Chunk chunk = current;
+                current = null;
+                if (chunk != null)
+                    chunks.add(chunk);
                 chunks.addAll(DeferredContentProvider.this.chunks);
                 clear();
-                current = null;
                 lock.notify();
             }
-            for (AsyncChunk chunk : chunks)
+            for (Chunk chunk : chunks)
                 chunk.callback.failed(x);
         }
     }
 
-    private static class AsyncChunk
+    public static class Chunk
     {
-        private final ByteBuffer buffer;
-        private final Callback callback;
+        public final ByteBuffer buffer;
+        public final Callback callback;
 
-        private AsyncChunk(ByteBuffer buffer, Callback callback)
+        public Chunk(ByteBuffer buffer, Callback callback)
         {
             this.buffer = Objects.requireNonNull(buffer);
             this.callback = Objects.requireNonNull(callback);
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("%s@%x", getClass().getSimpleName(), hashCode());
         }
     }
 }

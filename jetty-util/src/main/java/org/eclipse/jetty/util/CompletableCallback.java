@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.util;
 
-import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 /**
  * A callback to be used by driver code that needs to know whether the callback has been
@@ -57,20 +57,63 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public abstract class CompletableCallback implements Callback
 {
-    private final AtomicBoolean completed = new AtomicBoolean();
+    private final AtomicReference<State> state = new AtomicReference<>(State.IDLE);
 
     @Override
     public void succeeded()
     {
-        if (!tryComplete())
-            resume();
+        while (true)
+        {
+            State current = state.get();
+            switch (current)
+            {
+                case IDLE:
+                {
+                    if (state.compareAndSet(current, State.SUCCEEDED))
+                        return;
+                    break;
+                }
+                case COMPLETED:
+                {
+                    if (state.compareAndSet(current, State.SUCCEEDED))
+                    {
+                        resume();
+                        return;
+                    }
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException(current.toString());
+                }
+            }
+        }
     }
 
     @Override
     public void failed(Throwable x)
     {
-        if (!tryComplete())
-            abort(x);
+        while (true)
+        {
+            State current = state.get();
+            switch (current)
+            {
+                case IDLE:
+                case COMPLETED:
+                {
+                    if (state.compareAndSet(current, State.FAILED))
+                    {
+                        abort(x);
+                        return;
+                    }
+                    break;
+                }
+                default:
+                {
+                    throw new IllegalStateException(current.toString());
+                }
+            }
+        }
     }
 
     /**
@@ -80,8 +123,7 @@ public abstract class CompletableCallback implements Callback
     public abstract void resume();
 
     /**
-     * Callback method invoked when this callback is failed
-     * <em>after</em> a first call to {@link #tryComplete()}.
+     * Callback method invoked when this callback is failed.
      */
     public abstract void abort(Throwable failure);
 
@@ -95,6 +137,32 @@ public abstract class CompletableCallback implements Callback
      */
     public boolean tryComplete()
     {
-        return completed.compareAndSet(false, true);
+        while (true)
+        {
+            State current = state.get();
+            switch (current)
+            {
+                case IDLE:
+                {
+                    if (state.compareAndSet(current, State.COMPLETED))
+                        return true;
+                    break;
+                }
+                case SUCCEEDED:
+                case FAILED:
+                {
+                    return false;
+                }
+                default:
+                {
+                    throw new IllegalStateException(current.toString());
+                }
+            }
+        }
+    }
+
+    private enum State
+    {
+        IDLE, SUCCEEDED, FAILED, COMPLETED
     }
 }

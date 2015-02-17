@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
-import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
-import static org.eclipse.jetty.http.HttpTokens.SPACE;
-import static org.eclipse.jetty.http.HttpTokens.TAB;
-
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
@@ -36,6 +31,11 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+
+import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
+import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
+import static org.eclipse.jetty.http.HttpTokens.SPACE;
+import static org.eclipse.jetty.http.HttpTokens.TAB;
 
 
 /* ------------------------------------------------------------ */
@@ -632,28 +632,8 @@ public class HttpParser
                                 version=HttpVersion.lookAheadGet(buffer.array(),buffer.arrayOffset()+buffer.position()-1,buffer.arrayOffset()+buffer.limit());
                             else
                                 version=HttpVersion.CACHE.getBest(buffer,0,buffer.remaining());
-                            if (version==null)
-                            {
-                                if (_method==HttpMethod.PROXY)
-                                {
-                                    if (!(_requestHandler instanceof ProxyHandler))
-                                        throw new BadMessageException();
-                                    
-                                    String protocol=_uri.toString();
-                                    // This is the proxy protocol, so we can assume entire first line is in buffer else 400
-                                    buffer.position(buffer.position()-1);
-                                    String sAddr = getProxyField(buffer);
-                                    String dAddr = getProxyField(buffer);
-                                    int sPort = BufferUtil.takeInt(buffer);
-                                    next(buffer);
-                                    int dPort = BufferUtil.takeInt(buffer);
-                                    next(buffer);
-                                    _state=State.START;
-                                    ((ProxyHandler)_requestHandler).proxied(protocol,sAddr,dAddr,sPort,dPort);
-                                    return false;
-                                }
-                            }
-                            else
+                            
+                            if (version!=null)
                             {
                                 int pos = buffer.position()+version.asString().length()-1;
                                 if (pos<buffer.limit())
@@ -881,7 +861,7 @@ public class HttpParser
                             // End of headers!
 
                             // Was there a required host header?
-                            if (!_host && _version!=HttpVersion.HTTP_1_0 && _requestHandler!=null)
+                            if (!_host && _version==HttpVersion.HTTP_1_1 && _requestHandler!=null)
                             {
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"No Host");
                             }
@@ -1066,7 +1046,18 @@ public class HttpParser
                     
                     if (ch==HttpTokens.SPACE || ch==HttpTokens.TAB)
                         break;
-                    
+
+                    if (ch==HttpTokens.LINE_FEED)
+                    {
+                        _value=null;
+                        _string.setLength(0);
+                        _valueString=null;
+                        _length=-1;
+                        
+                        parsedHeader();
+                        setState(State.HEADER);
+                        break;
+                    }
                     throw new IllegalCharacter(ch,buffer);
 
                 case HEADER_IN_VALUE:
@@ -1177,7 +1168,7 @@ public class HttpParser
                     // Just ignore data when closed
                     _headerBytes+=buffer.remaining();
                     BufferUtil.clear(buffer);
-                    if (_headerBytes>_maxHeaderBytes)
+                    if (_maxHeaderBytes>0 && _headerBytes>_maxHeaderBytes)
                     {
                         // Don't want to waste time reading data of a closed request
                         throw new IllegalStateException("too much data seeking EOF");
@@ -1572,14 +1563,6 @@ public class HttpParser
         /** @return the size in bytes of the per parser header cache
          */
         public int getHeaderCacheSize();
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    public interface ProxyHandler 
-    {
-        void proxied(String protocol, String sAddr, String dAddr, int sPort, int dPort);
     }
 
     /* ------------------------------------------------------------------------------- */

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -769,7 +769,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _managedAttributes = new HashMap<String, Object>();
             String[] attributes = managedAttributes.split(",");
             for (String attribute : attributes)
-                _managedAttributes.put(attribute,null);
+            {
+                _managedAttributes.put(attribute.trim(),null);
+            }
 
             Enumeration<String> e = _scontext.getAttributeNames();
             while (e.hasMoreElements())

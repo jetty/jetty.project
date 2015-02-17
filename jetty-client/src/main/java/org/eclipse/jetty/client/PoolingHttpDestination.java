@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -211,6 +211,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
+        super.dump(out, indent);
         ContainerLifeCycle.dump(out, indent, Arrays.asList(connectionPool));
     }
 

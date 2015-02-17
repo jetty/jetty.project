@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import static org.junit.Assert.assertEquals;
-
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -28,7 +26,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -63,6 +60,8 @@ import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
 
 public class ProxyTunnellingTest
 {
@@ -148,8 +147,10 @@ public class ProxyTunnellingTest
 
         try
         {
+            // Use a numeric host to test the URI of the CONNECT request.
+            String host = "127.0.0.1";
             String body = "BODY";
-            ContentResponse response = httpClient.newRequest("localhost", serverConnector.getLocalPort())
+            ContentResponse response = httpClient.newRequest(host, serverConnector.getLocalPort())
                     .scheme(HttpScheme.HTTPS.asString())
                     .method(HttpMethod.GET)
                     .path("/echo?body=" + URLEncoder.encode(body, "UTF-8"))
@@ -347,9 +348,9 @@ public class ProxyTunnellingTest
         startProxy(new ConnectHandler()
         {
             @Override
-            protected void handleConnect(Request jettyRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+            protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
             {
-                HttpConnection.getCurrentConnection().close();
+                ((HttpConnection)baseRequest.getHttpChannel().getHttpTransport()).close();
             }
         });
 
@@ -385,7 +386,7 @@ public class ProxyTunnellingTest
         {
             new Socket(proxyHost, proxyPort).close();
         }
-        catch (IOException x)
+        catch (Throwable x)
         {
             Assume.assumeNoException(x);
         }

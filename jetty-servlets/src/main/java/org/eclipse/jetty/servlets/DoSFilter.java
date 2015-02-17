@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -35,6 +35,7 @@ import java.util.regex.Pattern;
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
+import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -91,41 +92,38 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <dd>is the delay given to all requests over the rate limit,
  * before they are considered at all. -1 means just reject request,
  * 0 means no delay, otherwise it is the delay.</dd>
- * <p/>
  * <dt>maxWaitMs</dt>
  * <dd>how long to blocking wait for the throttle semaphore.</dd>
- * <p/>
  * <dt>throttledRequests</dt>
  * <dd>is the number of requests over the rate limit able to be
  * considered at once.</dd>
- * <p/>
  * <dt>throttleMs</dt>
  * <dd>how long to async wait for semaphore.</dd>
- * <p/>
  * <dt>maxRequestMs</dt>
  * <dd>how long to allow this request to run.</dd>
- * <p/>
  * <dt>maxIdleTrackerMs</dt>
  * <dd>how long to keep track of request rates for a connection,
  * before deciding that the user has gone away, and discarding it</dd>
- * <p/>
  * <dt>insertHeaders</dt>
  * <dd>if true , insert the DoSFilter headers into the response. Defaults to true.</dd>
- * <p/>
  * <dt>trackSessions</dt>
  * <dd>if true, usage rate is tracked by session if a session exists. Defaults to true.</dd>
- * <p/>
  * <dt>remotePort</dt>
  * <dd>if true and session tracking is not used, then rate is tracked by IP+port (effectively connection). Defaults to false.</dd>
- * <p/>
  * <dt>ipWhitelist</dt>
  * <dd>a comma-separated list of IP addresses that will not be rate limited</dd>
- * <p/>
  * <dt>managedAttr</dt>
  * <dd>if set to true, then this servlet is set as a {@link ServletContext} attribute with the
  * filter name as the attribute name.  This allows context external mechanism (eg JMX via {@link ContextHandler#MANAGED_ATTRIBUTES}) to
  * manage the configuration of the filter.</dd>
+ * <dt>tooManyCode</dt>
+ * <dd>The status code to send if there are too many requests.  By default is 429 (too many requests), but 503 (Unavailable) is 
+ * another option</dd>
  * </dl>
+ * </p>
+ * <p>
+ * This filter should be configured for {@link DispatcherType#REQUEST} and {@link DispatcherType#ASYNC} and with 
+ * <code>&lt;async-supported&gt;true&lt;/async-supported&gt;</code>.
  * </p>
  */
 @ManagedObject("limits exposure to abuse from request flooding, whether malicious, or as a result of a misconfigured client")
@@ -163,6 +161,7 @@ public class DoSFilter implements Filter
     static final String REMOTE_PORT_INIT_PARAM = "remotePort";
     static final String IP_WHITELIST_INIT_PARAM = "ipWhitelist";
     static final String ENABLED_INIT_PARAM = "enabled";
+    static final String TOO_MANY_CODE = "tooManyCode";
 
     private static final int USER_AUTH = 2;
     private static final int USER_SESSION = 2;
@@ -173,6 +172,7 @@ public class DoSFilter implements Filter
     private final String _resumed = "DoSFilter@" + Integer.toHexString(hashCode()) + ".RESUMED";
     private final ConcurrentHashMap<String, RateTracker> _rateTrackers = new ConcurrentHashMap<>();
     private final List<String> _whitelist = new CopyOnWriteArrayList<>();
+    private int _tooManyCode;
     private volatile long _delayMs;
     private volatile long _throttleMs;
     private volatile long _maxWaitMs;
@@ -260,7 +260,10 @@ public class DoSFilter implements Filter
 
         parameter = filterConfig.getInitParameter(ENABLED_INIT_PARAM);
         setEnabled(parameter == null || Boolean.parseBoolean(parameter));
-
+        
+        parameter = filterConfig.getInitParameter(TOO_MANY_CODE);
+        setTooManyCode(parameter==null?429:Integer.parseInt(parameter));
+        
         _scheduler = startScheduler();
 
         ServletContext context = filterConfig.getServletContext();
@@ -331,7 +334,7 @@ public class DoSFilter implements Filter
                     LOG.warn("DOS ALERT: Request rejected ip={}, session={}, user={}", request.getRemoteAddr(), request.getRequestedSessionId(), request.getUserPrincipal());
                     if (insertHeaders)
                         response.addHeader("DoSFilter", "unavailable");
-                    response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                    response.sendError(getTooManyCode());
                     return;
                 }
                 case 0:
@@ -414,12 +417,13 @@ public class DoSFilter implements Filter
                     LOG.debug("Rejecting {}", request);
                 if (isInsertHeaders())
                     response.addHeader("DoSFilter", "unavailable");
-                response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+                response.sendError(getTooManyCode());
             }
         }
         catch (InterruptedException e)
         {
-            response.sendError(HttpServletResponse.SC_SERVICE_UNAVAILABLE);
+            LOG.ignore(e);
+            response.sendError(getTooManyCode());
         }
         finally
         {
@@ -979,6 +983,16 @@ public class DoSFilter implements Filter
     public void setEnabled(boolean enabled)
     {
         _enabled = enabled;
+    }
+    
+    public int getTooManyCode()
+    {
+        return _tooManyCode;
+    }
+
+    public void setTooManyCode(int tooManyCode)
+    {
+        _tooManyCode = tooManyCode;
     }
 
     /**

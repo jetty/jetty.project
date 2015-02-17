@@ -4,7 +4,7 @@
 <!-- ============================================================= -->
 <!-- Base SSL configuration                                        -->
 <!-- This configuration needs to be used together with 1 or more   -->
-<!-- of jetty-https.xml, jetty-spdy.xml and/or jetty-http2.xml     --> 
+<!-- of jetty-https.xml or jetty-http2.xml                         -->
 <!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -19,6 +19,10 @@
         <Arg name="selectors" type="int"><Property name="ssl.selectors" default="-1"/></Arg>
         <Arg name="factories">
           <Array type="org.eclipse.jetty.server.ConnectionFactory">
+            <!-- uncomment to support proxy protocol
+	    <Item>
+              <New class="org.eclipse.jetty.server.ProxyConnectionFactory"/>
+            </Item>-->
           </Array>
         </Arg>
 
@@ -28,6 +32,7 @@
         <Set name="soLingerTime"><Property name="ssl.soLingerTime" default="-1"/></Set>
         <Set name="acceptorPriorityDelta"><Property name="ssl.acceptorPriorityDelta" default="0"/></Set>
         <Set name="selectorPriorityDelta"><Property name="ssl.selectorPriorityDelta" default="0"/></Set>
+        <Set name="acceptQueueSize"><Property name="ssl.acceptQueueSize" default="0"/></Set>
       </New>
     </Arg>
   </Call>

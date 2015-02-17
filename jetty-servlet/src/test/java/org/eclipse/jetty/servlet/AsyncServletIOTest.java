@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -31,6 +31,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.AsyncEvent;
 import javax.servlet.AsyncListener;
@@ -59,12 +60,13 @@ import org.junit.Test;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertEquals;
 
-// TODO need  these on SPDY as well!
+// TODO need  these on HTTP2 as well!
 public class AsyncServletIOTest 
 {    
     private static final Logger LOG = Log.getLogger(AsyncServletIOTest.class);
     protected AsyncIOServlet _servlet0=new AsyncIOServlet();
     protected AsyncIOServlet2 _servlet2=new AsyncIOServlet2();
+    protected AsyncIOServlet3 _servlet3=new AsyncIOServlet3();
     protected int _port;
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
@@ -89,8 +91,12 @@ public class AsyncServletIOTest
         _servletHandler.addServletWithMapping(holder,"/path/*");
         
         ServletHolder holder2=new ServletHolder(_servlet2);
-        holder.setAsyncSupported(true);
+        holder2.setAsyncSupported(true);
         _servletHandler.addServletWithMapping(holder2,"/path2/*");
+        
+        ServletHolder holder3=new ServletHolder(_servlet3);
+        holder3.setAsyncSupported(true);
+        _servletHandler.addServletWithMapping(holder3,"/path3/*");
         
         _server.start();
         _port=_connector.getLocalPort();
@@ -140,7 +146,7 @@ public class AsyncServletIOTest
     public void testBigWrites() throws Exception
     {
         process(102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400,102400);
-        Assert.assertThat("On Write Possible",_owp.get(),greaterThan(1));
+        Assert.assertThat("On Write Possible",_owp.get(),greaterThanOrEqualTo(1));
     }
 
     @Test
@@ -209,6 +215,51 @@ public class AsyncServletIOTest
         Assert.assertTrue(_servlet2.completed.await(5, TimeUnit.SECONDS));
     }
 
+    @Test
+    public void testAsyncConsumeAll() throws Exception
+    {
+        StringBuilder request = new StringBuilder(512);
+        request.append("GET /ctx/path3/info HTTP/1.1\r\n")
+        .append("Host: localhost\r\n")
+        .append("Content-Type: text/plain\r\n")
+        .append("Content-Length: 10\r\n")
+        .append("\r\n")
+        .append("0");
+        
+        int port=_port;
+        try (Socket socket = new Socket("localhost",port))
+        {
+            socket.setSoTimeout(1000000);
+            OutputStream out = socket.getOutputStream();
+            out.write(request.toString().getBytes(StandardCharsets.ISO_8859_1));
+            
+            BufferedReader in = new BufferedReader(new InputStreamReader(socket.getInputStream()),102400);
+            
+            // response line
+            String line = in.readLine();
+            LOG.debug("response-line: "+line);
+            Assert.assertThat(line,startsWith("HTTP/1.1 200 OK"));
+            
+            // Skip headers
+            while (line!=null)
+            {
+                line = in.readLine();
+                LOG.debug("header-line: "+line);
+                if (line.length()==0)
+                    break;
+            }
+
+            // Get body
+            line = in.readLine();
+            LOG.debug("body: "+line);
+            Assert.assertEquals("DONE",line);
+
+            // The connection should be aborted
+            line = in.readLine();
+            Assert.assertNull(line);
+        }
+    }
+    
     public synchronized List<String> process(String content,int... writes) throws Exception
     {
         return process(content.getBytes(StandardCharsets.ISO_8859_1),writes);
@@ -505,6 +556,42 @@ public class AsyncServletIOTest
             {
 
             }
+        }
+    }
+    
+
+    @SuppressWarnings("serial")
+    public class AsyncIOServlet3 extends HttpServlet
+    {
+        public CountDownLatch completed = new CountDownLatch(1);
+        
+        @Override
+        public void doGet(final HttpServletRequest request, final HttpServletResponse response) throws IOException
+        {
+            AsyncContext async = request.startAsync();
+            
+            request.getInputStream().setReadListener(new ReadListener()
+            {
+                
+                @Override
+                public void onError(Throwable t)
+                {                    
+                }
+                
+                @Override
+                public void onDataAvailable() throws IOException
+                {                    
+                }
+                
+                @Override
+                public void onAllDataRead() throws IOException
+                {                    
+                }
+            });
+            
+            response.setStatus(200);
+            response.getOutputStream().print("DONE");
+            async.complete();
         }
     }
 }

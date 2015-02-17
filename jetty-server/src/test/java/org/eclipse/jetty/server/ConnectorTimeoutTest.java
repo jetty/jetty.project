@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -34,13 +34,18 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+    
     protected static final int MAX_IDLE_TIME=500;
     private int sleepTime = MAX_IDLE_TIME + MAX_IDLE_TIME/5;
     private int minimumTestRuntime = MAX_IDLE_TIME-MAX_IDLE_TIME/5;
@@ -52,7 +57,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     }
 
 
-    @Test
+    @Test(timeout=60000)
     public void testMaxIdleWithRequest10() throws Exception
     {
         configureServer(new HelloWorldHandler());
@@ -82,7 +87,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Assert.assertTrue(System.currentTimeMillis() - start < maximumTestRuntime);
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testMaxIdleWithRequest11() throws Exception
     {
         configureServer(new EchoHandler());
@@ -115,7 +120,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Assert.assertTrue(System.currentTimeMillis() - start < maximumTestRuntime);
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testMaxIdleWithRequest10NoClientClose() throws Exception
     {
         final Exchanger<EndPoint> exchanger = new Exchanger<>();
@@ -189,7 +194,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Assert.assertFalse(endPoint.isOpen());
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testMaxIdleWithRequest10ClientIgnoresClose() throws Exception
     {
         final Exchanger<EndPoint> exchanger = new Exchanger<>();
@@ -265,7 +270,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Assert.assertFalse(endPoint.isOpen());
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testMaxIdleWithRequest11NoClientClose() throws Exception
     {
         final Exchanger<EndPoint> exchanger = new Exchanger<>();
@@ -342,8 +347,40 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         Assert.assertFalse(endPoint.isOpen());
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testMaxIdleNoRequest() throws Exception
+    {
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+        InputStream is=client.getInputStream();
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        os.write("GET ".getBytes("utf-8"));
+        os.flush();
+
+        Thread.sleep(sleepTime);
+        long start = System.currentTimeMillis();
+        try
+        {
+            IO.toString(is);
+            Assert.assertEquals(-1, is.read());
+        }
+        catch(SSLException e)
+        {
+            e.printStackTrace();
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        Assert.assertTrue(System.currentTimeMillis() - start < maximumTestRuntime);
+
+    }
+
+    @Test(timeout=60000)
+    public void testMaxIdleNothingSent() throws Exception
     {
         configureServer(new EchoHandler());
         Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
@@ -360,7 +397,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
         catch(SSLException e)
         {
-
+            // e.printStackTrace();
         }
         catch(Exception e)
         {
@@ -370,7 +407,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
 
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testMaxIdleWithSlowRequest() throws Exception
     {
         configureServer(new EchoHandler());
@@ -410,7 +447,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testMaxIdleWithSlowResponse() throws Exception
     {
         configureServer(new SlowResponseHandler());
@@ -439,7 +476,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         }
     }
 
-    @Test
+    @Test(timeout=60000)
     public void testMaxIdleWithWait() throws Exception
     {
         configureServer(new WaitHandler());

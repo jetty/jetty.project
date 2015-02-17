@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -69,7 +69,7 @@ public abstract class AbstractDoSFilterTest
 
         _tester.getContext().addServlet(TestServlet.class, "/*");
 
-        _dosFilter = _tester.getContext().addFilter(filter, "/dos/*", EnumSet.allOf(DispatcherType.class));
+        _dosFilter = _tester.getContext().addFilter(filter, "/dos/*", EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         _dosFilter.setInitParameter("maxRequestsPerSec", "4");
         _dosFilter.setInitParameter("delayMs", "200");
         _dosFilter.setInitParameter("throttledRequests", "1");
@@ -78,7 +78,7 @@ public abstract class AbstractDoSFilterTest
         _dosFilter.setInitParameter("remotePort", "false");
         _dosFilter.setInitParameter("insertHeaders", "true");
 
-        _timeoutFilter = _tester.getContext().addFilter(filter, "/timeout/*", EnumSet.allOf(DispatcherType.class));
+        _timeoutFilter = _tester.getContext().addFilter(filter, "/timeout/*", EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
         _timeoutFilter.setInitParameter("maxRequestsPerSec", "4");
         _timeoutFilter.setInitParameter("delayMs", "200");
         _timeoutFilter.setInitParameter("throttledRequests", "1");
@@ -260,7 +260,7 @@ public abstract class AbstractDoSFilterTest
         // System.err.println("RESPONSES: \n"+responses);
 
         assertEquals(4,count(responses,"HTTP/1.1 200 OK"));
-        assertEquals(1,count(responses,"HTTP/1.1 503"));
+        assertEquals(1,count(responses,"HTTP/1.1 429"));
         assertEquals(1,count(responses,"DoSFilter: delayed"));
         assertEquals(1,count(responses,"DoSFilter: throttled"));
         assertEquals(1,count(responses,"DoSFilter: unavailable"));

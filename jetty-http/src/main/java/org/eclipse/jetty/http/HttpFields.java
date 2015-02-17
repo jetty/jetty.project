@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -94,15 +94,15 @@ public class HttpFields implements Iterable<HttpField>
     /**
      * Get Collection of header names.
      */
-    public Collection<String> getFieldNamesCollection()
+    public Set<String> getFieldNamesCollection()
     {
-        final Set<String> list = new HashSet<>(_size);
+        final Set<String> set = new HashSet<>(_size);
         for (HttpField f : this)
         {
             if (f!=null)
-                list.add(f.getName());
+                set.add(f.getName());
         }
-        return list;
+        return set;
     }
 
     /**
@@ -180,7 +180,17 @@ public class HttpFields implements Iterable<HttpField>
         }
         return false;
     }
-    
+
+    public boolean contains(HttpHeader header)
+    {
+        for (int i=_size;i-->0;)
+        {
+            HttpField f=_fields[i];
+            if (f.getHeader()==header)
+                return true;
+        }
+        return false;
+    }
     
     public boolean containsKey(String name)
     {
@@ -192,7 +202,8 @@ public class HttpFields implements Iterable<HttpField>
         }
         return false;
     }
-
+    
+    
     public String get(HttpHeader header)
     {
         for (int i=0;i<_size;i++)

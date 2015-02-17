@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -252,6 +252,12 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 (overrideBundleInstallLocation == null 
                         ? BundleFileLocatorHelperFactory.getFactory().getHelper().getBundleInstallLocation(_bundle) 
                         : new File(overrideBundleInstallLocation));
+            
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Bundle location is {}, install location: {}", _bundle.getLocation(), bundleInstallLocation);
+            }
+            
             URL url = null;
             Resource rootResource = Resource.newResource(BundleFileLocatorHelperFactory.getFactory().getHelper().getLocalURL(bundleInstallLocation.toURI().toURL()));
             //try and make sure the rootResource is useable - if its a jar then make it a jar file url
@@ -266,6 +272,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             if (_webAppPath == null || _webAppPath.length() == 0 || ".".equals(_webAppPath))
             {
                 url = bundleInstallLocation.toURI().toURL();
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Webapp base using bundle install location: {}", url);
             }
             else
             {
@@ -273,16 +281,24 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 if (_webAppPath.startsWith("/") || _webAppPath.startsWith("file:"))
                 {
                     url = new File(_webAppPath).toURI().toURL();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Webapp base using absolute location: {}", url);
                 }
                 else if (bundleInstallLocation != null && bundleInstallLocation.isDirectory())
                 {
                     url = new File(bundleInstallLocation, _webAppPath).toURI().toURL();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Webapp base using path relative to bundle unpacked install location: {}", url);
                 }
                 else if (bundleInstallLocation != null)
                 {
                     Enumeration<URL> urls = BundleFileLocatorHelperFactory.getFactory().getHelper().findEntries(_bundle, _webAppPath);
                     if (urls != null && urls.hasMoreElements())
+                    {
                         url = urls.nextElement();
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Webapp base using path relative to packed bundle location: {}", url);
+                    }
                 }
             }
 
@@ -387,7 +403,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                 throw new IllegalStateException("Unable to get PackageAdmin reference to locate required Tld bundles");
 
             StringBuilder paths = new StringBuilder();         
-            String[] symbNames = requireTldBundles.split(", ");
+            String[] symbNames = requireTldBundles.split("[, ]");
 
             for (String symbName : symbNames)
             {
@@ -436,7 +452,7 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
                         String tmp = (String)_properties.get(OSGiWebappConstants.JETTY_CONTEXT_FILE_PATH);
                         if (tmp != null)
                         {
-                            String[] filenames = tmp.split(",;");
+                            String[] filenames = tmp.split("[,;]");
                             if (filenames != null && filenames.length > 0)
                             {
                                 String filename = filenames[0]; //should only be 1 filename in this usage

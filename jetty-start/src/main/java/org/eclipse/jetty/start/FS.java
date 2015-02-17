@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -67,14 +67,15 @@ public class FS
         return Files.exists(ret);
     }
 
-    public static void ensureDirectoryExists(Path dir) throws IOException
+    public static boolean ensureDirectoryExists(Path dir) throws IOException
     {
         if (exists(dir))
         {
             // exists already, nothing to do
-            return;
+            return false;
         }
         Files.createDirectories(dir);
+        return true;
     }
 
     public static void ensureDirectoryWritable(Path dir) throws IOException

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -54,6 +54,11 @@ public class ConnectionPool implements Closeable, Dumpable
         this.activeConnections = new BlockingArrayQueue<>(maxConnections);
     }
 
+    public int getConnectionCount()
+    {
+        return connectionCount.get();
+    }
+
     public BlockingQueue<Connection> getIdleConnections()
     {
         return idleConnections;
@@ -76,7 +81,7 @@ public class ConnectionPool implements Closeable, Dumpable
     {
         while (true)
         {
-            int current = connectionCount.get();
+            int current = getConnectionCount();
             final int next = current + 1;
 
             if (next > maxConnections)
@@ -101,6 +106,8 @@ public class ConnectionPool implements Closeable, Dumpable
                             LOG.debug("Connection {}/{} creation succeeded {}", next, maxConnections, connection);
                         if (activate(connection))
                             connectionPromise.succeeded(connection);
+                        else
+                            connectionPromise.failed(new IllegalStateException("Active connection overflow"));
                     }
 
                     @Override

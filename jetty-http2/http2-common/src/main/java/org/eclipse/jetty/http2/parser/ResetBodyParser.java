@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 
 public class ResetBodyParser extends BodyParser
@@ -42,7 +42,7 @@ public class ResetBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -52,14 +52,10 @@ public class ResetBodyParser extends BodyParser
                 {
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
-                    {
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_rst_stream_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_rst_stream_frame");
                     int length = getBodyLength();
                     if (length != 4)
-                    {
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_rst_stream_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_rst_stream_frame");
                     state = State.ERROR;
                     break;
                 }
@@ -82,9 +78,7 @@ public class ResetBodyParser extends BodyParser
                     --cursor;
                     error += currByte << (8 * cursor);
                     if (cursor == 0)
-                    {
                         return onReset(error);
-                    }
                     break;
                 }
                 default:
@@ -93,14 +87,15 @@ public class ResetBodyParser extends BodyParser
                 }
             }
         }
-        return Result.PENDING;
+        return false;
     }
 
-    private Result onReset(int error)
+    private boolean onReset(int error)
     {
         ResetFrame frame = new ResetFrame(getStreamId(), error);
         reset();
-        return notifyReset(frame) ? Result.ASYNC : Result.COMPLETE;
+        notifyReset(frame);
+        return true;
     }
 
     private enum State

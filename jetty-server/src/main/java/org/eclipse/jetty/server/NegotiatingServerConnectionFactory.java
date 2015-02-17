@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -32,9 +32,8 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
 {
     public static void checkProtocolNegotiationAvailable()
     {
-        if (!isAvailableInBootClassPath("org.eclipse.jetty.alpn.ALPN") &&
-                !isAvailableInBootClassPath("org.eclipse.jetty.npn.NextProtoNego"))
-            throw new IllegalStateException("No ALPN nor NPN classes available");
+        if (!isAvailableInBootClassPath("org.eclipse.jetty.alpn.ALPN"))
+            throw new IllegalStateException("No ALPN classes available");
     }
 
     private static boolean isAvailableInBootClassPath(String className)
@@ -52,21 +51,21 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
         }
     }
 
-    private final List<String> protocols;
+    private final List<String> negotiatedProtocols;
     private String defaultProtocol;
 
-    public NegotiatingServerConnectionFactory(String protocol, String... protocols)
+    public NegotiatingServerConnectionFactory(String protocol, String... negotiatedProtocols)
     {
         super(protocol);
-        this.protocols = new ArrayList<>();
-        if (protocols != null)
+        this.negotiatedProtocols = new ArrayList<>();
+        if (negotiatedProtocols != null)
         {
             // Trim the values, as they may come from XML configuration.
-            for (String p : protocols)
+            for (String p : negotiatedProtocols)
             {
                 p = p.trim();
                 if (!p.isEmpty())
-                    this.protocols.add(p.trim());
+                    this.negotiatedProtocols.add(p.trim());
             }
         }
     }
@@ -83,34 +82,37 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
         this.defaultProtocol = dft.isEmpty() ? null : dft;
     }
 
-    public List<String> getProtocols()
+    public List<String> getNegotiatedProtocols()
     {
-        return protocols;
+        return negotiatedProtocols;
     }
     
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
-        List<String> protocols = this.protocols;
-        if (protocols.isEmpty())
+        List<String> negotiated = this.negotiatedProtocols;
+        if (negotiated.isEmpty())
         {
-            protocols = connector.getProtocols();
-            Iterator<String> i = protocols.iterator();
-            while (i.hasNext())
+            // Generate list of protocols that we can negotiate
+            negotiated = new ArrayList<>(connector.getProtocols());
+            for (Iterator<String> i = negotiated.iterator();i.hasNext();)
             {
                 String protocol = i.next();
-                if ("ssl".equalsIgnoreCase(protocol) ||
-                        "alpn".equalsIgnoreCase(protocol) ||
-                        "npn".equalsIgnoreCase(protocol))
+                // exclude SSL and negotiating protocols
+                ConnectionFactory f = connector.getConnectionFactory(protocol);
+               
+                if ((f instanceof SslConnectionFactory) ||
+                    (f instanceof NegotiatingServerConnectionFactory))
                 {
                     i.remove();
                 }
             }
         }
 
+        // if default protocol is not set, then it is the first protocol given
         String dft = defaultProtocol;
-        if (dft == null && !protocols.isEmpty())
-            dft = protocols.get(0);
+        if (dft == null && !negotiated.isEmpty())
+            dft = negotiated.get(0);
 
         SSLEngine engine = null;
         EndPoint ep = endPoint;
@@ -123,7 +125,7 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
                 ep = null;
         }
 
-        return configure(newServerConnection(connector, endPoint, engine, protocols, dft), connector, endPoint);
+        return configure(newServerConnection(connector, endPoint, engine, negotiated, dft), connector, endPoint);
     }
 
     protected abstract AbstractConnection newServerConnection(Connector connector, EndPoint endPoint, SSLEngine engine, List<String> protocols, String defaultProtocol);
@@ -131,6 +133,6 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
     @Override
     public String toString()
     {
-        return String.format("%s@%x{%s,%s,%s}", getClass().getSimpleName(), hashCode(), getProtocol(), getDefaultProtocol(), getProtocols());
+        return String.format("%s@%x{%s,%s,%s}", getClass().getSimpleName(), hashCode(), getProtocols(), getDefaultProtocol(), getNegotiatedProtocols());
     }
 }

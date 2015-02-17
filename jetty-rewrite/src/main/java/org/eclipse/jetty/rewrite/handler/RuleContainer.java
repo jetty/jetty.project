@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -46,35 +46,7 @@ public class RuleContainer extends Rule
     protected String _originalPathAttribute;
     protected boolean _rewriteRequestURI=true;
     protected boolean _rewritePathInfo=true;
-    
-    protected LegacyRule _legacy;
-
-    /* ------------------------------------------------------------ */
-    @Deprecated
-    public LegacyRule getLegacyRule()
-    {
-        if (_legacy==null)
-        {
-            _legacy= new LegacyRule();
-            addRule(_legacy);
-        }
-        return _legacy;
-    }
-    
-
-    /* ------------------------------------------------------------ */
-    /**
-     * To enable configuration from jetty.xml on rewriteRequestURI, rewritePathInfo and
-     * originalPathAttribute
-     * 
-     * @param legacyRule old style rewrite rule
-     */
-    @Deprecated
-    public void setLegacyRule(LegacyRule legacyRule)
-    {
-        _legacy = legacyRule;
-    }
-
+     
     /* ------------------------------------------------------------ */
     /**
      * Returns the list of rules.
@@ -92,16 +64,7 @@ public class RuleContainer extends Rule
      */
     public void setRules(Rule[] rules)
     {
-        if (_legacy==null)
-            _rules = rules;
-        else
-        {
-            _rules=null;
-            addRule(_legacy);
-            if (rules!=null)
-                for (Rule rule:rules)
-                    addRule(rule);
-        }
+        _rules = rules;
     }
 
     /* ------------------------------------------------------------ */

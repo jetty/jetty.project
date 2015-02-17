@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,7 +20,9 @@ package org.eclipse.jetty.security;
 
 import java.io.IOException;
 import java.util.Arrays;
+
 import javax.servlet.ServletException;
+import javax.servlet.ServletRequest;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
@@ -436,7 +438,7 @@ public class DataConstraintsTest
         }
 
         @Override
-        public UserIdentity login(String username, Object credentials)
+        public UserIdentity login(String username, Object credentials, ServletRequest request)
         {
             if("admin".equals(username) && "password".equals(credentials))
                     return new DefaultUserIdentity(null,null,new String[] { "admin" } );

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,8 +19,10 @@
 package org.eclipse.jetty.io;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.Map;
 import java.util.concurrent.Executor;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -38,7 +40,7 @@ public abstract class NegotiatingClientConnection extends AbstractConnection
 
     protected NegotiatingClientConnection(EndPoint endp, Executor executor, SSLEngine sslEngine, ClientConnectionFactory connectionFactory, Map<String, Object> context)
     {
-        super(endp, executor, false);
+        super(endp, executor);
         this.engine = sslEngine;
         this.connectionFactory = connectionFactory;
         this.context = context;

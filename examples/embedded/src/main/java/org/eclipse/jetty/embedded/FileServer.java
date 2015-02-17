@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -24,8 +24,8 @@ import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 
-/* ------------------------------------------------------------ */
-/** Simple Jetty FileServer.
+/** 
+ * Simple Jetty FileServer.
  * This is a simple example of Jetty configured as a FileServer.
  */
 public class FileServer
@@ -56,5 +56,4 @@ public class FileServer
         server.start();
         server.join();
     }
-
 }

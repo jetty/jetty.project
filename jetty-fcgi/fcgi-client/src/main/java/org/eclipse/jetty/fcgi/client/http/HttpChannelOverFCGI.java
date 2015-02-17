@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -78,7 +78,14 @@ public class HttpChannelOverFCGI extends HttpChannel
     @Override
     public boolean abort(Throwable cause)
     {
-        sender.abort(cause);
+        boolean sendAborted = sender.abort(cause);
+        boolean receiveAborted = abortResponse(cause);
+        return sendAborted || receiveAborted;
+    }
+
+    @Override
+    public boolean abortResponse(Throwable cause)
+    {
         return receiver.abort(cause);
     }
 

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,22 +19,26 @@
 package org.eclipse.jetty.embedded;
 
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.ServletContextHandler;
-import org.eclipse.jetty.servlet.ServletHolder;
 
 public class OneServletContext
 {
-    public static void main(String[] args) throws Exception
+    public static void main( String[] args ) throws Exception
     {
-        Server server = new Server(8080);        
+        Server server = new Server(8080);
 
-        ServletContextHandler context = new ServletContextHandler(ServletContextHandler.SESSIONS);
+        ServletContextHandler context = new ServletContextHandler(
+                ServletContextHandler.SESSIONS);
         context.setContextPath("/");
+        context.setResourceBase(System.getProperty("java.io.tmpdir"));
         server.setHandler(context);
 
-        context.addServlet(org.eclipse.jetty.servlet.DefaultServlet.class,"/");
-        context.addServlet(new ServletHolder(new DumpServlet()),"/dump/*");
-        
+        // Add dump servlet
+        context.addServlet(DumpServlet.class, "/dump/*");
+        // Add default servlet
+        context.addServlet(DefaultServlet.class, "/");
+
         server.start();
         server.join();
     }

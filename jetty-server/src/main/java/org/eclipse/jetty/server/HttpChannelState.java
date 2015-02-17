@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -40,7 +40,7 @@ public class HttpChannelState
 {
     private static final Logger LOG = Log.getLogger(HttpChannelState.class);
 
-    private final static long DEFAULT_TIMEOUT=30000L;
+    private final static long DEFAULT_TIMEOUT=Long.getLong("org.eclipse.jetty.server.HttpChannelState.DEFAULT_TIMEOUT",30000L);
 
     /** The dispatched state of the HttpChannel, used to control the overall livecycle
      */
@@ -52,7 +52,8 @@ public class HttpChannelState
         ASYNC_WOKEN,      // A thread has been dispatch to handle from ASYNCWAIT
         ASYNC_IO,         // Has been dispatched for async IO
         COMPLETING,       // Request is completable
-        COMPLETED         // Request is complete
+        COMPLETED,        // Request is complete
+        UPGRADED          // Request upgraded the connection
     }
 
     /**
@@ -228,7 +229,7 @@ public class HttpChannelState
                     return Action.WAIT;
 
                 default:
-                    throw new IllegalStateException(this.getStatusString());
+                    return Action.WAIT;
             }
         }
     }
@@ -296,19 +297,6 @@ public class HttpChannelState
                     throw new IllegalStateException(this.getStatusString());
             }
 
-            if (_asyncRead)
-            {
-                _state=State.ASYNC_IO;
-                _asyncRead=false;
-                return Action.READ_CALLBACK;
-            }
-            
-            if (_asyncWrite)
-            {
-                _asyncWrite=false;
-                _state=State.ASYNC_IO;
-                return Action.WRITE_CALLBACK;
-            }
 
             if (_async!=null)
             {
@@ -327,8 +315,25 @@ public class HttpChannelState
                         _state=State.DISPATCHED;
                         _async=null;
                         return Action.ASYNC_EXPIRED;
-                    case EXPIRING:
                     case STARTED:
+                        if (_asyncRead)
+                        {
+                            _state=State.ASYNC_IO;
+                            _asyncRead=false;
+                            return Action.READ_CALLBACK;
+                        }
+                        
+                        if (_asyncWrite)
+                        {
+                            _asyncWrite=false;
+                            _state=State.ASYNC_IO;
+                            return Action.WRITE_CALLBACK;
+                        }
+                        scheduleTimeout();
+                        _state=State.ASYNC_WAIT;
+                        return Action.WAIT;
+
+                    case EXPIRING:
                         scheduleTimeout();
                         _state=State.ASYNC_WAIT;
                         return Action.WAIT;
@@ -525,6 +530,8 @@ public class HttpChannelState
                 case DISPATCHED:
                 case ASYNC_IO:
                     throw new IllegalStateException(getStatusString());
+                case UPGRADED:
+                    return;
                 default:
                     break;
             }
@@ -539,6 +546,31 @@ public class HttpChannelState
             _event=null;
         }
     }
+    
+    public void upgrade()
+    {
+        synchronized (this)
+        {
+            switch(_state)
+            {
+                case IDLE:
+                case COMPLETED:
+                    break;
+                default:
+                    throw new IllegalStateException(getStatusString());
+            }
+            _asyncListeners=null;
+            _state=State.UPGRADED;
+            _async=null;
+            _initial=true;
+            _asyncRead=false;
+            _asyncWrite=false;
+            _timeoutMs=DEFAULT_TIMEOUT;
+            cancelTimeout();
+            _event=null;
+        }
+    }
+
 
     protected void scheduleDispatch()
     {
@@ -563,6 +595,14 @@ public class HttpChannelState
             event.cancelTimeoutTask();
     }
 
+    public boolean isIdle()
+    {
+        synchronized (this)
+        {
+            return _state==State.IDLE;
+        }
+    }
+    
     public boolean isExpired()
     {
         synchronized (this)
@@ -613,6 +653,7 @@ public class HttpChannelState
         }
     }
 
+    
     public boolean isAsync()
     {
         synchronized (this)
@@ -690,6 +731,7 @@ public class HttpChannelState
         }
 
         if (handle)
+            // TODO, do we need to execute or just run?
             _channel.execute(_channel);
     }
     

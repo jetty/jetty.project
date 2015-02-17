@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.Closeable;
 import java.io.IOException;
 import java.nio.channels.AsynchronousCloseException;
+import java.util.ArrayList;
 import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.RejectedExecutionException;
@@ -58,7 +59,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         this.client = client;
         this.origin = origin;
 
-        this.exchanges = new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
+        this.exchanges = newExchangeQueue(client);
 
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier();
@@ -81,6 +82,11 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         if (!client.isDefaultPort(getScheme(), getPort()))
             host += ":" + getPort();
         hostField = new HttpField(HttpHeader.HOST, host);
+    }
+
+    protected Queue<HttpExchange> newExchangeQueue(HttpClient client)
+    {
+        return new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
     }
 
     protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
@@ -167,7 +173,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
 
         if (client.isRunning())
         {
-            if (exchanges.offer(exchange))
+            if (enqueue(exchanges, exchange))
             {
                 if (!client.isRunning() && exchanges.remove(exchange))
                 {
@@ -192,6 +198,11 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         {
             request.abort(new RejectedExecutionException(client + " is stopped"));
         }
+    }
+
+    protected boolean enqueue(Queue<HttpExchange> queue, HttpExchange exchange)
+    {
+        return queue.offer(exchange);
     }
 
     protected abstract void send();
@@ -233,9 +244,11 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
      */
     public void abort(Throwable cause)
     {
-        HttpExchange exchange;
-        // Just peek(), the abort() will remove it from the queue.
-        while ((exchange = exchanges.peek()) != null)
+        // Copy the queue of exchanges and fail only those that are queued at this moment.
+        // The application may queue another request from the failure/complete listener
+        // and we don't want to fail it immediately as if it was queued before the failure.
+        // The call to Request.abort() will remove the exchange from the exchanges queue.
+        for (HttpExchange exchange : new ArrayList<>(exchanges))
             exchange.getRequest().abort(cause);
     }
 
@@ -248,7 +261,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        ContainerLifeCycle.dumpObject(out, this + " - requests queued: " + exchanges.size());
+        ContainerLifeCycle.dumpObject(out, toString());
     }
 
     public String asString()
@@ -259,9 +272,10 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
     @Override
     public String toString()
     {
-        return String.format("%s[%s]%s,queue=%d",
+        return String.format("%s[%s]%x%s,queue=%d",
                 HttpDestination.class.getSimpleName(),
                 asString(),
+                hashCode(),
                 proxy == null ? "" : "(via " + proxy + ")",
                 exchanges.size());
     }

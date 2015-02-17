@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,17 +20,22 @@ package org.eclipse.jetty.server;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.util.Callback;
 
+
+/* ------------------------------------------------------------ */
+/** Abstraction of the outbound HTTP transport.
+ */
 public interface HttpTransport
 {    
     void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback);
+
+    boolean isPushSupported();
     
-    void push (MetaData.Request request);
+    void push(MetaData.Request request);
     
-    void completed();
+    void onCompleted();
     
     /**
      * Aborts this transport.
@@ -46,4 +51,10 @@ public interface HttpTransport
      * @param failure the failure that caused the abort.
      */
     void abort(Throwable failure);
+
+    /* ------------------------------------------------------------ */
+    /** Is the underlying transport optimized for DirectBuffer usage
+     * @return True if direct buffers can be used optimally.
+     */
+    boolean isOptimizedForDirectBuffers();
 }

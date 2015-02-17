@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -28,6 +28,7 @@ import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.Executor;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -39,11 +40,13 @@ import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.io.ManagedSelector;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.BufferUtil;
@@ -210,14 +213,14 @@ public class ConnectHandler extends HandlerWrapper
      * <p>CONNECT requests may have authentication headers such as {@code Proxy-Authorization}
      * that authenticate the client with the proxy.</p>
      *
-     * @param jettyRequest  Jetty-specific http request
+     * @param baseRequest  Jetty-specific http request
      * @param request       the http request
      * @param response      the http response
      * @param serverAddress the remote server address in the form {@code host:port}
      */
-    protected void handleConnect(Request jettyRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
+    protected void handleConnect(Request baseRequest, HttpServletRequest request, HttpServletResponse response, String serverAddress)
     {
-        jettyRequest.setHandled(true);
+        baseRequest.setHandled(true);
         try
         {
             boolean proceed = handleAuthentication(request, response, serverAddress);
@@ -249,15 +252,25 @@ public class ConnectHandler extends HandlerWrapper
             SocketChannel channel = SocketChannel.open();
             channel.socket().setTcpNoDelay(true);
             channel.configureBlocking(false);
-            InetSocketAddress address = new InetSocketAddress(host, port);
 
             AsyncContext asyncContext = request.startAsync();
             asyncContext.setTimeout(0);
 
+            HttpTransport transport = baseRequest.getHttpChannel().getHttpTransport();
+            
+            // TODO Handle CONNECT over HTTP2!
+            if (!(transport instanceof HttpConnection))
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("CONNECT forbidden for {}", transport);
+                sendConnectResponse(request, response, HttpServletResponse.SC_FORBIDDEN);
+                return;
+            }
+
+            InetSocketAddress address = newConnectAddress(host, port);
             if (LOG.isDebugEnabled())
                 LOG.debug("Connecting to {}", address);
-
-            ConnectContext connectContext = new ConnectContext(request, response, asyncContext, HttpConnection.getCurrentConnection());
+            ConnectContext connectContext = new ConnectContext(request, response, asyncContext, (HttpConnection)transport);
             if (channel.connect(address))
                 selector.accept(channel, connectContext);
             else
@@ -269,6 +282,17 @@ public class ConnectHandler extends HandlerWrapper
         }
     }
 
+    /* ------------------------------------------------------------ */
+    /** Create the address the connect channel will connect to.
+     * @param host The host from the connect request
+     * @param port The port from the connect request
+     * @return The InetSocketAddress to connect to.
+     */
+    protected InetSocketAddress newConnectAddress(String host, int port)
+    {
+        return new InetSocketAddress(host, port);
+    }
+    
     protected void onConnectSuccess(ConnectContext connectContext, UpstreamConnection upstreamConnection)
     {
         HttpConnection httpConnection = connectContext.getHttpConnection();

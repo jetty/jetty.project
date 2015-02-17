@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -45,9 +45,13 @@ public class MetaDataBuilder
 
     private HttpFields _fields = new HttpFields(10);
     
-    MetaDataBuilder(int maxSize)
+    /* ------------------------------------------------------------ */
+    /**
+     * @param maxHeadersSize The maximum size of the headers, expressed as total name and value characters.
+     */
+    MetaDataBuilder(int maxHeadersSize)
     {
-        _maxSize=maxSize;
+        _maxSize=maxHeadersSize;
     }
     
     /** Get the maxSize.

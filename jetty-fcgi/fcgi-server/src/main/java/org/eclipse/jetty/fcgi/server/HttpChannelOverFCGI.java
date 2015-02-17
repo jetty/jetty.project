@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -51,9 +51,9 @@ public class HttpChannelOverFCGI extends HttpChannel
     private String version;
     private HostPortHttpField hostPort;
 
-    public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
+    public HttpChannelOverFCGI(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
-        super(connector, configuration, endPoint, transport, input);
+        super(connector, configuration, endPoint, transport);
         this.dispatcher = new Dispatcher(connector.getExecutor(), this);
     }
 

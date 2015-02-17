@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -376,10 +376,10 @@ public class ServerInstanceWrapper
 
         _deploymentManager.setUseStandardBindings(false);
         List<AppLifeCycle.Binding> deploymentLifeCycleBindings = new ArrayList<AppLifeCycle.Binding>();
-        deploymentLifeCycleBindings.add(new OSGiDeployer());
+        deploymentLifeCycleBindings.add(new OSGiDeployer(this));
         deploymentLifeCycleBindings.add(new StandardStarter());
         deploymentLifeCycleBindings.add(new StandardStopper());
-        deploymentLifeCycleBindings.add(new OSGiUndeployer());
+        deploymentLifeCycleBindings.add(new OSGiUndeployer(this));
         _deploymentManager.setLifeCycleBindings(deploymentLifeCycleBindings);
         
         if (!providerClassNames.contains(BundleWebAppProvider.class.getName()))

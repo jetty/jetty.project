@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -67,7 +67,7 @@ public class PathFinderTest
     @Test
     public void testFindMods() throws IOException
     {
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         Path homePath = homeDir.toPath().toAbsolutePath();
         File baseDir = testdir.getEmptyDir();
         Path basePath = baseDir.toPath().toAbsolutePath();

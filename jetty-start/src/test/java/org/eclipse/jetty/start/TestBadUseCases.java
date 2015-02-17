@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -19,67 +19,80 @@
 package org.eclipse.jetty.start;
 
 import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
 
 import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
+import org.junit.Rule;
 import org.junit.Test;
+import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test bad configuration scenarios.
  */
+@RunWith(Parameterized.class)
 public class TestBadUseCases
 {
-    private void assertBadConfig(String homeName, String baseName, String expectedErrorMessage, String... cmdLineArgs) throws Exception
+    @Parameters(name = "{0}")
+    public static List<Object[]> getCases()
     {
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/" + homeName);
-        File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + baseName);
+        List<Object[]> ret = new ArrayList<>();
+        
+        ret.add(new Object[]{ "jsp", 
+                "Missing referenced dependency: jsp-impl/bad-jsp", 
+                new String[]{ "jsp-impl=bad" }});
+        
+        ret.add(new Object[]{ "jsp-bad", 
+                "Missing referenced dependency: jsp-impl/bad-jsp", 
+                null});
+
+        ret.add(new Object[]{ "http2", 
+                "Missing referenced dependency: alpn-impl/alpn-1.7.0_01", 
+                new String[]{"java.version=1.7.0_01"}});
+        
+        return ret;
+    }
+    
+    @Rule
+    public ExpectedException expectedException = ExpectedException.none();
+    
+    @Parameter(0)
+    public String caseName;
+    
+    @Parameter(1)
+    public String expectedErrorMessage;
+
+    @Parameter(2)
+    public String[] commandLineArgs;
+    
+    @Test
+    public void testBadConfig() throws Exception
+    {
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
+        File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName);
 
         Main main = new Main();
         List<String> cmdLine = new ArrayList<>();
         cmdLine.add("jetty.home=" + homeDir.getAbsolutePath());
         cmdLine.add("jetty.base=" + baseDir.getAbsolutePath());
         // cmdLine.add("--debug");
-        for (String arg : cmdLineArgs)
+        
+        if (commandLineArgs != null)
         {
-            cmdLine.add(arg);
+            for (String arg : commandLineArgs)
+            {
+                cmdLine.add(arg);
+            }
         }
 
-        try
-        {
-            main.processCommandLine(cmdLine);
-            fail("Expected " + UsageException.class.getName());
-        }
-        catch (UsageException e)
-        {
-            assertThat("Usage error",e.getMessage(),containsString(expectedErrorMessage));
-        }
+        expectedException.expect(UsageException.class);
+        expectedException.expectMessage(containsString(expectedErrorMessage));
+        main.processCommandLine(cmdLine);
     }
-
-    @Test
-    public void testBadJspCommandLine() throws Exception
-    {
-        assertBadConfig("home","base.with.jsp.default",
-                "Missing referenced dependency: jsp-impl/bad-jsp","jsp-impl=bad");
-    }
-
-    @Test
-    public void testBadJspImplName() throws Exception
-    {
-        assertBadConfig("home","base.with.jsp.bad",
-                "Missing referenced dependency: jsp-impl/bogus-jsp");
-    }
-    
-    @Test
-    public void testWithSpdyBadNpnVersion() throws Exception
-    {
-        assertBadConfig("home","base.enable.spdy.bad.npn.version",
-                "Missing referenced dependency: protonego-impl/npn-1.7.0_01",
-                "java.version=1.7.0_01", "protonego=npn");
-    }
-
-
 }

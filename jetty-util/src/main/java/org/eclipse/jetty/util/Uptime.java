@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -22,7 +22,7 @@ import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 
 /**
- * Provide for a Uptime class that is compatible with Android and the new Java 8 compact1 and compact2 environments.
+ * Provide for a Uptime class that is compatible with Android, GAE, and the new Java 8 compact profiles
  */
 public class Uptime
 {
@@ -62,10 +62,15 @@ public class Uptime
                     throw new UnsupportedOperationException("method getUptime() not found");
                 }
             }
-            catch (ClassNotFoundException | NoSuchMethodException | SecurityException | IllegalAccessException | IllegalArgumentException
-                    | InvocationTargetException e)
+            catch (ClassNotFoundException | 
+                   NoClassDefFoundError | 
+                   NoSuchMethodException | 
+                   SecurityException | 
+                   IllegalAccessException | 
+                   IllegalArgumentException | 
+                   InvocationTargetException e)
             {
-                throw new UnsupportedOperationException("Implementation not available",e);
+                throw new UnsupportedOperationException("Implementation not available in this environment",e);
             }
         }
 
