@@ -1,3 +1,29 @@
+jetty-9.2.8.v20150217 - 17 February 2015
+ + 451092 Connector will fail if HeaderListener return false.
+ + 455436 ProxyServlet sends two User-Agent values.
+ + 457893 Close temp jar resource
+ + 458101 added test for maxFormContentSize
+ + 458174 Example Jar Server
+ + 458175 multipart annotation on lazily loaded servlet does not work
+ + 458209 Length check for HttpMethod MOVE lookahead
+ + 458354 ALPNServerConnection.select negotiation.
+ + 458495 CompletableCallback may not notify failures.
+ + 458527 Implement an async proxy servlet that can perform content
+   transformations.
+ + 458568 JDBCLoginService javadoc incorrectly references HashLoginService
+ + 458849 org.eclipse.jetty.util.Uptime.DefaultImpl() not available on GAE
+ + 459006 master branch does not build on norwegian locale
+ + 459125 GzipHandler default mimeType behavior incorrect
+ + 459352 AsyncMiddleManServlet should set "Host:" header correctly in proxy to
+   remote request headers.
+ + 459490 Defining a duplicate error page in webdefault.xml and web.xml results
+   in an error
+ + 459542 AsyncMiddleManServlet race condition on first download content.
+ + 459560 jetty.sh handles start.d and no start.ini
+ + 459769 AsyncMiddleManServlet race condition on last download content.
+ + 459845 Support upgrade
+ + 459963 Failure writing content of a committed request leaks connections.
+
 jetty-9.2.7.v20150116 - 16 January 2015
  + 420944 Hot Deployment of WAR when Context XML exists doesn't trigger
    redeploy
