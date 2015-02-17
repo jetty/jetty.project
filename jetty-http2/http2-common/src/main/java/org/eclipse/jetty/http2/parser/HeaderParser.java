@@ -22,6 +22,11 @@ import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.frames.Frame;
 
+/**
+ * <p>The parser for the frame header of HTTP/2 frames.</p>
+ *
+ * @see Parser
+ */
 public class HeaderParser
 {
     private State state = State.LENGTH;
@@ -44,12 +49,13 @@ public class HeaderParser
     }
 
     /**
-     * Parses the header bytes in the given {@code buffer}; only the header
-     * bytes are consumed, therefore the buffer may contain unconsumed bytes.
+     * <p>Parses the header bytes in the given {@code buffer}; only the header
+     * bytes are consumed, therefore when this method returns, the buffer may
+     * contain unconsumed bytes.</p>
      *
      * @param buffer the buffer to parse
-     * @return true if a whole header was parsed, false if not enough header
-     *         bytes were present in the buffer
+     * @return true if the whole header bytes were parsed, false if not enough
+     * header bytes were present in the buffer
      */
     public boolean parse(ByteBuffer buffer)
     {
@@ -59,8 +65,8 @@ public class HeaderParser
             {
                 case LENGTH:
                 {
-                    int octect = buffer.get() & 0xFF;
-                    length = (length << 8) + octect;
+                    int octet = buffer.get() & 0xFF;
+                    length = (length << 8) + octet;
                     if (++cursor == 3)
                     {
                         length &= Frame.MAX_MAX_LENGTH;

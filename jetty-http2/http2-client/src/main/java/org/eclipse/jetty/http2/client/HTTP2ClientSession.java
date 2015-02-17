@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.http2.client;
 
-import org.eclipse.jetty.http2.FlowControl;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
@@ -35,13 +35,13 @@ public class HTTP2ClientSession extends HTTP2Session
 {
     private static final Logger LOG = Log.getLogger(HTTP2ClientSession.class);
 
-    public HTTP2ClientSession(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl)
+    public HTTP2ClientSession(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControlStrategy flowControl)
     {
         super(scheduler, endPoint, generator, listener, flowControl, 1);
     }
 
     @Override
-    public boolean onHeaders(HeadersFrame frame)
+    public void onHeaders(HeadersFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -55,13 +55,11 @@ public class HTTP2ClientSession extends HTTP2Session
         }
         else
         {
-            stream.updateClose(frame.isEndStream(), false);
             stream.process(frame, Callback.Adapter.INSTANCE);
             notifyHeaders(stream, frame);
             if (stream.isClosed())
                 removeStream(stream, false);
         }
-        return false;
     }
 
     private void notifyHeaders(IStream stream, HeadersFrame frame)
@@ -80,7 +78,7 @@ public class HTTP2ClientSession extends HTTP2Session
     }
 
     @Override
-    public boolean onPushPromise(PushPromiseFrame frame)
+    public void onPushPromise(PushPromiseFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -96,14 +94,12 @@ public class HTTP2ClientSession extends HTTP2Session
         else
         {
             IStream pushStream = createRemoteStream(pushStreamId);
-            pushStream.updateClose(true, true);
             pushStream.process(frame, Callback.Adapter.INSTANCE);
             Stream.Listener listener = notifyPush(stream, pushStream, frame);
             pushStream.setListener(listener);
             if (pushStream.isClosed())
                 removeStream(pushStream, false);
         }
-        return false;
     }
 
     private Stream.Listener notifyPush(IStream stream, IStream pushStream, PushPromiseFrame frame)

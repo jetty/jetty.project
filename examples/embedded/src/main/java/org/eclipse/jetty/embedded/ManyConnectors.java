@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.embedded;
 
-import org.eclipse.jetty.http.HttpVersion;
 import java.io.File;
 import java.io.FileNotFoundException;
 
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -78,7 +78,7 @@ public class ManyConnectors
         http.setPort(8080);
         http.setIdleTimeout(30000);
 
-        // SSL Context Factory for HTTPS and SPDY
+        // SSL Context Factory for HTTPS
         // SSL requires a certificate so we configure a factory for ssl contents
         // with information pointing to what keystore the ssl connection needs
         // to know about. Much more configuration is available the ssl context,

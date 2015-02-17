@@ -861,7 +861,7 @@ public class HttpParser
                             // End of headers!
 
                             // Was there a required host header?
-                            if (!_host && _version!=HttpVersion.HTTP_1_0 && _requestHandler!=null)
+                            if (!_host && _version==HttpVersion.HTTP_1_1 && _requestHandler!=null)
                             {
                                 throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"No Host");
                             }
@@ -1046,7 +1046,18 @@ public class HttpParser
                     
                     if (ch==HttpTokens.SPACE || ch==HttpTokens.TAB)
                         break;
-                    
+
+                    if (ch==HttpTokens.LINE_FEED)
+                    {
+                        _value=null;
+                        _string.setLength(0);
+                        _valueString=null;
+                        _length=-1;
+                        
+                        parsedHeader();
+                        setState(State.HEADER);
+                        break;
+                    }
                     throw new IllegalCharacter(ch,buffer);
 
                 case HEADER_IN_VALUE:

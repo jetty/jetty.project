@@ -46,23 +46,6 @@ public class WindowUpdateGenerator extends FrameGenerator
         if (windowUpdate < 0)
             throw new IllegalArgumentException("Invalid window update: " + windowUpdate);
 
-        // A negative streamId means that we have to generate
-        // bytes for both the stream and session frames.
-        boolean both = false;
-        if (streamId < 0)
-        {
-            both = true;
-            streamId = -streamId;
-        }
-
-        if (both)
-        {
-            ByteBuffer header = generateHeader(lease, FrameType.WINDOW_UPDATE, 4, Flags.NONE, 0);
-            header.putInt(windowUpdate);
-            BufferUtil.flipToFlush(header, 0);
-            lease.append(header, true);
-        }
-
         ByteBuffer header = generateHeader(lease, FrameType.WINDOW_UPDATE, 4, Flags.NONE, streamId);
         header.putInt(windowUpdate);
         BufferUtil.flipToFlush(header, 0);

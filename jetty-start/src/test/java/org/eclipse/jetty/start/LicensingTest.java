@@ -100,23 +100,23 @@ public class LicensingTest
     }
     
     @Test
-    public void testAdd_SPDY_Licensed() throws Exception
+    public void testAdd_HTTP2_Licensed() throws Exception
     {
         File basePath = testdir.getEmptyDir();
 
         List<String> cmds = getBaseCommandLine(basePath);
 
         cmds.add("-Dorg.eclipse.jetty.start.ack.licenses=true");
-        cmds.add("--add-to-start=spdy");
+        cmds.add("--add-to-start=http2");
 
         execMain(cmds);
         
         String contents = assertFileExists(basePath, "start.ini");
-        assertThat("Contents",contents,containsString("--module=spdy"+System.lineSeparator()));
+        assertThat("Contents",contents,containsString("--module=http2"+System.lineSeparator()));
     }
     
     @Test
-    public void testCreate_SPDY_Licensed() throws Exception
+    public void testCreate_HTTP2_Licensed() throws Exception
     {
         File basePath = testdir.getEmptyDir();
 
@@ -125,7 +125,7 @@ public class LicensingTest
         cmds.add("-Dorg.eclipse.jetty.start.ack.licenses=true");
         cmds.add("--dry-run");
         
-        StringReader startIni = new StringReader("--module=spdy\n");
+        StringReader startIni = new StringReader("--module=http2\n");
         try (FileWriter writer = new FileWriter(new File(basePath,"start.ini")))
         {
             IO.copy(startIni,writer);

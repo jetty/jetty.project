@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * <p>This class is a holder of HTTP configuration for use by the 
  * {@link HttpChannel} class.  Typically a HTTPConfiguration instance
  * is instantiated and passed to a {@link ConnectionFactory} that can 
- * create HTTP channels (eg HTTP, AJP or SPDY).</p>
+ * create HTTP channels (e.g. HTTP, AJP or FCGI).</p>
  * <p>The configuration held by this class is not for the wire protocol,
  * but for the interpretation and handling of HTTP requests that could
  * be transported by a variety of protocols.
@@ -54,7 +54,7 @@ public class HttpConfiguration
     private boolean _sendServerVersion = true;
     private boolean _sendXPoweredBy = false;
     private boolean _sendDateHeader = true;
-    private boolean _delayDispatchUntilContent = false;
+    private boolean _delayDispatchUntilContent = true;
 
     /* ------------------------------------------------------------ */
     /** 

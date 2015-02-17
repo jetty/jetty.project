@@ -67,7 +67,7 @@ public class PathFinderTest
     @Test
     public void testFindMods() throws IOException
     {
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         Path homePath = homeDir.toPath().toAbsolutePath();
         File baseDir = testdir.getEmptyDir();
         Path basePath = baseDir.toPath().toAbsolutePath();

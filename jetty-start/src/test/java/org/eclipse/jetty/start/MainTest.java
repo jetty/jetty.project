@@ -50,7 +50,7 @@ public class MainTest
     public void testBasicProcessing() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
-        File testJettyHome = MavenTestingUtils.getTestResourceDir("usecases/home").getAbsoluteFile();
+        File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home").getAbsoluteFile();
         cmdLineArgs.add("user.dir=" + testJettyHome);
         cmdLineArgs.add("jetty.home=" + testJettyHome);
         cmdLineArgs.add("jetty.port=9090");
@@ -87,7 +87,7 @@ public class MainTest
     public void testListConfig() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
-        File testJettyHome = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home");
         cmdLineArgs.add("jetty.home=" + testJettyHome);
         cmdLineArgs.add("jetty.port=9090");
         cmdLineArgs.add("--list-config");
@@ -111,7 +111,7 @@ public class MainTest
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        File homePath = MavenTestingUtils.getTestResourceDir("usecases/home").getAbsoluteFile();
+        File homePath = MavenTestingUtils.getTestResourceDir("dist-home").getAbsoluteFile();
         cmdLineArgs.add("jetty.home=" + homePath);
         cmdLineArgs.add("user.dir=" + homePath);
 
@@ -155,19 +155,18 @@ public class MainTest
     }
     
     @Test
-    public void testWithSpdy() throws Exception
+    public void testWithHttp2() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        File homePath = MavenTestingUtils.getTestResourceDir("usecases/home").getAbsoluteFile();
+        File homePath = MavenTestingUtils.getTestResourceDir("dist-home").getAbsoluteFile();
         cmdLineArgs.add("jetty.home=" + homePath);
         cmdLineArgs.add("user.dir=" + homePath);
         cmdLineArgs.add("java.version=1.7.0_60");
 
         // Modules
-        cmdLineArgs.add("--module=server");
         cmdLineArgs.add("--module=deploy");
-        cmdLineArgs.add("--module=spdy");
+        cmdLineArgs.add("--module=http2");
 
         Main main = new Main();
 
@@ -177,7 +176,7 @@ public class MainTest
         assertThat("jetty.home",baseHome.getHome(),is(homePath.getAbsolutePath()));
         assertThat("jetty.base",baseHome.getBase(),is(homePath.getAbsolutePath()));
 
-        ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-spdy.txt");
+        ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-http2.txt");
     }
 
     @Test

@@ -29,7 +29,7 @@ import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -51,25 +51,50 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2Client extends ContainerLifeCycle
 {
-    private final Queue<ISession> sessions = new ConcurrentLinkedQueue<>();
-    private final SelectorManager selector;
-    private final ByteBufferPool byteBufferPool;
-    private long idleTimeout;
+    private Executor executor;
+    private Scheduler scheduler;
+    private ByteBufferPool bufferPool;
+    private ClientConnectionFactory connectionFactory;
+    private Queue<ISession> sessions;
+    private SelectorManager selector;
+    public int selectors = 1;
+    public long idleTimeout = 30000;
+    public long connectTimeout = 10000;
 
-    public HTTP2Client()
+    @Override
+    protected void doStart() throws Exception
     {
-        this(new QueuedThreadPool());
+        if (executor == null)
+            setExecutor(new QueuedThreadPool());
+
+        if (scheduler == null)
+            setScheduler(new ScheduledExecutorScheduler());
+
+        if (bufferPool == null)
+            setByteBufferPool(new MappedByteBufferPool());
+
+        if (connectionFactory == null)
+            setClientConnectionFactory(new HTTP2ClientConnectionFactory());
+
+        if (sessions == null)
+        {
+            sessions = new ConcurrentLinkedQueue<>();
+            addBean(sessions);
+        }
+
+        if (selector == null)
+        {
+            selector = newSelectorManager();
+            addBean(selector);
+        }
+        selector.setConnectTimeout(getConnectTimeout());
+
+        super.doStart();
     }
 
-    public HTTP2Client(Executor executor)
+    protected SelectorManager newSelectorManager()
     {
-        addBean(executor);
-        Scheduler scheduler = new ScheduledExecutorScheduler();
-        addBean(scheduler, true);
-        this.selector = new ClientSelectorManager(executor, scheduler);
-        addBean(selector, true);
-        this.byteBufferPool = new MappedByteBufferPool();
-        addBean(byteBufferPool, true);
+        return new ClientSelectorManager(getExecutor(), getScheduler(), getSelectors());
     }
 
     @Override
@@ -79,6 +104,83 @@ public class HTTP2Client extends ContainerLifeCycle
         super.doStop();
     }
 
+    public Executor getExecutor()
+    {
+        return executor;
+    }
+
+    public void setExecutor(Executor executor)
+    {
+        this.updateBean(this.executor, executor);
+        this.executor = executor;
+    }
+
+    public Scheduler getScheduler()
+    {
+        return scheduler;
+    }
+
+    public void setScheduler(Scheduler scheduler)
+    {
+        this.updateBean(this.scheduler, scheduler);
+        this.scheduler = scheduler;
+    }
+
+    public ByteBufferPool getByteBufferPool()
+    {
+        return bufferPool;
+    }
+
+    public void setByteBufferPool(ByteBufferPool bufferPool)
+    {
+        this.updateBean(this.bufferPool, bufferPool);
+        this.bufferPool = bufferPool;
+    }
+
+    public ClientConnectionFactory getClientConnectionFactory()
+    {
+        return connectionFactory;
+    }
+
+    public void setClientConnectionFactory(ClientConnectionFactory connectionFactory)
+    {
+        this.updateBean(this.connectionFactory, connectionFactory);
+        this.connectionFactory = connectionFactory;
+    }
+
+    public int getSelectors()
+    {
+        return selectors;
+    }
+
+    public void setSelectors(int selectors)
+    {
+        this.selectors = selectors;
+    }
+
+    public long getIdleTimeout()
+    {
+        return idleTimeout;
+    }
+
+    public void setIdleTimeout(long idleTimeout)
+    {
+        this.idleTimeout = idleTimeout;
+    }
+
+    public long getConnectTimeout()
+    {
+        return connectTimeout;
+    }
+
+    public void setConnectTimeout(long connectTimeout)
+    {
+        this.connectTimeout = connectTimeout;
+        SelectorManager selector = this.selector;
+        if (selector != null)
+            selector.setConnectTimeout(connectTimeout);
+    }
+
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
         connect(null, address, listener, promise);
@@ -86,13 +188,17 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
+        connect(sslContextFactory, address, listener, promise, new HashMap<String, Object>());
+    }
+
+    public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    {
         try
         {
             SocketChannel channel = SocketChannel.open();
             channel.socket().setTcpNoDelay(true);
             channel.configureBlocking(false);
 
-            Map<String, Object> context = new HashMap<>();
             context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
             context.put(HTTP2ClientConnectionFactory.SESSION_LISTENER_CONTEXT_KEY, listener);
             context.put(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY, promise);
@@ -115,18 +221,8 @@ public class HTTP2Client extends ContainerLifeCycle
     private void closeConnections()
     {
         for (ISession session : sessions)
-            session.close(ErrorCodes.NO_ERROR, null, Callback.Adapter.INSTANCE);
+            session.close(ErrorCode.NO_ERROR.code, null, Callback.Adapter.INSTANCE);
         sessions.clear();
-    }
-
-    public long getIdleTimeout()
-    {
-        return idleTimeout;
-    }
-
-    public void setIdleTimeout(long idleTimeout)
-    {
-        this.idleTimeout = idleTimeout;
     }
 
     public boolean addSession(ISession session)
@@ -141,9 +237,9 @@ public class HTTP2Client extends ContainerLifeCycle
 
     private class ClientSelectorManager extends SelectorManager
     {
-        private ClientSelectorManager(Executor executor, Scheduler scheduler)
+        private ClientSelectorManager(Executor executor, Scheduler scheduler, int selectors)
         {
-            super(executor, scheduler);
+            super(executor, scheduler, selectors);
         }
 
         @Override
@@ -157,20 +253,36 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             @SuppressWarnings("unchecked")
             Map<String, Object> context = (Map<String, Object>)attachment;
-            context.put(HTTP2ClientConnectionFactory.BYTE_BUFFER_POOL_CONTEXT_KEY, byteBufferPool);
+            context.put(HTTP2ClientConnectionFactory.BYTE_BUFFER_POOL_CONTEXT_KEY, getByteBufferPool());
             context.put(HTTP2ClientConnectionFactory.EXECUTOR_CONTEXT_KEY, getExecutor());
             context.put(HTTP2ClientConnectionFactory.SCHEDULER_CONTEXT_KEY, getScheduler());
 
-            ClientConnectionFactory factory = new HTTP2ClientConnectionFactory();
+            ClientConnectionFactory factory = getClientConnectionFactory();
 
             SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
             if (sslContextFactory != null)
             {
-                ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), factory, "h2-14");
-                factory = new SslClientConnectionFactory(sslContextFactory, byteBufferPool, getExecutor(), alpn);
+                ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), factory, "h2-17");
+                factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
             }
 
             return factory.newConnection(endpoint, context);
+        }
+
+        @Override
+        protected void connectionFailed(SocketChannel channel, Throwable failure, Object attachment)
+        {
+            @SuppressWarnings("unchecked")
+            Map<String, Object> context = (Map<String, Object>)attachment;
+            if (LOG.isDebugEnabled())
+            {
+                Object host = context.get(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY);
+                Object port = context.get(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY);
+                LOG.debug("Could not connect to {}:{}", host, port);
+            }
+            @SuppressWarnings("unchecked")
+            Promise<Session> promise = (Promise<Session>)context.get(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY);
+            promise.failed(failure);
         }
     }
 }

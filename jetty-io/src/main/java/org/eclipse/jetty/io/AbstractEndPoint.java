@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -89,6 +90,12 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     public void setConnection(Connection connection)
     {
         _connection = connection;
+    }
+
+    @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return false;
     }
 
     @Override
@@ -164,9 +171,30 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
     }
 
     @Override
+    public void upgrade(Connection newConnection)
+    {
+        Connection old_connection = getConnection();
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} upgradeing from {} to {}", this, old_connection, newConnection);
+        
+        ByteBuffer prefilled = (old_connection instanceof Connection.UpgradeFrom)
+                ?((Connection.UpgradeFrom)old_connection).onUpgradeFrom():null;
+        old_connection.onClose();
+        old_connection.getEndPoint().setConnection(newConnection);
+
+        if (newConnection instanceof Connection.UpgradeTo)
+            ((Connection.UpgradeTo)newConnection).onUpgradeTo(prefilled);
+        else if (BufferUtil.hasContent(prefilled))
+            throw new IllegalStateException();
+
+        newConnection.onOpen();
+    }
+    
+    @Override
     public String toString()
     {
-        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d,%s}",
+        return String.format("%s@%x{%s<->%d,%s,%s,%s,%s,%s,%d/%d,%s}",
                 getClass().getSimpleName(),
                 hashCode(),
                 getRemoteAddress(),
@@ -176,6 +204,7 @@ public abstract class AbstractEndPoint extends IdleTimeout implements EndPoint
                 isOutputShutdown()?"OSHUT":"out",
                 _fillInterest.isInterested()?"R":"-",
                 _writeFlusher.isInProgress()?"W":"-",
+                getIdleFor(),
                 getIdleTimeout(),
                 getConnection()==null?null:getConnection().getClass().getSimpleName());
     }

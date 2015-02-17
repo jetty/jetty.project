@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.IOException;
+import java.nio.channels.ClosedChannelException;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -26,6 +28,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
@@ -49,6 +52,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Atomics;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -70,14 +74,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     private final EndPoint endPoint;
     private final Generator generator;
     private final Listener listener;
-    private final FlowControl flowControl;
+    private final FlowControlStrategy flowControl;
     private final HTTP2Flusher flusher;
     private int maxLocalStreams;
     private int maxRemoteStreams;
     private long streamIdleTimeout;
     private boolean pushEnabled;
 
-    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControl flowControl, int initialStreamId)
+    public HTTP2Session(Scheduler scheduler, EndPoint endPoint, Generator generator, Listener listener, FlowControlStrategy flowControl, int initialStreamId)
     {
         this.scheduler = scheduler;
         this.endPoint = endPoint;
@@ -89,12 +93,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         this.maxRemoteStreams = -1;
         this.streamIds.set(initialStreamId);
         this.streamIdleTimeout = endPoint.getIdleTimeout();
-        this.sendWindow.set(FlowControl.DEFAULT_WINDOW_SIZE);
-        this.recvWindow.set(FlowControl.DEFAULT_WINDOW_SIZE);
+        this.sendWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        this.recvWindow.set(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         this.pushEnabled = true; // SPEC: by default, push is enabled.
     }
 
-    public FlowControl getFlowControl()
+    public FlowControlStrategy getFlowControlStrategy()
     {
         return flowControl;
     }
@@ -140,7 +144,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     }
 
     @Override
-    public boolean onData(final DataFrame frame)
+    public void onData(final DataFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -155,46 +159,52 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
         if (stream != null)
         {
-            stream.updateClose(frame.isEndStream(), false);
-
             if (getRecvWindow() < 0)
             {
-                close(ErrorCodes.FLOW_CONTROL_ERROR, "session_window_exceeded", Callback.Adapter.INSTANCE);
-                return false;
+                close(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", Callback.Adapter.INSTANCE);
             }
-
-            boolean result = stream.process(frame, new Callback.Adapter()
+            else
             {
-                @Override
-                public void succeeded()
+                stream.process(frame, new Callback()
                 {
-                    flowControl.onDataConsumed(stream, flowControlLength);
-                }
-            });
+                    @Override
+                    public void succeeded()
+                    {
+                        flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
+                    }
 
-            if (stream.isClosed())
-                removeStream(stream, false);
-            return result;
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        // Consume also in case of failures, to free the
+                        // session flow control window for other streams.
+                        flowControl.onDataConsumed(HTTP2Session.this, stream, flowControlLength);
+                    }
+                });
+                if (stream.isClosed())
+                    removeStream(stream, false);
+            }
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Ignoring {}, stream #{} not found", frame, streamId);
-            return false;
+            // We must enlarge the session flow control window,
+            // otherwise other requests will be stalled.
+            flowControl.onDataConsumed(this, null, flowControlLength);
         }
     }
 
     @Override
-    public abstract boolean onHeaders(HeadersFrame frame);
+    public abstract void onHeaders(HeadersFrame frame);
 
     @Override
-    public boolean onPriority(PriorityFrame frame)
+    public void onPriority(PriorityFrame frame)
     {
-        return false;
     }
 
     @Override
-    public boolean onReset(ResetFrame frame)
+    public void onReset(ResetFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -202,20 +212,18 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         IStream stream = getStream(frame.getStreamId());
         if (stream != null)
             stream.process(frame, Callback.Adapter.INSTANCE);
-
-        notifyReset(this, frame);
+        else
+            notifyReset(this, frame);
 
         if (stream != null)
             removeStream(stream, false);
-
-        return false;
     }
 
     @Override
-    public boolean onSettings(SettingsFrame frame)
+    public void onSettings(SettingsFrame frame)
     {
         if (frame.isReply())
-            return false;
+            return;
 
         // Iterate over all settings
         for (Map.Entry<Integer, Integer> entry : frame.getSettings().entrySet())
@@ -236,8 +244,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     // SPEC: check the value is sane.
                     if (value != 0 && value != 1)
                     {
-                        onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_enable_push");
-                        return false;
+                        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_enable_push");
+                        return;
                     }
                     pushEnabled = value == 1;
                     break;
@@ -253,7 +261,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Update initial window size to {}", value);
-                    flowControl.updateInitialStreamWindow(this, value);
+                    flowControl.updateInitialStreamWindow(this, value, false);
                     break;
                 }
                 case SettingsFrame.MAX_FRAME_SIZE:
@@ -263,8 +271,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     // SPEC: check the max frame size is sane.
                     if (value < Frame.DEFAULT_MAX_LENGTH || value > Frame.MAX_MAX_LENGTH)
                     {
-                        onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_max_frame_size");
-                        return false;
+                        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_max_frame_size");
+                        return;
                     }
                     generator.setMaxFrameSize(value);
                     break;
@@ -287,11 +295,10 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         // SPEC: SETTINGS frame MUST be replied.
         SettingsFrame reply = new SettingsFrame(Collections.<Integer, Integer>emptyMap(), true);
         settings(reply, Callback.Adapter.INSTANCE);
-        return false;
     }
 
     @Override
-    public boolean onPing(PingFrame frame)
+    public void onPing(PingFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -304,7 +311,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             PingFrame reply = new PingFrame(frame.getPayload(), true);
             control(null, Callback.Adapter.INSTANCE, reply);
         }
-        return false;
     }
 
     /**
@@ -320,13 +326,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
      *   performing their actions.
      *
      * @param frame the GO_AWAY frame that has been received.
-     * @return whether the parsing will be resumed asynchronously
      * @see #close(int, String, Callback)
      * @see #onShutdown()
      * @see #onIdleTimeout()
      */
     @Override
-    public boolean onGoAway(final GoAwayFrame frame)
+    public void onGoAway(final GoAwayFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -356,7 +361,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                                 notifyClose(HTTP2Session.this, frame);
                             }
                         }, new DisconnectFrame());
-                        return false;
+                        return;
                     }
                     break;
                 }
@@ -364,14 +369,14 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Ignored {}, already closed", frame);
-                    return false;
+                    return;
                 }
             }
         }
     }
 
     @Override
-    public boolean onWindowUpdate(WindowUpdateFrame frame)
+    public void onWindowUpdate(WindowUpdateFrame frame)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Received {}", frame);
@@ -386,13 +391,13 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             onWindowUpdate(null, frame);
         }
-        return false;
     }
 
     @Override
     public void onConnectionFailure(int error, String reason)
     {
         close(error, reason, Callback.Adapter.INSTANCE);
+        notifyFailure(this, new IOException(String.format("%d/%s", error, reason)));
     }
 
     @Override
@@ -400,6 +405,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         // Synchronization is necessary to atomically create
         // the stream id and enqueue the frame to be sent.
+        boolean queued;
         synchronized (this)
         {
             int streamId = streamIds.getAndAdd(2);
@@ -414,10 +420,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             stream.setListener(listener);
 
             ControlEntry entry = new ControlEntry(frame, stream, new PromiseCallback<>(promise, stream));
-            flusher.append(entry);
+            queued = flusher.append(entry);
         }
         // Iterate outside the synchronized block.
-        flusher.iterate();
+        if (queued)
+            flusher.iterate();
     }
 
     @Override
@@ -425,6 +432,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     {
         // Synchronization is necessary to atomically create
         // the stream id and enqueue the frame to be sent.
+        boolean queued;
         synchronized (this)
         {
             int streamId = streamIds.getAndAdd(2);
@@ -436,10 +444,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             pushStream.updateClose(true, false);
 
             ControlEntry entry = new ControlEntry(frame, pushStream, new PromiseCallback<>(promise, pushStream));
-            flusher.append(entry);
+            queued = flusher.append(entry);
         }
         // Iterate outside the synchronized block.
-        flusher.iterate();
+        if (queued)
+            flusher.iterate();
     }
 
     @Override
@@ -486,7 +495,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
      * @see #onIdleTimeout()
      */
     @Override
-    public void close(int error, String reason, Callback callback)
+    public boolean close(int error, String reason, Callback callback)
     {
         while (true)
         {
@@ -502,7 +511,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                         if (LOG.isDebugEnabled())
                             LOG.debug("Sending {}", frame);
                         control(null, callback, frame);
-                        return;
+                        return true;
                     }
                     break;
                 }
@@ -510,7 +519,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Ignoring close {}/{}, already closed", error, reason);
-                    return;
+                    callback.succeeded();
+                    return false;
                 }
             }
         }
@@ -530,11 +540,23 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void control(IStream stream, Callback callback, Frame frame, Frame... frames)
     {
-        // We want to generate as late as possible to allow re-prioritization.
+        // We want to generate as late as possible to allow re-prioritization;
+        // generation will happen while processing the entries.
+
+        // The callback needs to be notified only when the last frame completes.
+
         int length = frames.length;
-        frame(new ControlEntry(frame, stream, callback), length == 0);
-        for (int i = 1; i <= length; ++i)
-            frame(new ControlEntry(frames[i - 1], stream, callback), i == length);
+        if (length == 0)
+        {
+            frame(new ControlEntry(frame, stream, callback), true);
+        }
+        else
+        {
+            callback = new CountingCallback(callback, 1 + length);
+            frame(new ControlEntry(frame, stream, callback), false);
+            for (int i = 1; i <= length; ++i)
+                frame(new ControlEntry(frames[i - 1], stream, callback), i == length);
+        }
     }
 
     @Override
@@ -549,11 +571,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (LOG.isDebugEnabled())
             LOG.debug("Sending {}", entry.frame);
         // Ping frames are prepended to process them as soon as possible.
-        if (entry.frame.getType() == FrameType.PING)
-            flusher.prepend(entry);
-        else
-            flusher.append(entry);
-        if (flush)
+        boolean queued = entry.frame.getType() == FrameType.PING ? flusher.prepend(entry) : flusher.append(entry);
+        if (queued && flush)
             flusher.iterate();
     }
 
@@ -597,7 +616,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             int maxCount = getMaxRemoteStreams();
             if (maxCount >= 0 && remoteCount >= maxCount)
             {
-                reset(new ResetFrame(streamId, ErrorCodes.REFUSED_STREAM_ERROR), Callback.Adapter.INSTANCE);
+                reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
                 return null;
             }
             if (remoteStreamCount.compareAndSet(remoteCount, remoteCount + 1))
@@ -618,7 +637,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         else
         {
-            close(ErrorCodes.PROTOCOL_ERROR, "duplicate_stream", Callback.Adapter.INSTANCE);
+            close(ErrorCode.PROTOCOL_ERROR.code, "duplicate_stream", Callback.Adapter.INSTANCE);
             return null;
         }
     }
@@ -640,6 +659,8 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             else
                 remoteStreamCount.decrementAndGet();
 
+            flowControl.onStreamTerminated(stream);
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Removed {}", stream);
         }
@@ -659,12 +680,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         return streams.get(streamId);
     }
 
-    protected int getSendWindow()
+    public int getSendWindow()
     {
         return sendWindow.get();
     }
 
-    protected int getRecvWindow()
+    public int getRecvWindow()
     {
         return recvWindow.get();
     }
@@ -737,7 +758,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 // The other peer did not send a GO_AWAY, no need to be gentle.
                 if (LOG.isDebugEnabled())
                     LOG.debug("Abrupt close for {}", this);
-                terminate();
+                abort(new ClosedChannelException());
                 break;
             }
             case LOCALLY_CLOSED:
@@ -788,13 +809,13 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             case NOT_CLOSED:
             {
                 // Real idle timeout, just close.
-                close(ErrorCodes.NO_ERROR, "idle_timeout", Callback.Adapter.INSTANCE);
+                close(ErrorCode.NO_ERROR.code, "idle_timeout", Callback.Adapter.INSTANCE);
                 break;
             }
             case LOCALLY_CLOSED:
             case REMOTELY_CLOSED:
             {
-                terminate();
+                abort(new TimeoutException());
                 break;
             }
             default:
@@ -837,6 +858,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 }
             }
         }
+    }
+
+    protected void abort(Throwable failure)
+    {
+        terminate();
+        notifyFailure(this, failure);
     }
 
     public boolean isDisconnected()
@@ -910,6 +937,18 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
     }
 
+    protected void notifyFailure(Session session, Throwable failure)
+    {
+        try
+        {
+            listener.onFailure(session, failure);
+        }
+        catch (Throwable x)
+        {
+            LOG.info("Failure while notifying listener " + listener, x);
+        }
+    }
+
     @Override
     public String toString()
     {
@@ -946,10 +985,26 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             switch (frame.getType())
             {
+                case HEADERS:
+                {
+                    HeadersFrame headersFrame = (HeadersFrame)frame;
+                    stream.updateClose(headersFrame.isEndStream(), true);
+                    if (stream.isClosed())
+                        removeStream(stream, true);
+                    break;
+                }
                 case RST_STREAM:
                 {
                     if (stream != null)
                         removeStream(stream, true);
+                    break;
+                }
+                case SETTINGS:
+                {
+                    SettingsFrame settingsFrame = (SettingsFrame)frame;
+                    Integer initialWindow = settingsFrame.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
+                    if (initialWindow != null)
+                        flowControl.updateInitialStreamWindow(HTTP2Session.this, initialWindow, true);
                     break;
                 }
                 case GO_AWAY:

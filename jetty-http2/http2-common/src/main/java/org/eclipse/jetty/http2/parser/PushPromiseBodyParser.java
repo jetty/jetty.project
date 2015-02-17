@@ -21,10 +21,9 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
-import org.eclipse.jetty.util.BufferUtil;
 
 public class PushPromiseBodyParser extends BodyParser
 {
@@ -51,7 +50,7 @@ public class PushPromiseBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         boolean loop = false;
         while (buffer.hasRemaining() || loop)
@@ -62,17 +61,11 @@ public class PushPromiseBodyParser extends BodyParser
                 {
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_push_promise_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_push_promise_frame");
 
                     // For now we don't support PUSH_PROMISE frames that don't have END_HEADERS.
                     if (!hasFlag(Flags.END_HEADERS))
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.INTERNAL_ERROR, "unsupported_push_promise_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.INTERNAL_ERROR.code, "unsupported_push_promise_frame");
 
                     length = getBodyLength();
 
@@ -93,10 +86,7 @@ public class PushPromiseBodyParser extends BodyParser
                     length -= paddingLength;
                     state = State.STREAM_ID;
                     if (length < 4)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_push_promise_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_push_promise_frame");
                     break;
                 }
                 case STREAM_ID:
@@ -123,10 +113,7 @@ public class PushPromiseBodyParser extends BodyParser
                     streamId += currByte << (8 * cursor);
                     --length;
                     if (cursor > 0 && length <= 0)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_push_promise_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_push_promise_frame");
                     if (cursor == 0)
                     {
                         streamId &= 0x7F_FF_FF_FF;
@@ -142,10 +129,7 @@ public class PushPromiseBodyParser extends BodyParser
                     {
                         state = State.PADDING;
                         loop = paddingLength == 0;
-                        if (onPushPromise(streamId, metaData))
-                        {
-                            return Result.ASYNC;
-                        }
+                        onPushPromise(streamId, metaData);
                     }
                     break;
                 }
@@ -157,7 +141,7 @@ public class PushPromiseBodyParser extends BodyParser
                     if (paddingLength == 0)
                     {
                         reset();
-                        return Result.COMPLETE;
+                        return true;
                     }
                     break;
                 }
@@ -167,13 +151,13 @@ public class PushPromiseBodyParser extends BodyParser
                 }
             }
         }
-        return Result.PENDING;
+        return false;
     }
 
-    private boolean onPushPromise(int streamId, MetaData metaData)
+    private void onPushPromise(int streamId, MetaData metaData)
     {
         PushPromiseFrame frame = new PushPromiseFrame(getStreamId(), streamId, metaData);
-        return notifyPushPromise(frame);
+        notifyPushPromise(frame);
     }
 
     private enum State

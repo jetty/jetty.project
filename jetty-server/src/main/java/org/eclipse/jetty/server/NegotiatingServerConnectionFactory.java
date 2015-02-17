@@ -32,9 +32,8 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
 {
     public static void checkProtocolNegotiationAvailable()
     {
-        if (!isAvailableInBootClassPath("org.eclipse.jetty.alpn.ALPN") &&
-                !isAvailableInBootClassPath("org.eclipse.jetty.npn.NextProtoNego"))
-            throw new IllegalStateException("No ALPN nor NPN classes available");
+        if (!isAvailableInBootClassPath("org.eclipse.jetty.alpn.ALPN"))
+            throw new IllegalStateException("No ALPN classes available");
     }
 
     private static boolean isAvailableInBootClassPath(String className)

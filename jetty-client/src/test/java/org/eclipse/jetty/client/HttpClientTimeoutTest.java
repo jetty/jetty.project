@@ -28,7 +28,6 @@ import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import javax.net.ssl.SSLEngine;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -297,114 +296,6 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
             Assert.assertFalse(sslIdle.get());
             Assert.assertThat(x.getCause(), Matchers.instanceOf(TimeoutException.class));
         }
-    }
-
-    @Slow
-    @Test
-    public void testConnectTimeoutFailsRequest() throws Exception
-    {
-        String host = "10.255.255.1";
-        int port = 80;
-        int connectTimeout = 1000;
-        assumeConnectTimeout(host, port, connectTimeout);
-
-        start(new EmptyServerHandler());
-        client.stop();
-        client.setConnectTimeout(connectTimeout);
-        client.start();
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        Request request = client.newRequest(host, port);
-        request.scheme(scheme)
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isFailed())
-                            latch.countDown();
-                    }
-                });
-
-        Assert.assertTrue(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
-        Assert.assertNotNull(request.getAbortCause());
-    }
-
-    @Slow
-    @Test
-    public void testConnectTimeoutIsCancelledByShorterRequestTimeout() throws Exception
-    {
-        String host = "10.255.255.1";
-        int port = 80;
-        int connectTimeout = 2000;
-        assumeConnectTimeout(host, port, connectTimeout);
-
-        start(new EmptyServerHandler());
-        client.stop();
-        client.setConnectTimeout(connectTimeout);
-        client.start();
-
-        final AtomicInteger completes = new AtomicInteger();
-        final CountDownLatch latch = new CountDownLatch(2);
-        Request request = client.newRequest(host, port);
-        request.scheme(scheme)
-                .timeout(connectTimeout / 2, TimeUnit.MILLISECONDS)
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        completes.incrementAndGet();
-                        latch.countDown();
-                    }
-                });
-
-        Assert.assertFalse(latch.await(2 * connectTimeout, TimeUnit.MILLISECONDS));
-        Assert.assertEquals(1, completes.get());
-        Assert.assertNotNull(request.getAbortCause());
-    }
-
-    @Test
-    public void retryAfterConnectTimeout() throws Exception
-    {
-        final String host = "10.255.255.1";
-        final int port = 80;
-        int connectTimeout = 1000;
-        assumeConnectTimeout(host, port, connectTimeout);
-
-        start(new EmptyServerHandler());
-        client.stop();
-        client.setConnectTimeout(connectTimeout);
-        client.start();
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        Request request = client.newRequest(host, port);
-        request.scheme(scheme)
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
-                    {
-                        if (result.isFailed())
-                        {
-                            // Retry
-                            client.newRequest(host, port)
-                                    .scheme(scheme)
-                                    .send(new Response.CompleteListener()
-                                    {
-                                        @Override
-                                        public void onComplete(Result result)
-                                        {
-                                            if (result.isFailed())
-                                                latch.countDown();
-                                        }
-                                    });
-                        }
-                    }
-                });
-
-        Assert.assertTrue(latch.await(333 * connectTimeout, TimeUnit.MILLISECONDS));
-        Assert.assertNotNull(request.getAbortCause());
     }
 
     @Test

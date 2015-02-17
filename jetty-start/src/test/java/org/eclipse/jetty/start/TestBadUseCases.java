@@ -28,54 +28,71 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.rules.ExpectedException;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
 /**
  * Test bad configuration scenarios.
  */
+@RunWith(Parameterized.class)
 public class TestBadUseCases
 {
+    @Parameters(name = "{0}")
+    public static List<Object[]> getCases()
+    {
+        List<Object[]> ret = new ArrayList<>();
+        
+        ret.add(new Object[]{ "jsp", 
+                "Missing referenced dependency: jsp-impl/bad-jsp", 
+                new String[]{ "jsp-impl=bad" }});
+        
+        ret.add(new Object[]{ "jsp-bad", 
+                "Missing referenced dependency: jsp-impl/bad-jsp", 
+                null});
+
+        ret.add(new Object[]{ "http2", 
+                "Missing referenced dependency: alpn-impl/alpn-1.7.0_01", 
+                new String[]{"java.version=1.7.0_01"}});
+        
+        return ret;
+    }
+    
     @Rule
     public ExpectedException expectedException = ExpectedException.none();
     
-    private void assertBadConfig(String homeName, String baseName, String expectedErrorMessage, String... cmdLineArgs) throws Exception
+    @Parameter(0)
+    public String caseName;
+    
+    @Parameter(1)
+    public String expectedErrorMessage;
+
+    @Parameter(2)
+    public String[] commandLineArgs;
+    
+    @Test
+    public void testBadConfig() throws Exception
     {
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/" + homeName);
-        File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + baseName);
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
+        File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName);
 
         Main main = new Main();
         List<String> cmdLine = new ArrayList<>();
         cmdLine.add("jetty.home=" + homeDir.getAbsolutePath());
         cmdLine.add("jetty.base=" + baseDir.getAbsolutePath());
         // cmdLine.add("--debug");
-        for (String arg : cmdLineArgs)
+        
+        if (commandLineArgs != null)
         {
-            cmdLine.add(arg);
+            for (String arg : commandLineArgs)
+            {
+                cmdLine.add(arg);
+            }
         }
 
         expectedException.expect(UsageException.class);
         expectedException.expectMessage(containsString(expectedErrorMessage));
         main.processCommandLine(cmdLine);
-    }
-
-    @Test
-    public void testBadJspCommandLine() throws Exception
-    {
-        assertBadConfig("home","base.with.jsp.default",
-                "Missing referenced dependency: jsp-impl/bad-jsp","jsp-impl=bad");
-    }
-
-    @Test
-    public void testBadJspImplName() throws Exception
-    {
-        assertBadConfig("home","base.with.jsp.bad",
-                "Missing referenced dependency: jsp-impl/bogus-jsp");
-    }
-    
-    @Test
-    public void testWithSpdyBadNpnVersion() throws Exception
-    {
-        assertBadConfig("home","base.enable.spdy.bad.npn.version",
-                "Missing referenced dependency: protonego-impl/npn-1.7.0_01",
-                "java.version=1.7.0_01", "protonego=npn");
     }
 }

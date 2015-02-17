@@ -43,10 +43,9 @@ public class PriorityGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onPriority(PriorityFrame frame)
+            public void onPriority(PriorityFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -88,10 +87,9 @@ public class PriorityGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onPriority(PriorityFrame frame)
+            public void onPriority(PriorityFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

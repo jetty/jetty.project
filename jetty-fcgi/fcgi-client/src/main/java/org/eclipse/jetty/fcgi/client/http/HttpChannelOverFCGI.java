@@ -78,7 +78,14 @@ public class HttpChannelOverFCGI extends HttpChannel
     @Override
     public boolean abort(Throwable cause)
     {
-        sender.abort(cause);
+        boolean sendAborted = sender.abort(cause);
+        boolean receiveAborted = abortResponse(cause);
+        return sendAborted || receiveAborted;
+    }
+
+    @Override
+    public boolean abortResponse(Throwable cause)
+    {
         return receiver.abort(cause);
     }
 

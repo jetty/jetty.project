@@ -58,13 +58,14 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     {
         void write(ByteBuffer content, boolean complete, Callback callback);
         Interceptor getNextInterceptor();
+        boolean isOptimizedForDirectBuffers();
     }
     
     private static Logger LOG = Log.getLogger(HttpOutput.class);
 
     private final HttpChannel _channel;
     private final SharedBlockingCallback _writeBlock;
-    private Interceptor _filter;
+    private Interceptor _interceptor;
     
     /** Bytes written via the write API (excludes bytes written via sendContent). Used to autocommit once content length is written. */
     private long _written;
@@ -90,7 +91,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public HttpOutput(HttpChannel channel)
     {
         _channel = channel;
-        _filter = channel;
+        _interceptor = channel;
         _writeBlock = new SharedBlockingCallback()
         {
             @Override
@@ -111,12 +112,12 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     public Interceptor getInterceptor()
     {
-        return _filter;
+        return _interceptor;
     }
 
     public void setInterceptor(Interceptor filter)
     {
-        _filter=filter;
+        _interceptor=filter;
     }
     
     public boolean isWritten()
@@ -162,7 +163,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
     protected void write(ByteBuffer content, boolean complete, Callback callback)
     {
-        _filter.write(content, complete, callback);
+        _interceptor.write(content, complete, callback);
     }
 
     private void abort(Throwable failure)
@@ -336,7 +337,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     if (!complete && len<=_commitSize)
                     {
                         if (_aggregate == null)
-                            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
+                            _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _interceptor.isOptimizedForDirectBuffers());
 
                         // YES - fill the aggregate with content from the buffer
                         int filled = BufferUtil.fill(_aggregate, b, off, len);
@@ -381,7 +382,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (!complete && len<=_commitSize)
         {
             if (_aggregate == null)
-                _aggregate = _channel.getByteBufferPool().acquire(capacity, false);
+                _aggregate = _channel.getByteBufferPool().acquire(capacity, _interceptor.isOptimizedForDirectBuffers());
 
             // YES - fill the aggregate with content from the buffer
             int filled = BufferUtil.fill(_aggregate, b, off, len);
@@ -509,7 +510,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             {
                 case OPEN:
                     if (_aggregate == null)
-                        _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
+                        _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _interceptor.isOptimizedForDirectBuffers());
                     BufferUtil.append(_aggregate, (byte)b);
 
                     // Check if all written or full
@@ -529,7 +530,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         continue;
 
                     if (_aggregate == null)
-                        _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), false);
+                        _aggregate = _channel.getByteBufferPool().acquire(getBufferSize(), _interceptor.isOptimizedForDirectBuffers());
                     BufferUtil.append(_aggregate, (byte)b);
 
                     // Check if all written or full
@@ -795,7 +796,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public void recycle()
     {
         resetBuffer();
-        _filter=_channel;
+        _interceptor=_channel;
     }
     
     public void resetBuffer()

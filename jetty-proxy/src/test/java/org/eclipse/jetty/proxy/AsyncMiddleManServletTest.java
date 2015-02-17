@@ -20,7 +20,6 @@ package org.eclipse.jetty.proxy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InterruptedIOException;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -51,6 +50,7 @@ import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
@@ -75,49 +75,10 @@ public class AsyncMiddleManServletTest
     private HttpClient client;
     private Server proxy;
     private ServerConnector proxyConnector;
-    private ServletContextHandler proxyContext;
     private Server server;
     private ServerConnector serverConnector;
 
-    private void prepareProxy(HttpServlet proxyServlet) throws Exception
-    {
-        prepareProxy(proxyServlet, new HashMap<String, String>());
-    }
-
-    private void prepareProxy(HttpServlet proxyServlet, Map<String, String> initParams) throws Exception
-    {
-        QueuedThreadPool proxyPool = new QueuedThreadPool();
-        proxyPool.setName("proxy");
-        proxy = new Server(proxyPool);
-
-        HttpConfiguration configuration = new HttpConfiguration();
-        configuration.setSendDateHeader(false);
-        configuration.setSendServerVersion(false);
-        String value = initParams.get("outputBufferSize");
-        if (value != null)
-            configuration.setOutputBufferSize(Integer.valueOf(value));
-        proxyConnector = new ServerConnector(proxy, new HttpConnectionFactory(configuration));
-        proxy.addConnector(proxyConnector);
-
-        proxyContext = new ServletContextHandler(proxy, "/", true, false);
-        ServletHolder proxyServletHolder = new ServletHolder(proxyServlet);
-        proxyServletHolder.setInitParameters(initParams);
-        proxyContext.addServlet(proxyServletHolder, "/*");
-
-        proxy.start();
-    }
-
-    private void prepareClient() throws Exception
-    {
-        QueuedThreadPool clientPool = new QueuedThreadPool();
-        clientPool.setName("client");
-        client = new HttpClient();
-        client.setExecutor(clientPool);
-        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
-        client.start();
-    }
-
-    private void prepareServer(HttpServlet servlet) throws Exception
+    private void startServer(HttpServlet servlet) throws Exception
     {
         QueuedThreadPool serverPool = new QueuedThreadPool();
         serverPool.setName("server");
@@ -132,17 +93,64 @@ public class AsyncMiddleManServletTest
         server.start();
     }
 
-    @After
-    public void disposeProxy() throws Exception
+    private void startProxy(HttpServlet proxyServlet) throws Exception
     {
-        client.stop();
-        proxy.stop();
+        startProxy(proxyServlet, new HashMap<String, String>());
+    }
+
+    private void startProxy(HttpServlet proxyServlet, Map<String, String> initParams) throws Exception
+    {
+        QueuedThreadPool proxyPool = new QueuedThreadPool();
+        proxyPool.setName("proxy");
+        proxy = new Server(proxyPool);
+
+        HttpConfiguration configuration = new HttpConfiguration();
+        configuration.setSendDateHeader(false);
+        configuration.setSendServerVersion(false);
+        String value = initParams.get("outputBufferSize");
+        if (value != null)
+            configuration.setOutputBufferSize(Integer.valueOf(value));
+        proxyConnector = new ServerConnector(proxy, new HttpConnectionFactory(configuration));
+        proxy.addConnector(proxyConnector);
+
+        ServletContextHandler proxyContext = new ServletContextHandler(proxy, "/", true, false);
+        ServletHolder proxyServletHolder = new ServletHolder(proxyServlet);
+        proxyServletHolder.setInitParameters(initParams);
+        proxyContext.addServlet(proxyServletHolder, "/*");
+
+        proxy.start();
+    }
+
+    private void startClient() throws Exception
+    {
+        QueuedThreadPool clientPool = new QueuedThreadPool();
+        clientPool.setName("client");
+        client = new HttpClient();
+        client.setExecutor(clientPool);
+        client.getProxyConfiguration().getProxies().add(new HttpProxy("localhost", proxyConnector.getLocalPort()));
+        client.start();
     }
 
     @After
-    public void disposeServer() throws Exception
+    public void dispose() throws Exception
     {
+        client.stop();
+        proxy.stop();
         server.stop();
+    }
+
+    @Test
+    public void testZeroContentLength() throws Exception
+    {
+        startServer(new EchoHttpServlet());
+        startProxy(new AsyncMiddleManServlet());
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
     }
 
     @Test
@@ -164,7 +172,7 @@ public class AsyncMiddleManServletTest
         byte[] bytes = new byte[length];
         new Random().nextBytes(bytes);
 
-        prepareServer(new EchoHttpServlet()
+        startServer(new EchoHttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -178,7 +186,7 @@ public class AsyncMiddleManServletTest
                 super.service(request, response);
             }
         });
-        prepareProxy(new AsyncMiddleManServlet()
+        startProxy(new AsyncMiddleManServlet()
         {
             @Override
             protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
@@ -186,7 +194,7 @@ public class AsyncMiddleManServletTest
                 return new GZIPContentTransformer(ContentTransformer.IDENTITY);
             }
         });
-        prepareClient();
+        startClient();
 
         byte[] gzipBytes = gzip(bytes);
         ContentProvider gzipContent = new BytesContentProvider(gzipBytes);
@@ -208,7 +216,7 @@ public class AsyncMiddleManServletTest
         new Random().nextBytes(bytes);
         final byte[] gzipBytes = gzip(bytes);
 
-        prepareServer(new HttpServlet()
+        startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -217,7 +225,7 @@ public class AsyncMiddleManServletTest
                 response.getOutputStream().write(gzipBytes);
             }
         });
-        prepareProxy(new AsyncMiddleManServlet()
+        startProxy(new AsyncMiddleManServlet()
         {
             @Override
             protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
@@ -225,7 +233,7 @@ public class AsyncMiddleManServletTest
                 return new GZIPContentTransformer(ContentTransformer.IDENTITY);
             }
         });
-        prepareClient();
+        startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .timeout(5, TimeUnit.SECONDS)
@@ -241,7 +249,7 @@ public class AsyncMiddleManServletTest
         String data = "<a href=\"http://google.com\">Google</a>";
         byte[] bytes = data.getBytes(StandardCharsets.UTF_8);
 
-        prepareServer(new EchoHttpServlet()
+        startServer(new EchoHttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -250,7 +258,7 @@ public class AsyncMiddleManServletTest
                 super.service(request, response);
             }
         });
-        prepareProxy(new AsyncMiddleManServlet()
+        startProxy(new AsyncMiddleManServlet()
         {
             @Override
             protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
@@ -264,7 +272,7 @@ public class AsyncMiddleManServletTest
                 return new GZIPContentTransformer(new HrefTransformer.Server());
             }
         });
-        prepareClient();
+        startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .header(HttpHeader.CONTENT_ENCODING, "gzip")
@@ -286,7 +294,7 @@ public class AsyncMiddleManServletTest
     @Test
     public void testUpstreamTransformationBufferedGzipped() throws Exception
     {
-        prepareServer(new EchoHttpServlet()
+        startServer(new EchoHttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -295,7 +303,7 @@ public class AsyncMiddleManServletTest
                 super.service(request, response);
             }
         });
-        prepareProxy(new AsyncMiddleManServlet()
+        startProxy(new AsyncMiddleManServlet()
         {
             @Override
             protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
@@ -303,7 +311,7 @@ public class AsyncMiddleManServletTest
                 return new GZIPContentTransformer(new BufferingContentTransformer());
             }
         });
-        prepareClient();
+        startClient();
 
         DeferredContentProvider content = new DeferredContentProvider();
         Request request = client.newRequest("localhost", serverConnector.getLocalPort());
@@ -324,7 +332,7 @@ public class AsyncMiddleManServletTest
     @Test
     public void testDownstreamTransformationBufferedGzipped() throws Exception
     {
-        prepareServer(new HttpServlet()
+        startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -341,7 +349,7 @@ public class AsyncMiddleManServletTest
                 }
             }
         });
-        prepareProxy(new AsyncMiddleManServlet()
+        startProxy(new AsyncMiddleManServlet()
         {
             @Override
             protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
@@ -349,7 +357,7 @@ public class AsyncMiddleManServletTest
                 return new GZIPContentTransformer(new BufferingContentTransformer());
             }
         });
-        prepareClient();
+        startClient();
 
         byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
@@ -366,7 +374,7 @@ public class AsyncMiddleManServletTest
     public void testDiscardUpstreamAndDownstreamKnownContentLengthGzipped() throws Exception
     {
         final byte[] bytes = "ABCDEFGHIJKLMNOPQRSTUVWXYZ".getBytes(StandardCharsets.UTF_8);
-        prepareServer(new HttpServlet()
+        startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -376,7 +384,7 @@ public class AsyncMiddleManServletTest
                 response.getOutputStream().write(gzip(bytes));
             }
         });
-        prepareProxy(new AsyncMiddleManServlet()
+        startProxy(new AsyncMiddleManServlet()
         {
             @Override
             protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
@@ -390,7 +398,7 @@ public class AsyncMiddleManServletTest
                 return new GZIPContentTransformer(new DiscardContentTransformer());
             }
         });
-        prepareClient();
+        startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .header(HttpHeader.CONTENT_ENCODING, "gzip")
@@ -405,8 +413,8 @@ public class AsyncMiddleManServletTest
     @Test
     public void testUpstreamTransformationThrowsBeforeCommittingProxyRequest() throws Exception
     {
-        prepareServer(new EchoHttpServlet());
-        prepareProxy(new AsyncMiddleManServlet()
+        startServer(new EchoHttpServlet());
+        startProxy(new AsyncMiddleManServlet()
         {
             @Override
             protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
@@ -421,7 +429,7 @@ public class AsyncMiddleManServletTest
                 };
             }
         });
-        prepareClient();
+        startClient();
 
         byte[] bytes = new byte[1024];
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
@@ -435,8 +443,8 @@ public class AsyncMiddleManServletTest
     @Test
     public void testUpstreamTransformationThrowsAfterCommittingProxyRequest() throws Exception
     {
-        prepareServer(new EchoHttpServlet());
-        prepareProxy(new AsyncMiddleManServlet()
+        startServer(new EchoHttpServlet());
+        startProxy(new AsyncMiddleManServlet()
         {
             @Override
             protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
@@ -456,7 +464,7 @@ public class AsyncMiddleManServletTest
                 };
             }
         });
-        prepareClient();
+        startClient();
 
         final CountDownLatch latch = new CountDownLatch(1);
         DeferredContentProvider content = new DeferredContentProvider();
@@ -518,8 +526,8 @@ public class AsyncMiddleManServletTest
 
     private void testDownstreamTransformationThrows(HttpServlet serverServlet) throws Exception
     {
-        prepareServer(serverServlet);
-        prepareProxy(new AsyncMiddleManServlet()
+        startServer(serverServlet);
+        startProxy(new AsyncMiddleManServlet()
         {
             @Override
             protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
@@ -539,7 +547,7 @@ public class AsyncMiddleManServletTest
                 };
             }
         });
-        prepareClient();
+        startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .timeout(5, TimeUnit.SECONDS)
@@ -549,10 +557,109 @@ public class AsyncMiddleManServletTest
     }
 
     @Test
+    public void testLargeChunkedBufferedDownstreamTransformation() throws Exception
+    {
+        // Tests the race between a incomplete write performed from ProxyResponseListener.onSuccess()
+        // and ProxyResponseListener.onComplete() being called before the write has completed.
+
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                ServletOutputStream output = response.getOutputStream();
+                byte[] chunk = new byte[1024 * 1024];
+                for (int i = 0; i < 16; ++i)
+                {
+                    output.write(chunk);
+                    output.flush();
+                }
+            }
+        });
+        startProxy(new AsyncMiddleManServlet()
+        {
+            @Override
+            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            {
+                return new BufferingContentTransformer();
+            }
+        });
+        startClient();
+
+        final CountDownLatch latch = new CountDownLatch(1);
+        client.newRequest("localhost", serverConnector.getLocalPort())
+                .onResponseContent(new Response.ContentListener()
+                {
+                    @Override
+                    public void onContent(Response response, ByteBuffer content)
+                    {
+                        // Slow down the reader so that the
+                        // write from the proxy gets congested.
+                        sleep(1);
+                    }
+                })
+                .send(new Response.CompleteListener()
+                {
+                    @Override
+                    public void onComplete(Result result)
+                    {
+                        Assert.assertTrue(result.isSucceeded());
+                        Assert.assertEquals(200, result.getResponse().getStatus());
+                        latch.countDown();
+                    }
+                });
+
+        Assert.assertTrue(latch.await(15, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testDownstreamTransformationKnownContentLengthDroppingLastChunk() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                byte[] chunk = new byte[1024];
+                int contentLength = 2 * chunk.length;
+                response.setContentLength(contentLength);
+                ServletOutputStream output = response.getOutputStream();
+                output.write(chunk);
+                output.flush();
+                sleep(1000);
+                output.write(chunk);
+            }
+        });
+        startProxy(new AsyncMiddleManServlet()
+        {
+            @Override
+            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            {
+                return new ContentTransformer()
+                {
+                    @Override
+                    public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
+                    {
+                        if (!finished)
+                            output.add(input);
+                    }
+                };
+            }
+        });
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
     public void testClientRequestReadFailsOnFirstRead() throws Exception
     {
-        prepareServer(new EchoHttpServlet());
-        prepareProxy(new AsyncMiddleManServlet()
+        startServer(new EchoHttpServlet());
+        startProxy(new AsyncMiddleManServlet()
         {
             @Override
             protected int readClientRequestContent(ServletInputStream input, byte[] buffer) throws IOException
@@ -560,7 +667,7 @@ public class AsyncMiddleManServletTest
                 throw new IOException("explicitly_thrown_by_test");
             }
         });
-        prepareClient();
+        startClient();
 
         final CountDownLatch latch = new CountDownLatch(1);
         DeferredContentProvider content = new DeferredContentProvider();
@@ -587,8 +694,8 @@ public class AsyncMiddleManServletTest
     @Test
     public void testClientRequestReadFailsOnSecondRead() throws Exception
     {
-        prepareServer(new EchoHttpServlet());
-        prepareProxy(new AsyncMiddleManServlet()
+        startServer(new EchoHttpServlet());
+        startProxy(new AsyncMiddleManServlet()
         {
             private int count;
 
@@ -601,7 +708,7 @@ public class AsyncMiddleManServletTest
                     throw new IOException("explicitly_thrown_by_test");
             }
         });
-        prepareClient();
+        startClient();
 
         final CountDownLatch latch = new CountDownLatch(1);
         DeferredContentProvider content = new DeferredContentProvider();
@@ -638,7 +745,7 @@ public class AsyncMiddleManServletTest
 
     private void testProxyResponseWriteFails(final int writeCount) throws Exception
     {
-        prepareServer(new HttpServlet()
+        startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
@@ -649,7 +756,7 @@ public class AsyncMiddleManServletTest
                 output.write(new byte[512]);
             }
         });
-        prepareProxy(new AsyncMiddleManServlet()
+        startProxy(new AsyncMiddleManServlet()
         {
             private int count;
 
@@ -662,7 +769,7 @@ public class AsyncMiddleManServletTest
                     throw new IOException("explicitly_thrown_by_test");
             }
         });
-        prepareClient();
+        startClient();
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .timeout(5, TimeUnit.SECONDS)
@@ -671,7 +778,7 @@ public class AsyncMiddleManServletTest
         Assert.assertEquals(502, response.getStatus());
     }
 
-    private void sleep(long delay) throws IOException
+    private void sleep(long delay)
     {
         try
         {
@@ -679,7 +786,7 @@ public class AsyncMiddleManServletTest
         }
         catch (InterruptedException x)
         {
-            throw new InterruptedIOException();
+            throw new RuntimeIOException(x);
         }
     }
 

@@ -39,7 +39,8 @@ public enum HttpMethod
     TRACE,
     CONNECT,
     MOVE,
-    PROXY;
+    PROXY,
+    PRI;
 
     /* ------------------------------------------------------------ */
     /**
@@ -67,6 +68,8 @@ public enum HttpMethod
                     return PROXY;
                 if (bytes[position+1]=='U' && bytes[position+2]=='T' && bytes[position+3]==' ')
                     return PUT;
+                if (bytes[position+1]=='R' && bytes[position+2]=='I' && bytes[position+3]==' ')
+                    return PRI;
                 break;
             case 'H':
                 if (bytes[position+1]=='E' && bytes[position+2]=='A' && bytes[position+3]=='D' && length>=5 && bytes[position+4]==' ')

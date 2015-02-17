@@ -43,7 +43,7 @@ public class ModuleGraphWriterTest
     public void testGenerate_NothingEnabled() throws IOException
     {
         // Test Env
-        File homeDir = MavenTestingUtils.getTestResourceDir("usecases/home");
+        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyDir();
         String cmdLine[] = new String[] {"jetty.version=TEST"};
         

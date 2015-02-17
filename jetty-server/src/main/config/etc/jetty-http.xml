@@ -20,7 +20,7 @@
   <!-- =========================================================== -->
   <Call name="addConnector">
     <Arg>
-      <New class="org.eclipse.jetty.server.ServerConnector">
+      <New id="httpConnector" class="org.eclipse.jetty.server.ServerConnector">
         <Arg name="server"><Ref refid="Server" /></Arg>
         <Arg name="acceptors" type="int"><Property name="http.acceptors" default="-1"/></Arg>
         <Arg name="selectors" type="int"><Property name="http.selectors" default="-1"/></Arg>

@@ -29,7 +29,7 @@ import java.util.concurrent.atomic.AtomicReference;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -39,6 +39,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.junit.Assert;
@@ -88,7 +89,7 @@ public class CloseTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public void onHeaders(HeadersFrame frame)
                 {
                     try
                     {
@@ -96,11 +97,10 @@ public class CloseTest extends AbstractServerTest
                         // receiving the response headers.
                         client.close();
                         closeLatch.countDown();
-                        return false;
                     }
                     catch (IOException x)
                     {
-                        return false;
+                        throw new RuntimeIOException(x);
                     }
                 }
             }, 4096, 8192);
@@ -136,7 +136,7 @@ public class CloseTest extends AbstractServerTest
         generator.control(lease, new PrefaceFrame());
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
-        generator.control(lease, new GoAwayFrame(1, ErrorCodes.NO_ERROR, "OK".getBytes("UTF-8")));
+        generator.control(lease, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes("UTF-8")));
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
@@ -152,12 +152,11 @@ public class CloseTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public void onHeaders(HeadersFrame frame)
                 {
                     // Even if we sent the GO_AWAY immediately after the
                     // HEADERS, the server is able to send us the response.
                     responseLatch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
@@ -192,7 +191,7 @@ public class CloseTest extends AbstractServerTest
                 sessionRef.set(stream.getSession());
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.Adapter.INSTANCE);
-                stream.getSession().close(ErrorCodes.NO_ERROR, "OK", Callback.Adapter.INSTANCE);
+                stream.getSession().close(ErrorCode.NO_ERROR.code, "OK", Callback.Adapter.INSTANCE);
                 return null;
             }
         });
@@ -216,17 +215,15 @@ public class CloseTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public void onHeaders(HeadersFrame frame)
                 {
                     responseLatch.countDown();
-                    return false;
                 }
 
                 @Override
-                public boolean onGoAway(GoAwayFrame frame)
+                public void onGoAway(GoAwayFrame frame)
                 {
                     closeLatch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 

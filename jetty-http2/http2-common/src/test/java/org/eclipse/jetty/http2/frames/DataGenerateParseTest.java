@@ -93,10 +93,9 @@ public class DataGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onData(DataFrame frame)
+            public void onData(DataFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -125,10 +124,9 @@ public class DataGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onData(DataFrame frame)
+            public void onData(DataFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

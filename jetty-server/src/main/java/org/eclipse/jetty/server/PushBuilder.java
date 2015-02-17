@@ -18,23 +18,27 @@
 
 package org.eclipse.jetty.server;
 
-import java.util.Collection;
 import java.util.Set;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
 /** 
- * 
  */
 public class PushBuilder
 {    
+    private static final Logger LOG = Log.getLogger(PushBuilder.class);
+
+    private final static HttpField JettyPush = new HttpField("x-http2-push","PushBuilder");
+    
     private final Request _request;
     private final HttpFields _fields;
     private String _method;
@@ -51,6 +55,9 @@ public class PushBuilder
         _queryString = queryString;
         _sessionId = sessionId;
         _conditional = conditional;
+        _fields.add(JettyPush);
+        if (LOG.isDebugEnabled())
+            LOG.debug("PushBuilder({} {}?{} s={} c={})",_method,_request.getRequestURI(),_queryString,_sessionId,_conditional);
     }
 
     public String getMethod()
@@ -137,27 +144,25 @@ public class PushBuilder
      * will be generated. If the builder has a session ID, then the pushed request
      * will include the session ID either as a Cookie or as a URI parameter as appropriate.The builders
      * query string is merged with any passed query string.
-     * @param uriInContext The URI within the current context of the resource to push.
+     * @param path The URI of the resource to push.
      * @param etag The etag for the resource or null if not available
      * @param lastModified The last modified date of the resource or null if not available
      * @throws IllegalArgumentException if the method set expects a request 
      * body (eg POST)
      */
-    public void push(String uriInContext,String etag,String lastModified)
+    public void push(String path,String etag,String lastModified)
     {
         if (HttpMethod.POST.is(_method) || HttpMethod.PUT.is(_method))
             throw new IllegalStateException("Bad Method "+_method);
         
         String query=_queryString;
-        int q=uriInContext.indexOf('?');
+        int q=path.indexOf('?');
         if (q>=0)
         {
-            query=uriInContext.substring(q+1)+'&'+query;
-            uriInContext=uriInContext.substring(0,q);
+            query=path.substring(q+1)+'&'+query;
+            path=path.substring(0,q);
         }
-        
-        String path = URIUtil.addPaths(_request.getContextPath(),uriInContext);
-        
+                
         String param=null;
         if (_sessionId!=null && _request.isRequestedSessionIdFromURL())
             param="jsessionid="+_sessionId;
@@ -172,7 +177,10 @@ public class PushBuilder
         
         HttpURI uri = HttpURI.createHttpURI(_request.getScheme(),_request.getServerName(),_request.getServerPort(),path,param,query,null);
         MetaData.Request push = new MetaData.Request(_method,uri,_request.getHttpVersion(),_fields);
-        _request.getHttpChannel().getHttpTransport().push(push);
         
+        if (LOG.isDebugEnabled())
+            LOG.debug("Push {} {} inm={} ims={}",_method,uri,_fields.get(HttpHeader.IF_NONE_MATCH),_fields.get(HttpHeader.IF_MODIFIED_SINCE));
+        
+        _request.getHttpChannel().getHttpTransport().push(push);
     }
 }

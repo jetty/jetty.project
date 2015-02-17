@@ -23,7 +23,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -31,6 +31,7 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpTransport;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -54,6 +55,14 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         this.connection = connection;
     }
 
+    @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        // Because sent buffers are passed directly to the endpoint without
+        // copying we can defer to the endpoint
+        return connection.getEndPoint().isOptimizedForDirectBuffers();
+    }
+    
     public IStream getStream()
     {
         return stream;
@@ -134,6 +143,9 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             return;
         }
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP/2 Push {}",request);
+        
         stream.push(new PushPromiseFrame(stream.getId(), 0, request), new Promise<Stream>()
         {
             @Override
@@ -178,6 +190,16 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     @Override
     public void onCompleted()
     {
+        if (!stream.isClosed())
+        {
+            // If the stream is not closed, it is still reading the request content.
+            // Send a reset to the other end so that it stops sending data.
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+            // Now that this stream is reset, in-flight data frames will be consumed and discarded.
+            // Consume the existing queued data frames to avoid stalling the flow control.
+            HttpChannel channel = (HttpChannel)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+            channel.getRequest().getHttpInput().consumeAll();
+        }
     }
 
     @Override
@@ -185,8 +207,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Response #{} aborted", stream.getId());
-        if (!stream.isReset())
-            stream.reset(new ResetFrame(stream.getId(), ErrorCodes.INTERNAL_ERROR), Callback.Adapter.INSTANCE);
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.Adapter.INSTANCE);
     }
 
     private class CommitCallback implements Callback

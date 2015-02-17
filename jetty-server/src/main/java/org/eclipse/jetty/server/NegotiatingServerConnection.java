@@ -19,7 +19,9 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.nio.ByteBuffer;
 import java.util.List;
+
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLEngineResult;
 
@@ -126,13 +128,8 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
                 else
                 {
                     EndPoint endPoint = getEndPoint();
-                    Connection oldConnection = endPoint.getConnection();
                     Connection newConnection = connectionFactory.newConnection(connector, endPoint);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} switching from {} to {}", this, oldConnection, newConnection);
-                    oldConnection.onClose();
-                    endPoint.setConnection(newConnection);
-                    getEndPoint().getConnection().onOpen();
+                    endPoint.upgrade(newConnection);
                 }
             }
         }

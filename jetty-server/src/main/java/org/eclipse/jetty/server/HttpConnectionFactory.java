@@ -24,7 +24,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.annotation.Name;
 
 /** A Connection Factory for HTTP Connections.
- * <p>Accepts connections either directly or via SSL and/or NPN chained connection factories.  The accepted 
+ * <p>Accepts connections either directly or via SSL and/or ALPN chained connection factories.  The accepted
  * {@link HttpConnection}s are configured by a {@link HttpConfiguration} instance that is either created by
  * default or passed in to the constructor.
  */
@@ -41,6 +41,8 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     {
         super(HttpVersion.HTTP_1_1.asString());
         _config=config;
+        if (config==null)
+            throw new IllegalArgumentException("Null HttpConfiguration");
         addBean(_config);
     }
 
@@ -48,17 +50,6 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     public HttpConfiguration getHttpConfiguration()
     {
         return _config;
-    }
-
-    @Deprecated
-    public boolean isDispatchIO()
-    {
-        return false;
-    }
-
-    @Deprecated
-    public void setDispatchIO(boolean dispatchIO)
-    {
     }
 
     @Override

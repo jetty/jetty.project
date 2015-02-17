@@ -24,6 +24,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -46,7 +47,7 @@ public class HTTP2Test extends AbstractTest
     @Test
     public void testRequestNoContentResponseNoContent() throws Exception
     {
-        startServer(new EmptyHttpServlet());
+        start(new EmptyHttpServlet());
 
         Session session = newClient(new Session.Listener.Adapter());
 
@@ -79,7 +80,7 @@ public class HTTP2Test extends AbstractTest
     public void testRequestNoContentResponseContent() throws Exception
     {
         final byte[] content = "Hello World!".getBytes(StandardCharsets.UTF_8);
-        startServer(new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
@@ -131,7 +132,7 @@ public class HTTP2Test extends AbstractTest
     public void testMultipleRequests() throws Exception
     {
         final String downloadBytes = "X-Download";
-        startServer(new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException

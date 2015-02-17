@@ -45,9 +45,13 @@ public class MetaDataBuilder
 
     private HttpFields _fields = new HttpFields(10);
     
-    MetaDataBuilder(int maxSize)
+    /* ------------------------------------------------------------ */
+    /**
+     * @param maxHeadersSize The maximum size of the headers, expressed as total name and value characters.
+     */
+    MetaDataBuilder(int maxHeadersSize)
     {
-        _maxSize=maxSize;
+        _maxSize=maxHeadersSize;
     }
     
     /** Get the maxSize.

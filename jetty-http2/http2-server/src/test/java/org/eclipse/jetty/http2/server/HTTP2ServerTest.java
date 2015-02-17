@@ -26,6 +26,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -33,7 +34,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
@@ -70,10 +71,9 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onGoAway(GoAwayFrame frame)
+                public void onGoAway(GoAwayFrame frame)
                 {
                     latch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
@@ -113,18 +113,16 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onSettings(SettingsFrame frame)
+                public void onSettings(SettingsFrame frame)
                 {
                     latch.countDown();
-                    return false;
                 }
 
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public void onHeaders(HeadersFrame frame)
                 {
                     frameRef.set(frame);
                     latch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
@@ -172,26 +170,23 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onSettings(SettingsFrame frame)
+                public void onSettings(SettingsFrame frame)
                 {
                     latch.countDown();
-                    return false;
                 }
 
                 @Override
-                public boolean onHeaders(HeadersFrame frame)
+                public void onHeaders(HeadersFrame frame)
                 {
                     headersRef.set(frame);
                     latch.countDown();
-                    return false;
                 }
 
                 @Override
-                public boolean onData(DataFrame frame)
+                public void onData(DataFrame frame)
                 {
                     dataRef.set(frame);
                     latch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
@@ -233,11 +228,10 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onGoAway(GoAwayFrame frame)
+                public void onGoAway(GoAwayFrame frame)
                 {
-                    Assert.assertEquals(ErrorCodes.FRAME_SIZE_ERROR, frame.getError());
+                    Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, frame.getError());
                     latch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 
@@ -270,11 +264,10 @@ public class HTTP2ServerTest extends AbstractServerTest
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
             {
                 @Override
-                public boolean onGoAway(GoAwayFrame frame)
+                public void onGoAway(GoAwayFrame frame)
                 {
-                    Assert.assertEquals(ErrorCodes.PROTOCOL_ERROR, frame.getError());
+                    Assert.assertEquals(ErrorCode.PROTOCOL_ERROR.code, frame.getError());
                     latch.countDown();
-                    return false;
                 }
             }, 4096, 8192);
 

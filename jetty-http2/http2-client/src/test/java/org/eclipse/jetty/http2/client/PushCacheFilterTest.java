@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -32,7 +33,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.DataFrame;
@@ -60,7 +61,7 @@ public class PushCacheFilterTest extends AbstractTest
         final String primaryResource = "/primary.html";
         final String secondaryResource = "/secondary.png";
         final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
-        startServer(new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
@@ -145,7 +146,7 @@ public class PushCacheFilterTest extends AbstractTest
         final String primaryResource = "/primary.html";
         final String secondaryResource = "/secondary.png";
         final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
-        startServer(new HttpServlet()
+        start(new HttpServlet()
         {
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
@@ -201,7 +202,7 @@ public class PushCacheFilterTest extends AbstractTest
             public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
             {
                 // Reset the stream as soon as we see the push.
-                ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCodes.REFUSED_STREAM_ERROR);
+                ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCode.REFUSED_STREAM_ERROR.code);
                 stream.reset(resetFrame, Callback.Adapter.INSTANCE);
                 return new Adapter()
                 {

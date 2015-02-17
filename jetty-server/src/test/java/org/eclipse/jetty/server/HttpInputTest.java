@@ -27,22 +27,21 @@ import static org.junit.Assert.fail;
 
 import java.io.EOFException;
 import java.io.IOException;
-import java.nio.ByteBuffer;
 import java.util.Queue;
-import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeoutException;
-import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.ReadListener;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.hamcrest.Matchers;
 import org.junit.After;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
+@RunWith(AdvancedRunner.class)
 public class HttpInputTest
 {
     Queue<String> _history = new ConcurrentArrayQueue<String>()
@@ -328,7 +327,8 @@ public class HttpInputTest
     public void testAsyncEmpty() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("onReadPossible"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         
         _in.run();
@@ -349,7 +349,8 @@ public class HttpInputTest
     public void testAsyncRead() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("onReadPossible"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         
         _in.run();
@@ -401,7 +402,8 @@ public class HttpInputTest
     public void testAsyncEOF() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("onReadPossible"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
 
         _in.run();
@@ -423,7 +425,8 @@ public class HttpInputTest
     public void testAsyncReadEOF() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("onReadPossible"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         
         _in.run();
@@ -475,7 +478,8 @@ public class HttpInputTest
     public void testAsyncError() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("onReadPossible"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         _in.run();
         assertThat(_history.poll(),equalTo("onDataAvailable"));

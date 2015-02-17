@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.primitives;
 
 import java.io.IOException;
+import java.util.Locale;
 
 import javax.websocket.OnError;
 import javax.websocket.OnMessage;
@@ -46,7 +47,7 @@ public class DoubleTextSocket
     @OnMessage
     public void onMessage(double d) throws IOException
     {
-        String msg = String.format("%.4f",d);
+        String msg = String.format(Locale.US, "%.4f",d);
         session.getAsyncRemote().sendText(msg);
     }
 

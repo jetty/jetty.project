@@ -201,14 +201,8 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 }
 
                 EndPoint endPoint = new ProxyEndPoint(getEndPoint(),remote,local);
-                Connection oldConnection = getEndPoint().getConnection();
-                Connection newConnection = connectionFactory.newConnection(_connector, endPoint);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Switching to {} {}", _next, getEndPoint());
-                
-                oldConnection.onClose();
-                endPoint.setConnection(newConnection);
-                newConnection.onOpen();
+                Connection newConnection = connectionFactory.newConnection(_connector, endPoint);                
+                endPoint.upgrade(newConnection);
             }
             catch (Throwable e)
             {
@@ -231,6 +225,12 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             _endp=endp;
             _remote=remote;
             _local=local;
+        }
+
+        @Override
+        public boolean isOptimizedForDirectBuffers()
+        {
+            return _endp.isOptimizedForDirectBuffers();
         }
         
         public InetSocketAddress getLocalAddress()
@@ -326,6 +326,12 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         public void onClose()
         {
             _endp.onClose();
+        }
+
+        @Override
+        public void upgrade(Connection newConnection)
+        {
+            _endp.upgrade(newConnection);
         }
     }
 }

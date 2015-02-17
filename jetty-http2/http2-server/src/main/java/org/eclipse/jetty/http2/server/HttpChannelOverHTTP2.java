@@ -146,7 +146,10 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
     public void requestContent(DataFrame frame, final Callback callback)
     {
-        // We must copy the data since we do not know when its bytes will be consumed.
+        // We must copy the data since we do not know when the
+        // application will consume its bytes (we queue them by
+        // calling onContent()), and we cannot stop the parsing
+        // since there may be frames for other streams.
         final ByteBufferPool byteBufferPool = getByteBufferPool();
         ByteBuffer original = frame.getData();
         final ByteBuffer copy = byteBufferPool.acquire(original.remaining(), original.isDirect());

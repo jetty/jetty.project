@@ -26,6 +26,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
@@ -33,7 +34,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
-public class HTTP2Connection extends AbstractConnection
+public class HTTP2Connection extends AbstractConnection implements Connection.UpgradeTo
 {
     protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
 
@@ -42,7 +43,8 @@ public class HTTP2Connection extends AbstractConnection
     private final Parser parser;
     private final ISession session;
     private final int bufferSize;
-    private final ExecutionStrategy executionStrategy; // TODO: make it pluggable from outside ?
+    private final HTTP2Producer producer = new HTTP2Producer();
+    private final ExecutionStrategy executionStrategy;
 
     public HTTP2Connection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, Parser parser, ISession session, int bufferSize)
     {
@@ -51,7 +53,7 @@ public class HTTP2Connection extends AbstractConnection
         this.parser = parser;
         this.session = session;
         this.bufferSize = bufferSize;
-        this.executionStrategy = ExecutionStrategy.Factory.instanceFor(new HTTP2Producer(), executor);
+        this.executionStrategy = ExecutionStrategy.Factory.instanceFor(producer, executor);
     }
 
     protected ISession getSession()
@@ -59,13 +61,20 @@ public class HTTP2Connection extends AbstractConnection
         return session;
     }
 
+    public void onUpgradeTo(ByteBuffer prefilled)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDebugString(prefilled));
+        producer.prefill(prefilled);
+    }
+    
     @Override
     public void onOpen()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Open {} ", this);
         super.onOpen();
-        fillInterested();
+        executionStrategy.execute();
     }
 
     @Override
@@ -124,7 +133,7 @@ public class HTTP2Connection extends AbstractConnection
             if (task != null)
                 return task;
 
-            boolean looping = false;
+            boolean looping = BufferUtil.hasContent(buffer);
             while (true)
             {
                 if (buffer == null)
@@ -133,10 +142,7 @@ public class HTTP2Connection extends AbstractConnection
                 if (looping)
                 {
                     while (buffer.hasRemaining())
-                    {
-                        if (parser.parse(buffer))
-                            break;
-                    }
+                        parser.parse(buffer);
 
                     task = tasks.poll();
                     if (LOG.isDebugEnabled())
@@ -167,6 +173,11 @@ public class HTTP2Connection extends AbstractConnection
 
                 looping = true;
             }
+        }
+
+        public void prefill(ByteBuffer prefilledBuffer)
+        {
+            buffer=prefilledBuffer;
         }
 
         private void release()

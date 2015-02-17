@@ -85,7 +85,7 @@ public class SslConnection extends AbstractConnection
     private ByteBuffer _decryptedInput;
     private ByteBuffer _encryptedInput;
     private ByteBuffer _encryptedOutput;
-    private final boolean _encryptedDirectBuffers = false;
+    private final boolean _encryptedDirectBuffers = true;
     private final boolean _decryptedDirectBuffers = false;
     private boolean _renegotiationAllowed;
     private final Runnable _runCompletWrite = new Runnable()

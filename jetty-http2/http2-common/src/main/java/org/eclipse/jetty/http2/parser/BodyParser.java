@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -35,6 +35,13 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * <p>The base parser for the frame body of HTTP/2 frames.</p>
+ * <p>Subclasses implement {@link #parse(ByteBuffer)} to parse
+ * the frame specific body.</p>
+ *
+ * @see Parser
+ */
 public abstract class BodyParser
 {
     protected static final Logger LOG = Log.getLogger(BodyParser.class);
@@ -48,13 +55,20 @@ public abstract class BodyParser
         this.listener = listener;
     }
 
-    public abstract Result parse(ByteBuffer buffer);
+    /**
+     * <p>Parses the body bytes in the given {@code buffer}; only the body
+     * bytes are consumed, therefore when this method returns, the buffer
+     * may contain unconsumed bytes.</p>
+     *
+     * @param buffer the buffer to parse
+     * @return true if the whole body bytes were parsed, false if not enough
+     * body bytes were present in the buffer
+     */
+    public abstract boolean parse(ByteBuffer buffer);
 
-    protected boolean emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ByteBuffer buffer)
     {
-        BufferUtil.clear(buffer);
-        notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_frame");
-        return false;
+        connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_frame");
     }
 
     protected boolean hasFlag(int bit)
@@ -82,139 +96,130 @@ public abstract class BodyParser
         return headerParser.getLength();
     }
 
-    protected boolean notifyData(DataFrame frame)
+    protected void notifyData(DataFrame frame)
     {
         try
         {
-            return listener.onData(frame);
+            listener.onData(frame);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
-    protected boolean notifyHeaders(HeadersFrame frame)
+    protected void notifyHeaders(HeadersFrame frame)
     {
         try
         {
-            return listener.onHeaders(frame);
+            listener.onHeaders(frame);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
-    protected boolean notifyPriority(PriorityFrame frame)
+    protected void notifyPriority(PriorityFrame frame)
     {
         try
         {
-            return listener.onPriority(frame);
+            listener.onPriority(frame);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
-    protected boolean notifyReset(ResetFrame frame)
+    protected void notifyReset(ResetFrame frame)
     {
         try
         {
-            return listener.onReset(frame);
+            listener.onReset(frame);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
-    protected boolean notifySettings(SettingsFrame frame)
+    protected void notifySettings(SettingsFrame frame)
     {
         try
         {
-            return listener.onSettings(frame);
+            listener.onSettings(frame);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
-    protected boolean notifyPushPromise(PushPromiseFrame frame)
+    protected void notifyPushPromise(PushPromiseFrame frame)
     {
         try
         {
-            return listener.onPushPromise(frame);
+            listener.onPushPromise(frame);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
-    protected boolean notifyPing(PingFrame frame)
+    protected void notifyPing(PingFrame frame)
     {
         try
         {
-            return listener.onPing(frame);
+            listener.onPing(frame);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
-    protected boolean notifyGoAway(GoAwayFrame frame)
+    protected void notifyGoAway(GoAwayFrame frame)
     {
         try
         {
-            return listener.onGoAway(frame);
+            listener.onGoAway(frame);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
-    protected boolean notifyWindowUpdate(WindowUpdateFrame frame)
+    protected void notifyWindowUpdate(WindowUpdateFrame frame)
     {
         try
         {
-            return listener.onWindowUpdate(frame);
+            listener.onWindowUpdate(frame);
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
-    protected Result notifyConnectionFailure(int error, String reason)
+    protected boolean connectionFailure(ByteBuffer buffer, int error, String reason)
+    {
+        BufferUtil.clear(buffer);
+        notifyConnectionFailure(error, reason);
+        return false;
+    }
+
+    private void notifyConnectionFailure(int error, String reason)
     {
         try
         {
             listener.onConnectionFailure(error, reason);
-            return Result.ASYNC;
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return Result.ASYNC;
         }
-    }
-
-    public enum Result
-    {
-        PENDING, ASYNC, COMPLETE
     }
 }

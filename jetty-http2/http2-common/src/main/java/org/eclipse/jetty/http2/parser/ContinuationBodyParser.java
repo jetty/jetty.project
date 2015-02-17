@@ -33,14 +33,10 @@ public class ContinuationBodyParser extends BodyParser
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         MetaData metaData = headerBlockParser.parse(buffer, getBodyLength());
-        if (metaData != null)
-        {
-            // TODO: CONTINUATION frames are not supported for now, we just parse them to keep HPACK happy.
-            return Result.ASYNC;
-        }
-        return Result.PENDING;
+        // TODO: CONTINUATION frames are not supported for now, we just parse them to keep HPACK happy.
+        return metaData != null;
     }
 }

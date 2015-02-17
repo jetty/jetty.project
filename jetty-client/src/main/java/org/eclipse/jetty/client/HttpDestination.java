@@ -59,7 +59,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         this.client = client;
         this.origin = origin;
 
-        this.exchanges = new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
+        this.exchanges = newExchangeQueue(client);
 
         this.requestNotifier = new RequestNotifier(client);
         this.responseNotifier = new ResponseNotifier();
@@ -82,6 +82,11 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         if (!client.isDefaultPort(getScheme(), getPort()))
             host += ":" + getPort();
         hostField = new HttpField(HttpHeader.HOST, host);
+    }
+
+    protected Queue<HttpExchange> newExchangeQueue(HttpClient client)
+    {
+        return new BlockingArrayQueue<>(client.getMaxRequestsQueuedPerDestination());
     }
 
     protected ClientConnectionFactory newSslClientConnectionFactory(ClientConnectionFactory connectionFactory)
@@ -168,7 +173,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
 
         if (client.isRunning())
         {
-            if (exchanges.offer(exchange))
+            if (enqueue(exchanges, exchange))
             {
                 if (!client.isRunning() && exchanges.remove(exchange))
                 {
@@ -193,6 +198,11 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         {
             request.abort(new RejectedExecutionException(client + " is stopped"));
         }
+    }
+
+    protected boolean enqueue(Queue<HttpExchange> queue, HttpExchange exchange)
+    {
+        return queue.offer(exchange);
     }
 
     protected abstract void send();

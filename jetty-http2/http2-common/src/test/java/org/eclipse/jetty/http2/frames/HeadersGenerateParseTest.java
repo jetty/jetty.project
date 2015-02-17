@@ -56,10 +56,9 @@ public class HeadersGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onHeaders(HeadersFrame frame)
+            public void onHeaders(HeadersFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -102,10 +101,9 @@ public class HeadersGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onHeaders(HeadersFrame frame)
+            public void onHeaders(HeadersFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

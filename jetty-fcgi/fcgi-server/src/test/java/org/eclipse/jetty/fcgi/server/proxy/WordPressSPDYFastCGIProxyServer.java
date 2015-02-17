@@ -19,20 +19,22 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.util.EnumSet;
-import java.util.HashMap;
-import java.util.Map;
 
 import javax.servlet.DispatcherType;
 
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.HttpConfiguration;
+import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.servlet.DefaultServlet;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.spdy.api.SPDY;
-import org.eclipse.jetty.spdy.server.http.HTTPSPDYServerConnector;
-import org.eclipse.jetty.spdy.server.http.PushStrategy;
-import org.eclipse.jetty.spdy.server.http.ReferrerPushStrategy;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
 public class WordPressSPDYFastCGIProxyServer
@@ -51,14 +53,26 @@ public class WordPressSPDYFastCGIProxyServer
 
         Server server = new Server();
 
-        Map<Short, PushStrategy> pushStrategies = new HashMap<>();
-        pushStrategies.put(SPDY.V3, new ReferrerPushStrategy());
-        HTTPSPDYServerConnector tlsConnector = new HTTPSPDYServerConnector(server, sslContextFactory, pushStrategies);
-        tlsConnector.setPort(tlsPort);
-        server.addConnector(tlsConnector);
-        HTTPSPDYServerConnector connector = new HTTPSPDYServerConnector(server, null, pushStrategies);
-        connector.setPort(port);
-        server.addConnector(connector);
+        // HTTP(S) Configuration
+        HttpConfiguration config = new HttpConfiguration();
+        HttpConfiguration https_config = new HttpConfiguration(config);
+        https_config.addCustomizer(new SecureRequestCustomizer());
+        
+        // HTTP2 factory
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
+        NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(h2.getProtocol());
+        
+        // SSL Factory
+        SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,alpn.getProtocol());
+        
+        // HTTP2 Connector
+        ServerConnector http2Connector = 
+            new ServerConnector(server,ssl,alpn,h2,new HttpConnectionFactory(https_config));
+        http2Connector.setPort(tlsPort);
+        http2Connector.setIdleTimeout(15000);
+        server.addConnector(http2Connector);
 
         String root = "/home/simon/programs/wordpress-3.7.1";
 

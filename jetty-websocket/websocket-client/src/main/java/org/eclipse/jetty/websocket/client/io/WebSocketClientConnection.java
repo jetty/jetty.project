@@ -86,6 +86,7 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
             connectPromise.succeeded(session);
 
             ByteBuffer extraBuf = connectPromise.getResponse().getRemainingBuffer();
+            setInitialBuffer(extraBuf);
             if (extraBuf.hasRemaining())
             {
                 LOG.debug("Parsing extra remaining buffer from UpgradeConnection");

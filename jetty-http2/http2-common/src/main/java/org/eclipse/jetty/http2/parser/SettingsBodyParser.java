@@ -22,10 +22,9 @@ import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -55,13 +54,13 @@ public class SettingsBodyParser extends BodyParser
     }
 
     @Override
-    protected boolean emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ByteBuffer buffer)
     {
-        return onSettings(new HashMap<Integer, Integer>()) == Result.ASYNC;
+        onSettings(new HashMap<Integer, Integer>());
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         while (buffer.hasRemaining())
         {
@@ -71,10 +70,7 @@ public class SettingsBodyParser extends BodyParser
                 {
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() != 0)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_settings_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_settings_frame");
                     length = getBodyLength();
                     settings = new HashMap<>();
                     state = State.SETTING_ID;
@@ -88,10 +84,7 @@ public class SettingsBodyParser extends BodyParser
                         state = State.SETTING_VALUE;
                         length -= 2;
                         if (length <= 0)
-                        {
-                            BufferUtil.clear(buffer);
-                            return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_settings_frame");
-                        }
+                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_settings_frame");
                     }
                     else
                     {
@@ -108,10 +101,7 @@ public class SettingsBodyParser extends BodyParser
                     settingId += currByte << (8 * cursor);
                     --length;
                     if (length <= 0)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_settings_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_settings_frame");
                     if (cursor == 0)
                     {
                         state = State.SETTING_VALUE;
@@ -129,9 +119,7 @@ public class SettingsBodyParser extends BodyParser
                         state = State.SETTING_ID;
                         length -= 4;
                         if (length == 0)
-                        {
                             return onSettings(settings);
-                        }
                     }
                     else
                     {
@@ -148,10 +136,7 @@ public class SettingsBodyParser extends BodyParser
                     settingValue += currByte << (8 * cursor);
                     --length;
                     if (cursor > 0 && length <= 0)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_settings_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_settings_frame");
                     if (cursor == 0)
                     {
                         if (LOG.isDebugEnabled())
@@ -159,9 +144,7 @@ public class SettingsBodyParser extends BodyParser
                         settings.put(settingId, settingValue);
                         state = State.SETTING_ID;
                         if (length == 0)
-                        {
                             return onSettings(settings);
-                        }
                     }
                     break;
                 }
@@ -171,14 +154,15 @@ public class SettingsBodyParser extends BodyParser
                 }
             }
         }
-        return Result.PENDING;
+        return false;
     }
 
-    private Result onSettings(Map<Integer, Integer> settings)
+    private boolean onSettings(Map<Integer, Integer> settings)
     {
         SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flags.ACK));
         reset();
-        return notifySettings(frame) ? Result.ASYNC : Result.COMPLETE;
+        notifySettings(frame);
+        return true;
     }
 
     private enum State

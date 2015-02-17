@@ -22,8 +22,8 @@ import java.util.Collections;
 import java.util.Map;
 
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
-import org.eclipse.jetty.http2.FlowControl;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
@@ -47,14 +47,14 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
 
     private final ServerSessionListener listener;
 
-    public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, Generator generator, ServerSessionListener listener, FlowControl flowControl)
+    public HTTP2ServerSession(Scheduler scheduler, EndPoint endPoint, Generator generator, ServerSessionListener listener, FlowControlStrategy flowControl)
     {
         super(scheduler, endPoint, generator, listener, flowControl, 2);
         this.listener = listener;
     }
 
     @Override
-    public boolean onPreface()
+    public void onPreface()
     {
         // SPEC: send a SETTINGS frame upon receiving the preface.
         Map<Integer, Integer> settings = notifyPreface(this);
@@ -63,11 +63,10 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         SettingsFrame frame = new SettingsFrame(settings, false);
         // TODO: consider sending a WINDOW_UPDATE to enlarge the session send window of the client.
         control(null, Callback.Adapter.INSTANCE, frame, Frame.EMPTY_ARRAY);
-        return false;
     }
 
     @Override
-    public boolean onHeaders(HeadersFrame frame)
+    public void onHeaders(HeadersFrame frame)
     {
         MetaData metaData = frame.getMetaData();
         if (metaData.isRequest())
@@ -75,7 +74,6 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             IStream stream = createRemoteStream(frame.getStreamId());
             if (stream != null)
             {
-                stream.updateClose(frame.isEndStream(), false);
                 stream.process(frame, Callback.Adapter.INSTANCE);
                 Stream.Listener listener = notifyNewStream(stream, frame);
                 stream.setListener(listener);
@@ -86,16 +84,14 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         }
         else
         {
-            onConnectionFailure(ErrorCodes.INTERNAL_ERROR, "invalid_request");
+            onConnectionFailure(ErrorCode.INTERNAL_ERROR.code, "invalid_request");
         }
-        return false;
     }
 
     @Override
-    public boolean onPushPromise(PushPromiseFrame frame)
+    public void onPushPromise(PushPromiseFrame frame)
     {
-        onConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "push_promise");
-        return false;
+        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "push_promise");
     }
 
     private Map<Integer, Integer> notifyPreface(Session session)

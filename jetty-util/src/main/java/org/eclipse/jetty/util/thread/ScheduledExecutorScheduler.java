@@ -18,13 +18,17 @@
 
 package org.eclipse.jetty.util.thread;
 
-import java.util.concurrent.BlockingQueue;
+import java.io.IOException;
+import java.util.Arrays;
+import java.util.List;
 import java.util.concurrent.ScheduledFuture;
 import java.util.concurrent.ScheduledThreadPoolExecutor;
 import java.util.concurrent.ThreadFactory;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 
 /**
  * Implementation of {@link Scheduler} based on JDK's {@link ScheduledThreadPoolExecutor}.
@@ -34,12 +38,13 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
  * queue even if the task did not fire, which provides a huge benefit in the performance
  * of garbage collection in young generation.
  */
-public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Scheduler
+public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Scheduler, Dumpable
 {
     private final String name;
     private final boolean daemon;
+    private final ClassLoader classloader;
     private volatile ScheduledThreadPoolExecutor scheduler;
-    private ClassLoader classloader;
+    private volatile Thread thread;
 
     public ScheduledExecutorScheduler()
     {
@@ -66,7 +71,7 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
             @Override
             public Thread newThread(Runnable r)
             {
-                Thread thread = new Thread(r, name);
+                Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(r, name);
                 thread.setDaemon(daemon);
                 thread.setContextClassLoader(classloader);
                 return thread;
@@ -75,8 +80,6 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
         scheduler.setRemoveOnCancelPolicy(true);
         super.doStart();
     }
-
-    
 
     @Override
     protected void doStop() throws Exception
@@ -89,10 +92,36 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     @Override
     public Task schedule(Runnable task, long delay, TimeUnit unit)
     {
-        ScheduledFuture<?> result = scheduler.schedule(task, delay, unit);
+        ScheduledThreadPoolExecutor s = scheduler;
+        if (s==null)
+            return new Task(){
+                @Override
+                public boolean cancel()
+                {
+                    return false;
+                }};
+
+        ScheduledFuture<?> result = s.schedule(task, delay, unit);
         return new ScheduledFutureTask(result);
     }
- 
+
+    @Override
+    public String dump()
+    {
+        return ContainerLifeCycle.dump(this);
+    }
+
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        ContainerLifeCycle.dumpObject(out, this);
+        Thread thread = this.thread;
+        if (thread != null)
+        {
+            List<StackTraceElement> frames = Arrays.asList(thread.getStackTrace());
+            ContainerLifeCycle.dump(out, indent, frames);
+        }
+    }
 
     private class ScheduledFutureTask implements Task
     {

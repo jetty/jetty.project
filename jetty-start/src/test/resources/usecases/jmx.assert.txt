@@ -1,0 +1,31 @@
+# The XMLs we expect (order is important)
+XML|${jetty.home}/etc/jetty.xml
+XML|${jetty.home}/etc/jetty-http.xml
+XML|${jetty.home}/etc/jetty-jmx.xml
+
+# The LIBs we expect (order is irrelevant)
+LIB|${jetty.home}/lib/jetty-http-TEST.jar
+LIB|${jetty.home}/lib/jetty-io-TEST.jar
+LIB|${jetty.home}/lib/jetty-jmx-TEST.jar
+LIB|${jetty.home}/lib/jetty-schemas-3.1.jar
+LIB|${jetty.home}/lib/jetty-server-TEST.jar
+LIB|${jetty.home}/lib/jetty-util-TEST.jar
+LIB|${jetty.home}/lib/jetty-xml-TEST.jar
+LIB|${jetty.home}/lib/servlet-api-3.1.jar
+
+# The Properties we expect (order is irrelevant)
+# (this is the property we actually set in jetty.base)
+PROP|jetty.port=9090
+# (these are the ones set by default from jetty.home modules)
+PROP|http.timeout=30000
+PROP|jetty.delayDispatchUntilContent=false
+PROP|jetty.dump.start=false
+PROP|jetty.dump.stop=false
+PROP|jetty.output.buffer.size=32768
+PROP|jetty.request.header.size=8192
+PROP|jetty.response.header.size=8192
+PROP|jetty.send.date.header=false
+PROP|jetty.send.server.version=true
+PROP|threads.max=200
+PROP|threads.min=10
+PROP|threads.timeout=60000

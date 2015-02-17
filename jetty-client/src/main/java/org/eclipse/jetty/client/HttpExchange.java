@@ -198,7 +198,7 @@ public class HttpExchange
 
             boolean aborted = channel.abort(cause);
             if (LOG.isDebugEnabled())
-                LOG.debug("Aborted while active ({}) {}: {}", aborted, this, cause);
+                LOG.debug("Aborted ({}) while active {}: {}", aborted, this, cause);
             return aborted;
         }
     }

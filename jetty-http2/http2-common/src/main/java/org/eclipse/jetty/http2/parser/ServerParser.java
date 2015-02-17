@@ -20,8 +20,9 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -40,8 +41,22 @@ public class ServerParser extends Parser
         this.prefaceParser = new PrefaceParser(listener);
     }
 
+    /* ------------------------------------------------------------ */
+    /** Unsafe upgrade is an unofficial upgrade from HTTP/1.0 to HTTP/2.0
+     * initiated when a the {@link HttpConnection} sees a PRI * HTTP/2.0 prefix
+     * that indicates a HTTP/2.0 client is attempting a h2c direct connection.
+     * This is not a standard HTTP/1.1 Upgrade path.
+     */
+    public void directUpgrade()
+    {
+        if (state!=State.PREFACE)
+            throw new IllegalStateException();
+        prefaceParser.directUpgrade();
+    }
+    
+    
     @Override
-    public boolean parse(ByteBuffer buffer)
+    public void parse(ByteBuffer buffer)
     {
         try
         {
@@ -55,16 +70,16 @@ public class ServerParser extends Parser
                     case PREFACE:
                     {
                         if (!prefaceParser.parse(buffer))
-                            return false;
-                        if (onPreface())
-                            return true;
+                            return;
+                        onPreface();
                         state = State.FRAMES;
                         break;
                     }
                     case FRAMES:
                     {
                         // Stay forever in the FRAMES state.
-                        return super.parse(buffer);
+                        super.parse(buffer);
+                        return;
                     }
                     default:
                     {
@@ -76,39 +91,37 @@ public class ServerParser extends Parser
         catch (Throwable x)
         {
             LOG.debug(x);
-            notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "parser_error");
-            return false;
+            BufferUtil.clear(buffer);
+            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
         }
     }
 
-    protected boolean onPreface()
+    protected void onPreface()
     {
-        return notifyPreface();
+        notifyPreface();
     }
 
-    private boolean notifyPreface()
+    private void notifyPreface()
     {
         try
         {
-            return listener.onPreface();
+            listener.onPreface();
         }
         catch (Throwable x)
         {
             LOG.info("Failure while notifying listener " + listener, x);
-            return false;
         }
     }
 
     public interface Listener extends Parser.Listener
     {
-        public boolean onPreface();
+        public void onPreface();
 
         public static class Adapter extends Parser.Listener.Adapter implements Listener
         {
             @Override
-            public boolean onPreface()
+            public void onPreface()
             {
-                return false;
             }
         }
     }

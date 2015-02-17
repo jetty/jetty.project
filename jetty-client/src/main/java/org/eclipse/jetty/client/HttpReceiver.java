@@ -35,6 +35,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -335,17 +336,10 @@ public abstract class HttpReceiver
             }
             else
             {
-                Callback partial = new Callback.Adapter()
-                {
-                    @Override
-                    public void failed(Throwable x)
-                    {
-                        callback.failed(x);
-                    }
-                };
-
-                for (int i = 1, size = decodeds.size(); i <= size; ++i)
-                    notifier.notifyContent(listeners, response, decodeds.get(i - 1), i < size ? partial : callback);
+                int size = decodeds.size();
+                CountingCallback counter = new CountingCallback(callback, size);
+                for (int i = 0; i < size; ++i)
+                    notifier.notifyContent(listeners, response, decodeds.get(i), counter);
             }
         }
 
@@ -525,6 +519,15 @@ public abstract class HttpReceiver
                 LOG.debug("State update failed: {} -> {}: {}", from, to, responseState.get());
         }
         return updated;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x(rcv=%s)",
+                getClass().getSimpleName(),
+                hashCode(),
+                responseState);
     }
 
     /**

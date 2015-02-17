@@ -26,7 +26,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.atomic.AtomicInteger;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.generator.HeaderGenerator;
 import org.eclipse.jetty.http2.generator.SettingsGenerator;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -76,10 +76,9 @@ public class SettingsGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onSettings(SettingsFrame frame)
+            public void onSettings(SettingsFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -133,7 +132,7 @@ public class SettingsGenerateParseTest
             }
         }
 
-        Assert.assertEquals(ErrorCodes.FRAME_SIZE_ERROR, errorRef.get());
+        Assert.assertEquals(ErrorCode.FRAME_SIZE_ERROR.code, errorRef.get());
     }
 
     @Test
@@ -145,10 +144,9 @@ public class SettingsGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onSettings(SettingsFrame frame)
+            public void onSettings(SettingsFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

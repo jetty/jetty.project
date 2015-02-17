@@ -34,7 +34,7 @@ public class PingTest extends AbstractTest
     @Test
     public void testPing() throws Exception
     {
-        startServer(new ServerSessionListener.Adapter());
+        start(new ServerSessionListener.Adapter());
 
         final byte[] payload = new byte[8];
         new Random().nextBytes(payload);

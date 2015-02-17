@@ -269,8 +269,37 @@ public class HttpParserTest
         
     }
     
-    
-    
+
+    @Test
+    public void testNoValue() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "GET / HTTP/1.0\015\012" +
+                "Host: localhost\015\012" +
+                "Name0: \015\012"+
+                "Name1: \015\012"+
+                "Connection: close\015\012" +
+                "\015\012");
+        
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("GET", _methodOrVersion);
+        assertEquals("/", _uriOrStatus);
+        assertEquals("HTTP/1.0", _versionOrReason);
+        assertEquals("Host", _hdr[0]);
+        assertEquals("localhost", _val[0]);
+        assertEquals("Name0", _hdr[1]);
+        assertEquals(null, _val[1]);
+        assertEquals("Name1", _hdr[2]);
+        assertEquals(null, _val[2]);
+        assertEquals("Connection", _hdr[3]);
+        assertEquals("close", _val[3]);
+        assertEquals(3, _headers);
+    }
 
     @Test
     public void testHeaderParseDirect() throws Exception
@@ -1564,6 +1593,30 @@ public class HttpParserTest
         assertEquals("Accept",_hdr[4]);
         assertEquals("unknown",_val[4]);
     }
+    
+
+    @Test
+    public void testHTTP2Preface() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer(
+                "PRI * HTTP/2.0\015\012" +
+                "\015\012" +
+                "SM\015\012"+
+                "\015\012");
+        
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
+        assertEquals("PRI", _methodOrVersion);
+        assertEquals("*", _uriOrStatus);
+        assertEquals("HTTP/2.0", _versionOrReason);
+        assertEquals(-1, _headers);
+        assertEquals(null, _bad);
+    }
+    
     
     @Before
     public void init()

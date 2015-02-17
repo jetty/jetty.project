@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.client;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -48,17 +49,15 @@ public class AbstractTest
     protected HTTP2Client client;
     private Server server;
 
-    protected void startServer(HttpServlet servlet) throws Exception
+    protected void start(HttpServlet servlet) throws Exception
     {
         prepareServer(new HTTP2ServerConnectionFactory(new HttpConfiguration()));
-
         ServletContextHandler context = new ServletContextHandler(server, "/", true, false);
         context.addServlet(new ServletHolder(servlet), servletPath + "/*");
         customizeContext(context);
+        server.start();
 
         prepareClient();
-
-        server.start();
         client.start();
     }
 
@@ -66,11 +65,12 @@ public class AbstractTest
     {
     }
 
-    protected void startServer(ServerSessionListener listener) throws Exception
+    protected void start(ServerSessionListener listener) throws Exception
     {
         prepareServer(new RawHTTP2ServerConnectionFactory(new HttpConfiguration(),listener));
-        prepareClient();
         server.start();
+
+        prepareClient();
         client.start();
     }
 
@@ -85,9 +85,10 @@ public class AbstractTest
 
     private void prepareClient()
     {
+        client = new HTTP2Client();
         QueuedThreadPool clientExecutor = new QueuedThreadPool();
         clientExecutor.setName("client");
-        client = new HTTP2Client(clientExecutor);
+        client.setExecutor(clientExecutor);
     }
 
     protected Session newClient(Session.Listener listener) throws Exception
@@ -116,7 +117,13 @@ public class AbstractTest
     @After
     public void dispose() throws Exception
     {
-        client.stop();
-        server.stop();
+        if (client != null)
+        {
+            client.stop();
+        }
+        if (server != null)
+        {
+            server.stop();
+        }
     }
 }

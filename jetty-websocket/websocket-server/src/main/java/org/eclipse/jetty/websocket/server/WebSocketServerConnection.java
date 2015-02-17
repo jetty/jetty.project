@@ -19,17 +19,19 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.net.InetSocketAddress;
+import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
 import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 
-public class WebSocketServerConnection extends AbstractWebSocketConnection
+public class WebSocketServerConnection extends AbstractWebSocketConnection implements Connection.UpgradeTo
 {
     private final AtomicBoolean opened = new AtomicBoolean(false);
 
@@ -52,6 +54,17 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection
     public InetSocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteAddress();
+    }
+
+    /**
+     * Extra bytes from the initial HTTP upgrade that need to
+     * be processed by the websocket parser before starting
+     * to read bytes from the connection
+     */
+    @Override
+    public void onUpgradeTo(ByteBuffer prefilled)
+    {
+        setInitialBuffer(prefilled);
     }
 
     @Override

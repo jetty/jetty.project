@@ -293,7 +293,8 @@ public class IOState
         {
             notifyStateListeners(event);
             
-            if(abnormalEvent != null) {
+            if(abnormalEvent != null) 
+            {
                 notifyStateListeners(abnormalEvent);
             }
         }

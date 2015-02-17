@@ -108,7 +108,7 @@ public class HpackEncoder
         _debug=LOG.isDebugEnabled();
     }
 
-    public HpackContext getContext()
+    public HpackContext getHpackContext()
     {
         return _context;
     }

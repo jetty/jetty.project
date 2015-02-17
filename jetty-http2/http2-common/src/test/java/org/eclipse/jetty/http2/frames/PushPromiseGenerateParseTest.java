@@ -50,10 +50,9 @@ public class PushPromiseGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onPushPromise(PushPromiseFrame frame)
+            public void onPushPromise(PushPromiseFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 
@@ -103,10 +102,9 @@ public class PushPromiseGenerateParseTest
         Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
         {
             @Override
-            public boolean onPushPromise(PushPromiseFrame frame)
+            public void onPushPromise(PushPromiseFrame frame)
             {
                 frames.add(frame);
-                return false;
             }
         }, 4096, 8192);
 

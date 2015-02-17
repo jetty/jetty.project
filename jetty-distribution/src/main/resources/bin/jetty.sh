@@ -69,7 +69,7 @@ NAME=$(echo $(basename $0) | sed -e 's/^[SK][0-9]*//' -e 's/\.sh$//')
 # JETTY_ARGS
 #   The default arguments to pass to jetty.
 #   For example
-#      JETTY_ARGS=jetty.port=8080 jetty.spdy.port=8443 jetty.secure.port=443
+#      JETTY_ARGS=jetty.port=8080 jetty.secure.port=443
 #
 # JETTY_USER
 #   if set, then used as a username to run the server as
@@ -328,7 +328,7 @@ fi
 
 if [ -z "$JAVA" ]
 then
-  echo "Cannot find a Java JDK. Please set either set JAVA or put java (>=1.5) in your PATH." 2>&2
+  echo "Cannot find a Java JDK. Please set either set JAVA or put java (>=1.5) in your PATH." >&2
   exit 1
 fi
 
@@ -382,9 +382,10 @@ JAVA_OPTIONS=(${JAVA_OPTIONS[*]} "-Djetty.home=$JETTY_HOME" "-Djetty.base=$JETTY
 
 JETTY_START=$JETTY_HOME/start.jar
 START_INI=$JETTY_BASE/start.ini
-if [ ! -f "$START_INI" ]
+START_D=$JETTY_BASE/start.d
+if [ ! -f "$START_INI" -a ! -d "$START_D" ]
 then
-  echo "Cannot find a start.ini in your JETTY_BASE directory: $JETTY_BASE" 2>&2
+  echo "Cannot find a start.ini file or a start.d directory in your JETTY_BASE directory: $JETTY_BASE" >&2
   exit 1
 fi
 
@@ -402,6 +403,7 @@ RUN_CMD=("$JAVA" ${RUN_ARGS[@]})
 if (( DEBUG ))
 then
   echo "START_INI      =  $START_INI"
+  echo "START_D        =  $START_D"
   echo "JETTY_HOME     =  $JETTY_HOME"
   echo "JETTY_BASE     =  $JETTY_BASE"
   echo "JETTY_CONF     =  $JETTY_CONF"
@@ -410,7 +412,7 @@ then
   echo "JETTY_ARGS     =  ${JETTY_ARGS[*]}"
   echo "JAVA_OPTIONS   =  ${JAVA_OPTIONS[*]}"
   echo "JAVA           =  $JAVA"
-  echo "RUN_CMD        =  ${RUN_CMD}"
+  echo "RUN_CMD        =  ${RUN_CMD[*]}"
 fi
 
 ##################################################
@@ -562,6 +564,7 @@ case "$ACTION" in
   check|status)
     echo "Checking arguments to Jetty: "
     echo "START_INI      =  $START_INI"
+    echo "START_D        =  $START_D"
     echo "JETTY_HOME     =  $JETTY_HOME"
     echo "JETTY_BASE     =  $JETTY_BASE"
     echo "JETTY_CONF     =  $JETTY_CONF"

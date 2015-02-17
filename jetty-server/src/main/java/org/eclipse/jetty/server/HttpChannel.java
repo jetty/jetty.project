@@ -186,6 +186,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _configuration;
     }
 
+    @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return getHttpTransport().isOptimizedForDirectBuffers();
+    }
+
     public Server getServer()
     {
         return _connector.getServer();
@@ -271,7 +277,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         case REQUEST_DISPATCH:
                             if (!_request.hasMetaData())
-                                throw new IllegalStateException();
+                                throw new IllegalStateException("state="+_state);
                             _request.setHandled(false);
                             _response.getHttpOutput().reopen();
                             _request.setDispatcherType(DispatcherType.REQUEST);

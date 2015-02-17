@@ -33,13 +33,11 @@ import javax.servlet.ServletRequestListener;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpSession;
 
-import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.PushBuilder;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
-import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -84,26 +82,38 @@ public class PushSessionCacheFilter implements Filter
                 target._etag=response.getHttpFields().get(HttpHeader.ETAG);
                 target._lastModified=response.getHttpFields().get(HttpHeader.LAST_MODIFIED);
                 
+                // Don't associate pushes
+                if (request.isPush())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Pushed {} for {}",request.getResponse().getStatus(),request.getRequestURI());
+                    return;
+                } 
+                else if (LOG.isDebugEnabled())
+                    LOG.debug("Served {} for {}",request.getResponse().getStatus(),request.getRequestURI());
+                
                 // Does this request have a referer?
                 String referer = request.getHttpFields().get(HttpHeader.REFERER);
+                
                 if (referer!=null)
                 {
                     // Is the referer from this contexts?
-                    HttpURI uri = new HttpURI(referer);
-                    String path = uri.getPath();
-                    if (request.getServerName().equals(uri.getHost()) && path.startsWith(request.getContextPath()))
+                    HttpURI referer_uri = new HttpURI(referer);
+                    if (request.getServerName().equals(referer_uri.getHost()))
                     {
-                        String path_in_ctx = path.substring(request.getContextPath().length());
-                        Target referer_target = _cache.get(path_in_ctx);
+                        Target referer_target = _cache.get(referer_uri.getPath());
                         if (referer_target!=null)
                         {
                             HttpSession session = request.getSession();                            
                             ConcurrentHashMap<String, Long> timestamps = (ConcurrentHashMap<String, Long>)session.getAttribute(TIMESTAMP_ATTR);
                             Long last = timestamps.get(referer_target._path);
-                            if (last!=null && (System.currentTimeMillis()-last)<_associateDelay && !referer_target._associated.containsKey(path))
+                            if (last!=null && (System.currentTimeMillis()-last)<_associateDelay)
                             {
-                                if (referer_target._associated.putIfAbsent(path,target)==null)
-                                    LOG.info("ASSOCIATE {}->{}",path_in_ctx,target._path);
+                                if (referer_target._associated.putIfAbsent(target._path,target)==null)
+                                {
+                                    if (LOG.isDebugEnabled())
+                                        LOG.debug("ASSOCIATE {}->{}",referer_target._path,target._path);
+                                }
                             }
                         }
                     }
@@ -128,53 +138,43 @@ public class PushSessionCacheFilter implements Filter
     { 
         // Get Jetty request as these APIs are not yet standard
         Request baseRequest = Request.getBaseRequest(request);
-        
-        if (baseRequest.isPush())
-        {
-            LOG.info("PUSH {} if modified since {}",baseRequest,baseRequest.getHttpFields().get("If-Modified-Since"));
-        }
-        
-        
-        // Iterating over fields is more efficient than multiple gets
-        HttpFields fields = baseRequest.getHttpFields();
-        String referer=fields.get(HttpHeader.REFERER);
-        
+        String uri=baseRequest.getRequestURI();
+
         if (LOG.isDebugEnabled())
-            LOG.debug("{} {} referer={}%n",baseRequest.getMethod(),baseRequest.getRequestURI(),referer);
+            LOG.debug("{} {} push={}",baseRequest.getMethod(),uri,baseRequest.isPush());
 
         HttpSession session = baseRequest.getSession(true);
-        String sessionId = session.getId();
-        String path = URIUtil.addPaths(baseRequest.getServletPath(),baseRequest.getPathInfo());
 
         // find the target for this resource
-        Target target = _cache.get(path);
+        Target target = _cache.get(uri);
         if (target == null)
         {
-            Target t=new Target(path);
-            target = _cache.putIfAbsent(path,t);
+            Target t=new Target(uri);
+            target = _cache.putIfAbsent(uri,t);
             target = target==null?t:target;
         }
+        request.setAttribute(TARGET_ATTR,target);
         
+        // Set the timestamp for this resource in this session
         ConcurrentHashMap<String, Long> timestamps = (ConcurrentHashMap<String, Long>)session.getAttribute(TIMESTAMP_ATTR);
         if (timestamps==null)
         {
             timestamps=new ConcurrentHashMap<>();
             session.setAttribute(TIMESTAMP_ATTR,timestamps);
         }
-        
-        timestamps.put(path,System.currentTimeMillis());
-        request.setAttribute(TARGET_ATTR,target);
+        timestamps.put(uri,System.currentTimeMillis());
         
         // push any associated resources
         if (baseRequest.isPushSupported() && target._associated.size()>0)
         {
             PushBuilder builder = baseRequest.getPushBuilder();
-            if (!session.isNew())
-                builder.setConditional(true);
             for (Target associated : target._associated.values())
             {
-                LOG.info("PUSH {}->{}",path,associated);
-                builder.push(associated._path,associated._etag,associated._lastModified);
+                String path = associated._path;
+                if (LOG.isDebugEnabled())
+                    LOG.debug("PUSH {} <- {}",path,uri);
+                
+                builder.push(path,associated._etag,associated._lastModified);
             }
         }
 
@@ -207,7 +207,7 @@ public class PushSessionCacheFilter implements Filter
         @Override
         public String toString()
         {
-            return String.format("Target(p=%s,e=%s,m=%s)->%s",_path,_etag,_lastModified,_associated);
+            return String.format("Target{p=%s,e=%s,m=%s,a=%d}",_path,_etag,_lastModified,_associated.size());
         }
     }
 }

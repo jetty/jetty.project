@@ -49,6 +49,12 @@ public class HttpTransportOverFCGI implements HttpTransport
     }
 
     @Override
+    public boolean isOptimizedForDirectBuffers()
+    {
+        return false;
+    }
+    
+    @Override
     public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
     {
         if (info!=null)

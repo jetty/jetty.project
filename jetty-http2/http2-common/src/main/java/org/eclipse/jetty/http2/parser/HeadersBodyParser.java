@@ -21,7 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http.MetaData;
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PriorityFrame;
@@ -56,16 +56,15 @@ public class HeadersBodyParser extends BodyParser
     }
 
     @Override
-    protected boolean emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ByteBuffer buffer)
     {
         MetaData metaData = headerBlockParser.parse(BufferUtil.EMPTY_BUFFER, 0);
-        boolean result = onHeaders(0, 0, false, metaData);
+        onHeaders(0, 0, false, metaData);
         reset();
-        return result;
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         boolean loop = false;
         while (buffer.hasRemaining() || loop)
@@ -76,17 +75,11 @@ public class HeadersBodyParser extends BodyParser
                 {
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_headers_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_headers_frame");
 
                     // For now we don't support HEADERS frames that don't have END_HEADERS.
                     if (!hasFlag(Flags.END_HEADERS))
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.INTERNAL_ERROR, "unsupported_headers_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.INTERNAL_ERROR.code, "unsupported_headers_frame");
 
                     length = getBodyLength();
 
@@ -112,10 +105,7 @@ public class HeadersBodyParser extends BodyParser
                     state = hasFlag(Flags.PRIORITY) ? State.EXCLUSIVE : State.HEADERS;
                     loop = length == 0;
                     if (length < 0)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame_padding");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame_padding");
                     break;
                 }
                 case EXCLUSIVE:
@@ -136,10 +126,7 @@ public class HeadersBodyParser extends BodyParser
                         length -= 4;
                         state = State.WEIGHT;
                         if (length < 1)
-                        {
-                            BufferUtil.clear(buffer);
-                            return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame");
-                        }
+                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame");
                     }
                     else
                     {
@@ -155,19 +142,13 @@ public class HeadersBodyParser extends BodyParser
                     streamId += currByte << (8 * cursor);
                     --length;
                     if (cursor > 0 && length <= 0)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame");
                     if (cursor == 0)
                     {
                         streamId &= 0x7F_FF_FF_FF;
                         state = State.WEIGHT;
                         if (length < 1)
-                        {
-                            BufferUtil.clear(buffer);
-                            return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_headers_frame");
-                        }
+                            return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_headers_frame");
                     }
                     break;
                 }
@@ -184,13 +165,9 @@ public class HeadersBodyParser extends BodyParser
                     MetaData metaData = headerBlockParser.parse(buffer, length);
                     if (metaData != null)
                     {
-                        // TODO: optimize of paddingLength==0: reset() here.
                         state = State.PADDING;
                         loop = paddingLength == 0;
-                        if (onHeaders(streamId, weight, exclusive, metaData))
-                        {
-                            return Result.ASYNC;
-                        }
+                        onHeaders(streamId, weight, exclusive, metaData);
                     }
                     break;
                 }
@@ -202,7 +179,7 @@ public class HeadersBodyParser extends BodyParser
                     if (paddingLength == 0)
                     {
                         reset();
-                        return Result.COMPLETE;
+                        return true;
                     }
                     break;
                 }
@@ -212,18 +189,16 @@ public class HeadersBodyParser extends BodyParser
                 }
             }
         }
-        return Result.PENDING;
+        return false;
     }
 
-    private boolean onHeaders(int streamId, int weight, boolean exclusive, MetaData metaData)
+    private void onHeaders(int streamId, int weight, boolean exclusive, MetaData metaData)
     {
         PriorityFrame priorityFrame = null;
         if (hasFlag(Flags.PRIORITY))
-        {
             priorityFrame = new PriorityFrame(streamId, getStreamId(), weight, exclusive);
-        }
         HeadersFrame frame = new HeadersFrame(getStreamId(), metaData, priorityFrame, isEndStream());
-        return notifyHeaders(frame);
+        notifyHeaders(frame);
     }
 
     private enum State

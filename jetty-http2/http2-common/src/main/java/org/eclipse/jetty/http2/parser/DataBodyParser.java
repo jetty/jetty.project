@@ -20,7 +20,7 @@ package org.eclipse.jetty.http2.parser;
 
 import java.nio.ByteBuffer;
 
-import org.eclipse.jetty.http2.ErrorCodes;
+import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -45,19 +45,16 @@ public class DataBodyParser extends BodyParser
     }
 
     @Override
-    protected boolean emptyBody(ByteBuffer buffer)
+    protected void emptyBody(ByteBuffer buffer)
     {
         if (isPadding())
-        {
-            BufferUtil.clear(buffer);
-            notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_data_frame");
-            return false;
-        }
-        return onData(BufferUtil.EMPTY_BUFFER, false, 0);
+            connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_data_frame");
+        else
+            onData(BufferUtil.EMPTY_BUFFER, false, 0);
     }
 
     @Override
-    public Result parse(ByteBuffer buffer)
+    public boolean parse(ByteBuffer buffer)
     {
         boolean loop = false;
         while (buffer.hasRemaining() || loop)
@@ -68,19 +65,10 @@ public class DataBodyParser extends BodyParser
                 {
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.PROTOCOL_ERROR, "invalid_data_frame");
-                    }
+                        return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_data_frame");
+
                     length = getBodyLength();
-                    if (isPadding())
-                    {
-                        state = State.PADDING_LENGTH;
-                    }
-                    else
-                    {
-                        state = State.DATA;
-                    }
+                    state = isPadding() ? State.PADDING_LENGTH : State.DATA;
                     break;
                 }
                 case PADDING_LENGTH:
@@ -92,10 +80,7 @@ public class DataBodyParser extends BodyParser
                     state = State.DATA;
                     loop = length == 0;
                     if (length < 0)
-                    {
-                        BufferUtil.clear(buffer);
-                        return notifyConnectionFailure(ErrorCodes.FRAME_SIZE_ERROR, "invalid_data_frame_padding");
-                    }
+                        return connectionFailure(buffer, ErrorCode.FRAME_SIZE_ERROR.code, "invalid_data_frame_padding");
                     break;
                 }
                 case DATA:
@@ -115,20 +100,14 @@ public class DataBodyParser extends BodyParser
                         loop = paddingLength == 0;
                         // Padding bytes include the bytes that define the
                         // padding length plus the actual padding bytes.
-                        if (onData(slice, false, padding + paddingLength))
-                        {
-                            return Result.ASYNC;
-                        }
+                        onData(slice, false, padding + paddingLength);
                     }
                     else
                     {
                         // We got partial data, simulate a smaller frame, and stay in DATA state.
                         // No padding for these synthetic frames (even if we have read
                         // the padding length already), it will be accounted at the end.
-                        if (onData(slice, true, 0))
-                        {
-                            return Result.ASYNC;
-                        }
+                        onData(slice, true, 0);
                     }
                     break;
                 }
@@ -140,7 +119,7 @@ public class DataBodyParser extends BodyParser
                     if (paddingLength == 0)
                     {
                         reset();
-                        return Result.COMPLETE;
+                        return true;
                     }
                     break;
                 }
@@ -150,13 +129,13 @@ public class DataBodyParser extends BodyParser
                 }
             }
         }
-        return Result.PENDING;
+        return false;
     }
 
-    private boolean onData(ByteBuffer buffer, boolean fragment, int padding)
+    private void onData(ByteBuffer buffer, boolean fragment, int padding)
     {
         DataFrame frame = new DataFrame(getStreamId(), buffer, !fragment && isEndStream(), padding);
-        return notifyData(frame);
+        notifyData(frame);
     }
 
     private enum State
