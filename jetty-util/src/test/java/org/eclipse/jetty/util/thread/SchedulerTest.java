@@ -177,7 +177,7 @@ public class SchedulerTest
             @Override
             public void run()
             {
-                throw new RuntimeException();
+                throw new RuntimeException("Thrown by testTaskThrowsException");
             }
         }, delay, TimeUnit.MILLISECONDS);
 

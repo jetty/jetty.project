@@ -39,7 +39,8 @@ public class HostPortHttpField extends HttpField
     public HostPortHttpField(HttpHeader header, String name, String authority)
     {
         super(header,name,authority);
-                
+        if (authority==null || authority.length()==0)
+            throw new IllegalArgumentException("No Authority");
         try
         {
             if (authority.charAt(0)=='[')
