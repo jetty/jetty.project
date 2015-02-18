@@ -21,6 +21,7 @@ package org.eclipse.jetty.cdi;
 import javax.naming.NamingException;
 import javax.naming.Reference;
 
+import org.eclipse.jetty.cdi.websocket.WebSocketServerLifecycleListener;
 import org.eclipse.jetty.plus.jndi.Resource;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
@@ -57,6 +58,8 @@ public class JettyWeldInitializer
 
     public static void initContext(ContextHandler handler) throws NamingException
     {
+        handler.addLifeCycleListener(new WebSocketServerLifecycleListener(handler));
+        
         // Add context specific weld container reference.
         // See https://issues.jboss.org/browse/WELD-1710
         // and https://github.com/weld/core/blob/2.2.5.Final/environments/servlet/core/src/main/java/org/jboss/weld/environment/servlet/WeldServletLifecycle.java#L244-L253
@@ -65,8 +68,5 @@ public class JettyWeldInitializer
         // Setup Weld BeanManager reference
         Reference ref = new Reference("javax.enterprise.inject.spi.BeanManager","org.jboss.weld.resources.ManagerObjectFactory",null);
         new Resource(handler,"BeanManager",ref);
-
-        // Add just in time listeners for WebSocketServerFactory
-        handler.setAttribute("org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope.Listener","org.eclipse.jetty.cdi.weld.WeldScopeInitializer");
     }
 }

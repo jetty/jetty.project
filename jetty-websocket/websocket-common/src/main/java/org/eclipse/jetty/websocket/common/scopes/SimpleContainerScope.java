@@ -18,22 +18,25 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
+import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
-public class SimpleContainerScope implements WebSocketContainerScope
+public class SimpleContainerScope extends ContainerLifeCycle implements WebSocketContainerScope
 {
     private final ByteBufferPool bufferPool;
     private final DecoratedObjectFactory objectFactory;
     private final WebSocketPolicy policy;
     private Executor executor;
     private SslContextFactory sslContextFactory;
+    private WebSocketScopeEvents scopeEvents = new WebSocketScopeEvents();
 
     public SimpleContainerScope(WebSocketPolicy policy)
     {
@@ -56,6 +59,20 @@ public class SimpleContainerScope implements WebSocketContainerScope
         threadPool.setName(name);
         threadPool.setDaemon(true);
         this.executor = threadPool;
+    }
+
+    @Override
+    protected void doStart() throws Exception
+    {
+        super.doStart();
+        scopeEvents.fireContainerActivated(this);
+    }
+
+    @Override
+    protected void doStop() throws Exception
+    {
+        super.doStop();
+        scopeEvents.fireContainerDeactivated(this);
     }
 
     @Override
@@ -91,5 +108,28 @@ public class SimpleContainerScope implements WebSocketContainerScope
     public void setSslContextFactory(SslContextFactory sslContextFactory)
     {
         this.sslContextFactory = sslContextFactory;
+    }
+    
+    public WebSocketScopeEvents getScopeEvents()
+    {
+        return scopeEvents;
+    }
+
+    @Override
+    public void addScopeListener(WebSocketScopeListener listener)
+    {
+        this.scopeEvents.addScopeListener(listener);
+    }
+
+    @Override
+    public void removeScopeListener(WebSocketScopeListener listener)
+    {
+        this.scopeEvents.removeScopeListener(listener);
+    }
+
+    @Override
+    public List<WebSocketScopeListener> getScopeListeners()
+    {
+        return this.scopeEvents.getScopeListeners();
     }
 }

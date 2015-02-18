@@ -24,6 +24,7 @@ import java.net.SocketAddress;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
@@ -60,6 +61,8 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketScopeEvents;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketScopeListener;
 
 /**
  * WebSocketClient provides a means of establishing connections to remote websocket endpoints.
@@ -71,6 +74,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     private final WebSocketPolicy policy = WebSocketPolicy.newClientPolicy();
     private final SslContextFactory sslContextFactory;
     private final WebSocketExtensionFactory extensionRegistry;
+    private WebSocketScopeEvents scopeEvents = new WebSocketScopeEvents();
     private boolean daemon = false;
     private EventDriverFactory eventDriverFactory;
     private SessionFactory sessionFactory;
@@ -144,6 +148,12 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         addBean(this.executor);
         addBean(this.sslContextFactory);
         addBean(this.bufferPool);
+    }
+    
+    @Override
+    public void addScopeListener(WebSocketScopeListener listener)
+    {
+        this.scopeEvents.addScopeListener(listener);
     }
 
     public Future<Session> connect(Object websocket, URI toUri) throws IOException
@@ -280,6 +290,8 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         }
 
         super.doStart();
+        
+        scopeEvents.fireContainerActivated(this);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Started {}",this);
@@ -303,6 +315,8 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         }
 
         super.doStop();
+        
+        scopeEvents.fireContainerDeactivated(this);
 
         if (LOG.isDebugEnabled())
             LOG.debug("Stopped {}",this);
@@ -438,6 +452,17 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     {
         return scheduler;
     }
+    
+    public WebSocketScopeEvents getScopeEvents()
+    {
+        return scopeEvents;
+    }
+    
+    @Override
+    public List<WebSocketScopeListener> getScopeListeners()
+    {
+        return this.scopeEvents.getScopeListeners();
+    }
 
     public SessionFactory getSessionFactory()
     {
@@ -504,6 +529,12 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Session Opened: {}",session);
+    }
+    
+    @Override
+    public void removeScopeListener(WebSocketScopeListener listener)
+    {
+        this.scopeEvents.removeScopeListener(listener);
     }
 
     public void setAsyncWriteTimeout(long ms)

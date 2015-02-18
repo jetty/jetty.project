@@ -22,7 +22,7 @@ import java.io.PrintWriter;
 import java.io.StringWriter;
 import java.util.logging.Level;
 
-import javax.enterprise.context.RequestScoped;
+import javax.enterprise.context.SessionScoped;
 import javax.inject.Inject;
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpSession;
@@ -38,12 +38,15 @@ public class CdiInfoSocket
 {
     private static final java.util.logging.Logger LOG = java.util.logging.Logger.getLogger(CdiInfoSocket.class.getName());
 
-    @RequestScoped
+    @SessionScoped
     @Inject
     private HttpSession httpSession;
 
     @Inject
     private ServletContext servletContext;
+    
+    @Inject
+    private DataMaker dataMaker;
 
     private Session session;
     
@@ -73,6 +76,9 @@ public class CdiInfoSocket
                 out.printf("websocketSession is %s%n",asPresent(session));
                 out.printf("httpSession is %s%n",asPresent(httpSession));
                 out.printf("servletContext is %s%n",asPresent(servletContext));
+                break;
+            case "data":
+                dataMaker.processMessage(msg);
                 break;
         }
 

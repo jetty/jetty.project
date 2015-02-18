@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -58,6 +59,8 @@ import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketScopeEvents;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketScopeListener;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
@@ -114,6 +117,12 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         this.encoderFactory = new EncoderFactory(this,PrimitiveEncoderMetadataSet.INSTANCE);
 
         ShutdownThread.register(this);
+    }
+    
+    @Override
+    public void addScopeListener(WebSocketScopeListener listener)
+    {
+        this.scopeDelegate.addScopeListener(listener);
     }
 
     private Session connect(EndpointInstance instance, URI path) throws IOException
@@ -341,6 +350,17 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
     {
         return scopeDelegate.getPolicy();
     }
+    
+    public WebSocketScopeEvents getScopeEvents()
+    {
+        return scopeDelegate.getScopeEvents();
+    }
+    
+    @Override
+    public List<WebSocketScopeListener> getScopeListeners()
+    {
+        return scopeDelegate.getScopeListeners();
+    }
 
     @Override
     public SslContextFactory getSslContextFactory()
@@ -404,6 +424,12 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
             LOG.warn("JSR356 Implementation should not be mixed with native implementation: Expected {} to implement {}",session.getClass().getName(),
                     Session.class.getName());
         }
+    }
+    
+    @Override
+    public void removeScopeListener(WebSocketScopeListener listener)
+    {
+        scopeDelegate.removeScopeListener(listener);
     }
 
     @Override
