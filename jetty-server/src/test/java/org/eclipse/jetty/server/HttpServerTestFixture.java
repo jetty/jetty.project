@@ -35,10 +35,12 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.runner.RunWith;
 
 public class HttpServerTestFixture
 {    // Useful constants

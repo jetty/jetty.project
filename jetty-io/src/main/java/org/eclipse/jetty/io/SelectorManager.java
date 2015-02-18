@@ -304,19 +304,27 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just opened
      */
-    public void connectionOpened(Connection connection)
+    public void connectionOpened(final Connection connection)
     {
-        try
+        // TODO remove this execution
+        getExecutor().execute(new Runnable()
         {
-            connection.onOpen();
-        }
-        catch (Throwable x)
-        {
-            if (isRunning())
-                LOG.warn("Exception while notifying connection " + connection, x);
-            else
-                LOG.debug("Exception while notifying connection " + connection, x);
-        }
+            @Override
+            public void run()
+            {
+                try
+                {
+                    connection.onOpen();
+                }
+                catch (Throwable x)
+                {
+                    if (isRunning())
+                        LOG.warn("Exception while notifying connection " + connection, x);
+                    else
+                        LOG.debug("Exception while notifying connection " + connection, x);
+                }
+            }
+        });
     }
 
     /**

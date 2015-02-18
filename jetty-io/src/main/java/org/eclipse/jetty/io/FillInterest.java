@@ -74,8 +74,12 @@ public abstract class FillInterest
     public void fillable()
     {
         Callback callback = _interested.get();
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} fillable {}",this,callback);
         if (callback != null && _interested.compareAndSet(callback, null))
             callback.succeeded();
+        else
+            LOG.debug("{} lost race {}",this,callback);
     }
 
     /**

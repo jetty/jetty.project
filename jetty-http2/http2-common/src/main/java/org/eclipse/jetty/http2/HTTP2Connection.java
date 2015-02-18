@@ -88,6 +88,8 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
     @Override
     public void onFillable()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 onFillable {} ", this);
         executionStrategy.execute();
     }
 
