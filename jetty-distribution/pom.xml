@@ -302,7 +302,7 @@
             <configuration>
               <includeGroupIds>org.eclipse.jetty</includeGroupIds>
               <excludeGroupIds>org.eclipse.jetty.orbit,org.eclipse.jetty.http2,org.eclipse.jetty.websocket,org.eclipse.jetty.fcgi,org.eclipse.jetty.toolchain,org.apache.taglibs</excludeGroupIds>
-              <excludeArtifactIds>jetty-all,jetty-jsp,apache-jsp,apache-jstl,jetty-start,jetty-monitor,jetty-spring</excludeArtifactIds>
+              <excludeArtifactIds>jetty-all,apache-jsp,apache-jstl,jetty-start,jetty-monitor,jetty-spring</excludeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib</outputDirectory>
             </configuration>
@@ -445,19 +445,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-glassfish-jsp-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.orbit,org.glassfish.web, org.glassfish, javax.el, javax.servlet.jsp, org.eclipse.jetty.toolchain, org.eclipse.jetty</includeGroupIds>
-              <includeArtifactIds>org.eclipse.jdt.core, javax.servlet.jsp-api, javax.servlet.jsp, jetty-jsp-jdt, javax.el-api, javax.el, jetty-jsp</includeArtifactIds>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>copy-apache-jsp-deps</id>
             <phase>generate-resources</phase>
             <goals>
@@ -481,19 +468,6 @@
               <includeGroupIds>org.eclipse.jetty.orbit</includeGroupIds>
               <includeArtifactIds>javax.servlet.jsp.jstl</includeArtifactIds>
               <prependGroupId>true</prependGroupId>
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
-           </configuration>
-          </execution>
-          <execution>
-           <id>copy-jstl-impl</id>
-           <phase>generate-resources</phase>
-           <goals>
-             <goal>copy-dependencies</goal>
-           </goals>
-           <configuration>
-              <includeGroupIds>org.glassfish.web</includeGroupIds>
-              <includeArtifactIds>javax.servlet.jsp.jstl</includeArtifactIds>
               <includeTypes>jar</includeTypes>
               <outputDirectory>${assembly-directory}/lib/jsp</outputDirectory>
            </configuration>
@@ -650,28 +624,6 @@
     </dependency>
 
     <dependency>
-      <groupId>org.glassfish.web</groupId>
-      <artifactId>javax.servlet.jsp.jstl</artifactId>
-    </dependency>
-
-    <dependency>
-      <groupId>org.glassfish.web</groupId>
-      <artifactId>javax.servlet.jsp</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.toolchain</groupId>
-      <artifactId>jetty-jsp-jdt</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>javax.servlet.jsp</groupId>
-      <artifactId>javax.servlet.jsp-api</artifactId>
-    </dependency>
-    <dependency>
-      <groupId>org.glassfish</groupId>
-      <artifactId>javax.el</artifactId>
-    </dependency>
-
-    <dependency>
       <groupId>org.ow2.asm</groupId>
       <artifactId>asm</artifactId>
     </dependency>
@@ -736,11 +688,6 @@
     <dependency>
       <groupId>org.eclipse.jetty.websocket</groupId>
       <artifactId>javax-websocket-server-impl</artifactId>
-      <version>${project.version}</version>
-    </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty</groupId>
-      <artifactId>jetty-jsp</artifactId>
       <version>${project.version}</version>
     </dependency>
     <dependency>
