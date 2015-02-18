@@ -57,8 +57,6 @@ public class HTTP2ClientSession extends HTTP2Session
         {
             stream.process(frame, Callback.Adapter.INSTANCE);
             notifyHeaders(stream, frame);
-            if (stream.isClosed())
-                removeStream(stream, false);
         }
     }
 
@@ -97,8 +95,6 @@ public class HTTP2ClientSession extends HTTP2Session
             pushStream.process(frame, Callback.Adapter.INSTANCE);
             Stream.Listener listener = notifyPush(stream, pushStream, frame);
             pushStream.setListener(listener);
-            if (pushStream.isClosed())
-                removeStream(pushStream, false);
         }
     }
 

@@ -160,7 +160,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
                 if (LOG.isDebugEnabled())
                     LOG.debug("Could not push " + request, x);
             }
-        });
+        }, new Stream.Listener.Adapter()); // TODO: handle reset from the client ?
     }
 
     private void commit(MetaData.Response info, boolean endStream, Callback callback)
