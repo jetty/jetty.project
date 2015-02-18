@@ -53,16 +53,20 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public abstract class FlowControlStrategyTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
     protected ServerConnector connector;
     protected HTTP2Client client;
     protected Server server;
