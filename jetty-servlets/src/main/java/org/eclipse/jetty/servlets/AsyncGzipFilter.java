@@ -33,6 +33,7 @@ import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
+import javax.servlet.ServletRegistration;
 import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
 import javax.servlet.http.HttpServletRequest;
@@ -121,7 +122,8 @@ import org.eclipse.jetty.util.log.Logger;
  *                            the User-Agent, unless the cache does some normalization of the UA string.
  * </dd>                         
  * <dt>checkGzExists</dt>       <dd>If set to true, the filter check if a static resource with ".gz" appended exists.  If so then
- *                            the normal processing is done so that the default servlet can send  the pre existing gz content.
+ *                            the normal processing is done so that the default servlet can send  the pre existing gz content. If not
+ *                            set, defaults to the same as the default servlet "gzip" parameter.
  *  </dd>
  *  </dl>
  */
@@ -189,6 +191,13 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
         tmp=filterConfig.getInitParameter("checkGzExists");
         if (tmp!=null)
             _checkGzExists=Boolean.parseBoolean(tmp);
+        else
+        {
+            // Look to Default servlet for default
+            ServletRegistration dftServlet = _context.getServletRegistration("default");
+            if (dftServlet!=null && dftServlet.getInitParameter("gzip")!=null)
+                _checkGzExists=Boolean.parseBoolean(dftServlet.getInitParameter("gzip"));
+        }
         LOG.debug("{} checkGzExists={}",this,_checkGzExists);
         
         tmp=filterConfig.getInitParameter("methods");
@@ -281,6 +290,7 @@ public class AsyncGzipFilter extends UserAgentFilter implements GzipFactory
         if (tmp!=null)
             _vary=new HttpGenerator.CachedHttpField(HttpHeader.VARY,tmp);
         LOG.debug("{} vary={}",this,_vary);
+        
     }
 
     /* ------------------------------------------------------------ */
