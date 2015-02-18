@@ -31,7 +31,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 /**
  * An ChannelEndpoint that can be scheduled by {@link SelectorManager}.
  */
-public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorManager.SelectableEndPoint
+public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSelector.SelectableEndPoint
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
@@ -115,17 +115,23 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements SelectorMa
                         // selector will call updateKey before selecting again.
                         _interestState.set(State.UPDATE_PENDING);
                     }
-                    
-                    if ((readyOps & SelectionKey.OP_READ) != 0)
+
+                    boolean readable = (readyOps & SelectionKey.OP_READ) != 0;
+                    boolean writable = (readyOps & SelectionKey.OP_WRITE) != 0;
+                    if (readable)
                     {
-                        if ((readyOps & SelectionKey.OP_WRITE) != 0)
+                        if (writable)
                             return _runFillableCompleteWrite;
                         return _runFillable;
                     }
-                    if ((readyOps & SelectionKey.OP_WRITE) != 0)
+                    else if (writable)
+                    {
                         return _runCompleteWrite;
-
-                    return null;
+                    }
+                    else
+                    {
+                        return null;
+                    }
                 }
                 case LOCKED:
                 {

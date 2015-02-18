@@ -304,27 +304,19 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      *
      * @param connection the connection just opened
      */
-    public void connectionOpened(final Connection connection)
+    public void connectionOpened(Connection connection)
     {
-        // TODO remove this execution
-        getExecutor().execute(new Runnable()
+        try
         {
-            @Override
-            public void run()
-            {
-                try
-                {
-                    connection.onOpen();
-                }
-                catch (Throwable x)
-                {
-                    if (isRunning())
-                        LOG.warn("Exception while notifying connection " + connection, x);
-                    else
-                        LOG.debug("Exception while notifying connection " + connection, x);
-                }
-            }
-        });
+            connection.onOpen();
+        }
+        catch (Throwable x)
+        {
+            if (isRunning())
+                LOG.warn("Exception while notifying connection " + connection, x);
+            else
+                LOG.debug("Exception while notifying connection " + connection, x);
+        }
     }
 
     /**
@@ -399,26 +391,5 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     {
         ContainerLifeCycle.dumpObject(out, this);
         ContainerLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
-    }
-
-    /**
-     * A {@link SelectableEndPoint} is an {@link EndPoint} that wish to be
-     * notified of non-blocking events by the {@link ManagedSelector}.
-     */
-    public interface SelectableEndPoint extends EndPoint
-    {
-        /**
-         * Callback method invoked when a read or write events has been
-         * detected by the {@link ManagedSelector} for this endpoint.
-         *
-         * @return a job that may block or null
-         */
-        Runnable onSelected();
-
-        /**
-         * Callback method invoked when all the keys selected by the
-         * {@link ManagedSelector} for this endpoint have been processed.
-         */
-        void updateKey();
     }
 }
