@@ -991,8 +991,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 }
                 case RST_STREAM:
                 {
-                    stream.close();
-                    removeStream(stream, true);
+                    if (stream != null)
+                    {
+                        stream.close();
+                        removeStream(stream, true);
+                    }
                     break;
                 }
                 case SETTINGS:
