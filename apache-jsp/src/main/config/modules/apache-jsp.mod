@@ -3,7 +3,7 @@
 #
 
 [name]
-jsp-impl
+apache-jsp
 
 [lib]
 lib/apache-jsp/*.jar

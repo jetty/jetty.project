@@ -2,7 +2,7 @@
 # Apache JSTL 
 #
 [name]
-jstl-impl
+apache-jstl
 
 [lib]
 lib/apache-jstl/*.jar

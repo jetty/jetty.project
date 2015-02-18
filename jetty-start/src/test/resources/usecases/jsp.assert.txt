@@ -31,7 +31,6 @@ LIB|${jetty.home}/lib/apache-jsp/org.mortbay.jasper.apache-jsp-8.0.9.M3.jar
 # The Properties we expect (order is irrelevant)
 # (these are the properties we actually set in the configuration)
 PROP|jetty.port=9090
-PROP|jsp-impl=apache
 # (these are the ones set by default from jetty.home modules)
 PROP|http.timeout=30000
 PROP|jetty.delayDispatchUntilContent=false

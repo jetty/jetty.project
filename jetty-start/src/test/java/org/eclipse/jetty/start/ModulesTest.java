@@ -86,6 +86,8 @@ public class ModulesTest
         List<String> expected = new ArrayList<>();
         expected.add("alpn");
         expected.add("annotations");
+        expected.add("apache-jsp");
+        expected.add("apache-jstl");
         expected.add("cdi");
         expected.add("client");
         expected.add("continuation");
@@ -98,6 +100,7 @@ public class ModulesTest
         expected.add("home-base-warning");
         expected.add("http");
         expected.add("http2");
+        expected.add("http2c");
         expected.add("https");
         expected.add("ipaccess");
         expected.add("jaas");
@@ -229,8 +232,8 @@ public class ModulesTest
         expected.add("jvm");
         // transitive
         expected.add("ssl");
-        expected.add("jsp-impl");
-        expected.add("jstl-impl");
+        expected.add("apache-jsp");
+        expected.add("apache-jstl");
         expected.add("webapp");
         expected.add("deploy");
         expected.add("plus");
@@ -444,7 +447,7 @@ public class ModulesTest
 
         // Assert names are correct, and in the right order
         List<String> expectedNames = new ArrayList<>();
-        expectedNames.add("jsp-impl");
+        expectedNames.add("apache-jsp");
         expectedNames.add("server");
         expectedNames.add("http");
         expectedNames.add("jndi");
@@ -467,7 +470,7 @@ public class ModulesTest
 
         // Now work with the 'alt' selected
         List<String> expectedAlts = new ArrayList<>();
-        expectedAlts.add("jsp-impl");
+        expectedAlts.add("apache-jsp");
         expectedAlts.add("jsp");
         expectedAlts.add("websocket");
 

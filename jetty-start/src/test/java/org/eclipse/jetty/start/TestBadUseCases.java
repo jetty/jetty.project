@@ -44,14 +44,6 @@ public class TestBadUseCases
     {
         List<Object[]> ret = new ArrayList<>();
         
-        ret.add(new Object[]{ "jsp", 
-                "Missing referenced dependency: jsp-impl/bad-jsp", 
-                new String[]{ "jsp-impl=bad" }});
-        
-        ret.add(new Object[]{ "jsp-bad", 
-                "Missing referenced dependency: jsp-impl/bad-jsp", 
-                null});
-
         ret.add(new Object[]{ "http2", 
                 "Missing referenced dependency: alpn-impl/alpn-1.7.0_01", 
                 new String[]{"java.version=1.7.0_01"}});
