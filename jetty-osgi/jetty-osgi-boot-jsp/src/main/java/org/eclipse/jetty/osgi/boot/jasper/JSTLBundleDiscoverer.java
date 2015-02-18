@@ -19,19 +19,13 @@
 package org.eclipse.jetty.osgi.boot.jasper;
 
 import java.io.File;
-import java.io.InputStream;
-import java.lang.reflect.Field;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.Set;
 
-import javax.servlet.Servlet;
-import javax.servlet.jsp.JspContext;
 import javax.servlet.jsp.JspFactory;
 
-import org.apache.jasper.Constants;
-import org.apache.jasper.compiler.Localizer;
 import org.eclipse.jetty.deploy.DeploymentManager;
 import org.eclipse.jetty.osgi.boot.JettyBootstrapActivator;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
@@ -40,9 +34,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
-import org.xml.sax.EntityResolver;
-import org.xml.sax.InputSource;
-import org.xml.sax.SAXException;
 
 /**
  * 
@@ -68,17 +59,7 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
      */
     private static String DEFAULT_JSTL_BUNDLE_CLASS = "org.apache.taglibs.standard.tag.el.core.WhenTag";
 
-    // used to be "org.apache.jasper.runtime.JspFactoryImpl" but now
-    // the standard tag library implementation are stored in a separate bundle.
-
-    // DISABLED please use the tld bundle argument for the OSGiAppProvider
-    // /**
-    // * Default name of a class that belongs to the bundle where the Java
-    // server Faces tld files are defined.
-    // * This is the sun's reference implementation.
-    // */
-    // private static String DEFAUT_JSF_IMPL_CLASS =
-    // "com.sun.faces.config.ConfigureListener";
+ 
 
     /**
      * Default jsp factory implementation. Idally jasper is osgified and we can
@@ -91,8 +72,6 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
 
     public JSTLBundleDiscoverer()
     {
-        //fixupDtdResolution();
-
         try
         {
             // sanity check:
@@ -168,8 +147,6 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
             Bundle tldBundle = FrameworkUtil.getBundle(jstlClass);
             File tldBundleLocation = locatorHelper.getBundleInstallLocation(tldBundle);
             
-            System.err.println("jstl bundle: "+tldBundle);
-            System.err.println("jstl bundle location: "+tldBundleLocation);
             if (tldBundleLocation != null && tldBundleLocation.isDirectory())
             {
                 // try to find the jar files inside this folder
@@ -177,7 +154,6 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
                 {
                     if (f.getName().endsWith(".jar") && f.isFile())
                     {
-                        System.err.println("Tld jar in dir: "+f.toURI());
                         urls.add(f.toURI().toURL());
                     }
                     else if (f.isDirectory() && f.getName().equals("lib"))
@@ -186,7 +162,6 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
                         {
                             if (f2.getName().endsWith(".jar") && f2.isFile())
                             {
-                                System.err.println("Tld jar in lib dir: "+f2.toURI());
                                 urls.add(f2.toURI().toURL());
                             }
                         }
@@ -196,7 +171,6 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
             }
             else if (tldBundleLocation != null)
             {
-                System.err.println("Tld bundle uri: "+tldBundleLocation.toURI());
                 urls.add(tldBundleLocation.toURI().toURL());
               
                 String pattern = (String)deployer.getContextAttribute("org.eclipse.jetty.server.webapp.containerIncludeBundlePattern");
@@ -206,90 +180,10 @@ public class JSTLBundleDiscoverer implements TldBundleDiscoverer
                     pattern += "|"+tldBundle.getSymbolicName();
                     deployer.setContextAttribute("org.eclipse.jetty.server.webapp.containerIncludeBundlePattern", pattern);
                 }
-                System.err.println("PATTERN: "+pattern);
             }
         }
         
         return urls.toArray(new URL[urls.size()]);
     }
-
-    /**
-     * Jasper resolves the dtd when it parses a taglib descriptor. It uses this
-     * code to do that:
-     * ParserUtils.getClass().getResourceAsStream(resourcePath); where
-     * resourcePath is for example:
-     * /javax/servlet/jsp/resources/web-jsptaglibrary_1_2.dtd Unfortunately, the
-     * dtd file is not in the exact same classloader as ParserUtils class and
-     * the dtds are packaged in 2 separate bundles. OSGi does not look in the
-     * dependencies' classloader when a resource is searched.
-     * <p>
-     * The workaround consists of setting the entity resolver. That is a patch
-     * added to the version of glassfish-jasper-jetty. IT is also present in the
-     * latest version of glassfish jasper. Could not use introspection to set
-     * new value on a static friendly field :(
-     * </p>
-     */
-   void fixupDtdResolution()
-    {
-        try
-        {
-           // ParserUtils.setEntityResolver(new MyFixedupEntityResolver());
-         
-
-        }
-        catch (Exception e)
-        {
-            e.printStackTrace();
-        }
-
-    }
-
-    /**
-     * Instead of using the ParserUtil's classloader, we use a class that is
-     * indeed next to the resource for sure.
-     */
-    //static class MyFixedupEntityResolver implements EntityResolver
-    //{
-        /**
-         * Same values than in ParserUtils...
-         */
-      /*  static final String[] CACHED_DTD_PUBLIC_IDS = { Constants.TAGLIB_DTD_PUBLIC_ID_11, Constants.TAGLIB_DTD_PUBLIC_ID_12,
-                                                       Constants.WEBAPP_DTD_PUBLIC_ID_22, Constants.WEBAPP_DTD_PUBLIC_ID_23, };
-
-        static final String[] CACHED_DTD_RESOURCE_PATHS = { Constants.TAGLIB_DTD_RESOURCE_PATH_11, Constants.TAGLIB_DTD_RESOURCE_PATH_12,
-                                                           Constants.WEBAPP_DTD_RESOURCE_PATH_22, Constants.WEBAPP_DTD_RESOURCE_PATH_23, };
-
-        static final String[] CACHED_SCHEMA_RESOURCE_PATHS = { Constants.TAGLIB_SCHEMA_RESOURCE_PATH_20, Constants.TAGLIB_SCHEMA_RESOURCE_PATH_21,
-                                                              Constants.WEBAPP_SCHEMA_RESOURCE_PATH_24, Constants.WEBAPP_SCHEMA_RESOURCE_PATH_25, };*/
-
-      /*  public InputSource resolveEntity(String publicId, String systemId) throws SAXException
-        {
-            for (int i = 0; i < CACHED_DTD_PUBLIC_IDS.length; i++)
-            {
-                String cachedDtdPublicId = CACHED_DTD_PUBLIC_IDS[i];
-                if (cachedDtdPublicId.equals(publicId))
-                {
-                    String resourcePath = CACHED_DTD_RESOURCE_PATHS[i];
-                    InputStream input = null;
-                    input = Servlet.class.getResourceAsStream(resourcePath);
-                    if (input == null)
-                    {
-                        input = JspContext.class.getResourceAsStream(resourcePath);
-                        if (input == null)
-                        {*/
-                            // if that failed try again with the original code:
-                            // although it is likely not changed.
-                   /*         input = this.getClass().getResourceAsStream(resourcePath);
-                      }
-                    }
-                    if (input == null) { throw new SAXException(Localizer.getMessage("jsp.error.internal.filenotfound", resourcePath)); }
-                    InputSource isrc = new InputSource(input);
-                    return isrc;
-                }
-            }
-
-            return null;
-        }
-    }*/
 
 }

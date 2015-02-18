@@ -91,11 +91,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     private transient boolean _enabled = true;
     private transient UnavailableException _unavailableEx;
 
-    public static final String GLASSFISH_SENTINEL_CLASS = "org.glassfish.jsp.api.ResourceInjector";
+    
     public static final String APACHE_SENTINEL_CLASS = "org.apache.tomcat.InstanceManager";
     public static final  String JSP_GENERATED_PACKAGE_NAME = "org.eclipse.jetty.servlet.jspPackagePrefix";
     public static final Map<String,String> NO_MAPPED_ROLES = Collections.emptyMap();
-    public static enum JspContainer {GLASSFISH, APACHE, OTHER}; 
+    public static enum JspContainer {APACHE, OTHER}; 
 
     /* ---------------------------------------------------------------- */
     /** Constructor .
@@ -653,9 +653,6 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
         /* Set the webapp's classpath for Jasper */
         ch.setAttribute("org.apache.catalina.jsp_classpath", ch.getClassPath());
 
-        /* Set the system classpath for Jasper */
-        setInitParameter("com.sun.appserv.jsp.classpath", Loader.getClassPath(ch.getClassLoader().getParent()));
-
         /* Set up other classpath attribute */
         if ("?".equals(getInitParameter("classpath")))
         {
@@ -859,13 +856,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /* ------------------------------------------------------------ */
     private void adaptForcedPathToJspContainer (ServletRequest request)
     {
-        if (_forcedPath != null && _jspContainer != null && JspContainer.GLASSFISH.equals(_jspContainer))
-        {
-            //if container is glassfish, set the request attribute org.apache.catalina.jsp_file to
-            //ensure the delegate jsp will be compiled
-
-            request.setAttribute("org.apache.catalina.jsp_file",_forcedPath);
-        }
+        //no-op for apache jsp
     }
 
     /* ------------------------------------------------------------ */
@@ -873,29 +864,17 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     {
         if (_jspContainer == null)
         {
-            //check for glassfish
             try
             {
-                //if container is glassfish, set the request attribute org.apache.catalina.jsp_file to
-                //ensure the delegate jsp will be compiled
-                Loader.loadClass(Holder.class, GLASSFISH_SENTINEL_CLASS);
-                if (LOG.isDebugEnabled())LOG.debug("Glassfish jasper detected");
-                _jspContainer = JspContainer.GLASSFISH;
+                //check for apache
+                Loader.loadClass(Holder.class, APACHE_SENTINEL_CLASS);
+                if (LOG.isDebugEnabled())LOG.debug("Apache jasper detected");
+                _jspContainer = JspContainer.APACHE;
             }
-            catch (ClassNotFoundException e)
+            catch (ClassNotFoundException x)
             {
-                try
-                {
-                    //check for apache
-                    Loader.loadClass(Holder.class, APACHE_SENTINEL_CLASS);
-                    if (LOG.isDebugEnabled())LOG.debug("Apache jasper detected");
-                    _jspContainer = JspContainer.APACHE;
-                }
-                catch (ClassNotFoundException x)
-                {
-                    if (LOG.isDebugEnabled())LOG.debug("Other jasper detected");
-                    _jspContainer = JspContainer.OTHER;
-                }
+                if (LOG.isDebugEnabled())LOG.debug("Other jasper detected");
+                _jspContainer = JspContainer.OTHER;
             }
         }
     }
