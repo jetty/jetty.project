@@ -28,10 +28,6 @@ https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html
 
 javax.servlet:javax.servlet-api
 javax.servlet.jsp:javax.servlet.jsp-api
-org.glassfish.web:javax.servlet.jsp
-org.glassfish.web:javax.servlet.jsp
-org.glassfish.web:javax.servlet.jsp.jstl
-org.eclipse.jetty.orbit.javax.servlet.jsp.jstl
 
 
 ------
