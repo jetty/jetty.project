@@ -35,6 +35,8 @@ import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
 
 import org.eclipse.jetty.toolchain.test.EventQueue;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.junit.Test;
 
 public class SessionInfoIT
@@ -42,6 +44,8 @@ public class SessionInfoIT
     @ClientEndpoint
     public static class ClientSessionInfoSocket
     {
+        private static final Logger LOG = Log.getLogger(SessionInfoIT.ClientSessionInfoSocket.class);
+        
         public CountDownLatch openLatch = new CountDownLatch(1);
         public CountDownLatch closeLatch = new CountDownLatch(1);
         public Session session;
@@ -51,6 +55,7 @@ public class SessionInfoIT
         @OnOpen
         public void onOpen(Session session)
         {
+            LOG.info("onOpen(): {}", session);
             this.session = session;
             this.openLatch.countDown();
         }
@@ -58,6 +63,7 @@ public class SessionInfoIT
         @OnClose
         public void onClose(CloseReason close)
         {
+            LOG.info("onClose(): {}", close);
             this.session = null;
             this.closeReason = close;
             this.closeLatch.countDown();
@@ -66,7 +72,8 @@ public class SessionInfoIT
         @OnMessage
         public void onMessage(String message)
         {
-            this.messages.add(message);
+            LOG.info("onMessage(): {}", message);
+            this.messages.offer(message);
         }
     }
 
@@ -84,10 +91,16 @@ public class SessionInfoIT
         assertThat("Await open", socket.openLatch.await(1,TimeUnit.SECONDS), is(true));
         
         socket.session.getBasicRemote().sendText("info");
-        socket.session.getBasicRemote().sendText("close");
+        socket.messages.awaitEventCount(1,2,TimeUnit.SECONDS);
         
+        System.out.printf("socket.messages.size = %s%n",socket.messages.size());
+        
+        String msg = socket.messages.poll();
+        System.out.printf("Message is [%s]%n",msg);
+        
+        assertThat("Message", msg, containsString("HttpSession = HttpSession"));
+        
+        socket.session.getBasicRemote().sendText("close");
         assertThat("Await close", socket.closeLatch.await(1,TimeUnit.SECONDS),is(true));
-                
-        assertThat("Message", socket.messages.poll(), containsString("HttpSession = HttpSession"));
     }
 }

@@ -18,41 +18,81 @@
 
 package org.eclipse.jetty.tests.ws;
 
-import java.io.IOException;
-
 import javax.inject.Inject;
 import javax.servlet.http.HttpSession;
 import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.RemoteEndpoint;
 import javax.websocket.Session;
 import javax.websocket.server.ServerEndpoint;
+
+import org.eclipse.jetty.tests.logging.JULog;
 
 @ServerEndpoint(value = "/sessioninfo")
 public class SessionInfoSocket
 {
     @Inject
+    private JULog LOG;
+
+    @Inject
     private HttpSession httpSession;
 
-    @OnMessage
-    public void onMessage(Session session, String message)
+    private Session wsSession;
+
+    @OnOpen
+    public void onOpen(Session session)
     {
+        LOG.info("onOpen({0})",asClassId(session));
+        this.wsSession = session;
+    }
+
+    @OnMessage
+    public void onMessage(String message)
+    {
+        LOG.info("onMessage({0})",quoted(message));
+        
         try
         {
-            switch (message)
+            RemoteEndpoint.Basic remote = wsSession.getBasicRemote();
+            LOG.info("Remote.Basic: {0}", remote);
+            
+            if ("info".equalsIgnoreCase(message))
             {
-                case "info":
-                    session.getBasicRemote().sendText("HttpSession = " + httpSession);
-                    break;
-                case "close":
-                    session.close();
-                    break;
-                default:
-                    session.getBasicRemote().sendText(message);
-                    break;
+                LOG.info("returning 'info' details");
+                remote.sendText("HttpSession = " + httpSession);
+            }
+            else if ("close".equalsIgnoreCase(message))
+            {
+                LOG.info("closing session");
+                wsSession.close();
+            }
+            else
+            {
+                LOG.info("echoing message as-is");
+                remote.sendText(message);
             }
         }
-        catch (IOException e)
+        catch (Throwable t)
         {
-            e.printStackTrace(System.err);
+            LOG.warn(t);
         }
+    }
+
+    private String asClassId(Object obj)
+    {
+        if (obj == null)
+        {
+            return "<null>";
+        }
+        return String.format("%s@%X",obj.getClass().getName(),obj.hashCode());
+    }
+
+    private String quoted(String str)
+    {
+        if (str == null)
+        {
+            return "<null>";
+        }
+        return '"' + str + '"';
     }
 }
