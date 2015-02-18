@@ -88,7 +88,7 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
         }
 
         if (produce)
-            produce();
+            produceAndRun();
     }
     
     @Override
@@ -107,10 +107,10 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
         }
         
         if (produce)
-            produce();
+            produceAndRun();
     }
     
-    private void produce()
+    private void produceAndRun()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} produce enter",this);

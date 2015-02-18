@@ -22,7 +22,13 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 
 /* ------------------------------------------------------------ */
-/**
+/** Spin Lock
+ * <p>This is a lock designed to protect VERY short sections of 
+ * critical code.  Threads attempting to take the lock will spin 
+ * forever until the lock is available, thus it is important that
+ * the code protected by this lock is extremely simple and non
+ * blocking. The reason for this lock is that it prevents a thread
+ * from giving up a CPU core when contending for the lock.</p>
  * <pre>
  * try(SpinLock.Lock lock = spinlock.lock())
  * {
