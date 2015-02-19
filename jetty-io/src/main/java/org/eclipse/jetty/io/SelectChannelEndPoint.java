@@ -37,7 +37,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
 
     private final SpinLock _lock = new SpinLock();
     private boolean _updatePending;
-    
+
     /**
      * true if {@link ManagedSelector#destroyEndPoint(EndPoint)} has not been called
      */
@@ -48,7 +48,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
      * The desired value for {@link SelectionKey#interestOps()}
      */
     private int _interestOps;
-    
+
     private final Runnable _runUpdateKey = new Runnable() { public void run() { updateKey(); } };
     private final Runnable _runFillable = new Runnable() { public void run() { getFillInterest().fillable(); } };
     private final Runnable _runCompleteWrite = new Runnable() { public void run() { getWriteFlusher().completeWrite(); } };
@@ -80,12 +80,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         /**
          * This method may run concurrently with {@link #changeInterests(int)}.
          */
+
         int readyOps;
         int oldInterestOps;
         int newInterestOps;
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            _updatePending=true;
+            _updatePending = true;
 
             // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
             readyOps = _key.readyOps();
@@ -96,32 +97,33 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
 
         if (LOG.isDebugEnabled())
             LOG.debug("onSelected {}->{} for {}", oldInterestOps, newInterestOps, this);
-        
+
         boolean readable = (readyOps & SelectionKey.OP_READ) != 0;
         boolean writable = (readyOps & SelectionKey.OP_WRITE) != 0;
-        return readable?(writable?_runFillableCompleteWrite:_runFillable):(writable?_runCompleteWrite:null);
+        return readable ? (writable ? _runFillableCompleteWrite : _runFillable)
+                        : (writable ? _runCompleteWrite : null);
     }
 
     @Override
     public void updateKey()
     {
         /**
-         * This method may run concurrently with
-         * {@link #changeInterests(int)} and {@link #onSelected()}.
+         * This method may run concurrently with {@link #changeInterests(int)}.
          */
+
         try
         {
             int oldInterestOps;
             int newInterestOps;
-            try(SpinLock.Lock lock = _lock.lock())
+            try (SpinLock.Lock lock = _lock.lock())
             {
-                _updatePending=false;
+                _updatePending = false;
                 oldInterestOps = _key.interestOps();
                 newInterestOps = _interestOps;
                 if (oldInterestOps != newInterestOps)
                     _key.interestOps(newInterestOps);
             }
-            
+
             if (LOG.isDebugEnabled())
                 LOG.debug("Key interests updated {} -> {} on {}", oldInterestOps, newInterestOps, this);
         }
@@ -147,10 +149,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         int oldInterestOps;
         int newInterestOps;
         boolean pending;
-
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            pending=_updatePending;
+            pending = _updatePending;
             oldInterestOps = _interestOps;
             newInterestOps = oldInterestOps | operation;
             if (newInterestOps != oldInterestOps)
@@ -194,8 +195,6 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
     @Override
     public String toString()
     {
-        // Do NOT use synchronized (this)
-        // because it's very easy to deadlock when debugging is enabled.
         // We do a best effort to print the right toString() and that's it.
         try
         {
@@ -208,10 +207,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
                     keyInterests,
                     keyReadiness);
         }
-        catch (CancelledKeyException x)
+        catch (Throwable x)
         {
             return String.format("%s{io=%s,kio=-2,kro=-2}", super.toString(), _interestOps);
         }
     }
-
 }
