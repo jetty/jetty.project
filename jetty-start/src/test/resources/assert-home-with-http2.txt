@@ -61,7 +61,6 @@ PROP|ssl.port=8443
 PROP|ssl.timeout=30000
 # (these are the ones set by default from jetty.home modules)
 PROP|jetty.port=8080
-PROP|jsp-impl=apache
 PROP|http.timeout=30000
 PROP|jetty.delayDispatchUntilContent=false
 PROP|jetty.dump.start=false
