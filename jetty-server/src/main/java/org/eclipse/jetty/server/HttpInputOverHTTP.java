@@ -51,6 +51,6 @@ public class HttpInputOverHTTP extends HttpInput
     @Override 
     protected void onReadPossible()
     {
-        _httpConnection.getHttpChannel().getState().onReadPossible(false); // Will be handled by async callback
+        _httpConnection.getHttpChannel().getState().onReadPossible();
     }
 }

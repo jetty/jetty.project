@@ -60,8 +60,6 @@ public abstract class FillInterest
         }
         try
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} register {}",this,callback);
             needsFillInterest();
         }
         catch (Throwable e)
@@ -80,7 +78,7 @@ public abstract class FillInterest
             LOG.debug("{} fillable {}",this,callback);
         if (callback != null && _interested.compareAndSet(callback, null))
             callback.succeeded();
-        else if (LOG.isDebugEnabled())
+        else
             LOG.debug("{} lost race {}",this,callback);
     }
 
