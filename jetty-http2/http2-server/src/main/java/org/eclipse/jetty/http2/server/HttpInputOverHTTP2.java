@@ -21,6 +21,8 @@ package org.eclipse.jetty.http2.server;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpInput;
 
+
+// TODO This class is the same as the default.  Is it needed?
 public class HttpInputOverHTTP2 extends HttpInput
 {
     private final HttpChannelState _httpChannelState;

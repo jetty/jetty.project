@@ -347,6 +347,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             }
         }
         
+        // TODO currently this is an active method that can dispatch a call to HttpChannel.handle. This can be duplicated by the AsyncReadCallback!
         if (call_on_read_possible)
             onReadPossible();
     }

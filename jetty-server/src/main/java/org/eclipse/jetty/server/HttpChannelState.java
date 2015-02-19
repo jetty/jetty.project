@@ -730,8 +730,8 @@ public class HttpChannelState
             }
         }
 
+        // TODO, do we need to execute?  or should it be done elsewhere?
         if (handle)
-            // TODO, do we need to execute or just run?
             _channel.execute(_channel);
     }
     

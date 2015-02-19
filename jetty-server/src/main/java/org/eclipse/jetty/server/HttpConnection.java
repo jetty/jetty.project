@@ -538,7 +538,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             _input.failed(x);
         }
-        
     }
 
     private class AsyncReadCallback implements Callback
@@ -547,8 +546,13 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public void succeeded()
         {
             if (parseContent())
-                _channel.handle();
+                _channel.handle();  // TODO this call to handle can be duplicated by HttpInput.addContent calling onReadPossible
             else if (!_input.isFinished())
+                // TODO This may not always be correct.    The main use-case is when the asyncReadCallback has succeeded because of 
+                // some data that is not sufficient to produce anything to read (Eg one byte of a chunk header).  We can't add
+                // zero length content because HttpInput.read() cannot return 0 as no bytes read!  So instead we just say we are 
+                // fill interested and look for more content.   BUT maybe there is a case when this is not needed..... hmmm I think
+                // this is probably OK as the AsyncReadCallback is only ever used when there is not another thread reading etc.
                 asyncReadFillInterested();
         }
 
@@ -559,7 +563,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _channel.handle();
         }
     }
-    
     
     private class SendCallback extends IteratingCallback
     {

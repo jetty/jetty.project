@@ -102,11 +102,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     protected HttpInput newHttpInput()
     {
+        // TODO - this is a convoluted way to construct the HttpInput.  Can this be simplified?
+        // TODO - the issue is that the HttpInput needs access to the HttpState, which is not 
+        // TODO - constructed until the HttpChannel is constructed... so there is chicken and egg.
         return new HttpInput()
         {
             @Override
             protected void onReadPossible()
             {
+                // TODO All three implementations just do this?  do we need to override onReadPossible at all?
+                
                 getState().onReadPossible();
             }            
         };
