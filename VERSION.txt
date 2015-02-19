@@ -1,3 +1,5 @@
+jetty-9.2.9-SNAPSHOT
+
 jetty-9.2.8.v20150217 - 17 February 2015
  + 451092 Connector will fail if HeaderListener return false.
  + 455436 ProxyServlet sends two User-Agent values.
