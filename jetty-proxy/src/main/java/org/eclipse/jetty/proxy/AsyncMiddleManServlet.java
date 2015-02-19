@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -52,6 +53,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;
 
+@SuppressWarnings("serial")
 public class AsyncMiddleManServlet extends AbstractProxyServlet
 {
     private static final String CLIENT_TRANSFORMER = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
@@ -702,7 +704,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 }
             }
 
-            if (!buffers.isEmpty())
+            if (!buffers.isEmpty() || finished)
             {
                 ByteBuffer result = gzip(buffers, finished);
                 buffers.clear();
