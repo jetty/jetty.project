@@ -24,7 +24,11 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.security.SecureRandom;
 import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Collection;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -32,6 +36,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -58,6 +63,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -282,6 +288,51 @@ public class AsyncMiddleManServletTest
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(bytes, response.getContent());
+    }
+    
+    @Test
+    public void testTransformGzippedHead() throws Exception
+    {
+        // create a byte buffer larger enough to create 2 (or more) transforms.
+        byte[] bigbuf = new byte[64*1024];
+        // fill with nonsense (to force compressed view to also be bigger enough for 2 or more transforms)
+        SecureRandom rand = new SecureRandom(new byte[]{0x11, 0x22, 0x33, 0x44});
+        rand.nextBytes(bigbuf);
+        
+        String sample = "<a href=\"http://webtide.com/\">Webtide</a>\n<a href=\"http://google.com\">Google</a>\n";
+        byte[] bytes = sample.getBytes(StandardCharsets.UTF_8);
+        System.arraycopy(bytes,0,bigbuf,0,bytes.length);
+
+        startServer(new EchoHttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                super.service(request, response);
+            }
+        });
+        startProxy(new AsyncMiddleManServlet()
+        {
+            @Override
+            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            {
+                return new GZIPContentTransformer(new HeadTransformer());
+            }
+        });
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .header(HttpHeader.CONTENT_ENCODING, "gzip")
+                .content(new BytesContentProvider(gzip(bigbuf)))
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+        
+        String expectedStr = "<a href=\"http://webtide.com/\">Webtide</a>";
+        byte[] expected = expectedStr.getBytes(StandardCharsets.UTF_8);
+        Assert.assertArrayEquals(expected, response.getContent());
     }
 
     @Test
@@ -944,6 +995,68 @@ public class AsyncMiddleManServletTest
                 output.addAll(buffers);
                 buffers.clear();
             }
+        }
+    }
+    
+    /**
+     * A transformer that discards all but the first line of text.
+     */
+    private static class HeadTransformer implements AsyncMiddleManServlet.ContentTransformer
+    {
+        private StringBuilder head = new StringBuilder();
+
+        @Override
+        public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
+        {
+            if (input.hasRemaining() && head != null)
+            {
+                int lnPos = findLineFeed(input);
+                if (lnPos == -1)
+                {
+                    // no linefeed found, copy it all
+                    copyHeadBytes(input,input.limit());
+                }
+                else
+                {
+                    // found linefeed
+                    copyHeadBytes(input,lnPos);
+                    output.addAll(getHeadBytes());
+                    // mark head as sent
+                    head = null;
+                }
+            }
+
+            if (finished && head != null)
+            {
+                output.addAll(getHeadBytes());
+            }
+        }
+
+        private void copyHeadBytes(ByteBuffer input, int pos)
+        {
+            ByteBuffer dup = input.duplicate();
+            dup.limit(pos);
+            String str = BufferUtil.toUTF8String(dup);
+            head.append(str);
+        }
+
+        private int findLineFeed(ByteBuffer input)
+        {
+            for (int i = input.position(); i < input.limit(); i++)
+            {
+                byte b = input.get(i);
+                if ((b == (byte)'\n') || (b == (byte)'\r'))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private List<ByteBuffer> getHeadBytes()
+        {
+            ByteBuffer buf = BufferUtil.toBuffer(head.toString(),StandardCharsets.UTF_8);
+            return Collections.singletonList(buf);
         }
     }
 

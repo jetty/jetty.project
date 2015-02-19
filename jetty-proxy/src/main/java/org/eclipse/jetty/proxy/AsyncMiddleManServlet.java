@@ -150,9 +150,13 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         write(output, content);
     }
 
-    private static void write(OutputStream output, ByteBuffer content) throws IOException
+    private static boolean write(OutputStream output, ByteBuffer content) throws IOException
     {
         int length = content.remaining();
+        if (length <= 0)
+        {
+            return false;
+        }
         int offset = 0;
         byte[] buffer;
         if (content.hasArray())
@@ -166,6 +170,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             content.get(buffer);
         }
         output.write(buffer, offset, length);
+        return (length > 0);
     }
 
     protected class ProxyReader extends IteratingCallback implements ReadListener
@@ -665,6 +670,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         private final ContentTransformer transformer;
         private final ByteArrayOutputStream out;
         private final GZIPOutputStream gzipOut;
+        private boolean gzipping = false;
 
         public GZIPContentTransformer(ContentTransformer transformer)
         {
@@ -698,20 +704,39 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 }
             }
 
-            if (!buffers.isEmpty())
+            if (!buffers.isEmpty() || finished)
             {
                 ByteBuffer result = gzip(buffers, finished);
                 buffers.clear();
-                output.add(result);
+                if (result != null)
+                {
+                    output.add(result);
+                }
             }
         }
 
         private ByteBuffer gzip(List<ByteBuffer> buffers, boolean finished) throws IOException
         {
             for (ByteBuffer buffer : buffers)
-                write(gzipOut, buffer);
+            {
+                if (write(gzipOut,buffer))
+                {
+                    // gzip was started (now we need to honor close/reset)
+                    gzipping = true;
+                }
+            }
+            
+            // only close / reset if gzip was started
+            if (!gzipping)
+            {
+                return null;
+            }
+            
             if (finished)
+            {
                 gzipOut.close();
+            }
+            
             byte[] gzipBytes = out.toByteArray();
             out.reset();
             return ByteBuffer.wrap(gzipBytes);
