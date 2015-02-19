@@ -24,10 +24,7 @@ import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.security.SecureRandom;
 import java.util.ArrayList;
-import java.util.Arrays;
-import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
@@ -35,6 +32,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
 import javax.servlet.ServletException;
@@ -62,6 +60,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
@@ -73,6 +72,7 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
+@SuppressWarnings("serial")
 public class AsyncMiddleManServletTest
 {
     private static final Logger LOG = Log.getLogger(AsyncMiddleManServletTest.class);
@@ -293,23 +293,28 @@ public class AsyncMiddleManServletTest
     @Test
     public void testTransformGzippedHead() throws Exception
     {
-        // create a byte buffer larger enough to create 2 (or more) transforms.
-        byte[] bigbuf = new byte[64*1024];
-        // fill with nonsense (to force compressed view to also be bigger enough for 2 or more transforms)
-        SecureRandom rand = new SecureRandom(new byte[]{0x11, 0x22, 0x33, 0x44});
-        rand.nextBytes(bigbuf);
-        
-        String sample = "<a href=\"http://webtide.com/\">Webtide</a>\n<a href=\"http://google.com\">Google</a>\n";
-        byte[] bytes = sample.getBytes(StandardCharsets.UTF_8);
-        System.arraycopy(bytes,0,bigbuf,0,bytes.length);
-
-        startServer(new EchoHttpServlet()
+        startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
-                super.service(request, response);
+                
+                String sample = "<a href=\"http://webtide.com/\">Webtide</a>\n<a href=\"http://google.com\">Google</a>\n";
+                byte[] bytes = sample.getBytes(StandardCharsets.UTF_8);
+                
+                ServletOutputStream out = response.getOutputStream();
+                out.write(gzip(bytes));
+                
+                // create a byte buffer larger enough to create 2 (or more) transforms.
+                byte[] randomFiller = new byte[64*1024];
+                /* fill with nonsense
+                 * Using random data to ensure compressed buffer size is large
+                 * enough to trigger at least 2 transform() events.
+                 */
+                new Random().nextBytes(randomFiller);
+                
+                out.write(gzip(randomFiller));
             }
         });
         startProxy(new AsyncMiddleManServlet()
@@ -324,7 +329,6 @@ public class AsyncMiddleManServletTest
 
         ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
                 .header(HttpHeader.CONTENT_ENCODING, "gzip")
-                .content(new BytesContentProvider(gzip(bigbuf)))
                 .timeout(5, TimeUnit.SECONDS)
                 .send();
 
@@ -430,7 +434,11 @@ public class AsyncMiddleManServletTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                Assert.assertEquals(-1, request.getInputStream().read());
+                // decode input stream thru gzip
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                IO.copy(new GZIPInputStream(request.getInputStream()),bos);
+                // ensure decompressed is 0 length
+                Assert.assertEquals(0, bos.toByteArray().length);
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
                 response.getOutputStream().write(gzip(bytes));
             }
