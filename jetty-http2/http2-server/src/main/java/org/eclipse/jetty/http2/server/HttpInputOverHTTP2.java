@@ -33,6 +33,6 @@ public class HttpInputOverHTTP2 extends HttpInput
     @Override
     protected void onReadPossible()
     {
-        _httpChannelState.onReadPossible();
+        _httpChannelState.onReadPossible(true);
     }
 }

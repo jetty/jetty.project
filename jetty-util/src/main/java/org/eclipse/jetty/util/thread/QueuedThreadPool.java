@@ -356,6 +356,8 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     @Override
     public void execute(Runnable job)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("queue {}",job);
         if (!isRunning() || !_jobs.offer(job))
         {
             LOG.warn("{} rejected {}", this, job);
@@ -552,7 +554,11 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
                     // Job loop
                     while (job != null && isRunning())
                     {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("run {}",job);
                         runJob(job);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("ran {}",job);
                         if (Thread.interrupted())
                         {
                             ignore=true;

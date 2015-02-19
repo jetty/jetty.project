@@ -716,7 +716,7 @@ public class HttpChannelState
         _channel.getRequest().setAttribute(name,attribute);
     }
 
-    public void onReadPossible()
+    public void onReadPossible(boolean execute)
     {
         boolean handle=false;
 
@@ -730,7 +730,7 @@ public class HttpChannelState
             }
         }
 
-        if (handle)
+        if (execute && handle)
             // TODO, do we need to execute or just run?
             _channel.execute(_channel);
     }

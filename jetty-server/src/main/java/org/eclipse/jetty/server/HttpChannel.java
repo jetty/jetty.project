@@ -107,7 +107,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             @Override
             protected void onReadPossible()
             {
-                getState().onReadPossible();
+                getState().onReadPossible(true);
             }            
         };
     }
