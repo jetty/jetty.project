@@ -71,9 +71,9 @@ import org.eclipse.jetty.util.log.Logger;
 @ManagedObject("Servlet Holder")
 public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable<ServletHolder>
 {
-    private static final Logger LOG = Log.getLogger(ServletHolder.class);
 
     /* ---------------------------------------------------------------- */
+    private static final Logger LOG = Log.getLogger(ServletHolder.class);
     private int _initOrder = -1;
     private boolean _initOnStartup=false;
     private Map<String, String> _roleMap;
@@ -298,7 +298,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
             if (LOG.isDebugEnabled())
                 LOG.debug("Checking for precompiled servlet {} for jsp {}", precompiled, _forcedPath);
             ServletHolder jsp=getServletHandler().getServlet(precompiled);
-            if (jsp!=null)
+            if (jsp!=null && jsp.getClassName() !=  null)
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("JSP file {} for {} mapped to Servlet {}",_forcedPath, getName(),jsp.getClassName());

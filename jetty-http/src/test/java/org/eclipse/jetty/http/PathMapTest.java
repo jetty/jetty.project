@@ -31,7 +31,6 @@ import org.junit.Test;
 public class PathMapTest
 {
     @Test
-    @Ignore
     public void testPathMap() throws Exception
     {
         PathMap<String> p = new PathMap<>();
@@ -167,6 +166,30 @@ public class PathMapTest
         assertNotMatch(spec, "/xyz?123"); // as if the ? was encoded and part of the path
     }
 
+    @Test
+    public void testPrecidenceVsOrdering() throws Exception
+    {
+        PathMap<String> p = new PathMap<>();
+        p.put("/dump/gzip/*","prefix");
+        p.put("*.txt","suffix");
+       
+        assertEquals(null,p.getMatch("/foo/bar"));
+        assertEquals("prefix",p.getMatch("/dump/gzip/something").getValue());
+        assertEquals("suffix",p.getMatch("/foo/something.txt").getValue());
+        assertEquals("prefix",p.getMatch("/dump/gzip/something.txt").getValue());
+        
+        p = new PathMap<>();
+        p.put("*.txt","suffix");
+        p.put("/dump/gzip/*","prefix");
+       
+        assertEquals(null,p.getMatch("/foo/bar"));
+        assertEquals("prefix",p.getMatch("/dump/gzip/something").getValue());
+        assertEquals("suffix",p.getMatch("/foo/something.txt").getValue());
+        assertEquals("prefix",p.getMatch("/dump/gzip/something.txt").getValue());
+    }
+    
+    
+    
     private void assertMatch(String spec, String path)
     {
         boolean match = PathMap.match(spec, path);

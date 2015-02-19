@@ -16,8 +16,7 @@
 // You may elect to redistribute this code under either of these licenses. 
 // ========================================================================
  -->
-<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
-  xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
+<project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance" xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-jmx-parent</artifactId>
@@ -123,32 +122,27 @@
             </goals>
             <configuration>
               <target>
-                <property name="jetty.jmx.home" location="${test-home-dir}/jetty-distribution-${project.version}"/>
-                <property name="jetty.jmx.base" location="${test-base-dir}"/>
+                <property name="jetty.jmx.home" location="${test-home-dir}/jetty-distribution-${project.version}" />
+                <property name="jetty.jmx.base" location="${test-base-dir}" />
                 <echo>Integration Test : Setup Jetty</echo>
-                <exec executable="${run.command}"
-                      dir="${scripts-dir}"
-                      spawn="false">
-                  <arg value="${run.command.xtra}"/>
-                  <arg value="${setup.script}"/>
-                  <arg file="${java.home}"/>
-                  <arg file="${jetty.jmx.home}"/>
-                  <arg file="${jetty.jmx.base}"/>
+                <exec executable="${run.command}" dir="${scripts-dir}" spawn="false">
+                  <arg value="${run.command.xtra}" />
+                  <arg value="${setup.script}" />
+                  <arg file="${java.home}" />
+                  <arg file="${jetty.jmx.home}" />
+                  <arg file="${jetty.jmx.base}" />
                 </exec>
 
                 <echo>Integration Test : Starting Jetty ...</echo>
-                <exec executable="${run.command}"
-                      dir="${scripts-dir}"
-                      spawn="true">
-                  <arg value="${run.command.xtra}"/>
-                  <arg value="${start.script}"/>
-                  <arg file="${java.home}"/>
-                  <arg file="${jetty.jmx.home}"/>
-                  <arg file="${jetty.jmx.base}"/>
+                <exec executable="${run.command}" dir="${scripts-dir}" spawn="true">
+                  <arg value="${run.command.xtra}" />
+                  <arg value="${start.script}" />
+                  <arg file="${java.home}" />
+                  <arg file="${jetty.jmx.home}" />
+                  <arg file="${jetty.jmx.base}" />
                 </exec>
-                <waitfor maxwait="5" maxwaitunit="second"
-                  checkevery="500" checkeveryunit="millisecond">
-                  <http url="http://localhost:58080/jmx-webapp/"/>
+                <waitfor maxwait="5" maxwaitunit="second" checkevery="500" checkeveryunit="millisecond">
+                  <http url="http://localhost:58080/jmx-webapp/" />
                 </waitfor>
                 <echo>Integration Test : Jetty is now available</echo>
               </target>
@@ -162,17 +156,15 @@
             </goals>
             <configuration>
               <target>
-                <property name="jetty.jmx.home" location="${test-home-dir}/jetty-distribution-${project.version}"/>
-                <property name="jetty.jmx.base" location="${test-base-dir}"/>
+                <property name="jetty.jmx.home" location="${test-home-dir}/jetty-distribution-${project.version}" />
+                <property name="jetty.jmx.base" location="${test-base-dir}" />
                 <echo>Integration Test : Stop Jetty</echo>
-                <exec executable="${run.command}"
-                      dir="${scripts-dir}"
-                      spawn="false">
-                  <arg value="${run.command.xtra}"/>
-                  <arg value="${stop.script}"/>
-                  <arg file="${java.home}"/>
-                  <arg file="${jetty.jmx.home}"/>
-                  <arg file="${jetty.jmx.base}"/>
+                <exec executable="${run.command}" dir="${scripts-dir}" spawn="false">
+                  <arg value="${run.command.xtra}" />
+                  <arg value="${stop.script}" />
+                  <arg file="${java.home}" />
+                  <arg file="${jetty.jmx.home}" />
+                  <arg file="${jetty.jmx.base}" />
                 </exec>
               </target>
             </configuration>
