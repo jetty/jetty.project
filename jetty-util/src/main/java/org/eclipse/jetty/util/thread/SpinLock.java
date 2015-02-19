@@ -53,6 +53,11 @@ public class SpinLock
         }
     }
     
+    public boolean isLocked()
+    {
+        return _lock.get();
+    }
+    
     public class Lock implements AutoCloseable
     {
         @Override

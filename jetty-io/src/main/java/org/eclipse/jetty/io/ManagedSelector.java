@@ -27,8 +27,10 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
+import java.util.List;
 import java.util.Queue;
 import java.util.Set;
 import java.util.concurrent.CountDownLatch;
@@ -37,6 +39,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
@@ -49,16 +53,16 @@ import org.eclipse.jetty.util.thread.SpinLock;
  * happen for registered channels. When events happen, it notifies the {@link EndPoint} associated
  * with the channel.</p>
  */
-public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Dumpable TODO
+public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dumpable
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
 
     private final SpinLock _lock = new SpinLock();
+    private boolean _selecting=false;
     private final Queue<Runnable> _actions = new ConcurrentArrayQueue<>();
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
-    private State _state = State.PROCESSING;
     private Selector _selector;
 
     public ManagedSelector(SelectorManager selectorManager, int id)
@@ -94,9 +98,14 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Stopping {}", this);
-        Stop stop = new Stop();
-        submit(stop);
-        stop.await(getStopTimeout());
+        CloseEndPoints close_endps = new CloseEndPoints();
+        submit(close_endps);
+        close_endps.await(getStopTimeout());
+        super.doStop();
+        CloseSelector close_selector = new CloseSelector();
+        submit(close_selector);
+        close_selector.await(getStopTimeout());
+        
         if (LOG.isDebugEnabled())
             LOG.debug("Stopped {}", this);
     }
@@ -109,12 +118,11 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
         try (SpinLock.Lock lock = _lock.lock())
         {
             _actions.offer(change);
-            if (_state == State.SELECTING)
+            if (_selecting)
             {
                 _selector.wakeup();
-                // Move to PROCESSING now, so other submit()
-                // calls will avoid the extra select wakeup.
-                _state = State.PROCESSING;
+                // To avoid the extra select wakeup.
+                _selecting=false;
             }
         }
     }
@@ -181,7 +189,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
                     action = _actions.poll();
                     if (action == null)
                     {
-                        _state = State.SELECTING;
+                        // No more actions, so we need to select
+                        _selecting=true;
                         return null;
                     }
                 }
@@ -212,21 +221,26 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
         {
             try
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Selector loop waiting on select");
-                int selected = _selector.select();
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Selector loop woken up from select, {}/{} selected", selected, _selector.keys().size());
-
-                try (SpinLock.Lock lock = _lock.lock())
+                Selector selector=_selector;
+                if (selector!=null && selector.isOpen())
                 {
-                    _state = State.PROCESSING;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Selector loop waiting on select");
+                    int selected = selector.select();
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Selector loop woken up from select, {}/{} selected", selected, selector.keys().size());
+
+                    try (SpinLock.Lock lock = _lock.lock())
+                    {
+                        // finished selecting
+                        _selecting=false;
+                    }
+
+                    _keys = selector.selectedKeys();
+                    _cursor = _keys.iterator();
+
+                    return true;
                 }
-
-                _keys = _selector.selectedKeys();
-                _cursor = _keys.iterator();
-
-                return true;
             }
             catch (Throwable x)
             {
@@ -235,8 +249,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
                     LOG.warn(x);
                 else
                     LOG.debug(x);
-                return false;
             }
+            return false;
         }
 
         private Runnable processSelected()
@@ -252,6 +266,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
                         if (attachment instanceof SelectableEndPoint)
                         {
                             // Try to produce a task
+                            @SuppressWarnings("resource")
                             SelectableEndPoint selectable = (SelectableEndPoint)attachment;
                             Runnable task = selectable.onSelected();
                             if (task != null)
@@ -403,7 +418,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
             _selectorManager.connectionClosed(connection);
         _selectorManager.endPointClosed(endPoint);
     }
-/*
+    
     @Override
     public String dump()
     {
@@ -425,20 +440,6 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
             dumpKeys.await(5, TimeUnit.SECONDS);
 
             ContainerLifeCycle.dump(out, indent, dump);
-        }
-    }
-
-    public void dumpKeysState(List<Object> dumps)
-    {
-        Selector selector = _selector;
-        Set<SelectionKey> keys = selector.keys();
-        dumps.add(selector + " keys=" + keys.size());
-        for (SelectionKey key : keys)
-        {
-            if (key.isValid())
-                dumps.add(key.attachment() + " iOps=" + key.interestOps() + " rOps=" + key.readyOps());
-            else
-                dumps.add(key.attachment() + " iOps=-1 rOps=-1");
         }
     }
 
@@ -465,7 +466,15 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
         @Override
         public void run()
         {
-            dumpKeysState(_dumps);
+            Selector selector = _selector;
+            if (selector!=null)
+            {
+                Set<SelectionKey> keys = selector.keys();
+                _dumps.add(selector + " keys=" + keys.size());
+                for (SelectionKey key : keys)
+                    _dumps.add(String.format("Key@%x{i=%d}->%s",key.hashCode(),key.interestOps(),key.attachment()));
+            }
+            
             latch.countDown();
         }
 
@@ -481,7 +490,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
             }
         }
     }
-*/
+
+    
     class Acceptor implements Runnable
     {
         private final ServerSocketChannel _channel;
@@ -626,44 +636,38 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
         }
     }
 
-    // TODO: convert this to produce tasks that are run by the ExecutionStrategy.
-    private class Stop implements Runnable
+    private class CloseEndPoints implements Runnable
     {
-        private final CountDownLatch latch = new CountDownLatch(1);
+        private CountDownLatch _latch=new CountDownLatch(1);
+        CountDownLatch _allClosed ;
 
         @Override
         public void run()
         {
-            try
+            List<EndPoint> end_points = new ArrayList<EndPoint>();
+            for (SelectionKey key : _selector.keys())
             {
-                for (SelectionKey key : _selector.keys())
+                if (key.isValid())
                 {
                     Object attachment = key.attachment();
                     if (attachment instanceof EndPoint)
-                    {
-                        EndPointCloser closer = new EndPointCloser((EndPoint)attachment);
-                        ManagedSelector.this._selectorManager.execute(closer);
-                        // We are closing the SelectorManager, so we want to block the
-                        // selector thread here until we have closed all EndPoints.
-                        // This is different than calling close() directly, because close()
-                        // can wait forever, while here we are limited by the stop timeout.
-                        closer.await(getStopTimeout());
-                    }
+                        end_points.add((EndPoint)attachment);
                 }
+            }
 
-                closeNoExceptions(_selector);
-            }
-            finally
-            {
-                latch.countDown();
-            }
+            _allClosed = new CountDownLatch(end_points.size());
+            _latch.countDown();
+
+            for (EndPoint endp : end_points)
+                submit(new EndPointCloser(endp,_allClosed));
         }
 
         public boolean await(long timeout)
         {
             try
             {
-                return latch.await(timeout, TimeUnit.MILLISECONDS);
+                 return _latch.await(timeout, TimeUnit.MILLISECONDS) &&
+                     _allClosed.await(timeout,TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException x)
             {
@@ -672,44 +676,48 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable//, Du
         }
     }
 
-    private class EndPointCloser implements Runnable
+    private class EndPointCloser implements Product
     {
-        private final CountDownLatch latch = new CountDownLatch(1);
-        private final EndPoint endPoint;
+        private final EndPoint _endp;
+        private final CountDownLatch _latch;
 
-        private EndPointCloser(EndPoint endPoint)
+        private EndPointCloser(EndPoint endPoint, CountDownLatch latch)
         {
-            this.endPoint = endPoint;
+            _endp = endPoint;
+            _latch = latch;
         }
 
         @Override
         public void run()
         {
-            try
-            {
-                closeNoExceptions(endPoint.getConnection());
-            }
-            finally
-            {
-                latch.countDown();
-            }
+            closeNoExceptions(_endp.getConnection());
+            _latch.countDown();
+        }
+    }
+
+    private class CloseSelector implements Runnable
+    {
+        private CountDownLatch _latch=new CountDownLatch(1);
+
+        @Override
+        public void run()
+        {
+            Selector selector=_selector;
+            _selector=null;
+            closeNoExceptions(selector);
+            _latch.countDown();
         }
 
-        private boolean await(long timeout)
+        public boolean await(long timeout)
         {
             try
             {
-                return latch.await(timeout, TimeUnit.MILLISECONDS);
+                 return _latch.await(timeout, TimeUnit.MILLISECONDS);
             }
             catch (InterruptedException x)
             {
                 return false;
             }
         }
-    }
-
-    private enum State
-    {
-        PROCESSING, SELECTING
     }
 }
