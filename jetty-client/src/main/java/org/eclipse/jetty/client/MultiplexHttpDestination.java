@@ -35,7 +35,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
     }
 
     @Override
-    protected void send()
+    public void send()
     {
         while (true)
         {
@@ -56,7 +56,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
                 }
                 case CONNECTED:
                 {
-                    if (process(connection, false))
+                    if (process(connection))
                         break;
                     return;
                 }
@@ -75,7 +75,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         C connection = this.connection = (C)result;
         if (connect.compareAndSet(ConnectState.CONNECTING, ConnectState.CONNECTED))
         {
-            process(connection, true);
+            process(connection);
         }
         else
         {
@@ -91,7 +91,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         abort(x);
     }
 
-    protected boolean process(final C connection, boolean dispatch)
+    protected boolean process(final C connection)
     {
         HttpClient client = getHttpClient();
         final HttpExchange exchange = getHttpExchanges().poll();
@@ -113,21 +113,7 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
         }
         else
         {
-            if (dispatch)
-            {
-                client.getExecutor().execute(new Runnable()
-                {
-                    @Override
-                    public void run()
-                    {
-                        send(connection, exchange);
-                    }
-                });
-            }
-            else
-            {
-                send(connection, exchange);
-            }
+            send(connection, exchange);
         }
         return true;
     }

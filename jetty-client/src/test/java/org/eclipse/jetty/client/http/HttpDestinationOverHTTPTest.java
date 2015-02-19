@@ -94,12 +94,12 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()))
         {
             @Override
-            public void process(HttpConnectionOverHTTP connection, boolean dispatch)
+            public void process(HttpConnectionOverHTTP connection)
             {
                 try
                 {
                     latch.await(5, TimeUnit.SECONDS);
-                    super.process(connection, dispatch);
+                    super.process(connection);
                 }
                 catch (InterruptedException x)
                 {
@@ -142,7 +142,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         // Acquire the connection to make it active
         Assert.assertSame(connection1, destination.acquire());
 
-        destination.process(connection1, false);
+        destination.process(connection1);
         destination.release(connection1);
 
         Connection connection2 = destination.acquire();

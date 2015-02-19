@@ -28,6 +28,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -41,15 +42,15 @@ public class ConnectionPool implements Closeable, Dumpable
     private final AtomicInteger connectionCount = new AtomicInteger();
     private final Destination destination;
     private final int maxConnections;
-    private final Promise<Connection> connectionPromise;
+    private final Callback requester;
     private final BlockingDeque<Connection> idleConnections;
     private final BlockingQueue<Connection> activeConnections;
 
-    public ConnectionPool(Destination destination, int maxConnections, Promise<Connection> connectionPromise)
+    public ConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
         this.destination = destination;
         this.maxConnections = maxConnections;
-        this.connectionPromise = connectionPromise;
+        this.requester = requester;
         this.idleConnections = new LinkedBlockingDeque<>(maxConnections);
         this.activeConnections = new BlockingArrayQueue<>(maxConnections);
     }
@@ -104,10 +105,8 @@ public class ConnectionPool implements Closeable, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connection {}/{} creation succeeded {}", next, maxConnections, connection);
-                        if (activate(connection))
-                            connectionPromise.succeeded(connection);
-                        else
-                            connectionPromise.failed(new IllegalStateException("Active connection overflow"));
+                        idle(connection, true);
+                        requester.succeeded();
                     }
 
                     @Override
@@ -116,7 +115,7 @@ public class ConnectionPool implements Closeable, Dumpable
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connection " + next + "/" + maxConnections + " creation failed", x);
                         connectionCount.decrementAndGet();
-                        connectionPromise.failed(x);
+                        requester.failed(x);
                     }
                 });
 
@@ -160,22 +159,28 @@ public class ConnectionPool implements Closeable, Dumpable
     {
         released(connection);
         if (activeConnections.remove(connection))
-        {
-            // Make sure we use "hot" connections first
-            if (idleConnections.offerFirst(connection))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Connection idle {}", connection);
-                return true;
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Connection idle overflow {}", connection);
-                connection.close();
-            }
-        }
+            return idle(connection, false);
         return false;
+    }
+
+    protected boolean idle(Connection connection, boolean created)
+    {
+        // Make sure we use "hot" connections first.
+        boolean idle = created ? idleConnections.offerLast(connection)
+                : idleConnections.offerFirst(connection);
+        if (idle)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection idle {}", connection);
+            return true;
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection idle overflow {}", connection);
+            connection.close();
+            return false;
+        }
     }
 
     protected void released(Connection connection)

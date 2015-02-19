@@ -205,7 +205,7 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
         return queue.offer(exchange);
     }
 
-    protected abstract void send();
+    public abstract void send();
 
     public void newConnection(Promise<Connection> promise)
     {

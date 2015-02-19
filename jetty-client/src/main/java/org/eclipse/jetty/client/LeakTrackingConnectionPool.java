@@ -20,8 +20,8 @@ package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.LeakDetector;
-import org.eclipse.jetty.util.Promise;
 
 public class LeakTrackingConnectionPool extends ConnectionPool
 {
@@ -34,9 +34,9 @@ public class LeakTrackingConnectionPool extends ConnectionPool
         }
     };
 
-    public LeakTrackingConnectionPool(Destination destination, int maxConnections, Promise<Connection> connectionPromise)
+    public LeakTrackingConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
-        super(destination, maxConnections, connectionPromise);
+        super(destination, maxConnections, requester);
         start();
     }
 
