@@ -120,7 +120,8 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             _actions.offer(change);
             if (_selecting)
             {
-                _selector.wakeup();
+                if (_selector!=null)
+                    _selector.wakeup();
                 // To avoid the extra select wakeup.
                 _selecting=false;
             }
@@ -708,8 +709,12 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         @Override
         public void run()
         {
-            Selector selector=_selector;
-            _selector=null;
+            Selector selector;
+            try(SpinLock.Lock lock = _lock.lock())
+            {
+                selector=_selector;
+                _selector=null;
+            }
             closeNoExceptions(selector);
             _latch.countDown();
         }
