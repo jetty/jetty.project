@@ -25,14 +25,19 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.hamcrest.Matcher;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
  * Testing for LifeCycleListener events on nested components
  * during runtime.
  */
+@Ignore
 public class LifeCycleListenerNestedTest
 {
+    // Set this true to use test-specific workaround.
+    private final boolean WORKAROUND = false;
+    
     public static class Foo extends ContainerLifeCycle
     {
         @Override
@@ -153,18 +158,18 @@ public class LifeCycleListenerNestedTest
         @Override
         public void beanAdded(Container parent, Object child)
         {
-            if(child instanceof ContainerLifeCycle)
+            if(child instanceof LifeCycle)
             {
-                ((ContainerLifeCycle)child).addLifeCycleListener(this);
+                ((LifeCycle)child).addLifeCycleListener(this);
             }
         }
 
         @Override
         public void beanRemoved(Container parent, Object child)
         {
-            if(child instanceof ContainerLifeCycle)
+            if(child instanceof LifeCycle)
             {
-                ((ContainerLifeCycle)child).removeLifeCycleListener(this);
+                ((LifeCycle)child).removeLifeCycleListener(this);
             }
         }
     }
@@ -180,7 +185,8 @@ public class LifeCycleListenerNestedTest
 
         CapturingListener listener = new CapturingListener();
         foo.addLifeCycleListener(listener);
-        foo.addEventListener(listener);
+        if(WORKAROUND)
+            foo.addEventListener(listener);
 
         try
         {
@@ -210,7 +216,8 @@ public class LifeCycleListenerNestedTest
 
         CapturingListener listener = new CapturingListener();
         foo.addLifeCycleListener(listener);
-        foo.addEventListener(listener);
+        if(WORKAROUND)
+            foo.addEventListener(listener);
 
         Bar bara = new Bar("a");
         Bar barb = new Bar("b");
@@ -247,7 +254,8 @@ public class LifeCycleListenerNestedTest
 
         CapturingListener listener = new CapturingListener();
         foo.addLifeCycleListener(listener);
-        foo.addEventListener(listener);
+        if(WORKAROUND)
+            foo.addEventListener(listener);
 
         try
         {
