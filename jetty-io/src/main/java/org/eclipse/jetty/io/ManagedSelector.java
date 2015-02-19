@@ -408,15 +408,21 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         return endPoint;
     }
 
-    public void destroyEndPoint(EndPoint endPoint)
+    public void destroyEndPoint(final EndPoint endPoint)
     {
-        // TODO: perhaps this code should be wrapped and submitted as a task.
-        if (LOG.isDebugEnabled())
-            LOG.debug("Destroyed {}", endPoint);
-        Connection connection = endPoint.getConnection();
-        if (connection != null)
-            _selectorManager.connectionClosed(connection);
-        _selectorManager.endPointClosed(endPoint);
+        final Connection connection = endPoint.getConnection();
+        submit(new Product()
+        {
+            @Override
+            public void run()
+            {        
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Destroyed {}", endPoint);
+                if (connection != null)
+                    _selectorManager.connectionClosed(connection);
+                _selectorManager.endPointClosed(endPoint);
+            }
+        });
     }
     
     @Override
