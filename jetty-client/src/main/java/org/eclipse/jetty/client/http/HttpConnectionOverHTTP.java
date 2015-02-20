@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -38,13 +39,15 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final Promise<Connection> promise;
     private final Delegate delegate;
     private final HttpChannelOverHTTP channel;
     private long idleTimeout;
 
-    public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination)
+    public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
         super(endPoint, destination.getHttpClient().getExecutor());
+        this.promise = promise;
         this.delegate = new Delegate(destination);
         this.channel = newHttpChannel();
     }
@@ -80,7 +83,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         super.onOpen();
         fillInterested();
-        getHttpDestination().send();
+        promise.succeeded(this);
     }
 
     public boolean isClosed()

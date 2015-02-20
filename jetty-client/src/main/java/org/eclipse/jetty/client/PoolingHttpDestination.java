@@ -49,6 +49,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     @Override
     public void succeeded()
     {
+        send();
     }
 
     @Override

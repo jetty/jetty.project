@@ -105,6 +105,7 @@ public abstract class AbstractTest
             {
                 HTTP2Client http2Client = new HTTP2Client();
                 http2Client.setExecutor(clientThreads);
+                http2Client.setSelectors(1);
                 return new HttpClientTransportOverHTTP2(http2Client);
             }
             default:
