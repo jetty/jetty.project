@@ -27,11 +27,6 @@ public class MetaData implements Iterable<HttpField>
     private HttpFields _fields;
     private long _contentLength;
 
-    public MetaData()
-    {
-        this(null, null);
-    }
-
     public MetaData(HttpVersion version, HttpFields fields)
     {
         this(version, fields, Long.MIN_VALUE);
@@ -49,7 +44,6 @@ public class MetaData implements Iterable<HttpField>
         _httpVersion = null;
         if (_fields != null)
             _fields.clear();
-        _fields = null;
         _contentLength = Long.MIN_VALUE;
     }
 
@@ -85,15 +79,6 @@ public class MetaData implements Iterable<HttpField>
     public HttpFields getFields()
     {
         return _fields;
-    }
-
-    /**
-     * @param fields the HTTP fields to set
-     */
-    public void setFields(HttpFields fields)
-    {
-        _fields = fields;
-        _contentLength = Long.MIN_VALUE;
     }
 
     /**
@@ -136,8 +121,9 @@ public class MetaData implements Iterable<HttpField>
         private String _method;
         private HttpURI _uri;
 
-        public Request()
+        public Request(HttpFields fields)
         {
+            this(null, null, null, fields);
         }
 
         public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields)
