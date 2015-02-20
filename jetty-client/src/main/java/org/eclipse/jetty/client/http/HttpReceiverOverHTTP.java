@@ -57,6 +57,11 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return getHttpChannel().getHttpConnection();
     }
 
+    protected ByteBuffer getResponseBuffer()
+    {
+        return buffer;
+    }
+
     public void receive()
     {
         buffer = acquireBuffer();
@@ -85,7 +90,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             HttpConnectionOverHTTP connection = getHttpConnection();
             EndPoint endPoint = connection.getEndPoint();
-            boolean looping = false;
             while (true)
             {
                 // Connection may be closed in a parser callback.
@@ -97,12 +101,12 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     return;
                 }
 
-                if (!looping && !parse(buffer))
+                if (!parse(buffer))
                     return;
 
                 int read = endPoint.fill(buffer);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Read {} bytes from {}", read, endPoint);
+                    LOG.debug("Read {} bytes {} from {}", read, BufferUtil.toDetailString(buffer), endPoint);
 
                 if (read > 0)
                 {
@@ -121,8 +125,6 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
                     shutdown();
                     return;
                 }
-
-                looping = true;
             }
         }
         catch (Throwable x)
@@ -147,7 +149,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         // parser to advance from asynchronous content to response complete.
         boolean handle = parser.parseNext(buffer);
         if (LOG.isDebugEnabled())
-            LOG.debug("Parsed {} - {}", handle, parser);
+            LOG.debug("Parsed {}, remaining {} {}", handle, buffer.remaining(), parser);
 
         if (!handle)
             return true;
@@ -158,7 +160,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return parser.isStart();
     }
 
-    private void fillInterested()
+    protected void fillInterested()
     {
         getHttpChannel().getHttpConnection().fillInterested();
     }
@@ -239,7 +241,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content consumed asynchronously, resuming processing");
-                process(HttpReceiverOverHTTP.this.buffer);
+                process(getResponseBuffer());
             }
 
             public void abort(Throwable x)

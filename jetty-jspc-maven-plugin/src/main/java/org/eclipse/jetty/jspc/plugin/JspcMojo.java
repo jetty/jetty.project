@@ -439,6 +439,9 @@ public class JspcMojo extends AbstractMojo
                     }
                 }
                 
+                if (atEOF && !atInsertPoint)
+                    throw new IllegalStateException("web.xml does not contain insertionMarker "+insertionMarker);
+                
                 //put in a context init-param to flag that the contents have been precompiled
                 mergedWebXmlWriter.println("<context-param><param-name>"+PRECOMPILED_FLAG+"</param-name><param-value>true</param-value></context-param>");
                 
