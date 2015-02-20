@@ -20,6 +20,11 @@ package org.eclipse.jetty.client;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.io.OutputStream;
+import java.net.InetSocketAddress;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Iterator;
@@ -644,5 +649,76 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
                 });
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void test_Expect100Continue_WithTwoResponsesInOneRead() throws Exception
+    {
+        // There is a chance that the server replies with the 100 Continue response
+        // and immediately after with the "normal" response, say a 200 OK.
+        // These may be read by the client in a single read, and must be handled correctly.
+
+        startClient();
+
+        try (ServerSocket server = new ServerSocket())
+        {
+            server.bind(new InetSocketAddress("localhost", 0));
+
+            final CountDownLatch latch = new CountDownLatch(1);
+            client.newRequest("localhost", server.getLocalPort())
+                    .header(HttpHeader.EXPECT, HttpHeaderValue.CONTINUE.asString())
+                    .content(new BytesContentProvider(new byte[]{0}))
+                    .send(new Response.CompleteListener()
+                    {
+                        @Override
+                        public void onComplete(Result result)
+                        {
+                            Assert.assertTrue(result.toString(), result.isSucceeded());
+                            Assert.assertEquals(200, result.getResponse().getStatus());
+                            latch.countDown();
+                        }
+                    });
+
+            try (Socket socket = server.accept())
+            {
+                // Read the request headers.
+                InputStream input = socket.getInputStream();
+                int crlfs = 0;
+                while (true)
+                {
+                    int read = input.read();
+                    if (read == '\r' || read == '\n')
+                        ++crlfs;
+                    else
+                        crlfs = 0;
+                    if (crlfs == 4)
+                        break;
+                }
+
+                OutputStream output = socket.getOutputStream();
+                String responses = "" +
+                        "HTTP/1.1 100 Continue\r\n" +
+                        "\r\n" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Transfer-Encoding: chunked\r\n" +
+                        "\r\n" +
+                        "10\r\n" +
+                        "0123456789ABCDEF\r\n";
+                output.write(responses.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                Thread.sleep(1000);
+
+                String content = "" +
+                        "10\r\n" +
+                        "0123456789ABCDEF\r\n" +
+                        "0\r\n" +
+                        "\r\n";
+                output.write(content.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+            }
+        }
     }
 }

@@ -70,16 +70,25 @@ public abstract class AbstractHttpClientServerTest
         }
 
         if (server == null)
-            server = new Server();
+        {
+            QueuedThreadPool serverThreads = new QueuedThreadPool();
+            serverThreads.setName("server");
+            server = new Server(serverThreads);
+        }
         connector = new ServerConnector(server, sslContextFactory);
         server.addConnector(connector);
         server.setHandler(handler);
         server.start();
 
-        QueuedThreadPool executor = new QueuedThreadPool();
-        executor.setName(executor.getName() + "-client");
+        startClient();
+    }
+
+    protected void startClient() throws Exception
+    {
+        QueuedThreadPool clientThreads = new QueuedThreadPool();
+        clientThreads.setName("client");
         client = new HttpClient(sslContextFactory);
-        client.setExecutor(executor);
+        client.setExecutor(clientThreads);
         client.start();
     }
 
