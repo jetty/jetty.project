@@ -24,6 +24,7 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -35,6 +36,7 @@ import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
@@ -75,9 +77,9 @@ public class HttpClientFailureTest
         client = new HttpClient(new HttpClientTransportOverHTTP()
         {
             @Override
-            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination)
+            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
             {
-                HttpConnectionOverHTTP connection = super.newHttpConnection(endPoint, destination);
+                HttpConnectionOverHTTP connection = super.newHttpConnection(endPoint, destination, promise);
                 connectionRef.set(connection);
                 return connection;
             }
@@ -119,9 +121,9 @@ public class HttpClientFailureTest
         client = new HttpClient(new HttpClientTransportOverHTTP()
         {
             @Override
-            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination)
+            protected HttpConnectionOverHTTP newHttpConnection(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
             {
-                HttpConnectionOverHTTP connection = super.newHttpConnection(endPoint, destination);
+                HttpConnectionOverHTTP connection = super.newHttpConnection(endPoint, destination, promise);
                 connectionRef.set(connection);
                 return connection;
             }

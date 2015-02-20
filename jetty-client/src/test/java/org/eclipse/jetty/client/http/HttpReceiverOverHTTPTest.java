@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpFields;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.Promise;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -60,7 +62,7 @@ public class HttpReceiverOverHTTPTest
         client.start();
         destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
         endPoint = new ByteArrayEndPoint();
-        connection = new HttpConnectionOverHTTP(endPoint, destination);
+        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
     }
 
     @After
@@ -204,7 +206,7 @@ public class HttpReceiverOverHTTPTest
     @Test
     public void test_FillInterested_RacingWith_BufferRelease() throws Exception
     {
-        connection = new HttpConnectionOverHTTP(endPoint, destination)
+        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>())
         {
             @Override
             protected HttpChannelOverHTTP newHttpChannel()
