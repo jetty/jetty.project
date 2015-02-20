@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client.http;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -47,7 +46,12 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         super(endPoint, destination.getHttpClient().getExecutor(), destination.getHttpClient().isDispatchIO());
         this.delegate = new Delegate(destination);
-        this.channel = new HttpChannelOverHTTP(this);
+        this.channel = newHttpChannel();
+    }
+
+    protected HttpChannelOverHTTP newHttpChannel()
+    {
+        return new HttpChannelOverHTTP(this);
     }
 
     public HttpChannelOverHTTP getHttpChannel()

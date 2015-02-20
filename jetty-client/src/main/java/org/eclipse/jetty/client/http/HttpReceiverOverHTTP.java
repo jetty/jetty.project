@@ -57,74 +57,82 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         return getHttpChannel().getHttpConnection();
     }
 
+    protected ByteBuffer getResponseBuffer()
+    {
+        return buffer;
+    }
+
     public void receive()
+    {
+        buffer = acquireBuffer();
+        process(buffer);
+    }
+
+    private ByteBuffer acquireBuffer()
     {
         HttpClient client = getHttpDestination().getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
-        buffer = bufferPool.acquire(client.getResponseBufferSize(), true);
-        process();
+        return bufferPool.acquire(client.getResponseBufferSize(), true);
     }
 
-    private void process()
+    private void releaseBuffer(ByteBuffer buffer)
     {
-        if (readAndParse())
-        {
-            HttpClient client = getHttpDestination().getHttpClient();
-            ByteBufferPool bufferPool = client.getByteBufferPool();
-            bufferPool.release(buffer);
-            // Don't linger the buffer around if we are idle.
-            buffer = null;
-        }
+        assert this.buffer == buffer;
+        HttpClient client = getHttpDestination().getHttpClient();
+        ByteBufferPool bufferPool = client.getByteBufferPool();
+        bufferPool.release(buffer);
+        this.buffer = null;
     }
 
-    private boolean readAndParse()
+    private void process(ByteBuffer buffer)
     {
-        HttpConnectionOverHTTP connection = getHttpConnection();
-        EndPoint endPoint = connection.getEndPoint();
-        ByteBuffer buffer = this.buffer;
-        while (true)
+        try
         {
-            try
+            HttpConnectionOverHTTP connection = getHttpConnection();
+            EndPoint endPoint = connection.getEndPoint();
+            while (true)
             {
                 // Connection may be closed in a parser callback.
                 if (connection.isClosed())
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("{} closed", connection);
-                    return true;
+                    releaseBuffer(buffer);
+                    return;
                 }
 
                 if (!parse(buffer))
-                    return false;
+                    return;
 
                 int read = endPoint.fill(buffer);
-                // Avoid boxing of variable 'read'
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Read {} bytes from {}", read, endPoint);
+                    LOG.debug("Read {} bytes {} from {}", read, BufferUtil.toDetailString(buffer), endPoint);
 
                 if (read > 0)
                 {
                     if (!parse(buffer))
-                        return false;
+                        return;
                 }
                 else if (read == 0)
                 {
+                    releaseBuffer(buffer);
                     fillInterested();
-                    return true;
+                    return;
                 }
                 else
                 {
+                    releaseBuffer(buffer);
                     shutdown();
-                    return true;
+                    return;
                 }
             }
-            catch (Throwable x)
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug(x);
-                failAndClose(x);
-                return true;
-            }
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug(x);
+            releaseBuffer(buffer);
+            failAndClose(x);
         }
     }
 
@@ -139,17 +147,20 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         // Must parse even if the buffer is fully consumed, to allow the
         // parser to advance from asynchronous content to response complete.
-        if (parser.parseNext(buffer))
-        {
-            // If the parser returns true, we need to differentiate two cases:
-            // A) the response is completed, so the parser is in START state;
-            // B) the content is handled asynchronously, so the parser is in CONTENT state.
-            return parser.isStart();
-        }
-        return true;
+        boolean handle = parser.parseNext(buffer);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Parsed {}, remaining {} {}", handle, buffer.remaining(), parser);
+
+        if (!handle)
+            return true;
+
+        // If the parser returns true, we need to differentiate two cases:
+        // A) the response is completed, so the parser is in START state;
+        // B) the content is handled asynchronously, so the parser is in CONTENT state.
+        return parser.isStart();
     }
 
-    private void fillInterested()
+    protected void fillInterested()
     {
         getHttpChannel().getHttpConnection().fillInterested();
     }
@@ -233,7 +244,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Content consumed asynchronously, resuming processing");
-                process();
+                process(getResponseBuffer());
             }
 
             public void abort(Throwable x)
