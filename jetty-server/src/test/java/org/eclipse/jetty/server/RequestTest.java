@@ -1262,7 +1262,7 @@ public class RequestTest
         {
             long start=System.currentTimeMillis();
             String response = _connector.getResponses(request);
-            assertTrue(response.contains("Form too many keys"));
+            assertThat(response,Matchers.containsString("Form too many keys"));
             long now=System.currentTimeMillis();
             assertTrue((now-start)<5000);
         }

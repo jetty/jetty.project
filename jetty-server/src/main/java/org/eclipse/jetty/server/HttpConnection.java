@@ -23,10 +23,14 @@ import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
 
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -43,11 +47,12 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class HttpConnection extends AbstractConnection implements Runnable, HttpTransport, Connection.UpgradeFrom
 {
+    private static final Logger LOG = Log.getLogger(HttpConnection.class);
+    public static final HttpField CONNECTION_CLOSE = new PreEncodedHttpField(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE.asString());
     public static final String UPGRADE_CONNECTION_ATTRIBUTE = "org.eclipse.jetty.server.HttpConnection.UPGRADE";
     private static final boolean REQUEST_BUFFER_DIRECT=false;
     private static final boolean HEADER_BUFFER_DIRECT=false;
     private static final boolean CHUNK_BUFFER_DIRECT=false;
-    private static final Logger LOG = Log.getLogger(HttpConnection.class);
     private static final ThreadLocal<HttpConnection> __currentConnection = new ThreadLocal<>();
 
     private final HttpConfiguration _config;
@@ -90,8 +95,8 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         _connector = connector;
         _bufferPool = _connector.getByteBufferPool();
         _generator = newHttpGenerator();
-        _input = newHttpInput();
-        _channel = newHttpChannel(_input);
+        _channel = newHttpChannel();    
+        _input = _channel.getRequest().getHttpInput();
         _parser = newHttpParser();
         if (LOG.isDebugEnabled())
             LOG.debug("New HTTP Connection {}", this);
@@ -107,14 +112,9 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         return new HttpGenerator(_config.getSendServerVersion(),_config.getSendXPoweredBy());
     }
     
-    protected HttpInput newHttpInput()
+    protected HttpChannelOverHttp newHttpChannel()
     {
-        return new HttpInputOverHTTP(this);
-    }
-    
-    protected HttpChannelOverHttp newHttpChannel(HttpInput httpInput)
-    {
-        return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this, httpInput);
+        return new HttpChannelOverHttp(this, _connector, _config, getEndPoint(), this);
     }
     
     protected HttpParser newHttpParser()
@@ -262,22 +262,21 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     /** Fill and parse data looking for content
      * @throws IOException
      */
-    protected boolean parseContent() 
+    protected boolean fillAndParseForContent() 
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("{} parseContent",this);
         boolean handled=false;
         while (_parser.inContentState())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} parseContent",this);
             int filled = fillRequestBuffer();
             boolean handle = parseRequestBuffer();
             handled|=handle;
-            if (handle || filled<=0)
+            if (handle || filled<=0 || _channel.getRequest().getHttpInput().hasContent())
                 break;
         }
         return handled;
     }
-    
 
     /* ------------------------------------------------------------ */
     private int fillRequestBuffer() 
@@ -545,22 +544,17 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         @Override
         public void succeeded()
         {
-            if (parseContent())
-                _channel.handle();  // TODO this call to handle can be duplicated by HttpInput.addContent calling onReadPossible
+            if (fillAndParseForContent())
+                _channel.handle();
             else if (!_input.isFinished())
-                // TODO This may not always be correct.    The main use-case is when the asyncReadCallback has succeeded because of 
-                // some data that is not sufficient to produce anything to read (Eg one byte of a chunk header).  We can't add
-                // zero length content because HttpInput.read() cannot return 0 as no bytes read!  So instead we just say we are 
-                // fill interested and look for more content.   BUT maybe there is a case when this is not needed..... hmmm I think
-                // this is probably OK as the AsyncReadCallback is only ever used when there is not another thread reading etc.
                 asyncReadFillInterested();
         }
 
         @Override
         public void failed(Throwable x)
         {
-            _input.failed(x);
-            _channel.handle();
+            if (_input.failed(x))
+                _channel.handle();
         }
     }
     
@@ -768,7 +762,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void asyncReadFillInterested()
     {
         getEndPoint().fillInterested(_asyncReadCallback);
-        
     }
 
     public void blockingReadFillInterested()

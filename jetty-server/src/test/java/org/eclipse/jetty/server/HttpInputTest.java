@@ -104,14 +104,30 @@ public class HttpInputTest
     @Before
     public void before()
     {
-        _in=new HttpInput()
+        _in=new HttpInput(new HttpChannelState(new HttpChannel(null,new HttpConfiguration(),null,null)
         {
             @Override
-            protected void onReadPossible()
-            {     
-                _history.add("onReadPossible");        
+            public void asyncReadFillInterested()
+            {
+                _history.add("asyncReadFillInterested");
+            }
+        })
+        {
+            @Override
+            public void onReadUnready()
+            {
+                _history.add("unready");
+                super.onReadUnready();
             }
 
+            @Override
+            public boolean onReadPossible()
+            {
+                _history.add("onReadPossible");
+                return super.onReadPossible();
+            }
+        })
+        {
             @Override
             protected void produceContent() throws IOException
             {
@@ -132,12 +148,6 @@ public class HttpInputTest
                 _history.add("blockForContent"); 
                 super.blockForContent();
             }
-
-            @Override
-            protected void unready()
-            {
-                _history.add("unready"); 
-            }  
         };
     }
     
@@ -174,6 +184,7 @@ public class HttpInputTest
         assertThat(_in.read(),equalTo((int)'A'));
         assertThat(_in.getContentConsumed(),equalTo(1L));
         assertThat(_in.read(),equalTo((int)'B'));
+        assertThat(_in.getContentConsumed(),equalTo(2L));
         
         assertThat(_history.poll(),equalTo("Content succeeded AB"));
         assertThat(_history.poll(),nullValue());
@@ -252,9 +263,9 @@ public class HttpInputTest
         assertThat(_in.read(),equalTo((int)'C'));
         assertThat(_in.isFinished(),equalTo(false));
         assertThat(_in.read(),equalTo((int)'D'));
-        assertThat(_in.isFinished(),equalTo(true));
         assertThat(_history.poll(),equalTo("Content succeeded CD"));
         assertThat(_history.poll(),nullValue());
+        assertThat(_in.isFinished(),equalTo(false));
         
         assertThat(_in.read(),equalTo(-1));
         assertThat(_in.isFinished(),equalTo(true));
@@ -327,8 +338,8 @@ public class HttpInputTest
     public void testAsyncEmpty() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("unready"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());
         
         _in.run();
@@ -341,6 +352,8 @@ public class HttpInputTest
         assertThat(_history.poll(),nullValue());
         
         assertThat(_in.isReady(),equalTo(false));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
     }
     
@@ -349,8 +362,8 @@ public class HttpInputTest
     public void testAsyncRead() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("unready"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());
         
         _in.run();
@@ -382,6 +395,7 @@ public class HttpInputTest
         
         assertThat(_in.isReady(),equalTo(true));
         assertThat(_history.poll(),equalTo("produceContent 1"));
+        assertThat(_history.poll(),equalTo("onReadPossible"));
         assertThat(_history.poll(),nullValue());
 
         assertThat(_in.read(),equalTo((int)'C'));
@@ -402,8 +416,8 @@ public class HttpInputTest
     public void testAsyncEOF() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("unready"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());
 
         _in.run();
@@ -413,10 +427,12 @@ public class HttpInputTest
         _in.eof();
         assertThat(_in.isReady(),equalTo(true));
         assertThat(_in.isFinished(),equalTo(false));
+        assertThat(_history.poll(),equalTo("onReadPossible"));
         assertThat(_history.poll(),nullValue());
 
         assertThat(_in.read(),equalTo(-1));
         assertThat(_in.isFinished(),equalTo(true));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),equalTo("onReadPossible"));
         assertThat(_history.poll(),nullValue());
     }
@@ -425,8 +441,8 @@ public class HttpInputTest
     public void testAsyncReadEOF() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("unready"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());
         
         _in.run();
@@ -460,11 +476,13 @@ public class HttpInputTest
         assertThat(_in.isFinished(),equalTo(false));
         assertThat(_in.isReady(),equalTo(true));
         assertThat(_history.poll(),equalTo("produceContent 1"));
+        assertThat(_history.poll(),equalTo("onReadPossible"));
         assertThat(_history.poll(),nullValue());
 
         assertThat(_in.isFinished(),equalTo(false));
         assertThat(_in.read(),equalTo(-1));        
         assertThat(_in.isFinished(),equalTo(true));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),equalTo("onReadPossible"));
         assertThat(_history.poll(),nullValue());
         
@@ -478,8 +496,8 @@ public class HttpInputTest
     public void testAsyncError() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),equalTo("unready"));
+        assertThat(_history.poll(),equalTo("produceContent 0"));
         assertThat(_history.poll(),nullValue());
         _in.run();
         assertThat(_history.poll(),equalTo("onDataAvailable"));

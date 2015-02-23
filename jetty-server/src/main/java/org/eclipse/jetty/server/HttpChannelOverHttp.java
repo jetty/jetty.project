@@ -50,25 +50,23 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     private final MetaData.Request _metadata = new MetaData.Request(_fields);
     private final HttpConnection _httpConnection;
     private HttpField _connection;
+    private boolean _delayedForContent;
     private boolean _unknownExpectation = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
 
+    
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
-        this(httpConnection,connector,config,endPoint,transport,new HttpInputOverHTTP(httpConnection));
-    }
-    
-    public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport,HttpInput input)
-    {
-        super(connector,config,endPoint,transport,input);
+        super(connector,config,endPoint,transport);
         _httpConnection = httpConnection;
         _metadata.setURI(new HttpURI());
     }
     
-    protected HttpInput newHttpInput()
+    @Override
+    protected HttpInput newHttpInput(HttpChannelState state)
     {
-        throw new IllegalStateException();
+        return new HttpInputOverHTTP(state);
     }
 
     @Override
@@ -219,10 +217,16 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     public boolean content(ByteBuffer content)
     {
         // TODO avoid creating the Content object with wrapper?
-        onContent(new HttpInput.Content(content));
-        return true;
+        boolean handle = onContent(new HttpInput.Content(content)) || _delayedForContent;
+        _delayedForContent=false;
+        return handle;
     }
 
+    public void asyncReadFillInterested()
+    {
+        _httpConnection.asyncReadFillInterested();        
+    }
+    
     @Override
     public void badMessage(int status, String reason)
     {
@@ -336,10 +340,9 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
 
         // Should we delay dispatch until we have some content?
         // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
-        if (getHttpConfiguration().isDelayDispatchUntilContent() && _httpConnection.getParser().getContentLength()>0 && !isExpecting100Continue() && !isCommitted() && _httpConnection.isRequestBufferEmpty())
-            return false;
-            
-        return true;
+        _delayedForContent =  (getHttpConfiguration().isDelayDispatchUntilContent() && _httpConnection.getParser().getContentLength()>0 && !isExpecting100Continue() && !isCommitted() && _httpConnection.isRequestBufferEmpty());
+        
+        return !_delayedForContent;
     }
 
     @Override
@@ -359,8 +362,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     public boolean messageComplete()
     {
-        onRequestComplete();
-        return false;
+        return onRequestComplete();
     }
 
     @Override

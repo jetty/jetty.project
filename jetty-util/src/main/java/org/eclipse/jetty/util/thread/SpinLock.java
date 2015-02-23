@@ -19,6 +19,7 @@
 package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicReference;
 
 
 /* ------------------------------------------------------------ */
@@ -38,15 +39,18 @@ import java.util.concurrent.atomic.AtomicBoolean;
  */
 public class SpinLock
 {
-    private final AtomicBoolean _lock = new AtomicBoolean(false);
+    private final AtomicReference<Thread> _lock = new AtomicReference<>(null);
     private final Lock _unlock = new Lock();
     
     public Lock lock()
     {
+        Thread thread = Thread.currentThread();
         while(true)
         {
-            if (!_lock.compareAndSet(false,true))
+            if (!_lock.compareAndSet(null,thread))
             {
+                if (_lock.get()==thread)
+                    throw new IllegalStateException("SpinLock is not reentrant");
                 continue;
             }
             return _unlock;
@@ -55,7 +59,12 @@ public class SpinLock
     
     public boolean isLocked()
     {
-        return _lock.get();
+        return _lock.get()!=null;
+    }
+    
+    public boolean isLockedThread()
+    {
+        return _lock.get()==Thread.currentThread();
     }
     
     public class Lock implements AutoCloseable
@@ -63,8 +72,7 @@ public class SpinLock
         @Override
         public void close()
         {
-            if (!_lock.compareAndSet(true,false))
-                throw new IllegalStateException();
+            _lock.set(null);
         }
     }
 }

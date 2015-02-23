@@ -1390,6 +1390,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             int point = points[j];
 
+            // System.err.println("write: "+new String(bytes, last, point - last));
             os.write(bytes, last, point - last);
             last = point;
             os.flush();
@@ -1400,6 +1401,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         // Write the last fragment
+        // System.err.println("Write: "+new String(bytes, last, bytes.length - last));
         os.write(bytes, last, bytes.length - last);
         os.flush();
         Thread.sleep(PAUSE);

@@ -404,19 +404,18 @@ public class AsyncServletIOTest
                         if (!onDataAvailable.compareAndSet(false,true))
                             throw new IllegalStateException();
                         
-                        // System.err.println("ODA");
+                        //System.err.println("ODA");
                         while (in.isReady() && !in.isFinished())
                         {
                             _oda.incrementAndGet();
                             int len=in.read(_buf);
-                            // System.err.println("read "+len);
+                            //System.err.println("read "+len);
                             if (len>0)
                                 _read.addAndGet(len);
                         }
 
                         if (!onDataAvailable.compareAndSet(true,false))
                             throw new IllegalStateException();
-                        
                     }
                     
                     @Override

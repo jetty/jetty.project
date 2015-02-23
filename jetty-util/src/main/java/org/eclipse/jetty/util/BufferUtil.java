@@ -952,10 +952,7 @@ public class BufferUtil
         StringBuilder buf = new StringBuilder();
         buf.append(buffer.getClass().getSimpleName());
         buf.append("@");
-        if (buffer.hasArray())
-            buf.append(Integer.toHexString(Arrays.hashCode(buffer.array())));
-        else
-            buf.append(Integer.toHexString(buf.hashCode()));
+        buf.append(Integer.toHexString(System.identityHashCode(buffer)));
         buf.append("[p=");
         buf.append(buffer.position());
         buf.append(",l=");

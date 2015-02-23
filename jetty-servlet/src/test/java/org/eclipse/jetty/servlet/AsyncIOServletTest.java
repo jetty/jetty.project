@@ -132,6 +132,7 @@ public class AsyncIOServletTest
                         Assert.assertThat("onError message",t.getMessage(),is(throwable.getMessage()));
                         latch.countDown();
                         response.setStatus(500);
+                        
                         asyncContext.complete();
                     }
                 });
@@ -147,6 +148,7 @@ public class AsyncIOServletTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
+            client.setSoTimeout(5000);
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();
@@ -217,6 +219,7 @@ public class AsyncIOServletTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
+            client.setSoTimeout(5000);
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();
@@ -509,6 +512,91 @@ public class AsyncIOServletTest
     
 
     @Test
+    public void testOnAllDataRead() throws Exception
+    {
+        String text = "X";
+        final byte[] data = text.getBytes(StandardCharsets.ISO_8859_1);
+        
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
+            {
+                response.flushBuffer();
+                
+                final AsyncContext async = request.startAsync();
+                async.setTimeout(5000);
+                final ServletInputStream in = request.getInputStream();
+                final ServletOutputStream out = response.getOutputStream();
+                
+                in.setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onError(Throwable t)
+                    {
+                        t.printStackTrace();
+                        async.complete();
+                    }
+                    
+                    @Override
+                    public void onDataAvailable() throws IOException
+                    {
+                        try
+                        {
+                            Thread.sleep(1000);
+                            if (!in.isReady())
+                                throw new IllegalStateException();
+                            if (in.read()!='X')
+                                throw new IllegalStateException();
+                            if (!in.isReady())
+                                throw new IllegalStateException();
+                            if (in.read()!=-1)
+                                throw new IllegalStateException();
+                        }
+                        catch(Exception e)
+                        {
+                            e.printStackTrace();
+                        }
+                    }
+                    
+                    @Override
+                    public void onAllDataRead() throws IOException
+                    {
+                        out.write("OK\n".getBytes(StandardCharsets.ISO_8859_1));
+                        async.complete();                        
+                    }
+                });
+            }
+        });
+
+        String request = "GET " + path + " HTTP/1.1\r\n" +
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "Content-Type: text/plain\r\n"+
+                "Content-Length: "+data.length+"\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        {
+            client.setSoTimeout(5000);
+            OutputStream output = client.getOutputStream();
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+            Thread.sleep(100);
+            output.write(data);
+            output.flush();
+
+            BufferedReader in = new BufferedReader(new InputStreamReader(client.getInputStream()));
+            String line=in.readLine();
+            assertThat(line, containsString("200 OK"));
+            while (line.length()>0)
+                line=in.readLine();
+            line=in.readLine();
+            assertThat(line, containsString("OK"));
+        }
+    }
+    
+    @Test
     public void testOtherThreadOnAllDataRead() throws Exception
     {
         String text = "X";
@@ -522,6 +610,7 @@ public class AsyncIOServletTest
                 response.flushBuffer();
                 
                 final AsyncContext async = request.startAsync();
+                async.setTimeout(5000);
                 final ServletInputStream in = request.getInputStream();
                 final ServletOutputStream out = response.getOutputStream();
                 
@@ -580,6 +669,7 @@ public class AsyncIOServletTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
+            client.setSoTimeout(5000);
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();

@@ -22,35 +22,21 @@ import java.io.IOException;
 
 public class HttpInputOverHTTP extends HttpInput
 {
-    private final HttpConnection _httpConnection;
-
-    public HttpInputOverHTTP(HttpConnection httpConnection)
+    public HttpInputOverHTTP(HttpChannelState state)
     {
-        _httpConnection = httpConnection;
+        super(state);
     }
 
     @Override
     protected void produceContent() throws IOException
     {
-        _httpConnection.parseContent();
+        ((HttpConnection)getHttpChannelState().getHttpChannel().getEndPoint().getConnection()).fillAndParseForContent();
     }
 
     @Override
     protected void blockForContent() throws IOException
     {
-        _httpConnection.blockingReadFillInterested();
+        ((HttpConnection)getHttpChannelState().getHttpChannel().getEndPoint().getConnection()).blockingReadFillInterested();
         super.blockForContent();
-    }
-
-    @Override
-    protected void unready()
-    {
-        _httpConnection.asyncReadFillInterested();
-    }
-
-    @Override 
-    protected void onReadPossible()
-    {
-        _httpConnection.getHttpChannel().getState().onReadPossible();
     }
 }
