@@ -954,21 +954,6 @@ public class BufferUtil
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convert buffer to a Debug String.
-     * @param buffer
-     * @return A string showing the escaped content of the buffer around the
-     * position and limit (marked with &lt;&lt;&lt; and &gt;&gt;&gt;)
-     */
-    public static String toDebugString(ByteBuffer buffer)
-    {
-        if (buffer == null)
-            return "null";
-        StringBuilder buf = new StringBuilder();
-        appendDebugString(buf,buffer);
-        return buf.toString();
-    }
-    
     private static void appendDebugString(StringBuilder buf,ByteBuffer buffer)
     {
         for (int i = 0; i < buffer.position(); i++)
