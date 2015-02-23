@@ -1709,69 +1709,9 @@ public class HttpParser
     {
         private IllegalCharacterException(State state,byte ch,ByteBuffer buffer)
         {
-            super(String.format("Illegal character 0x%X in state=%s for buffer %s",ch,state,toDebugString(buffer)));
-        }
-
-        /**
-         * This is an HttpParser safe version of {@link BufferUtil#toDetailString(ByteBuffer)}.
-         * <p>
-         * Which will only show the parsing state (what has been parsed, what is being parsed, and what is coming up),
-         * while not showing what is past the {@link ByteBuffer#limit()}.
-         * 
-         * @param buffer
-         * @return
-         */
-        private static String toDebugString(ByteBuffer buffer)
-        {
-            if (buffer == null)
-            {
-                return "<null>";
-            }
-            
-            StringBuilder buf = new StringBuilder();
-            
-            buf.append('"');
-            
-            for (int i = 0; i < buffer.position(); i++)
-            {
-                appendContentChar(buf,buffer.get(i));
-                if (i == 16 && buffer.position() > 32)
-                {
-                    buf.append("...");
-                    i = buffer.position() - 16;
-                }
-            }
-            buf.append("<<<");
-            for (int i = buffer.position(); i < buffer.limit(); i++)
-            {
-                appendContentChar(buf,buffer.get(i));
-                if (i == buffer.position() + 16 && buffer.limit() > buffer.position() + 32)
-                {
-                    buf.append("...");
-                    i = buffer.limit() - 16;
-                }
-            }
-            buf.append(">>>\"");
-            
-            // ignore content beyond limit()
-            
-            return buf.toString();
-        }
-        
-        private static void appendContentChar(StringBuilder buf, byte b)
-        {
-            if (b == '\\')
-                buf.append("\\\\");   
-            else if (b >= ' ')
-                buf.append((char)b);
-            else if (b == '\r')
-                buf.append("\\r");
-            else if (b == '\n')
-                buf.append("\\n");
-            else if (b == '\t')
-                buf.append("\\t");
-            else
-                buf.append("\\x").append(TypeUtil.toHexString(b));
+            super(400,String.format("Illegal character 0x%X",ch));
+            // Bug #460642 - don't reveal buffers to end user
+            LOG.warn(String.format("Illegal character 0x%X in state=%s for buffer %s",ch,state,BufferUtil.toDetailString(buffer)));
         }
     }
 }
