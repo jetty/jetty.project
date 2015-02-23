@@ -279,7 +279,7 @@ public class Module
         {
             return true;
         }
-
+        
         System.err.printf("%nModule %s:%n",getName());
         System.err.printf(" + contains software not provided by the Eclipse Foundation!%n");
         System.err.printf(" + contains software not covered by the Eclipse Public License!%n");
@@ -359,6 +359,20 @@ public class Module
     public boolean isEnabled()
     {
         return enabled;
+    }
+
+    public boolean hasFiles(BaseHome baseHome)
+    {
+        for (String ref : getFiles())
+        {
+            FileArg farg = new FileArg(this,ref);
+            Path refPath = baseHome.getBasePath(farg.location);
+            if (!Files.exists(refPath))
+            {
+                return false;
+            }
+        }
+        return true;
     }
 
     public void process(BaseHome basehome) throws FileNotFoundException, IOException
@@ -477,5 +491,4 @@ public class Module
         str.append(']');
         return str.toString();
     }
-
 }

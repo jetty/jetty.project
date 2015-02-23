@@ -407,7 +407,7 @@ public class Main
 
         if (!args.isApproveAllLicenses())
         {
-            if (!module.acknowledgeLicense())
+            if (!module.hasFiles(baseHome) && !module.acknowledgeLicense())
             {
                 StartLog.warn(EXITING_LICENSE_NOT_ACKNOWLEDGED);
                 System.exit(1);
