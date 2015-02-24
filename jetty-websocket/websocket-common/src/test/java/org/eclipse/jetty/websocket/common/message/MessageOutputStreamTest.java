@@ -34,6 +34,8 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
 import org.junit.After;
 import org.junit.Assert;
@@ -74,6 +76,9 @@ public class MessageOutputStreamTest
 
         // Event Driver factory
         EventDriverFactory factory = new EventDriverFactory(policy);
+        
+        // Container
+        WebSocketContainerScope containerScope = new SimpleContainerScope(policy,bufferPool);
 
         // local socket
         EventDriver driver = factory.wrap(new TrackingSocket("local"));
@@ -82,7 +87,7 @@ public class MessageOutputStreamTest
         socket = new TrackingSocket("remote");
         OutgoingFrames socketPipe = FramePipes.to(factory.wrap(socket));
 
-        session = new LocalWebSocketSession(testname,driver,bufferPool);
+        session = new LocalWebSocketSession(containerScope,testname,driver);
 
         session.setPolicy(policy);
         // talk to our remote socket

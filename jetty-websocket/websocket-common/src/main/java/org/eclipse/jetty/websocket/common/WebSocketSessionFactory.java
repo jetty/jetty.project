@@ -23,18 +23,35 @@ import java.net.URI;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.JettyAnnotatedEventDriver;
 import org.eclipse.jetty.websocket.common.events.JettyListenerEventDriver;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 
 /**
  * Default Session factory, creating WebSocketSession objects.
  */
 public class WebSocketSessionFactory implements SessionFactory
 {
+    private final WebSocketContainerScope containerScope;
     private final SessionListener[] listeners;
 
-    public WebSocketSessionFactory(SessionListener... sessionListeners)
+    public WebSocketSessionFactory(WebSocketContainerScope containerScope, SessionListener... sessionListeners)
     {
-        listeners = sessionListeners;
-    }
+        this.containerScope = containerScope;
+        if ((sessionListeners != null) && (sessionListeners.length > 0))
+        {
+            this.listeners = sessionListeners;
+        }
+        else
+        {
+            if (this.containerScope instanceof SessionListener)
+            {
+                this.listeners = new SessionListener[] { (SessionListener)containerScope };
+            }
+            else
+            {
+                this.listeners = new SessionListener[0];
+            }
+        }
+   }
 
     @Override
     public boolean supports(EventDriver websocket)
@@ -45,6 +62,6 @@ public class WebSocketSessionFactory implements SessionFactory
     @Override
     public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
-        return new WebSocketSession(requestURI,websocket,connection,listeners);
+        return new WebSocketSession(containerScope, requestURI,websocket,connection,listeners);
     }
 }

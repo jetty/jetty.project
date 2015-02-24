@@ -19,20 +19,36 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.List;
+
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;
 import javax.websocket.server.HandshakeRequest;
 import javax.websocket.server.ServerEndpointConfig;
+import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 
-public class BasicServerEndpointConfigurator extends ServerEndpointConfig.Configurator
+/**
+ * The "Container Default Configurator" per the JSR-356 spec.
+ * 
+ * @see ServiceLoader behavior of {@link ServerEndpointConfig.Configurator}
+ */
+public final class ContainerDefaultConfigurator extends Configurator
 {
-    private static final Logger LOG = Log.getLogger(BasicServerEndpointConfigurator.class);
+    private static final Logger LOG = Log.getLogger(ContainerDefaultConfigurator.class);
     private static final String NO_SUBPROTOCOL = "";
-    public static final ServerEndpointConfig.Configurator INSTANCE = new BasicServerEndpointConfigurator();
+    
+    /**
+     * Default Constructor required, as
+     * javax.websocket.server.ServerEndpointConfig$Configurator.fetchContainerDefaultConfigurator()
+     * will be the one that instantiates this class in most cases.
+     */
+    public ContainerDefaultConfigurator()
+    {
+        super();
+    }
 
     @Override
     public boolean checkOrigin(String originHeaderValue)
@@ -47,8 +63,11 @@ public class BasicServerEndpointConfigurator extends ServerEndpointConfig.Config
         {
             LOG.debug(".getEndpointInstance({})",endpointClass);
         }
+        
         try
         {
+            // Since this is started via a ServiceLoader, this class has no Scope or context
+            // that can be used to obtain a ObjectFactory from.
             return endpointClass.newInstance();
         }
         catch (IllegalAccessException e)

@@ -43,7 +43,7 @@ public class JsrSessionFactory implements SessionFactory
     @Override
     public WebSocketSession createSession(URI requestURI, EventDriver websocket, LogicalConnection connection)
     {
-        return new JsrSession(requestURI,websocket,connection,container,getNextId(),listeners);
+        return new JsrSession(container,getNextId(),requestURI,websocket,connection,listeners);
     }
 
     public String getNextId()

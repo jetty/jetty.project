@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.servlet;
 
 import java.io.IOException;
 
+import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -128,10 +129,12 @@ public abstract class WebSocketServlet extends HttpServlet
             factory = WebSocketServletFactory.Loader.create(policy);
 
             configure(factory);
-
-            factory.init();
             
-            getServletContext().setAttribute(WebSocketServletFactory.class.getName(),factory);
+            ServletContext ctx = getServletContext();
+
+            factory.init(ctx);
+            
+            ctx.setAttribute(WebSocketServletFactory.class.getName(),factory);
         }
         catch (Exception x)
         {

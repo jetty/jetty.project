@@ -68,6 +68,7 @@ import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParser;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.junit.Assert;
 
 /**
@@ -227,7 +228,7 @@ public class BlockheadClient implements OutgoingFrames, ConnectionStateListener,
         this.generator = new Generator(policy,bufferPool);
         this.parser = new Parser(policy,bufferPool);
 
-        this.extensionFactory = new WebSocketExtensionFactory(policy,bufferPool);
+        this.extensionFactory = new WebSocketExtensionFactory(new SimpleContainerScope(policy,bufferPool));
         this.ioState = new IOState();
         this.ioState.addListener(this);
     }
