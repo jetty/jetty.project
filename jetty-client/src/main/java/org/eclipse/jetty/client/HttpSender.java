@@ -741,10 +741,12 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
     private class ContentCallback extends IteratingCallback
     {
+        private HttpExchange exchange;
+
         @Override
         protected Action process() throws Exception
         {
-            HttpExchange exchange = getHttpExchange();
+            HttpExchange exchange = this.exchange = getHttpExchange();
             if (exchange == null)
                 return Action.IDLE;
 
@@ -798,7 +800,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         public void succeeded()
         {
             ByteBuffer buffer = content.getContent();
-            someToContent(getHttpExchange().getRequest(), buffer);
+            someToContent(exchange.getRequest(), buffer);
             content.succeeded();
             super.succeeded();
         }
