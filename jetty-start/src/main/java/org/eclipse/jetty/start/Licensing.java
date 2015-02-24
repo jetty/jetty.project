@@ -40,7 +40,7 @@ public class Licensing
             // skip, no license
             return;
         }
-
+        
         if (licenseMap.containsKey(module.getName()))
         {
             // skip, already being tracked

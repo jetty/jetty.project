@@ -18,11 +18,12 @@
 
 package org.eclipse.jetty.http;
 
+import static org.eclipse.jetty.http.HttpTokens.*;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 
-import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
@@ -31,11 +32,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
-import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
-import static org.eclipse.jetty.http.HttpTokens.SPACE;
-import static org.eclipse.jetty.http.HttpTokens.TAB;
 
 
 /* ------------------------------------------------------------ */
@@ -382,7 +378,7 @@ public class HttpParser
             }
             // Only LF or TAB acceptable special characters
             else if (!(ch==LINE_FEED || ch==TAB))
-                throw new IllegalCharacter(ch,buffer);
+                throw new IllegalCharacterException(_state,ch,buffer);
         }
         
         return ch;
@@ -511,7 +507,7 @@ public class HttpParser
                         if (ch==LINE_FEED)
                             throw new BadMessageException("No URI");
                         else
-                            throw new IllegalCharacter(ch,buffer);
+                            throw new IllegalCharacterException(_state,ch,buffer);
                     }
                     else
                         _string.append((char)ch);
@@ -528,7 +524,7 @@ public class HttpParser
                         setState(State.SPACE1);
                     }
                     else if (ch < HttpTokens.SPACE)
-                        throw new IllegalCharacter(ch,buffer);
+                        throw new IllegalCharacterException(_state,ch,buffer);
                     else
                         _string.append((char)ch);
                     break;
@@ -1033,7 +1029,7 @@ public class HttpParser
                         break;
                     }
 
-                    throw new IllegalCharacter(ch,buffer);
+                    throw new IllegalCharacterException(_state,ch,buffer);
 
                 case HEADER_VALUE:
                     if (ch>HttpTokens.SPACE || ch<0)
@@ -1058,7 +1054,7 @@ public class HttpParser
                         setState(State.HEADER);
                         break;
                     }
-                    throw new IllegalCharacter(ch,buffer);
+                    throw new IllegalCharacterException(_state,ch,buffer);
 
                 case HEADER_IN_VALUE:
                     if (ch>=HttpTokens.SPACE || ch<0 || ch==HttpTokens.TAB)
@@ -1088,7 +1084,7 @@ public class HttpParser
                         break;
                     }
 
-                    throw new IllegalCharacter(ch,buffer);
+                    throw new IllegalCharacterException(_state,ch,buffer);
                     
                 default:
                     throw new IllegalStateException(_state.toString());
@@ -1593,13 +1589,14 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    private class IllegalCharacter extends BadMessageException
+    @SuppressWarnings("serial")
+    private static class IllegalCharacterException extends BadMessageException
     {
-        IllegalCharacter(byte ch,ByteBuffer buffer)
+        private IllegalCharacterException(State state,byte ch,ByteBuffer buffer)
         {
-            super(String.format("Illegal character 0x%x in state=%s in '%s'",ch,_state,BufferUtil.toDebugString(buffer)));
+            super(400,String.format("Illegal character 0x%X",ch));
+            // Bug #460642 - don't reveal buffers to end user
+            LOG.warn(String.format("Illegal character 0x%X in state=%s for buffer %s",ch,state,BufferUtil.toDetailString(buffer)));
         }
     }
 }
