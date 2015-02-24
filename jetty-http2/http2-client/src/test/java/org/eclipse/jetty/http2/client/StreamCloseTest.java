@@ -96,16 +96,19 @@ public class StreamCloseTest extends AbstractTest
 
         Session session = newClient(new Session.Listener.Adapter());
         HeadersFrame frame = new HeadersFrame(0, newRequest("GET", new HttpFields()), null, true);
-        session.newStream(frame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        FuturePromise<Stream> promise = new FuturePromise<>();
+        session.newStream(frame, promise, new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                Assert.assertTrue(stream.isClosed());
+                // The stream promise may not be notified yet here.
                 latch.countDown();
             }
         });
+        Stream stream = promise.get(5, TimeUnit.SECONDS);
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(stream.isClosed());
     }
 
     @Test
@@ -151,7 +154,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
-                Assert.assertTrue(stream.isClosed());
+                // The sent data callback may not be notified yet here.
                 completeLatch.countDown();
             }
         });
@@ -173,6 +176,7 @@ public class StreamCloseTest extends AbstractTest
         Assert.assertTrue(clientDataLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(stream.isClosed());
         Assert.assertEquals(0, stream.getSession().getStreams().size());
     }
 
@@ -226,6 +230,7 @@ public class StreamCloseTest extends AbstractTest
                     public void onData(Stream pushedStream, DataFrame frame, Callback callback)
                     {
                         Assert.assertTrue(pushedStream.isClosed());
+                        callback.succeeded();
                         clientLatch.countDown();
                     }
                 };
