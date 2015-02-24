@@ -113,7 +113,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
     public void submit(Runnable change)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("Queued change {}", change);
+            LOG.debug("Queued change {} on {}", change, this);
 
         try (SpinLock.Lock lock = _lock.lock())
         {
@@ -672,11 +672,18 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                 }
             }
 
-            _allClosed = new CountDownLatch(end_points.size());
+            int size = end_points.size();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closing {} endPoints on {}", size, ManagedSelector.this);
+
+            _allClosed = new CountDownLatch(size);
             _latch.countDown();
 
             for (EndPoint endp : end_points)
                 submit(new EndPointCloser(endp, _allClosed));
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Closed {} endPoints on {}", size, ManagedSelector.this);
         }
 
         public boolean await(long timeout)
