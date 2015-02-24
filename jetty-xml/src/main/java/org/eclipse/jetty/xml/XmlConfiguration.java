@@ -35,7 +35,6 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 import java.util.ArrayList;
 import java.util.Collection;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.LinkedList;
@@ -945,20 +944,45 @@ public class XmlConfiguration
          */
         private Object propertyObj(XmlParser.Node node) throws Exception
         {
-            String id = node.getAttribute("id");
-            String name = node.getAttribute("name");
+            String idAttr = node.getAttribute("id");
+            String nameAttr = node.getAttribute("name");
             String defaultValue = node.getAttribute("default");
-            Object prop;
-            Map<String,String> property_map=_configuration.getProperties();
-            if (property_map != null && property_map.containsKey(name))
-                prop = property_map.get(name);
-            else
-                prop = defaultValue;
-            if (id != null)
-                _configuration.getIdMap().put(id,prop);
-            if (prop != null)
-                configure(prop,node,0);
-            return prop;
+
+            Object value = null;
+            boolean present = false;
+            Map<String,String> properties = _configuration.getProperties();
+            if (properties != null && nameAttr != null)
+            {
+                String preferredName = null;
+                String[] names = nameAttr.split(",");
+                for (String name : names)
+                {
+                    name = name.trim();
+                    if (name.length() == 0)
+                        continue;
+                    if (preferredName == null)
+                        preferredName = name;
+
+                    if (properties.containsKey(name))
+                    {
+                        if (!name.equals(preferredName))
+                            LOG.warn("Property '{}' is deprecated, use '{}' instead", name, preferredName);
+                        present = true;
+                        value = properties.get(name);
+                        break;
+                    }
+                }
+            }
+            if (!present)
+                value = defaultValue;
+
+            if (idAttr != null)
+                _configuration.getIdMap().put(idAttr, value);
+
+            if (value != null)
+                configure(value, node, 0);
+
+            return value;
         }
 
         /*

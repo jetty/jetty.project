@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.xml;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +28,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class XmlConfigurationTest
 {
@@ -778,5 +778,46 @@ public class XmlConfigurationTest
         {
             
         }
+    }
+
+    @Test
+    public void testWithMultiplePropertyNamesWithNoPropertyThenDefaultIsChosen() throws Exception
+    {
+        // No properties
+        String defolt = "baz";
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                "  <Set name=\"first\"><Property name=\"foo,bar\" default=\"" + defolt + "\"/></Set>  " +
+                "</Configure>");
+        DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
+        assertEquals(defolt, config.getFirst());
+    }
+
+    @Test
+    public void testWithMultiplePropertyNamesWithFirstPropertyThenFirstIsChosen() throws Exception
+    {
+        String name = "foo";
+        String value = "foo";
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                "  <Set name=\"first\"><Property name=\"" + name + ",bar\" default=\"baz\"/></Set>  " +
+                "</Configure>");
+        xmlConfiguration.getProperties().put(name, value);
+        DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
+        assertEquals(value, config.getFirst());
+    }
+
+    @Test
+    public void testWithMultiplePropertyNamesWithSecondPropertyThenSecondIsChosen() throws Exception
+    {
+        String name = "bar";
+        String value = "bar";
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                "  <Set name=\"first\"><Property name=\"foo," + name + "\" default=\"baz\"/></Set>  " +
+                "</Configure>");
+        xmlConfiguration.getProperties().put(name, value);
+        DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
+        assertEquals(value, config.getFirst());
     }
 }
