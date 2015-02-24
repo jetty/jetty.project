@@ -35,6 +35,7 @@ public abstract class FillInterest
 {
     private final static Logger LOG = Log.getLogger(FillInterest.class);
     private final AtomicReference<Callback> _interested = new AtomicReference<>(null);
+    private Throwable _lastSet;
 
     protected FillInterest()
     {
@@ -53,9 +54,19 @@ public abstract class FillInterest
         if (callback == null)
             throw new IllegalArgumentException();
 
-        if (!_interested.compareAndSet(null, callback))
+        if (_interested.compareAndSet(null, callback))
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{} register {}",this,callback);
+                _lastSet=new Throwable();
+            }
+        }
+        else
         {
             LOG.warn("Read pending for {} prevented {}", _interested, callback);
+            if (LOG.isDebugEnabled())
+                LOG.warn("callback set at ",_lastSet);
             throw new ReadPendingException();
         }
         try

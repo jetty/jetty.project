@@ -113,6 +113,7 @@ public class HttpInputTest
             }
         })
         {
+            
             @Override
             public void onReadUnready()
             {
@@ -125,6 +126,13 @@ public class HttpInputTest
             {
                 _history.add("onReadPossible");
                 return super.onReadPossible();
+            }
+            
+            @Override
+            public boolean onReadReady()
+            {
+                _history.add("ready");
+                return super.onReadReady();
             }
         })
         {
@@ -338,8 +346,8 @@ public class HttpInputTest
     public void testAsyncEmpty() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         
         _in.run();
@@ -362,8 +370,8 @@ public class HttpInputTest
     public void testAsyncRead() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         
         _in.run();
@@ -416,8 +424,8 @@ public class HttpInputTest
     public void testAsyncEOF() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
 
         _in.run();
@@ -432,8 +440,7 @@ public class HttpInputTest
 
         assertThat(_in.read(),equalTo(-1));
         assertThat(_in.isFinished(),equalTo(true));
-        assertThat(_history.poll(),equalTo("unready"));
-        assertThat(_history.poll(),equalTo("onReadPossible"));
+        assertThat(_history.poll(),equalTo("ready"));
         assertThat(_history.poll(),nullValue());
     }
     
@@ -441,8 +448,8 @@ public class HttpInputTest
     public void testAsyncReadEOF() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         
         _in.run();
@@ -482,8 +489,7 @@ public class HttpInputTest
         assertThat(_in.isFinished(),equalTo(false));
         assertThat(_in.read(),equalTo(-1));        
         assertThat(_in.isFinished(),equalTo(true));
-        assertThat(_history.poll(),equalTo("unready"));
-        assertThat(_history.poll(),equalTo("onReadPossible"));
+        assertThat(_history.poll(),equalTo("ready"));
         assertThat(_history.poll(),nullValue());
         
         assertThat(_in.isReady(),equalTo(true));
@@ -496,8 +502,8 @@ public class HttpInputTest
     public void testAsyncError() throws Exception
     {
         _in.setReadListener(_listener);
-        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),equalTo("produceContent 0"));
+        assertThat(_history.poll(),equalTo("unready"));
         assertThat(_history.poll(),nullValue());
         _in.run();
         assertThat(_history.poll(),equalTo("onDataAvailable"));

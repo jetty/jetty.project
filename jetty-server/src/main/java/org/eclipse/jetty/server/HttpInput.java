@@ -207,8 +207,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 else
                 {
                     _state=AEOF;
-                    _channelState.onReadUnready();
-                    boolean woken = _channelState.onReadPossible(); // force callback
+                    boolean woken = _channelState.onReadReady(); // force callback?
                     if (woken) 
                         wake();
                 }
@@ -502,7 +501,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     public void setReadListener(ReadListener readListener)
     {
         readListener = Objects.requireNonNull(readListener);
-        boolean content;
+        boolean woken=false;
         try
         {
             synchronized (_inputQ)
@@ -511,20 +510,20 @@ public class HttpInput extends ServletInputStream implements Runnable
                     throw new IllegalStateException("state=" + _state);
                 _state = ASYNC;
                 _listener = readListener;
-                _channelState.onReadUnready();
-                content=nextContent()!=null;
+                boolean content=nextContent()!=null;
+                if (content)
+                    woken = _channelState.onReadReady();
+                else
+                    _channelState.onReadUnready();
             }
         }
         catch(IOException e)
         {
             throw new RuntimeIOException(e);
         }
-        
-        boolean woken = content && _channelState.onReadPossible();
 
-        // TODO something with woken?
         if (woken)
-            throw new IllegalStateException("How do we wake?");
+            wake();
     }
 
     public boolean failed(Throwable x)

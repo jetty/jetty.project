@@ -30,6 +30,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.DispatcherType;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -610,9 +611,12 @@ public class AsyncIOServletTest
                 response.flushBuffer();
                 
                 final AsyncContext async = request.startAsync();
-                async.setTimeout(5000);
+                async.setTimeout(500000);
                 final ServletInputStream in = request.getInputStream();
                 final ServletOutputStream out = response.getOutputStream();
+                
+                if (request.getDispatcherType()==DispatcherType.ERROR)
+                    throw new IllegalStateException();
                 
                 in.setReadListener(new ReadListener()
                 {
@@ -669,7 +673,7 @@ public class AsyncIOServletTest
 
         try (Socket client = new Socket("localhost", connector.getLocalPort()))
         {
-            client.setSoTimeout(5000);
+            client.setSoTimeout(500000);
             OutputStream output = client.getOutputStream();
             output.write(request.getBytes("UTF-8"));
             output.flush();

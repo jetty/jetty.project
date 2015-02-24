@@ -37,6 +37,10 @@ import org.eclipse.jetty.util.thread.SpinLock;
 /**
  * Implementation of AsyncContext interface that holds the state of request-response cycle.
  */
+
+/* ------------------------------------------------------------ */
+/**
+ */
 public class HttpChannelState
 {
     private static final Logger LOG = Log.getLogger(HttpChannelState.class);
@@ -747,6 +751,14 @@ public class HttpChannelState
         _channel.getRequest().setAttribute(name,attribute);
     }
 
+    
+    /* ------------------------------------------------------------ */
+    /** Called to signal async read isReady() has returned false.
+     * This indicates that there is no content available to be consumed
+     * and that once the channel enteres the ASYNC_WAIT state it will
+     * register for read interest by calling {@link HttpChannel#asyncReadFillInterested()}
+     * either from this method or from a subsequent call to {@link #unhandle()}.
+     */
     public void onReadUnready()
     {
         boolean interested=false;
@@ -766,6 +778,13 @@ public class HttpChannelState
             _channel.asyncReadFillInterested();
     }
     
+    /* ------------------------------------------------------------ */
+    /** Called to signal that content is now available to read.
+     * If the channel is in ASYNC_WAIT state and unready (ie isReady() has
+     * returned false), then the state is changed to ASYNC_WOKEN and true 
+     * is returned.
+     * @return True IFF the channel was unready and in ASYNC_WAIT state
+     */
     public boolean onReadPossible()
     {
         boolean woken=false;
@@ -773,6 +792,29 @@ public class HttpChannelState
         {
             _asyncReadPossible=true;
             if (_state==State.ASYNC_WAIT && _asyncReadUnready)
+            {
+                woken=true;
+                _state=State.ASYNC_WOKEN;
+            }
+        }
+        return woken;
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Called to signal that the channel is ready for a callback.
+     * This is similar to calling {@link #onReadUnready()} followed by
+     * {@link #onReadPossible()}, except that as content is already
+     * available, read interest is never set.
+     * @return
+     */
+    public boolean onReadReady()
+    {
+        boolean woken=false;
+        try(SpinLock.Lock lock=_lock.lock())
+        {
+            _asyncReadUnready=true;
+            _asyncReadPossible=true;
+            if (_state==State.ASYNC_WAIT)
             {
                 woken=true;
                 _state=State.ASYNC_WOKEN;
