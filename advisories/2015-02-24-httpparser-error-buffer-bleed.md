@@ -9,12 +9,14 @@ Published Date:
 CVE:
 ----
 
-*(not yet assigned)*
+CVE-2015-2080
 
 Discovered and Reported By:
 ---------------------------
 
-[GDS Security](http://www.gdssecurity.com/) and Stephen Komal
+[Gotham Digital Science](http://www.gdssecurity.com/) and Stephen Komal.
+
+[JetLeak Vulnerability Remote Leakage of Shared Buffers in Jetty / blogs.gdsecurity.com](http://blog.gdssecurity.com/labs/2015/2/25/jetleak-vulnerability-remote-leakage-of-shared-buffers-in-je.html)
 
 
 Affected Versions of Jetty:
