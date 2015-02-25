@@ -28,8 +28,10 @@ Affected Versions of Jetty:
   * 9.2.6.v20141205
   * 9.2.7.v20150116
   * 9.2.8.v20150217
+  * 9.3.0.M0
+  * 9.3.0.M1
 
-Version of Jetty Containing Fix:
+Versions of Jetty Containing Fix:
 --------------------------------
 
   * 9.2.9.v20150224
