@@ -113,7 +113,6 @@ public class HttpChannelState
 
     public State getState()
     {
-        // TODO use SpinLock instead of synchronized?
         try(SpinLock.Lock lock=_lock.lock())
         {
             return _state;
@@ -831,7 +830,7 @@ public class HttpChannelState
         }
     }
     
-    public void onWritePossible()
+    public boolean onWritePossible()
     {
         boolean handle=false;
 
@@ -845,8 +844,7 @@ public class HttpChannelState
             }
         }
 
-        if (handle)
-            _channel.execute(_channel);
+        return handle;
     }
 
 }
