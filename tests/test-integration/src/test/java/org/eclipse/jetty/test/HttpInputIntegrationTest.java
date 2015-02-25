@@ -23,6 +23,8 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.OutputStream;
+import java.net.Inet4Address;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -33,6 +35,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
+import javax.net.ssl.SSLSocket;
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -41,11 +44,16 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector;
+import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
+import org.eclipse.jetty.server.SecureRequestCustomizer;
+import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.LocalConnector.LocalEndPoint;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Request;
@@ -55,6 +63,7 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -74,6 +83,8 @@ public class HttpInputIntegrationTest
     
     private static Server __server;
     private static HttpConfiguration __config;
+    private static HttpConfiguration __sslConfig;
+    private static SslContextFactory __sslContextFactory;
     
     @BeforeClass
     public static void beforeClass() throws Exception
@@ -84,10 +95,43 @@ public class HttpInputIntegrationTest
         __server.addConnector(new LocalConnector(__server,new HttpConnectionFactory(__config)));
         __server.addConnector(new ServerConnector(__server,new HttpConnectionFactory(__config),new HTTP2CServerConnectionFactory(__config)));
         
+
+        // SSL Context Factory for HTTPS and HTTP/2
+        String jetty_distro = System.getProperty("jetty.distro","../../jetty-distribution/target/distribution");
+        __sslContextFactory = new SslContextFactory();
+        __sslContextFactory.setKeyStorePath(jetty_distro + "/etc/keystore");
+        __sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
+        __sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+
+        // HTTPS Configuration
+        __sslConfig = new HttpConfiguration(__config);
+        __sslConfig.addCustomizer(new SecureRequestCustomizer());
+
+        // HTTP/1 Connection Factory
+        HttpConnectionFactory h1=new HttpConnectionFactory(__sslConfig);
+        // HTTP/2 Connection Factory
+        HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(__sslConfig);
+        
+        NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
+        ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
+        alpn.setDefaultProtocol(h1.getProtocol());
+        
+        // SSL Connection Factory
+        SslConnectionFactory ssl = new SslConnectionFactory(__sslContextFactory,alpn.getProtocol());
+        
+        // HTTP/2 Connector
+        ServerConnector http2Connector = 
+            new ServerConnector(__server,ssl,alpn,h1,h2);
+        http2Connector.setPort(8443);
+        __server.addConnector(http2Connector);
+        
+        
         ServletContextHandler context = new ServletContextHandler(__server,"/ctx");
         ServletHolder holder = new ServletHolder(new TestServlet());
         holder.setAsyncSupported(true);
         context.addServlet(holder,"/*");
+        
+        
         
         __server.start();
     }
@@ -126,7 +170,7 @@ public class HttpInputIntegrationTest
         //   + HTTP/2
         //   + SSL + HTTP/2
         //   + FASTCGI
-        for (String c : new String[]{"LOCAL","HTTP/1"})
+        for (String c : new String[]{"LOCAL","H1","H1S"})
         {
             TestClient client;
             switch(c)
@@ -134,8 +178,11 @@ public class HttpInputIntegrationTest
                 case "LOCAL":
                     client=new LocalClient();
                     break;
-                case "HTTP/1":
-                    client=new H1Client();
+                case "H1":
+                    client=new H1Client(1);
+                    break;
+                case "H1S":
+                    client=new H1SClient(2);
                     break;
                 default:
                     throw new IllegalStateException();
@@ -399,85 +446,6 @@ public class HttpInputIntegrationTest
     }
     
 
-    public static class H1Client implements TestClient
-    {
-
-        @Override
-        public String send(String uri, Boolean delayInFrame,int contentLength, List<String> content) throws Exception
-        {
-            int port=((NetworkConnector)__server.getConnectors()[1]).getLocalPort();
-            
-            try (Socket client = new Socket("localhost", port))
-            {
-                client.setSoTimeout(5000);
-                OutputStream out = client.getOutputStream();
-
-                StringBuilder buffer = new StringBuilder();
-                buffer.append("GET ").append(uri).append(" HTTP/1.1\r\n");
-                buffer.append("Host: localhost:").append(port).append("\r\n");
-                buffer.append("Connection: close\r\n");
-
-                flush(out,buffer,delayInFrame,true);
-
-                boolean chunked=contentLength<0;
-                if (chunked)
-                    buffer.append("Transfer-Encoding: chunked\r\n");
-                else
-                    buffer.append("Content-Length: ").append(contentLength).append("\r\n");
-                    
-                if (contentLength>0)
-                    buffer.append("Content-Type: text/plain\r\n");
-                buffer.append("\r\n");
-
-                flush(out,buffer,delayInFrame,false);
-                
-                for (String c : content)
-                {
-                    if (chunked)
-                    {
-                        buffer.append("\r\n").append(Integer.toHexString(c.length())).append("\r\n");
-                       flush(out,buffer,delayInFrame,true);
-                    }
-                    
-                    buffer.append(c.substring(0,1));
-                    flush(out,buffer,delayInFrame,true);
-                    buffer.append(c.substring(1));
-                    flush(out,buffer,delayInFrame,false);
-                }
-
-                if (chunked)
-                {
-                    buffer.append("\r\n0");
-                    flush(out,buffer,delayInFrame,true);
-                    buffer.append("\r\n\r\n");
-                }
-                
-                flush(out,buffer);
-                
-                return IO.toString(client.getInputStream());
-            }
-            
-        }
-
-        private void flush(OutputStream out, StringBuilder buffer, Boolean delayInFrame, boolean inFrame) throws Exception
-        {
-            // Flush now if we should delay
-            if (delayInFrame!=null && delayInFrame.equals(inFrame))
-            {
-                flush(out,buffer);
-            }
-        }
-        
-        private void flush(OutputStream out, StringBuilder buffer) throws Exception
-        {
-            String flush=buffer.toString();
-            buffer.setLength(0);
-            out.write(flush.getBytes(StandardCharsets.ISO_8859_1));
-            Thread.sleep(50);
-        }
-
-    }
-
     public static class LocalClient implements TestClient
     {
        
@@ -562,5 +530,110 @@ public class HttpInputIntegrationTest
         }
 
     }
+
+    public static class H1Client implements TestClient
+    {
+        final int _connector;
+        
+        public H1Client(int connector)
+        {
+            _connector=connector;
+        }
+
+        @Override
+        public String send(String uri, Boolean delayInFrame,int contentLength, List<String> content) throws Exception
+        {
+            int port=((NetworkConnector)__server.getConnectors()[_connector]).getLocalPort();
+            
+            try (Socket client = newSocket("localhost", port))
+            {
+                client.setSoTimeout(5000);
+                OutputStream out = client.getOutputStream();
+
+                StringBuilder buffer = new StringBuilder();
+                buffer.append("GET ").append(uri).append(" HTTP/1.1\r\n");
+                buffer.append("Host: localhost:").append(port).append("\r\n");
+                buffer.append("Connection: close\r\n");
+
+                flush(out,buffer,delayInFrame,true);
+
+                boolean chunked=contentLength<0;
+                if (chunked)
+                    buffer.append("Transfer-Encoding: chunked\r\n");
+                else
+                    buffer.append("Content-Length: ").append(contentLength).append("\r\n");
+                    
+                if (contentLength>0)
+                    buffer.append("Content-Type: text/plain\r\n");
+                buffer.append("\r\n");
+
+                flush(out,buffer,delayInFrame,false);
+                
+                for (String c : content)
+                {
+                    if (chunked)
+                    {
+                        buffer.append("\r\n").append(Integer.toHexString(c.length())).append("\r\n");
+                       flush(out,buffer,delayInFrame,true);
+                    }
+                    
+                    buffer.append(c.substring(0,1));
+                    flush(out,buffer,delayInFrame,true);
+                    buffer.append(c.substring(1));
+                    flush(out,buffer,delayInFrame,false);
+                }
+
+                if (chunked)
+                {
+                    buffer.append("\r\n0");
+                    flush(out,buffer,delayInFrame,true);
+                    buffer.append("\r\n\r\n");
+                }
+                
+                flush(out,buffer);
+                
+                return IO.toString(client.getInputStream());
+            }
+            
+        }
+
+        private void flush(OutputStream out, StringBuilder buffer, Boolean delayInFrame, boolean inFrame) throws Exception
+        {
+            // Flush now if we should delay
+            if (delayInFrame!=null && delayInFrame.equals(inFrame))
+            {
+                flush(out,buffer);
+            }
+        }
+        
+        private void flush(OutputStream out, StringBuilder buffer) throws Exception
+        {
+            String flush=buffer.toString();
+            buffer.setLength(0);
+            out.write(flush.getBytes(StandardCharsets.ISO_8859_1));
+            Thread.sleep(50);
+        }
+
+        public Socket newSocket(String host, int port) throws IOException
+        {
+            return new Socket(host, port);
+        }
+    }
+    
+    public static class H1SClient extends H1Client
+    {
+        public H1SClient(int connector)
+        {
+            super(connector);
+        }
+
+        public Socket newSocket(String host, int port) throws IOException
+        {
+            SSLSocket socket = __sslContextFactory.newSslSocket();
+            socket.connect(new InetSocketAddress(Inet4Address.getByName(host),port));
+            return socket;
+        }
+    }
+
     
 }
