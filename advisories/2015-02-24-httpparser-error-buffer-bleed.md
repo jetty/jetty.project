@@ -1,7 +1,21 @@
 HttpParser Error Buffer Bleed Vulnerability
 ===========================================
 
-Date: 2015, Feb 24
+Published Date:
+---------------
+
+2015, Feb 24
+
+CVE:
+----
+
+*(not yet assigned)*
+
+Discovered and Reported By:
+---------------------------
+
+[GDS Security](http://www.gdssecurity.com/) and Stephen Komal
+
 
 Affected Versions of Jetty:
 ---------------------------
