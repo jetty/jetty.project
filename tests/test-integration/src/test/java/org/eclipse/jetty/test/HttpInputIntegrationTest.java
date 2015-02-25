@@ -109,19 +109,21 @@ public class HttpInputIntegrationTest
 
         // HTTP/1 Connection Factory
         HttpConnectionFactory h1=new HttpConnectionFactory(__sslConfig);
+        /* TODO
         // HTTP/2 Connection Factory
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(__sslConfig);
         
         NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h1.getProtocol());
+        */
         
         // SSL Connection Factory
-        SslConnectionFactory ssl = new SslConnectionFactory(__sslContextFactory,alpn.getProtocol());
+        SslConnectionFactory ssl = new SslConnectionFactory(__sslContextFactory,h1.getProtocol() /*TODO alpn.getProtocol()*/);
         
         // HTTP/2 Connector
         ServerConnector http2Connector = 
-            new ServerConnector(__server,ssl,alpn,h1,h2);
+            new ServerConnector(__server,ssl,/*TODO alpn,h2,*/ h1);
         http2Connector.setPort(8443);
         __server.addConnector(http2Connector);
         
@@ -331,9 +333,7 @@ public class HttpInputIntegrationTest
         
     }
     
-    
     @Test
-    @Slow
     public void test() throws Exception
     {
         System.err.printf("TEST c=%s, m=%s, d=%b D=%s content-length:%d expect=%d read=%d content:%s%n",_client.getClass().getSimpleName(),_mode,__config.isDelayDispatchUntilContent(),_delay,_length,_status,_read,_send);
@@ -611,6 +611,7 @@ public class HttpInputIntegrationTest
             String flush=buffer.toString();
             buffer.setLength(0);
             out.write(flush.getBytes(StandardCharsets.ISO_8859_1));
+            out.flush();
             Thread.sleep(50);
         }
 
