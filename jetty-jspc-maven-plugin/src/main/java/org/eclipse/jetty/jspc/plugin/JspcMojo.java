@@ -557,7 +557,7 @@ public class JspcMojo extends AbstractMojo
 
     
     /**
-     * Glassfish jsp requires that we set up the list of system jars that have
+     * jsp requires that we set up the list of system jars that have
      * tlds in them.
      * 
      * This method is a little fragile, as it relies on knowing that the jstl jars
