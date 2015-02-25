@@ -36,6 +36,11 @@ Versions of Jetty Containing Fix:
 
   * 9.2.9.v20150224
 
+Patched version of jetty-http.jar:
+----------------------------------
+
+Patched version of the affected jetty-http jars are available as attachments on https://bugs.eclipse.org/460642
+
 Statement:
 ----------
 
