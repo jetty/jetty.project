@@ -291,7 +291,7 @@ public class HttpChannelState
     protected Action unhandle()
     {
         Action action;
-        boolean schedule_timeout=false;
+        AsyncContextEvent schedule_event=null;
         boolean read_interested=false;
 
         if(DEBUG)
@@ -344,9 +344,9 @@ public class HttpChannelState
                             _state=State.ASYNC_IO;
                             action = Action.WRITE_CALLBACK;
                         }
-                        else
+                        else 
                         {
-                            schedule_timeout=true;    
+                            schedule_event=_event;    
                             read_interested=_asyncReadUnready;
                             _state=State.ASYNC_WAIT;
                             action =  Action.WAIT;
@@ -354,7 +354,7 @@ public class HttpChannelState
                         break;
 
                     case EXPIRING:
-                        schedule_timeout=true;
+                        schedule_event=_event;
                         _state=State.ASYNC_WAIT;
                         action = Action.WAIT;
                         break;
@@ -372,8 +372,8 @@ public class HttpChannelState
             }
         }
 
-        if (schedule_timeout)
-            scheduleTimeout();
+        if (schedule_event!=null)
+            scheduleTimeout(schedule_event);
         if (read_interested)
             _channel.asyncReadFillInterested();
         return action;
@@ -611,11 +611,11 @@ public class HttpChannelState
         _channel.execute(_channel);
     }
 
-    protected void scheduleTimeout()
+    protected void scheduleTimeout(AsyncContextEvent event)
     {
         Scheduler scheduler = _channel.getScheduler();
         if (scheduler!=null && _timeoutMs>0)
-            _event.setTimeoutTask(scheduler.schedule(_event,_timeoutMs,TimeUnit.MILLISECONDS));
+            event.setTimeoutTask(scheduler.schedule(event,_timeoutMs,TimeUnit.MILLISECONDS));
     }
 
     protected void cancelTimeout()

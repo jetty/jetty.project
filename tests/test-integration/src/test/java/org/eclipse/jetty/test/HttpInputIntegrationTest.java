@@ -126,7 +126,6 @@ public class HttpInputIntegrationTest
         // HTTP/2 Connector
         ServerConnector http2Connector = 
             new ServerConnector(__server,ssl,/*TODO alpn,h2,*/ h1);
-        http2Connector.setPort(8443);
         __server.addConnector(http2Connector);
         
         

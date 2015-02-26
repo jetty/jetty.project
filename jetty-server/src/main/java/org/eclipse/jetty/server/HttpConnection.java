@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
-import java.lang.ref.Reference;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
@@ -70,7 +69,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final BlockingReadCallback _blockingReadCallback = new BlockingReadCallback();
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
-
+    
     /**
      * Get the current connection that this thread is dispatched to.
      * Note that a thread may be processing a request asynchronously and
@@ -200,7 +199,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         if (_requestBuffer == null)
             _requestBuffer = _bufferPool.acquire(getInputBufferSize(), REQUEST_BUFFER_DIRECT);
-        return _requestBuffer;
+        return _requestBuffer; 
     }
 
     public boolean isRequestBufferEmpty()
@@ -221,10 +220,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             {
                 // Fill the request buffer (if needed)
                 int filled = fillRequestBuffer();
-                
+
                 // Parse the request buffer
                 boolean handle = parseRequestBuffer();
-                
+
                 // Handle close parser
                 if (_parser.isClose())
                 {
@@ -258,7 +257,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 LOG.debug("{} onFillable exit {}", this, _channel.getState());
         }
     }
-
     
     /* ------------------------------------------------------------ */
     /** Fill and parse data looking for content
