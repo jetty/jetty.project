@@ -206,7 +206,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         if (!updateRequestState(RequestState.BEGIN, RequestState.TRANSIENT))
             return false;
         if (LOG.isDebugEnabled())
-            LOG.debug("Request headers {}{}{}", request, System.getProperty("line.separator"), request.getHeaders().toString().trim());
+            LOG.debug("Request headers {}{}{}", request, System.lineSeparator(), request.getHeaders().toString().trim());
         RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
         notifier.notifyHeaders(request);
         if (!updateRequestState(RequestState.TRANSIENT, RequestState.HEADERS))
@@ -238,7 +238,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 if (!updateRequestState(current, RequestState.TRANSIENT_CONTENT))
                     return false;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Request content {}{}{}", request, System.getProperty("line.separator"), BufferUtil.toDetailString(content));
+                    LOG.debug("Request content {}{}{}", request, System.lineSeparator(), BufferUtil.toDetailString(content));
                 RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
                 notifier.notifyContent(request, content);
                 if (!updateRequestState(RequestState.TRANSIENT_CONTENT, RequestState.CONTENT))
@@ -327,7 +327,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
         Request request = exchange.getRequest();
         if (LOG.isDebugEnabled())
-            LOG.debug("Request failure {} {}", exchange, failure);
+            LOG.debug("Request failure {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
         HttpDestination destination = getHttpChannel().getHttpDestination();
         destination.getRequestNotifier().notifyFailure(request, failure);
 
@@ -365,7 +365,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (failure != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Response failure from request {}", exchange);
+                    LOG.debug("Response failure from request {} {}", request, exchange);
                 getHttpChannel().abortResponse(failure);
             }
         }
@@ -500,7 +500,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     private boolean updateRequestState(RequestState from, RequestState to)
     {
         boolean updated = requestState.compareAndSet(from, to);
-        if (!updated)
+        if (!updated && LOG.isDebugEnabled())
             LOG.debug("RequestState update failed: {} -> {}: {}", from, to, requestState.get());
         return updated;
     }
@@ -508,7 +508,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     private boolean updateSenderState(SenderState from, SenderState to)
     {
         boolean updated = senderState.compareAndSet(from, to);
-        if (!updated)
+        if (!updated && LOG.isDebugEnabled())
             LOG.debug("SenderState update failed: {} -> {}: {}", from, to, senderState.get());
         return updated;
     }
@@ -548,11 +548,12 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     @Override
     public String toString()
     {
-        return String.format("%s@%x(req=%s,snd=%s)",
+        return String.format("%s@%x(req=%s,snd=%s,failure=%s)",
                 getClass().getSimpleName(),
                 hashCode(),
                 requestState,
-                senderState);
+                senderState,
+                failure);
     }
 
     /**

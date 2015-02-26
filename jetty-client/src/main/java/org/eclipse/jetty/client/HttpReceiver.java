@@ -524,10 +524,11 @@ public abstract class HttpReceiver
     @Override
     public String toString()
     {
-        return String.format("%s@%x(rcv=%s)",
+        return String.format("%s@%x(rsp=%s,failure=%s)",
                 getClass().getSimpleName(),
                 hashCode(),
-                responseState);
+                responseState,
+                failure);
     }
 
     /**
