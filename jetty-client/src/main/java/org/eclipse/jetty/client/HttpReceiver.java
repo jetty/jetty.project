@@ -435,7 +435,7 @@ public abstract class HttpReceiver
 
         HttpResponse response = exchange.getResponse();
         if (LOG.isDebugEnabled())
-            LOG.debug("Response failure {} {}", response, failure);
+            LOG.debug("Response failure {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
         List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifyFailure(listeners, response, failure);
