@@ -85,7 +85,7 @@ public class HttpReceiverOverHTTPTest
     @Test
     public void test_Receive_NoResponseContent() throws Exception
     {
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 0\r\n" +
                 "\r\n");
@@ -108,7 +108,7 @@ public class HttpReceiverOverHTTPTest
     public void test_Receive_ResponseContent() throws Exception
     {
         String content = "0123456789ABCDEF";
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: " + content.length() + "\r\n" +
                 "\r\n" +
@@ -135,7 +135,7 @@ public class HttpReceiverOverHTTPTest
     {
         String content1 = "0123456789";
         String content2 = "ABCDEF";
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
@@ -143,7 +143,7 @@ public class HttpReceiverOverHTTPTest
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
-        endPoint.setInputEOF();
+        endPoint.addInputEOF();
         connection.getHttpChannel().receive();
 
         try
@@ -160,7 +160,7 @@ public class HttpReceiverOverHTTPTest
     @Test
     public void test_Receive_ResponseContent_IdleTimeout() throws Exception
     {
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 1\r\n" +
                 "\r\n");
@@ -184,7 +184,7 @@ public class HttpReceiverOverHTTPTest
     @Test
     public void test_Receive_BadResponse() throws Exception
     {
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: A\r\n" +
                 "\r\n");
@@ -225,7 +225,7 @@ public class HttpReceiverOverHTTPTest
                                 // before fillInterested() is called.
                                 Assert.assertNull(getResponseBuffer());
                                 // Fill the endpoint so receive is called again.
-                                endPoint.setInput("X");
+                                endPoint.addInput("X");
                                 super.fillInterested();
                             }
                         };
@@ -235,7 +235,7 @@ public class HttpReceiverOverHTTPTest
         };
         
         // Partial response to trigger the call to fillInterested().
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-Length: 1\r\n" +
                 "\r\n");

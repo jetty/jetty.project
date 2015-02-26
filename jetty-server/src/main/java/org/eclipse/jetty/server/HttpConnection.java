@@ -782,6 +782,6 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     @Override
     public String toString()
     {
-        return super.toString()+" "+BufferUtil.toDetailString(_requestBuffer);
+        return super.toString()+"<--"+BufferUtil.toDetailString(_requestBuffer);
     }
 }

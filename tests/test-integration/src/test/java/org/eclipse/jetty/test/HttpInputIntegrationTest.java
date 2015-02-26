@@ -94,8 +94,13 @@ public class HttpInputIntegrationTest
         __config = new HttpConfiguration();
         
         __server = new Server();
-        __server.addConnector(new LocalConnector(__server,new HttpConnectionFactory(__config)));
-        __server.addConnector(new ServerConnector(__server,new HttpConnectionFactory(__config),new HTTP2CServerConnectionFactory(__config)));
+        LocalConnector local=new LocalConnector(__server,new HttpConnectionFactory(__config));
+        local.setIdleTimeout(4000);
+        __server.addConnector(local);
+        
+        ServerConnector http = new ServerConnector(__server,new HttpConnectionFactory(__config),new HTTP2CServerConnectionFactory(__config));
+        http.setIdleTimeout(4000);
+        __server.addConnector(http);
         
 
         // SSL Context Factory for HTTPS and HTTP/2
@@ -124,9 +129,9 @@ public class HttpInputIntegrationTest
         SslConnectionFactory ssl = new SslConnectionFactory(__sslContextFactory,h1.getProtocol() /*TODO alpn.getProtocol()*/);
         
         // HTTP/2 Connector
-        ServerConnector http2Connector = 
-            new ServerConnector(__server,ssl,/*TODO alpn,h2,*/ h1);
-        __server.addConnector(http2Connector);
+        ServerConnector http2 = new ServerConnector(__server,ssl,/*TODO alpn,h2,*/ h1);
+        http2.setIdleTimeout(4000);
+        __server.addConnector(http2);
         
         
         ServletContextHandler context = new ServletContextHandler(__server,"/ctx");
@@ -174,7 +179,7 @@ public class HttpInputIntegrationTest
         //   + HTTP/2
         //   + SSL + HTTP/2
         //   + FASTCGI
-        for (Class<? extends TestClient> client : new Class[]{LocalClient.class,H1Client.class,H1SClient.class})
+        for (Class<? extends TestClient> client : new Class[]{/* TODO LocalClient.class,*/H1Client.class,H1SClient.class})
         {
 
             // test async actions that are run:

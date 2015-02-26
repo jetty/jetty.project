@@ -681,7 +681,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
     }
     
-    protected static class ErrorState extends EOFState
+    protected class ErrorState extends EOFState
     {
         final Throwable _error;
         ErrorState(Throwable error)
