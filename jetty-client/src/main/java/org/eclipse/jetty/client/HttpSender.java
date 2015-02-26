@@ -492,9 +492,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
     public boolean abort(Throwable failure)
     {
-        RequestState current = requestState.get();
-        boolean abortable = isBeforeCommit(current) || isSending(current);
-        return abortable && anyToFailure(failure);
+        return anyToFailure(failure);
     }
 
     private boolean updateRequestState(RequestState from, RequestState to)
@@ -511,33 +509,6 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         if (!updated && LOG.isDebugEnabled())
             LOG.debug("SenderState update failed: {} -> {}: {}", from, to, senderState.get());
         return updated;
-    }
-
-    private boolean isBeforeCommit(RequestState requestState)
-    {
-        switch (requestState)
-        {
-            case TRANSIENT:
-            case QUEUED:
-            case BEGIN:
-            case HEADERS:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private boolean isSending(RequestState requestState)
-    {
-        switch (requestState)
-        {
-            case TRANSIENT_CONTENT:
-            case COMMIT:
-            case CONTENT:
-                return true;
-            default:
-                return false;
-        }
     }
 
     private RuntimeException illegalSenderState(SenderState current)
