@@ -45,8 +45,10 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -149,13 +151,14 @@ public class HttpInputIntegrationTest
         /* ------------------------------------------------------------ */
         /**
          * @param uri The URI to test, typically /ctx/test?mode=THE_MODE
+         * @param delayMs the delay in MS to use.
          * @param delayInFrame If null, send the request with no delays, if FALSE then send with delays between frames, if TRUE send with delays within frames
          * @param contentLength The content length header to send.
          * @param content The content to send, with each string to be converted to a chunk or a frame 
          * @return The response received in HTTP/1 format
          * @throws Exception
          */
-        String send(String uri,Boolean delayInFrame, int contentLength, List<String> content) throws Exception; 
+        String send(String uri,int delayMs, Boolean delayInFrame, int contentLength, List<String> content) throws Exception; 
     }
 
     @Parameterized.Parameters
@@ -172,23 +175,8 @@ public class HttpInputIntegrationTest
         //   + HTTP/2
         //   + SSL + HTTP/2
         //   + FASTCGI
-        for (String c : new String[]{"LOCAL","H1","H1S"})
+        for (Class<? extends TestClient> client : new Class[]{LocalClient.class,H1Client.class,H1SClient.class})
         {
-            TestClient client;
-            switch(c)
-            {
-                case "LOCAL":
-                    client=new LocalClient();
-                    break;
-                case "H1":
-                    client=new H1Client(1);
-                    break;
-                case "H1S":
-                    client=new H1SClient(2);
-                    break;
-                default:
-                    throw new IllegalStateException();
-            }
 
             // test async actions that are run:
             //   + By a thread in a container callback
@@ -217,13 +205,13 @@ public class HttpInputIntegrationTest
                         // + known length + content + EOF
                         // + known length + content + content + EOF
                         
-                        tests.add(new Object[]{client,mode,dispatch,delayWithinFrame,200,0,-1,new String[]{}});
-                        tests.add(new Object[]{client,mode,dispatch,delayWithinFrame,200,8,-1,new String[]{"content0"}});
-                        tests.add(new Object[]{client,mode,dispatch,delayWithinFrame,200,16,-1,new String[]{"content0","CONTENT1"}});
+                        tests.add(new Object[]{tests.size(),client,mode,dispatch,delayWithinFrame,200,0,-1,new String[]{}});
+                        tests.add(new Object[]{tests.size(),client,mode,dispatch,delayWithinFrame,200,8,-1,new String[]{"content0"}});
+                        tests.add(new Object[]{tests.size(),client,mode,dispatch,delayWithinFrame,200,16,-1,new String[]{"content0","CONTENT1"}});
                         
-                        tests.add(new Object[]{client,mode,dispatch,delayWithinFrame,200,0,0,new String[]{}});
-                        tests.add(new Object[]{client,mode,dispatch,delayWithinFrame,200,8,8,new String[]{"content0"}});
-                        tests.add(new Object[]{client,mode,dispatch,delayWithinFrame,200,16,16,new String[]{"content0","CONTENT1"}});
+                        tests.add(new Object[]{tests.size(),client,mode,dispatch,delayWithinFrame,200,0,0,new String[]{}});
+                        tests.add(new Object[]{tests.size(),client,mode,dispatch,delayWithinFrame,200,8,8,new String[]{"content0"}});
+                        tests.add(new Object[]{tests.size(),client,mode,dispatch,delayWithinFrame,200,16,16,new String[]{"content0","CONTENT1"}});
                         
                     }
                 }
@@ -233,7 +221,8 @@ public class HttpInputIntegrationTest
     }
     
 
-    final TestClient _client;
+    final int _id;
+    final Class<? extends TestClient> _client;
     final Mode _mode;
     final Boolean _delay;
     final int _status;
@@ -241,8 +230,9 @@ public class HttpInputIntegrationTest
     final int _length;
     final List<String> _send;
     
-    public HttpInputIntegrationTest(TestClient client, Mode mode,boolean dispatch,Boolean delay,int status,int read,int length,String... send)
+    public HttpInputIntegrationTest(int id,Class<? extends TestClient> client, Mode mode,boolean dispatch,Boolean delay,int status,int read,int length,String... send)
     {
+        _id=id;
         _client=client;
         _mode=mode;
         __config.setDelayDispatchUntilContent(dispatch);
@@ -334,22 +324,83 @@ public class HttpInputIntegrationTest
     }
     
     @Test
-    public void test() throws Exception
+    public void testOne() throws Exception
     {
-        System.err.printf("TEST c=%s, m=%s, d=%b D=%s content-length:%d expect=%d read=%d content:%s%n",_client.getClass().getSimpleName(),_mode,__config.isDelayDispatchUntilContent(),_delay,_length,_status,_read,_send);
+        System.err.printf("[%d] TEST   c=%s, m=%s, delayDispatch=%b delayInFrame=%s content-length:%d expect=%d read=%d content:%s%n",_id,_client.getSimpleName(),_mode,__config.isDelayDispatchUntilContent(),_delay,_length,_status,_read,_send);
 
-        String response = _client.send("/ctx/test?mode="+_mode,_delay,_length,_send);
+        TestClient client=_client.newInstance();
+        String response = client.send("/ctx/test?mode="+_mode,50,_delay,_length,_send);
+        
+        int sum=0;
+        for (String s:_send)
+            for (char c : s.toCharArray())
+                sum+=c;
         
         assertThat(response,startsWith("HTTP"));
         assertThat(response,Matchers.containsString(" "+_status+" "));
         assertThat(response,Matchers.containsString("read="+_read));
+        assertThat(response,Matchers.containsString("sum="+sum));
     }
+    
+    @Test
+    public void testStress() throws Exception
+    {
+        System.err.printf("[%d] STRESS c=%s, m=%s, delayDispatch=%b delayInFrame=%s content-length:%d expect=%d read=%d content:%s%n",_id,_client.getSimpleName(),_mode,__config.isDelayDispatchUntilContent(),_delay,_length,_status,_read,_send);
 
+        int sum=0;
+        for (String s:_send)
+            for (char c : s.toCharArray())
+                sum+=c;
+        final int summation=sum;
+        
+        
+        final int threads=10;
+        final int loops=10;
+        
+        final AtomicInteger count = new AtomicInteger(0);
+        Thread[] t = new Thread[threads];
+        
+        Runnable run = new Runnable()
+        {
+            @Override 
+            public void run()
+            {
+                try
+                {
+                    TestClient client=_client.newInstance();
+                    for (int j=0;j<loops;j++)
+                    {
+                        String response = client.send("/ctx/test?mode="+_mode,10,_delay,_length,_send);
+                        assertThat(response,startsWith("HTTP"));
+                        assertThat(response,Matchers.containsString(" "+_status+" "));
+                        assertThat(response,Matchers.containsString("read="+_read));
+                        assertThat(response,Matchers.containsString("sum="+summation));
+                        count.incrementAndGet();
+                    }
+                }
+                catch(Exception e)
+                {
+                    e.printStackTrace();
+                }
+            }
+        };
+        
+        for (int i=0;i<threads;i++)
+        {
+            t[i]=new Thread(run);
+            t[i].start();
+        }
+        for (int i=0;i<threads;i++)
+            t[i].join();
+        
+        assertThat(count.get(),Matchers.is(threads*loops));
+    }
     
     
     public static class TestServlet extends HttpServlet
     {
-
+        String expected ="content0CONTENT1";
+        
         @Override
         protected void doGet(final HttpServletRequest req, final HttpServletResponse resp) throws ServletException, IOException
         {
@@ -364,12 +415,17 @@ public class HttpInputIntegrationTest
                     resp.setStatus(200);
                     resp.setContentType("text/plain");
                     resp.getWriter().println("read="+content.length());
+                    int sum = 0;
+                    for (char c:content.toCharArray())
+                        sum+=c;
+                    resp.getWriter().println("sum="+sum);
                 }
                 catch(Exception e)
                 {
                     e.printStackTrace();
                     resp.setStatus(500);
                     resp.getWriter().println("read="+e);
+                    resp.getWriter().println("sum=-1");
                 }
             }
             else
@@ -380,6 +436,7 @@ public class HttpInputIntegrationTest
                 final ServletInputStream in = req.getInputStream();
                 final Request request = Request.getBaseRequest(req);
                 final AtomicInteger read = new AtomicInteger(0);
+                final AtomicInteger sum = new AtomicInteger(0);
 
                 runmode(mode,request,new Runnable()
                 {
@@ -419,7 +476,15 @@ public class HttpInputIntegrationTest
                                                 int b = in.read();
                                                 if (b<0)
                                                     return;
-                                                read.incrementAndGet();
+                                                sum.addAndGet(b);
+                                                int i=read.getAndIncrement();
+                                                if (b!=expected.charAt(i))
+                                                {
+                                                    System.err.printf("XXX '%c'!='%c' at %d%n",expected.charAt(i),(char)b,i);
+                                                    System.err.println("    "+request.getHttpChannel());
+                                                    System.err.println("    "+request.getHttpChannel().getHttpTransport());
+                                                }
+                                                
                                             }
                                             catch (IOException e)
                                             {
@@ -436,6 +501,7 @@ public class HttpInputIntegrationTest
                                 resp.setStatus(200);
                                 resp.setContentType("text/plain");
                                 resp.getWriter().println("read="+read.get());
+                                resp.getWriter().println("sum="+sum.get());
                                 context.complete();
                             }
                         });
@@ -450,7 +516,7 @@ public class HttpInputIntegrationTest
     {
        
         @Override
-        public String send(String uri, Boolean delayInFrame,int contentLength, List<String> content) throws Exception
+        public String send(String uri,int delayMs, Boolean delayInFrame,int contentLength, List<String> content) throws Exception
         {
             LocalConnector connector = __server.getBean(LocalConnector.class);
 
@@ -461,7 +527,7 @@ public class HttpInputIntegrationTest
 
             LocalEndPoint local = connector.executeRequest("");
             
-            flush(local,buffer,delayInFrame,true);
+            flush(local,buffer,delayMs,delayInFrame,true);
 
             boolean chunked=contentLength<0;
             if (chunked)
@@ -473,28 +539,28 @@ public class HttpInputIntegrationTest
                 buffer.append("Content-Type: text/plain\r\n");
             buffer.append("\r\n");
 
-            flush(local,buffer,delayInFrame,false);
+            flush(local,buffer,delayMs,delayInFrame,false);
 
             for (String c : content)
             {
                 if (chunked)
                 {
                     buffer.append("\r\n").append(Integer.toHexString(c.length())).append("\r\n");
-                    flush(local,buffer,delayInFrame,true);
+                    flush(local,buffer,delayMs,delayInFrame,true);
                 }
 
                 buffer.append(c.substring(0,1));
-                flush(local,buffer,delayInFrame,true);
+                flush(local,buffer,delayMs,delayInFrame,true);
                 buffer.append(c.substring(1));
                 if (chunked)
                     buffer.append("\r\n"); 
-                flush(local,buffer,delayInFrame,false);
+                flush(local,buffer,delayMs,delayInFrame,false);
             }
 
             if (chunked)
             {
                 buffer.append("0");
-                flush(local,buffer,delayInFrame,true);
+                flush(local,buffer,delayMs,delayInFrame,true);
                 buffer.append("\r\n\r\n");
             }
 
@@ -504,12 +570,13 @@ public class HttpInputIntegrationTest
         }
           
 
-        private void flush(LocalEndPoint local, StringBuilder buffer, Boolean delayInFrame, boolean inFrame) throws Exception
+        private void flush(LocalEndPoint local, StringBuilder buffer,int delayMs, Boolean delayInFrame, boolean inFrame) throws Exception
         {
             // Flush now if we should delay
             if (delayInFrame!=null && delayInFrame.equals(inFrame))
             {
                 flush(local,buffer);
+                Thread.sleep(delayMs);
             }
         }
         
@@ -526,28 +593,36 @@ public class HttpInputIntegrationTest
                     local.addInput(flush);
                 }
             }.start();
-            Thread.sleep(50);
         }
 
     }
 
     public static class H1Client implements TestClient
     {
-        final int _connector;
-        
-        public H1Client(int connector)
+        NetworkConnector _connector;
+
+        public H1Client()
         {
-            _connector=connector;
+            for (Connector c:__server.getConnectors())
+            {
+                if (c instanceof NetworkConnector && c.getDefaultConnectionFactory().getProtocol().equals(HttpVersion.HTTP_1_1.asString()))
+                {
+                    _connector=(NetworkConnector)c;
+                    break;
+                }
+            }
         }
 
         @Override
-        public String send(String uri, Boolean delayInFrame,int contentLength, List<String> content) throws Exception
+        public String send(String uri, int delayMs, Boolean delayInFrame,int contentLength, List<String> content) throws Exception
         {
-            int port=((NetworkConnector)__server.getConnectors()[_connector]).getLocalPort();
+            int port=_connector.getLocalPort();
             
             try (Socket client = newSocket("localhost", port))
             {
                 client.setSoTimeout(5000);
+                client.setTcpNoDelay(true);
+                client.setSoLinger(true,1);
                 OutputStream out = client.getOutputStream();
 
                 StringBuilder buffer = new StringBuilder();
@@ -555,7 +630,7 @@ public class HttpInputIntegrationTest
                 buffer.append("Host: localhost:").append(port).append("\r\n");
                 buffer.append("Connection: close\r\n");
 
-                flush(out,buffer,delayInFrame,true);
+                flush(out,buffer,delayMs,delayInFrame,true);
 
                 boolean chunked=contentLength<0;
                 if (chunked)
@@ -567,26 +642,26 @@ public class HttpInputIntegrationTest
                     buffer.append("Content-Type: text/plain\r\n");
                 buffer.append("\r\n");
 
-                flush(out,buffer,delayInFrame,false);
+                flush(out,buffer,delayMs,delayInFrame,false);
                 
                 for (String c : content)
                 {
                     if (chunked)
                     {
                         buffer.append("\r\n").append(Integer.toHexString(c.length())).append("\r\n");
-                       flush(out,buffer,delayInFrame,true);
+                       flush(out,buffer,delayMs,delayInFrame,true);
                     }
                     
                     buffer.append(c.substring(0,1));
-                    flush(out,buffer,delayInFrame,true);
+                    flush(out,buffer,delayMs,delayInFrame,true);
                     buffer.append(c.substring(1));
-                    flush(out,buffer,delayInFrame,false);
+                    flush(out,buffer,delayMs,delayInFrame,false);
                 }
 
                 if (chunked)
                 {
                     buffer.append("\r\n0");
-                    flush(out,buffer,delayInFrame,true);
+                    flush(out,buffer,delayMs,delayInFrame,true);
                     buffer.append("\r\n\r\n");
                 }
                 
@@ -597,12 +672,13 @@ public class HttpInputIntegrationTest
             
         }
 
-        private void flush(OutputStream out, StringBuilder buffer, Boolean delayInFrame, boolean inFrame) throws Exception
+        private void flush(OutputStream out, StringBuilder buffer, int delayMs, Boolean delayInFrame, boolean inFrame) throws Exception
         {
             // Flush now if we should delay
             if (delayInFrame!=null && delayInFrame.equals(inFrame))
             {
                 flush(out,buffer);
+                Thread.sleep(delayMs);
             }
         }
         
@@ -612,7 +688,6 @@ public class HttpInputIntegrationTest
             buffer.setLength(0);
             out.write(flush.getBytes(StandardCharsets.ISO_8859_1));
             out.flush();
-            Thread.sleep(50);
         }
 
         public Socket newSocket(String host, int port) throws IOException
@@ -623,9 +698,16 @@ public class HttpInputIntegrationTest
     
     public static class H1SClient extends H1Client
     {
-        public H1SClient(int connector)
+        public H1SClient()
         {
-            super(connector);
+            for (Connector c:__server.getConnectors())
+            {
+                if (c instanceof NetworkConnector && c.getDefaultConnectionFactory().getProtocol().equals("SSL"))
+                {
+                    _connector=(NetworkConnector)c;
+                    break;
+                }
+            }
         }
 
         public Socket newSocket(String host, int port) throws IOException

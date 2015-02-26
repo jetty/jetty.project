@@ -19,9 +19,11 @@
 package org.eclipse.jetty.server;
 
 import java.io.IOException;
+import java.lang.ref.Reference;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.RejectedExecutionException;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -62,12 +64,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     private final HttpGenerator _generator;
     private final HttpChannelOverHttp _channel;
     private final HttpParser _parser;
+    private final AtomicInteger _contentBufferReferences=new AtomicInteger();
     private volatile ByteBuffer _requestBuffer = null;
     private volatile ByteBuffer _chunk = null;
     private final BlockingReadCallback _blockingReadCallback = new BlockingReadCallback();
     private final AsyncReadCallback _asyncReadCallback = new AsyncReadCallback();
     private final SendCallback _sendCallback = new SendCallback();
-    private final HttpInput.PoisonPillContent _recycleRequestBuffer = new RecycleBufferContent();
 
     /**
      * Get the current connection that this thread is dispatched to.
@@ -281,6 +283,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     /* ------------------------------------------------------------ */
     private int fillRequestBuffer() 
     {
+        if (_contentBufferReferences.get()>0)
+        {
+            LOG.warn("{} fill with unconsumed content!",this);
+            return 0;
+        }
+        
         if (BufferUtil.isEmpty(_requestBuffer))
         {
             // Can we fill?
@@ -329,30 +337,19 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         if (LOG.isDebugEnabled())
             LOG.debug("{} parse {} {}",this,BufferUtil.toDetailString(_requestBuffer));
         
-        boolean buffer_had_content=BufferUtil.hasContent(_requestBuffer);
         boolean handle = _parser.parseNext(_requestBuffer==null?BufferUtil.EMPTY_BUFFER:_requestBuffer);
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} parsed {} {}",this,handle,_parser);
         
         // recycle buffer ?
-        if (buffer_had_content)
-        {
-            if (BufferUtil.isEmpty(_requestBuffer))
-            {
-                if (_parser.inContentState())
-                    _input.addContent(_recycleRequestBuffer);
-                else
-                    releaseRequestBuffer();
-            }
-        }
-        else
-        {
+        if (_contentBufferReferences.get()==0)
             releaseRequestBuffer();
-        }
+            
         return handle;
     }
-    
+
+    /* ------------------------------------------------------------ */
     @Override
     public void onCompleted()
     {
@@ -369,7 +366,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 _channel.recycle();
                 _parser.reset();
                 _generator.reset();
-                releaseRequestBuffer();
+                if (_contentBufferReferences.get()==0)
+                    releaseRequestBuffer();
+                else
+                {
+                    LOG.warn("{} lingering content references?!?!",this);
+                    _requestBuffer=null; // Not returned to pool!
+                    _contentBufferReferences.set(0);
+                }
                 return;
             }
         }
@@ -504,17 +508,25 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             _sendCallback.iterate();
     }
 
-    private final class RecycleBufferContent extends HttpInput.PoisonPillContent
+    
+    HttpInput.Content newContent(ByteBuffer c)
     {
-        private RecycleBufferContent()
+        return new Content(c);
+    }
+    
+    private class Content extends HttpInput.Content
+    {
+        public Content(ByteBuffer content)
         {
-            super("RECYCLE");
+            super(content);
+            _contentBufferReferences.incrementAndGet();
         }
 
         @Override
         public void succeeded()
         {
-            releaseRequestBuffer();
+            if (_contentBufferReferences.decrementAndGet()==0)
+                releaseRequestBuffer();
         }
 
         @Override
@@ -767,5 +779,11 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     public void blockingReadFillInterested()
     {
         getEndPoint().fillInterested(_blockingReadCallback);        
+    }
+    
+    @Override
+    public String toString()
+    {
+        return super.toString()+" "+BufferUtil.toDetailString(_requestBuffer);
     }
 }

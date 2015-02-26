@@ -216,8 +216,8 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     public boolean content(ByteBuffer content)
     {
-        // TODO avoid creating the Content object with wrapper?
-        boolean handle = onContent(new HttpInput.Content(content)) || _delayedForContent;
+        HttpInput.Content c = _httpConnection.newContent(content);        
+        boolean handle = onContent(c) || _delayedForContent;
         _delayedForContent=false;
         return handle;
     }
