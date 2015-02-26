@@ -434,15 +434,23 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         start(new EmptyServerHandler());
 
         long timeout = 1000;
-        Request request = client.newRequest("bad_scheme://localhost:" + connector.getLocalPort());
-        request.timeout(timeout, TimeUnit.MILLISECONDS)
-                .send(new Response.CompleteListener()
-                {
-                    @Override
-                    public void onComplete(Result result)
+        Request request = client.newRequest("badscheme://localhost:" + connector.getLocalPort());
+
+        try
+        {
+            request.timeout(timeout, TimeUnit.MILLISECONDS)
+                    .send(new Response.CompleteListener()
                     {
-                    }
-                });
+                        @Override
+                        public void onComplete(Result result)
+                        {
+                        }
+                    });
+            Assert.fail();
+        }
+        catch (Exception expected)
+        {
+        }
 
         Thread.sleep(2 * timeout);
 

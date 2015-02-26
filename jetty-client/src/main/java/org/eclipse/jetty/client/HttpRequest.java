@@ -683,6 +683,7 @@ public class HttpRequest implements Request
             // can't even start sending the request.
             if (timeoutListener != null)
                 timeoutListener.cancel();
+            throw x;
         }
     }
 
