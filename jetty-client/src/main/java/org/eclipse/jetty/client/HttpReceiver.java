@@ -435,7 +435,7 @@ public abstract class HttpReceiver
 
         HttpResponse response = exchange.getResponse();
         if (LOG.isDebugEnabled())
-            LOG.debug("Response failure {} {}", response, failure);
+            LOG.debug("Response failure {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
         List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifyFailure(listeners, response, failure);
@@ -524,10 +524,11 @@ public abstract class HttpReceiver
     @Override
     public String toString()
     {
-        return String.format("%s@%x(rcv=%s)",
+        return String.format("%s@%x(rsp=%s,failure=%s)",
                 getClass().getSimpleName(),
                 hashCode(),
-                responseState);
+                responseState,
+                failure);
     }
 
     /**

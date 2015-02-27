@@ -666,13 +666,25 @@ public class HttpRequest implements Request
     @Override
     public void send(Response.CompleteListener listener)
     {
-        if (getTimeout() > 0)
+        TimeoutCompleteListener timeoutListener = null;
+        try
         {
-            TimeoutCompleteListener timeoutListener = new TimeoutCompleteListener(this);
-            timeoutListener.schedule(client.getScheduler());
-            responseListeners.add(timeoutListener);
+            if (getTimeout() > 0)
+            {
+                timeoutListener = new TimeoutCompleteListener(this);
+                timeoutListener.schedule(client.getScheduler());
+                responseListeners.add(timeoutListener);
+            }
+            send(this, listener);
         }
-        send(this, listener);
+        catch (Throwable x)
+        {
+            // Do not leak the scheduler task if we
+            // can't even start sending the request.
+            if (timeoutListener != null)
+                timeoutListener.cancel();
+            throw x;
+        }
     }
 
     private void send(HttpRequest request, Response.CompleteListener listener)
