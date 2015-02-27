@@ -80,11 +80,6 @@ public interface IStream extends Stream, Closeable
     public void close();
 
     /**
-     * @return the current value of the stream send window
-     */
-    public int getSendWindow();
-
-    /**
      * <p>Updates the stream send window by the given {@code delta}.</p>
      *
      * @param delta the delta value (positive or negative) to add to the stream send window

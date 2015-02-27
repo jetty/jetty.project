@@ -323,13 +323,12 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         }
     }
 
-    @Override
     public int getSendWindow()
     {
         return sendWindow.get();
     }
 
-    protected int getRecvWindow()
+    public int getRecvWindow()
     {
         return recvWindow.get();
     }

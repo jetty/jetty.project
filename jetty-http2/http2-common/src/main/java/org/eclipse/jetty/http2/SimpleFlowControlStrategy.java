@@ -29,36 +29,36 @@ public class SimpleFlowControlStrategy extends AbstractFlowControlStrategy
         this(DEFAULT_WINDOW_SIZE);
     }
 
-    public SimpleFlowControlStrategy(int initialStreamWindow)
+    public SimpleFlowControlStrategy(int initialStreamSendWindow)
     {
-        super(initialStreamWindow);
+        super(initialStreamSendWindow);
     }
 
     @Override
     public void onDataConsumed(ISession session, IStream stream, int length)
     {
+        if (length <= 0)
+            return;
+
         // This is the simple algorithm for flow control.
         // This method is called when a whole flow controlled frame has been consumed.
         // We send a WindowUpdate every time, even if the frame was very small.
 
-        if (length > 0)
+        WindowUpdateFrame sessionFrame = new WindowUpdateFrame(0, length);
+        session.updateRecvWindow(length);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Data consumed, increased session recv window by {} for {}", length, session);
+
+        Frame[] streamFrame = Frame.EMPTY_ARRAY;
+        if (stream != null)
         {
-            WindowUpdateFrame sessionFrame = new WindowUpdateFrame(0, length);
-            session.updateRecvWindow(length);
+            streamFrame = new Frame[1];
+            streamFrame[0] = new WindowUpdateFrame(stream.getId(), length);
+            stream.updateRecvWindow(length);
             if (LOG.isDebugEnabled())
-                LOG.debug("Data consumed, increased session recv window by {} for {}", length, session);
-
-            Frame[] streamFrame = null;
-            if (stream != null)
-            {
-                streamFrame = new Frame[1];
-                streamFrame[0] = new WindowUpdateFrame(stream.getId(), length);
-                stream.updateRecvWindow(length);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Data consumed, increased stream recv window by {} for {}", length, stream);
-            }
-
-            session.control(stream, Callback.Adapter.INSTANCE, sessionFrame, streamFrame == null ? Frame.EMPTY_ARRAY : streamFrame);
+                LOG.debug("Data consumed, increased stream recv window by {} for {}", length, stream);
         }
+
+        session.control(stream, Callback.Adapter.INSTANCE, sessionFrame, streamFrame);
     }
 }

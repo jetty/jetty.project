@@ -589,7 +589,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             stream.setIdleTimeout(getStreamIdleTimeout());
-            flowControl.onNewStream(stream);
+            flowControl.onNewStream(stream, true);
             if (LOG.isDebugEnabled())
                 LOG.debug("Created local {}", stream);
             return stream;
@@ -624,7 +624,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             updateLastStreamId(streamId);
             stream.setIdleTimeout(getStreamIdleTimeout());
-            flowControl.onNewStream(stream);
+            flowControl.onNewStream(stream, false);
             if (LOG.isDebugEnabled())
                 LOG.debug("Created remote {}", stream);
             return stream;
@@ -654,7 +654,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             else
                 remoteStreamCount.decrementAndGet();
 
-            flowControl.onStreamTerminated(stream);
+            flowControl.onStreamTerminated(stream, local);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Removed {}", stream);
@@ -1020,6 +1020,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                     getEndPoint().shutdownOutput();
                     break;
                 }
+                case WINDOW_UPDATE:
+                {
+                    flowControl.windowUpdate(HTTP2Session.this, stream, (WindowUpdateFrame)frame);
+                    break;
+                }
                 case DISCONNECT:
                 {
                     terminate();
@@ -1064,7 +1069,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 if (sessionSendWindow < 0)
                     throw new IllegalStateException();
 
-                int streamSendWindow = stream.getSendWindow();
+                int streamSendWindow = stream.updateSendWindow(0);
                 if (streamSendWindow < 0)
                     throw new IllegalStateException();
 
