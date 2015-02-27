@@ -68,28 +68,19 @@ public class GzipContentLengthTest
     private static final int TINY = GzipHandler.DEFAULT_MIN_GZIP_SIZE / 2;
     private static final boolean EXPECT_COMPRESSED = true;
 
-    @Parameters(name = "{0} bytes - {1} - compressed({2}) - type({3}) - filter({4})")
+    @Parameters(name = "{0} bytes - {1} - compressed({2})")
     public static List<Object[]> data()
     {
         List<Object[]> ret = new ArrayList<Object[]>();
-        
-        String compressionTypes[] = new String[] { GzipHandler.GZIP, GzipHandler.DEFLATE };
-        Class<?> gzipFilters[] = new Class<?>[] { GzipFilter.class, AsyncGzipFilter.class };
-        
-        for(String compressionType: compressionTypes)
-        {
-            for(Class<?> gzipFilter: gzipFilters)
-            {
-                ret.add(new Object[] { 0, "empty.txt", !EXPECT_COMPRESSED, compressionType, gzipFilter });
-                ret.add(new Object[] { TINY, "file-tiny.txt", !EXPECT_COMPRESSED, compressionType, gzipFilter });
-                ret.add(new Object[] { SMALL, "file-small.txt", EXPECT_COMPRESSED, compressionType, gzipFilter });
-                ret.add(new Object[] { SMALL, "file-small.mp3", !EXPECT_COMPRESSED, compressionType, gzipFilter });
-                ret.add(new Object[] { MEDIUM, "file-med.txt", EXPECT_COMPRESSED, compressionType, gzipFilter });
-                ret.add(new Object[] { MEDIUM, "file-medium.mp3", !EXPECT_COMPRESSED, compressionType, gzipFilter });
-                ret.add(new Object[] { LARGE, "file-large.txt", EXPECT_COMPRESSED, compressionType, gzipFilter });
-                ret.add(new Object[] { LARGE, "file-large.mp3", !EXPECT_COMPRESSED, compressionType, gzipFilter });
-            }
-        }
+
+        ret.add(new Object[] { 0, "empty.txt", !EXPECT_COMPRESSED});
+        ret.add(new Object[] { TINY, "file-tiny.txt", !EXPECT_COMPRESSED});
+        ret.add(new Object[] { SMALL, "file-small.txt", EXPECT_COMPRESSED});
+        ret.add(new Object[] { SMALL, "file-small.mp3", !EXPECT_COMPRESSED});
+        ret.add(new Object[] { MEDIUM, "file-med.txt", EXPECT_COMPRESSED});
+        ret.add(new Object[] { MEDIUM, "file-medium.mp3", !EXPECT_COMPRESSED});
+        ret.add(new Object[] { LARGE, "file-large.txt", EXPECT_COMPRESSED});
+        ret.add(new Object[] { LARGE, "file-large.mp3", !EXPECT_COMPRESSED});
 
         return ret;
     }
@@ -100,28 +91,21 @@ public class GzipContentLengthTest
     public String fileName;
     @Parameter(2)
     public boolean expectCompressed;
-    @Parameter(3)
-    public String compressionType;
-    @Parameter(4)
-    public Class<? extends GzipFilter> gzipFilterClass;
     
     private void testWithGzip(Class<? extends TestDirContentServlet> contentServlet) throws Exception
     {
         GzipTester tester = new GzipTester(testingdir, GzipHandler.GZIP);
         
-        // Add AsyncGzip Filter
-        FilterHolder gzipHolder = new FilterHolder(gzipFilterClass);
-        gzipHolder.setAsyncSupported(true);
-        tester.addFilter(gzipHolder,"*.txt",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        tester.addFilter(gzipHolder,"*.mp3",EnumSet.of(DispatcherType.REQUEST,DispatcherType.ASYNC));
-        gzipHolder.setInitParameter("mimeTypes","text/plain");
+        // Add AsyncGzip Configuration
+        tester.getGzipHandler().setIncludedMimeTypes("text/plain");
+        tester.getGzipHandler().setIncludedPaths("*.txt","*.mp3");
 
         // Add content servlet
         tester.setContentServlet(contentServlet);
         
         try
         {
-            String testFilename = String.format("%s-%s-%s", gzipFilterClass.getSimpleName(), contentServlet.getSimpleName(), fileName);
+            String testFilename = String.format("%s-%s", contentServlet.getSimpleName(), fileName);
             File testFile = tester.prepareServerFile(testFilename,fileSize);
             
             tester.start();
@@ -159,8 +143,6 @@ public class GzipContentLengthTest
     @Test
     public void testAsyncTimeoutCompleteWrite_Default() throws Exception
     {
-        if (expectCompressed && gzipFilterClass==GzipFilter.class)
-            return; // Default startAsync will never work with GzipFilter, which needs wrapping
         testWithGzip(AsyncTimeoutCompleteWrite.Default.class);
     }
     
@@ -334,8 +316,6 @@ public class GzipContentLengthTest
     @Test
     public void testHttpOutputWrite() throws Exception
     {
-        if (gzipFilterClass == GzipFilter.class)
-            return;  // Can't downcaste output stream when wrapper is used
         testWithGzip(TestServletBufferTypeLengthWrite.class);
     }
 }
