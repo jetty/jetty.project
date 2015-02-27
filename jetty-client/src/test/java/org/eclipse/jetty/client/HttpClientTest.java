@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
 import java.net.URI;
@@ -323,6 +324,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
+                consume(request.getInputStream());
                 String value = request.getParameter(paramName);
                 if (paramValue.equals(value))
                 {
@@ -347,9 +349,17 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_POST_WithContent_NotifiesRequestContentListener() throws Exception
     {
-        final byte[] content = {0, 1, 2, 3};
-        start(new EmptyServerHandler());
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                consume(request.getInputStream());
+            }
+        });
 
+        final byte[] content = {0, 1, 2, 3};
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
                 .onRequestContent(new Request.ContentListener()
                 {
@@ -373,7 +383,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void test_POST_WithContent_TracksProgress() throws Exception
     {
-        start(new EmptyServerHandler());
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                consume(request.getInputStream());
+            }
+        });
 
         final AtomicInteger progress = new AtomicInteger();
         ContentResponse response = client.POST(scheme + "://localhost:" + connector.getLocalPort())
@@ -1346,6 +1364,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 int count = requests.incrementAndGet();
                 if (count == maxRetries)
                     baseRequest.setHandled(true);
+                consume(request.getInputStream());
             }
         });
 
@@ -1409,6 +1428,15 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         // Now the complete event is emitted.
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    private void consume(InputStream input) throws IOException
+    {
+        while (true)
+        {
+            if (input.read() < 0)
+                break;
+        }
     }
 
     public static abstract class RetryListener implements Response.CompleteListener
