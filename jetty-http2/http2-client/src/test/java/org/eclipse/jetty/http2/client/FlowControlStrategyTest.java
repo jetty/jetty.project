@@ -730,6 +730,13 @@ public abstract class FlowControlStrategyTest
         });
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 
+        // The following "sneaky" write may clash with the write
+        // of the reply SETTINGS frame sent by the client in
+        // response to the server SETTINGS frame.
+        // It is not enough to use a latch on the server to
+        // wait for the reply frame, since the client may have
+        // sent the bytes, but not yet be ready to write again.
+        Thread.sleep(1000);
 
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
@@ -788,8 +795,8 @@ public abstract class FlowControlStrategyTest
         });
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 
-        // Wait for a while to allow flow control window frames
-        // to be exchanged before doing the "sneaky" write below.
+        // Wait for a while before doing the "sneaky" write
+        // below, see comments in the previous test case.
         Thread.sleep(1000);
 
         // Now the client is supposed to not send more frames.
