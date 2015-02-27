@@ -64,6 +64,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
@@ -179,7 +180,7 @@ public class HttpInputIntegrationTest
         //   + HTTP/2
         //   + SSL + HTTP/2
         //   + FASTCGI
-        for (Class<? extends TestClient> client : new Class[]{/* TODO LocalClient.class,*/H1Client.class,H1SClient.class})
+        for (Class<? extends TestClient> client : new Class[]{LocalClient.class,H1Client.class,H1SClient.class})
         {
 
             // test async actions that are run:
@@ -518,7 +519,7 @@ public class HttpInputIntegrationTest
 
     public static class LocalClient implements TestClient
     {
-       
+        StringBuilder flushed = new StringBuilder();
         @Override
         public String send(String uri,int delayMs, Boolean delayInFrame,int contentLength, List<String> content) throws Exception
         {
@@ -549,7 +550,7 @@ public class HttpInputIntegrationTest
             {
                 if (chunked)
                 {
-                    buffer.append("\r\n").append(Integer.toHexString(c.length())).append("\r\n");
+                    buffer.append(Integer.toHexString(c.length())).append("\r\n");
                     flush(local,buffer,delayMs,delayInFrame,true);
                 }
 
@@ -588,15 +589,8 @@ public class HttpInputIntegrationTest
         {
             final String flush=buffer.toString();
             buffer.setLength(0);
-            // System.err.println("FLUSH:'"+flush+"'");
-            new Thread()
-            {
-                @Override
-                public void run()
-                {
-                    local.addInput(flush);
-                }
-            }.start();
+            flushed.append(flush);
+            local.addInputAndExecute(BufferUtil.toBuffer(flush));
         }
 
     }
@@ -652,7 +646,7 @@ public class HttpInputIntegrationTest
                 {
                     if (chunked)
                     {
-                        buffer.append("\r\n").append(Integer.toHexString(c.length())).append("\r\n");
+                        buffer.append(Integer.toHexString(c.length())).append("\r\n");
                        flush(out,buffer,delayMs,delayInFrame,true);
                     }
                     
@@ -660,11 +654,13 @@ public class HttpInputIntegrationTest
                     flush(out,buffer,delayMs,delayInFrame,true);
                     buffer.append(c.substring(1));
                     flush(out,buffer,delayMs,delayInFrame,false);
+                    if (chunked)
+                        buffer.append("\r\n"); 
                 }
 
                 if (chunked)
                 {
-                    buffer.append("\r\n0");
+                    buffer.append("0");
                     flush(out,buffer,delayMs,delayInFrame,true);
                     buffer.append("\r\n\r\n");
                 }
