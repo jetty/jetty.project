@@ -605,6 +605,11 @@
         <version>2.9</version>
       </dependency>
       <dependency>
+        <groupId>org.eclipse.jetty.toolchain</groupId>
+        <artifactId>jetty-perf-helper</artifactId>
+        <version>1.0.5</version>
+      </dependency>
+      <dependency>
         <groupId>org.slf4j</groupId>
         <artifactId>jcl104-over-slf4j</artifactId>
         <version>${slf4j-version}</version>
