@@ -82,7 +82,7 @@ public class ALPNServerConnection extends NegotiatingServerConnection implements
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} could not negotiate protocol: C[{}] | S[{}]", this, clientProtocols, serverProtocols);
+                    LOG.debug("{} could not negotiate protocol: C{} | S{}", this, clientProtocols, serverProtocols);
                 throw new IllegalStateException();
             }
         }
