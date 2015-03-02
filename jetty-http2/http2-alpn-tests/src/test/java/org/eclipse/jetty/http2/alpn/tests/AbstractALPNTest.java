@@ -27,9 +27,12 @@ import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.JDK;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.After;
+import org.junit.Assume;
+import org.junit.Before;
 import org.junit.Rule;
 
 public class AbstractALPNTest
@@ -38,6 +41,14 @@ public class AbstractALPNTest
     public final TestTracker tracker = new TestTracker();
     protected Server server;
     protected ServerConnector connector;
+
+    @Before
+    public void before()
+    {
+        // The mandatory cipher needed to run HTTP/2
+        // over TLS is only available in JDK 8.
+        Assume.assumeTrue(JDK.IS_8);
+    }
 
     protected InetSocketAddress prepare() throws Exception
     {
@@ -66,6 +77,7 @@ public class AbstractALPNTest
         sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
         sslContextFactory.setTrustStorePassword("storepwd");
         sslContextFactory.setIncludeProtocols("TLSv1.2");
+        // The mandatory HTTP/2 cipher.
         sslContextFactory.setIncludeCipherSuites("TLS_ECDHE_RSA_WITH_AES_128_GCM_SHA256");
         return sslContextFactory;
     }
@@ -73,6 +85,7 @@ public class AbstractALPNTest
     @After
     public void dispose() throws Exception
     {
-        server.stop();
+        if (server != null)
+            server.stop();
     }
 }
