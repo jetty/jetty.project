@@ -42,7 +42,8 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
     private final CountDownLatch callbackLatch = new CountDownLatch(1);
     private final CountDownLatch failureLatch = new CountDownLatch(1);
     private final CountDownLatch completeLatch = new CountDownLatch(1);
-    private final AtomicBoolean success = new AtomicBoolean();
+    private final AtomicBoolean failureWasAsync = new AtomicBoolean();
+    private final AtomicBoolean completeWasSync = new AtomicBoolean();
 
     public HttpResponseConcurrentAbortTest(SslContextFactory sslContextFactory)
     {
@@ -66,8 +67,9 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
                 })
                 .send(new TestResponseListener());
         Assert.assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(completeLatch.await(6, TimeUnit.SECONDS));
-        Assert.assertTrue(success.get());
+        Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(failureWasAsync.get());
+        Assert.assertTrue(completeWasSync.get());
     }
 
     @Test
@@ -89,7 +91,8 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
                 .send(new TestResponseListener());
         Assert.assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(success.get());
+        Assert.assertTrue(failureWasAsync.get());
+        Assert.assertTrue(completeWasSync.get());
     }
 
     @Test
@@ -110,7 +113,8 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
                 .send(new TestResponseListener());
         Assert.assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(success.get());
+        Assert.assertTrue(failureWasAsync.get());
+        Assert.assertTrue(completeWasSync.get());
     }
 
     @Test
@@ -141,7 +145,8 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
                 .send(new TestResponseListener());
         Assert.assertTrue(callbackLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(completeLatch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(success.get());
+        Assert.assertTrue(failureWasAsync.get());
+        Assert.assertTrue(completeWasSync.get());
     }
 
     private void abort(final Response response)
@@ -157,14 +162,15 @@ public class HttpResponseConcurrentAbortTest extends AbstractHttpClientServerTes
 
         try
         {
-            // The failure callback must be executed asynchronously.
-            boolean latched = failureLatch.await(4, TimeUnit.SECONDS);
-            success.set(latched);
+            // The failure callback is executed asynchronously, but
+            // here we are within the context of another response
+            // callback, which should detect that a failure happened
+            // and therefore this thread should complete the response.
+            failureWasAsync.set(failureLatch.await(2, TimeUnit.SECONDS));
 
-            // The complete callback must not be executed
-            // until we return from this callback.
-            latched = completeLatch.await(1, TimeUnit.SECONDS);
-            success.set(!latched);
+            // The complete callback must be executed by this thread,
+            // after we return from this response callback.
+            completeWasSync.set(!completeLatch.await(1, TimeUnit.SECONDS));
 
             callbackLatch.countDown();
         }
