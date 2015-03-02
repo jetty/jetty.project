@@ -20,6 +20,7 @@ package org.eclipse.jetty.proxy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -34,7 +35,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -72,7 +72,6 @@ import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
 
-@SuppressWarnings("serial")
 public class AsyncMiddleManServletTest
 {
     private static final Logger LOG = Log.getLogger(AsyncMiddleManServletTest.class);
@@ -618,6 +617,17 @@ public class AsyncMiddleManServletTest
     @Test
     public void testLargeChunkedBufferedDownstreamTransformation() throws Exception
     {
+        testLargeChunkedBufferedDownstreamTransformation(false);
+    }
+
+    @Test
+    public void testLargeChunkedGzippedBufferedDownstreamTransformation() throws Exception
+    {
+        testLargeChunkedBufferedDownstreamTransformation(true);
+    }
+
+    private void testLargeChunkedBufferedDownstreamTransformation(final boolean gzipped) throws Exception
+    {
         // Tests the race between a incomplete write performed from ProxyResponseListener.onSuccess()
         // and ProxyResponseListener.onComplete() being called before the write has completed.
 
@@ -626,10 +636,18 @@ public class AsyncMiddleManServletTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                ServletOutputStream output = response.getOutputStream();
+                OutputStream output = response.getOutputStream();
+                if (gzipped)
+                {
+                    output = new GZIPOutputStream(output);
+                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                }
+
+                Random random = new Random();
                 byte[] chunk = new byte[1024 * 1024];
                 for (int i = 0; i < 16; ++i)
                 {
+                    random.nextBytes(chunk);
                     output.write(chunk);
                     output.flush();
                 }
@@ -640,7 +658,10 @@ public class AsyncMiddleManServletTest
             @Override
             protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
-                return new BufferingContentTransformer();
+                ContentTransformer transformer = new BufferingContentTransformer();
+                if (gzipped)
+                    transformer = new GZIPContentTransformer(transformer);
+                return transformer;
             }
         });
         startClient();
