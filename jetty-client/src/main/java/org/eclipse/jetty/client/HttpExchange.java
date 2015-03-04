@@ -159,10 +159,9 @@ public class HttpExchange
 
     private int update(int code, Throwable failure)
     {
-        int current;
         while (true)
         {
-            current = complete.get();
+            int current = complete.get();
             boolean updateable = (current & code) == 0;
             if (updateable)
             {
@@ -177,9 +176,8 @@ public class HttpExchange
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} updated", this);
             }
-            break;
+            return current;
         }
-        return current;
     }
 
     public boolean abort(Throwable cause)

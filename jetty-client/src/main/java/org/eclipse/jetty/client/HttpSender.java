@@ -321,15 +321,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
         dispose();
 
-        // Mark atomically the request as terminated and failed,
-        // with respect to concurrency between request and response.
-        Result result = exchange.terminateRequest(failure);
-
-        Request request = exchange.getRequest();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Request failure {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
-        HttpDestination destination = getHttpChannel().getHttpDestination();
-        destination.getRequestNotifier().notifyFailure(request, failure);
+        Result result = failRequest(exchange, failure);
 
         if (fail)
         {
@@ -344,11 +336,26 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         return true;
     }
 
+    private Result failRequest(HttpExchange exchange, Throwable failure)
+    {
+        // Mark atomically the request as terminated and failed,
+        // with respect to concurrency between request and response.
+        Result result = exchange.terminateRequest(failure);
+
+        Request request = exchange.getRequest();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Request failure {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
+        HttpDestination destination = getHttpChannel().getHttpDestination();
+        destination.getRequestNotifier().notifyFailure(request, failure);
+
+        return result;
+    }
+
     private void terminateRequest(HttpExchange exchange, Throwable failure)
     {
         if (exchange != null)
         {
-            Result result = exchange.terminateRequest(failure);
+            Result result = failRequest(exchange, failure);
             terminateRequest(exchange, failure, result);
         }
     }
@@ -376,7 +383,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (!ordered)
                 channel.exchangeTerminated(result);
             if (LOG.isDebugEnabled())
-                LOG.debug("Request/Response {} {}", failure == null ? "succeeded" : "failed", request);
+                LOG.debug("Request/Response {}: {}", failure == null ? "succeeded" : "failed", result);
             HttpConversation conversation = exchange.getConversation();
             destination.getResponseNotifier().notifyComplete(conversation.getResponseListeners(), result);
             if (ordered)
