@@ -80,6 +80,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     {
         if (buffer==null)
             throw new IllegalStateException();
+        if (BufferUtil.hasContent(buffer))
+            throw new IllegalStateException();
         HttpClient client = getHttpDestination().getHttpClient();
         ByteBufferPool bufferPool = client.getByteBufferPool();
         bufferPool.release(buffer);
@@ -133,6 +135,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         {
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
+            BufferUtil.clear(buffer);
             releaseBuffer();
             failAndClose(x);
         }
