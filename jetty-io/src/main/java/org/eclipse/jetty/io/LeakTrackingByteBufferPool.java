@@ -37,7 +37,8 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
             LeakTrackingByteBufferPool.this.leaked(leakInfo);
         }
     };
-    
+
+    private final static boolean NOISY = Boolean.getBoolean(LeakTrackingByteBufferPool.class.getName() + ".NOISY");
     private final ByteBufferPool delegate;
 
     public LeakTrackingByteBufferPool(ByteBufferPool delegate)
@@ -50,9 +51,11 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     @Override
     public ByteBuffer acquire(int size, boolean direct)
     {
-        ByteBuffer buffer = delegate.acquire(size, direct);
+        ByteBuffer buffer = delegate.acquire(size,direct);
         boolean leakd = leakDetector.acquired(buffer);
-        LOG.info(String.format("ByteBuffer acquire %s@%X leakd.acquired=%b", buffer, System.identityHashCode(buffer), leakd), new Throwable("LeakStack.Acquire"));
+        if (NOISY || !leakd)
+            LOG.info(String.format("ByteBuffer acquire %s@%X leakd.acquired=%s",buffer,System.identityHashCode(buffer),leakd ? "normal" : "LEAK"),
+                    new Throwable("LeakStack.Acquire"));
         return buffer;
     }
 
@@ -62,12 +65,14 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
         if (buffer == null)
             return;
         boolean leakd = leakDetector.released(buffer);
-        LOG.info(String.format("ByteBuffer release %s@%X leakd.released=%b", buffer, System.identityHashCode(buffer), leakd), new Throwable("LeakStack.Release"));
+        if (NOISY || !leakd)
+            LOG.info(String.format("ByteBuffer release %s@%X leakd.released=%s",buffer,System.identityHashCode(buffer),leakd ? "normal" : "LEAK"),
+                    new Throwable("LeakStack.Release"));
         delegate.release(buffer);
     }
 
     protected void leaked(LeakDetector<ByteBuffer>.LeakInfo leakInfo)
     {
-        LOG.warn("ByteBuffer " + leakInfo.getResourceDescription() + " leaked at:", leakInfo.getStackFrames());
+        LOG.warn("ByteBuffer " + leakInfo.getResourceDescription() + " leaked at:",leakInfo.getStackFrames());
     }
 }
