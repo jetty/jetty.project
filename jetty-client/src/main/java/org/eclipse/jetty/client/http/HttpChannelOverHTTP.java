@@ -93,10 +93,11 @@ public class HttpChannelOverHTTP extends HttpChannel
     public void exchangeTerminated(Result result)
     {
         super.exchangeTerminated(result);
+
         Response response = result.getResponse();
         HttpFields responseHeaders = response.getHeaders();
         boolean close = result.isFailed() || receiver.isShutdown();
-        // Only check HTTP headers if there are no failures.
+
         if (!close)
         {
             if (response.getVersion().compareTo(HttpVersion.HTTP_1_1) < 0)
@@ -110,6 +111,7 @@ public class HttpChannelOverHTTP extends HttpChannel
                 close = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
             }
         }
+
         if (close)
             connection.close();
         else

@@ -146,7 +146,6 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} is stopped", client);
-            close(connection);
             connection.close();
         }
     }
@@ -155,6 +154,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     public void close(Connection oldConnection)
     {
         super.close(oldConnection);
+
         connectionPool.remove(oldConnection);
 
         if (getHttpExchanges().isEmpty())

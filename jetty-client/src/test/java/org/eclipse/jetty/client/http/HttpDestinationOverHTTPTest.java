@@ -101,18 +101,17 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
                 return new ConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
                 {
                     @Override
-                    protected boolean idle(Connection connection, boolean created)
+                    protected void idleCreated(Connection connection)
                     {
                         try
                         {
                             idleLatch.countDown();
                             latch.await(5, TimeUnit.SECONDS);
-                            return super.idle(connection, created);
+                            super.idleCreated(connection);
                         }
                         catch (InterruptedException x)
                         {
                             x.printStackTrace();
-                            return false;
                         }
                     }
                 };
@@ -120,14 +119,14 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         };
         Connection connection1 = destination.acquire();
 
-        // Make sure we entered idle().
+        // Make sure we entered idleCreated().
         Assert.assertTrue(idleLatch.await(5, TimeUnit.SECONDS));
 
-        // There are no available existing connections, so
-        // acquire() returns null because we delayed idle() above.
+        // There are no available existing connections, so acquire()
+        // returns null because we delayed idleCreated() above
         Assert.assertNull(connection1);
 
-        // Second attempt also returns null because we delayed idle() above.
+        // Second attempt also returns null because we delayed idleCreated() above.
         Connection connection2 = destination.acquire();
         Assert.assertNull(connection2);
 
