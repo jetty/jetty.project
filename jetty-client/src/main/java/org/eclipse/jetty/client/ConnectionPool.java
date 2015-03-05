@@ -109,13 +109,7 @@ public class ConnectionPool implements Closeable, Dumpable
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connection {}/{} creation succeeded {}", next, maxConnections, connection);
 
-                        boolean idle;
-                        try (SpinLock.Lock lock = ConnectionPool.this.lock.lock())
-                        {
-                            // Use "cold" new connections as last.
-                            idle = idleConnections.offerLast(connection);
-                        }
-                        idle(connection, idle);
+                        idleCreated(connection);
 
                         requester.succeeded(connection);
                     }
@@ -136,6 +130,17 @@ public class ConnectionPool implements Closeable, Dumpable
                 return activateIdle();
             }
         }
+    }
+
+    protected void idleCreated(Connection connection)
+    {
+        boolean idle;
+        try (SpinLock.Lock lock = this.lock.lock())
+        {
+            // Use "cold" new connections as last.
+            idle = idleConnections.offerLast(connection);
+        }
+        idle(connection, idle);
     }
 
     private Connection activateIdle()
@@ -184,7 +189,7 @@ public class ConnectionPool implements Closeable, Dumpable
         return idle(connection, idle);
     }
 
-    private boolean idle(Connection connection, boolean idle)
+    protected boolean idle(Connection connection, boolean idle)
     {
         if (idle)
         {
