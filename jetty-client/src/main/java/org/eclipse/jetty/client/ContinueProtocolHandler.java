@@ -78,7 +78,7 @@ public class ContinueProtocolHandler implements ProtocolHandler
                 case 100:
                 {
                     // All good, continue
-                    exchange.resetResponse(true);
+                    exchange.resetResponse();
                     exchange.proceed(null);
                     break;
                 }

@@ -152,7 +152,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         return closed.compareAndSet(false, true);
     }
 
-    private boolean abort(Throwable failure)
+    protected boolean abort(Throwable failure)
     {
         HttpExchange exchange = channel.getHttpExchange();
         return exchange != null && exchange.getRequest().abort(failure);

@@ -939,25 +939,24 @@ public class HttpParser
                                 case EOF_CONTENT:
                                     setState(State.EOF_CONTENT);
                                     handle=_handler.headerComplete()||handle;
-                                    break;
+                                    return handle;
 
                                 case CHUNKED_CONTENT:
                                     setState(State.CHUNKED_CONTENT);
                                     handle=_handler.headerComplete()||handle;
-                                    break;
+                                    return handle;
 
                                 case NO_CONTENT:
                                     handle=_handler.headerComplete()||handle;
                                     setState(State.END);
                                     handle=_handler.messageComplete()||handle;
-                                    break;
+                                    return handle;
 
                                 default:
                                     setState(State.CONTENT);
                                     handle=_handler.headerComplete()||handle;
-                                    break;
+                                    return handle;
                             }
-                            break;
                         }
 
                         default:
@@ -1191,8 +1190,7 @@ public class HttpParser
                 if (_responseStatus>0 && _headResponse)
                 {
                     setState(State.END);
-                    if (_handler.messageComplete())
-                        return true;
+                    return _handler.messageComplete();
                 }
                 else
                 {
@@ -1332,8 +1330,7 @@ public class HttpParser
             if (content == 0)
             {
                 setState(State.END);
-                if (_handler.messageComplete())
-                    return true;
+                return _handler.messageComplete();
             }
         }
         
@@ -1357,8 +1354,7 @@ public class HttpParser
                     if (content == 0)
                     {
                         setState(State.END);
-                        if (_handler.messageComplete())
-                            return true;
+                        return _handler.messageComplete();
                     }
                     else
                     {
@@ -1381,8 +1377,7 @@ public class HttpParser
                         if(_contentPosition == _contentLength)
                         {
                             setState(State.END);
-                            if (_handler.messageComplete())
-                                return true;
+                            return _handler.messageComplete();
                         }
                     }
                     break;
@@ -1411,8 +1406,7 @@ public class HttpParser
                         if (_chunkLength == 0)
                         {
                             setState(State.END);
-                            if (_handler.messageComplete())
-                                return true;
+                            return _handler.messageComplete();
                         }
                         else
                             setState(State.CHUNK);
@@ -1432,8 +1426,7 @@ public class HttpParser
                         if (_chunkLength == 0)
                         {
                             setState(State.END);
-                            if (_handler.messageComplete())
-                                return true;
+                            return _handler.messageComplete();
                         }
                         else
                             setState(State.CHUNK);
