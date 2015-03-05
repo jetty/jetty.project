@@ -139,9 +139,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     }
 
     /**
-     * Parses a HTTP response from the given {@code buffer}.
+     * Parses a HTTP response in the receivers buffer.
      *
-     * @param buffer the response bytes
      * @return true to indicate that parsing should be interrupted (and will be resumed by another thread).
      */
     private boolean parse()
@@ -154,13 +153,21 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
         if (handle)
         {
-            // There are several cases here:
-            // a) the content is being handled asynchronously and resume will eventually call process().  Return false.
-            // b) the content has already been handled asynchronously, resume called process and processing is ongoing.  Return false.
-            // c) the content has already been handled asynchronously, resume called process which completed the response.  Return false.
-            // d) This call to parse called parseNext, which completed the response. Return true
-
-            return !parser.isStart(); // TODO this is insufficient to distinguish the last to cases above
+            if (!parser.isStart())
+            {
+                // The parser has NOT been reset.
+                // So we have not ourselves parsed the messageComplete() OR if we did we failed the atomic tests in
+                // responseComplete and the parser is not yet reset, but soon will be by another thread.
+                // So most likely we are here because async handling is underway and a callback will eventually call resume
+                // which will call process to progress.  So we can return true here to stop us calling process.
+                return true;
+            }
+            
+            // The parser has been reset!  If this was done by this thread parsing message Complete, then returning false here
+            // will let the parsing continue, fill 0 and return the buffer.  All good.
+            // If the parser was reset by an asynchronous callback calling resume that called process(), then it may have already
+            // returned false to that thread, which may have already filled 0 and thus already returned the buffer
+            // TODO This is the double return race.
         }
 
         return false;
