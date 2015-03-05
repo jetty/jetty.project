@@ -51,10 +51,8 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     public ByteBuffer acquire(int size, boolean direct)
     {
         ByteBuffer buffer = delegate.acquire(size, direct);
-        if (!leakDetector.acquired(buffer))
-        {
-            LOG.warn("ByteBuffer {}@{} not tracked", buffer, System.identityHashCode(buffer));
-        }
+        boolean leakd = leakDetector.acquired(buffer);
+        LOG.info(String.format("ByteBuffer acquire %s@%X leakd.acquired=%b", buffer, System.identityHashCode(buffer), leakd), new Throwable("LeakStack.Acquire"));
         return buffer;
     }
 
@@ -63,10 +61,8 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     {
         if (buffer == null)
             return;
-        if (!leakDetector.released(buffer))
-        {
-            LOG.warn("ByteBuffer " + buffer + "@" + System.identityHashCode(buffer) + " released but not acquired", new Throwable("LeakStack"));
-        }
+        boolean leakd = leakDetector.released(buffer);
+        LOG.info(String.format("ByteBuffer release %s@%X leakd.released=%b", buffer, System.identityHashCode(buffer), leakd), new Throwable("LeakStack.Release"));
         delegate.release(buffer);
     }
 
