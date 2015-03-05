@@ -151,26 +151,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
         if (LOG.isDebugEnabled())
             LOG.debug("Parsed {}, remaining {} {}", handle, buffer.remaining(), parser);
 
-        if (handle)
-        {
-            if (!parser.isStart())
-            {
-                // The parser has NOT been reset.
-                // So we have not ourselves parsed the messageComplete() OR if we did we failed the atomic tests in
-                // responseComplete and the parser is not yet reset, but soon will be by another thread.
-                // So most likely we are here because async handling is underway and a callback will eventually call resume
-                // which will call process to progress.  So we can return true here to stop us calling process.
-                return true;
-            }
-            
-            // The parser has been reset!  If this was done by this thread parsing message Complete, then returning false here
-            // will let the parsing continue, fill 0 and return the buffer.  All good.
-            // If the parser was reset by an asynchronous callback calling resume that called process(), then it may have already
-            // returned false to that thread, which may have already filled 0 and thus already returned the buffer
-            // TODO This is the double return race.
-        }
-
-        return false;
+        return handle;
     }
 
     protected void fillInterested()
@@ -273,11 +254,9 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
     public boolean messageComplete()
     {
         HttpExchange exchange = getHttpExchange();
-        if (exchange == null)
-            return false;
-
-        responseSuccess(exchange);
-        return true;
+        if (exchange != null)
+            responseSuccess(exchange);
+        return false;
     }
 
     @Override

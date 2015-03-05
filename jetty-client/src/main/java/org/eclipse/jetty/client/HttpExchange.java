@@ -220,13 +220,10 @@ public class HttpExchange
         }
     }
 
-    public void resetResponse(boolean success)
+    public void resetResponse()
     {
         responseComplete.set(false);
-        int responseSuccess = 0b1100;
-        int responseFailure = 0b0100;
-        int code = success ? responseSuccess : responseFailure;
-        complete.addAndGet(-code);
+        complete.addAndGet(-0b1100);
     }
 
     public void proceed(Throwable failure)
