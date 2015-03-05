@@ -50,7 +50,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     @SuppressWarnings("unchecked")
     public void succeeded(Connection connection)
     {
-        process((C)connection, true);
+        send(true);
     }
 
     @Override
@@ -66,11 +66,19 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         });
     }
 
+    @Override
     protected void send()
     {
+        send(false);
+    }
+
+    private void send(boolean dispatch)
+    {
+        if (getHttpExchanges().isEmpty())
+            return;
         C connection = acquire();
         if (connection != null)
-            process(connection, false);
+            process(connection, dispatch);
     }
 
     @SuppressWarnings("unchecked")
@@ -167,7 +175,6 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} is stopped", client);
-            close(connection);
             connection.close();
         }
     }
@@ -176,6 +183,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     public void close(Connection oldConnection)
     {
         super.close(oldConnection);
+
         connectionPool.remove(oldConnection);
 
         if (getHttpExchanges().isEmpty())

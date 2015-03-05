@@ -87,16 +87,11 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
             Assert.assertFalse(begin.get());
         }
 
-        // The request send triggered a connection creation
-        // that is not awaited before failing the exchange.
-        Thread.sleep(1000);
-
-        // However, the connection has not been used, so it's a good one.
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, "localhost", connector.getLocalPort());
         ConnectionPool connectionPool = destination.getConnectionPool();
-        Assert.assertEquals(1, connectionPool.getConnectionCount());
+        Assert.assertEquals(0, connectionPool.getConnectionCount());
         Assert.assertEquals(0, connectionPool.getActiveConnections().size());
-        Assert.assertEquals(1, connectionPool.getIdleConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
     }
 
     @Test
