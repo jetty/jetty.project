@@ -22,6 +22,7 @@ import static org.eclipse.jetty.http.HttpTokens.*;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.EnumSet;
 
 import org.eclipse.jetty.util.ArrayTernaryTrie;
@@ -344,41 +345,92 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
+    enum CharState { ILLEGAL, CR, LF, LEGAL }
+    private final static CharState[] __charState;
+    static
+    {
+        // token          = 1*tchar
+        // tchar          = "!" / "#" / "$" / "%" / "&" / "'" / "*"
+        //                / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+        //                / DIGIT / ALPHA
+        //                ; any VCHAR, except delimiters
+        // quoted-string  = DQUOTE *( qdtext / quoted-pair ) DQUOTE
+        // qdtext         = HTAB / SP /%x21 / %x23-5B / %x5D-7E / obs-text
+        // obs-text       = %x80-FF
+        // comment        = "(" *( ctext / quoted-pair / comment ) ")"
+        // ctext          = HTAB / SP / %x21-27 / %x2A-5B / %x5D-7E / obs-text
+        // quoted-pair    = "\" ( HTAB / SP / VCHAR / obs-text )
+   
+        __charState=new CharState[256];
+        Arrays.fill(__charState,CharState.ILLEGAL);
+        __charState[LINE_FEED]=CharState.LF;
+        __charState[CARRIAGE_RETURN]=CharState.CR;
+        __charState[TAB]=CharState.LEGAL;
+        __charState[SPACE]=CharState.LEGAL;
+        
+        __charState['!']=CharState.LEGAL;
+        __charState['#']=CharState.LEGAL;
+        __charState['$']=CharState.LEGAL;
+        __charState['%']=CharState.LEGAL;
+        __charState['&']=CharState.LEGAL;
+        __charState['\'']=CharState.LEGAL;
+        __charState['*']=CharState.LEGAL;
+        __charState['+']=CharState.LEGAL;
+        __charState['-']=CharState.LEGAL;
+        __charState['.']=CharState.LEGAL;
+        __charState['^']=CharState.LEGAL;
+        __charState['_']=CharState.LEGAL;
+        __charState['`']=CharState.LEGAL;
+        __charState['|']=CharState.LEGAL;
+        __charState['~']=CharState.LEGAL;
+        
+        __charState['"']=CharState.LEGAL;
+        
+        __charState['\\']=CharState.LEGAL;
+        __charState['(']=CharState.LEGAL;
+        __charState[')']=CharState.LEGAL;
+        Arrays.fill(__charState,0x21,0x27+1,CharState.LEGAL);
+        Arrays.fill(__charState,0x2A,0x5B+1,CharState.LEGAL);
+        Arrays.fill(__charState,0x5D,0x7E+1,CharState.LEGAL);
+        Arrays.fill(__charState,0x80,0xFF+1,CharState.LEGAL);
+        
+    }
+    
+    /* ------------------------------------------------------------------------------- */
     private byte next(ByteBuffer buffer)
     {
         byte ch = buffer.get();
         
-        if (_cr)
+        CharState s = __charState[0xff & ch];
+        switch(s)
         {
-            if (ch!=LINE_FEED)
-                throw new BadMessageException("Bad EOL");
-            _cr=false;
-            return ch;
-        }
+            case ILLEGAL:
+                throw new IllegalCharacterException(_state,ch,buffer);
+                
+            case LF:
+                _cr=false;
+                break;
+                
+            case CR:
+                if (_cr)
+                    throw new BadMessageException("Bad EOL");
 
-        if (ch>=0 && ch<SPACE)
-        {
-            if (ch==CARRIAGE_RETURN)
-            {
+                _cr=true;
                 if (buffer.hasRemaining())
                 {
                     if(_maxHeaderBytes>0 && _state.ordinal()<State.END.ordinal())
                         _headerBytes++;
-                    ch=buffer.get();
-                    if (ch!=LINE_FEED)
-                        throw new BadMessageException("Bad EOL");
+                    return next(buffer);
                 }
-                else
-                {
-                    _cr=true;
-                    // Can return 0 here to indicate the need for more characters, 
-                    // because a real 0 in the buffer would cause a BadMessage below 
-                    return 0;
-                }
-            }
-            // Only LF or TAB acceptable special characters
-            else if (!(ch==LINE_FEED || ch==TAB))
-                throw new IllegalCharacterException(_state,ch,buffer);
+                
+                // Can return 0 here to indicate the need for more characters, 
+                // because a real 0 in the buffer would cause a BadMessage below 
+                return 0;
+                
+            case LEGAL:
+                if (_cr)
+                    throw new BadMessageException("Bad EOL");
+                
         }
         
         return ch;
