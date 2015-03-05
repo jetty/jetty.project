@@ -37,9 +37,10 @@ public class HttpExchange
     private final List<Response.ResponseListener> listeners;
     private final HttpResponse response;
     
+    enum State { PENDING, COMPLETED, TERMINATED } ;
     private final SpinLock _lock = new SpinLock();
-    private Boolean requestTerminated;
-    private Boolean responseTerminated;
+    private State requestState=State.PENDING;
+    private State responseState=State.PENDING;
     private Throwable requestFailure;
     private Throwable responseFailure;
 
@@ -106,9 +107,9 @@ public class HttpExchange
     {
         try(SpinLock.Lock lock = _lock.lock())
         {
-            if (requestTerminated!=null)
+            if (requestState!=State.PENDING)
                 return false;
-            requestTerminated=Boolean.FALSE;
+            requestState=State.COMPLETED;
             return true;
         }
     }
@@ -117,9 +118,9 @@ public class HttpExchange
     {
         try(SpinLock.Lock lock = _lock.lock())
         {
-            if (responseTerminated!=null)
+            if (responseState!=State.PENDING)
                 return false;
-            responseTerminated=Boolean.FALSE;
+            responseState=State.COMPLETED;
             return true;
         }
     }
@@ -128,9 +129,9 @@ public class HttpExchange
     {
         try(SpinLock.Lock lock = _lock.lock())
         {
-            requestTerminated=Boolean.TRUE;
+            requestState=State.TERMINATED;
             requestFailure=failure;
-            if (Boolean.TRUE.equals(responseTerminated))
+            if (State.TERMINATED.equals(responseState))
                 return new Result(getRequest(), requestFailure, getResponse(), responseFailure);
         }
         return null;
@@ -140,9 +141,9 @@ public class HttpExchange
     {
         try(SpinLock.Lock lock = _lock.lock())
         {
-            responseTerminated=Boolean.TRUE;
+            responseState=State.TERMINATED;
             responseFailure=failure;
-            if (Boolean.TRUE.equals(requestTerminated))
+            if (State.TERMINATED.equals(requestState))
                 return new Result(getRequest(), requestFailure, getResponse(), responseFailure);
         }
         return null;
@@ -175,15 +176,15 @@ public class HttpExchange
         boolean notify=false;
         try(SpinLock.Lock lock = _lock.lock())
         {
-            if (!Boolean.TRUE.equals(requestTerminated))
+            if (!Boolean.TRUE.equals(requestState))
             {
-                requestTerminated=Boolean.TRUE;
+                requestState=State.TERMINATED;
                 notify=true;
                 requestFailure=cause;
             }
-            if (!Boolean.TRUE.equals(responseTerminated))
+            if (!Boolean.TRUE.equals(responseState))
             {
-                responseTerminated=Boolean.TRUE;
+                responseState=State.TERMINATED;
                 notify=true;
                 responseFailure=cause;
             }
@@ -210,7 +211,7 @@ public class HttpExchange
     {
         try(SpinLock.Lock lock = _lock.lock())
         {
-            responseTerminated=null;
+            responseState=State.PENDING;
             responseFailure=null;
         }
     }
@@ -230,8 +231,8 @@ public class HttpExchange
             return String.format("%s@%x req=%s/%s res=%s/%s",
                 HttpExchange.class.getSimpleName(),
                 hashCode(),
-                requestTerminated,requestFailure,
-                responseTerminated,responseFailure);
+                requestState,requestFailure,
+                responseState,responseFailure);
         }
     }
 }

@@ -136,7 +136,8 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
             BufferUtil.clear(buffer);
-            releaseBuffer();
+            if (buffer!=null)
+                releaseBuffer();
             failAndClose(x);
         }
     }
