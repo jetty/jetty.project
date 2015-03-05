@@ -19,29 +19,29 @@
 package org.eclipse.jetty.client;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.SpinLock;
 
 public class HttpExchange
 {
     private static final Logger LOG = Log.getLogger(HttpExchange.class);
 
-    private final AtomicBoolean requestComplete = new AtomicBoolean();
-    private final AtomicBoolean responseComplete = new AtomicBoolean();
-    private final AtomicInteger complete = new AtomicInteger();
     private final AtomicReference<HttpChannel> channel = new AtomicReference<>();
     private final HttpDestination destination;
     private final HttpRequest request;
     private final List<Response.ResponseListener> listeners;
     private final HttpResponse response;
-    private volatile Throwable requestFailure;
-    private volatile Throwable responseFailure;
+    
+    private final SpinLock _lock = new SpinLock();
+    private Boolean requestTerminated;
+    private Boolean responseTerminated;
+    private Throwable requestFailure;
+    private Throwable responseFailure;
 
     public HttpExchange(HttpDestination destination, HttpRequest request, List<Response.ResponseListener> listeners)
     {
@@ -66,7 +66,10 @@ public class HttpExchange
 
     public Throwable getRequestFailure()
     {
-        return requestFailure;
+        try(SpinLock.Lock lock = _lock.lock())
+        {
+            return requestFailure;
+        }
     }
 
     public List<Response.ResponseListener> getResponseListeners()
@@ -81,7 +84,10 @@ public class HttpExchange
 
     public Throwable getResponseFailure()
     {
-        return responseFailure;
+        try(SpinLock.Lock lock = _lock.lock())
+        {
+            return responseFailure;
+        }
     }
 
     public void associate(HttpChannel channel)
@@ -98,87 +104,50 @@ public class HttpExchange
 
     public boolean requestComplete()
     {
-        return requestComplete.compareAndSet(false, true);
+        try(SpinLock.Lock lock = _lock.lock())
+        {
+            if (requestTerminated!=null)
+                return false;
+            requestTerminated=Boolean.FALSE;
+            return true;
+        }
     }
 
     public boolean responseComplete()
     {
-        return responseComplete.compareAndSet(false, true);
+        try(SpinLock.Lock lock = _lock.lock())
+        {
+            if (responseTerminated!=null)
+                return false;
+            responseTerminated=Boolean.FALSE;
+            return true;
+        }
     }
 
     public Result terminateRequest(Throwable failure)
     {
-        int requestSuccess = 0b0011;
-        int requestFailure = 0b0001;
-        return terminate(failure == null ? requestSuccess : requestFailure, failure);
-    }
-
-    public Result terminateResponse(Throwable failure)
-    {
-        if (failure == null)
+        try(SpinLock.Lock lock = _lock.lock())
         {
-            int responseSuccess = 0b1100;
-            return terminate(responseSuccess, null);
-        }
-        else
-        {
-            proceed(failure);
-            int responseFailure = 0b0100;
-            return terminate(responseFailure, failure);
-        }
-    }
-
-    /**
-     * This method needs to atomically compute whether this exchange is completed,
-     * that is both request and responses are completed (either with a success or
-     * a failure).
-     *
-     * Furthermore, this method needs to atomically compute whether the exchange
-     * has completed successfully (both request and response are successful) or not.
-     *
-     * To do this, we use 2 bits for the request (one to indicate completion, one
-     * to indicate success), and similarly for the response.
-     * By using {@link AtomicInteger} to atomically sum these codes we can know
-     * whether the exchange is completed and whether is successful.
-     *
-     * @return the {@link Result} - if any - associated with the status
-     */
-    private Result terminate(int code, Throwable failure)
-    {
-        int current = update(code, failure);
-        int terminated = 0b0101;
-        if ((current & terminated) == terminated)
-        {
-            // Request and response terminated
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} terminated", this);
-            return new Result(getRequest(), getRequestFailure(), getResponse(), getResponseFailure());
+            requestTerminated=Boolean.TRUE;
+            requestFailure=failure;
+            if (Boolean.TRUE.equals(responseTerminated))
+                return new Result(getRequest(), requestFailure, getResponse(), responseFailure);
         }
         return null;
     }
 
-    private int update(int code, Throwable failure)
+    public Result terminateResponse(Throwable failure)
     {
-        while (true)
+        try(SpinLock.Lock lock = _lock.lock())
         {
-            int current = complete.get();
-            boolean updateable = (current & code) == 0;
-            if (updateable)
-            {
-                int candidate = current | code;
-                if (!complete.compareAndSet(current, candidate))
-                    continue;
-                current = candidate;
-                if ((code & 0b01) == 0b01)
-                    requestFailure = failure;
-                if ((code & 0b0100) == 0b0100)
-                    responseFailure = failure;
-                if (LOG.isDebugEnabled())
-                    LOG.debug("{} updated", this);
-            }
-            return current;
+            responseTerminated=Boolean.TRUE;
+            responseFailure=failure;
+            if (Boolean.TRUE.equals(requestTerminated))
+                return new Result(getRequest(), requestFailure, getResponse(), responseFailure);
         }
+        return null;
     }
+
 
     public boolean abort(Throwable cause)
     {
@@ -203,7 +172,24 @@ public class HttpExchange
 
     private boolean fail(Throwable cause)
     {
-        if (update(0b0101, cause) == 0b0101)
+        boolean notify=false;
+        try(SpinLock.Lock lock = _lock.lock())
+        {
+            if (!Boolean.TRUE.equals(requestTerminated))
+            {
+                requestTerminated=Boolean.TRUE;
+                notify=true;
+                requestFailure=cause;
+            }
+            if (!Boolean.TRUE.equals(responseTerminated))
+            {
+                responseTerminated=Boolean.TRUE;
+                notify=true;
+                responseFailure=cause;
+            }
+        }
+        
+        if (notify)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Failing {}: {}", this, cause);
@@ -222,8 +208,11 @@ public class HttpExchange
 
     public void resetResponse()
     {
-        responseComplete.set(false);
-        complete.addAndGet(-0b1100);
+        try(SpinLock.Lock lock = _lock.lock())
+        {
+            responseTerminated=null;
+            responseFailure=null;
+        }
     }
 
     public void proceed(Throwable failure)
@@ -233,20 +222,16 @@ public class HttpExchange
             channel.proceed(this, failure);
     }
 
-    private String toString(int code)
-    {
-        String padding = "0000";
-        String status = Integer.toBinaryString(code);
-        return String.format("%s@%x status=%s%s",
-                HttpExchange.class.getSimpleName(),
-                hashCode(),
-                padding.substring(status.length()),
-                status);
-    }
-
     @Override
     public String toString()
     {
-        return toString(complete.get());
+        try(SpinLock.Lock lock = _lock.lock())
+        {
+            return String.format("%s@%x req=%s/%s res=%s/%s",
+                HttpExchange.class.getSimpleName(),
+                hashCode(),
+                requestTerminated,requestFailure,
+                responseTerminated,responseFailure);
+        }
     }
 }
