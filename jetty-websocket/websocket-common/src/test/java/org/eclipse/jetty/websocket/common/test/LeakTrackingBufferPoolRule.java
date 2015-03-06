@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class LeakTrackingBufferPoolRule extends LeakTrackingByteBufferPool implements TestRule
 {
@@ -41,7 +41,7 @@ public class LeakTrackingBufferPoolRule extends LeakTrackingByteBufferPool imple
     {
         assertThat("Leaked Acquires Count for [" + id + "]",getLeakedAcquires(),is(0L));
         assertThat("Leaked Releases Count for [" + id + "]",getLeakedReleases(),is(0L));
-        assertThat("Leaked Unrelesed Count for [" + id + "]",getLeakedUnreleased(),is(0L));
+        assertThat("Leaked Resource Count for [" + id + "]", getLeakedResources(),is(0L));
     }
 
     @Override

@@ -19,9 +19,6 @@
 
 package org.eclipse.jetty.spdy.server;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
-
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -59,6 +56,9 @@ import org.eclipse.jetty.util.thread.Scheduler;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class SynDataReplyDataLoadTest extends AbstractTest
 {
@@ -192,13 +192,15 @@ public class SynDataReplyDataLoadTest extends AbstractTest
 
         threadPool.shutdown();
 
+        System.gc();
+
         assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), is(0L));
         assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), is(0L));
-        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedUnreleased(), is(0L));
+        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), is(0L));
         
         assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), is(0L));
         assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), is(0L));
-        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedUnreleased(), is(0L));
+        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedResources(), is(0L));
     }
 
     private void synCompletedData(Session session, Fields headers, int iterations) throws Exception
