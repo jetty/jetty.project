@@ -464,7 +464,11 @@ public class BufferUtil
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())
-            out.write(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        {
+            out.write(buffer.array(),buffer.arrayOffset() + buffer.position(),buffer.remaining());
+            // update buffer position, in way similar to non-array version of writeTo
+            buffer.position(buffer.position() + buffer.remaining());
+        }
         else
         {
             byte[] bytes = new byte[TEMP_BUFFER_SIZE];
@@ -927,7 +931,7 @@ public class BufferUtil
      * @param buffer
      * @return A string showing the buffer ID
      */
-    public static void idString(ByteBuffer buffer, StringBuilder out) 
+    private static void idString(ByteBuffer buffer, StringBuilder out) 
     {
         out.append(buffer.getClass().getSimpleName());
         out.append("@");
