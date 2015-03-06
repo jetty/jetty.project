@@ -939,6 +939,43 @@ public class BufferUtil
         return builder.toString();
     }
 
+
+    
+    /* ------------------------------------------------------------ */
+    /** Convert Buffer to string ID independent of content
+     * @param buffer
+     * @return A string showing the buffer ID
+     */
+    public static void idString(ByteBuffer buffer, StringBuilder out) 
+    {
+        out.append(buffer.getClass().getSimpleName());
+        out.append("@");
+        if (buffer.hasArray() && buffer.arrayOffset()==4)
+        {
+            out.append('T');
+            byte[] array = buffer.array();
+            TypeUtil.toHex(array[0],out);
+            TypeUtil.toHex(array[1],out);
+            TypeUtil.toHex(array[2],out);
+            TypeUtil.toHex(array[3],out);
+        }
+        else
+            out.append(Integer.toHexString(System.identityHashCode(buffer)));
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Convert Buffer to string ID independent of content
+     * @param buffer
+     * @return A string showing the buffer ID
+     */
+    public static String toIDString(ByteBuffer buffer)
+    {
+        StringBuilder buf = new StringBuilder();
+        idString(buffer,buf);
+        return buf.toString();
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /** Convert Buffer to a detail debug string of pointers and content
      * @param buffer
@@ -950,9 +987,7 @@ public class BufferUtil
             return "null";
 
         StringBuilder buf = new StringBuilder();
-        buf.append(buffer.getClass().getSimpleName());
-        buf.append("@");
-        buf.append(Integer.toHexString(System.identityHashCode(buffer)));
+        idString(buffer,buf);
         buf.append("[p=");
         buf.append(buffer.position());
         buf.append(",l=");

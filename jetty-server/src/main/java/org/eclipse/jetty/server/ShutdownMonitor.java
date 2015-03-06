@@ -23,6 +23,7 @@ import java.io.InputStreamReader;
 import java.io.LineNumberReader;
 import java.io.OutputStream;
 import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
@@ -294,7 +295,9 @@ public class ShutdownMonitor
 
             try
             {
-                serverSocket = new ServerSocket(port,1,InetAddress.getByName("127.0.0.1"));
+                serverSocket = new ServerSocket();
+                serverSocket.setReuseAddress(true);
+                serverSocket.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), port), 1);
                 if (port == 0)
                 {
                     // server assigned port in use
