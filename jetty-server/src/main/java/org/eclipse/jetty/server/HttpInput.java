@@ -376,8 +376,9 @@ public abstract class HttpInput<T> extends ServletInputStream implements Runnabl
                 _contentState = ASYNC;
                 _listener = readListener;
                 _notReady = true;
-
-                content = getNextContent()!=null;
+                
+                content = getNextContent()!=null || isEOF();
+                
             }
             if (content)
                 _channelState.onReadPossible();

@@ -26,6 +26,7 @@ import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.AsyncContext;
@@ -42,6 +43,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
+import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
@@ -493,4 +495,66 @@ public class AsyncIOServletTest
             assertThat(line, containsString("i="+data.length+" eof=false finished=true"));
         }
     }
+    
+
+    @Test
+    public void testEmptyAsyncRead() throws Exception
+    {
+        final AtomicBoolean oda = new AtomicBoolean();
+        final CountDownLatch latch = new CountDownLatch(1);
+        
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                final AsyncContext asyncContext = request.startAsync(request, response);
+                response.setStatus(200);
+                response.getOutputStream().close();
+                request.getInputStream().setReadListener(new ReadListener()
+                {
+                    @Override
+                    public void onDataAvailable() throws IOException 
+                    {
+                        oda.set(true);
+                    }
+
+                    @Override
+                    public void onAllDataRead() throws IOException 
+                    {
+                        asyncContext.complete();
+                        latch.countDown();
+                    }
+
+                    @Override
+                    public void onError(Throwable t) 
+                    {
+                        t.printStackTrace();
+                        asyncContext.complete();
+                    }        
+                });
+            }
+        });
+
+        String request = "GET " + path + " HTTP/1.1\r\n" +
+                "Host: localhost:" + connector.getLocalPort() + "\r\n" +
+                "Connection: close\r\n" +
+                "\r\n";
+
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = client.getOutputStream();
+            output.write(request.getBytes("UTF-8"));
+            output.flush();
+
+            String response = IO.toString(client.getInputStream());
+            assertThat(response,containsString(" 200 OK"));
+            // wait for onAllDataRead BEFORE closing client
+            latch.await();
+        }
+        
+        // ODA not called at all!
+        Assert.assertFalse(oda.get());
+    }
+
 }
