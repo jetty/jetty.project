@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.io;
 
+import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertSame;
@@ -29,7 +30,9 @@ import java.nio.ByteBuffer;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentMap;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.hamcrest.Matchers;
 import org.junit.Test;
 
 public class MappedByteBufferPoolTest
@@ -112,5 +115,17 @@ public class MappedByteBufferPoolTest
         {
             // Expected path.
         }
+    }
+    
+    @Test
+    public void testTagged()
+    {
+        MappedByteBufferPool pool = new MappedByteBufferPool.Tagged();
+
+        ByteBuffer buffer = pool.acquire(1024,false);
+
+        assertThat(BufferUtil.toDetailString(buffer),containsString("@T00000001"));
+        buffer = pool.acquire(1024,false);
+        assertThat(BufferUtil.toDetailString(buffer),containsString("@T00000002"));
     }
 }

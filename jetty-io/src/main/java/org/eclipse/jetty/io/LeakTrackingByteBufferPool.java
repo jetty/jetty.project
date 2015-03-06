@@ -20,6 +20,7 @@ package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -54,7 +55,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
         ByteBuffer buffer = delegate.acquire(size,direct);
         boolean leakd = leakDetector.acquired(buffer);
         if (NOISY || !leakd)
-            LOG.info(String.format("ByteBuffer acquire %s@%X leakd.acquired=%s",buffer,System.identityHashCode(buffer),leakd ? "normal" : "LEAK"),
+            LOG.info(String.format("ByteBuffer acquire %s leakd.acquired=%s",BufferUtil.toIDString(buffer),leakd ? "normal" : "LEAK"),
                     new Throwable("LeakStack.Acquire"));
         return buffer;
     }
@@ -66,7 +67,7 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
             return;
         boolean leakd = leakDetector.released(buffer);
         if (NOISY || !leakd)
-            LOG.info(String.format("ByteBuffer release %s@%X leakd.released=%s",buffer,System.identityHashCode(buffer),leakd ? "normal" : "LEAK"),
+            LOG.info(String.format("ByteBuffer release %s leakd.released=%s",BufferUtil.toIDString(buffer),leakd ? "normal" : "LEAK"),
                     new Throwable("LeakStack.Release"));
         delegate.release(buffer);
     }

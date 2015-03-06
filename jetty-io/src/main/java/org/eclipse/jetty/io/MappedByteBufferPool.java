@@ -23,6 +23,7 @@ import java.util.Queue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.util.BufferUtil;
 
@@ -56,13 +57,24 @@ public class MappedByteBufferPool implements ByteBufferPool
         if (result == null)
         {
             int capacity = bucket * factor;
-            result = direct ? BufferUtil.allocateDirect(capacity) : BufferUtil.allocate(capacity);
+            result = direct ? createDirect(capacity) : createInDirect(capacity);
         }
 
         BufferUtil.clear(result);
         return result;
     }
 
+    protected ByteBuffer createDirect(int capacity)
+    {
+        return BufferUtil.allocateDirect(capacity);
+    }
+
+    protected ByteBuffer createInDirect(int capacity)
+    {
+        return BufferUtil.allocate(capacity);
+    }
+    
+    
     @Override
     public void release(ByteBuffer buffer)
     {
@@ -107,5 +119,26 @@ public class MappedByteBufferPool implements ByteBufferPool
     ConcurrentMap<Integer, Queue<ByteBuffer>> buffersFor(boolean direct)
     {
         return direct ? directBuffers : heapBuffers;
+    }
+    
+    static AtomicInteger __tag = new AtomicInteger();
+    public static class Tagged extends MappedByteBufferPool
+    {
+        protected ByteBuffer createInDirect(int capacity)
+        {
+            ByteBuffer buffer =  BufferUtil.allocate(capacity+4);
+            buffer.limit(4);
+            buffer.putInt(0,__tag.incrementAndGet());
+            buffer.position(4);
+            buffer.limit(buffer.capacity());
+            ByteBuffer slice = buffer.slice();
+            BufferUtil.clear(slice);
+            return slice;
+        }
+        
+        protected ByteBuffer createDirect(int capacity)
+        {
+            return createInDirect(capacity);
+        }
     }
 }
