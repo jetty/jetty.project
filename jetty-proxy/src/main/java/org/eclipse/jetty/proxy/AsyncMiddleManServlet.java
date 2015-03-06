@@ -28,7 +28,6 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
-
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletException;
@@ -82,7 +81,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
         boolean hasContent = hasContent(clientRequest);
 
-        copyHeaders(clientRequest, proxyRequest);
+        copyRequestHeaders(clientRequest, proxyRequest);
 
         addProxyHeaders(clientRequest, proxyRequest);
 
