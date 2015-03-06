@@ -25,18 +25,12 @@ import org.eclipse.jetty.util.Promise;
 
 public class LeakTrackingConnectionPool extends ConnectionPool
 {
-    private final LeakDetector<Connection> leakDetector = new LeakDetector<Connection>()
-    {
-        @Override
-        protected void leaked(LeakInfo leakInfo)
-        {
-            LeakTrackingConnectionPool.this.leaked(leakInfo);
-        }
-    };
+    private final LeakDetector<Connection> leakDetector;
 
-    public LeakTrackingConnectionPool(Destination destination, int maxConnections, Promise<Connection> connectionPromise)
+    public LeakTrackingConnectionPool(Destination destination, int maxConnections, Promise<Connection> connectionPromise, LeakDetector<Connection> leakDetector)
     {
         super(destination, maxConnections, connectionPromise);
+        this.leakDetector = leakDetector;
         start();
     }
 
@@ -83,10 +77,5 @@ public class LeakTrackingConnectionPool extends ConnectionPool
     {
         if (!leakDetector.released(connection))
             LOG.info("Connection {}@{} released but not acquired", connection, System.identityHashCode(connection));
-    }
-
-    protected void leaked(LeakDetector.LeakInfo leakInfo)
-    {
-        LOG.info("Connection " + leakInfo.getResourceDescription() + " leaked at:", leakInfo.getStackFrames());
     }
 }

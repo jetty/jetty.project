@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.client;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
@@ -28,7 +31,7 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -44,15 +47,12 @@ import org.eclipse.jetty.client.util.BytesContentProvider;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.AbstractConnectionFactory;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
-import org.eclipse.jetty.toolchain.test.annotation.Stress;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.log.Log;
@@ -71,31 +71,25 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         super(sslContextFactory);
     }
 
-    @Stress("High I/O, High CPU")
-    @Slow
     @Test
     public void testIterative() throws Exception
     {
         int cores = Runtime.getRuntime().availableProcessors();
 
-        final AtomicLong leaks = new AtomicLong();
-
         start(new LoadHandler());
         server.stop();
         server.removeConnector(connector);
+        LeakTrackingByteBufferPool serverBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
         connector = new ServerConnector(server, connector.getExecutor(), connector.getScheduler(),
-                new LeakTrackingByteBufferPool(new ArrayByteBufferPool())
-                {
-                    @Override
-                    protected void leaked(LeakDetector.LeakInfo leakInfo)
-                    {
-                        leaks.incrementAndGet();
-                    }
-                }, 1, Math.min(1, cores / 2), AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
+                serverBufferPool , 1, Math.min(1, cores / 2), 
+                AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
         server.addConnector(connector);
         server.start();
 
         client.stop();
+        
+        final LeakDetector<Connection> connectionLeakDetector = new LeakDetector<Connection>();
+        
         HttpClient newClient = new HttpClient(new HttpClientTransportOverHTTP()
         {
             @Override
@@ -106,29 +100,15 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
                     @Override
                     protected ConnectionPool newConnectionPool(HttpClient client)
                     {
-                        return new LeakTrackingConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
-                        {
-                            @Override
-                            protected void leaked(LeakDetector.LeakInfo resource)
-                            {
-                                leaks.incrementAndGet();
-                            }
-                        };
+                        return new LeakTrackingConnectionPool(this, client.getMaxConnectionsPerDestination(), this, connectionLeakDetector);
                     }
                 };
             }
         }, sslContextFactory);
         newClient.setExecutor(client.getExecutor());
         client = newClient;
-        client.setByteBufferPool(new LeakTrackingByteBufferPool(new MappedByteBufferPool())
-        {
-            @Override
-            protected void leaked(LeakDetector.LeakInfo leakInfo)
-            {
-                super.leaked(leakInfo);
-                leaks.incrementAndGet();
-            }
-        });
+        LeakTrackingByteBufferPool clientBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+        client.setByteBufferPool(clientBufferPool);
         client.setMaxConnectionsPerDestination(32768);
         client.setMaxRequestsQueuedPerDestination(1024 * 1024);
         client.setDispatchIO(false);
@@ -151,7 +131,15 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
             run(random, iterations);
         }
 
-        Assert.assertEquals(0, leaks.get());
+        assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), is(0L));
+        assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), is(0L));
+        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedUnreleased(), is(0L));
+        
+        assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), is(0L));
+        assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), is(0L));
+        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedUnreleased(), is(0L));
+        
+        assertThat("Connection Leaks", connectionLeakDetector.getUnreleasedCount(), is(0L));
     }
 
     private void run(Random random, int iterations) throws InterruptedException

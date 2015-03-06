@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.common.test;
 
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -34,7 +35,7 @@ public class UnitParser extends Parser
 
     public UnitParser(WebSocketPolicy policy)
     {
-        super(policy,new LeakTrackingBufferPool("UnitParser",new MappedByteBufferPool()));
+        super(policy,new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
     }
 
     private void parsePartial(ByteBuffer buf, int numBytes)

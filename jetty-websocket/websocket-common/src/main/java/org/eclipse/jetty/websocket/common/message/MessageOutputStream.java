@@ -140,8 +140,6 @@ public class MessageOutputStream extends OutputStream
             closed = fin;
 
             BufferUtil.flipToFlush(buffer, 0);
-            if (LOG.isDebugEnabled())
-                LOG.debug("flush({}): {}", fin, BufferUtil.toDetailString(buffer));
             frame.setPayload(buffer);
             frame.setFin(fin);
 

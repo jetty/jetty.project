@@ -19,6 +19,9 @@
 
 package org.eclipse.jetty.spdy.server;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
 import java.util.List;
@@ -31,9 +34,7 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
-import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.ServerConnector;
@@ -50,7 +51,6 @@ import org.eclipse.jetty.spdy.api.server.ServerSessionFrameListener;
 import org.eclipse.jetty.spdy.client.SPDYClient;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Fields;
-import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -69,23 +69,8 @@ public class SynDataReplyDataLoadTest extends AbstractTest
     @Ignore("Test needs to be rewritten")
     public void testSynDataReplyDataLoad() throws Exception
     {
-        final AtomicLong leaks = new AtomicLong();
-        LeakTrackingByteBufferPool serverBufferPool = new LeakTrackingByteBufferPool(new ArrayByteBufferPool())
-        {
-            @Override
-            protected void leaked(LeakDetector.LeakInfo leakInfo)
-            {
-                leaks.incrementAndGet();
-            }
-        };
-        LeakTrackingByteBufferPool clientBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool())
-        {
-            @Override
-            protected void leaked(LeakDetector.LeakInfo leakInfo)
-            {
-                leaks.incrementAndGet();
-            }
-        };
+        LeakTrackingByteBufferPool serverBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
+        LeakTrackingByteBufferPool clientBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
         ServerSessionFrameListener listener = new ServerSessionFrameListener.Adapter()
         {
@@ -207,7 +192,13 @@ public class SynDataReplyDataLoadTest extends AbstractTest
 
         threadPool.shutdown();
 
-        Assert.assertEquals(0, leaks.get());
+        assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), is(0L));
+        assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), is(0L));
+        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedUnreleased(), is(0L));
+        
+        assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), is(0L));
+        assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), is(0L));
+        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedUnreleased(), is(0L));
     }
 
     private void synCompletedData(Session session, Fields headers, int iterations) throws Exception

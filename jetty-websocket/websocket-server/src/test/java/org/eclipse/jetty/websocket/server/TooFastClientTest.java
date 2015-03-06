@@ -24,7 +24,6 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.EventQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
@@ -32,7 +31,7 @@ import org.eclipse.jetty.websocket.common.Generator;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.frames.TextFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadClient;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.server.examples.MyEchoServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
@@ -83,7 +82,7 @@ public class TooFastClientTest
             
             // Add text frames
             Generator generator = new Generator(WebSocketPolicy.newClientPolicy(),
-                    new LeakTrackingBufferPool("Generator",new MappedByteBufferPool()));
+                    new LeakTrackingBufferPoolRule("Generator"));
             String msg1 = "Echo 1";
             String msg2 = "This is also an echooooo!";
             
