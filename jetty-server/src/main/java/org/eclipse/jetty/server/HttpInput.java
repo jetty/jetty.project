@@ -511,6 +511,7 @@ public class HttpInput extends ServletInputStream implements Runnable
                 _state = ASYNC;
                 _listener = readListener;
                 boolean content=nextContent()!=null;
+                
                 if (content)
                     woken = _channelState.onReadReady();
                 else

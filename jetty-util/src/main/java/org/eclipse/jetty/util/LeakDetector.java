@@ -22,6 +22,7 @@ import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -63,6 +64,7 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
 
     private final ReferenceQueue<T> queue = new ReferenceQueue<>();
     private final ConcurrentMap<String, LeakInfo> resources = new ConcurrentHashMap<>();
+    private final AtomicLong unreleasedCount = new AtomicLong(0);
     private Thread thread;
 
     /**
@@ -81,7 +83,6 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
         if (info != null)
         {
             // leak detected, prior acquire exists (not released)
-            LOG.warn("Prior Acquire from Stack",info.getStackFrames());
             return false;
         }
         // normal behavior
@@ -103,7 +104,7 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
         LeakInfo info = resources.remove(id);
         if (info != null)
         {
-            // normal path
+            // normal behavior
             return true;
         }
 
@@ -118,7 +119,7 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
      *            the resource to generate the unique ID for
      * @return the unique ID of the given resource
      */
-    protected String id(T resource)
+    public String id(T resource)
     {
         return String.valueOf(System.identityHashCode(resource));
     }
@@ -169,6 +170,17 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
     protected void leaked(LeakInfo leakInfo)
     {
         LOG.warn("Resource leaked: " + leakInfo.description,leakInfo.stackFrames);
+        unreleasedCount.incrementAndGet();
+    }
+
+    public void clear()
+    {
+        unreleasedCount.set(0);
+    }
+    
+    public long getUnreleasedCount()
+    {
+        return unreleasedCount.get();
     }
 
     /**

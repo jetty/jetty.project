@@ -22,13 +22,12 @@ import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.websocket.api.Session;
 import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Rule;
@@ -43,7 +42,7 @@ public class BadNetworkTest
     public TestTracker tt = new TestTracker();
 
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private BlockheadServer server;
     private WebSocketClient client;

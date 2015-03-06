@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.client;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.net.CookieManager;
 import java.net.HttpCookie;
@@ -104,6 +105,12 @@ public class CookieTest
         client.setCookieStore(cookieMgr.getCookieStore());
         HttpCookie cookie = new HttpCookie("hello","world");
         cookie.setPath("/");
+        cookie.setVersion(0);
+        cookie.setMaxAge(100000);
+        cookieMgr.getCookieStore().add(server.getWsUri(),cookie);
+        
+        cookie = new HttpCookie("foo","bar is the word");
+        cookie.setPath("/");
         cookie.setMaxAge(100000);
         cookieMgr.getCookieStore().add(server.getWsUri(),cookie);
 
@@ -117,7 +124,8 @@ public class CookieTest
         // client confirms upgrade and receipt of frame
         String serverCookies = confirmClientUpgradeAndCookies(clientSocket,clientConnectFuture,serverConn);
 
-        Assert.assertThat("Cookies seen at server side",serverCookies,containsString("hello=\"world\""));
+        assertThat("Cookies seen at server side",serverCookies,containsString("hello=world"));
+        assertThat("Cookies seen at server side",serverCookies,containsString("foo=\"bar is the word\""));
     }
     
     @Test

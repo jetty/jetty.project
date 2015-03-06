@@ -19,48 +19,29 @@
 package org.eclipse.jetty.websocket.common.test;
 
 import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
-import java.nio.ByteBuffer;
-import java.util.concurrent.atomic.AtomicInteger;
-
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
-import org.eclipse.jetty.util.LeakDetector;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.junit.Assert;
+import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.junit.rules.TestRule;
 import org.junit.runner.Description;
 import org.junit.runners.model.Statement;
 
-public class LeakTrackingBufferPool extends LeakTrackingByteBufferPool implements TestRule
+public class LeakTrackingBufferPoolRule extends LeakTrackingByteBufferPool implements TestRule
 {
-    private static final Logger LOG = Log.getLogger(LeakTrackingBufferPool.class);
     private final String id;
-    private AtomicInteger leakCount = new AtomicInteger(0);
 
-    public LeakTrackingBufferPool(String id, ByteBufferPool delegate)
+    public LeakTrackingBufferPoolRule(String id)
     {
-        super(delegate);
+        super(new MappedByteBufferPool.Tagged());
         this.id = id;
-    }
-
-    @Override
-    protected void leaked(LeakDetector<ByteBuffer>.LeakInfo leakInfo)
-    {
-        String msg = String.format("%s ByteBuffer %s leaked at:",id,leakInfo.getResourceDescription());
-        LOG.warn(msg,leakInfo.getStackFrames());
-        leakCount.incrementAndGet();
     }
 
     public void assertNoLeaks()
     {
-        Assert.assertThat("Leak Count for [" + id + "]",leakCount.get(),is(0));
-    }
-
-    public void clearTracking()
-    {
-        leakCount.set(0);
+        assertThat("Leaked Acquires Count for [" + id + "]",getLeakedAcquires(),is(0L));
+        assertThat("Leaked Releases Count for [" + id + "]",getLeakedReleases(),is(0L));
+        assertThat("Leaked Unrelesed Count for [" + id + "]",getLeakedUnreleased(),is(0L));
     }
 
     @Override

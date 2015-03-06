@@ -121,7 +121,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         sslContextFactory.setKeyManagerPassword("keypwd");
         sslContextFactory.setTrustStorePath(keystorePath);
         sslContextFactory.setTrustStorePassword("storepwd");
-        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool());
+        ByteBufferPool pool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
         ServerConnector connector = new ServerConnector(_server,(Executor)null,(Scheduler)null,pool, 1, 1, AbstractConnectionFactory.getFactories(sslContextFactory,new HttpConnectionFactory()));
 
         

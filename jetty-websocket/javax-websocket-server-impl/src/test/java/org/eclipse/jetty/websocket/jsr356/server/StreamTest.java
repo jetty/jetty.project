@@ -32,6 +32,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.websocket.ClientEndpoint;
 import javax.websocket.CloseReason;
 import javax.websocket.CloseReason.CloseCode;
@@ -50,7 +51,6 @@ import javax.websocket.server.PathParam;
 import javax.websocket.server.ServerEndpoint;
 import javax.websocket.server.ServerEndpointConfig;
 
-import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -59,7 +59,7 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPool;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
@@ -76,7 +76,7 @@ public class StreamTest
     private static final Logger LOG = Log.getLogger(StreamTest.class);
 
     @Rule
-    public LeakTrackingBufferPool bufferPool = new LeakTrackingBufferPool("Test",new MappedByteBufferPool());
+    public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
     private static File outputDir;
     private static Server server;

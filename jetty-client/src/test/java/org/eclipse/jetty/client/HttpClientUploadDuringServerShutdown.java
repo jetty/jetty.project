@@ -43,8 +43,6 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.Assert;
 import org.junit.Test;
@@ -141,8 +139,6 @@ public class HttpClientUploadDuringServerShutdown
     @Test
     public void testUploadDuringServerShutdown() throws Exception
     {
-        final Logger LOG = Log.getLogger(getClass());
-
         final AtomicReference<EndPoint> endPointRef = new AtomicReference<>();
         final CountDownLatch serverLatch = new CountDownLatch(1);
         QueuedThreadPool serverThreads = new QueuedThreadPool();
@@ -186,7 +182,6 @@ public class HttpClientUploadDuringServerShutdown
                                 if (afterSetup.get())
                                 {
                                     associateLatch.countDown();
-                                    LOG.info("Sending...");
                                 }
                                 super.send();
                             }
@@ -214,7 +209,6 @@ public class HttpClientUploadDuringServerShutdown
                         try
                         {
                             associateLatch.await(5, TimeUnit.SECONDS);
-                            LOG.info("Aborting... {}", getHttpChannel());
                             return super.abort(failure);
                         }
                         catch (InterruptedException x)
@@ -270,7 +264,6 @@ public class HttpClientUploadDuringServerShutdown
                     @Override
                     public void onComplete(Result result)
                     {
-                        LOG.info("Completed");
                         completeLatch.countDown();
                     }
                 });
