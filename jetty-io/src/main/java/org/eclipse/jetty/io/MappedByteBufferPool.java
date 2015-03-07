@@ -119,23 +119,23 @@ public class MappedByteBufferPool implements ByteBufferPool
     {
         return direct ? directBuffers : heapBuffers;
     }
-    
-    private static AtomicInteger __tag = new AtomicInteger();
-    
+
     public static class Tagged extends MappedByteBufferPool
     {
+        private final AtomicInteger tag = new AtomicInteger();
+
         public ByteBuffer createIndirect(int capacity)
         {
-            ByteBuffer buffer =  BufferUtil.allocate(capacity+4);
+            ByteBuffer buffer = BufferUtil.allocate(capacity + 4);
             buffer.limit(4);
-            buffer.putInt(0,__tag.incrementAndGet());
+            buffer.putInt(0, tag.incrementAndGet());
             buffer.position(4);
             buffer.limit(buffer.capacity());
             ByteBuffer slice = buffer.slice();
             BufferUtil.clear(slice);
             return slice;
         }
-        
+
         protected ByteBuffer createDirect(int capacity)
         {
             return createIndirect(capacity);
