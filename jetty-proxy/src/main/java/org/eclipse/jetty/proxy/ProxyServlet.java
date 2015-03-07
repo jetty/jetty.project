@@ -108,6 +108,15 @@ public class ProxyServlet extends AbstractProxyServlet
         sendProxyRequest(request, response, proxyRequest);
     }
 
+    /**
+     * @deprecated use {@link #copyRequestHeaders(HttpServletRequest, Request)} instead
+     */
+    @Deprecated
+    protected void copyHeaders(HttpServletRequest clientRequest, Request proxyRequest)
+    {
+        copyRequestHeaders(clientRequest, proxyRequest);
+    }
+
     protected ContentProvider proxyRequestContent(final Request proxyRequest, final HttpServletRequest request) throws IOException
     {
         return new ProxyInputStreamContentProvider(proxyRequest, request, request.getInputStream());

@@ -25,12 +25,18 @@ import org.eclipse.jetty.util.LeakDetector;
 
 public class LeakTrackingConnectionPool extends ConnectionPool
 {
-    private final LeakDetector<Connection> leakDetector;
+    private final LeakDetector<Connection> leakDetector = new LeakDetector<Connection>()
+    {
+        @Override
+        protected void leaked(LeakInfo leakInfo)
+        {
+            LeakTrackingConnectionPool.this.leaked(leakInfo);
+        }
+    };
 
-    public LeakTrackingConnectionPool(Destination destination, int maxConnections, Callback requester, LeakDetector<Connection> leakDetector)
+    public LeakTrackingConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
         super(destination, maxConnections, requester);
-        this.leakDetector = leakDetector;
         start();
     }
 
@@ -69,13 +75,18 @@ public class LeakTrackingConnectionPool extends ConnectionPool
     protected void acquired(Connection connection)
     {
         if (!leakDetector.acquired(connection))
-            LOG.info("Connection {}@{} not tracked", connection, System.identityHashCode(connection));
+            LOG.info("Connection {}@{} not tracked", connection, leakDetector.id(connection));
     }
 
     @Override
     protected void released(Connection connection)
     {
         if (!leakDetector.released(connection))
-            LOG.info("Connection {}@{} released but not acquired", connection, System.identityHashCode(connection));
+            LOG.info("Connection {}@{} released but not acquired", connection, leakDetector.id(connection));
+    }
+
+    protected void leaked(LeakDetector.LeakInfo leakInfo)
+    {
+        LOG.info("Connection " + leakInfo.getResourceDescription() + " leaked at:", leakInfo.getStackFrames());
     }
 }

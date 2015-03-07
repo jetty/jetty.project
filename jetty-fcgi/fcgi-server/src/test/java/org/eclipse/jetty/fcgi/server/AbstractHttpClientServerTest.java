@@ -18,15 +18,13 @@
 
 package org.eclipse.jetty.fcgi.server;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.LeakTrackingConnectionPool;
 import org.eclipse.jetty.client.Origin;
-import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.fcgi.client.http.HttpClientTransportOverFCGI;
 import org.eclipse.jetty.fcgi.client.http.HttpDestinationOverFCGI;
 import org.eclipse.jetty.http.HttpScheme;
@@ -42,13 +40,16 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Rule;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 public abstract class AbstractHttpClientServerTest
 {
     @Rule
     public final TestTracker tracker = new TestTracker();
     private LeakTrackingByteBufferPool serverBufferPool;
     private LeakTrackingByteBufferPool clientBufferPool;
-    private LeakDetector<Connection> connectionLeakDetector;
+    private final AtomicLong connectionLeaks = new AtomicLong();
     protected Server server;
     protected ServerConnector connector;
     protected HttpClient client;
@@ -71,8 +72,6 @@ public abstract class AbstractHttpClientServerTest
         QueuedThreadPool executor = new QueuedThreadPool();
         executor.setName(executor.getName() + "-client");
         
-        connectionLeakDetector = new LeakDetector<Connection>();
-
         client = new HttpClient(new HttpClientTransportOverFCGI(1, false, "")
         {
             @Override
@@ -83,7 +82,14 @@ public abstract class AbstractHttpClientServerTest
                     @Override
                     protected ConnectionPool newConnectionPool(HttpClient client)
                     {
-                        return new LeakTrackingConnectionPool(this, client.getMaxConnectionsPerDestination(), this, connectionLeakDetector);
+                        return new LeakTrackingConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
+                        {
+                            @Override
+                            protected void leaked(LeakDetector.LeakInfo leakInfo)
+                            {
+                                connectionLeaks.incrementAndGet();
+                            }
+                        };
                     }
                 };
             }
@@ -98,15 +104,16 @@ public abstract class AbstractHttpClientServerTest
     public void dispose() throws Exception
     {
         System.gc();
+
         assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), is(0L));
         assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), is(0L));
-        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedUnreleased(), is(0L));
+        assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), is(0L));
         
         assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), is(0L));
         assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), is(0L));
-        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedUnreleased(), is(0L));
+        assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedResources(), is(0L));
         
-        assertThat("Connection Leaks", connectionLeakDetector.getUnreleasedCount(), is(0L));
+        assertThat("Connection Leaks", connectionLeaks.get(), is(0L));
 
         if (client != null)
             client.stop();

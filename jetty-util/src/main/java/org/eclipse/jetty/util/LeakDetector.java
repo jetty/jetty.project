@@ -20,9 +20,9 @@ package org.eclipse.jetty.util;
 
 import java.lang.ref.PhantomReference;
 import java.lang.ref.ReferenceQueue;
+import java.lang.ref.WeakReference;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
-import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -55,8 +55,7 @@ import org.eclipse.jetty.util.log.Logger;
  * has been released and if not, it reports a leak. Using {@link PhantomReference}s is better than overriding
  * {@link #finalize()} and works also in those cases where {@link #finalize()} is not overridable.
  *
- * @param <T>
- *            the resource type.
+ * @param <T> the resource type.
  */
 public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
 {
@@ -64,14 +63,12 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
 
     private final ReferenceQueue<T> queue = new ReferenceQueue<>();
     private final ConcurrentMap<String, LeakInfo> resources = new ConcurrentHashMap<>();
-    private final AtomicLong unreleasedCount = new AtomicLong(0);
     private Thread thread;
 
     /**
      * Tracks the resource as been acquired.
      *
-     * @param resource
-     *            the resource that has been acquired
+     * @param resource the resource that has been acquired
      * @return true whether the resource has been acquired normally, false if the resource has detected a leak (meaning
      *         that another acquire occurred before a release of the same resource)
      * @see #released(Object)
@@ -79,21 +76,20 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
     public boolean acquired(T resource)
     {
         String id = id(resource);
-        LeakInfo info = resources.putIfAbsent(id,new LeakInfo(resource,id));
+        LeakInfo info = resources.putIfAbsent(id, new LeakInfo(resource,id));
         if (info != null)
         {
-            // leak detected, prior acquire exists (not released)
+            // Leak detected, prior acquire exists (not released) or id clash.
             return false;
         }
-        // normal behavior
+        // Normal behavior.
         return true;
     }
 
     /**
      * Tracks the resource as been released.
      *
-     * @param resource
-     *            the resource that has been released
+     * @param resource the resource that has been released
      * @return true whether the resource has been released normally (based on a previous acquire). false if the resource
      *         has been released without a prior acquire (such as a double release scenario)
      * @see #acquired(Object)
@@ -104,19 +100,18 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
         LeakInfo info = resources.remove(id);
         if (info != null)
         {
-            // normal behavior
+            // Normal behavior.
             return true;
         }
 
-        // leak detected (released without acquire)
+        // Leak detected (released without acquire).
         return false;
     }
 
     /**
      * Generates a unique ID for the given resource.
      *
-     * @param resource
-     *            the resource to generate the unique ID for
+     * @param resource the resource to generate the unique ID for
      * @return the unique ID of the given resource
      */
     public String id(T resource)
@@ -164,23 +159,11 @@ public class LeakDetector<T> extends AbstractLifeCycle implements Runnable
     /**
      * Callback method invoked by {@link LeakDetector} when it detects that a resource has been leaked.
      *
-     * @param leakInfo
-     *            the information about the leak
+     * @param leakInfo the information about the leak
      */
     protected void leaked(LeakInfo leakInfo)
     {
         LOG.warn("Resource leaked: " + leakInfo.description,leakInfo.stackFrames);
-        unreleasedCount.incrementAndGet();
-    }
-
-    public void clear()
-    {
-        unreleasedCount.set(0);
-    }
-    
-    public long getUnreleasedCount()
-    {
-        return unreleasedCount.get();
     }
 
     /**

@@ -58,7 +58,7 @@ import org.eclipse.jetty.util.log.Logger;
  * {@link HttpContent} may not have content, if the related {@link ContentProvider} is {@code null}, and this
  * is reflected by {@link #hasContent()}.
  * <p />
- * {@link HttpContent} may have {@link DeferredContentProvider deferred content}, in which case {@link #advance()}
+ * {@link HttpContent} may have {@link AsyncContentProvider deferred content}, in which case {@link #advance()}
  * moves the cursor to a position that provides {@code null} {@link #getByteBuffer() buffer} and
  * {@link #getContent() content}. When the deferred content is available, a further call to {@link #advance()}
  * will move the cursor to a position that provides non {@code null} buffer and content.
@@ -124,7 +124,34 @@ public class HttpContent implements Callback, Closeable
      */
     public boolean advance()
     {
-        if (isLast())
+        boolean advanced;
+        boolean hasNext;
+        ByteBuffer bytes;
+        if (iterator instanceof Synchronizable)
+        {
+            synchronized (((Synchronizable)iterator).getLock())
+            {
+                advanced = iterator.hasNext();
+                bytes = advanced ? iterator.next() : null;
+                hasNext = advanced && iterator.hasNext();
+            }
+        }
+        else
+        {
+            advanced = iterator.hasNext();
+            bytes = advanced ? iterator.next() : null;
+            hasNext = advanced && iterator.hasNext();
+        }
+
+        if (advanced)
+        {
+            buffer = bytes;
+            content = bytes == null ? null : bytes.slice();
+            if (LOG.isDebugEnabled())
+                LOG.debug("Advanced content to {} chunk {}", hasNext ? "next" : "last", bytes);
+            return bytes != null;
+        }
+        else
         {
             if (content != AFTER)
             {
@@ -133,14 +160,6 @@ public class HttpContent implements Callback, Closeable
                     LOG.debug("Advanced content past last chunk");
             }
             return false;
-        }
-        else
-        {
-            ByteBuffer buffer = this.buffer = iterator.next();
-            if (LOG.isDebugEnabled())
-                LOG.debug("Advanced content to {} chunk {}", isLast() ? "last" : "next", buffer);
-            content = buffer == null ? null : buffer.slice();
-            return buffer != null;
         }
     }
 

@@ -27,11 +27,11 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
-import java.util.Queue;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.AsyncContentProvider;
+import org.eclipse.jetty.client.Synchronizable;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -90,7 +90,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
     private static final Chunk CLOSE = new Chunk(BufferUtil.EMPTY_BUFFER, Callback.Adapter.INSTANCE);
 
     private final Object lock = this;
-    private final Queue<Chunk> chunks = new ArrayQueue<>(4, 64, lock);
+    private final ArrayQueue<Chunk> chunks = new ArrayQueue<>(4, 64, lock);
     private final AtomicReference<Listener> listener = new AtomicReference<>();
     private final DeferredContentProviderIterator iterator = new DeferredContentProviderIterator();
     private final AtomicBoolean closed = new AtomicBoolean();
@@ -241,7 +241,7 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
         return iterator;
     }
 
-    private class DeferredContentProviderIterator implements Iterator<ByteBuffer>, Callback
+    private class DeferredContentProviderIterator implements Iterator<ByteBuffer>, Callback, Synchronizable
     {
         private Chunk current;
 
@@ -261,7 +261,12 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
             {
                 Chunk chunk = current = chunks.poll();
                 if (chunk == CLOSE)
+                {
+                    // Slow path: reinsert the CLOSE chunk
+                    // so that hasNext() works correctly.
+                    chunks.add(0, CLOSE);
                     throw new NoSuchElementException();
+                }
                 return chunk == null ? null : chunk.buffer;
             }
         }
@@ -307,6 +312,12 @@ public class DeferredContentProvider implements AsyncContentProvider, Callback, 
             }
             for (Chunk chunk : chunks)
                 chunk.callback.failed(x);
+        }
+
+        @Override
+        public Object getLock()
+        {
+            return lock;
         }
     }
 

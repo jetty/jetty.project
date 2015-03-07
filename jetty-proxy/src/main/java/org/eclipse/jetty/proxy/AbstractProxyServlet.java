@@ -390,7 +390,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
                 clientRequest.getHeader(HttpHeader.TRANSFER_ENCODING.asString()) != null;
     }
 
-    protected void copyHeaders(HttpServletRequest clientRequest, Request proxyRequest)
+    protected void copyRequestHeaders(HttpServletRequest clientRequest, Request proxyRequest)
     {
         // First clear possibly existing headers, as we are going to copy those from the client request.
         proxyRequest.getHeaders().clear();
