@@ -84,7 +84,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * httpClient.start();
  *
  * // One liner:
- * httpClient.GET("http://localhost:8080/").get().status();
+ * httpClient.GET("http://localhost:8080/").getStatus();
  *
  * // Building a request with a timeout
  * Response response = httpClient.newRequest("http://localhost:8080").send().get(5, TimeUnit.SECONDS);
