@@ -11,4 +11,5 @@ distribution for webapp deployment.
 
 - [https://projects.eclipse.org/projects/rt.jetty](https://projects.eclipse.org/projects/rt.jetty)
 
-This fork adds enhancements to Jetty to support auto-scaling in container engines like OpenShift or Docker.
+This fork adds enhancements to Jetty to support auto-scaling in container engines like OpenShift or Docker. Specifically flexible network binding mechanism that enables Jetty services to listen on IP/Port dynamically allocated by the container engine.
+
