@@ -1,37 +1,4 @@
-jetty-9.3.0.M3 - 09 March 2015
- + 445518 Provide different error callbacks to ProxyServlet.
- + 456521 ShutdownHandler should shut down more gracefully
- + 458140 Added DispatcherType support to RewriteHandler
- + 459273 Redundant license notices
- + 459681 Remove dead code after removal of glassfish jasper support
- + 460176 When checking for precompiled jsp, ensure classname is present
- + 460180 Jaas demo has wrong doco in html
- + 460210 ExecutionStragegy producer for SelectManager calls onOpen from
-   produce method
- + 460211 Fixed Idle race in ExecuteProduceRun
- + 460291 AsyncGzipFilter Mappings
- + 460371 AsyncMiddleManServlet.GZipContentTransformer fails if last transform
-   has no output
- + 460372 if web.xml does not contain jspc maven plugin insertionMarker
-   behavior is wrong
- + 460443 Race condition releasing the response buffer.
- + 460642 HttpParser error 400 can expose previous buffer contents in HTTP
-   status reason message
- + 460670 Support multiple names in <Property> elements.
- + 460769 ClientUpgradeRequest sends cookies in the wrong format
- + 460905 Make sure TimeoutCompleteListener is cancelled if the request cannot
-   be sent.
- + 461052 Local streams created after INITIAL_WINDOW_SIZE setting have wrong
-   send window.
- + 461070 Handle setReadListener on request with no content
- + 461133 allow stop port to reuse address
- + 461350 Update HttpParser IllegalCharacter handling to RFC7230
- + 461452 Double release of buffer by HttpReceiverOverHTTP
- + 461499 ConnectionPool may leak connections.
- + 461623 BufferUtil.writeTo does not update position consistently
- + 461643 HttpContent.advance() race.
-
-jetty-9.3.0.M2 - 17 February 2015
+jetty-9.3.0.M2 - 09 March 2015
  + 383207 Use BundleFileLocatorHelperFactory to obtain BundleFileLocatorHelper
  + 420944 Hot Deployment of WAR when Context XML exists doesn't trigger
    redeploy
@@ -42,6 +9,7 @@ jetty-9.3.0.M2 - 17 February 2015
  + 440506 Jetty OSGi boot bundle does not support OSGi framework Eclipse
    Concierge
  + 443652 Remove dependency on java.lang.management classes
+ + 445518 Provide different error callbacks to ProxyServlet.
  + 446564 Refactored RequestLog Mechanism
  + 447472 Clear async context timeout on async static content
  + 448446 org.eclipse.jetty.start.Main create classloader duplicate
@@ -55,7 +23,7 @@ jetty-9.3.0.M2 - 17 February 2015
  + 450873 Disable tests that downcaste wrapped GzipFilterResponses
  + 450894 jetty.sh does not delete JETTY_STATE at start
  + 451092 Connector will fail if HeaderListener return false.
- + 451529 Change sentinel class for finding jstl on classpath to
+ + 451529 Change sentinel class for finding jstl on classpath to 
    org.apache.taglibs.standard.tag.rt.core.WhenTag
  + 451634 DefaultServlet: useFileMappedBuffer javadoc is misleading
  + 451973 Ambiguous module init location when mixing --add-to-start &
@@ -107,6 +75,7 @@ jetty-9.3.0.M2 - 17 February 2015
  + 456426 Exception on context undeploy from EnvConfiguration
  + 456486 Jar containing ServiceContainerInitializer impl not found in TCCL in
    osgi
+ + 456521 ShutdownHandler should shut down more gracefully
  + 456956 Reduce ThreadLocal.remove() weak reference garbage
  + 457017 Reflective call to websocket methods that fail have ambiguous
    exceptions
@@ -117,6 +86,7 @@ jetty-9.3.0.M2 - 17 February 2015
  + 457696 JMX implementation should not be overridden by WebApp classes
  + 457893 Close temp jar resource
  + 458101 added test for maxFormContentSize
+ + 458140 Added DispatcherType support to RewriteHandler
  + 458174 Example Jar Server
  + 458175 multipart annotation on lazily loaded servlet does not work
  + 458209 Length check for HttpMethod MOVE lookahead
@@ -129,6 +99,7 @@ jetty-9.3.0.M2 - 17 February 2015
  + 458849 org.eclipse.jetty.util.Uptime.DefaultImpl() not available on GAE
  + 459006 master branch does not build on norwegian locale
  + 459125 GzipHandler default mimeType behavior incorrect
+ + 459273 Redundant license notices
  + 459352 AsyncMiddleManServlet should set "Host:" header correctly in proxy to
    remote request headers.
  + 459490 Defining a duplicate error page in webdefault.xml and web.xml results
@@ -136,10 +107,37 @@ jetty-9.3.0.M2 - 17 February 2015
  + 459542 AsyncMiddleManServlet race condition on first download content.
  + 459560 jetty.sh handles start.d and no start.ini
  + 459655 Remove SPDY and NPN
+ + 459681 Remove dead code after removal of glassfish jasper support
  + 459731 Update for drafts hpack-11 and http2-17
  + 459769 AsyncMiddleManServlet race condition on last download content.
  + 459845 Support upgrade from http1 to http2/websocket
  + 459963 Failure writing content of a committed request leaks connections.
+ + 460176 When checking for precompiled jsp, ensure classname is present
+ + 460180 Jaas demo has wrong doco in html
+ + 460210 ExecutionStragegy producer for SelectManager calls onOpen from
+   produce method
+ + 460211 Fixed Idle race in ExecuteProduceRun
+ + 460291 AsyncGzipFilter Mappings
+ + 460371 AsyncMiddleManServlet.GZipContentTransformer fails if last transform
+   has no output
+ + 460372 if web.xml does not contain jspc maven plugin insertionMarker
+   behavior is wrong
+ + 460443 Race condition releasing the response buffer.
+ + 460642 HttpParser error 400 can expose previous buffer contents in HTTP
+   status reason message
+ + 460670 Support multiple names in <Property> elements.
+ + 460769 ClientUpgradeRequest sends cookies in the wrong format
+ + 460905 Make sure TimeoutCompleteListener is cancelled if the request cannot
+   be sent.
+ + 461052 Local streams created after INITIAL_WINDOW_SIZE setting have wrong
+   send window.
+ + 461070 Handle setReadListener on request with no content
+ + 461133 allow stop port to reuse address
+ + 461350 Update HttpParser IllegalCharacter handling to RFC7230
+ + 461452 Double release of buffer by HttpReceiverOverHTTP
+ + 461499 ConnectionPool may leak connections.
+ + 461623 BufferUtil.writeTo does not update position consistently
+ + 461643 HttpContent.advance() race.
 
 jetty-9.3.0.M1 - 03 November 2014
  + 376365 "jetty.sh start" returns 0 on failure
