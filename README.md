@@ -11,14 +11,4 @@ distribution for webapp deployment.
 
 - [https://projects.eclipse.org/projects/rt.jetty](https://projects.eclipse.org/projects/rt.jetty)
 
-Documentation
-============
-
-Project documentation is located on our Eclipse website.
-
-- [http://www.eclipse.org/jetty/documentation](http://www.eclipse.org/jetty/documentation)
-
-Professional Services
-============
-
-Expert advice and production support are available through [http://webtide.com](Webtide.com).
+This fork introces enhancements to Jetty to support auto-scaling in container engines like OpenShift or Docker.
