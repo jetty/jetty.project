@@ -429,16 +429,7 @@ public abstract class HttpReceiver
 
         dispose();
 
-        // Mark atomically the response as terminated and failed,
-        // with respect to concurrency between request and response.
-        Result result = exchange.terminateResponse(failure);
-
-        HttpResponse response = exchange.getResponse();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Response failure {} {}", response, failure);
-        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
-        ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-        notifier.notifyFailure(listeners, response, failure);
+        Result result = failResponse(exchange, failure);
 
         if (fail)
         {
@@ -453,9 +444,25 @@ public abstract class HttpReceiver
         return true;
     }
 
+    private Result failResponse(HttpExchange exchange, Throwable failure)
+    {
+        // Mark atomically the response as terminated and failed,
+        // with respect to concurrency between request and response.
+        Result result = exchange.terminateResponse(failure);
+
+        HttpResponse response = exchange.getResponse();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Response failure {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
+        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+        ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
+        notifier.notifyFailure(listeners, response, failure);
+
+        return result;
+    }
+
     private void terminateResponse(HttpExchange exchange, Throwable failure)
     {
-        Result result = exchange.terminateResponse(failure);
+        Result result = failResponse(exchange, failure);
         terminateResponse(exchange, result);
     }
 
@@ -472,7 +479,7 @@ public abstract class HttpReceiver
             if (!ordered)
                 channel.exchangeTerminated(result);
             if (LOG.isDebugEnabled())
-                LOG.debug("Request/Response {} {}", failure == null ? "succeeded" : "failed", response);
+                LOG.debug("Request/Response {}: {}", failure == null ? "succeeded" : "failed", result);
             List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
             ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
             notifier.notifyComplete(listeners, result);
@@ -524,10 +531,11 @@ public abstract class HttpReceiver
     @Override
     public String toString()
     {
-        return String.format("%s@%x(rcv=%s)",
+        return String.format("%s@%x(rsp=%s,failure=%s)",
                 getClass().getSimpleName(),
                 hashCode(),
-                responseState);
+                responseState,
+                failure);
     }
 
     /**

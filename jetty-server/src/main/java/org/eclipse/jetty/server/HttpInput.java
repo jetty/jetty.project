@@ -28,6 +28,7 @@ import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -41,29 +42,29 @@ import org.eclipse.jetty.util.log.Logger;
  * maintains two states: the content state that tells whether there is content to consume and the EOF
  * state that tells whether an EOF has arrived.
  * Only once the content has been consumed the content state is moved to the EOF state.
+ * 
  */
-public abstract class HttpInput extends ServletInputStream implements Runnable
+public class HttpInput extends ServletInputStream implements Runnable
 {
     private final static Logger LOG = Log.getLogger(HttpInput.class);
-    private final static Content EOF_CONTENT = new PoisonPillContent("EOF");
-    private final static Content EARLY_EOF_CONTENT = new PoisonPillContent("EARLY_EOF");
+    private final static Content EOF_CONTENT = new EofContent("EOF");
+    private final static Content EARLY_EOF_CONTENT = new EofContent("EARLY_EOF");
     
     private final byte[] _oneByteBuffer = new byte[1];
     private final ArrayQueue<Content> _inputQ = new ArrayQueue<>();
+    private final HttpChannelState _channelState;
     private ReadListener _listener;
-    private boolean _unready;
     private State _state = STREAM;
     private long _contentConsumed;
 
-    public HttpInput()
+    public HttpInput(HttpChannelState state)
     {
+        _channelState=state;
     }
-
-    protected abstract void onReadPossible();
-
-    public Object lock()
+    
+    protected HttpChannelState getHttpChannelState()
     {
-        return _inputQ;
+        return _channelState;
     }
     
     public void recycle()
@@ -77,7 +78,6 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                 item = _inputQ.pollUnsafe();
             }
             _listener = null;
-            _unready = false;
             _state = STREAM;
             _contentConsumed = 0;
         }
@@ -86,6 +86,8 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
     @Override
     public int available()
     {
+        int available=0;
+        boolean woken=false;
         synchronized (_inputQ)
         {
             Content content = _inputQ.peekUnsafe();
@@ -97,17 +99,27 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                 }
                 catch(IOException e)
                 {
-                    failed(e);
+                    woken=failed(e);
                 }
                 content = _inputQ.peekUnsafe();
             }
             
             if (content!=null)
-                return remaining(content);
-            return 0;
+                available= remaining(content);
         }
+        
+        if (woken)
+            wake();
+        return available;
     }
 
+    private void wake()
+    {
+        // TODO review if this is correct
+        _channelState.getHttpChannel().getConnector().getExecutor().execute(_channelState.getHttpChannel()); 
+    }
+    
+    
     @Override
     public int read() throws IOException
     {
@@ -127,7 +139,12 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                 Content item = nextContent();
                 if (item!=null)
                 {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("{} read {} from {}",this,len,item);
                     int l = get(item, b, off, len);
+                    
+                    consumeNonContent();
+                    
                     return l;
                 }
                 
@@ -157,8 +174,6 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
      */
     protected Content nextContent() throws IOException
     {
-        if (!Thread.holdsLock(_inputQ))
-            throw new IllegalStateException();
         Content content = pollContent();
         if (content==null && !isFinished())
         {
@@ -175,9 +190,6 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
      */
     protected Content pollContent()
     {
-        if (!Thread.holdsLock(_inputQ))
-            throw new IllegalStateException();
-
         // Items are removed only when they are fully consumed.
         Content content = _inputQ.peekUnsafe();
         // Skip consumed items at the head of the queue.
@@ -195,7 +207,9 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                 else
                 {
                     _state=AEOF;
-                    onReadPossible();
+                    boolean woken = _channelState.onReadReady(); // force callback?
+                    if (woken) 
+                        wake();
                 }
             }
             else if (content==EARLY_EOF_CONTENT)
@@ -207,6 +221,28 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         return content;
     }
 
+    /** 
+     */
+    protected void consumeNonContent()
+    {
+        // Items are removed only when they are fully consumed.
+        Content content = _inputQ.peekUnsafe();
+        // Skip consumed items at the head of the queue.
+        while (content != null && remaining(content) == 0)
+        {
+            // Defer EOF until read
+            if (content instanceof EofContent)
+                break;
+            
+            // Consume all other empty content
+            _inputQ.pollUnsafe();
+            content.succeeded();
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} consumed {}", this, content);
+            content = _inputQ.peekUnsafe();
+        }        
+    }
+
     /**
      * Get the next readable from the inputQ, calling {@link #produceContent()}
      * if need be. EOF is NOT processed and state is not changed.
@@ -216,8 +252,6 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
      */
     protected Content nextReadable() throws IOException
     {
-        if (!Thread.holdsLock(_inputQ))
-            throw new IllegalStateException();
         Content content = pollReadable();
         if (content==null && !isFinished())
         {
@@ -234,9 +268,6 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
      */
     protected Content pollReadable()
     {
-        if (!Thread.holdsLock(_inputQ))
-            throw new IllegalStateException();
-
         // Items are removed only when they are fully consumed.
         Content content = _inputQ.peekUnsafe();
         
@@ -279,8 +310,6 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         int l = Math.min(content.remaining(), length);
         content.getContent().get(buffer, offset, l);
         _contentConsumed+=l;
-        if (l>0 && !content.hasContent())
-            pollContent(); // hungry succeed
         return l;
     }
 
@@ -309,8 +338,6 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
      */
     protected void blockForContent() throws IOException
     {
-        if (!Thread.holdsLock(_inputQ))
-            throw new IllegalStateException();
         try
         {
             if (LOG.isDebugEnabled())
@@ -328,29 +355,36 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
      *
      * @param content the content to add
      */
-    public void addContent(Content item)
+    public boolean addContent(Content item)
     {
-        boolean call_on_read_possible=false;
+        boolean woken=false;
         synchronized (_inputQ)
         {
             boolean wasEmpty = _inputQ.isEmpty();
             _inputQ.add(item);
             if (LOG.isDebugEnabled())
-                LOG.debug("{} queued {}", this, item);
+                LOG.debug("{} addContent {}", this, item);
             
-            if (wasEmpty)
+            if (wasEmpty) // TODO do we need this guard?
             {
                 if (_listener==null)
                     _inputQ.notify();
                 else
-                    call_on_read_possible = _unready; 
+                    woken=_channelState.onReadPossible(); 
             }
         }
         
-        if (call_on_read_possible)
-            onReadPossible();
+        return woken;
     }
 
+    public boolean hasContent()
+    {
+        synchronized (_inputQ)
+        {
+            return !_inputQ.isEmpty();
+        }
+    }
+    
     public void unblock()
     {
         synchronized (_inputQ)
@@ -374,18 +408,18 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
      * Typically this will result in an EOFException being thrown
      * from a subsequent read rather than a -1 return.
      */
-    public void earlyEOF()
+    public boolean earlyEOF()
     {
-        addContent(EARLY_EOF_CONTENT);
+        return addContent(EARLY_EOF_CONTENT);
     }
 
     /**
      * This method should be called to signal that all the expected
      * content arrived.
      */
-    public void eof()
+    public boolean eof()
     {
-       addContent(EOF_CONTENT);
+       return addContent(EOF_CONTENT);
     }
 
     public boolean consumeAll()
@@ -447,16 +481,13 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             {
                 if (_listener == null )
                     return true;
-                if (_unready)
-                    return false;
                 if (_state instanceof EOFState)
                     return true;
                 if (nextReadable()!=null)
                     return true;
 
-                _unready = true;
+                _channelState.onReadUnready();
             }
-            unready();
             return false;
         }
         catch(IOException e)
@@ -466,15 +497,11 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         }
     }
 
-    protected void unready()
-    {
-    }
-
     @Override
     public void setReadListener(ReadListener readListener)
     {
         readListener = Objects.requireNonNull(readListener);
-        boolean content;
+        boolean woken=false;
         try
         {
             synchronized (_inputQ)
@@ -483,24 +510,26 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                     throw new IllegalStateException("state=" + _state);
                 _state = ASYNC;
                 _listener = readListener;
-                _unready = true;
-                content=nextContent()!=null;
+                boolean content=nextContent()!=null;
+                
+                if (content)
+                    woken = _channelState.onReadReady();
+                else
+                    _channelState.onReadUnready();
             }
         }
         catch(IOException e)
         {
             throw new RuntimeIOException(e);
         }
-        
-        if (content)
-            onReadPossible();
-        else
-            unready();
+
+        if (woken)
+            wake();
     }
 
-    public void failed(Throwable x)
+    public boolean failed(Throwable x)
     {
-        boolean call_on_read_possible=false;
+        boolean woken=false;
         synchronized (_inputQ)
         {
             if (_state instanceof ErrorState)
@@ -511,14 +540,20 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             if (_listener==null)    
                 _inputQ.notify();
             else
-                call_on_read_possible=true;
+                woken=_channelState.onReadPossible();
         }
-        
-        if (call_on_read_possible)
-            onReadPossible();
-    
+
+        return woken;
     }
 
+    /* ------------------------------------------------------------ */
+    /*
+     * <p>
+     * While this class is-a Runnable, it should never be dispatched in it's own thread. It is a 
+     * runnable only so that the calling thread can use {@link ContextHandler#handle(Runnable)}
+     * to setup classloaders etc.
+     * </p>
+     */
     @Override
     public void run()
     {
@@ -536,22 +571,22 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
                 _state=EOF;
                 aeof=true;
             }
-            else if (!_unready)
-                return;
 
             listener = _listener;
             error = _state instanceof ErrorState?((ErrorState)_state).getError():null;            
-            _unready=false;
         }
 
         try
         {
-            if (aeof)
+            if (error!=null)
+            {
+                _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE); // TODO ???
+                listener.onError(error);
+            }
+            else if (aeof)
                listener.onAllDataRead();
             else if (error == null)
                 listener.onDataAvailable();
-            else
-                listener.onError(error);
         }
         catch (Throwable e)
         {
@@ -560,7 +595,10 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             try
             {
                 if (aeof || error==null)
+                {
+                    _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE); // TODO ???
                     listener.onError(e);
+                }
             }
             catch (Throwable e2)
             {
@@ -587,6 +625,14 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         }
     }
     
+    public static class EofContent extends PoisonPillContent
+    {
+        EofContent(String name)
+        {
+            super(name);
+        }
+    }
+    
     public static class Content extends Callback.Adapter
     {
         private final ByteBuffer _content;
@@ -610,6 +656,12 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
         {
             return _content.remaining();
         }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("Content@%x{%s}",hashCode(),BufferUtil.toDetailString(_content));
+        }
     }
     
     
@@ -630,7 +682,7 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
     {
     }
     
-    protected static class ErrorState extends EOFState
+    protected class ErrorState extends EOFState
     {
         final Throwable _error;
         ErrorState(Throwable error)
@@ -721,4 +773,5 @@ public abstract class HttpInput extends ServletInputStream implements Runnable
             return "AEOF";
         }
     };
+
 }

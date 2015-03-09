@@ -463,7 +463,11 @@ public class BufferUtil
     public static void writeTo(ByteBuffer buffer, OutputStream out) throws IOException
     {
         if (buffer.hasArray())
-            out.write(buffer.array(), buffer.arrayOffset() + buffer.position(), buffer.remaining());
+        {
+            out.write(buffer.array(),buffer.arrayOffset() + buffer.position(),buffer.remaining());
+            // update buffer position, in way similar to non-array version of writeTo
+            buffer.position(buffer.position() + buffer.remaining());
+        }
         else
         {
             byte[] bytes = new byte[TEMP_BUFFER_SIZE];
@@ -939,6 +943,43 @@ public class BufferUtil
         return builder.toString();
     }
 
+
+    
+    /* ------------------------------------------------------------ */
+    /** Convert Buffer to string ID independent of content
+     * @param buffer
+     * @return A string showing the buffer ID
+     */
+    private static void idString(ByteBuffer buffer, StringBuilder out) 
+    {
+        out.append(buffer.getClass().getSimpleName());
+        out.append("@");
+        if (buffer.hasArray() && buffer.arrayOffset()==4)
+        {
+            out.append('T');
+            byte[] array = buffer.array();
+            TypeUtil.toHex(array[0],out);
+            TypeUtil.toHex(array[1],out);
+            TypeUtil.toHex(array[2],out);
+            TypeUtil.toHex(array[3],out);
+        }
+        else
+            out.append(Integer.toHexString(System.identityHashCode(buffer)));
+    }
+    
+    /* ------------------------------------------------------------ */
+    /** Convert Buffer to string ID independent of content
+     * @param buffer
+     * @return A string showing the buffer ID
+     */
+    public static String toIDString(ByteBuffer buffer)
+    {
+        StringBuilder buf = new StringBuilder();
+        idString(buffer,buf);
+        return buf.toString();
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /** Convert Buffer to a detail debug string of pointers and content
      * @param buffer
@@ -950,12 +991,7 @@ public class BufferUtil
             return "null";
 
         StringBuilder buf = new StringBuilder();
-        buf.append(buffer.getClass().getSimpleName());
-        buf.append("@");
-        if (buffer.hasArray())
-            buf.append(Integer.toHexString(Arrays.hashCode(buffer.array())));
-        else
-            buf.append(Integer.toHexString(buf.hashCode()));
+        idString(buffer,buf);
         buf.append("[p=");
         buf.append(buffer.position());
         buf.append(",l=");
@@ -973,21 +1009,6 @@ public class BufferUtil
         return buf.toString();
     }
 
-    /* ------------------------------------------------------------ */
-    /** Convert buffer to a Debug String.
-     * @param buffer
-     * @return A string showing the escaped content of the buffer around the
-     * position and limit (marked with &lt;&lt;&lt; and &gt;&gt;&gt;)
-     */
-    public static String toDebugString(ByteBuffer buffer)
-    {
-        if (buffer == null)
-            return "null";
-        StringBuilder buf = new StringBuilder();
-        appendDebugString(buf,buffer);
-        return buf.toString();
-    }
-    
     private static void appendDebugString(StringBuilder buf,ByteBuffer buffer)
     {
         for (int i = 0; i < buffer.position(); i++)

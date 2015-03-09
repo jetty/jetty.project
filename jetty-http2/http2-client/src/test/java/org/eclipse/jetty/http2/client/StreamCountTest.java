@@ -44,7 +44,7 @@ import org.junit.Test;
 public class StreamCountTest extends AbstractTest
 {
     @Test
-    public void testServersAllowsOneStreamEnforcedByClient() throws Exception
+    public void testServerAllowsOneStreamEnforcedByClient() throws Exception
     {
         start(new ServerSessionListener.Adapter()
         {
@@ -122,7 +122,7 @@ public class StreamCountTest extends AbstractTest
     }
 
     @Test
-    public void testServersAllowsOneStreamEnforcedByServer() throws Exception
+    public void testServerAllowsOneStreamEnforcedByServer() throws Exception
     {
         final CountDownLatch resetLatch = new CountDownLatch(1);
         start(new ServerSessionListener.Adapter()

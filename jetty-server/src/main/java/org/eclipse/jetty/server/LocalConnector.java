@@ -161,7 +161,7 @@ public class LocalConnector extends AbstractConnector
         if (!isStarted())
             throw new IllegalStateException("!STARTED");
         LocalEndPoint endp = new LocalEndPoint();
-        endp.setInput(rawRequest);
+        endp.addInput(rawRequest);
         _connects.add(endp);
         return endp;
     }
@@ -196,14 +196,6 @@ public class LocalConnector extends AbstractConnector
             getExecutor().execute(task);
         }
 
-        public void addInput(String s)
-        {
-            // TODO this is a busy wait
-            while(getIn()==null || BufferUtil.hasContent(getIn()))
-                Thread.yield();
-            setInput(BufferUtil.toBuffer(s, StandardCharsets.UTF_8));
-        }
-
         @Override
         public void close()
         {
@@ -211,7 +203,6 @@ public class LocalConnector extends AbstractConnector
             super.close();
             if (wasOpen)
             {
-//                connectionClosed(getConnection());
                 getConnection().onClose();
                 onClose();
             }

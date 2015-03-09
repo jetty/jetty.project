@@ -22,6 +22,7 @@ import java.nio.ByteBuffer;
 import java.util.List;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.LeakTrackingByteBufferPool;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -123,7 +124,7 @@ public class UnitGenerator extends Generator
 
     public UnitGenerator()
     {
-        super(WebSocketPolicy.newServerPolicy(),new LeakTrackingBufferPool("UnitGenerator",new MappedByteBufferPool()));
+        super(WebSocketPolicy.newServerPolicy(),new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged()));
     }
     
     public UnitGenerator(ByteBufferPool bufferPool)

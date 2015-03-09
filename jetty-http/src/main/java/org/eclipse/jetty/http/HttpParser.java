@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.http;
 
+import static org.eclipse.jetty.http.HttpTokens.*;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.EnumSet;
 
-import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
@@ -31,11 +33,6 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-
-import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
-import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
-import static org.eclipse.jetty.http.HttpTokens.SPACE;
-import static org.eclipse.jetty.http.HttpTokens.TAB;
 
 
 /* ------------------------------------------------------------ */
@@ -348,41 +345,92 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
+    enum CharState { ILLEGAL, CR, LF, LEGAL }
+    private final static CharState[] __charState;
+    static
+    {
+        // token          = 1*tchar
+        // tchar          = "!" / "#" / "$" / "%" / "&" / "'" / "*"
+        //                / "+" / "-" / "." / "^" / "_" / "`" / "|" / "~"
+        //                / DIGIT / ALPHA
+        //                ; any VCHAR, except delimiters
+        // quoted-string  = DQUOTE *( qdtext / quoted-pair ) DQUOTE
+        // qdtext         = HTAB / SP /%x21 / %x23-5B / %x5D-7E / obs-text
+        // obs-text       = %x80-FF
+        // comment        = "(" *( ctext / quoted-pair / comment ) ")"
+        // ctext          = HTAB / SP / %x21-27 / %x2A-5B / %x5D-7E / obs-text
+        // quoted-pair    = "\" ( HTAB / SP / VCHAR / obs-text )
+   
+        __charState=new CharState[256];
+        Arrays.fill(__charState,CharState.ILLEGAL);
+        __charState[LINE_FEED]=CharState.LF;
+        __charState[CARRIAGE_RETURN]=CharState.CR;
+        __charState[TAB]=CharState.LEGAL;
+        __charState[SPACE]=CharState.LEGAL;
+        
+        __charState['!']=CharState.LEGAL;
+        __charState['#']=CharState.LEGAL;
+        __charState['$']=CharState.LEGAL;
+        __charState['%']=CharState.LEGAL;
+        __charState['&']=CharState.LEGAL;
+        __charState['\'']=CharState.LEGAL;
+        __charState['*']=CharState.LEGAL;
+        __charState['+']=CharState.LEGAL;
+        __charState['-']=CharState.LEGAL;
+        __charState['.']=CharState.LEGAL;
+        __charState['^']=CharState.LEGAL;
+        __charState['_']=CharState.LEGAL;
+        __charState['`']=CharState.LEGAL;
+        __charState['|']=CharState.LEGAL;
+        __charState['~']=CharState.LEGAL;
+        
+        __charState['"']=CharState.LEGAL;
+        
+        __charState['\\']=CharState.LEGAL;
+        __charState['(']=CharState.LEGAL;
+        __charState[')']=CharState.LEGAL;
+        Arrays.fill(__charState,0x21,0x27+1,CharState.LEGAL);
+        Arrays.fill(__charState,0x2A,0x5B+1,CharState.LEGAL);
+        Arrays.fill(__charState,0x5D,0x7E+1,CharState.LEGAL);
+        Arrays.fill(__charState,0x80,0xFF+1,CharState.LEGAL);
+        
+    }
+    
+    /* ------------------------------------------------------------------------------- */
     private byte next(ByteBuffer buffer)
     {
         byte ch = buffer.get();
         
-        if (_cr)
+        CharState s = __charState[0xff & ch];
+        switch(s)
         {
-            if (ch!=LINE_FEED)
-                throw new BadMessageException("Bad EOL");
-            _cr=false;
-            return ch;
-        }
+            case ILLEGAL:
+                throw new IllegalCharacterException(_state,ch,buffer);
+                
+            case LF:
+                _cr=false;
+                break;
+                
+            case CR:
+                if (_cr)
+                    throw new BadMessageException("Bad EOL");
 
-        if (ch>=0 && ch<SPACE)
-        {
-            if (ch==CARRIAGE_RETURN)
-            {
+                _cr=true;
                 if (buffer.hasRemaining())
                 {
                     if(_maxHeaderBytes>0 && _state.ordinal()<State.END.ordinal())
                         _headerBytes++;
-                    ch=buffer.get();
-                    if (ch!=LINE_FEED)
-                        throw new BadMessageException("Bad EOL");
+                    return next(buffer);
                 }
-                else
-                {
-                    _cr=true;
-                    // Can return 0 here to indicate the need for more characters, 
-                    // because a real 0 in the buffer would cause a BadMessage below 
-                    return 0;
-                }
-            }
-            // Only LF or TAB acceptable special characters
-            else if (!(ch==LINE_FEED || ch==TAB))
-                throw new IllegalCharacter(ch,buffer);
+                
+                // Can return 0 here to indicate the need for more characters, 
+                // because a real 0 in the buffer would cause a BadMessage below 
+                return 0;
+                
+            case LEGAL:
+                if (_cr)
+                    throw new BadMessageException("Bad EOL");
+                
         }
         
         return ch;
@@ -511,7 +559,7 @@ public class HttpParser
                         if (ch==LINE_FEED)
                             throw new BadMessageException("No URI");
                         else
-                            throw new IllegalCharacter(ch,buffer);
+                            throw new IllegalCharacterException(_state,ch,buffer);
                     }
                     else
                         _string.append((char)ch);
@@ -528,7 +576,7 @@ public class HttpParser
                         setState(State.SPACE1);
                     }
                     else if (ch < HttpTokens.SPACE)
-                        throw new IllegalCharacter(ch,buffer);
+                        throw new IllegalCharacterException(_state,ch,buffer);
                     else
                         _string.append((char)ch);
                     break;
@@ -891,25 +939,24 @@ public class HttpParser
                                 case EOF_CONTENT:
                                     setState(State.EOF_CONTENT);
                                     handle=_handler.headerComplete()||handle;
-                                    break;
+                                    return handle;
 
                                 case CHUNKED_CONTENT:
                                     setState(State.CHUNKED_CONTENT);
                                     handle=_handler.headerComplete()||handle;
-                                    break;
+                                    return handle;
 
                                 case NO_CONTENT:
                                     handle=_handler.headerComplete()||handle;
                                     setState(State.END);
                                     handle=_handler.messageComplete()||handle;
-                                    break;
+                                    return handle;
 
                                 default:
                                     setState(State.CONTENT);
                                     handle=_handler.headerComplete()||handle;
-                                    break;
+                                    return handle;
                             }
-                            break;
                         }
 
                         default:
@@ -1033,7 +1080,7 @@ public class HttpParser
                         break;
                     }
 
-                    throw new IllegalCharacter(ch,buffer);
+                    throw new IllegalCharacterException(_state,ch,buffer);
 
                 case HEADER_VALUE:
                     if (ch>HttpTokens.SPACE || ch<0)
@@ -1058,7 +1105,7 @@ public class HttpParser
                         setState(State.HEADER);
                         break;
                     }
-                    throw new IllegalCharacter(ch,buffer);
+                    throw new IllegalCharacterException(_state,ch,buffer);
 
                 case HEADER_IN_VALUE:
                     if (ch>=HttpTokens.SPACE || ch<0 || ch==HttpTokens.TAB)
@@ -1088,7 +1135,7 @@ public class HttpParser
                         break;
                     }
 
-                    throw new IllegalCharacter(ch,buffer);
+                    throw new IllegalCharacterException(_state,ch,buffer);
                     
                 default:
                     throw new IllegalStateException(_state.toString());
@@ -1143,8 +1190,7 @@ public class HttpParser
                 if (_responseStatus>0 && _headResponse)
                 {
                     setState(State.END);
-                    if (_handler.messageComplete())
-                        return true;
+                    return _handler.messageComplete();
                 }
                 else
                 {
@@ -1284,8 +1330,7 @@ public class HttpParser
             if (content == 0)
             {
                 setState(State.END);
-                if (_handler.messageComplete())
-                    return true;
+                return _handler.messageComplete();
             }
         }
         
@@ -1309,8 +1354,7 @@ public class HttpParser
                     if (content == 0)
                     {
                         setState(State.END);
-                        if (_handler.messageComplete())
-                            return true;
+                        return _handler.messageComplete();
                     }
                     else
                     {
@@ -1333,8 +1377,7 @@ public class HttpParser
                         if(_contentPosition == _contentLength)
                         {
                             setState(State.END);
-                            if (_handler.messageComplete())
-                                return true;
+                            return _handler.messageComplete();
                         }
                     }
                     break;
@@ -1363,8 +1406,7 @@ public class HttpParser
                         if (_chunkLength == 0)
                         {
                             setState(State.END);
-                            if (_handler.messageComplete())
-                                return true;
+                            return _handler.messageComplete();
                         }
                         else
                             setState(State.CHUNK);
@@ -1384,8 +1426,7 @@ public class HttpParser
                         if (_chunkLength == 0)
                         {
                             setState(State.END);
-                            if (_handler.messageComplete())
-                                return true;
+                            return _handler.messageComplete();
                         }
                         else
                             setState(State.CHUNK);
@@ -1593,13 +1634,14 @@ public class HttpParser
     }
 
     /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    /* ------------------------------------------------------------------------------- */
-    private class IllegalCharacter extends BadMessageException
+    @SuppressWarnings("serial")
+    private static class IllegalCharacterException extends BadMessageException
     {
-        IllegalCharacter(byte ch,ByteBuffer buffer)
+        private IllegalCharacterException(State state,byte ch,ByteBuffer buffer)
         {
-            super(String.format("Illegal character 0x%x in state=%s in '%s'",ch,_state,BufferUtil.toDebugString(buffer)));
+            super(400,String.format("Illegal character 0x%X",ch));
+            // Bug #460642 - don't reveal buffers to end user
+            LOG.warn(String.format("Illegal character 0x%X in state=%s for buffer %s",ch,state,BufferUtil.toDetailString(buffer)));
         }
     }
 }

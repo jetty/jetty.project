@@ -64,7 +64,7 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
     public void onUpgradeTo(ByteBuffer prefilled)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDebugString(prefilled));
+            LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDetailString(prefilled));
         producer.prefill(prefilled);
     }
     
@@ -88,6 +88,8 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
     @Override
     public void onFillable()
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("HTTP2 onFillable {} ", this);
         executionStrategy.execute();
     }
 

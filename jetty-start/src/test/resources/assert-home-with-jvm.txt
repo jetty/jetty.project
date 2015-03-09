@@ -50,7 +50,6 @@ LIB|${jetty.base}/lib/websocket/websocket-servlet-TEST.jar
 # PROP|jetty.port=8080
 # (these are the ones set by default from jetty.home modules)
 PROP|jetty.port=8080
-PROP|jsp-impl=apache
 PROP|http.timeout=30000
 PROP|jetty.delayDispatchUntilContent=false
 PROP|jetty.dump.start=false

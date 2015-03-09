@@ -19,7 +19,9 @@
 package org.eclipse.jetty.io;
 
 import java.nio.ByteBuffer;
+import java.util.concurrent.atomic.AtomicLong;
 
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -31,14 +33,24 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
 
     private final LeakDetector<ByteBuffer> leakDetector = new LeakDetector<ByteBuffer>()
     {
+        public String id(ByteBuffer resource)
+        {
+            return BufferUtil.toIDString(resource);
+        }
+
         @Override
         protected void leaked(LeakInfo leakInfo)
         {
+            leaked.incrementAndGet();
             LeakTrackingByteBufferPool.this.leaked(leakInfo);
         }
     };
-    
+
+    private final static boolean NOISY = Boolean.getBoolean(LeakTrackingByteBufferPool.class.getName() + ".NOISY");
     private final ByteBufferPool delegate;
+    private final AtomicLong leakedReleases = new AtomicLong(0);
+    private final AtomicLong leakedAcquires = new AtomicLong(0);
+    private final AtomicLong leaked = new AtomicLong(0);
 
     public LeakTrackingByteBufferPool(ByteBufferPool delegate)
     {
@@ -51,8 +63,13 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     public ByteBuffer acquire(int size, boolean direct)
     {
         ByteBuffer buffer = delegate.acquire(size, direct);
-        if (!leakDetector.acquired(buffer))
-            LOG.warn("ByteBuffer {}@{} not tracked", buffer, System.identityHashCode(buffer));
+        boolean leaked = leakDetector.acquired(buffer);
+        if (NOISY || !leaked)
+        {
+            leakedAcquires.incrementAndGet();
+            LOG.info(String.format("ByteBuffer acquire %s leaked.acquired=%s", leakDetector.id(buffer), leaked ? "normal" : "LEAK"),
+                    new Throwable("LeakStack.Acquire"));
+        }
         return buffer;
     }
 
@@ -61,9 +78,44 @@ public class LeakTrackingByteBufferPool extends ContainerLifeCycle implements By
     {
         if (buffer == null)
             return;
-        if (!leakDetector.released(buffer))
-            LOG.warn("ByteBuffer {}@{} released but not acquired", buffer, System.identityHashCode(buffer));
+        boolean leaked = leakDetector.released(buffer);
+        if (NOISY || !leaked)
+        {
+            leakedReleases.incrementAndGet();
+            LOG.info(String.format("ByteBuffer release %s leaked.released=%s", leakDetector.id(buffer), leaked ? "normal" : "LEAK"), new Throwable(
+                    "LeakStack.Release"));
+        }
         delegate.release(buffer);
+    }
+
+    public void clearTracking()
+    {
+        leakedAcquires.set(0);
+        leakedReleases.set(0);
+    }
+
+    /**
+     * @return count of BufferPool.acquire() calls that detected a leak
+     */
+    public long getLeakedAcquires()
+    {
+        return leakedAcquires.get();
+    }
+
+    /**
+     * @return count of BufferPool.release() calls that detected a leak
+     */
+    public long getLeakedReleases()
+    {
+        return leakedReleases.get();
+    }
+
+    /**
+     * @return count of resources that were acquired but not released
+     */
+    public long getLeakedResources()
+    {
+        return leaked.get();
     }
 
     protected void leaked(LeakDetector<ByteBuffer>.LeakInfo leakInfo)

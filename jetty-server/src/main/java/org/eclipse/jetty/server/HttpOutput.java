@@ -816,7 +816,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         if (_state.compareAndSet(OutputState.OPEN, OutputState.READY))
         {
             _writeListener = writeListener;
-            _channel.getState().onWritePossible();
+            if (_channel.getState().onWritePossible())
+                _channel.execute(_channel);
         }
         else
             throw new IllegalStateException();
@@ -958,7 +959,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                     case UNREADY:
                         if (!_state.compareAndSet(OutputState.UNREADY, OutputState.READY))
                             continue;
-                        _channel.getState().onWritePossible();
+                        if (_channel.getState().onWritePossible())
+                            _channel.run();
                         break;
 
                     case CLOSED:
@@ -975,7 +977,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         public void onCompleteFailure(Throwable e)
         {
             _onError=e==null?new IOException():e;
-            _channel.getState().onWritePossible();
+            if (_channel.getState().onWritePossible())
+                _channel.run();
         }
     }
 

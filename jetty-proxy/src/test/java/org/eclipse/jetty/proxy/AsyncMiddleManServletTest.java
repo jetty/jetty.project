@@ -20,17 +20,20 @@ package org.eclipse.jetty.proxy;
 
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.URLDecoder;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
+import java.util.Collections;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
@@ -57,7 +60,9 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
+import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -283,6 +288,55 @@ public class AsyncMiddleManServletTest
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(bytes, response.getContent());
     }
+    
+    @Test
+    public void testTransformGzippedHead() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                
+                String sample = "<a href=\"http://webtide.com/\">Webtide</a>\n<a href=\"http://google.com\">Google</a>\n";
+                byte[] bytes = sample.getBytes(StandardCharsets.UTF_8);
+                
+                ServletOutputStream out = response.getOutputStream();
+                out.write(gzip(bytes));
+                
+                // create a byte buffer larger enough to create 2 (or more) transforms.
+                byte[] randomFiller = new byte[64*1024];
+                /* fill with nonsense
+                 * Using random data to ensure compressed buffer size is large
+                 * enough to trigger at least 2 transform() events.
+                 */
+                new Random().nextBytes(randomFiller);
+                
+                out.write(gzip(randomFiller));
+            }
+        });
+        startProxy(new AsyncMiddleManServlet()
+        {
+            @Override
+            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            {
+                return new GZIPContentTransformer(new HeadTransformer());
+            }
+        });
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .header(HttpHeader.CONTENT_ENCODING, "gzip")
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+        
+        String expectedStr = "<a href=\"http://webtide.com/\">Webtide</a>";
+        byte[] expected = expectedStr.getBytes(StandardCharsets.UTF_8);
+        Assert.assertArrayEquals(expected, response.getContent());
+    }
 
     @Test
     public void testManySequentialTransformations() throws Exception
@@ -379,7 +433,11 @@ public class AsyncMiddleManServletTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                Assert.assertEquals(-1, request.getInputStream().read());
+                // decode input stream thru gzip
+                ByteArrayOutputStream bos = new ByteArrayOutputStream();
+                IO.copy(new GZIPInputStream(request.getInputStream()),bos);
+                // ensure decompressed is 0 length
+                Assert.assertEquals(0, bos.toByteArray().length);
                 response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
                 response.getOutputStream().write(gzip(bytes));
             }
@@ -559,6 +617,17 @@ public class AsyncMiddleManServletTest
     @Test
     public void testLargeChunkedBufferedDownstreamTransformation() throws Exception
     {
+        testLargeChunkedBufferedDownstreamTransformation(false);
+    }
+
+    @Test
+    public void testLargeChunkedGzippedBufferedDownstreamTransformation() throws Exception
+    {
+        testLargeChunkedBufferedDownstreamTransformation(true);
+    }
+
+    private void testLargeChunkedBufferedDownstreamTransformation(final boolean gzipped) throws Exception
+    {
         // Tests the race between a incomplete write performed from ProxyResponseListener.onSuccess()
         // and ProxyResponseListener.onComplete() being called before the write has completed.
 
@@ -567,10 +636,18 @@ public class AsyncMiddleManServletTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                ServletOutputStream output = response.getOutputStream();
+                OutputStream output = response.getOutputStream();
+                if (gzipped)
+                {
+                    output = new GZIPOutputStream(output);
+                    response.setHeader(HttpHeader.CONTENT_ENCODING.asString(), "gzip");
+                }
+
+                Random random = new Random();
                 byte[] chunk = new byte[1024 * 1024];
                 for (int i = 0; i < 16; ++i)
                 {
+                    random.nextBytes(chunk);
                     output.write(chunk);
                     output.flush();
                 }
@@ -581,7 +658,10 @@ public class AsyncMiddleManServletTest
             @Override
             protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
             {
-                return new BufferingContentTransformer();
+                ContentTransformer transformer = new BufferingContentTransformer();
+                if (gzipped)
+                    transformer = new GZIPContentTransformer(transformer);
+                return transformer;
             }
         });
         startClient();
@@ -944,6 +1024,68 @@ public class AsyncMiddleManServletTest
                 output.addAll(buffers);
                 buffers.clear();
             }
+        }
+    }
+    
+    /**
+     * A transformer that discards all but the first line of text.
+     */
+    private static class HeadTransformer implements AsyncMiddleManServlet.ContentTransformer
+    {
+        private StringBuilder head = new StringBuilder();
+
+        @Override
+        public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
+        {
+            if (input.hasRemaining() && head != null)
+            {
+                int lnPos = findLineFeed(input);
+                if (lnPos == -1)
+                {
+                    // no linefeed found, copy it all
+                    copyHeadBytes(input,input.limit());
+                }
+                else
+                {
+                    // found linefeed
+                    copyHeadBytes(input,lnPos);
+                    output.addAll(getHeadBytes());
+                    // mark head as sent
+                    head = null;
+                }
+            }
+
+            if (finished && head != null)
+            {
+                output.addAll(getHeadBytes());
+            }
+        }
+
+        private void copyHeadBytes(ByteBuffer input, int pos)
+        {
+            ByteBuffer dup = input.duplicate();
+            dup.limit(pos);
+            String str = BufferUtil.toUTF8String(dup);
+            head.append(str);
+        }
+
+        private int findLineFeed(ByteBuffer input)
+        {
+            for (int i = input.position(); i < input.limit(); i++)
+            {
+                byte b = input.get(i);
+                if ((b == (byte)'\n') || (b == (byte)'\r'))
+                {
+                    return i;
+                }
+            }
+            return -1;
+        }
+
+        private List<ByteBuffer> getHeadBytes()
+        {
+            ByteBuffer buf = BufferUtil.toBuffer(head.toString(),StandardCharsets.UTF_8);
+            return Collections.singletonList(buf);
         }
     }
 

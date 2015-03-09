@@ -64,7 +64,7 @@ public class ByteArrayEndPointTest
     public void testFill() throws Exception
     {
         ByteArrayEndPoint endp = new ByteArrayEndPoint();
-        endp.setInput("test input");
+        endp.addInput("test input");
 
         ByteBuffer buffer = BufferUtil.allocate(1024);
 
@@ -73,13 +73,13 @@ public class ByteArrayEndPointTest
 
         assertEquals(0,endp.fill(buffer));
 
-        endp.setInput(" more");
+        endp.addInput(" more");
         assertEquals(5,endp.fill(buffer));
         assertEquals("test input more",BufferUtil.toString(buffer));
 
         assertEquals(0,endp.fill(buffer));
 
-        endp.setInput((ByteBuffer)null);
+        endp.addInput((ByteBuffer)null);
 
         assertEquals(-1,endp.fill(buffer));
 
@@ -96,7 +96,7 @@ public class ByteArrayEndPointTest
         }
 
         endp.reset();
-        endp.setInput("and more");
+        endp.addInput("and more");
         buffer = BufferUtil.allocate(4);
 
         assertEquals(4,endp.fill(buffer));
@@ -154,7 +154,7 @@ public class ByteArrayEndPointTest
     public void testReadable() throws Exception
     {
         ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
-        endp.setInput("test input");
+        endp.addInput("test input");
 
         ByteBuffer buffer = BufferUtil.allocate(1024);
         FutureCallback fcb = new FutureCallback();
@@ -172,7 +172,7 @@ public class ByteArrayEndPointTest
         assertFalse(fcb.isDone());
         assertEquals(0, endp.fill(buffer));
 
-        endp.setInput(" more");
+        endp.addInput(" more");
         fcb.get(1000,TimeUnit.MILLISECONDS);
         assertTrue(fcb.isDone());
         assertEquals(null, fcb.get());
@@ -185,7 +185,7 @@ public class ByteArrayEndPointTest
         assertFalse(fcb.isDone());
         assertEquals(0, endp.fill(buffer));
 
-        endp.setInput((ByteBuffer)null);
+        endp.addInput((ByteBuffer)null);
         assertTrue(fcb.isDone());
         assertEquals(null, fcb.get());
         assertEquals(-1, endp.fill(buffer));
@@ -267,7 +267,7 @@ public class ByteArrayEndPointTest
     {
         long idleTimeout = 500;
         ByteArrayEndPoint endp = new ByteArrayEndPoint(_scheduler, idleTimeout);
-        endp.setInput("test");
+        endp.addInput("test");
         endp.setGrowOutput(false);
         endp.setOutput(BufferUtil.allocate(5));
 

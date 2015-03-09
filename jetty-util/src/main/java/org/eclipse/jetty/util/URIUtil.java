@@ -306,7 +306,7 @@ public class URIUtil
                         }
                         else
                         {
-                            throw new IllegalArgumentException();
+                            throw new IllegalArgumentException("Bad URI % encoding");
                         }
 
                         break;

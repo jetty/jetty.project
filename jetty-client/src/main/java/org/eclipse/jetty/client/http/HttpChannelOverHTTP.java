@@ -37,8 +37,18 @@ public class HttpChannelOverHTTP extends HttpChannel
     {
         super(connection.getHttpDestination());
         this.connection = connection;
-        this.sender = new HttpSenderOverHTTP(this);
-        this.receiver = new HttpReceiverOverHTTP(this);
+        this.sender = newHttpSender();
+        this.receiver = newHttpReceiver();
+    }
+
+    protected HttpSenderOverHTTP newHttpSender()
+    {
+        return new HttpSenderOverHTTP(this);
+    }
+
+    protected HttpReceiverOverHTTP newHttpReceiver()
+    {
+        return new HttpReceiverOverHTTP(this);
     }
 
     public HttpConnectionOverHTTP getHttpConnection()
@@ -83,10 +93,11 @@ public class HttpChannelOverHTTP extends HttpChannel
     public void exchangeTerminated(Result result)
     {
         super.exchangeTerminated(result);
+
         Response response = result.getResponse();
         HttpFields responseHeaders = response.getHeaders();
         boolean close = result.isFailed() || receiver.isShutdown();
-        // Only check HTTP headers if there are no failures.
+
         if (!close)
         {
             if (response.getVersion().compareTo(HttpVersion.HTTP_1_1) < 0)
@@ -100,6 +111,7 @@ public class HttpChannelOverHTTP extends HttpChannel
                 close = responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString());
             }
         }
+
         if (close)
             connection.close();
         else
@@ -109,9 +121,8 @@ public class HttpChannelOverHTTP extends HttpChannel
     @Override
     public String toString()
     {
-        return String.format("%s@%x(send=%s,recv=%s)",
-                getClass().getSimpleName(),
-                hashCode(),
+        return String.format("%s[send=%s,recv=%s]",
+                super.toString(),
                 sender,
                 receiver);
     }

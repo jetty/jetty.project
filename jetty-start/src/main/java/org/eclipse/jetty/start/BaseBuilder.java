@@ -107,7 +107,10 @@ public class BaseBuilder
                 Licensing licensing = new Licensing();
                 for (Module module : startArgs.getAllModules().getSelected())
                 {
-                    licensing.addModule(module);
+                    if (!module.hasFiles(baseHome))
+                    {
+                        licensing.addModule(module);
+                    }
                 }
 
                 if (licensing.hasLicenses())

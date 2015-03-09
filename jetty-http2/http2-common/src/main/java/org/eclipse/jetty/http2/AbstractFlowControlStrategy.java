@@ -27,36 +27,52 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
 {
     protected static final Logger LOG = Log.getLogger(FlowControlStrategy.class);
 
-    private int initialStreamWindow;
+    private int initialStreamSendWindow;
+    private int initialStreamRecvWindow;
 
-    public AbstractFlowControlStrategy(int initialStreamWindow)
+    public AbstractFlowControlStrategy(int initialStreamSendWindow)
     {
-        this.initialStreamWindow = initialStreamWindow;
+        this.initialStreamSendWindow = initialStreamSendWindow;
+        this.initialStreamRecvWindow = DEFAULT_WINDOW_SIZE;
     }
 
-    protected int getInitialStreamWindow()
+    protected int getInitialStreamSendWindow()
     {
-        return initialStreamWindow;
+        return initialStreamSendWindow;
+    }
+
+    protected int getInitialStreamRecvWindow()
+    {
+        return initialStreamRecvWindow;
     }
 
     @Override
-    public void onNewStream(IStream stream)
+    public void onNewStream(IStream stream, boolean local)
     {
-        stream.updateSendWindow(initialStreamWindow);
-        stream.updateRecvWindow(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        stream.updateSendWindow(initialStreamSendWindow);
+        stream.updateRecvWindow(initialStreamRecvWindow);
     }
 
     @Override
-    public void onStreamTerminated(IStream stream)
+    public void onStreamTerminated(IStream stream, boolean local)
     {
     }
 
     @Override
     public void updateInitialStreamWindow(ISession session, int initialStreamWindow, boolean local)
     {
-        int initialWindow = this.initialStreamWindow;
-        this.initialStreamWindow = initialStreamWindow;
-        int delta = initialStreamWindow - initialWindow;
+        int previousInitialStreamWindow;
+        if (local)
+        {
+            previousInitialStreamWindow = getInitialStreamRecvWindow();
+            this.initialStreamRecvWindow = initialStreamWindow;
+        }
+        else
+        {
+            previousInitialStreamWindow = getInitialStreamSendWindow();
+            this.initialStreamSendWindow = initialStreamWindow;
+        }
+        int delta = initialStreamWindow - previousInitialStreamWindow;
 
         // SPEC: updates of the initial window size only affect stream windows, not session's.
         for (Stream stream : session.getStreams())
@@ -65,7 +81,7 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
             {
                 ((IStream)stream).updateRecvWindow(delta);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Updated initial stream recv window {} -> {} for {}", initialWindow, initialStreamWindow, stream);
+                    LOG.debug("Updated initial stream recv window {} -> {} for {}", previousInitialStreamWindow, initialStreamWindow, stream);
             }
             else
             {
@@ -109,6 +125,11 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
             if (LOG.isDebugEnabled())
                 LOG.debug("Data received, updated stream recv window {} -> {} for {}", oldSize, oldSize - length, stream);
         }
+    }
+
+    @Override
+    public void windowUpdate(ISession session, IStream stream, WindowUpdateFrame frame)
+    {
     }
 
     @Override

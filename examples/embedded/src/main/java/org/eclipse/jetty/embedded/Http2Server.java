@@ -20,8 +20,10 @@
 package org.eclipse.jetty.embedded;
 
 import java.io.IOException;
+import java.lang.management.ManagementFactory;
 import java.util.Date;
 import java.util.EnumSet;
+
 import javax.servlet.DispatcherType;
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
@@ -39,6 +41,7 @@ import javax.servlet.http.HttpSession;
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
+import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.NegotiatingServerConnectionFactory;
@@ -63,6 +66,10 @@ public class Http2Server
     {
         Server server = new Server();
 
+        MBeanContainer mbContainer = new MBeanContainer(
+                ManagementFactory.getPlatformMBeanServer());
+        server.addBean(mbContainer);
+        
         ServletContextHandler context = new ServletContextHandler(server, "/",ServletContextHandler.SESSIONS);
         context.setResourceBase("src/main/resources/docroot");
         context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));

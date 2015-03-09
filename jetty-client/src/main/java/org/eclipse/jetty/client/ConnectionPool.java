@@ -20,6 +20,8 @@ package org.eclipse.jetty.client;
 
 import java.io.Closeable;
 import java.io.IOException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.BlockingDeque;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.LinkedBlockingDeque;
@@ -28,28 +30,31 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.BlockingArrayQueue;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.SpinLock;
 
 public class ConnectionPool implements Closeable, Dumpable
 {
     protected static final Logger LOG = Log.getLogger(ConnectionPool.class);
 
     private final AtomicInteger connectionCount = new AtomicInteger();
+    private final SpinLock lock = new SpinLock();
     private final Destination destination;
     private final int maxConnections;
-    private final Promise<Connection> connectionPromise;
+    private final Callback requester;
     private final BlockingDeque<Connection> idleConnections;
     private final BlockingQueue<Connection> activeConnections;
 
-    public ConnectionPool(Destination destination, int maxConnections, Promise<Connection> connectionPromise)
+    public ConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
         this.destination = destination;
         this.maxConnections = maxConnections;
-        this.connectionPromise = connectionPromise;
+        this.requester = requester;
         this.idleConnections = new LinkedBlockingDeque<>(maxConnections);
         this.activeConnections = new BlockingArrayQueue<>(maxConnections);
     }
@@ -71,7 +76,7 @@ public class ConnectionPool implements Closeable, Dumpable
 
     public Connection acquire()
     {
-        Connection connection = acquireIdleConnection();
+        Connection connection = activateIdle();
         if (connection == null)
             connection = tryCreate();
         return connection;
@@ -89,7 +94,7 @@ public class ConnectionPool implements Closeable, Dumpable
                 if (LOG.isDebugEnabled())
                     LOG.debug("Max connections {}/{} reached", current, maxConnections);
                 // Try again the idle connections
-                return acquireIdleConnection();
+                return activateIdle();
             }
 
             if (connectionCount.compareAndSet(current, next))
@@ -104,10 +109,10 @@ public class ConnectionPool implements Closeable, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connection {}/{} creation succeeded {}", next, maxConnections, connection);
-                        if (activate(connection))
-                            connectionPromise.succeeded(connection);
-                        else
-                            connectionPromise.failed(new IllegalStateException("Active connection overflow"));
+
+                        idleCreated(connection);
+
+                        requester.succeeded();
                     }
 
                     @Override
@@ -115,40 +120,55 @@ public class ConnectionPool implements Closeable, Dumpable
                     {
                         if (LOG.isDebugEnabled())
                             LOG.debug("Connection " + next + "/" + maxConnections + " creation failed", x);
+
                         connectionCount.decrementAndGet();
-                        connectionPromise.failed(x);
+
+                        requester.failed(x);
                     }
                 });
 
                 // Try again the idle connections
-                return acquireIdleConnection();
+                return activateIdle();
             }
         }
     }
 
-    private Connection acquireIdleConnection()
+    protected void idleCreated(Connection connection)
     {
-        Connection connection = idleConnections.pollFirst();
-        if (connection == null)
-            return null;
-        return activate(connection) ? connection : null;
+        boolean idle;
+        try (SpinLock.Lock lock = this.lock.lock())
+        {
+            // Use "cold" new connections as last.
+            idle = idleConnections.offerLast(connection);
+        }
+        idle(connection, idle);
     }
 
-    private boolean activate(Connection connection)
+    private Connection activateIdle()
     {
-        if (activeConnections.offer(connection))
+        boolean acquired;
+        Connection connection;
+        try (SpinLock.Lock lock = this.lock.lock())
+        {
+            connection = idleConnections.pollFirst();
+            if (connection == null)
+                return null;
+            acquired = activeConnections.offer(connection);
+        }
+
+        if (acquired)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Connection active {}", connection);
             acquired(connection);
-            return true;
+            return connection;
         }
         else
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Connection active overflow {}", connection);
             connection.close();
-            return false;
+            return null;
         }
     }
 
@@ -158,24 +178,33 @@ public class ConnectionPool implements Closeable, Dumpable
 
     public boolean release(Connection connection)
     {
-        released(connection);
-        if (activeConnections.remove(connection))
+        boolean idle;
+        try (SpinLock.Lock lock = this.lock.lock())
         {
-            // Make sure we use "hot" connections first
-            if (idleConnections.offerFirst(connection))
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Connection idle {}", connection);
-                return true;
-            }
-            else
-            {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("Connection idle overflow {}", connection);
-                connection.close();
-            }
+            if (!activeConnections.remove(connection))
+                return false;
+            // Make sure we use "hot" connections first.
+            idle = idleConnections.offerFirst(connection);
         }
-        return false;
+        released(connection);
+        return idle(connection, idle);
+    }
+
+    protected boolean idle(Connection connection, boolean idle)
+    {
+        if (idle)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection idle {}", connection);
+            return true;
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Connection idle overflow {}", connection);
+            connection.close();
+            return false;
+        }
     }
 
     protected void released(Connection connection)
@@ -184,9 +213,14 @@ public class ConnectionPool implements Closeable, Dumpable
 
     public boolean remove(Connection connection)
     {
-        boolean activeRemoved = activeConnections.remove(connection);
-        boolean idleRemoved = idleConnections.remove(connection);
-        if (!idleRemoved)
+        boolean activeRemoved;
+        boolean idleRemoved;
+        try (SpinLock.Lock lock = this.lock.lock())
+        {
+            activeRemoved = activeConnections.remove(connection);
+            idleRemoved = idleConnections.remove(connection);
+        }
+        if (activeRemoved)
             released(connection);
         boolean removed = activeRemoved || idleRemoved;
         if (removed)
@@ -200,12 +234,18 @@ public class ConnectionPool implements Closeable, Dumpable
 
     public boolean isActive(Connection connection)
     {
-        return activeConnections.contains(connection);
+        try (SpinLock.Lock lock = this.lock.lock())
+        {
+            return activeConnections.contains(connection);
+        }
     }
 
     public boolean isIdle(Connection connection)
     {
-        return idleConnections.contains(connection);
+        try (SpinLock.Lock lock = this.lock.lock())
+        {
+            return idleConnections.contains(connection);
+        }
     }
 
     public boolean isEmpty()
@@ -215,16 +255,23 @@ public class ConnectionPool implements Closeable, Dumpable
 
     public void close()
     {
-        for (Connection connection : idleConnections)
+        List<Connection> idles = new ArrayList<>();
+        List<Connection> actives = new ArrayList<>();
+        try (SpinLock.Lock lock = this.lock.lock())
+        {
+            idles.addAll(idleConnections);
+            idleConnections.clear();
+            actives.addAll(activeConnections);
+            activeConnections.clear();
+        }
+        connectionCount.set(0);
+
+        for (Connection connection : idles)
             connection.close();
-        idleConnections.clear();
 
         // A bit drastic, but we cannot wait for all requests to complete
-        for (Connection connection : activeConnections)
+        for (Connection connection : actives)
             connection.close();
-        activeConnections.clear();
-
-        connectionCount.set(0);
     }
 
     @Override
@@ -236,18 +283,32 @@ public class ConnectionPool implements Closeable, Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
+        List<Connection> actives = new ArrayList<>();
+        List<Connection> idles = new ArrayList<>();
+        try (SpinLock.Lock lock = this.lock.lock())
+        {
+            actives.addAll(activeConnections);
+            idles.addAll(idleConnections);
+        }
         ContainerLifeCycle.dumpObject(out, this);
-        ContainerLifeCycle.dump(out, indent, activeConnections, idleConnections);
+        ContainerLifeCycle.dump(out, indent, actives, idles);
     }
 
     @Override
     public String toString()
     {
+        int activeSize;
+        int idleSize;
+        try (SpinLock.Lock lock = this.lock.lock())
+        {
+            activeSize = activeConnections.size();
+            idleSize = idleConnections.size();
+        }
         return String.format("%s[c=%d/%d,a=%d,i=%d]",
                 getClass().getSimpleName(),
                 connectionCount.get(),
                 maxConnections,
-                activeConnections.size(),
-                idleConnections.size());
+                activeSize,
+                idleSize);
     }
 }

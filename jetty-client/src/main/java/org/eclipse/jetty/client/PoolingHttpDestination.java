@@ -23,10 +23,10 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
-import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
-public abstract class PoolingHttpDestination<C extends Connection> extends HttpDestination implements Promise<Connection>
+public abstract class PoolingHttpDestination<C extends Connection> extends HttpDestination implements Callback
 {
     private final ConnectionPool connectionPool;
 
@@ -47,30 +47,24 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     }
 
     @Override
-    @SuppressWarnings("unchecked")
-    public void succeeded(Connection connection)
+    public void succeeded()
     {
-        process((C)connection, true);
+        send();
     }
 
     @Override
     public void failed(final Throwable x)
     {
-        getHttpClient().getExecutor().execute(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                abort(x);
-            }
-        });
+        abort(x);
     }
 
-    protected void send()
+    public void send()
     {
+        if (getHttpExchanges().isEmpty())
+            return;
         C connection = acquire();
         if (connection != null)
-            process(connection, false);
+            process(connection);
     }
 
     @SuppressWarnings("unchecked")
@@ -87,9 +81,8 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
      * <p>If a request is waiting to be executed, it will be dequeued and executed by the new connection.</p>
      *
      * @param connection the new connection
-     * @param dispatch whether to dispatch the processing to another thread
      */
-    public void process(final C connection, boolean dispatch)
+    public void process(final C connection)
     {
         HttpClient client = getHttpClient();
         final HttpExchange exchange = getHttpExchanges().poll();
@@ -122,21 +115,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
             }
             else
             {
-                if (dispatch)
-                {
-                    client.getExecutor().execute(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            send(connection, exchange);
-                        }
-                    });
-                }
-                else
-                {
-                    send(connection, exchange);
-                }
+                send(connection, exchange);
             }
         }
     }
@@ -155,7 +134,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         {
             if (connectionPool.isActive(connection))
             {
-                process(connection, false);
+                process(connection);
             }
             else
             {
@@ -167,7 +146,6 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("{} is stopped", client);
-            close(connection);
             connection.close();
         }
     }
@@ -176,6 +154,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     public void close(Connection oldConnection)
     {
         super.close(oldConnection);
+
         connectionPool.remove(oldConnection);
 
         if (getHttpExchanges().isEmpty())
@@ -198,7 +177,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
             // idle timeout, so no worries.
             C newConnection = acquire();
             if (newConnection != null)
-                process(newConnection, false);
+                process(newConnection);
         }
     }
 

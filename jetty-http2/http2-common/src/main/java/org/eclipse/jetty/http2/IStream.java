@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2;
 
+import java.io.Closeable;
+
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.frames.Frame;
 import org.eclipse.jetty.util.Callback;
@@ -27,7 +29,7 @@ import org.eclipse.jetty.util.Callback;
  * <p>This class extends {@link Stream} by adding the methods required to
  * implement the HTTP/2 stream functionalities.</p>
  */
-public interface IStream extends Stream
+public interface IStream extends Stream, Closeable
 {
     /**
      * <p>The constant used as attribute key to store/retrieve the HTTP
@@ -67,14 +69,15 @@ public interface IStream extends Stream
      * @param local  whether the update comes from a local operation
      *               (such as sending a frame that ends the stream)
      *               or a remote operation (such as receiving a frame
-     *               that ends the stream).
+     * @return whether the stream has been fully closed by this invocation
      */
-    public void updateClose(boolean update, boolean local);
+    public boolean updateClose(boolean update, boolean local);
 
     /**
-     * @return the current value of the stream send window
+     * <p>Forcibly closes this stream.</p>
      */
-    public int getSendWindow();
+    @Override
+    public void close();
 
     /**
      * <p>Updates the stream send window by the given {@code delta}.</p>

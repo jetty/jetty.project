@@ -20,8 +20,8 @@ package org.eclipse.jetty.client;
 
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.LeakDetector;
-import org.eclipse.jetty.util.Promise;
 
 public class LeakTrackingConnectionPool extends ConnectionPool
 {
@@ -34,9 +34,9 @@ public class LeakTrackingConnectionPool extends ConnectionPool
         }
     };
 
-    public LeakTrackingConnectionPool(Destination destination, int maxConnections, Promise<Connection> connectionPromise)
+    public LeakTrackingConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
-        super(destination, maxConnections, connectionPromise);
+        super(destination, maxConnections, requester);
         start();
     }
 
@@ -75,14 +75,14 @@ public class LeakTrackingConnectionPool extends ConnectionPool
     protected void acquired(Connection connection)
     {
         if (!leakDetector.acquired(connection))
-            LOG.info("Connection {}@{} not tracked", connection, System.identityHashCode(connection));
+            LOG.info("Connection {}@{} not tracked", connection, leakDetector.id(connection));
     }
 
     @Override
     protected void released(Connection connection)
     {
         if (!leakDetector.released(connection))
-            LOG.info("Connection {}@{} released but not acquired", connection, System.identityHashCode(connection));
+            LOG.info("Connection {}@{} released but not acquired", connection, leakDetector.id(connection));
     }
 
     protected void leaked(LeakDetector.LeakInfo leakInfo)

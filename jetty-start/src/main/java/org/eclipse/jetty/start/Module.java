@@ -208,6 +208,20 @@ public class Module extends Node<Module>
         return !getName().equals(fileRef);
     }
 
+    public boolean hasFiles(BaseHome baseHome)
+    {
+        for (String ref : getFiles())
+        {
+            FileArg farg = new FileArg(this,ref);
+            Path refPath = baseHome.getBasePath(farg.location);
+            if (!Files.exists(refPath))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
     public void process(BaseHome basehome) throws FileNotFoundException, IOException
     {
         Pattern section = Pattern.compile("\\s*\\[([^]]*)\\]\\s*");

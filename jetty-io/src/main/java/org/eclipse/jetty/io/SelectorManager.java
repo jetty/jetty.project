@@ -392,25 +392,4 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         ContainerLifeCycle.dumpObject(out, this);
         ContainerLifeCycle.dump(out, indent, TypeUtil.asList(_selectors));
     }
-
-    /**
-     * A {@link SelectableEndPoint} is an {@link EndPoint} that wish to be
-     * notified of non-blocking events by the {@link ManagedSelector}.
-     */
-    public interface SelectableEndPoint extends EndPoint
-    {
-        /**
-         * Callback method invoked when a read or write events has been
-         * detected by the {@link ManagedSelector} for this endpoint.
-         *
-         * @return a job that may block or null
-         */
-        Runnable onSelected();
-
-        /**
-         * Callback method invoked when all the keys selected by the
-         * {@link ManagedSelector} for this endpoint have been processed.
-         */
-        void updateKey();
-    }
 }

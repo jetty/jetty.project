@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.HttpExchange;
 import org.eclipse.jetty.client.HttpRequest;
 import org.eclipse.jetty.client.HttpResponseException;
 import org.eclipse.jetty.client.Origin;
+import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.util.FutureResponseListener;
 import org.eclipse.jetty.http.HttpFields;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
 import org.eclipse.jetty.toolchain.test.TestTracker;
+import org.eclipse.jetty.util.Promise;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -60,7 +62,7 @@ public class HttpReceiverOverHTTPTest
         client.start();
         destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", 8080));
         endPoint = new ByteArrayEndPoint();
-        connection = new HttpConnectionOverHTTP(endPoint, destination);
+        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>());
     }
 
     @After
@@ -83,7 +85,7 @@ public class HttpReceiverOverHTTPTest
     @Test
     public void test_Receive_NoResponseContent() throws Exception
     {
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 0\r\n" +
                 "\r\n");
@@ -106,7 +108,7 @@ public class HttpReceiverOverHTTPTest
     public void test_Receive_ResponseContent() throws Exception
     {
         String content = "0123456789ABCDEF";
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: " + content.length() + "\r\n" +
                 "\r\n" +
@@ -133,7 +135,7 @@ public class HttpReceiverOverHTTPTest
     {
         String content1 = "0123456789";
         String content2 = "ABCDEF";
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: " + (content1.length() + content2.length()) + "\r\n" +
                 "\r\n" +
@@ -141,7 +143,7 @@ public class HttpReceiverOverHTTPTest
         HttpExchange exchange = newExchange();
         FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
         connection.getHttpChannel().receive();
-        endPoint.setInputEOF();
+        endPoint.addInputEOF();
         connection.getHttpChannel().receive();
 
         try
@@ -158,7 +160,7 @@ public class HttpReceiverOverHTTPTest
     @Test
     public void test_Receive_ResponseContent_IdleTimeout() throws Exception
     {
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: 1\r\n" +
                 "\r\n");
@@ -182,7 +184,7 @@ public class HttpReceiverOverHTTPTest
     @Test
     public void test_Receive_BadResponse() throws Exception
     {
-        endPoint.setInput("" +
+        endPoint.addInput("" +
                 "HTTP/1.1 200 OK\r\n" +
                 "Content-length: A\r\n" +
                 "\r\n");
@@ -199,5 +201,51 @@ public class HttpReceiverOverHTTPTest
         {
             Assert.assertTrue(e.getCause() instanceof HttpResponseException);
         }
+    }
+
+    @Test
+    public void test_FillInterested_RacingWith_BufferRelease() throws Exception
+    {
+        connection = new HttpConnectionOverHTTP(endPoint, destination, new Promise.Adapter<Connection>())
+        {
+            @Override
+            protected HttpChannelOverHTTP newHttpChannel()
+            {
+                return new HttpChannelOverHTTP(this)
+                {
+                    @Override
+                    protected HttpReceiverOverHTTP newHttpReceiver()
+                    {
+                        return new HttpReceiverOverHTTP(this)
+                        {
+                            @Override
+                            protected void fillInterested()
+                            {
+                                // Verify that the buffer has been released
+                                // before fillInterested() is called.
+                                Assert.assertNull(getResponseBuffer());
+                                // Fill the endpoint so receive is called again.
+                                endPoint.addInput("X");
+                                super.fillInterested();
+                            }
+                        };
+                    }
+                };
+            }
+        };
+        
+        // Partial response to trigger the call to fillInterested().
+        endPoint.addInput("" +
+                "HTTP/1.1 200 OK\r\n" +
+                "Content-Length: 1\r\n" +
+                "\r\n");
+
+        HttpExchange exchange = newExchange();
+        FutureResponseListener listener = (FutureResponseListener)exchange.getResponseListeners().get(0);
+        connection.getHttpChannel().receive();
+
+        Response response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertNotNull(response);
+        Assert.assertEquals(200, response.getStatus());
     }
 }

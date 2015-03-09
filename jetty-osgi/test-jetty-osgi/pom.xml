@@ -164,12 +164,44 @@
     </dependency>
 
     <dependency>
-     <groupId>org.mortbay.jasper</groupId>
-      <artifactId>apache-el</artifactId>
-      <version>8.0.9.M3</version>
-     <scope>test</scope>
+       <groupId>org.glassfish.web</groupId>
+       <artifactId>javax.servlet.jsp.jstl</artifactId>
+       <version>1.2.2</version>
+      <exclusions>
+        <exclusion>
+          <groupId>javax.servlet.jsp.jstl</groupId>
+          <artifactId>jstl-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet</groupId>
+          <artifactId>servlet-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.servlet.jsp</groupId>
+          <artifactId>jsp-api</artifactId>
+        </exclusion>
+        <exclusion>
+          <groupId>javax.el</groupId>
+          <artifactId>el-api</artifactId>
+        </exclusion>
+      </exclusions>
     </dependency>
 
+    <dependency>
+        <groupId>org.eclipse.jetty.orbit</groupId>
+        <artifactId>javax.servlet.jsp.jstl</artifactId>
+        <version>1.2.0.v201105211821</version>
+        <exclusions>
+          <exclusion>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.servlet</artifactId>
+          </exclusion>
+          <exclusion>
+            <groupId>org.eclipse.jetty.orbit</groupId>
+            <artifactId>javax.servlet.jsp</artifactId>
+          </exclusion>
+        </exclusions>
+    </dependency>
 
     <!-- Jetty Deps -->
     <dependency>

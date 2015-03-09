@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.util.Objects;
+
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
@@ -35,7 +37,7 @@ import org.eclipse.jetty.util.annotation.Name;
 public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConnectionFactory
 {
     private int maxDynamicTableSize = 4096;
-    private int initialStreamWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+    private int initialStreamSendWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
     private final HttpConfiguration httpConfiguration;
     
@@ -44,12 +46,10 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this(httpConfiguration,"h2-17","h2-16","h2-15","h2-14","h2");
     }
     
-    protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration,String... protocols)
+    protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, String... protocols)
     {
         super(protocols);
-        if (httpConfiguration==null)
-            throw new IllegalArgumentException("Null HttpConfiguration");
-        this.httpConfiguration = httpConfiguration;
+        this.httpConfiguration = Objects.requireNonNull(httpConfiguration);
     }
 
     public int getMaxDynamicTableSize()
@@ -57,19 +57,19 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         return maxDynamicTableSize;
     }
 
-    public void setMaxHeaderTableSize(int maxHeaderTableSize)
+    public void setMaxDynamicTableSize(int maxDynamicTableSize)
     {
-        this.maxDynamicTableSize = maxHeaderTableSize;
+        this.maxDynamicTableSize = maxDynamicTableSize;
     }
 
-    public int getInitialStreamWindow()
+    public int getInitialStreamSendWindow()
     {
-        return initialStreamWindow;
+        return initialStreamSendWindow;
     }
 
-    public void setInitialStreamWindow(int initialStreamWindow)
+    public void setInitialStreamSendWindow(int initialStreamSendWindow)
     {
-        this.initialStreamWindow = initialStreamWindow;
+        this.initialStreamSendWindow = initialStreamSendWindow;
     }
 
     public int getMaxConcurrentStreams()
@@ -112,7 +112,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     protected FlowControlStrategy newFlowControlStrategy()
     {
-        return new SimpleFlowControlStrategy(getInitialStreamWindow());
+        return new SimpleFlowControlStrategy(getInitialStreamSendWindow());
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);

@@ -20,18 +20,12 @@ package org.eclipse.jetty.http;
 
 import java.util.Collections;
 import java.util.Iterator;
-import java.util.Objects;
 
 public class MetaData implements Iterable<HttpField>
 {
     private HttpVersion _httpVersion;
     private HttpFields _fields;
     private long _contentLength;
-
-    public MetaData()
-    {
-        this(null, null);
-    }
 
     public MetaData(HttpVersion version, HttpFields fields)
     {
@@ -88,15 +82,6 @@ public class MetaData implements Iterable<HttpField>
     }
 
     /**
-     * @param fields the HTTP fields to set
-     */
-    public void setFields(HttpFields fields)
-    {
-        _fields = fields;
-        _contentLength = Long.MIN_VALUE;
-    }
-
-    /**
      * @return the content length if available, otherwise {@link Long#MIN_VALUE}
      */
     public long getContentLength()
@@ -123,31 +108,6 @@ public class MetaData implements Iterable<HttpField>
     }
 
     @Override
-    public int hashCode()
-    {
-        HttpVersion version = getVersion();
-        int hash = version == null ? 0 : version.hashCode();
-        HttpFields fields = getFields();
-        return 31 * hash + (fields == null ? 0 : fields.hashCode());
-    }
-
-    @Override
-    public boolean equals(Object o)
-    {
-        if (this == o)
-            return true;
-        if (!(o instanceof MetaData))
-            return false;
-
-        MetaData that = (MetaData)o;
-
-        if (getVersion() != that.getVersion())
-            return false;
-
-        return Objects.equals(getFields(), that.getFields());
-    }
-
-    @Override
     public String toString()
     {
         StringBuilder out = new StringBuilder();
@@ -161,8 +121,9 @@ public class MetaData implements Iterable<HttpField>
         private String _method;
         private HttpURI _uri;
 
-        public Request()
+        public Request(HttpFields fields)
         {
+            this(null, null, null, fields);
         }
 
         public Request(String method, HttpURI uri, HttpVersion version, HttpFields fields)
@@ -247,32 +208,11 @@ public class MetaData implements Iterable<HttpField>
         }
 
         @Override
-        public int hashCode()
-        {
-            int hash = super.hashCode();
-            hash = hash * 31 + (_method == null ? 0 : _method.hashCode());
-            return hash * 31 + (_uri == null ? 0 : _uri.hashCode());
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o)
-                return true;
-            if (!(o instanceof MetaData.Request))
-                return false;
-            MetaData.Request that = (MetaData.Request)o;
-            if (!Objects.equals(getMethod(), that.getMethod()) ||
-                    !Objects.equals(getURI(), that.getURI()))
-                return false;
-            return super.equals(o);
-        }
-
-        @Override
         public String toString()
         {
+            HttpFields fields = getFields();
             return String.format("%s{u=%s,%s,h=%d}",
-                    getMethod(), getURI(), getVersion(), getFields().size());
+                    getMethod(), getURI(), getVersion(), fields == null ? -1 : fields.size());
         }
     }
 
@@ -343,28 +283,10 @@ public class MetaData implements Iterable<HttpField>
         }
 
         @Override
-        public int hashCode()
-        {
-            return 31 * super.hashCode() + getStatus();
-        }
-
-        @Override
-        public boolean equals(Object o)
-        {
-            if (this == o)
-                return true;
-            if (!(o instanceof MetaData.Response))
-                return false;
-            MetaData.Response that = (MetaData.Response)o;
-            if (getStatus() != that.getStatus())
-                return false;
-            return super.equals(o);
-        }
-
-        @Override
         public String toString()
         {
-            return String.format("%s{s=%d,h=%d}", getVersion(), getStatus(), getFields().size());
+            HttpFields fields = getFields();
+            return String.format("%s{s=%d,h=%d}", getVersion(), getStatus(), fields == null ? -1 : fields.size());
         }
     }
 }

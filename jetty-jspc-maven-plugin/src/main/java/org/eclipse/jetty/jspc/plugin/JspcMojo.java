@@ -439,6 +439,9 @@ public class JspcMojo extends AbstractMojo
                     }
                 }
                 
+                if (atEOF && !atInsertPoint)
+                    throw new IllegalStateException("web.xml does not contain insertionMarker "+insertionMarker);
+                
                 //put in a context init-param to flag that the contents have been precompiled
                 mergedWebXmlWriter.println("<context-param><param-name>"+PRECOMPILED_FLAG+"</param-name><param-value>true</param-value></context-param>");
                 
@@ -554,7 +557,7 @@ public class JspcMojo extends AbstractMojo
 
     
     /**
-     * Glassfish jsp requires that we set up the list of system jars that have
+     * jsp requires that we set up the list of system jars that have
      * tlds in them.
      * 
      * This method is a little fragile, as it relies on knowing that the jstl jars

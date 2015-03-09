@@ -63,8 +63,9 @@ public interface Stream
      *
      * @param frame   the PUSH_PROMISE frame to send
      * @param promise the promise that gets notified of the pushed stream creation
+     * @param listener the listener that gets notified of stream events
      */
-    public void push(PushPromiseFrame frame, Promise<Stream> promise);
+    public void push(PushPromiseFrame frame, Promise<Stream> promise, Listener listener);
 
     /**
      * <p>Sends the given DATA {@code frame}.</p>

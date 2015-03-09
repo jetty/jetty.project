@@ -53,7 +53,7 @@ import org.junit.Test;
 public class SslConnectionTest
 {
     private static SslContextFactory __sslCtxFactory=new SslContextFactory();
-    private static ByteBufferPool __byteBufferPool = new MappedByteBufferPool();
+    private static ByteBufferPool __byteBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
 
     protected volatile EndPoint _lastEndp;
     private volatile boolean _testFill=true;

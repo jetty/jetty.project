@@ -23,7 +23,9 @@ import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.client.AbstractHttpClientServerTest;
+import org.eclipse.jetty.client.ConnectionPool;
 import org.eclipse.jetty.client.EmptyServerHandler;
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.ContentResponse;
@@ -33,7 +35,6 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
-import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
@@ -90,35 +91,48 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
     @Test
     public void test_SecondAcquire_ConcurrentWithFirstAcquire_WithEmptyQueue_CreatesTwoConnections() throws Exception
     {
+        final CountDownLatch idleLatch = new CountDownLatch(1);
         final CountDownLatch latch = new CountDownLatch(1);
         HttpDestinationOverHTTP destination = new HttpDestinationOverHTTP(client, new Origin("http", "localhost", connector.getLocalPort()))
         {
             @Override
-            public void process(HttpConnectionOverHTTP connection, boolean dispatch)
+            protected ConnectionPool newConnectionPool(HttpClient client)
             {
-                try
+                return new ConnectionPool(this, client.getMaxConnectionsPerDestination(), this)
                 {
-                    latch.await(5, TimeUnit.SECONDS);
-                    super.process(connection, dispatch);
-                }
-                catch (InterruptedException x)
-                {
-                    x.printStackTrace();
-                }
+                    @Override
+                    protected void idleCreated(Connection connection)
+                    {
+                        try
+                        {
+                            idleLatch.countDown();
+                            latch.await(5, TimeUnit.SECONDS);
+                            super.idleCreated(connection);
+                        }
+                        catch (InterruptedException x)
+                        {
+                            x.printStackTrace();
+                        }
+                    }
+                };
             }
         };
         Connection connection1 = destination.acquire();
 
+        // Make sure we entered idleCreated().
+        Assert.assertTrue(idleLatch.await(5, TimeUnit.SECONDS));
+
         // There are no available existing connections, so acquire()
-        // returns null because we delayed process() above
+        // returns null because we delayed idleCreated() above
         Assert.assertNull(connection1);
 
+        // Second attempt also returns null because we delayed idleCreated() above.
         Connection connection2 = destination.acquire();
         Assert.assertNull(connection2);
 
         latch.countDown();
 
-        // There must be 2 idle connections
+        // There must be 2 idle connections.
         Connection connection = destination.getConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection);
         connection = destination.getConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
@@ -142,14 +156,13 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         // Acquire the connection to make it active
         Assert.assertSame(connection1, destination.acquire());
 
-        destination.process(connection1, false);
+        destination.process(connection1);
         destination.release(connection1);
 
         Connection connection2 = destination.acquire();
         Assert.assertSame(connection1, connection2);
     }
 
-    @Slow
     @Test
     public void test_IdleConnection_IdleTimeout() throws Exception
     {

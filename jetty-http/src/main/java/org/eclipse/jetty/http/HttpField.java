@@ -20,9 +20,6 @@ package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
 
-import org.eclipse.jetty.util.StringUtil;
-
-/* ------------------------------------------------------------ */
 /** A HTTP Field
  */
 public class HttpField
@@ -31,6 +28,8 @@ public class HttpField
     private final HttpHeader _header;
     private final String _name;
     private final String _value;
+    // cached hashcode for case insensitive name
+    private int hash = 0;
         
     public HttpField(HttpHeader header, String name, String value)
     {
@@ -383,15 +382,22 @@ public class HttpField
     
     private int nameHashCode()
     {
-        int hash=13;
+        int h = this.hash;
         int len = _name.length();
-        for (int i = 0; i < len; i++)
+        if (h == 0 && len > 0)
         {
-            // simple case insensitive hash
-            char c = _name.charAt(i);
-            hash = 15 * hash + 0x0F&c;
+            for (int i = 0; i < len; i++)
+            {
+                // simple case insensitive hash
+                char c = _name.charAt(i);
+                // assuming us-ascii (per last paragraph on http://tools.ietf.org/html/rfc7230#section-3.2.4)
+                if ((c >= 'a' && c <= 'z'))
+                    c -= 0x20;
+                h = 31 * h + c;
+            }
+            this.hash = h;
         }
-        return hash;
+        return h;
     }
 
     @Override

@@ -19,15 +19,11 @@
 
 package org.eclipse.jetty.http2.client;
 
-import static org.hamcrest.core.IsInstanceOf.instanceOf;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -49,6 +45,9 @@ import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.hamcrest.core.IsInstanceOf.instanceOf;
+import static org.junit.Assert.assertThat;
 
 public class IdleTimeoutTest extends AbstractTest
 {
@@ -95,7 +94,7 @@ public class IdleTimeoutTest extends AbstractTest
 
         Assert.assertTrue(latch.await(2 * idleTimeout, TimeUnit.MILLISECONDS));
 
-        Thread.sleep(1000);
+        sleep(1000);
     }
 
     @Test
@@ -146,21 +145,16 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                try
-                {
-                    stream.setIdleTimeout(10 * idleTimeout);
-                    // Stay in the callback for more than the idleTimeout.
-                    Thread.sleep(2 * idleTimeout);
-                    MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
-                    HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
-                    stream.headers(responseFrame, Callback.Adapter.INSTANCE);
-                    return null;
-                }
-                catch (InterruptedException x)
-                {
-                    Assert.fail();
-                    return null;
-                }
+                stream.setIdleTimeout(10 * idleTimeout);
+                // Stay in the callback for more than idleTimeout,
+                // but not for an integer number of idle timeouts,
+                // to avoid a race where the idle timeout fires
+                // again before we can send the headers to the client.
+                sleep(idleTimeout + idleTimeout / 2);
+                MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
+                HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
+                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                return null;
             }
         });
         connector.setIdleTimeout(idleTimeout);
@@ -319,16 +313,11 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                try
-                {
-                    // Stay in the callback for more than idleTimeout.
-                    Thread.sleep(2 * idleTimeout);
-                    replyLatch.countDown();
-                }
-                catch (InterruptedException e)
-                {
-                    Assert.fail();
-                }
+                // Stay in the callback for more than idleTimeout,
+                // but not for an integer number of idle timeouts,
+                // to avoid that the idle timeout fires again.
+                sleep(idleTimeout + idleTimeout / 2);
+                replyLatch.countDown();
             }
         });
 
@@ -345,14 +334,7 @@ public class IdleTimeoutTest extends AbstractTest
             @Override
             protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
             {
-                try
-                {
-                    Thread.sleep(2 * idleTimeout);
-                }
-                catch (InterruptedException x)
-                {
-                    throw new RuntimeException(x);
-                }
+                sleep(2 * idleTimeout);
             }
         });
 

@@ -54,11 +54,6 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     {
         super(connector, configuration, endPoint, transport);
     }
-
-    protected HttpInput newHttpInput()
-    {
-        return new HttpInputOverHTTP2(getState());
-    }
     
     private IStream getStream()
     {

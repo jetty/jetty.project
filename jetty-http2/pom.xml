@@ -13,12 +13,12 @@
   <name>Jetty :: HTTP2</name>
 
   <modules>
-    <module>http2-hpack</module>
-    <module>http2-common</module>
+    <module>http2-alpn-tests</module>
     <module>http2-client</module>
-    <module>http2-server</module>
+    <module>http2-common</module>
+    <module>http2-hpack</module>
     <module>http2-http-client-transport</module>
+    <module>http2-server</module>
   </modules>
-
 
 </project>

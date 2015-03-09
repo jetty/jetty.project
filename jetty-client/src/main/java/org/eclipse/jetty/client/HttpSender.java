@@ -144,6 +144,8 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 case EXPECTING_WITH_CONTENT:
                 case PROCEEDING_WITH_CONTENT:
                 case WAITING:
+                case COMPLETED:
+                case FAILED:
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Deferred content available, {}", current);
@@ -151,7 +153,8 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 }
                 default:
                 {
-                    throw illegalSenderState(current);
+                    illegalSenderState(current);
+                    return;
                 }
             }
         }
@@ -169,8 +172,26 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         SenderState newSenderState = SenderState.SENDING;
         if (expects100Continue(request))
             newSenderState = content.hasContent() ? SenderState.EXPECTING_WITH_CONTENT : SenderState.EXPECTING;
-        if (!updateSenderState(SenderState.IDLE, newSenderState))
-            throw illegalSenderState(SenderState.IDLE);
+
+        out: while (true)
+        {
+            SenderState current = senderState.get();
+            switch (current)
+            {
+                case IDLE:
+                case COMPLETED:
+                {
+                    if (updateSenderState(current, newSenderState))
+                        break out;
+                    break;
+                }
+                default:
+                {
+                    illegalSenderState(current);
+                    return;
+                }
+            }
+        }
 
         // Setting the listener may trigger calls to onContent() by other
         // threads so we must set it only after the sender state has been updated
@@ -206,7 +227,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         if (!updateRequestState(RequestState.BEGIN, RequestState.TRANSIENT))
             return false;
         if (LOG.isDebugEnabled())
-            LOG.debug("Request headers {}{}{}", request, System.getProperty("line.separator"), request.getHeaders().toString().trim());
+            LOG.debug("Request headers {}{}{}", request, System.lineSeparator(), request.getHeaders().toString().trim());
         RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
         notifier.notifyHeaders(request);
         if (!updateRequestState(RequestState.TRANSIENT, RequestState.HEADERS))
@@ -238,7 +259,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 if (!updateRequestState(current, RequestState.TRANSIENT_CONTENT))
                     return false;
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Request content {}{}{}", request, System.getProperty("line.separator"), BufferUtil.toDetailString(content));
+                    LOG.debug("Request content {}{}{}", request, System.lineSeparator(), BufferUtil.toDetailString(content));
                 RequestNotifier notifier = getHttpChannel().getHttpDestination().getRequestNotifier();
                 notifier.notifyContent(request, content);
                 if (!updateRequestState(RequestState.TRANSIENT_CONTENT, RequestState.CONTENT))
@@ -321,15 +342,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
         dispose();
 
-        // Mark atomically the request as terminated and failed,
-        // with respect to concurrency between request and response.
-        Result result = exchange.terminateRequest(failure);
-
-        Request request = exchange.getRequest();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Request failure {} {}", exchange, failure);
-        HttpDestination destination = getHttpChannel().getHttpDestination();
-        destination.getRequestNotifier().notifyFailure(request, failure);
+        Result result = failRequest(exchange, failure);
 
         if (fail)
         {
@@ -344,11 +357,26 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         return true;
     }
 
+    private Result failRequest(HttpExchange exchange, Throwable failure)
+    {
+        // Mark atomically the request as terminated and failed,
+        // with respect to concurrency between request and response.
+        Result result = exchange.terminateRequest(failure);
+
+        Request request = exchange.getRequest();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Request failure {} {} on {}: {}", request, exchange, getHttpChannel(), failure);
+        HttpDestination destination = getHttpChannel().getHttpDestination();
+        destination.getRequestNotifier().notifyFailure(request, failure);
+
+        return result;
+    }
+
     private void terminateRequest(HttpExchange exchange, Throwable failure)
     {
         if (exchange != null)
         {
-            Result result = exchange.terminateRequest(failure);
+            Result result = failRequest(exchange, failure);
             terminateRequest(exchange, failure, result);
         }
     }
@@ -365,7 +393,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (failure != null)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Response failure from request {}", exchange);
+                    LOG.debug("Response failure from request {} {}", request, exchange);
                 getHttpChannel().abortResponse(failure);
             }
         }
@@ -376,7 +404,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (!ordered)
                 channel.exchangeTerminated(result);
             if (LOG.isDebugEnabled())
-                LOG.debug("Request/Response {} {}", failure == null ? "succeeded" : "failed", request);
+                LOG.debug("Request/Response {}: {}", failure == null ? "succeeded" : "failed", result);
             HttpConversation conversation = exchange.getConversation();
             destination.getResponseNotifier().notifyComplete(conversation.getResponseListeners(), result);
             if (ordered)
@@ -417,16 +445,19 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
     protected void reset()
     {
+        HttpContent content = this.content;
+        this.content = null;
         content.close();
-        content = null;
-        senderState.set(SenderState.IDLE);
+        senderState.set(SenderState.COMPLETED);
     }
 
     protected void dispose()
     {
         HttpContent content = this.content;
+        this.content = null;
         if (content != null)
             content.close();
+        senderState.set(SenderState.FAILED);
     }
 
     public void proceed(HttpExchange exchange, Throwable failure)
@@ -475,16 +506,23 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 case WAITING:
                 {
                     // We received the 100 Continue, now send the content if any.
-                    if (!updateSenderState(current, SenderState.SENDING))
-                        throw illegalSenderState(current);
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Proceeding while waiting");
-                    contentCallback.iterate();
+                    if (updateSenderState(current, SenderState.SENDING))
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Proceeding while waiting");
+                        contentCallback.iterate();
+                        return;
+                    }
+                    break;
+                }
+                case FAILED:
+                {
                     return;
                 }
                 default:
                 {
-                    throw illegalSenderState(current);
+                    illegalSenderState(current);
+                    return;
                 }
             }
         }
@@ -492,15 +530,13 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
     public boolean abort(Throwable failure)
     {
-        RequestState current = requestState.get();
-        boolean abortable = isBeforeCommit(current) || isSending(current);
-        return abortable && anyToFailure(failure);
+        return anyToFailure(failure);
     }
 
     private boolean updateRequestState(RequestState from, RequestState to)
     {
         boolean updated = requestState.compareAndSet(from, to);
-        if (!updated)
+        if (!updated && LOG.isDebugEnabled())
             LOG.debug("RequestState update failed: {} -> {}: {}", from, to, requestState.get());
         return updated;
     }
@@ -508,51 +544,25 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     private boolean updateSenderState(SenderState from, SenderState to)
     {
         boolean updated = senderState.compareAndSet(from, to);
-        if (!updated)
+        if (!updated && LOG.isDebugEnabled())
             LOG.debug("SenderState update failed: {} -> {}: {}", from, to, senderState.get());
         return updated;
     }
 
-    private boolean isBeforeCommit(RequestState requestState)
+    private void illegalSenderState(SenderState current)
     {
-        switch (requestState)
-        {
-            case TRANSIENT:
-            case QUEUED:
-            case BEGIN:
-            case HEADERS:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private boolean isSending(RequestState requestState)
-    {
-        switch (requestState)
-        {
-            case TRANSIENT_CONTENT:
-            case COMMIT:
-            case CONTENT:
-                return true;
-            default:
-                return false;
-        }
-    }
-
-    private RuntimeException illegalSenderState(SenderState current)
-    {
-        return new IllegalStateException("Expected " + current + " found " + senderState.get() + " instead");
+        anyToFailure(new IllegalStateException("Expected " + current + " found " + senderState.get() + " instead"));
     }
 
     @Override
     public String toString()
     {
-        return String.format("%s@%x(req=%s,snd=%s)",
+        return String.format("%s@%x(req=%s,snd=%s,failure=%s)",
                 getClass().getSimpleName(),
                 hashCode(),
                 requestState,
-                senderState);
+                senderState,
+                failure);
     }
 
     /**
@@ -630,7 +640,15 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         /**
          * {@link HttpSender} is sending the headers, while 100 Continue has arrived, and deferred content is available to be sent
          */
-        PROCEEDING_WITH_CONTENT
+        PROCEEDING_WITH_CONTENT,
+        /**
+         * {@link HttpSender} has finished to send the request
+         */
+        COMPLETED,
+        /**
+         * {@link HttpSender} has failed to send the request
+         */
+        FAILED
     }
 
     private class CommitCallback implements Callback
@@ -640,6 +658,9 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         {
             try
             {
+                HttpContent content = HttpSender.this.content;
+                if (content == null)
+                    return;
                 content.succeeded();
                 process();
             }
@@ -652,6 +673,9 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         @Override
         public void failed(Throwable failure)
         {
+            HttpContent content = HttpSender.this.content;
+            if (content == null)
+                return;
             content.failed(failure);
             anyToFailure(failure);
         }
@@ -666,7 +690,9 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             if (!headersToCommit(request))
                 return;
 
-            HttpContent content = HttpSender.this.content;
+             HttpContent content = HttpSender.this.content;
+            if (content == null)
+                return;
 
             if (!content.hasContent())
             {
@@ -729,9 +755,14 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                             updateSenderState(current, SenderState.SENDING);
                             break;
                         }
+                        case FAILED:
+                        {
+                            return;
+                        }
                         default:
                         {
-                            throw illegalSenderState(current);
+                            illegalSenderState(current);
+                            return;
                         }
                     }
                 }
@@ -749,6 +780,9 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                 return Action.IDLE;
 
             HttpContent content = HttpSender.this.content;
+            if (content == null)
+                return Action.IDLE;
+
             while (true)
             {
                 boolean advanced = content.advance();
@@ -768,7 +802,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                     return Action.IDLE;
                 }
 
-                SenderState current = HttpSender.this.senderState.get();
+                SenderState current = senderState.get();
                 switch (current)
                 {
                     case SENDING:
@@ -788,7 +822,8 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
                     }
                     default:
                     {
-                        throw illegalSenderState(current);
+                        illegalSenderState(current);
+                        return Action.IDLE;
                     }
                 }
             }
@@ -797,15 +832,24 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         @Override
         public void succeeded()
         {
-            ByteBuffer buffer = content.getContent();
-            someToContent(getHttpExchange().getRequest(), buffer);
+            HttpExchange exchange = getHttpExchange();
+            if (exchange == null)
+                return;
+            HttpContent content = HttpSender.this.content;
+            if (content == null)
+                return;
             content.succeeded();
+            ByteBuffer buffer = content.getContent();
+            someToContent(exchange.getRequest(), buffer);
             super.succeeded();
         }
 
         @Override
         public void onCompleteFailure(Throwable failure)
         {
+            HttpContent content = HttpSender.this.content;
+            if (content == null)
+                return;
             content.failed(failure);
             anyToFailure(failure);
         }
@@ -823,16 +867,22 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
         @Override
         public void succeeded()
         {
-            content.succeeded();
             HttpExchange exchange = getHttpExchange();
             if (exchange == null)
                 return;
+            HttpContent content = HttpSender.this.content;
+            if (content == null)
+                return;
+            content.succeeded();
             someToSuccess(exchange);
         }
 
         @Override
         public void failed(Throwable failure)
         {
+            HttpContent content = HttpSender.this.content;
+            if (content == null)
+                return;
             content.failed(failure);
             anyToFailure(failure);
         }

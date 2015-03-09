@@ -35,6 +35,7 @@ public abstract class FillInterest
 {
     private final static Logger LOG = Log.getLogger(FillInterest.class);
     private final AtomicReference<Callback> _interested = new AtomicReference<>(null);
+    private Throwable _lastSet;
 
     protected FillInterest()
     {
@@ -53,13 +54,25 @@ public abstract class FillInterest
         if (callback == null)
             throw new IllegalArgumentException();
 
-        if (!_interested.compareAndSet(null, callback))
+        if (_interested.compareAndSet(null, callback))
+        {
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("{} register {}",this,callback);
+                _lastSet=new Throwable();
+            }
+        }
+        else
         {
             LOG.warn("Read pending for {} prevented {}", _interested, callback);
+            if (LOG.isDebugEnabled())
+                LOG.warn("callback set at ",_lastSet);
             throw new ReadPendingException();
         }
         try
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} register {}",this,callback);
             needsFillInterest();
         }
         catch (Throwable e)
@@ -74,8 +87,12 @@ public abstract class FillInterest
     public void fillable()
     {
         Callback callback = _interested.get();
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} fillable {}",this,callback);
         if (callback != null && _interested.compareAndSet(callback, null))
             callback.succeeded();
+        else if (LOG.isDebugEnabled())
+            LOG.debug("{} lost race {}",this,callback);
     }
 
     /**

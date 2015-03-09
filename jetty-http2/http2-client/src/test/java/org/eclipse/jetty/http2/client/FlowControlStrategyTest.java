@@ -39,6 +39,7 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
+import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
@@ -53,16 +54,21 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
+import org.junit.Rule;
 import org.junit.Test;
 
 public abstract class FlowControlStrategyTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
     protected ServerConnector connector;
     protected HTTP2Client client;
     protected Server server;
@@ -126,6 +132,98 @@ public abstract class FlowControlStrategyTest
         Thread.sleep(1000);
         client.stop();
         server.stop();
+    }
+
+    @Test
+    public void testWindowSizeUpdates() throws Exception
+    {
+        final CountDownLatch prefaceLatch = new CountDownLatch(1);
+        final CountDownLatch stream1Latch = new CountDownLatch(1);
+        final CountDownLatch stream2Latch = new CountDownLatch(1);
+        final CountDownLatch settingsLatch = new CountDownLatch(1);
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Map<Integer, Integer> onPreface(Session session)
+            {
+                HTTP2Session serverSession = (HTTP2Session)session;
+                Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, serverSession.getSendWindow());
+                Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, serverSession.getRecvWindow());
+                prefaceLatch.countDown();
+                return null;
+            }
+
+            @Override
+            public void onSettings(Session session, SettingsFrame frame)
+            {
+                for (Stream stream : session.getStreams())
+                {
+                    HTTP2Stream serverStream = (HTTP2Stream)stream;
+                    Assert.assertEquals(0, serverStream.getSendWindow());
+                    Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, serverStream.getRecvWindow());
+                }
+                settingsLatch.countDown();
+            }
+
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                HTTP2Stream serverStream = (HTTP2Stream)stream;
+                MetaData.Request request = (MetaData.Request)frame.getMetaData();
+                if ("GET".equalsIgnoreCase(request.getMethod()))
+                {
+                    Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, serverStream.getSendWindow());
+                    Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, serverStream.getRecvWindow());
+                    stream1Latch.countDown();
+                }
+                else
+                {
+                    Assert.assertEquals(0, serverStream.getSendWindow());
+                    Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, serverStream.getRecvWindow());
+                    stream2Latch.countDown();
+                }
+                return null;
+            }
+        });
+
+        HTTP2Session clientSession = (HTTP2Session)newClient(new Session.Listener.Adapter());
+
+        Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientSession.getSendWindow());
+        Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientSession.getRecvWindow());
+        Assert.assertTrue(prefaceLatch.await(5, TimeUnit.SECONDS));
+
+        MetaData.Request request1 = newRequest("GET", new HttpFields());
+        FuturePromise<Stream> promise1 = new FuturePromise<>();
+        clientSession.newStream(new HeadersFrame(0, request1, null, true), promise1, new Stream.Listener.Adapter());
+        HTTP2Stream clientStream1 = (HTTP2Stream)promise1.get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientStream1.getSendWindow());
+        Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientStream1.getRecvWindow());
+        Assert.assertTrue(stream1Latch.await(5, TimeUnit.SECONDS));
+
+        // Send a SETTINGS frame that changes the window size.
+        // This tells the server that its stream send window must be updated,
+        // so on the client it's the receive window that must be updated.
+        Map<Integer, Integer> settings = new HashMap<>();
+        settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, 0);
+        SettingsFrame frame = new SettingsFrame(settings, false);
+        FutureCallback callback = new FutureCallback();
+        clientSession.settings(frame, callback);
+        callback.get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientStream1.getSendWindow());
+        Assert.assertEquals(0, clientStream1.getRecvWindow());
+        settingsLatch.await(5, TimeUnit.SECONDS);
+
+        // Now create a new stream, it must pick up the new value.
+        MetaData.Request request2 = newRequest("POST", new HttpFields());
+        FuturePromise<Stream> promise2 = new FuturePromise<>();
+        clientSession.newStream(new HeadersFrame(0, request2, null, true), promise2, new Stream.Listener.Adapter());
+        HTTP2Stream clientStream2 = (HTTP2Stream)promise2.get(5, TimeUnit.SECONDS);
+
+        Assert.assertEquals(FlowControlStrategy.DEFAULT_WINDOW_SIZE, clientStream2.getSendWindow());
+        Assert.assertEquals(0, clientStream2.getRecvWindow());
+        Assert.assertTrue(stream2Latch.await(5, TimeUnit.SECONDS));
     }
 
     @Test
@@ -397,6 +495,7 @@ public abstract class FlowControlStrategyTest
         try
         {
             exchanger.exchange(null, 1, TimeUnit.SECONDS);
+            Assert.fail();
         }
         catch (TimeoutException x)
         {
@@ -561,10 +660,12 @@ public abstract class FlowControlStrategyTest
         Random random = new Random();
         final byte[] chunk1 = new byte[1024];
         random.nextBytes(chunk1);
-        final byte[] chunk2 = new byte[1024];
+        final byte[] chunk2 = new byte[2048];
         random.nextBytes(chunk2);
 
-        final AtomicReference<CountDownLatch> settingsLatch = new AtomicReference<>(new CountDownLatch(1));
+        // Two SETTINGS frames: the initial after the preface,
+        // and the explicit where we set the stream window size to zero.
+        final AtomicReference<CountDownLatch> settingsLatch = new AtomicReference<>(new CountDownLatch(2));
         final CountDownLatch dataLatch = new CountDownLatch(1);
         start(new ServerSessionListener.Adapter()
         {
@@ -610,7 +711,7 @@ public abstract class FlowControlStrategyTest
 
         // Now we have the 2 DATA frames queued in the server.
 
-        // Partially unstall the first DATA frame.
+        // Unstall the stream window.
         settingsLatch.set(new CountDownLatch(1));
         settings.clear();
         settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, chunk1.length / 2);
@@ -618,6 +719,12 @@ public abstract class FlowControlStrategyTest
         Assert.assertTrue(settingsLatch.get().await(5, TimeUnit.SECONDS));
 
         Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
+
+        // Check that the data is sent correctly.
+        byte[] expected = new byte[content.length];
+        System.arraycopy(chunk1, 0, expected, 0, chunk1.length);
+        System.arraycopy(chunk2, 0, expected, chunk1.length, chunk2.length);
+        Assert.assertArrayEquals(expected, content);
     }
 
     @Test
@@ -726,6 +833,13 @@ public abstract class FlowControlStrategyTest
         });
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 
+        // The following "sneaky" write may clash with the write
+        // of the reply SETTINGS frame sent by the client in
+        // response to the server SETTINGS frame.
+        // It is not enough to use a latch on the server to
+        // wait for the reply frame, since the client may have
+        // sent the bytes, but not yet be ready to write again.
+        Thread.sleep(1000);
 
         // Now the client is supposed to not send more frames.
         // If it does, the connection must be closed.
@@ -784,8 +898,8 @@ public abstract class FlowControlStrategyTest
         });
         Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
 
-        // Wait for a while to allow flow control window frames
-        // to be exchanged before doing the "sneaky" write below.
+        // Wait for a while before doing the "sneaky" write
+        // below, see comments in the previous test case.
         Thread.sleep(1000);
 
         // Now the client is supposed to not send more frames.

@@ -42,28 +42,7 @@
       <artifactId>apache-jsp</artifactId>
       <version>${project.version}</version>
     </dependency>
-    <dependency>
-      <groupId>org.eclipse.jetty.orbit</groupId>
-      <artifactId>javax.servlet.jsp.jstl</artifactId>
-    </dependency>
-   <dependency>
-       <groupId>org.glassfish.web</groupId>
-       <artifactId>javax.servlet.jsp.jstl</artifactId>
-    </dependency>
-   <dependency>
-       <groupId>org.mortbay.jasper</groupId>
-       <artifactId>apache-el</artifactId>
-       <version>8.0.9.M3</version>
-    </dependency>
   </dependencies>
-<!--
-   <dependency>
-       <groupId>javax.el</groupId>
-       <artifactId>javax.el-api</artifactId>
-       <version>3.0.0</version>
-    </dependency>
-  </dependencies>
--->
 
   <build>
     <plugins>

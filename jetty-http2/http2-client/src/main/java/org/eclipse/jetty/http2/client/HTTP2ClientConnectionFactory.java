@@ -50,7 +50,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
     public static final String SESSION_LISTENER_CONTEXT_KEY = "http2.client.sessionListener";
     public static final String SESSION_PROMISE_CONTEXT_KEY = "http2.client.sessionPromise";
 
-    private int initialSessionWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+    private int initialSessionRecvWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
 
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
@@ -75,14 +75,14 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
         return new SimpleFlowControlStrategy();
     }
 
-    public int getInitialSessionWindow()
+    public int getInitialSessionRecvWindow()
     {
-        return initialSessionWindow;
+        return initialSessionRecvWindow;
     }
 
-    public void setInitialSessionWindow(int initialSessionWindow)
+    public void setInitialSessionRecvWindow(int initialSessionRecvWindow)
     {
-        this.initialSessionWindow = initialSessionWindow;
+        this.initialSessionRecvWindow = initialSessionRecvWindow;
     }
 
     private class HTTP2ClientConnection extends HTTP2Connection implements Callback
@@ -109,11 +109,17 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
             PrefaceFrame prefaceFrame = new PrefaceFrame();
             SettingsFrame settingsFrame = new SettingsFrame(settings, false);
-            int windowDelta = getInitialSessionWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
+            ISession session = getSession();
+            int windowDelta = getInitialSessionRecvWindow() - FlowControlStrategy.DEFAULT_WINDOW_SIZE;
             if (windowDelta > 0)
-                getSession().control(null, this, prefaceFrame, settingsFrame, new WindowUpdateFrame(0, windowDelta));
+            {
+                session.updateRecvWindow(windowDelta);
+                session.control(null, this, prefaceFrame, settingsFrame, new WindowUpdateFrame(0, windowDelta));
+            }
             else
-                getSession().control(null, this, prefaceFrame, settingsFrame);
+            {
+                session.control(null, this, prefaceFrame, settingsFrame);
+            }
         }
 
         @Override

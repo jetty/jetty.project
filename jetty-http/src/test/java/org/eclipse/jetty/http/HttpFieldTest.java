@@ -18,18 +18,14 @@
 
 package org.eclipse.jetty.http;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.*;
 
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Test;
 
-/**
- *
- */
 public class HttpFieldTest
 {
 
@@ -46,6 +42,24 @@ public class HttpFieldTest
         assertFalse(field.contains(null));
     }
     
+    @Test
+    public void testCaseInsensitiveHashcode_KnownField() throws Exception
+    {
+        HttpField fieldFoo1 = new HttpField("Cookie","foo");
+        HttpField fieldFoo2 = new HttpField("cookie","foo");
+        
+        assertThat("Field hashcodes are case insensitive", fieldFoo1.hashCode(), is(fieldFoo2.hashCode()));
+    }
+    
+    @Test
+    public void testCaseInsensitiveHashcode_UnknownField() throws Exception
+    {
+        HttpField fieldFoo1 = new HttpField("X-Foo","bar");
+        HttpField fieldFoo2 = new HttpField("x-foo","bar");
+        
+        assertThat("Field hashcodes are case insensitive", fieldFoo1.hashCode(), is(fieldFoo2.hashCode()));
+    }
+
     @Test
     public void testContainsList() throws Exception
     {

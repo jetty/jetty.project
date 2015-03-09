@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client.http;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -31,6 +30,7 @@ import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -39,15 +39,22 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
     private final AtomicBoolean closed = new AtomicBoolean();
+    private final Promise<Connection> promise;
     private final Delegate delegate;
     private final HttpChannelOverHTTP channel;
     private long idleTimeout;
 
-    public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination)
+    public HttpConnectionOverHTTP(EndPoint endPoint, HttpDestination destination, Promise<Connection> promise)
     {
         super(endPoint, destination.getHttpClient().getExecutor());
+        this.promise = promise;
         this.delegate = new Delegate(destination);
-        this.channel = new HttpChannelOverHTTP(this);
+        this.channel = newHttpChannel();
+    }
+
+    protected HttpChannelOverHTTP newHttpChannel()
+    {
+        return new HttpChannelOverHTTP(this);
     }
 
     public HttpChannelOverHTTP getHttpChannel()
@@ -76,6 +83,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         super.onOpen();
         fillInterested();
+        promise.succeeded(this);
     }
 
     public boolean isClosed()
@@ -144,7 +152,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         return closed.compareAndSet(false, true);
     }
 
-    private boolean abort(Throwable failure)
+    protected boolean abort(Throwable failure)
     {
         HttpExchange exchange = channel.getHttpExchange();
         return exchange != null && exchange.getRequest().abort(failure);

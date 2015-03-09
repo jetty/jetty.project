@@ -38,6 +38,14 @@ public interface ISession extends Session
     public IStream getStream(int streamId);
 
     /**
+     * <p>Removes the given {@code stream}.</p>
+     *
+     * @param stream the stream to remove
+     * @param local  whether the stream is local or remote
+     */
+    public void removeStream(IStream stream, boolean local);
+
+    /**
      * <p>Enqueues the given frames to be written to the connection.</p>
      *
      * @param stream   the stream the frames belong to
@@ -52,11 +60,12 @@ public interface ISession extends Session
      * <p>Differently from {@link #control(IStream, Callback, Frame, Frame...)}, this method
      * generates atomically the stream id for the pushed stream.</p>
      *
-     * @param stream  the stream associated to the pushed stream
-     * @param promise the promise that gets notified of the pushed stream creation
-     * @param frame   the PUSH_PROMISE frame to enqueue
+     * @param stream   the stream associated to the pushed stream
+     * @param promise  the promise that gets notified of the pushed stream creation
+     * @param frame    the PUSH_PROMISE frame to enqueue
+     * @param listener the listener that gets notified of pushed stream events
      */
-    public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame);
+    public void push(IStream stream, Promise<Stream> promise, PushPromiseFrame frame, Stream.Listener listener);
 
     /**
      * <p>Enqueues the given DATA frame to be written to the connection.</p>
@@ -87,7 +96,7 @@ public interface ISession extends Session
      * <p>Callback method invoked when the a WINDOW_UPDATE frame has been received.</p>
      *
      * @param stream the stream the window update belongs to, or null if the window update belongs to the session
-     * @param frame the WINDOW_UPDATE frame received
+     * @param frame  the WINDOW_UPDATE frame received
      */
     public void onWindowUpdate(IStream stream, WindowUpdateFrame frame);
 

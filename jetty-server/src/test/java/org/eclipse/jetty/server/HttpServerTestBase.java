@@ -31,6 +31,7 @@ import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.atomic.AtomicBoolean;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -40,13 +41,17 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
+import org.eclipse.jetty.util.thread.strategy.ExecuteProduceRun;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.greaterThanOrEqualTo;
@@ -61,6 +66,7 @@ import static org.junit.Assert.assertTrue;
 /**
  *
  */
+@RunWith(AdvancedRunner.class)
 public abstract class HttpServerTestBase extends HttpServerTestFixture
 {
     private static final String REQUEST1_HEADER = "POST / HTTP/1.0\n" + "Host: localhost\n" + "Content-Type: text/xml; charset=utf-8\n" + "Connection: close\n" + "Content-Length: ";
@@ -1384,6 +1390,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         {
             int point = points[j];
 
+            // System.err.println("write: "+new String(bytes, last, point - last));
             os.write(bytes, last, point - last);
             last = point;
             os.flush();
@@ -1394,6 +1401,7 @@ public abstract class HttpServerTestBase extends HttpServerTestFixture
         }
 
         // Write the last fragment
+        // System.err.println("Write: "+new String(bytes, last, bytes.length - last));
         os.write(bytes, last, bytes.length - last);
         os.flush();
         Thread.sleep(PAUSE);

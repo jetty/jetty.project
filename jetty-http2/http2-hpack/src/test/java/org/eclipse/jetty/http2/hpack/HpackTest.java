@@ -16,10 +16,10 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.http2.hpack;
 
-import static org.junit.Assert.assertEquals;
+import static org.hamcrest.CoreMatchers.*;
+import static org.junit.Assert.*;
 
 import java.nio.ByteBuffer;
 
@@ -36,7 +36,6 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.util.BufferUtil;
 import org.junit.Assert;
 import org.junit.Test;
-
 
 public class HpackTest
 {
@@ -66,7 +65,7 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer,0);
         Response decoded0 = (Response)decoder.decode(buffer);
 
-        Assert.assertEquals(original0,decoded0);
+        assertMetadataSame(original0,decoded0);
         
         // Same again?
         BufferUtil.clearToFill(buffer);
@@ -74,7 +73,7 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer,0);
         Response decoded0b = (Response)decoder.decode(buffer);
 
-        Assert.assertEquals(original0,decoded0b);        
+        assertMetadataSame(original0,decoded0b);        
 
         HttpFields fields1 = new HttpFields();
         fields1.add(HttpHeader.CONTENT_TYPE,"text/plain");
@@ -91,12 +90,10 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer,0);
         Response decoded1 = (Response)decoder.decode(buffer);
 
-        Assert.assertEquals(original1,decoded1);
+        assertMetadataSame(original1,decoded1);
         Assert.assertEquals("custom-key",decoded1.getFields().getField("Custom-Key").getName());
-        
     }
     
-
     @Test
     public void encodeDecodeTooLargeTest()
     {
@@ -114,7 +111,7 @@ public class HpackTest
         BufferUtil.flipToFlush(buffer,0);
         MetaData decoded0 = (MetaData)decoder.decode(buffer);
 
-        Assert.assertEquals(original0,decoded0);
+        assertMetadataSame(original0,decoded0);
                
         HttpFields fields1 = new HttpFields();
         fields1.add("1234567890","1234567890123456789012345678901234567890");
@@ -134,12 +131,7 @@ public class HpackTest
         {
             assertEquals(HttpStatus.REQUEST_ENTITY_TOO_LARGE_413,e.getCode());
         }
-        
     }
-    
-    
-    
-
 
     @Test
     public void evictReferencedFieldTest()
@@ -163,8 +155,7 @@ public class HpackTest
         assertEquals("123456789012345678901234567890123456788901234567890",encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length+1).getHttpField().getName());
         assertEquals("foo",encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length+0).getHttpField().getName());
         
-        
-        assertEquals(original0,decoded0);
+        assertMetadataSame(original0,decoded0);
                
         HttpFields fields1 = new HttpFields();
         fields1.add("123456789012345678901234567890123456788901234567890","other_value");
@@ -175,7 +166,7 @@ public class HpackTest
         encoder.encode(buffer,original1);
         BufferUtil.flipToFlush(buffer,0);
         MetaData decoded1 = (MetaData)decoder.decode(buffer);
-        assertEquals(original1,decoded1);
+        assertMetadataSame(original1,decoded1);
         
         assertEquals(2,encoder.getHpackContext().size());
         assertEquals(2,decoder.getHpackContext().size());
@@ -183,4 +174,33 @@ public class HpackTest
         assertEquals("foo",encoder.getHpackContext().get(HpackContext.STATIC_TABLE.length+1).getHttpField().getName());        
     }
     
+    private void assertMetadataSame(MetaData.Response expected, MetaData.Response actual)
+    {
+        assertThat("Response.status", actual.getStatus(), is(expected.getStatus()));
+        assertThat("Response.reason", actual.getReason(), is(expected.getReason()));
+        assertMetadataSame((MetaData)expected,(MetaData)actual);
+    }
+
+    private void assertMetadataSame(MetaData expected, MetaData actual)
+    {
+        assertThat("Metadata.contentLength",actual.getContentLength(),is(expected.getContentLength()));
+        assertThat("Metadata.version" + ".version", actual.getVersion(), is(expected.getVersion()));
+        assertHttpFieldsSame("Metadata.fields",expected.getFields(),actual.getFields());
+    }
+
+    private void assertHttpFieldsSame(String msg, HttpFields expected, HttpFields actual)
+    {
+        assertThat(msg + ".size", actual.size(), is(expected.size()));
+        
+        for (HttpField actualField : actual)
+        {
+            if ("DATE".equalsIgnoreCase(actualField.getName()))
+            {
+                // skip comparison on Date, as these values can often differ by 1 second
+                // during testing.
+                continue;
+            }
+            assertThat(msg + ".contains(" + actualField + ")",expected.contains(actualField),is(true));
+        }
+    }
 }

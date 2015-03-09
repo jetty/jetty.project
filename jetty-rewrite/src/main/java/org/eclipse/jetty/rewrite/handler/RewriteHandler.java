@@ -19,7 +19,10 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
+import java.util.Arrays;
+import java.util.EnumSet;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -171,6 +174,7 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 public class RewriteHandler extends HandlerWrapper
 {
     private RuleContainer _rules;
+    private EnumSet<DispatcherType> _dispatchTypes = EnumSet.of(DispatcherType.REQUEST);
 
     /* ------------------------------------------------------------ */
     public RewriteHandler()
@@ -278,6 +282,23 @@ public class RewriteHandler extends HandlerWrapper
         _rules.setOriginalPathAttribute(originalPathAttribute);
     }
 
+    /* ------------------------------------------------------------ */
+    public EnumSet<DispatcherType> getDispatcherTypes()
+    {
+        return _dispatchTypes;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setDispatcherTypes(EnumSet<DispatcherType> types)
+    {
+        _dispatchTypes=EnumSet.copyOf(types);
+    }
+    
+    /* ------------------------------------------------------------ */
+    public void setDispatcherTypes(DispatcherType... types)
+    {
+        _dispatchTypes=EnumSet.copyOf(Arrays.asList(types));
+    }
 
     /* ------------------------------------------------------------ */
     /* (non-Javadoc)
@@ -288,8 +309,11 @@ public class RewriteHandler extends HandlerWrapper
     {
         if (isStarted())
         {
-            String returned = _rules.matchAndApply(target, request, response);
-            target = (returned == null) ? target : returned;
+            if (_dispatchTypes.contains(baseRequest.getDispatcherType()))
+            {
+                String returned = _rules.matchAndApply(target, request, response);
+                target = (returned == null) ? target : returned;
+            }
 
             if (!baseRequest.isHandled())
                 super.handle(target, baseRequest, request, response);

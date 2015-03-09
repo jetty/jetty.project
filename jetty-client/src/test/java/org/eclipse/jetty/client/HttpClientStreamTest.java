@@ -36,9 +36,11 @@ import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -65,7 +67,6 @@ import org.junit.Assert;
 import org.junit.Test;
 
 import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.assertTrue;
 import static org.junit.Assert.fail;
 
 public class HttpClientStreamTest extends AbstractHttpClientServerTest
@@ -186,7 +187,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         for (byte b : data)
         {
             int read = input.read();
-            assertTrue(read >= 0);
+            Assert.assertTrue(read >= 0);
             Assert.assertEquals(b & 0xFF, read);
         }
 
@@ -1059,43 +1060,52 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void testUploadWithWriteFailureClosesStream() throws Exception
+    public void testUploadWithConcurrentServerCloseClosesStream() throws Exception
     {
-        start(new EmptyServerHandler());
+        final CountDownLatch serverLatch = new CountDownLatch(1);
+        start(new AbstractHandler()
+        {
+            @Override
+            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+            {
+                baseRequest.setHandled(true);
+                AsyncContext asyncContext = request.startAsync();
+                asyncContext.setTimeout(0);
+                serverLatch.countDown();
+            }
+        });
 
-        final AtomicInteger bytes = new AtomicInteger();
+        final AtomicBoolean commit = new AtomicBoolean();
         final CountDownLatch closeLatch = new CountDownLatch(1);
         InputStream stream = new InputStream()
         {
             @Override
             public int read() throws IOException
             {
-                int result = bytes.incrementAndGet();
-                switch (result)
+                // This method will be called few times before
+                // the request is committed.
+                // We wait for the request to commit, and we
+                // wait for the request to reach the server,
+                // to be sure that the server endPoint has
+                // been created, before stopping the connector.
+
+                if (commit.get())
                 {
-                    case 1:
+                    try
                     {
-                        break;
+                        Assert.assertTrue(serverLatch.await(5, TimeUnit.SECONDS));
+                        connector.stop();
+                        return 0;
                     }
-                    case 2:
+                    catch (Throwable x)
                     {
-                        try
-                        {
-                            connector.stop();
-                        }
-                        catch (Exception x)
-                        {
-                            throw new IOException(x);
-                        }
-                        break;
-                    }
-                    default:
-                    {
-                        result = -1;
-                        break;
+                        throw new IOException(x);
                     }
                 }
-                return result;
+                else
+                {
+                    return connector.isStopped() ? -1 : 0;
+                }
             }
 
             @Override
@@ -1111,6 +1121,14 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .content(provider)
+                .onRequestCommit(new Request.CommitListener()
+                {
+                    @Override
+                    public void onCommit(Request request)
+                    {
+                        commit.set(true);
+                    }
+                })
                 .send(new Response.CompleteListener()
                 {
                     @Override

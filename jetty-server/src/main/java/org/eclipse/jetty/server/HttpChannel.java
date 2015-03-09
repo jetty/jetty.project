@@ -80,12 +80,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     /** Bytes written after interception (eg after compression) */
     private long _written;
 
-    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
-    {
-        this(connector,configuration,endPoint,transport,null);
-    }
     
-    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport, HttpInput input)
+    public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
         _connector = connector;
         _configuration = configuration;
@@ -93,23 +89,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _transport = transport;
 
         _state = new HttpChannelState(this);
-        _request = new Request(this, input!=null?input:newHttpInput());
+        _request = new Request(this, newHttpInput(_state));
         _response = new Response(this, newHttpOutput());
         _requestLog=_connector==null?null:_connector.getServer().getRequestLog();
         if (LOG.isDebugEnabled())
             LOG.debug("new {} -> {},{},{}",this,_endPoint,_endPoint.getConnection(),_state);
     }
 
-    protected HttpInput newHttpInput()
+    protected HttpInput newHttpInput(HttpChannelState state)
     {
-        return new HttpInput()
-        {
-            @Override
-            protected void onReadPossible()
-            {
-                getState().onReadPossible();
-            }            
-        };
+        return new HttpInput(state);
     }
 
     protected HttpOutput newHttpOutput()
@@ -244,6 +233,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written=0;
     }
 
+    public void asyncReadFillInterested()
+    {        
+    }
+    
     @Override
     public void run()
     {
@@ -510,20 +503,19 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _request.setMetaData(request);
     }
 
-    public void onContent(HttpInput.Content content)
+    public boolean onContent(HttpInput.Content content)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} content {}", this, content);
         
-        HttpInput input = _request.getHttpInput();
-        input.addContent(content);
+        return _request.getHttpInput().addContent(content);
     }
 
-    public void onRequestComplete()
+    public boolean onRequestComplete()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} onRequestComplete", this);
-        _request.getHttpInput().eof();
+        return _request.getHttpInput().eof();
     }
 
     public void onCompleted()
@@ -533,9 +525,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _transport.onCompleted();
     }
     
-    public void onEarlyEOF()
+    public boolean onEarlyEOF()
     {
-        _request.getHttpInput().earlyEOF();
+        return _request.getHttpInput().earlyEOF();
     }
 
     public void onBadMessage(int status, String reason)
@@ -745,5 +737,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
 
     }
+
 
 }

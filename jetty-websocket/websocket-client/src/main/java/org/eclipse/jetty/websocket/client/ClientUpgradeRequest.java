@@ -167,7 +167,17 @@ public class ClientUpgradeRequest extends UpgradeRequest
                 {
                     request.append("; ");
                 }
-                request.append(cookie.toString());
+                
+                request.append(cookie.getName()).append("=");
+                if (cookie.getVersion() == 1)
+                {
+                    // must be enclosed with quotes
+                    request.append('"').append(cookie.getValue()).append('"');
+                }
+                else
+                {
+                    request.append(cookie.getValue());
+                }
                 needDelim = true;
             }
             request.append("\r\n");

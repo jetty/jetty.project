@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;
 
+@SuppressWarnings("serial")
 public class AsyncMiddleManServlet extends AbstractProxyServlet
 {
     private static final String CLIENT_TRANSFORMER = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
@@ -80,7 +81,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
         boolean hasContent = hasContent(clientRequest);
 
-        copyHeaders(clientRequest, proxyRequest);
+        copyRequestHeaders(clientRequest, proxyRequest);
 
         addProxyHeaders(clientRequest, proxyRequest);
 
@@ -702,7 +703,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 }
             }
 
-            if (!buffers.isEmpty())
+            if (!buffers.isEmpty() || finished)
             {
                 ByteBuffer result = gzip(buffers, finished);
                 buffers.clear();

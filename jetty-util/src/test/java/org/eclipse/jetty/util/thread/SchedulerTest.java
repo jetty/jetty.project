@@ -26,7 +26,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 
-import org.eclipse.jetty.toolchain.test.BenchmarkHelper;
+import org.eclipse.jetty.toolchain.perf.PlatformMonitor;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 import org.hamcrest.Matchers;
@@ -177,7 +177,7 @@ public class SchedulerTest
             @Override
             public void run()
             {
-                throw new RuntimeException();
+                throw new RuntimeException("Thrown by testTaskThrowsException");
             }
         }, delay, TimeUnit.MILLISECONDS);
 
@@ -218,11 +218,13 @@ public class SchedulerTest
     public void testBenchmark() throws Exception
     {
         schedule(2000,10000,2000,50);
-        BenchmarkHelper benchmark = new BenchmarkHelper();
-        benchmark.startStatistics();
+        PlatformMonitor benchmark = new PlatformMonitor();
+        PlatformMonitor.Start start = benchmark.start();
+        System.err.println(start);
         System.err.println(_scheduler);
         schedule(2000,30000,2000,50);
-        benchmark.stopStatistics();
+        PlatformMonitor.Stop stop = benchmark.stop();
+        System.err.println(stop);
     }
 
     private void schedule(int threads,final int duration, final int delay, final int interval) throws Exception

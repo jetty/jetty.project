@@ -30,11 +30,14 @@ import java.nio.charset.StandardCharsets;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.junit.Test;
+import org.junit.runner.RunWith;
 
 /**
  * HttpServer Tester.
  */
+@RunWith(AdvancedRunner.class)
 public abstract class ConnectorCloseTestBase extends HttpServerTestFixture
 {
     private static String __content =

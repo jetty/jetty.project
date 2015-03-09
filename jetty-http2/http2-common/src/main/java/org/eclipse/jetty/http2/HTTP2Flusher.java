@@ -22,7 +22,6 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.ArrayDeque;
 import java.util.ArrayList;
-import java.util.Deque;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -42,7 +41,7 @@ public class HTTP2Flusher extends IteratingCallback
 {
     private static final Logger LOG = Log.getLogger(HTTP2Flusher.class);
 
-    private final Deque<WindowEntry> windows = new ArrayDeque<>();
+    private final Queue<WindowEntry> windows = new ArrayDeque<>();
     private final ArrayQueue<Entry> frames = new ArrayQueue<>(ArrayQueue.DEFAULT_CAPACITY, ArrayQueue.DEFAULT_GROWTH, this);
     private final Map<IStream, Integer> streams = new HashMap<>();
     private final List<Entry> resets = new ArrayList<>();
@@ -59,15 +58,15 @@ public class HTTP2Flusher extends IteratingCallback
 
     public void window(IStream stream, WindowUpdateFrame frame)
     {
+        boolean added = false;
         synchronized (this)
         {
             if (!isClosed())
-            {
-                windows.offer(new WindowEntry(stream, frame));
-                // Flush stalled data.
-                iterate();
-            }
+                added = windows.offer(new WindowEntry(stream, frame));
         }
+        // Flush stalled data.
+        if (added)
+            iterate();
     }
 
     public boolean prepend(Entry entry)
@@ -189,7 +188,7 @@ public class HTTP2Flusher extends IteratingCallback
                         Integer streamWindow = streams.get(stream);
                         if (streamWindow == null)
                         {
-                            streamWindow = stream.getSendWindow();
+                            streamWindow = stream.updateSendWindow(0);
                             streams.put(stream, streamWindow);
                         }
 
@@ -364,6 +363,11 @@ public class HTTP2Flusher extends IteratingCallback
         @Override
         public void failed(Throwable x)
         {
+            if (stream != null)
+            {
+                stream.close();
+                stream.getSession().removeStream(stream, true);
+            }
             callback.failed(x);
         }
 

@@ -38,6 +38,7 @@ import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.junit.Assert;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class BufferingFlowControlStrategyTest extends FlowControlStrategyTest
@@ -48,6 +49,7 @@ public class BufferingFlowControlStrategyTest extends FlowControlStrategyTest
         return new BufferingFlowControlStrategy(0.5F);
     }
 
+    @Ignore // Race between sending data and receiving reset
     @Test
     public void testFlowControlWhenServerResetsStream() throws Exception
     {

@@ -86,6 +86,6 @@ public abstract class HttpChannel
     @Override
     public String toString()
     {
-        return String.format("%s@%h", getClass().getSimpleName(), this);
+        return String.format("%s@%x(exchange=%s)", getClass().getSimpleName(), hashCode(), exchange);
     }
 }

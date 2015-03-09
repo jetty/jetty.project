@@ -37,8 +37,12 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /**
- * A handler that shuts the server down on a valid request. Used to do "soft" restarts from Java. If _exitJvm ist set to true a hard System.exit() call is being
- * made.
+ * A handler that shuts the server down on a valid request. Used to do "soft" restarts from Java.
+ * If _exitJvm is set to true a hard System.exit() call is being made.
+ * If _sendShutdownAtStart is set to true, starting the server will try to shut down an existing server at the same port.
+ * If _sendShutdownAtStart is set to true, make a http call to
+ * "http://localhost:" + port + "/shutdown?token=" + shutdownCookie
+ * in order to shut down the server.
  *
  * This handler is a contribution from Johannes Brodwall: https://bugs.eclipse.org/bugs/show_bug.cgi?id=357687
  *
@@ -48,7 +52,7 @@ import org.eclipse.jetty.util.log.Logger;
     Server server = new Server(8080);
     HandlerList handlers = new HandlerList();
     handlers.setHandlers(new Handler[]
-    { someOtherHandler, new ShutdownHandler(&quot;secret password&quot;) });
+    { someOtherHandler, new ShutdownHandler(&quot;secret password&quot;, false, true) });
     server.setHandler(handlers);
     server.start();
    </pre>
@@ -100,9 +104,11 @@ public class ShutdownHandler extends HandlerWrapper
     
     /**
      * @param shutdownToken
+     *            a secret password to avoid unauthorized shutdown attempts
+     * @param exitJVM If true, when the shutdown is executed, the handler class System.exit()
      * @param sendShutdownAtStart If true, a shutdown is sent as a HTTP post
-     * during startup, which will shutdown any previously running instances of
-     * this server with an identically configured ShutdownHandler
+     *            during startup, which will shutdown any previously running instances of
+     *            this server with an identically configured ShutdownHandler
      */
     public ShutdownHandler(String shutdownToken, boolean exitJVM, boolean sendShutdownAtStart)
     {
@@ -120,7 +126,7 @@ public class ShutdownHandler extends HandlerWrapper
             HttpURLConnection connection = (HttpURLConnection)url.openConnection();
             connection.setRequestMethod("POST");
             connection.getResponseCode();
-            LOG.info("Shutting down " + url + ": " + connection.getResponseMessage());
+            LOG.info("Shutting down " + url + ": " + connection.getResponseCode() + " " + connection.getResponseMessage());
         }
         catch (SocketException e)
         {
@@ -189,6 +195,16 @@ public class ShutdownHandler extends HandlerWrapper
         }
 
         LOG.info("Shutting down by request from " + request.getRemoteAddr());
+        doShutdown(baseRequest, response);
+    }
+
+    protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException {
+        for (Connector connector : getServer().getConnectors()) {
+            connector.shutdown();
+        }
+
+        response.sendError(200, "Connectors closed, commencing full shutdown");
+        baseRequest.setHandled(true);
 
         final Server server=getServer();
         new Thread()

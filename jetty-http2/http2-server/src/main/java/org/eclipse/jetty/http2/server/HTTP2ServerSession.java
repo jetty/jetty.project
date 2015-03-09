@@ -77,9 +77,6 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
                 stream.process(frame, Callback.Adapter.INSTANCE);
                 Stream.Listener listener = notifyNewStream(stream, frame);
                 stream.setListener(listener);
-                // The listener may have sent a frame that closed the stream.
-                if (stream.isClosed())
-                    removeStream(stream, false);
             }
         }
         else

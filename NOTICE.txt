@@ -18,6 +18,24 @@ Jetty is dual licensed under both
 
 Jetty may be distributed under either license.
 
+------
+Eclipse
+
+The following artifacts are EPL.
+
+org.eclipse.jetty.orbit:org.eclipse.jdt.core
+
+
+The following artifacts are EPL and ASL2.
+
+org.eclipse.jetty.orbit:javax.security.auth.message
+
+
+The following artifacts are EPL and CDDL 1.0.
+
+org.eclipse.jetty.orbit:javax.mail.glassfish
+
+
 
 ------
 Oracle
@@ -27,11 +45,20 @@ The following artifacts are CDDL + GPLv2 with classpath exception.
 https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html
 
 javax.servlet:javax.servlet-api
-javax.servlet.jsp:javax.servlet.jsp-api
-org.glassfish.web:javax.servlet.jsp
-org.glassfish.web:javax.servlet.jsp
-org.glassfish.web:javax.servlet.jsp.jstl
-org.eclipse.jetty.orbit.javax.servlet.jsp.jstl
+javax.annotation:javax.annotation-api
+javax.transaction:javax.transaction-api
+javax.websocket:javax.websocket-api
+
+
+
+------
+OW2
+
+The following artifacts are licensed by the OW2 Foundation according to the
+terms of http://asm.ow2.org/license.html
+
+org.ow2.asm:asm-commons
+org.ow2.asm:asm
 
 
 ------

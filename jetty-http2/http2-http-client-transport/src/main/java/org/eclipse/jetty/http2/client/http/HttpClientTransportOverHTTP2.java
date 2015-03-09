@@ -30,6 +30,7 @@ import org.eclipse.jetty.client.Origin;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.client.HTTP2Client;
+import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements HttpClientTransport
 {
     private final HTTP2Client client;
+    private ClientConnectionFactory connectionFactory;
     private HttpClient httpClient;
 
     public HttpClientTransportOverHTTP2(HTTP2Client client)
@@ -49,6 +51,16 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     {
         addBean(client);
         super.doStart();
+        this.connectionFactory = client.getClientConnectionFactory();
+        client.setClientConnectionFactory(new ClientConnectionFactory()
+        {
+            @Override
+            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
+            {
+                HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+                return destination.getClientConnectionFactory().newConnection(endPoint, context);
+            }
+        });
     }
 
     @Override
@@ -91,9 +103,9 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         final Promise<Session> promise = new Promise<Session>()
         {
             @Override
-            public void succeeded(Session result)
+            public void succeeded(Session session)
             {
-                connection.succeeded(new HttpConnectionOverHTTP2(destination, result));
+                connection.succeeded(newHttpConnection(destination, session));
             }
 
             @Override
@@ -109,7 +121,11 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     @Override
     public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
-        final HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-        return destination.getClientConnectionFactory().newConnection(endPoint, context);
+        return connectionFactory.newConnection(endPoint, context);
+    }
+
+    protected HttpConnectionOverHTTP2 newHttpConnection(HttpDestination destination, Session session)
+    {
+        return new HttpConnectionOverHTTP2(destination, session);
     }
 }
