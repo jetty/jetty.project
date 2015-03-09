@@ -57,23 +57,19 @@ public class MappedByteBufferPool implements ByteBufferPool
         if (result == null)
         {
             int capacity = bucket * factor;
-            result = direct ? createDirect(capacity) : createIndirect(capacity);
+            result = newByteBuffer(capacity, direct);
         }
 
         BufferUtil.clear(result);
         return result;
     }
 
-    protected ByteBuffer createDirect(int capacity)
+    protected ByteBuffer newByteBuffer(int capacity, boolean direct)
     {
-        return BufferUtil.allocateDirect(capacity);
+        return direct ? BufferUtil.allocateDirect(capacity)
+                      : BufferUtil.allocate(capacity);
     }
 
-    public ByteBuffer createIndirect(int capacity)
-    {
-        return BufferUtil.allocate(capacity);
-    }
-    
     @Override
     public void release(ByteBuffer buffer)
     {
@@ -124,21 +120,15 @@ public class MappedByteBufferPool implements ByteBufferPool
     {
         private final AtomicInteger tag = new AtomicInteger();
 
-        public ByteBuffer createIndirect(int capacity)
+        @Override
+        protected ByteBuffer newByteBuffer(int capacity, boolean direct)
         {
-            ByteBuffer buffer = BufferUtil.allocate(capacity + 4);
-            buffer.limit(4);
-            buffer.putInt(0, tag.incrementAndGet());
-            buffer.position(4);
+            ByteBuffer buffer = super.newByteBuffer(capacity + 4, direct);
             buffer.limit(buffer.capacity());
+            buffer.putInt(tag.incrementAndGet());
             ByteBuffer slice = buffer.slice();
             BufferUtil.clear(slice);
             return slice;
-        }
-
-        protected ByteBuffer createDirect(int capacity)
-        {
-            return createIndirect(capacity);
         }
     }
 }
