@@ -94,13 +94,13 @@ public class HttpExchange
     public void associate(HttpChannel channel)
     {
         if (!this.channel.compareAndSet(null, channel))
-            throw new IllegalStateException();
+            request.abort(new IllegalStateException());
     }
 
     public void disassociate(HttpChannel channel)
     {
         if (!this.channel.compareAndSet(channel, null))
-            throw new IllegalStateException();
+            request.abort(new IllegalStateException());
     }
 
     public boolean requestComplete()

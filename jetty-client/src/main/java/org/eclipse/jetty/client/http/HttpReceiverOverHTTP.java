@@ -64,7 +64,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     public void receive()
     {
-        if (buffer==null)
+        if (buffer == null)
             acquireBuffer();
         process();
     }
@@ -78,7 +78,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
 
     private void releaseBuffer()
     {
-        if (buffer==null)
+        if (buffer == null)
             throw new IllegalStateException();
         if (BufferUtil.hasContent(buffer))
             throw new IllegalStateException();
@@ -136,7 +136,7 @@ public class HttpReceiverOverHTTP extends HttpReceiver implements HttpParser.Res
             if (LOG.isDebugEnabled())
                 LOG.debug(x);
             BufferUtil.clear(buffer);
-            if (buffer!=null)
+            if (buffer != null)
                 releaseBuffer();
             failAndClose(x);
         }

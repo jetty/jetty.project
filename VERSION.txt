@@ -1,5 +1,19 @@
 jetty-9.3.0-SNAPSHOT
 
+jetty-9.2.10.v20150310 - 10 March 2015
+ + 445518 Provide different error callbacks to ProxyServlet.
+ + 456521 ShutdownHandler should shut down more gracefully
+ + 458140 Added DispatcherType support to RewriteHandler
+ + 460769 ClientUpgradeRequest sends cookies in the wrong format
+ + 460905 Make sure TimeoutCompleteListener is cancelled if the request cannot
+   be sent.
+ + 461070 Handle setReadListener on request with no content
+ + 461133 allow stop port to reuse address
+ + 461452 Double release of buffer by HttpReceiverOverHTTP
+ + 461499 ConnectionPool may leak connections.
+ + 461623 BufferUtil.writeTo does not update position consistently
+ + 461643 HttpContent.advance() race.
+
 jetty-9.2.9.v20150224 - 24 February 2015
  + 459273 Redundant license notices
  + 460176 When checking for precompiled jsp, ensure classname is present
