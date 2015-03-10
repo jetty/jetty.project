@@ -19,8 +19,6 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -47,6 +45,7 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
 {
     private static final Logger LOG = Log.getLogger(ExecuteProduceRun.class);
     private final SpinLock _lock = new SpinLock();
+    private final Runnable _resumer = new Resumer();
     private final Producer _producer;
     private final Executor _executor;
     private boolean _idle=true;
@@ -90,9 +89,31 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
         if (produce)
             produceAndRun();
     }
-    
+
+    @Override
+    public void dispatch()
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} spawning",this);
+        boolean dispatch=false;
+        try (Lock locked = _lock.lock())
+        {
+            if (_idle)
+                dispatch=true;
+            else
+                _execute=true;
+        }
+        if (dispatch)
+            _executor.execute(this);
+    }
+
     @Override
     public void run()
+    {
+        execute();
+    }
+
+    private void resume()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} run",this);
@@ -105,7 +126,7 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
                 produce=_producing=true;
             }
         }
-        
+
         if (produce)
             produceAndRun();
     }
@@ -115,7 +136,7 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
         if (LOG.isDebugEnabled())
             LOG.debug("{} produce enter",this);
         
-        loop: while (true)
+        while (true)
         {
             // If we got here, then we are the thread that is producing.
             if (LOG.isDebugEnabled())
@@ -141,12 +162,12 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
                         _idle=false;
                         _producing=true;
                         _execute=false;
-                        continue loop;
+                        continue;
                     }
 
                     // ... and no additional calls to execute, so we are idle
                     _idle=true;
-                    break loop;
+                    break;
                 }
                 
                 // We have a task, which we will run ourselves,
@@ -166,7 +187,7 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
                 // Spawn a new thread to continue production by running the produce loop.
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} dispatch",this);
-                _executor.execute(this);
+                _executor.execute(_resumer);
             }
 
             // Run the task.
@@ -181,7 +202,7 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
             {
                 // Is another thread already producing or we are now idle?
                 if (_producing || _idle)
-                    break loop;
+                    break;
                 _producing=true;
             }
         }
@@ -202,7 +223,6 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
     {
         StringBuilder builder = new StringBuilder();
         builder.append("EPR ");
-        builder.append(" ");
         try (Lock locked = _lock.lock())
         {
             builder.append(_idle?"Idle/":"");
@@ -212,5 +232,14 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
         }
         builder.append(_producer);
         return builder.toString();
+    }
+
+    private class Resumer implements Runnable
+    {
+        @Override
+        public void run()
+        {
+            resume();
+        }
     }
 }

@@ -151,7 +151,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
             @Override
             public void succeeded(Stream pushStream)
             {
-                connection.onPush(connector, (IStream)pushStream, request);
+                connection.push(connector, (IStream)pushStream, request);
             }
 
             @Override

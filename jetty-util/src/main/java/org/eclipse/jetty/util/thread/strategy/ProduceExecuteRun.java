@@ -58,4 +58,10 @@ public class ProduceExecuteRun implements ExecutionStrategy
             _executor.execute(task);
         }
     }
+
+    @Override
+    public void dispatch()
+    {
+        execute();
+    }
 }
