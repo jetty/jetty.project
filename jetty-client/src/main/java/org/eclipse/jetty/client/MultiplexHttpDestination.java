@@ -62,7 +62,8 @@ public abstract class MultiplexHttpDestination<C extends Connection> extends Htt
                 }
                 default:
                 {
-                    throw new IllegalStateException();
+                    abort(new IllegalStateException("Invalid connection state " + current));
+                    return;
                 }
             }
         }

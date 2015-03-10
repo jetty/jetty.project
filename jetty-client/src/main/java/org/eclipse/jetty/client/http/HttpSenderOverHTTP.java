@@ -116,7 +116,8 @@ public class HttpSenderOverHTTP extends HttpSender
                     }
                     default:
                     {
-                        throw new IllegalStateException(result.toString());
+                        callback.failed(new IllegalStateException(result.toString()));
+                        return;
                     }
                 }
             }

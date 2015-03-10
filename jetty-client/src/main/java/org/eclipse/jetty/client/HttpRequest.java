@@ -654,7 +654,7 @@ public class HttpRequest implements Request
 
             return listener.get(timeout, TimeUnit.MILLISECONDS);
         }
-        catch (InterruptedException | TimeoutException x)
+        catch (Throwable x)
         {
             // Differently from the Future, the semantic of this method is that if
             // the send() is interrupted or times out, we abort the request.
