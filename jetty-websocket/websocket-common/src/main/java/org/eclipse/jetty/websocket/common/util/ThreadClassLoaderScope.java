@@ -16,27 +16,30 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.scopes;
+package org.eclipse.jetty.websocket.common.util;
 
-public interface WebSocketScopeListener
+import java.io.Closeable;
+
+public class ThreadClassLoaderScope implements Closeable
 {
-    /**
-     * A WebSocket Container scope was created / activated
-     */
-    void onWebSocketContainerActivated(WebSocketContainerScope scope);
+    private final ClassLoader old;
+    private final ClassLoader scopedClassLoader;
 
-    /**
-     * A WebSocket Container scope was stopped / deactivated
-     */
-    void onWebSocketContainerDeactivated(WebSocketContainerScope scope);
+    public ThreadClassLoaderScope(ClassLoader cl)
+    {
+        old = Thread.currentThread().getContextClassLoader();
+        scopedClassLoader = cl;
+        Thread.currentThread().setContextClassLoader(scopedClassLoader);
+    }
 
-    /**
-     * A WebSocket Session scope was created / activated
-     */
-    void onWebSocketSessionActivated(WebSocketSessionScope scope);
+    @Override
+    public void close()
+    {
+        Thread.currentThread().setContextClassLoader(old);
+    }
 
-    /**
-     * A WebSocket Session scope was stopped / deactivated
-     */
-    void onWebSocketSessionDeactivated(WebSocketSessionScope scope);
+    public ClassLoader getScopedClassLoader()
+    {
+        return scopedClassLoader;
+    }
 }

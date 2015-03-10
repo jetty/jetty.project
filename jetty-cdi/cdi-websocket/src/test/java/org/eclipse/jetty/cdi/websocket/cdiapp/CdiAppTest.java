@@ -29,6 +29,7 @@ import javax.websocket.server.ServerContainer;
 
 import org.eclipse.jetty.cdi.servlet.EmbeddedCdiHandler;
 import org.eclipse.jetty.cdi.websocket.CheckSocket;
+import org.eclipse.jetty.cdi.websocket.WebSocketCdiInitializer;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
@@ -60,6 +61,7 @@ public class CdiAppTest
         server.addConnector(connector);
 
         EmbeddedCdiHandler context = new EmbeddedCdiHandler();
+        WebSocketCdiInitializer.configureContext(context);
 
         File baseDir = MavenTestingUtils.getTestResourcesDir();
 
@@ -69,6 +71,7 @@ public class CdiAppTest
         
         // Add some websockets
         ServerContainer container = WebSocketServerContainerInitializer.configureContext(context);
+        container.addEndpoint(EchoSocket.class);
         container.addEndpoint(InfoSocket.class);
 
         server.start();
@@ -120,7 +123,7 @@ public class CdiAppTest
     }
 
     @Test
-    public void testWebSocketInfo() throws Exception
+    public void testWebSocket_Info_FieldPresence() throws Exception
     {
         WebSocketClient client = new WebSocketClient();
         try
@@ -144,6 +147,33 @@ public class CdiAppTest
                             containsString("httpSession is PRESENT"),
                             containsString("servletContext is PRESENT")
                     ));
+        }
+        finally
+        {
+            client.stop();
+        }
+    }
+    
+    @Test
+    public void testWebSocket_Info_DataFromCdi() throws Exception
+    {
+        WebSocketClient client = new WebSocketClient();
+        try
+        {
+            client.start();
+            CheckSocket socket = new CheckSocket();
+            client.connect(socket,serverWebsocketURI.resolve("/cdi-info"));
+
+            socket.awaitOpen(2,TimeUnit.SECONDS);
+            socket.sendText("data|stuff");
+            socket.close(StatusCode.NORMAL,"Test complete");
+            socket.awaitClose(2,TimeUnit.SECONDS);
+
+            assertThat("Messages received",socket.getTextMessages().size(),is(1));
+            String response = socket.getTextMessages().poll();
+            System.err.println(response);
+
+            assertThat("Message[0]",response,containsString("Hello there data"));
         }
         finally
         {

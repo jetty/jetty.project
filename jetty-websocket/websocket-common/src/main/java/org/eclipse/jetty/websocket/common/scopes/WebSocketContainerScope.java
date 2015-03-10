@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
-import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -31,32 +30,6 @@ import org.eclipse.jetty.websocket.api.WebSocketPolicy;
  */
 public interface WebSocketContainerScope
 {
-    /**
-     * Add a {@link WebSocketScopeListener} for this container.
-     * 
-     * @param listener
-     *            the listener to receive container scope events
-     */
-    public void addScopeListener(WebSocketScopeListener listener);
-
-    /**
-     * Remove a {@link WebSocketScopeListener} from this container
-     * 
-     * @param listener
-     *            the listener to receive websocket scope events
-     */
-    public void removeScopeListener(WebSocketScopeListener listener);
-
-    /**
-     * Get the current list of {@link WebSocketScopeListener}s for this container
-     */
-    public List<WebSocketScopeListener> getScopeListeners();
-    
-    /**
-     * Get the WebSocketScopeEvents handler, for firing {@link WebSocketScopeListener} events.
-     */
-    public WebSocketScopeEvents getScopeEvents();
-
     /**
      * The configured Container Buffer Pool.
      * 

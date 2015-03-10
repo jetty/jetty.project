@@ -52,7 +52,7 @@ public class WebSocketScopeContext
 
     public void begin()
     {
-        LOG.debug("begin()");
+        LOG.debug("begin()", new Throwable("Trace"));
         if (state.get() != null)
         {
             throw new IllegalAccessError("Already in WebSocketScope");
@@ -102,7 +102,7 @@ public class WebSocketScopeContext
 
     public void setSession(Session sess)
     {
-        LOG.debug("setSession()");
+        LOG.debug("setSession({})",sess);
         jettySessionProducer.setSession(sess);
         if(sess instanceof javax.websocket.Session)
         {

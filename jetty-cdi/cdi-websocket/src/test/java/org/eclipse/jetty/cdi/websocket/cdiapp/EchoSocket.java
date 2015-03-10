@@ -18,24 +18,40 @@
 
 package org.eclipse.jetty.cdi.websocket.cdiapp;
 
-import javax.inject.Inject;
+import javax.websocket.CloseReason;
+import javax.websocket.OnClose;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
+import javax.websocket.Session;
+import javax.websocket.server.ServerEndpoint;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.websocket.api.Session;
 
-public class DataMaker
+@ServerEndpoint("/echo")
+public class EchoSocket
 {
-    private static final Logger LOG = Log.getLogger(DataMaker.class);
-    
-    @Inject
+    private static final Logger LOG = Log.getLogger(EchoSocket.class);
+    @SuppressWarnings("unused")
     private Session session;
 
-    public void processMessage(String msg) 
+    @OnOpen
+    public void onOpen(Session session)
     {
-        LOG.debug(".processMessage({})",msg);
-        LOG.debug("session = {}",session);
+        LOG.debug("onOpen(): {}",session);
+        this.session = session;
+    }
 
-        session.getRemote().sendStringByFuture("Hello there " + msg);
+    @OnClose
+    public void onClose(CloseReason close)
+    {
+        LOG.debug("onClose(): {}",close);
+        this.session = null;
+    }
+
+    @OnMessage
+    public String onMessage(String msg)
+    {
+        return msg;
     }
 }

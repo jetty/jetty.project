@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.util.Collections;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Objects;
 import java.util.Set;
@@ -59,8 +58,6 @@ import org.eclipse.jetty.websocket.common.SessionListener;
 import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketScopeEvents;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketScopeListener;
 import org.eclipse.jetty.websocket.jsr356.annotations.AnnotatedEndpointScanner;
 import org.eclipse.jetty.websocket.jsr356.client.AnnotatedClientEndpointMetadata;
 import org.eclipse.jetty.websocket.jsr356.client.EmptyClientEndpointConfig;
@@ -119,12 +116,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         ShutdownThread.register(this);
     }
     
-    @Override
-    public void addScopeListener(WebSocketScopeListener listener)
-    {
-        this.scopeDelegate.addScopeListener(listener);
-    }
-
     private Session connect(EndpointInstance instance, URI path) throws IOException
     {
         Objects.requireNonNull(instance,"EndpointInstance cannot be null");
@@ -351,17 +342,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         return scopeDelegate.getPolicy();
     }
     
-    public WebSocketScopeEvents getScopeEvents()
-    {
-        return scopeDelegate.getScopeEvents();
-    }
-    
-    @Override
-    public List<WebSocketScopeListener> getScopeListeners()
-    {
-        return scopeDelegate.getScopeListeners();
-    }
-
     @Override
     public SslContextFactory getSslContextFactory()
     {
@@ -426,12 +406,6 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
         }
     }
     
-    @Override
-    public void removeScopeListener(WebSocketScopeListener listener)
-    {
-        scopeDelegate.removeScopeListener(listener);
-    }
-
     @Override
     public void setAsyncSendTimeout(long ms)
     {

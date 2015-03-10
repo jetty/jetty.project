@@ -49,6 +49,7 @@ public class BasicAppTest
     private static final Logger LOG = Log.getLogger(BasicAppTest.class);
     
     private static Server server;
+    @SuppressWarnings("unused")
     private static URI serverHttpURI;
     private static URI serverWebsocketURI;
 

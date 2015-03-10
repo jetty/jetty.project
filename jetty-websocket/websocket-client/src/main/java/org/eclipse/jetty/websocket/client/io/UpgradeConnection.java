@@ -275,7 +275,9 @@ public class UpgradeConnection extends AbstractConnection
         // Validate Response Status Code
         if (response.getStatusCode() != SWITCHING_PROTOCOLS)
         {
-            throw new UpgradeException(request.getRequestURI(),response.getStatusCode(),"Didn't switch protocols");
+            // TODO: use jetty-http and org.eclipse.jetty.http.HttpStatus for more meaningful exception messages 
+            throw new UpgradeException(request.getRequestURI(),response.getStatusCode(),"Didn't switch protocols, expected status <" + SWITCHING_PROTOCOLS
+                    + ">, but got <" + response.getStatusCode() + ">");
         }
 
         // Validate Connection header

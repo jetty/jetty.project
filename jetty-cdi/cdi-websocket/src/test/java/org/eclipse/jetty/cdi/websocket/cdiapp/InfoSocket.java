@@ -69,8 +69,10 @@ public class InfoSocket
     {
         StringWriter str = new StringWriter();
         PrintWriter out = new PrintWriter(str);
+        
+        String args[] = msg.split("\\|");
 
-        switch (msg)
+        switch (args[0])
         {
             case "info":
                 out.printf("websocketSession is %s%n",asPresent(session));
@@ -78,7 +80,7 @@ public class InfoSocket
                 out.printf("servletContext is %s%n",asPresent(servletContext));
                 break;
             case "data":
-                dataMaker.processMessage(msg);
+                dataMaker.processMessage(args[1]);
                 break;
         }
 

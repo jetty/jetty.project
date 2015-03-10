@@ -57,8 +57,6 @@ public class JettyWeldInitializer
 
     public static void initContext(ContextHandler handler) throws NamingException
     {
-        // TODO: handler.addLifeCycleListener(new WebSocketServerLifecycleListener(handler));
-        
         // Add context specific weld container reference.
         // See https://issues.jboss.org/browse/WELD-1710
         // and https://github.com/weld/core/blob/2.2.5.Final/environments/servlet/core/src/main/java/org/jboss/weld/environment/servlet/WeldServletLifecycle.java#L244-L253

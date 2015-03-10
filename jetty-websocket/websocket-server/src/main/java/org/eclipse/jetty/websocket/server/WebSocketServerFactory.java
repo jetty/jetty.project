@@ -66,8 +66,6 @@ import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketScopeEvents;
-import org.eclipse.jetty.websocket.common.scopes.WebSocketScopeListener;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
 import org.eclipse.jetty.websocket.servlet.WebSocketCreator;
@@ -97,7 +95,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     private WebSocketCreator creator;
     private List<Class<?>> registeredSocketClasses;
     private DecoratedObjectFactory objectFactory;
-    private WebSocketScopeEvents scopeEvents = new WebSocketScopeEvents();
 
     public WebSocketServerFactory()
     {
@@ -209,12 +206,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
     }
     
-    @Override
-    public void addScopeListener(WebSocketScopeListener listener)
-    {
-        this.scopeEvents.addScopeListener(listener);
-    }
-
     public void addSessionFactory(SessionFactory sessionFactory)
     {
         if (sessionFactories.contains(sessionFactory))
@@ -325,8 +316,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         }
         
         super.doStart();
-        
-        scopeEvents.fireContainerActivated(this);
     }
 
     @Override
@@ -334,8 +323,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         shutdownAllConnections();
         super.doStop();
-        
-        scopeEvents.fireContainerDeactivated(this);
     }
 
     @Override
@@ -383,17 +370,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         return defaultPolicy;
     }
     
-    public WebSocketScopeEvents getScopeEvents()
-    {
-        return scopeEvents;
-    }
-
-    @Override
-    public List<WebSocketScopeListener> getScopeListeners()
-    {
-        return this.scopeEvents.getScopeListeners();
-    }
-
     @Override
     public SslContextFactory getSslContextFactory()
     {
@@ -538,12 +514,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     public void register(Class<?> websocketPojo)
     {
         registeredSocketClasses.add(websocketPojo);
-    }
-    
-    @Override
-    public void removeScopeListener(WebSocketScopeListener listener)
-    {
-        this.scopeEvents.removeScopeListener(listener);
     }
     
     @Override

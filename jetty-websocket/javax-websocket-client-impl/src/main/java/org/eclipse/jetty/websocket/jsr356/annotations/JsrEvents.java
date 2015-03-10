@@ -148,6 +148,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
     {
         if (onError == null)
         {
+            LOG.warn("Unable to report throwable to websocket (no @OnError handler declared): " + websocket.getClass().getName(), cause);
             return;
         }
         onError.call(websocket,cause);

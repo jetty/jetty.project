@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.websocket.common.scopes;
 
-import java.util.List;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -36,7 +35,6 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     private final WebSocketPolicy policy;
     private Executor executor;
     private SslContextFactory sslContextFactory;
-    private WebSocketScopeEvents scopeEvents = new WebSocketScopeEvents();
 
     public SimpleContainerScope(WebSocketPolicy policy)
     {
@@ -65,14 +63,12 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     protected void doStart() throws Exception
     {
         super.doStart();
-        scopeEvents.fireContainerActivated(this);
     }
 
     @Override
     protected void doStop() throws Exception
     {
         super.doStop();
-        scopeEvents.fireContainerDeactivated(this);
     }
 
     @Override
@@ -108,28 +104,5 @@ public class SimpleContainerScope extends ContainerLifeCycle implements WebSocke
     public void setSslContextFactory(SslContextFactory sslContextFactory)
     {
         this.sslContextFactory = sslContextFactory;
-    }
-    
-    public WebSocketScopeEvents getScopeEvents()
-    {
-        return scopeEvents;
-    }
-
-    @Override
-    public void addScopeListener(WebSocketScopeListener listener)
-    {
-        this.scopeEvents.addScopeListener(listener);
-    }
-
-    @Override
-    public void removeScopeListener(WebSocketScopeListener listener)
-    {
-        this.scopeEvents.removeScopeListener(listener);
-    }
-
-    @Override
-    public List<WebSocketScopeListener> getScopeListeners()
-    {
-        return this.scopeEvents.getScopeListeners();
     }
 }
