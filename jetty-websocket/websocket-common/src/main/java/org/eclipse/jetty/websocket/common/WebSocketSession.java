@@ -54,6 +54,7 @@ import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
+import org.eclipse.jetty.websocket.common.util.ThreadClassLoaderScope;
 
 @ManagedObject("A Jetty WebSocket Session")
 public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketSessionScope, IncomingFrames, ConnectionStateListener
@@ -127,7 +128,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
     {
         executor.execute(runnable);
     }
-
+    
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -426,10 +427,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
             return;
         }
         
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(classLoader);
-
+        try(ThreadClassLoaderScope scope = new ThreadClassLoaderScope(classLoader)) 
+        {
             // Upgrade success
             connection.getIOState().onConnected();
     
@@ -459,10 +458,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
             }
             
             close(statusCode,t.getMessage());
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader(old);
         }
     }
 

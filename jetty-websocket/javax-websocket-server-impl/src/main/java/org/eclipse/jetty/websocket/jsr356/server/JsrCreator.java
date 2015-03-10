@@ -140,11 +140,8 @@ public class JsrCreator implements WebSocketCreator
             Class<?> endpointClass = config.getEndpointClass();
             Configurator configr = config.getConfigurator();
             Object endpoint = configr.getEndpointInstance(endpointClass);
-            if (configr instanceof ContainerDefaultConfigurator)
-            {
-                // default impl always decorates (custom ones do not)
-                endpoint = containerScope.getObjectFactory().decorate(endpoint);
-            }
+            // Do not decorate here (let the Connection and Session start first)
+            // This will allow CDI to see Session for injection into Endpoint classes.
             PathSpec pathSpec = hsreq.getRequestPathSpec();
             if (pathSpec instanceof WebSocketPathSpec)
             {

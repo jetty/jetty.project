@@ -63,12 +63,8 @@ public class WebSocketCdiInitializer implements ServletContainerInitializer
     
     private static void addListeners(ContainerLifeCycle container)
     {
-        WebSocketCdiListener listener = new WebSocketCdiListener(container);
-
-        if (listener != null)
-        {
-            container.addLifeCycleListener(listener);
-            container.addEventListener(listener);
-        }
+        WebSocketCdiListener listener = new WebSocketCdiListener();
+        container.addLifeCycleListener(listener);
+        container.addEventListener(listener);
     }
 }

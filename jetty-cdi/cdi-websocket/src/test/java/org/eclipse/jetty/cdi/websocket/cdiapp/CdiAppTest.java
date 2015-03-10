@@ -169,11 +169,11 @@ public class CdiAppTest
             socket.close(StatusCode.NORMAL,"Test complete");
             socket.awaitClose(2,TimeUnit.SECONDS);
 
-            assertThat("Messages received",socket.getTextMessages().size(),is(1));
+            assertThat("Messages received",socket.getTextMessages().size(),is(2));
             String response = socket.getTextMessages().poll();
-            System.err.println(response);
-
-            assertThat("Message[0]",response,containsString("Hello there data"));
+            System.out.println("[0]" + response);
+            assertThat("Message[0]",response,containsString("Hello there stuff"));
+            System.out.println("[1]" + socket.getTextMessages().poll());
         }
         finally
         {

@@ -635,21 +635,23 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         extensionStack.setNextOutgoing(wsConnection);
 
         // Start Components
-        try
+        session.addBean(extensionStack);
+        this.addBean(session);
+        
+        if (session.isFailed())
         {
-            session.start();
+            throw new IOException("Session failed to start");
         }
-        catch (Exception e)
+        else if (!session.isRunning())
         {
-            throw new IOException("Unable to start Session", e);
-        }
-        try
-        {
-            extensionStack.start();
-        }
-        catch (Exception e)
-        {
-            throw new IOException("Unable to start Extension Stack", e);
+            try
+            {
+                session.start();
+            }
+            catch (Exception e)
+            {
+                throw new IOException("Unable to start Session",e);
+            }
         }
 
         // Tell jetty about the new upgraded connection

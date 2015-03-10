@@ -47,7 +47,7 @@ public class JettyWebSocketSessionProducer
     @Produces
     public Session getSession(InjectionPoint injectionPoint)
     {
-        LOG.debug("getSession({})",injectionPoint);
+        LOG.debug("getSession(" + injectionPoint + ")");
         return this.sessionInstance.get();
     }
 }

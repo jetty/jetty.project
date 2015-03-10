@@ -52,14 +52,14 @@ public class WebSocketScopeContext
 
     public void begin()
     {
-        LOG.debug("begin()", new Throwable("Trace"));
+        LOG.debug("begin()");
         if (state.get() != null)
         {
-            throw new IllegalAccessError("Already in WebSocketScope");
+            return;
         }
         state.set(scope);
     }
-
+    
     public void create()
     {
         LOG.debug("create()");
@@ -80,7 +80,7 @@ public class WebSocketScopeContext
         LOG.debug("end()");
         if (state.get() == null)
         {
-            throw new IllegalAccessError("Not in WebSocketScope");
+            return;
         }
         state.remove();
     }

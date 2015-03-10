@@ -215,6 +215,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
         if (LOG.isDebugEnabled())
             LOG.debug("openSession({})",session);
         this.session = session;
+        this.session.getContainerScope().getObjectFactory().decorate(this.websocket);
         try
         {
             this.onConnect();
