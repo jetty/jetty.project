@@ -26,13 +26,15 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
  * <p>A strategy where the caller thread iterates over task production, submitting each
  * task to an {@link Executor} for execution.</p>
  */
-public class ProduceRun implements ExecutionStrategy
+public class ProduceRun implements ExecutionStrategy, Runnable
 {
     private final Producer _producer;
+    private final Executor _executor;
 
-    public ProduceRun(Producer producer)
+    public ProduceRun(Producer producer, Executor executor)
     {
         this._producer = producer;
+        this._executor = executor;
     }
 
     @Override
@@ -50,5 +52,17 @@ public class ProduceRun implements ExecutionStrategy
             // run the task.
             task.run();
         }
+    }
+
+    @Override
+    public void dispatch()
+    {
+        _executor.execute(this);
+    }
+
+    @Override
+    public void run()
+    {
+        execute();
     }
 }

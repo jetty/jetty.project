@@ -36,7 +36,20 @@ import org.eclipse.jetty.util.thread.strategy.ExecuteProduceRun;
 public interface ExecutionStrategy
 {
     /**
-     * Initiates (or resumes) the task production and execution.
+     * <p>Initiates (or resumes) the task production and execution.</p>
+     * <p>This method guarantees that the task is never run by the
+     * thread that called this method.</p>
+     *
+     * @see #execute()
+     */
+    public void dispatch();
+
+    /**
+     * <p>Initiates (or resumes) the task production and execution.</p>
+     * <p>The produced task may be run by the same thread that called
+     * this method.</p>
+     *
+     * @see #dispatch()
      */
     public void execute();
 

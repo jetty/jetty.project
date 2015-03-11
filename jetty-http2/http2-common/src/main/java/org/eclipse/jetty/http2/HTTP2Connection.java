@@ -65,7 +65,7 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
     {
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDetailString(prefilled));
-        producer.prefill(prefilled);
+        producer.buffer = prefilled;
     }
     
     @Override
@@ -117,9 +117,11 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
         return false;
     }
 
-    protected void offerTask(Runnable task)
+    protected void offerTask(Runnable task, boolean dispatch)
     {
         tasks.offer(task);
+        if (dispatch)
+            executionStrategy.dispatch();
     }
 
     private class HTTP2Producer implements ExecutionStrategy.Producer
@@ -135,12 +137,14 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
             if (task != null)
                 return task;
 
+            if (isFillInterested())
+                return null;
+
+            if (buffer == null)
+                buffer = byteBufferPool.acquire(bufferSize, false); // TODO: make directness customizable
             boolean looping = BufferUtil.hasContent(buffer);
             while (true)
             {
-                if (buffer == null)
-                    buffer = byteBufferPool.acquire(bufferSize, false);
-
                 if (looping)
                 {
                     while (buffer.hasRemaining())
@@ -177,14 +181,9 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
             }
         }
 
-        public void prefill(ByteBuffer prefilledBuffer)
-        {
-            buffer=prefilledBuffer;
-        }
-
         private void release()
         {
-            if (BufferUtil.isEmpty(buffer))
+            if (buffer != null && !buffer.hasRemaining())
             {
                 byteBufferPool.release(buffer);
                 buffer = null;

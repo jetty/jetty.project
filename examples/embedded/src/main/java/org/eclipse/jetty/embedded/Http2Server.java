@@ -40,6 +40,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.HttpConfiguration;
@@ -86,7 +87,7 @@ public class Http2Server
         http_config.setSendServerVersion(true);
 
         // HTTP Connector
-        ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config));        
+        ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config), new HTTP2CServerConnectionFactory(http_config));     
         http.setPort(8080);
         server.addConnector(http);
  

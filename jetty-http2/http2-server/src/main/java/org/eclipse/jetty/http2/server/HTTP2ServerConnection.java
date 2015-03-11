@@ -72,16 +72,16 @@ public class HTTP2ServerConnection extends HTTP2Connection
             LOG.debug("Processing {} on {}", frame, stream);
         HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
         Runnable task = channel.onRequest(frame);
-        offerTask(task);
+        offerTask(task, false);
     }
 
-    public void onPush(Connector connector, IStream stream, MetaData.Request request)
+    public void push(Connector connector, IStream stream, MetaData.Request request)
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Processing push {} on {}", request, stream);
         HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
         Runnable task = channel.onPushRequest(request);
-        offerTask(task);
+        offerTask(task, true);
     }
 
     private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)
@@ -97,20 +97,27 @@ public class HTTP2ServerConnection extends HTTP2Connection
         {
             HttpTransportOverHTTP2 transport = new HttpTransportOverHTTP2(connector, this);
             transport.setStream(stream);
-            channel = new HttpChannelOverHTTP2(connector, httpConfig, getEndPoint(), transport)
-            {
-                @Override
-                public void onCompleted()
-                {
-                    super.onCompleted();
-                    recycle();
-                    channels.offer(this);
-                }
-            };
+            channel = new ServerHttpChannelOverHTTP2(connector, httpConfig, getEndPoint(), transport);
             if (LOG.isDebugEnabled())
                 LOG.debug("Creating channel {} for {}", channel, this);
         }
         stream.setAttribute(IStream.CHANNEL_ATTRIBUTE, channel);
         return channel;
+    }
+
+    private class ServerHttpChannelOverHTTP2 extends HttpChannelOverHTTP2
+    {
+        public ServerHttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
+        {
+            super(connector, configuration, endPoint, transport);
+        }
+
+        @Override
+        public void onCompleted()
+        {
+            super.onCompleted();
+            recycle();
+            channels.offer(this);
+        }
     }
 }

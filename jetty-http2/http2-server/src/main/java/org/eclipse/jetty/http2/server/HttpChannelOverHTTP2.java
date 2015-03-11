@@ -100,6 +100,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     {
         onRequest(request);
         getRequest().setAttribute("org.eclipse.jetty.pushed", Boolean.TRUE);
+        onRequestComplete();
 
         if (LOG.isDebugEnabled())
         {

@@ -24,6 +24,7 @@ import java.net.CookiePolicy;
 import java.net.CookieStore;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
@@ -84,10 +85,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * httpClient.start();
  *
  * // One liner:
- * httpClient.GET("http://localhost:8080/").get().status();
+ * httpClient.GET("http://localhost:8080/").getStatus();
  *
  * // Building a request with a timeout
- * Response response = httpClient.newRequest("http://localhost:8080").send().get(5, TimeUnit.SECONDS);
+ * ContentResponse response = httpClient.newRequest("http://localhost:8080")
+ *         .timeout(5, TimeUnit.SECONDS)
+ *         .send();
  * int status = response.status();
  *
  * // Asynchronously

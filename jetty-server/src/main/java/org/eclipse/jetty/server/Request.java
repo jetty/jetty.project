@@ -258,7 +258,7 @@ public class Request implements HttpServletRequest
      * to the PushBuilder, unless the {@link Cookie#getMaxAge()} is <=0, in which
      * case the Cookie will be removed from the builder.</li>
      * <li>If this request has has the conditional headers If-Modified-Since or
-     * If-None-Match then the {@link PushBuilder#isConditional()} header is set
+     * If-None-Match then the {@link PushBuilderImpl#isConditional()} header is set
      * to true. 
      * </ul>
      * 
@@ -328,7 +328,7 @@ public class Request implements HttpServletRequest
             id=getRequestedSessionId();
         }
         
-        PushBuilder builder = new PushBuilder(this,fields,getMethod(),getQueryString(),id,conditional);
+        PushBuilder builder = new PushBuilderImpl(this,fields,getMethod(),getQueryString(),id,conditional);
         builder.addHeader("referer",getRequestURL().toString());
         
         // TODO process any set cookies
@@ -1308,7 +1308,8 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestURI()
     {
-        return _metadata.getURI().getPath();
+        MetaData metadata = _metadata;
+        return (metadata==null)?null:_metadata.getURI().getPath();
     }
 
     /* ------------------------------------------------------------ */
