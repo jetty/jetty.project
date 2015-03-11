@@ -45,7 +45,7 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
 {
     private static final Logger LOG = Log.getLogger(ExecuteProduceRun.class);
     private final SpinLock _lock = new SpinLock();
-    private final Runnable _resumer = new Resumer();
+    private final Runnable _runExecute = new RunExecute();
     private final Producer _producer;
     private final Executor _executor;
     private boolean _idle=true;
@@ -104,16 +104,11 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
                 _execute=true;
         }
         if (dispatch)
-            _executor.execute(this);
+            _executor.execute(_runExecute);
     }
 
     @Override
     public void run()
-    {
-        execute();
-    }
-
-    private void resume()
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} run",this);
@@ -187,7 +182,7 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
                 // Spawn a new thread to continue production by running the produce loop.
                 if (LOG.isDebugEnabled())
                     LOG.debug("{} dispatch",this);
-                _executor.execute(_resumer);
+                _executor.execute(this);
             }
 
             // Run the task.
@@ -234,12 +229,12 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
         return builder.toString();
     }
 
-    private class Resumer implements Runnable
+    private class RunExecute implements Runnable
     {
         @Override
         public void run()
         {
-            resume();
+            execute();
         }
     }
 }

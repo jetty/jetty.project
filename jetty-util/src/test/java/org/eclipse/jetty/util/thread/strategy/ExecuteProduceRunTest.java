@@ -19,7 +19,7 @@
 package org.eclipse.jetty.util.thread.strategy;
 
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertThat;
 
@@ -27,12 +27,10 @@ import java.util.Queue;
 import java.util.concurrent.BlockingQueue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Executor;
-import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.thread.ExecutionStrategy.Producer;
-import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
@@ -100,8 +98,8 @@ public class ExecuteProduceRunTest
     public void after()
     {
         // All done and checked
-        assertThat(_produce.size(),is(0));
-        assertThat(_executions.size(),is(0));
+        assertThat(_produce.size(),equalTo(0));
+        assertThat(_executions.size(),equalTo(0));
     }
     
     @Test
@@ -118,7 +116,7 @@ public class ExecuteProduceRunTest
         _produce.add(t0);
         _produce.add(NULLTASK);
         _ewyk.execute();
-        assertThat(t0.hasRun(),is(true));
+        assertThat(t0.hasRun(),equalTo(true));
         Assert.assertEquals(_ewyk,_executions.poll());
     }
     
@@ -135,7 +133,7 @@ public class ExecuteProduceRunTest
         _ewyk.execute();
 
         for (int i=0;i<t.length;i++)
-            assertThat(t[i].hasRun(),is(true));
+            assertThat(t[i].hasRun(),equalTo(true));
         Assert.assertEquals(_ewyk,_executions.poll());
 
     }
@@ -164,7 +162,7 @@ public class ExecuteProduceRunTest
         assertEquals(_ewyk,_executions.poll());
         // which is make us idle
         _ewyk.run();
-        assertThat(_ewyk.isIdle(),is(true));
+        assertThat(_ewyk.isIdle(),equalTo(true));
 
         
         // unblock task
@@ -199,7 +197,7 @@ public class ExecuteProduceRunTest
         t0.unblock();
         // will run to completion because are become idle
         thread.join();
-        assertThat(_ewyk.isIdle(),is(true));
+        assertThat(_ewyk.isIdle(),equalTo(true));
 
         // because we are idle, dispatched thread is noop
         _ewyk.run();
@@ -318,15 +316,15 @@ public class ExecuteProduceRunTest
         final Task t1 = new Task(true);
         _produce.add(t1);
         t1.awaitRun();
-        assertThat(t1.getThread(),is(thread0));
+        assertThat(t1.getThread(),equalTo(thread0));
 
         // Should NOT have dispatched another helper, because the last is still pending
-        assertThat(_executions.size(),is(0));
+        assertThat(_executions.size(),equalTo(0));
         
         // When the dispatched thread turns up, it will see the second idle
         _produce.add(NULLTASK);
         _ewyk.run();
-        assertThat(_ewyk.isIdle(),is(true));
+        assertThat(_ewyk.isIdle(),equalTo(true));
         
         // So that when t1 completes it does not produce again.
         t1.unblock();
