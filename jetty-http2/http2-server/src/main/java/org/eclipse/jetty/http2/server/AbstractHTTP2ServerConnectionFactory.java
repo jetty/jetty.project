@@ -20,9 +20,9 @@ package org.eclipse.jetty.http2.server;
 
 import java.util.Objects;
 
+import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
-import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.generator.Generator;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -112,7 +112,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
 
     protected FlowControlStrategy newFlowControlStrategy()
     {
-        return new SimpleFlowControlStrategy(getInitialStreamSendWindow());
+        return new BufferingFlowControlStrategy(getInitialStreamSendWindow(), 0.5F);
     }
 
     protected abstract ServerSessionListener newSessionListener(Connector connector, EndPoint endPoint);

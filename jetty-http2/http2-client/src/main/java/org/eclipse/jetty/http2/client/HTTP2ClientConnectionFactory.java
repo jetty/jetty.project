@@ -23,10 +23,10 @@ import java.util.Collections;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
+import org.eclipse.jetty.http2.BufferingFlowControlStrategy;
 import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
-import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
@@ -72,7 +72,7 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
 
     protected FlowControlStrategy newFlowControlStrategy()
     {
-        return new SimpleFlowControlStrategy();
+        return new BufferingFlowControlStrategy(0.5F);
     }
 
     public int getInitialSessionRecvWindow()
