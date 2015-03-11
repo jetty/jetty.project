@@ -217,6 +217,8 @@
             <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/DefaultPolicyLoader.java</exclude>
             <exclude>jetty-policy/src/main/java/org/eclipse/jetty/policy/loader/PolicyFileScanner.java</exclude>
             <exclude>jetty-ant/**</exclude>
+            <exclude>jetty-infinispan/**</exclude>
+            <exclude>tests/test-sessions/test-infinispan-sessions/**</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -434,6 +436,7 @@
     <module>jetty-osgi</module>
     <module>jetty-rewrite</module>
     <module>jetty-nosql</module>
+    <module>jetty-infinispan</module>
     <module>tests</module>
     <module>examples</module>
     <module>jetty-distribution</module>

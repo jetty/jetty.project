@@ -39,7 +39,7 @@ import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * AbstractNewSessionTest
+ * AbstractSessionCookieTest
  */
 public abstract class AbstractSessionCookieTest
 {

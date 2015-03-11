@@ -35,5 +35,6 @@
     <module>test-jdbc-sessions</module>
     <!-- Requires mongodb server running -->
     <!-- module>test-mongodb-sessions</module -->
+    <module>test-infinispan-sessions</module>
   </modules>
 </project>
