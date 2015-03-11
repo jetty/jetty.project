@@ -47,14 +47,14 @@ public abstract class AbstractFlowControlStrategy implements FlowControlStrategy
     }
 
     @Override
-    public void onNewStream(IStream stream, boolean local)
+    public void onStreamCreated(IStream stream, boolean local)
     {
         stream.updateSendWindow(initialStreamSendWindow);
         stream.updateRecvWindow(initialStreamRecvWindow);
     }
 
     @Override
-    public void onStreamTerminated(IStream stream, boolean local)
+    public void onStreamDestroyed(IStream stream, boolean local)
     {
     }
 

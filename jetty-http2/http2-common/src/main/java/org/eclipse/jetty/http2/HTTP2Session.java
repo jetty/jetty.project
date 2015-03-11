@@ -589,7 +589,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             stream.setIdleTimeout(getStreamIdleTimeout());
-            flowControl.onNewStream(stream, true);
+            flowControl.onStreamCreated(stream, true);
             if (LOG.isDebugEnabled())
                 LOG.debug("Created local {}", stream);
             return stream;
@@ -624,7 +624,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             updateLastStreamId(streamId);
             stream.setIdleTimeout(getStreamIdleTimeout());
-            flowControl.onNewStream(stream, false);
+            flowControl.onStreamCreated(stream, false);
             if (LOG.isDebugEnabled())
                 LOG.debug("Created remote {}", stream);
             return stream;
@@ -654,7 +654,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             else
                 remoteStreamCount.decrementAndGet();
 
-            flowControl.onStreamTerminated(stream, local);
+            flowControl.onStreamDestroyed(stream, local);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Removed {}", stream);
