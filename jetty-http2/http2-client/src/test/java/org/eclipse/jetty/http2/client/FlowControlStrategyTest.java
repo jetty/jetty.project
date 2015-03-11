@@ -34,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -48,6 +49,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -908,5 +910,66 @@ public abstract class FlowControlStrategyTest
 
         // Expect the connection to be closed.
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testFlowControlWhenServerResetsStream() throws Exception
+    {
+        // On server, don't consume the data and immediately reset.
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Request request = (MetaData.Request)frame.getMetaData();
+
+                if (HttpMethod.GET.is(request.getMethod()))
+                    return new Stream.Listener.Adapter();
+
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        // Fail the callback to enlarge the session window.
+                        // More data frames will be discarded because the
+                        // stream is reset, and automatically consumed to
+                        // keep the session window large for other streams.
+                        callback.failed(new Throwable());
+                        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+                    }
+                };
+            }
+        });
+
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request metaData = newRequest("POST", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(0, metaData, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        final CountDownLatch resetLatch = new CountDownLatch(1);
+        session.newStream(frame, streamPromise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onReset(Stream stream, ResetFrame frame)
+            {
+                resetLatch.countDown();
+            }
+        });
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+
+        // Perform a big upload that will stall the flow control windows.
+        ByteBuffer data = ByteBuffer.allocate(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        stream.data(new DataFrame(stream.getId(), data, true), new Callback.Adapter()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                dataLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 }
