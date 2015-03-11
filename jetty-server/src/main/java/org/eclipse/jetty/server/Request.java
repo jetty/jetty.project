@@ -1308,7 +1308,8 @@ public class Request implements HttpServletRequest
     @Override
     public String getRequestURI()
     {
-        return _metadata.getURI().getPath();
+        MetaData metadata = _metadata;
+        return (metadata==null)?null:_metadata.getURI().getPath();
     }
 
     /* ------------------------------------------------------------ */

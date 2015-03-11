@@ -495,7 +495,7 @@ public class Server extends HandlerWrapper implements Attributes
         final Response response=connection.getResponse();
 
         if (LOG.isDebugEnabled())
-            LOG.debug(request.getDispatcherType()+" "+request.getMethod()+" "+target+" on "+connection);
+            LOG.debug("{} on {}{}",request.getDispatcherType(),connection,"\n"+request.getMethod()+" "+request.getHttpURI()+"\n"+request.getHttpFields());
 
         if ("*".equals(target))
         {
@@ -507,7 +507,7 @@ public class Server extends HandlerWrapper implements Attributes
             handle(target, request, request, response);
 
         if (LOG.isDebugEnabled())
-            LOG.debug("RESPONSE "+target+"  "+connection.getResponse().getStatus()+" handled="+request.isHandled());
+            LOG.debug("RESPONSE for {} h={}{}",target,request.isHandled(),"\n"+response.getStatus()+" "+response.getReason()+"\n"+response.getHttpFields());
     }
 
     /* ------------------------------------------------------------ */
