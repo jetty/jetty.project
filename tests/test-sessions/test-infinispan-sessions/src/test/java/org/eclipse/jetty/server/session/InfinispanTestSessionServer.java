@@ -24,6 +24,7 @@ import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionIdManager;
 import org.eclipse.jetty.session.infinispan.InfinispanSessionManager;
 import org.infinispan.Cache;
+import org.infinispan.commons.api.BasicCache;
 import org.infinispan.commons.util.CloseableIteratorSet;
 
 public class InfinispanTestSessionServer extends AbstractTestServer
@@ -34,14 +35,14 @@ public class InfinispanTestSessionServer extends AbstractTestServer
 
     
     
-    public InfinispanTestSessionServer(int port, Cache config)
+    public InfinispanTestSessionServer(int port, BasicCache config)
     {
         this(port, 30, 10, config);
     }
     
   
     
-    public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, Cache config)
+    public InfinispanTestSessionServer(int port, int maxInactivePeriod, int scavengePeriod, BasicCache config)
     {
         super(port, maxInactivePeriod, scavengePeriod, config);
     }
@@ -53,7 +54,7 @@ public class InfinispanTestSessionServer extends AbstractTestServer
     {
         InfinispanSessionIdManager idManager = new InfinispanSessionIdManager(getServer());
         idManager.setWorkerName("w"+(__workers++));
-        idManager.setCache((Cache)config);
+        idManager.setCache((BasicCache)config);
         return idManager;
     }
 
@@ -75,22 +76,40 @@ public class InfinispanTestSessionServer extends AbstractTestServer
         return new SessionHandler(sessionManager);
     }
 
+    public boolean exists (String id)
+    {
+        BasicCache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
+        if (cache != null)
+        {
+            return cache.containsKey(id);      
+        }
+        
+        return false;
+    }
+    
+    public Object get (String id)
+    {
+        BasicCache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
+        if (cache != null)
+        {
+            return cache.get(id);      
+        }
+        
+        return null;
+    }
 
     public void dumpCache ()
     {
-        Cache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
+        BasicCache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
         if (cache != null)
         {
-            System.err.println(cache.getName()+" contains "+cache.size()+" entries");
-            CloseableIteratorSet<String> keys = cache.keySet();
-            for (String key:keys)
-                System.err.println(key + " "+cache.get(key));
+            System.err.println(cache.getName()+" contains "+cache.size()+" entries");         
         }
     }
 
     public void clearCache ()
     { 
-        Cache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
+        BasicCache cache = ((InfinispanSessionIdManager)_sessionIdManager).getCache();
         if (cache != null)
             cache.clear();
     }

@@ -18,14 +18,14 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
-import org.eclipse.jetty.server.session.AbstractLightLoadTest;
+import org.eclipse.jetty.server.session.AbstractScatterGunLoadTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.junit.Test;
 
 /**
- * LightLoadTest
+ * ScatterGunLoadTest
  */
-public class LightLoadTest extends AbstractLightLoadTest
+public class ScatterGunLoadTest extends AbstractScatterGunLoadTest
 {
 
     public AbstractTestServer createServer(int port)

@@ -42,9 +42,15 @@ import org.junit.Test;
 
 
 /**
- * AbstractLightLoadTest
+ * AbstractScatterGunLoadTest
+ * 
+ * This is an unrealistic test. It takes a scatter-gun approach to smearing a
+ * single session across 2 different nodes at once. 
+ * 
+ * In the real world, we must have a load balancer that uses sticky sessions
+ * to keep the session pinned to a particular node.
  */
-public abstract class AbstractLightLoadTest
+public abstract class AbstractScatterGunLoadTest
 {
     protected boolean _stress = Boolean.getBoolean( "STRESS" );
 
@@ -80,6 +86,7 @@ public abstract class AbstractLightLoadTest
                         urls[0] = "http://localhost:" + port1 + contextPath + servletMapping;
                         urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
 
+                        //create session via first server
                         ContentResponse response1 = client.GET(urls[0] + "?action=init");
                         assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
                         String sessionCookie = response1.getHeaders().get( "Set-Cookie" );
@@ -87,6 +94,7 @@ public abstract class AbstractLightLoadTest
                         // Mangle the cookie, replacing Path with $Path, etc.
                         sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
 
+                        //simulate 50 clients making 100 requests each
                         ExecutorService executor = Executors.newCachedThreadPool();
                         int clientsCount = 50;
                         CyclicBarrier barrier = new CyclicBarrier( clientsCount + 1 );
@@ -216,7 +224,7 @@ public abstract class AbstractLightLoadTest
             }
             else if ( "increment".equals( action ) )
             {
-                // Without synchronization, because it is taken care by Jetty/Terracotta
+                // Without synchronization
                 HttpSession session = request.getSession( false );
                 int value = (Integer) session.getAttribute( "value" );
                 session.setAttribute( "value", value + 1 );

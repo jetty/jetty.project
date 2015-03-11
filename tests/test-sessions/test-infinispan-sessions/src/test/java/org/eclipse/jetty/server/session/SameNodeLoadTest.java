@@ -16,25 +16,51 @@
 //  ========================================================================
 //
 
+
 package org.eclipse.jetty.server.session;
 
-import org.junit.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
- * LightLoadTest
+ * SameNodeLoadTest
+ *
+ *
  */
-public class LightLoadTest extends AbstractLightLoadTest
+public class SameNodeLoadTest extends AbstractSameNodeLoadTest
 {
 
+    public static InfinispanTestSupport __testSupport;
+
+    
+    
+    @BeforeClass
+    public static void setup () throws Exception
+    {
+        __testSupport = new InfinispanTestSupport();
+        __testSupport.setup();
+    }
+    
+    @AfterClass
+    public static void teardown () throws Exception
+    {
+       __testSupport.teardown();
+    }
+    
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractSameNodeLoadTest#createServer(int)
+     */
+    @Override
     public AbstractTestServer createServer(int port)
     {
-        return new HashTestServer(port);
+        InfinispanTestSessionServer server = new InfinispanTestSessionServer(port, __testSupport.getCache());
+        return server;
     }
 
-    @Test
-    public void testLightLoad() throws Exception
+    @Override
+    public void testLoad() throws Exception
     {
-        super.testLightLoad();
+        super.testLoad();
     }
 
 }

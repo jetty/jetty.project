@@ -17,8 +17,11 @@
 //
 
 
-package org.eclipse.jetty.server.session;
+package org.eclipse.jetty.server.session.remote;
 
+import org.eclipse.jetty.server.session.AbstractInvalidationSessionTest;
+import org.eclipse.jetty.server.session.AbstractTestServer;
+import org.eclipse.jetty.server.session.InfinispanTestSessionServer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 
@@ -27,10 +30,10 @@ import org.junit.BeforeClass;
  *
  *
  */
-public class InvalidationSessionTest extends AbstractInvalidationSessionTest
+public class RemoteInvalidationSessionTest extends AbstractInvalidationSessionTest
 {
 
-    public static InfinispanTestSupport __testSupport;
+    public static RemoteInfinispanTestSupport __testSupport;
     public static long __staleSec = 3L;
    
     
@@ -38,7 +41,7 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
     @BeforeClass
     public static void setup () throws Exception
     {
-      __testSupport = new InfinispanTestSupport();
+      __testSupport = new RemoteInfinispanTestSupport("remote-session-test");
       __testSupport.setup();
     }
     
@@ -76,8 +79,7 @@ public class InvalidationSessionTest extends AbstractInvalidationSessionTest
         //should never happen with a decent load balancer.
         //The infinispan session manager on node 2 will hold the session in local memory for a specific (configurable)
         //amount of time. We've set the stale session time to 3 sec, so we need to pause for at least this long before making
-        //another request to node2
-        
+        //another request to node2 so 
         //that the node will re-load the session from the database and discover that it has gone.
         try
         {
