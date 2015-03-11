@@ -138,7 +138,7 @@ public class QuickStartConfiguration extends WebInfConfiguration
         context.getMetaData().addDescriptorProcessor(new QuickStartDescriptorProcessor());
         
         //add a decorator that will find introspectable annotations
-        context.addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
+        context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
         
         //add a context bean that will run ServletContainerInitializers as the context starts
         ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);

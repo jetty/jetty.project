@@ -696,7 +696,7 @@ public class ServletContextHandler extends ContextHandler
     {
         _objFactory.addDecorator(decorator);
     }
-
+    
     /* ------------------------------------------------------------ */
     void destroyServlet(Servlet servlet)
     {
@@ -1462,7 +1462,9 @@ public class ServletContextHandler extends ContextHandler
      * Legacy Interface to decorate loaded classes.
      * <p>
      * Left for backwards compatibility with Weld / CDI
+     * @deprecated use new {@link org.eclipse.jetty.util.Decorator} 
      */
+    @Deprecated
     public interface Decorator extends org.eclipse.jetty.util.Decorator
     {
     }

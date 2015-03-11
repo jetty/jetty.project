@@ -424,7 +424,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void configure(WebAppContext context) throws Exception
     {
-       context.addDecorator(new AnnotationDecorator(context));
+       context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
 
        //Even if metadata is complete, we still need to scan for ServletContainerInitializers - if there are any
       
@@ -646,7 +646,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        context.addDecorator(new AnnotationDecorator(context));
+        context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
     }
 
 
