@@ -168,13 +168,14 @@ public class PushSessionCacheFilter implements Filter
         if (baseRequest.isPushSupported() && target._associated.size()>0)
         {
             PushBuilder builder = baseRequest.getPushBuilder();
+            builder.addHeader("X-Pusher",PushSessionCacheFilter.class.toString());
             for (Target associated : target._associated.values())
             {
                 String path = associated._path;
                 if (LOG.isDebugEnabled())
                     LOG.debug("PUSH {} <- {}",path,uri);
                 
-                builder.push(path,associated._etag,associated._lastModified);
+                builder.path(path).etag(associated._etag).lastModified(associated._lastModified).push();
             }
         }
 
