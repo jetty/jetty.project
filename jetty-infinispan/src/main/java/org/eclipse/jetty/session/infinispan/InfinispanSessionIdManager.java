@@ -19,6 +19,7 @@
 package org.eclipse.jetty.session.infinispan;
 
 import java.util.Random;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
@@ -32,7 +33,8 @@ import org.eclipse.jetty.server.session.AbstractSessionIdManager;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.infinispan.Cache;
+import org.infinispan.commons.api.BasicCache;
+
 
 
 
@@ -51,18 +53,25 @@ import org.infinispan.Cache;
  * </pre>
  * where [id] is the id of the session.
  * 
+ * If the first session to be added is not immortal (ie it has a timeout on it) then
+ * the corresponding session id is entered into infinispan with an idle expiry timeout
+ * equivalent to double the session's timeout (the multiplier is configurable).
+ * 
+ * 
  * Having one entry per in-use session id means that there is no contention on
  * cache entries (as would be the case if a single entry was kept containing a 
  * list of in-use session ids).
  * 
- * TODO synchronization
+ * 
  */
 public class InfinispanSessionIdManager extends AbstractSessionIdManager
 {
     private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
-    protected final static String ID_KEY = "__o.e.j.s.infinispanIdMgr__";
-    protected Cache<String,Object> _cache;
+    public final static String ID_KEY = "__o.e.j.s.infinispanIdMgr__";
+    public static final int DEFAULT_IDLE_EXPIRY_MULTIPLE = 2;
+    protected BasicCache<String,Object> _cache;
     private Server _server;
+    private int _idleExpiryMultiple = DEFAULT_IDLE_EXPIRY_MULTIPLE;
 
     
     
@@ -131,7 +140,8 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
         
         String clusterId = getClusterId(id);
         
-        //ask the cluster
+        //ask the cluster - this should also tickle the idle expiration timer on the sessionid entry
+        //keeping it valid
         try
         {
             return exists(clusterId);
@@ -154,13 +164,35 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     @Override
     public void addSession(HttpSession session)
     {
-       if (session == null)
-           return;
+        if (session == null)
+            return;
+
+        //insert into the cache and set an idle expiry on the entry that
+        //is based off the max idle time configured for the session. If the
+        //session is immortal, then there is no idle expiry on the corresponding
+        //session id
+        if (session.getMaxInactiveInterval() == 0)
+            insert (((AbstractSession)session).getClusterId());
+        else
+            insert (((AbstractSession)session).getClusterId(), session.getMaxInactiveInterval() * getIdleExpiryMultiple());
+    }
     
-       //insert into the cache
-       insert (((AbstractSession)session).getClusterId());
+    
+    public void setIdleExpiryMultiple (int multiplier)
+    {
+        if (multiplier <= 1)
+        {
+            LOG.warn("Idle expiry multiple of {} for session ids set to less than minimum. Using value of {} instead.", multiplier, DEFAULT_IDLE_EXPIRY_MULTIPLE);
+        }
+        _idleExpiryMultiple = multiplier;
     }
 
+    public int getIdleExpiryMultiple ()
+    {
+        return _idleExpiryMultiple;
+    }
+    
+    
     /** 
      * Remove a session id from the list of in-use ids.
      * 
@@ -245,15 +277,37 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
 
     }
 
-    public Cache<String,Object> getCache() 
+    /**
+     * Get the cache.
+     * @return
+     */
+    public BasicCache<String,Object> getCache() 
     {
         return _cache;
     }
 
-    public void setCache(Cache<String,Object> cache) 
+    /**
+     * Set the cache.
+     * @param cache
+     */
+    public void setCache(BasicCache<String,Object> cache) 
     {
         this._cache = cache;
     }
+    
+    
+    
+    /**
+     * Do any operation to the session id in the cache to
+     * ensure its idle expiry time moves forward
+     * @param id
+     */
+    public void touch (String id)
+    {
+        exists(id);
+    }
+    
+    
     
     /**
      * Ask the cluster if a particular id exists.
@@ -266,10 +320,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
         if (_cache == null)
             throw new IllegalStateException ("No cache");
         
-        Object key =_cache.get(makeKey(id));
-        if (key == null)
-            return false;
-        return true;
+        return _cache.containsKey(makeKey(id));
     }
     
 
@@ -287,6 +338,19 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
     }
     
     
+    /**
+     * Put a session id into the cluster with an idle expiry.
+     * 
+     * @param id
+     */
+    protected void insert (String id, long idleTimeOutSec)
+    {
+        if (_cache == null)
+            throw new IllegalStateException ("No cache");
+        
+        _cache.putIfAbsent(makeKey(id),id,-1L, TimeUnit.SECONDS, idleTimeOutSec, TimeUnit.SECONDS);
+    }
+   
     
     /**
      * Remove a session id from the cluster.

@@ -1,6 +1,6 @@
 //
 //  ========================================================================
-//  Copyright (c) 1995-2014 Mort Bay Consulting Pty. Ltd.
+//  Copyright (c) 1995-2015 Mort Bay Consulting Pty. Ltd.
 //  ------------------------------------------------------------------------
 //  All rights reserved. This program and the accompanying materials
 //  are made available under the terms of the Eclipse Public License v1.0
@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.session;
 
 import static org.junit.Assert.assertEquals;
 import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.assertNotNull;
 
 import java.io.IOException;
 import java.io.PrintWriter;
@@ -42,17 +43,19 @@ import org.junit.Test;
 
 
 /**
- * AbstractLightLoadTest
+ * AbstractSameNodeLoadTest
+ * 
+ * This test performs multiple concurrent requests for the same session on the same node.
+ * 
  */
-public abstract class AbstractLightLoadTest
+public abstract class AbstractSameNodeLoadTest
 {
     protected boolean _stress = Boolean.getBoolean( "STRESS" );
 
     public abstract AbstractTestServer createServer(int port);
 
     @Test
-    public void testLightLoad()
-        throws Exception
+    public void testLoad() throws Exception
     {
         if ( _stress )
         {
@@ -65,70 +68,57 @@ public abstract class AbstractLightLoadTest
             {
                 server1.start();
                 int port1 = server1.getPort();
-                AbstractTestServer server2 = createServer( 0 );
-                server2.addContext( contextPath ).addServlet( TestServlet.class, servletMapping );
 
+                HttpClient client = new HttpClient();
+                client.start();
                 try
                 {
-                    server2.start();
-                    int port2=server2.getPort();
-                    HttpClient client = new HttpClient();
-                    client.start();
-                    try
+                    String url = "http://localhost:" + port1 + contextPath + servletMapping;
+
+
+                    //create session via first server
+                    ContentResponse response1 = client.GET(url + "?action=init");
+                    assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
+                    String sessionCookie = response1.getHeaders().getStringField( "Set-Cookie" );
+                    assertTrue(sessionCookie != null);
+                    // Mangle the cookie, replacing Path with $Path, etc.
+                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+
+                    //simulate 10 clients making 100 requests each
+                    ExecutorService executor = Executors.newCachedThreadPool();
+                    int clientsCount = 10;
+                    CyclicBarrier barrier = new CyclicBarrier( clientsCount + 1 );
+                    int requestsCount = 100;
+                    Worker[] workers = new Worker[clientsCount];
+                    for ( int i = 0; i < clientsCount; ++i )
                     {
-                        String[] urls = new String[2];
-                        urls[0] = "http://localhost:" + port1 + contextPath + servletMapping;
-                        urls[1] = "http://localhost:" + port2 + contextPath + servletMapping;
-
-                        ContentResponse response1 = client.GET(urls[0] + "?action=init");
-                        assertEquals(HttpServletResponse.SC_OK,response1.getStatus());
-                        String sessionCookie = response1.getHeaders().getStringField( "Set-Cookie" );
-                        assertTrue(sessionCookie != null);
-                        // Mangle the cookie, replacing Path with $Path, etc.
-                        sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
-
-                        ExecutorService executor = Executors.newCachedThreadPool();
-                        int clientsCount = 50;
-                        CyclicBarrier barrier = new CyclicBarrier( clientsCount + 1 );
-                        int requestsCount = 100;
-                        Worker[] workers = new Worker[clientsCount];
-                        for ( int i = 0; i < clientsCount; ++i )
-                        {
-                            workers[i] = new Worker( barrier, requestsCount, sessionCookie, urls );
-                            workers[i].start();
-                            executor.execute( workers[i] );
-                        }
-                        // Wait for all workers to be ready
-                        barrier.await();
-                        long start = System.nanoTime();
-
-                        // Wait for all workers to be done
-                        barrier.await();
-                        long end = System.nanoTime();
-                        long elapsed = TimeUnit.NANOSECONDS.toMillis( end - start );
-                        System.out.println( "elapsed ms: " + elapsed );
-
-                        for ( Worker worker : workers )
-                            worker.stop();
-                        executor.shutdownNow();
-
-                        // Perform one request to get the result
-                        Request request = client.newRequest( urls[0] + "?action=result" );
-                        request.header("Cookie", sessionCookie);
-                        ContentResponse response2 = request.send();
-                        assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
-                        String response = response2.getContentAsString();
-                        System.out.println( "get = " + response );
-                        assertEquals(response.trim(), String.valueOf( clientsCount * requestsCount ) );
+                        workers[i] = new Worker(barrier, client, requestsCount, sessionCookie, url);
+                        executor.execute( workers[i] );
                     }
-                    finally
-                    {
-                        client.stop();
-                    }
+                    // Wait for all workers to be ready
+                    barrier.await();
+                    long start = System.nanoTime();
+
+                    // Wait for all workers to be done
+                    barrier.await();
+                    long end = System.nanoTime();
+                    long elapsed = TimeUnit.NANOSECONDS.toMillis( end - start );
+                    System.out.println( "elapsed ms: " + elapsed );
+
+                    executor.shutdownNow();
+
+                    // Perform one request to get the result
+                    Request request = client.newRequest( url + "?action=result" );
+                    request.header("Cookie", sessionCookie);
+                    ContentResponse response2 = request.send();
+                    assertEquals(HttpServletResponse.SC_OK,response2.getStatus());
+                    String response = response2.getContentAsString();
+                    System.out.println( "get = " + response );
+                    assertEquals(response.trim(), String.valueOf( clientsCount * requestsCount ) );
                 }
                 finally
                 {
-                    server2.stop();
+                    client.stop();
                 }
             }
             finally
@@ -138,9 +128,10 @@ public abstract class AbstractLightLoadTest
         }
     }
 
-    public static class Worker
-        implements Runnable
+    public static class Worker implements Runnable
     {
+        public static int COUNT = 0;
+        
         private final HttpClient client;
 
         private final CyclicBarrier barrier;
@@ -149,29 +140,21 @@ public abstract class AbstractLightLoadTest
 
         private final String sessionCookie;
 
-        private final String[] urls;
+        private final String url;
+        
+        private final String name;
 
 
-        public Worker( CyclicBarrier barrier, int requestsCount, String sessionCookie, String[] urls )
+        public Worker(CyclicBarrier barrier, HttpClient client, int requestsCount, String sessionCookie, String url)
         {
-            this.client = new HttpClient();
+            this.client = client;
             this.barrier = barrier;
             this.requestsCount = requestsCount;
             this.sessionCookie = sessionCookie;
-            this.urls = urls;
+            this.url = url;
+            this.name = ""+(COUNT++);
         }
 
-        public void start()
-            throws Exception
-        {
-            client.start();
-        }
-
-        public void stop()
-            throws Exception
-        {
-            client.stop();
-        }
 
         public void run()
         {
@@ -184,8 +167,14 @@ public abstract class AbstractLightLoadTest
 
                 for ( int i = 0; i < requestsCount; ++i )
                 {
-                    int urlIndex = random.nextInt( urls.length );
-                    Request request = client.newRequest(urls[urlIndex] + "?action=increment");
+                    int pauseMsec = random.nextInt(1000);
+
+                    //wait a random number of milliseconds between requests up to 1 second
+                    if (pauseMsec > 0)
+                    {
+                        Thread.currentThread().sleep(pauseMsec);
+                    }
+                    Request request = client.newRequest(url + "?action=increment");
                     request.header("Cookie", sessionCookie);
                     ContentResponse response = request.send();
                     assertEquals(HttpServletResponse.SC_OK,response.getStatus());
@@ -216,15 +205,23 @@ public abstract class AbstractLightLoadTest
             }
             else if ( "increment".equals( action ) )
             {
-                // Without synchronization, because it is taken care by Jetty/Terracotta
                 HttpSession session = request.getSession( false );
-                int value = (Integer) session.getAttribute( "value" );
-                session.setAttribute( "value", value + 1 );
+                assertNotNull(session);
+                synchronized(session)
+                {
+                    int value = (Integer) session.getAttribute( "value" );
+                    session.setAttribute( "value", value + 1 );
+                }
             }
             else if ( "result".equals( action ) )
             {
                 HttpSession session = request.getSession( false );
-                int value = (Integer) session.getAttribute( "value" );
+                assertNotNull(session);
+                Integer value = null;
+                synchronized (session)
+                {
+                    value = (Integer) session.getAttribute( "value" );
+                }
                 PrintWriter writer = response.getWriter();
                 writer.println( value );
                 writer.flush();

@@ -42,6 +42,8 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 import org.infinispan.Cache;
+import org.infinispan.commons.api.BasicCache;
+import org.omg.CORBA._IDLTypeStub;
 
 /**
  * InfinispanSessionManager
@@ -73,7 +75,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
     /**
      * Clustered cache of sessions
      */
-    private Cache<String, Object> _cache;
+    private BasicCache<String, Object> _cache;
     
     
     /**
@@ -197,108 +199,12 @@ public class InfinispanSessionManager extends AbstractSessionManager
             lastNode = in.readUTF(); //last managing node
             expiry = in.readLong(); 
             maxInactive = in.readLong();
-            HashMap<String,Object> attributes = (HashMap<String,Object>)in.readObject();
+            attributes = (HashMap<String,Object>)in.readObject();
         }
         
     }
     
  
-    
-    
-    /**
-     * SerializableSession
-     *
-     * Helper class that is responsible for de/serialization of the non-serializable session object.
-     */
-    public class SerializableSession implements Serializable
-    {
-        
-        /**
-         * 
-         */
-        private static final long serialVersionUID = -7603529353470249059L;
-        private transient Session _session;
-
-        
-        public SerializableSession ()
-        {
-            
-        }
-        
-        public SerializableSession (Session session)
-        {
-            setSession(session);
-        }
-        
-        /**
-         * Existing session
-         * @param session
-         */
-        public void setSession (Session session)
-        {
-            _session = session;
-        }
-        
-        public Session getSession ()
-        {
-            return _session;
-        }
-   
-        
-        private void writeObject(java.io.ObjectOutputStream out) throws IOException
-        {
-            if (_session == null)
-                throw new IOException ("No session to serialize");
-  
-            out.writeUTF(_session.getClusterId()); //session id
-            out.writeUTF(_session.getContextPath()); //context path
-            out.writeUTF(_session.getVHost()); //first vhost
-
-            out.writeLong(_session.getAccessed());//accessTime
-            out.writeLong(_session.getLastAccessedTime()); //lastAccessTime
-            out.writeLong(_session.getCreationTime()); //time created
-            out.writeLong(_session.getCookieSetTime());//time cookie was set
-            out.writeUTF(_session.getLastNode()); //name of last node managing
-      
-            out.writeLong(_session.getExpiry()); 
-            out.writeLong(_session.getMaxInactiveInterval());
-            out.writeObject(_session.getAttributeMap());
-        }
-        
-        
-        private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
-        {
-            String clusterId = in.readUTF();
-            String context = in.readUTF();
-            String vhost = in.readUTF();
-            
-            Long accessed = in.readLong();//accessTime
-            Long lastAccessed = in.readLong(); //lastAccessTime
-            Long created = in.readLong(); //time created
-            Long cookieSet = in.readLong();//time cookie was set
-            String lastNode = in.readUTF(); //last managing node
-            Long expiry = in.readLong(); 
-            Long maxIdle = in.readLong();
-            HashMap<String,Object> attributes = (HashMap<String,Object>)in.readObject();
-            Session session = new Session(clusterId, created, accessed, maxIdle);
-            session.setCookieSetTime(cookieSet);
-            session.setLastAccessedTime(lastAccessed);
-            session.setLastNode(lastNode);
-            session.setContextPath(context);
-            session.setVHost(vhost);
-            session.setExpiry(expiry);
-            session.addAttributes(attributes);
-            setSession(session);
-        }
-        
-        
-        private void readObjectNoData() throws ObjectStreamException
-        {
-            setSession(null);
-        }
-
-        
-    }
     
     
     /**
@@ -316,11 +222,6 @@ public class InfinispanSessionManager extends AbstractSessionManager
          */
         private String _contextPath;
         
-        
-        /**
-         * The number of currently active request threads in this session
-         */
-        private AtomicInteger _activeThreads = new AtomicInteger(0);
         
         
         /**
@@ -341,12 +242,24 @@ public class InfinispanSessionManager extends AbstractSessionManager
         private String _lastNode;
         
         
+        /**
+         * If dirty, session needs to be (re)sent to cluster
+         */
+        protected boolean _dirty=false;
         
+        
+     
 
         /**
          * Any virtual hosts for the context with which this session is associated
          */
         private String _vhost;
+
+        
+        /**
+         * Count of how many threads are active in this session
+         */
+        private AtomicInteger _activeThreads = new AtomicInteger(0);
         
         
         
@@ -364,6 +277,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
             _lastNode = getSessionIdManager().getWorkerName();
            setVHost(InfinispanSessionManager.getVirtualHost(_context));
            setContextPath(InfinispanSessionManager.getContextPath(_context));
+           _activeThreads.incrementAndGet(); //access will not be called on a freshly created session so increment here
         }
         
         
@@ -404,13 +318,13 @@ public class InfinispanSessionManager extends AbstractSessionManager
                 LOG.debug("Access session({}) for context {} on worker {}", getId(), getContextPath(), getSessionIdManager().getWorkerName());
             try
             {
-               _lock.lock();
 
+                long now = System.currentTimeMillis();
+                //lock so that no other thread can call access or complete until the first one has refreshed the session object if necessary
+                _lock.lock();
                 //a request thread is entering
                 if (_activeThreads.incrementAndGet() == 1)
                 {
-                    long now = System.currentTimeMillis();
-                    
                     //if the first thread, check that the session in memory is not stale, if we're checking for stale sessions
                     if (getStaleIntervalSec() > 0  && (now - getLastSyncTime()) >= (getStaleIntervalSec() * 1000L))
                     {
@@ -448,28 +362,65 @@ public class InfinispanSessionManager extends AbstractSessionManager
         {
             super.complete();
 
-            //if this is the last request thread to be in the session
-            if (_activeThreads.decrementAndGet() == 0)
+            //lock so that no other thread that might be calling access can proceed until this complete is done
+            _lock.lock();
+
+            try
             {
-                try
+                //if this is the last request thread to be in the session
+                if (_activeThreads.decrementAndGet() == 0)
                 {
-                    //an invalid session will already have been removed from the
-                    //local session map and deleted from the cluster. If its valid save
-                    //it to the cluster.
-                    //TODO consider doing only periodic saves if only the last access
-                    //time to the session changes
-                    if (isValid())
+                    try
                     {
-                        willPassivate();
-                        save(this);
-                        didActivate();
+                        //an invalid session will already have been removed from the
+                        //local session map and deleted from the cluster. If its valid save
+                        //it to the cluster.
+                        //TODO consider doing only periodic saves if only the last access
+                        //time to the session changes
+                        if (isValid())
+                        {
+                            //if session still valid && its dirty or stale or never been synced, write it to the cluster
+                            //otherwise, we just keep the updated last access time in memory
+                            if (_dirty || getLastSyncTime() == 0 || isStale(System.currentTimeMillis()))
+                            {
+                                willPassivate();
+                                save(this);
+                                didActivate();
+                            }
+                        }
+                    }
+                    catch (Exception e)
+                    {
+                        LOG.warn("Problem saving session({})",getId(), e);
+                    } 
+                    finally
+                    {
+                        _dirty = false;
                     }
                 }
-                catch (Exception e)
-                {
-                    LOG.warn("Problem saving session({})",getId(), e);
-                }
-            }  
+            }
+            finally
+            {
+                _lock.unlock();
+            }
+        }
+        
+        /** Test if the session is stale
+         * @param atTime
+         * @return
+         */
+        protected boolean isStale (long atTime)
+        {
+            return (getStaleIntervalSec() > 0) && (atTime - getLastSyncTime() >= (getStaleIntervalSec()*1000L));
+        }
+        
+        
+        /** Test if the session is dirty
+         * @return
+         */
+        protected boolean isDirty ()
+        {
+            return _dirty;
         }
 
         /** 
@@ -483,6 +434,8 @@ public class InfinispanSessionManager extends AbstractSessionManager
             super.timeout();
         }
         
+      
+        
         /**
          * Reload the session from the cluster. If the node that
          * last managed the session from the cluster is ourself,
@@ -494,8 +447,8 @@ public class InfinispanSessionManager extends AbstractSessionManager
         private void refresh ()
         {
             //get fresh copy from the cluster
-            Session fresh = load(getId());
-            
+            Session fresh = load(makeKey(getClusterId(), _context));
+
             //if the session no longer exists, invalidate
             if (fresh == null)
             {
@@ -564,6 +517,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
         
         public void swapId (String newId, String newNodeId)
         {
+            //TODO probably synchronize rather than use the access/complete lock?
             _lock.lock();
             setClusterId(newId);
             setNodeId(newNodeId);
@@ -577,7 +531,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
             if (value == null && old == null)
                 return; //if same as remove attribute but attribute was already removed, no change
             
-           //TODO _dirty = true;
+           _dirty = true;
         }
         
         
@@ -709,7 +663,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
                     candidateIds.add(entry.getKey());
             }
         }
-        
+
         for (String candidateId:candidateIds)
         {
             if (LOG.isDebugEnabled())
@@ -719,7 +673,8 @@ public class InfinispanSessionManager extends AbstractSessionManager
             if (candidateSession != null)
             {
                 //double check the state of the session in the cache, as the
-                //session may have migrated to another node
+                //session may have migrated to another node. This leaves a window
+                //where the cached session may have been changed by another node
                 Session cachedSession = load(makeKey(candidateId, _context));
                 if (cachedSession == null)
                 {
@@ -755,8 +710,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
     
     
     /**
-     * Set the interval between runs of the scavenger. As this will be a costly
-     * exercise (need to iterate over all cache entries) it should not be run too
+     * Set the interval between runs of the scavenger. It should not be run too
      * often.
      * 
      * 
@@ -803,7 +757,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
      * 
      * @return
      */
-    public Cache<String, Object> getCache() 
+    public BasicCache<String, Object> getCache() 
     {
         return _cache;
     }
@@ -815,7 +769,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
      * 
      * @param cache
      */
-    public void setCache (Cache<String, Object> cache) 
+    public void setCache (BasicCache<String, Object> cache) 
     {
         this._cache = cache;
     }
@@ -873,7 +827,6 @@ public class InfinispanSessionManager extends AbstractSessionManager
     {
         Session session = null;
 
-        
         //try and find the session in this node's memory
         Session memSession = (Session)_sessions.get(idInCluster);
 
@@ -940,7 +893,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
         }
         catch (Exception e)
         {
-            LOG.warn("Unable to load session {}", idInCluster, e);
+            LOG.warn("Unable to load session="+idInCluster, e);
             return null;
         }
     }
@@ -955,8 +908,28 @@ public class InfinispanSessionManager extends AbstractSessionManager
     @Override
     protected void shutdownSessions() throws Exception
     {
-        //TODO if implementing period saves, if we might have un-saved changes, 
-        //then we need to write them back to the clustered cache
+        Set<String> keys = new HashSet<String>(_sessions.keySet());
+        for (String key:keys)
+        {
+            Session session = _sessions.remove(key); //take the session out of the session list
+            //If the session is dirty, then write it to the cluster.
+            //If the session is simply stale do NOT write it to the cluster, as some other node
+            //may have started managing that session - this means that the last accessed/expiry time
+            //will not be updated, meaning it may look like it can expire sooner than it should.
+            try
+            {
+                if (session.isDirty())
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Saving dirty session {} before exiting ", session.getId());
+                    save(session);
+                }
+            }
+            catch (Exception e)
+            {
+                LOG.warn(e);
+            }
+        }
     }
 
 
@@ -1029,7 +1002,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
             throw new IllegalStateException("No cache");
         
         if (LOG.isDebugEnabled()) LOG.debug("Loading session {} from cluster", key);
-        //SerializableSession storableSession = (SerializableSession)_cache.get(key);
+
         SerializableSessionData storableSession = (SerializableSessionData)_cache.get(key);
         if (storableSession == null)
         {
@@ -1038,7 +1011,6 @@ public class InfinispanSessionManager extends AbstractSessionManager
         }
         else
         {
-            //Session session = storableSession.getSession();
             Session session = new Session (storableSession);
             session.setLastSyncTime(System.currentTimeMillis());
             return session;
@@ -1062,7 +1034,20 @@ public class InfinispanSessionManager extends AbstractSessionManager
         if (LOG.isDebugEnabled()) LOG.debug("Writing session {} to cluster", session.getId());
     
         SerializableSessionData storableSession = new SerializableSessionData(session);
-        _cache.put(makeKey(session, _context), storableSession);
+
+        //Put an idle timeout on the cache entry if the session is not immortal - 
+        //if no requests arrive at any node before this timeout occurs, or no node 
+        //scavenges the session before this timeout occurs, the session will be removed.
+        //NOTE: that no session listeners can be called for this.
+        InfinispanSessionIdManager sessionIdManager = (InfinispanSessionIdManager)getSessionIdManager();
+        if (storableSession.maxInactive > 0)
+            _cache.put(makeKey(session, _context), storableSession, -1, TimeUnit.SECONDS, storableSession.maxInactive*sessionIdManager.getIdleExpiryMultiple(), TimeUnit.SECONDS);
+        else
+            _cache.put(makeKey(session, _context), storableSession);
+        
+        //tickle the session id manager to keep the sessionid entry for this session up-to-date
+        sessionIdManager.touch(session.getClusterId());
+        
         session.setLastSyncTime(System.currentTimeMillis());
     }
     
@@ -1074,7 +1059,7 @@ public class InfinispanSessionManager extends AbstractSessionManager
      * @param session
      */
     protected void delete (InfinispanSessionManager.Session session)
-    {
+    {  
         if (_cache == null)
             throw new IllegalStateException("No cache");
         if (LOG.isDebugEnabled()) LOG.debug("Removing session {} from cluster", session.getId());

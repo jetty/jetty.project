@@ -16,22 +16,19 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.nosql.mongodb;
+package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.server.session.AbstractLightLoadTest;
-import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.junit.Ignore;
 import org.junit.Test;
 
 /**
- * LightLoadTest
+ * ScatterGunLoadTest
  */
-public class LightLoadTest extends AbstractLightLoadTest
+public class ScatterGunLoadTest extends AbstractScatterGunLoadTest
 {
 
     public AbstractTestServer createServer(int port)
     {
-        return new MongoTestServer(port);
+        return new HashTestServer(port);
     }
 
     @Test
