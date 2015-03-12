@@ -155,11 +155,9 @@ public class AsyncProxyServlet extends ProxyServlet
 
             // First check for isReady() because it has
             // side effects, and then for isFinished().
-            System.err.printf(Thread.currentThread()+" process isFinished=%b%n",input.isFinished());
             while (input.isReady() && !input.isFinished())
             {
                 int read = input.read(buffer);
-                System.err.printf(Thread.currentThread()+" read=%d%n",read);
                 if (_log.isDebugEnabled())
                     _log.debug("{} asynchronous read {} bytes on {}", requestId, read, input);
                 if (read > 0)
@@ -171,8 +169,6 @@ public class AsyncProxyServlet extends ProxyServlet
                 }
             }
 
-            System.err.printf(Thread.currentThread()+" processed isFinished=%b%n",input.isFinished());
-            
             if (input.isFinished())
             {
                 if (_log.isDebugEnabled())
