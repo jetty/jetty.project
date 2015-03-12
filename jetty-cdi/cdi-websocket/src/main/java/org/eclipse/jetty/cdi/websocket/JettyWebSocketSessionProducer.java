@@ -20,13 +20,14 @@ package org.eclipse.jetty.cdi.websocket;
 
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
-import javax.inject.Singleton;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
 
-@Singleton
+/**
+ * Producer of {@link org.eclipse.jetty.websocket.api.Session} instances
+ */
 public class JettyWebSocketSessionProducer
 {
     private static final Logger LOG = Log.getLogger(JettyWebSocketSessionProducer.class);

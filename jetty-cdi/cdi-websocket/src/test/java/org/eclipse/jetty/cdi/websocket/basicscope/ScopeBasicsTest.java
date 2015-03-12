@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.cdi.websocket.scope;
+package org.eclipse.jetty.cdi.websocket.basicscope;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
@@ -28,14 +28,13 @@ import javax.enterprise.inject.spi.Bean;
 import org.eclipse.jetty.cdi.core.AnyLiteral;
 import org.eclipse.jetty.cdi.core.ScopedInstance;
 import org.eclipse.jetty.cdi.core.logging.Logging;
-import org.eclipse.jetty.cdi.websocket.WebSocketScopeContext;
 import org.jboss.weld.environment.se.Weld;
 import org.jboss.weld.environment.se.WeldContainer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
-public class WebSocketScopeBaselineTest
+public class ScopeBasicsTest
 {
     private static Weld weld;
     private static WeldContainer container;
@@ -53,51 +52,26 @@ public class WebSocketScopeBaselineTest
     {
         weld.shutdown();
     }
-    
+
+    /**
+     * Validation of Scope / Inject logic on non-websocket-scoped classes
+     */
     @Test
-    public void testScopeBehavior() throws Exception
+    public void testBasicBehavior() throws Exception
     {
-        ScopedInstance<WebSocketScopeContext> wsScopeBean = newInstance(WebSocketScopeContext.class);
-        WebSocketScopeContext wsScope = wsScopeBean.instance;
+        ScopedInstance<Meal> meal1Bean = newInstance(Meal.class);
+        Meal meal1 = meal1Bean.instance;
+        ScopedInstance<Meal> meal2Bean = newInstance(Meal.class);
+        Meal meal2 = meal2Bean.instance;
 
-        wsScope.create();
-        Meal meal1;
-        try
-        {
-            wsScope.begin();
-            ScopedInstance<Meal> meal1Bean = newInstance(Meal.class);
-            meal1 = meal1Bean.instance;
-            ScopedInstance<Meal> meal2Bean = newInstance(Meal.class);
-            Meal meal2 = meal2Bean.instance;
-            
-            assertThat("Meals are not the same",meal1,not(sameInstance(meal2)));
-            
-            assertThat("Meal 1 Entree Constructed",meal1.getEntree().isConstructed(),is(true));
-            assertThat("Meal 1 Side Constructed",meal1.getSide().isConstructed(),is(true));
-            
-            /* TODO: enable when CreationalContext lookup is fixed
-            assertThat("Meal parts not the same",meal1.getEntree(),not(sameInstance(meal1.getSide())));
-            assertThat("Meal entrees are the same",meal1.getEntree(),not(sameInstance(meal2.getEntree())));
-            assertThat("Meal sides are the same",meal1.getSide(),not(sameInstance(meal2.getSide())));
-            */
+        assertThat("Meals are not the same",meal1,not(sameInstance(meal2)));
 
-            meal1Bean.destroy();
-            meal2Bean.destroy();
-        }
-        finally
-        {
-            wsScope.end();
-        }
+        assertThat("Meal 1 Entree Constructed",meal1.getEntree().isConstructed(),is(true));
+        assertThat("Meal 1 Side Constructed",meal1.getSide().isConstructed(),is(true));
 
-        assertThat("Meal 1 entree destroyed",meal1.getEntree().isDestroyed(),is(false));
-        assertThat("Meal 1 side destroyed",meal1.getSide().isDestroyed(),is(false));
-        wsScope.destroy();
-
-        /*
-        assertThat("Meal 1 entree destroyed",meal1.getEntree().isDestroyed(),is(true));
-        assertThat("Meal 1 side destroyed",meal1.getSide().isDestroyed(),is(true));
-        */
-        wsScopeBean.destroy();
+        assertThat("Meal parts not the same",meal1.getEntree(),not(sameInstance(meal1.getSide())));
+        assertThat("Meal entrees are the same",meal1.getEntree(),not(sameInstance(meal2.getEntree())));
+        assertThat("Meal sides are the same",meal1.getSide(),not(sameInstance(meal2.getSide())));
     }
 
     @SuppressWarnings({ "rawtypes", "unchecked" })

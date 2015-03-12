@@ -16,30 +16,25 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.websocket.common.util;
+package org.eclipse.jetty.cdi.websocket.basicscope;
 
-import java.io.Closeable;
+import javax.inject.Inject;
 
-public class ThreadClassLoaderScope implements Closeable
+public class Meal
 {
-    private final ClassLoader old;
-    private final ClassLoader scopedClassLoader;
+    @Inject
+    private Food entree;
 
-    public ThreadClassLoaderScope(ClassLoader cl)
+    @Inject
+    private Food side;
+
+    public Food getEntree()
     {
-        old = Thread.currentThread().getContextClassLoader();
-        scopedClassLoader = cl;
-        Thread.currentThread().setContextClassLoader(scopedClassLoader);
+        return entree;
     }
 
-    @Override
-    public void close()
+    public Food getSide()
     {
-        Thread.currentThread().setContextClassLoader(old);
-    }
-
-    public ClassLoader getScopedClassLoader()
-    {
-        return scopedClassLoader;
+        return side;
     }
 }

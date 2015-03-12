@@ -22,6 +22,9 @@ import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
 import javax.websocket.Session;
 
+/**
+ * Producer of {@link javax.websocket.Session} instances
+ */
 public class JavaWebSocketSessionProducer
 {
     private ThreadLocal<Session> sessionInstance;

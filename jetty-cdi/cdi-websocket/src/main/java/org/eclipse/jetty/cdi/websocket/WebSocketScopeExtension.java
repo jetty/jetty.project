@@ -26,21 +26,30 @@ import javax.enterprise.inject.spi.Extension;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+/**
+ * Register the various WebSocket specific components for CDI  
+ */
 public class WebSocketScopeExtension implements Extension
 {
     private static final Logger LOG = Log.getLogger(WebSocketScopeExtension.class);
 
     public void addScope(@Observes final BeforeBeanDiscovery event)
     {
-        LOG.info("addScope()");
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("addScope()");
+        }
         // Add our scope
         event.addScope(WebSocketScope.class,true,false);
     }
 
     public void registerContext(@Observes final AfterBeanDiscovery event)
     {
-        LOG.info("registerContext()");
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("registerContext()");
+        }
         // Register our context
-        event.addContext(new WebSocketScopeContextImpl());
+        event.addContext(new WebSocketScopeContext());
     }
 }

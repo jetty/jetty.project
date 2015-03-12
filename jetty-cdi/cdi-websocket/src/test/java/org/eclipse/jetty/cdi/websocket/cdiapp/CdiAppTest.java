@@ -42,6 +42,7 @@ import org.eclipse.jetty.websocket.client.WebSocketClient;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
+import org.junit.Ignore;
 import org.junit.Test;
 
 public class CdiAppTest
@@ -155,6 +156,7 @@ public class CdiAppTest
     }
     
     @Test
+    @Ignore
     public void testWebSocket_Info_DataFromCdi() throws Exception
     {
         WebSocketClient client = new WebSocketClient();

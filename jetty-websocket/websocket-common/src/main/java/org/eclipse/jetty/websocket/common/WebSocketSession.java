@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
@@ -54,7 +55,6 @@ import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
-import org.eclipse.jetty.websocket.common.util.ThreadClassLoaderScope;
 
 @ManagedObject("A Jetty WebSocket Session")
 public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketSessionScope, IncomingFrames, ConnectionStateListener

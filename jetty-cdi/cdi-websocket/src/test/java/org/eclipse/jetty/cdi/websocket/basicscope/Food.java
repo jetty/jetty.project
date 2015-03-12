@@ -16,14 +16,11 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.cdi.websocket.scope;
+package org.eclipse.jetty.cdi.websocket.basicscope;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.eclipse.jetty.cdi.websocket.WebSocketScope;
-
-@WebSocketScope
 public class Food
 {
     private boolean constructed = false;
@@ -33,7 +30,7 @@ public class Food
     @PreDestroy
     void destroy()
     {
-        destroyed = true;
+        destroyed = true;       
     }
 
     @Override
