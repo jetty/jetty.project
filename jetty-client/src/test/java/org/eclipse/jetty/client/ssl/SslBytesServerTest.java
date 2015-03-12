@@ -109,7 +109,7 @@ public class SslBytesServerTest extends SslBytesTest
         HttpConnectionFactory httpFactory = new HttpConnectionFactory()
         {
             @Override
-            public Connection newConnection(Connector connector, EndPoint endPoint)
+            public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
             {
                 return configure(new HttpConnection(getHttpConfiguration(), connector, endPoint)
                 {

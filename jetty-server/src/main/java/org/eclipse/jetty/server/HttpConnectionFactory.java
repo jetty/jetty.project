@@ -53,7 +53,7 @@ public class HttpConnectionFactory extends AbstractConnectionFactory implements 
     }
 
     @Override
-    public Connection newConnection(Connector connector, EndPoint endPoint)
+    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
     {
         return configure(new HttpConnection(_config, connector, endPoint), connector, endPoint);
     }

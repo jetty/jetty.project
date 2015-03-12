@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.Iterator;
 import java.util.List;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.io.AbstractConnection;
@@ -88,7 +89,7 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
     }
     
     @Override
-    public Connection newConnection(Connector connector, EndPoint endPoint)
+    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
     {
         List<String> negotiated = this.negotiatedProtocols;
         if (negotiated.isEmpty())

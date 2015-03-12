@@ -42,7 +42,7 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory
 {
     public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        super(httpConfiguration,"h2c");
+        super(httpConfiguration,"h2c","h2c-14");
     }
     
     @Override

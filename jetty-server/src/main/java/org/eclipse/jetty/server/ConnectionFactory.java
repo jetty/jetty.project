@@ -58,8 +58,10 @@ public interface ConnectionFactory
      * <p>Creates a new {@link Connection} with the given parameters</p>
      * @param connector The {@link Connector} creating this connection
      * @param endPoint the {@link EndPoint} associated with the connection
+     * @param attachment TODO
+     * @param attachment Extra information for the connection
      * @return a new {@link Connection}
      */
-    public Connection newConnection(Connector connector, EndPoint endPoint);
+    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment);
     
 }

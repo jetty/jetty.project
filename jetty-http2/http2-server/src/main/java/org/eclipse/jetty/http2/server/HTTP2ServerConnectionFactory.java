@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.http2.server;
 
+import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
+import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.IStream;
@@ -32,11 +35,13 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -143,6 +148,31 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             final Session session = stream.getSession();
             session.close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.Adapter.INSTANCE);
         }
-
     }
+
+    @Override
+    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
+    {
+        Connection connection = super.newConnection(connector,endPoint,attachment);
+        
+        if (attachment instanceof MetaData.Request)
+        {
+            MetaData.Request request = (MetaData.Request) attachment;
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} upgraded {}",this,request.toString()+request.getFields());
+            
+            // TODO work out why _ needs replacing?
+            byte[] settings = Base64.getDecoder().decode(request.getFields().getField(HttpHeader.HTTP2_SETTINGS).getValue().replace('_','='));
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} settings {}",this,TypeUtil.toHexString(settings));
+            
+            // TODO process the settings frame
+            
+            // TODO use the metadata to push a response
+        }
+        
+        return connection;
+    }
+    
+    
 }

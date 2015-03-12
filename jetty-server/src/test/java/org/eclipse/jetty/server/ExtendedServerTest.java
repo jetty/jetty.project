@@ -52,7 +52,7 @@ public class ExtendedServerTest extends HttpServerTestBase
         startServer(new ServerConnector(_server,new HttpConnectionFactory()
         {
             @Override
-            public Connection newConnection(Connector connector, EndPoint endPoint)
+            public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
             {
                 return configure(new ExtendedHttpConnection(getHttpConfiguration(), connector, endPoint), connector, endPoint);
             }

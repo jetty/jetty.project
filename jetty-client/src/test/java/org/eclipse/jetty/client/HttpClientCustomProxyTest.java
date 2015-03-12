@@ -200,7 +200,7 @@ public class HttpClientCustomProxyTest
         }
 
         @Override
-        public org.eclipse.jetty.io.Connection newConnection(Connector connector, EndPoint endPoint)
+        public org.eclipse.jetty.io.Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
         {
             return new CAFEBABEServerConnection(connector, endPoint, connectionFactory);
         }
@@ -235,7 +235,7 @@ public class HttpClientCustomProxyTest
                 getEndPoint().write(new Callback.Adapter(), buffer);
 
                 // We are good, upgrade the connection
-                ClientConnectionFactory.Helper.replaceConnection(this, connectionFactory.newConnection(connector, getEndPoint()));
+                ClientConnectionFactory.Helper.replaceConnection(this, connectionFactory.newConnection(connector, getEndPoint(), null));
             }
             catch (Throwable x)
             {

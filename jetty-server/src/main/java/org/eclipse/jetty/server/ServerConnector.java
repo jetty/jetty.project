@@ -512,7 +512,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Override
         public Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException
         {
-            return getDefaultConnectionFactory().newConnection(ServerConnector.this, endpoint);
+            return getDefaultConnectionFactory().newConnection(ServerConnector.this, endpoint, null);
         }
 
         @Override

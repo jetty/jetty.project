@@ -63,7 +63,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
     }
     
     @Override
-    public Connection newConnection(Connector connector, EndPoint endp)
+    public Connection newConnection(Connector connector, EndPoint endp, Object attachment)
     {
         String next=_next;
         if (next==null)
@@ -201,7 +201,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 }
 
                 EndPoint endPoint = new ProxyEndPoint(getEndPoint(),remote,local);
-                Connection newConnection = connectionFactory.newConnection(_connector, endPoint);                
+                Connection newConnection = connectionFactory.newConnection(_connector, endPoint, null);                
                 endPoint.upgrade(newConnection);
             }
             catch (Throwable e)
