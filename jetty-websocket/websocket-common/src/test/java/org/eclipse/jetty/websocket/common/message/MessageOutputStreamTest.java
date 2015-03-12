@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
-import static org.hamcrest.Matchers.allOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.*;
 
 import java.util.Arrays;
 
@@ -33,8 +31,9 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.io.FramePipes;
 import org.eclipse.jetty.websocket.common.io.LocalWebSocketSession;
-import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.test.LeakTrackingBufferPoolRule;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
