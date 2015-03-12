@@ -43,7 +43,7 @@ public class SettingsBodyParser extends BodyParser
         super(headerParser, listener);
     }
 
-    private void reset()
+    protected void reset()
     {
         state = State.PREPARE;
         cursor = 0;
@@ -157,7 +157,7 @@ public class SettingsBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onSettings(Map<Integer, Integer> settings)
+    protected boolean onSettings(Map<Integer, Integer> settings)
     {
         SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flags.ACK));
         reset();

@@ -24,6 +24,7 @@ import java.util.Map;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
@@ -34,12 +35,14 @@ import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
+import org.eclipse.jetty.http2.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
@@ -76,26 +79,52 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
     {
-        Connection connection = super.newConnection(connector,endPoint,attachment);
-
+        HTTP2ServerConnection connection = (HTTP2ServerConnection)super.newConnection(connector,endPoint,attachment);
+        
         if (attachment instanceof MetaData.Request)
         {
             MetaData.Request request = (MetaData.Request) attachment;
             if (LOG.isDebugEnabled())
                 LOG.debug("{} upgraded {}",this,request.toString()+request.getFields());
-
-            // TODO work out why _ needs replacing?
-            byte[] settings = B64Code.decode(request.getFields().getField(HttpHeader.HTTP2_SETTINGS).getValue().replace('_', '='));
+            
+            final byte[] settings = B64Code.decodeRFC4648URL(request.getFields().getField(HttpHeader.HTTP2_SETTINGS).getValue());
+                    
             if (LOG.isDebugEnabled())
-                LOG.debug("{} settings {}",this, TypeUtil.toHexString(settings));
+                LOG.debug("{} settings {}",this,TypeUtil.toHexString(settings));
+            
+            SettingsBodyParser parser = new SettingsBodyParser(null,null)
+            {
+                @Override
+                protected int getStreamId()
+                {
+                    return 0;
+                }
+                
+                @Override
+                protected int getBodyLength()
+                {
+                    return settings.length;
+                }
 
-            // TODO process the settings frame
-
+                @Override
+                protected boolean onSettings(Map<Integer, Integer> settings)
+                {
+                    SettingsFrame frame = new SettingsFrame(settings, false);
+                    // TODO something with this frame?
+                    
+                    reset();
+                    return true;
+                }
+                
+            };
+            parser.parse(BufferUtil.toBuffer(settings));
+            
             // TODO use the metadata to push a response
         }
-
+        
         return connection;
     }
+    
 
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
@@ -170,4 +199,5 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             session.close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.Adapter.INSTANCE);
         }
     }
+
 }
