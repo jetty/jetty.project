@@ -24,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -60,7 +59,6 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                Assert.assertTrue(stream.isClosed());
                 Assert.assertTrue(stream.getId() > 0);
 
                 Assert.assertTrue(frame.isEndStream());
@@ -100,7 +98,6 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                Assert.assertFalse(stream.isClosed());
                 Assert.assertTrue(stream.getId() > 0);
 
                 Assert.assertFalse(frame.isEndStream());
@@ -115,8 +112,6 @@ public class HTTP2Test extends AbstractTest
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
-                Assert.assertTrue(stream.isClosed());
-
                 Assert.assertTrue(frame.isEndStream());
                 Assert.assertEquals(ByteBuffer.wrap(content), frame.getData());
 
