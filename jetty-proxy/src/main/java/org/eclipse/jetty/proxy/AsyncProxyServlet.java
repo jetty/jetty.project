@@ -22,7 +22,6 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
-
 import javax.servlet.ReadListener;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -131,15 +130,12 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         public void onDataAvailable() throws IOException
         {
-            System.err.println(Thread.currentThread()+" ODA");
             iterate();
-            System.err.println(Thread.currentThread()+" !ODA");
         }
 
         @Override
         public void onAllDataRead() throws IOException
         {
-            System.err.println(Thread.currentThread()+" ON ALL DATA READ!!!!");
             if (_log.isDebugEnabled())
                 _log.debug("{} proxying content to upstream completed", getRequestId(request));
             provider.close();
@@ -154,7 +150,6 @@ public class AsyncProxyServlet extends ProxyServlet
         @Override
         protected Action process() throws Exception
         {
-            System.err.println(Thread.currentThread()+" Process");
             int requestId = _log.isDebugEnabled() ? getRequestId(request) : 0;
             ServletInputStream input = request.getInputStream();
 
