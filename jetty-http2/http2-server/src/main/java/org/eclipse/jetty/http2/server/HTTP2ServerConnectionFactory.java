@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.http2.server;
 
-import java.util.Base64;
 import java.util.HashMap;
 import java.util.Map;
 
@@ -40,6 +39,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.NegotiatingServerConnection.CipherDiscriminator;
+import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.annotation.Name;
@@ -70,10 +70,31 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     public boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher)
     {
         // Implement 9.2.2
-        if (HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher))
-            return false;
+        return !HTTP2Cipher.isBlackListProtocol(tlsProtocol) || !HTTP2Cipher.isBlackListCipher(tlsCipher);
+    }
 
-        return true;
+    @Override
+    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
+    {
+        Connection connection = super.newConnection(connector,endPoint,attachment);
+
+        if (attachment instanceof MetaData.Request)
+        {
+            MetaData.Request request = (MetaData.Request) attachment;
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} upgraded {}",this,request.toString()+request.getFields());
+
+            // TODO work out why _ needs replacing?
+            byte[] settings = B64Code.decode(request.getFields().getField(HttpHeader.HTTP2_SETTINGS).getValue().replace('_', '='));
+            if (LOG.isDebugEnabled())
+                LOG.debug("{} settings {}",this, TypeUtil.toHexString(settings));
+
+            // TODO process the settings frame
+
+            // TODO use the metadata to push a response
+        }
+
+        return connection;
     }
 
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
@@ -149,30 +170,4 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             session.close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.Adapter.INSTANCE);
         }
     }
-
-    @Override
-    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
-    {
-        Connection connection = super.newConnection(connector,endPoint,attachment);
-        
-        if (attachment instanceof MetaData.Request)
-        {
-            MetaData.Request request = (MetaData.Request) attachment;
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} upgraded {}",this,request.toString()+request.getFields());
-            
-            // TODO work out why _ needs replacing?
-            byte[] settings = Base64.getDecoder().decode(request.getFields().getField(HttpHeader.HTTP2_SETTINGS).getValue().replace('_','='));
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} settings {}",this,TypeUtil.toHexString(settings));
-            
-            // TODO process the settings frame
-            
-            // TODO use the metadata to push a response
-        }
-        
-        return connection;
-    }
-    
-    
 }
