@@ -11,17 +11,19 @@
        the RMI registry hostname and port number, that may need to be modified
        in order to comply with the firewall requirements.
   -->
-  <New id="ConnectorServer" class="org.eclipse.jetty.jmx.ConnectorServer">
+  <Call name="addBean">
     <Arg>
-      <New class="javax.management.remote.JMXServiceURL">
-        <Arg type="java.lang.String">rmi</Arg>
-        <Arg type="java.lang.String" />
-        <Arg type="java.lang.Integer"><SystemProperty name="jetty.jmxrmiport" default="1099"/></Arg>
-        <Arg type="java.lang.String">/jndi/rmi://<SystemProperty name="jetty.jmxrmihost" default="localhost"/>:<SystemProperty name="jetty.jmxrmiport" default="1099"/>/jmxrmi</Arg>
+      <New id="ConnectorServer" class="org.eclipse.jetty.jmx.ConnectorServer">
+	<Arg>
+	  <New class="javax.management.remote.JMXServiceURL">
+	    <Arg type="java.lang.String">rmi</Arg>
+	    <Arg type="java.lang.String" />
+	    <Arg type="java.lang.Integer"><Property name="jetty.jmxrmiport" default="1099"/></Arg>
+	    <Arg type="java.lang.String">/jndi/rmi://<Property name="jetty.jmxrmihost" default="localhost"/>:<Property name="jetty.jmxrmiport" default="1099"/>/jmxrmi</Arg>
+	  </New>
+	</Arg>
+	<Arg>org.eclipse.jetty.jmx:name=rmiconnectorserver</Arg>
       </New>
     </Arg>
-    <Arg>org.eclipse.jetty.jmx:name=rmiconnectorserver</Arg>
-    <Call name="start" />
-  </New>
+  </Call>
 </Configure>
-
