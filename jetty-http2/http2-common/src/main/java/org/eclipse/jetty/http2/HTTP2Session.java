@@ -217,6 +217,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void onSettings(SettingsFrame frame)
     {
+        // SPEC: SETTINGS frame MUST be replied.
+        onSettings(frame, true);
+    }
+
+    public void onSettings(SettingsFrame frame, boolean reply)
+    {
         if (frame.isReply())
             return;
 
@@ -287,9 +293,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         notifySettings(this, frame);
 
-        // SPEC: SETTINGS frame MUST be replied.
-        SettingsFrame reply = new SettingsFrame(Collections.<Integer, Integer>emptyMap(), true);
-        settings(reply, Callback.Adapter.INSTANCE);
+        if (reply)
+        {
+            SettingsFrame replyFrame = new SettingsFrame(Collections.<Integer, Integer>emptyMap(), true);
+            settings(replyFrame, Callback.Adapter.INSTANCE);
+        }
     }
 
     @Override

@@ -828,30 +828,14 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(String s)
     {
-        return ByteBuffer.wrap(s.getBytes(StandardCharsets.ISO_8859_1));
-    }
-
-    public static ByteBuffer toDirectBuffer(String s)
-    {
-        byte[] bytes = s.getBytes(StandardCharsets.ISO_8859_1);
-        ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
-        buf.put(bytes);
-        buf.flip();
-        return buf;
+        return toBuffer(s, StandardCharsets.ISO_8859_1);
     }
 
     public static ByteBuffer toBuffer(String s, Charset charset)
     {
-        return ByteBuffer.wrap(s.getBytes(charset));
-    }
-
-    public static ByteBuffer toDirectBuffer(String s, Charset charset)
-    {
-        byte[] bytes = s.getBytes(charset);
-        ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
-        buf.put(bytes);
-        buf.flip();
-        return buf;
+        if (s == null)
+            return EMPTY_BUFFER;
+        return toBuffer(s.getBytes(charset));
     }
 
     /**
@@ -861,9 +845,11 @@ public class BufferUtil
      *            the byte array to back buffer with.
      * @return ByteBuffer with provided byte array, in flush mode
      */
-    public static ByteBuffer toBuffer(byte array[])
+    public static ByteBuffer toBuffer(byte[] array)
     {
-        return ByteBuffer.wrap(array);
+        if (array == null)
+            return EMPTY_BUFFER;
+        return toBuffer(array, 0, array.length);
     }
 
     /**
@@ -879,7 +865,25 @@ public class BufferUtil
      */
     public static ByteBuffer toBuffer(byte array[], int offset, int length)
     {
+        if (array == null)
+            return EMPTY_BUFFER;
         return ByteBuffer.wrap(array, offset, length);
+    }
+
+    public static ByteBuffer toDirectBuffer(String s)
+    {
+        return toDirectBuffer(s, StandardCharsets.ISO_8859_1);
+    }
+
+    public static ByteBuffer toDirectBuffer(String s, Charset charset)
+    {
+        if (s == null)
+            return EMPTY_BUFFER;
+        byte[] bytes = s.getBytes(charset);
+        ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
+        buf.put(bytes);
+        buf.flip();
+        return buf;
     }
 
     public static ByteBuffer toMappedBuffer(File file) throws IOException

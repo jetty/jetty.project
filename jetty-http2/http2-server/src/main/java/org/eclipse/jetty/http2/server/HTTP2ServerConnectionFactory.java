@@ -24,8 +24,8 @@ import java.util.Map;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.HTTP2Cipher;
+import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -86,39 +86,21 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             MetaData.Request request = (MetaData.Request) attachment;
             if (LOG.isDebugEnabled())
                 LOG.debug("{} upgraded {}",this,request.toString()+request.getFields());
-            
-            final byte[] settings = B64Code.decodeRFC4648URL(request.getFields().getField(HttpHeader.HTTP2_SETTINGS).getValue());
+
+            String value = request.getFields().getField(HttpHeader.HTTP2_SETTINGS).getValue();
+            final byte[] settings = B64Code.decodeRFC4648URL(value);
                     
             if (LOG.isDebugEnabled())
                 LOG.debug("{} settings {}",this,TypeUtil.toHexString(settings));
-            
-            SettingsBodyParser parser = new SettingsBodyParser(null,null)
-            {
-                @Override
-                protected int getStreamId()
-                {
-                    return 0;
-                }
-                
-                @Override
-                protected int getBodyLength()
-                {
-                    return settings.length;
-                }
 
-                @Override
-                protected boolean onSettings(Map<Integer, Integer> settings)
-                {
-                    SettingsFrame frame = new SettingsFrame(settings, false);
-                    // TODO something with this frame?
-                    
-                    reset();
-                    return true;
-                }
-                
-            };
-            parser.parse(BufferUtil.toBuffer(settings));
-            
+            SettingsFrame frame = SettingsBodyParser.parseBody(BufferUtil.toBuffer(settings));
+            if (frame == null)
+                throw new IllegalArgumentException(String.format("Invalid %s header value: %s", HttpHeader.HTTP2_SETTINGS, value));
+
+            HTTP2Session session = (HTTP2Session)connection.getSession();
+            // SPEC: the required reply to this SETTINGS frame is the 101 response.
+            session.onSettings(frame, false);
+
             // TODO use the metadata to push a response
         }
         

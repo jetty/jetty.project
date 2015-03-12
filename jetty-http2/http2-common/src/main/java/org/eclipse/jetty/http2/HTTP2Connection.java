@@ -56,7 +56,7 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
         this.executionStrategy = ExecutionStrategy.Factory.instanceFor(producer, executor);
     }
 
-    protected ISession getSession()
+    public ISession getSession()
     {
         return session;
     }
