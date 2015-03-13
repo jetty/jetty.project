@@ -202,7 +202,12 @@ public class HttpFields implements Iterable<HttpField>
         }
         return false;
     }
-    
+
+    @Deprecated
+    public String getStringField(HttpHeader header)
+    {
+        return get(header);
+    }
     
     public String get(HttpHeader header)
     {
@@ -215,6 +220,12 @@ public class HttpFields implements Iterable<HttpField>
         return null;
     }
 
+    @Deprecated
+    public String getStringField(String name)
+    {
+        return get(name);
+    }
+    
     public String get(String header)
     {
         for (int i=0;i<_size;i++)
@@ -225,7 +236,7 @@ public class HttpFields implements Iterable<HttpField>
         }
         return null;
     }
-
+    
     /**
      * Get multi headers
      *
