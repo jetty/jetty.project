@@ -721,7 +721,7 @@ public class Main
             {
                 for (Module module : args.getAllModules().resolveEnabled())
                 {
-                    if (!module.acknowledgeLicense())
+                    if (!module.hasFiles(baseHome) && !module.acknowledgeLicense())
                     {
                         StartLog.warn(EXITING_LICENSE_NOT_ACKNOWLEDGED);
                         System.exit(1);

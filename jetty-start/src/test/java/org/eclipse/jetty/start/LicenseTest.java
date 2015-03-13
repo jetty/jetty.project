@@ -58,6 +58,7 @@ public class LicenseTest
         int len = cmds.size();
         String args[] = cmds.toArray(new String[len]);
 
+        System.err.printf("%n## Exec: %s%n", Main.join(cmds,", "));
         Main main = new Main();
         StartArgs startArgs = main.processCommandLine(args);
         main.start(startArgs);
@@ -112,6 +113,32 @@ public class LicenseTest
         execMain(cmds);
         
         String contents = assertFileExists(basePath, "start.ini");
+        assertThat("Contents",contents,containsString("--module=spdy"+System.lineSeparator()));
+    }
+    
+    @Test
+    public void testAdd_HttpSpdy_Then_Deploy() throws Exception
+    {
+        File basePath = testdir.getEmptyDir();
+
+        List<String> cmds = getBaseCommandLine(basePath);
+
+        cmds.add("-Dorg.eclipse.jetty.start.ack.license.protonego-impl=true");
+        cmds.add("--add-to-start=http,spdy");
+
+        execMain(cmds);
+        
+        String contents = assertFileExists(basePath, "start.ini");
+        assertThat("Contents",contents,containsString("--module=http"+System.lineSeparator()));
+        assertThat("Contents",contents,containsString("--module=spdy"+System.lineSeparator()));
+        
+        // now request deploy (no license check should occur)
+        List<String> cmds2 = getBaseCommandLine(basePath);
+        cmds2.add("--add-to-start=deploy");
+        execMain(cmds2);
+
+        contents = assertFileExists(basePath, "start.ini");
+        assertThat("Contents",contents,containsString("--module=deploy"+System.lineSeparator()));
         assertThat("Contents",contents,containsString("--module=spdy"+System.lineSeparator()));
     }
     
