@@ -22,6 +22,7 @@ package org.eclipse.jetty.server;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -45,16 +46,17 @@ import org.eclipse.jetty.util.log.Logger;
 class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandler
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
+    private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE,"h2c");
     
     private final HttpFields _fields = new HttpFields();
     private final MetaData.Request _metadata = new MetaData.Request(_fields);
     private final HttpConnection _httpConnection;
     private HttpField _connection;
+    private HttpField _upgrade = null;
     private boolean _delayedForContent;
     private boolean _unknownExpectation = false;
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
-    private HttpField _http2Upgrade = null;
 
     
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
@@ -80,7 +82,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         _metadata.recycle();
         _connection=null;
         _fields.clear();
-        _http2Upgrade=null;
+        _upgrade=null;
     }
 
     @Override
@@ -171,8 +173,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                 }
 
                 case UPGRADE:
-                    if (value.startsWith("h2c"))
-                        _http2Upgrade=field;
+                    _upgrade=field;
                     break;
 
                 default:
@@ -302,7 +303,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                 if (!persistent)
                     getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
                 
-                if (_http2Upgrade!=null && http2Upgrade())
+                if (_upgrade!=null && upgrade())
                     return true;
                 
                 break;
@@ -310,8 +311,17 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
             
             case HTTP_2:
             {
-                // Allow sneaky "upgrade" to HTTP_2_0 only if the connector supports h2, but not protocol negotiation
-                return http2Upgrade();
+                // Allow direct "upgrade" to HTTP_2_0 only if the connector supports h2, but not protocol negotiation
+                _upgrade=PREAMBLE_UPGRADE_H2C;
+                
+                if (HttpMethod.PRI.is(_metadata.getMethod()) &&
+                    "*".equals(_metadata.getURI().toString()) &&
+                    _fields.size()==0 &&
+                    upgrade())
+                    return false;
+              
+                badMessage(HttpStatus.UPGRADE_REQUIRED_426,null);
+                return false;
             }
                 
             default:
@@ -332,83 +342,68 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         return !_delayedForContent;
     }
 
-    private boolean http2Upgrade()
+    
+    /**
+     * Attempt to upgrade using a {@link ConnectionFactory.Upgrading} from the connector.
+     * The upgrade may succeed, be ignored (which can allow a later handler to implement)
+     * or fail with a {@link BadMessageException}.
+     * @return
+     * @throws BadMessageException
+     */
+    private boolean upgrade() throws BadMessageException
     {
-        LOG.debug("h2c upgrade {}",this);
-        // Find the h2 factory
-        ConnectionFactory h2=null;
-        if (!(getConnector().getDefaultConnectionFactory() instanceof NegotiatingServerConnectionFactory))
-        {
-            loop: for (ConnectionFactory factory : getConnector().getConnectionFactories())
-                for (String protocol : factory.getProtocols())
-                    if (protocol.startsWith("h2c"))
-                    {
-                        h2=factory;
-                        break loop;
-                    }
-        }
-        Connection old_connection=getEndPoint().getConnection();
-        Connection new_connection;
+        if (LOG.isDebugEnabled())
+            LOG.debug("upgrade {} {}",this,_upgrade);
         
+        if (_upgrade!=PREAMBLE_UPGRADE_H2C && (_connection==null || !_connection.getValue().contains("Upgrade")))
+            throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
         
-        if (_http2Upgrade==null)
+        // Find the upgrade factory
+        ConnectionFactory.Upgrading factory=null;
+        loop: for (ConnectionFactory f : getConnector().getConnectionFactories())
         {
-            LOG.debug("h2c preamble upgrade {}",this);
-            // This must be a sneaky upgrade triggered by the http2 preamble!
-            // If we don't have a HTTP factory or the preamble does not look right, then bad message
-            if (h2==null ||
-                _metadata.getMethod()!=HttpMethod.PRI.asString() ||
-                !"*".equals(_metadata.getURI().toString()) ||
-                _fields.size()>0)
+            if (f instanceof ConnectionFactory.Upgrading)
             {
-                badMessage(HttpStatus.UPGRADE_REQUIRED_426,null);
-                return false;
-            }  
-            
-            getResponse().setStatus(101);  // wont be sent    
-            new_connection = h2.newConnection(getConnector(),getEndPoint(), null);          
+                if (f.getProtocols().contains(_upgrade.getValue()))
+                {
+                    factory=(ConnectionFactory.Upgrading)f;
+                    break loop;
+                }
+            }
         }
-        else
+        
+        if (factory==null)
         {
-            // This is a standard upgrade, so failures are not bad message, just a false return
-            if (h2==null)
-            {
-                LOG.debug("No h2c factory for {}",this);
-                return false;
-            }
-            
-            if (!h2.getProtocols().contains(_http2Upgrade.getValue()))
-            {
-                LOG.debug("No h2c version {} for {}",_http2Upgrade.getValue(),this);
-                return false;
-            }
-            
-            if (_connection==null || !_connection.getValue().contains("Upgrade") || !_connection.getValue().contains("HTTP2-Settings"))
-            {
-                LOG.debug("Bad h2c {} for {}",_connection,this);
-                return false;
-            }
+            if (LOG.isDebugEnabled())
+                LOG.debug("No factory for {} in {}",_upgrade,getConnector());
+            return false;
+        }
 
-            getResponse().setStatus(101); 
-            HttpFields fields = new HttpFields();
-            
-            try
-            {
-                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1,HttpStatus.SWITCHING_PROTOCOLS_101,fields,0),null,true);
-            }
-            catch(IOException e)
-            {
-                LOG.warn(e);
-                badMessage(HttpStatus.INTERNAL_SERVER_ERROR_500,null);
-                return false;
-            }
+        // Create new connection
+        HttpFields response101 = new HttpFields();
+        Connection upgrade_connection = factory.upgradeConnection(getConnector(),getEndPoint(),_metadata,response101);
+        if (upgrade_connection==null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Upgrade ignored for {} by {}",_upgrade,factory);
+            return false;
+        }
 
-            new_connection = h2.newConnection(getConnector(),getEndPoint(),_metadata);
+        // Send 101 if needed
+        try
+        {
+            if (_upgrade!=PREAMBLE_UPGRADE_H2C)
+                sendResponse(new MetaData.Response(HttpVersion.HTTP_1_1,HttpStatus.SWITCHING_PROTOCOLS_101,response101,0),null,true);
+        }
+        catch(IOException e)
+        {
+            throw new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500,null,e);
         }
         
         if (LOG.isDebugEnabled())
-            LOG.debug("Upgrade from {} to {}", old_connection,new_connection);
-        getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,new_connection);
+            LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(),upgrade_connection);
+        getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,upgrade_connection);
+        getResponse().setStatus(101);
         getHttpTransport().onCompleted();                
         return true;
     }

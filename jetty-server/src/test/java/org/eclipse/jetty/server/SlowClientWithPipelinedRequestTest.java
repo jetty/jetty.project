@@ -52,7 +52,7 @@ public class SlowClientWithPipelinedRequestTest
         connector = new ServerConnector(server,new HttpConnectionFactory()
         {
             @Override
-            public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
+            public Connection newConnection(Connector connector, EndPoint endPoint)
             {
                 return configure(new HttpConnection(new HttpConfiguration(),connector,endPoint)
                 {

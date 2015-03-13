@@ -72,7 +72,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory
     }
 
     @Override
-    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
+    public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         SSLEngine engine = _sslContextFactory.newSSLEngine(endPoint.getRemoteAddress());
         engine.setUseClientMode(false);
@@ -83,7 +83,7 @@ public class SslConnectionFactory extends AbstractConnectionFactory
 
         ConnectionFactory next = connector.getConnectionFactory(_nextProtocol);
         EndPoint decryptedEndPoint = sslConnection.getDecryptedEndPoint();
-        Connection connection = next.newConnection(connector, decryptedEndPoint, null);
+        Connection connection = next.newConnection(connector, decryptedEndPoint);
         decryptedEndPoint.setConnection(connection);
 
         return sslConnection;

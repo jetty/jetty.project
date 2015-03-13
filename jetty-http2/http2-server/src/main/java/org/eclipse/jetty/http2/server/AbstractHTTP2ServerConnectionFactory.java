@@ -88,7 +88,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     }
     
     @Override
-    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
+    public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 

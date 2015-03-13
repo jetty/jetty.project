@@ -89,7 +89,7 @@ public abstract class NegotiatingServerConnectionFactory extends AbstractConnect
     }
     
     @Override
-    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
+    public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         List<String> negotiated = this.negotiatedProtocols;
         if (negotiated.isEmpty())

@@ -123,7 +123,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <li>block waiting for new connections
  * <li>accept the connection (eg socket accept)
  * <li>perform any configuration of the connection (eg. socket linger times)
- * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, org.eclipse.jetty.io.EndPoint, Object)}
+ * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, org.eclipse.jetty.io.EndPoint)}
  * method to create a new Connection instance.
  * </nl>
  * The default number of acceptor tasks is the minimum of 1 and half the number of available CPUs. Having more acceptors may reduce

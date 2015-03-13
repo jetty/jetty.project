@@ -128,7 +128,7 @@ public abstract class NegotiatingServerConnection extends AbstractConnection
                 else
                 {
                     EndPoint endPoint = getEndPoint();
-                    Connection newConnection = connectionFactory.newConnection(connector, endPoint, null);
+                    Connection newConnection = connectionFactory.newConnection(connector, endPoint);
                     endPoint.upgrade(newConnection);
                 }
             }

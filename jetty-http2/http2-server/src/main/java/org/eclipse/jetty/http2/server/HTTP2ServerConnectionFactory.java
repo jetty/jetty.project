@@ -76,38 +76,6 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         return !HTTP2Cipher.isBlackListProtocol(tlsProtocol) || !HTTP2Cipher.isBlackListCipher(tlsCipher);
     }
 
-    @Override
-    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
-    {
-        HTTP2ServerConnection connection = (HTTP2ServerConnection)super.newConnection(connector,endPoint,attachment);
-        
-        if (attachment instanceof MetaData.Request)
-        {
-            MetaData.Request request = (MetaData.Request) attachment;
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} upgraded {}",this,request.toString()+request.getFields());
-
-            String value = request.getFields().getField(HttpHeader.HTTP2_SETTINGS).getValue();
-            final byte[] settings = B64Code.decodeRFC4648URL(value);
-                    
-            if (LOG.isDebugEnabled())
-                LOG.debug("{} settings {}",this,TypeUtil.toHexString(settings));
-
-            SettingsFrame frame = SettingsBodyParser.parseBody(BufferUtil.toBuffer(settings));
-            if (frame == null)
-                throw new IllegalArgumentException(String.format("Invalid %s header value: %s", HttpHeader.HTTP2_SETTINGS, value));
-
-            HTTP2Session session = (HTTP2Session)connection.getSession();
-            // SPEC: the required reply to this SETTINGS frame is the 101 response.
-            session.onSettings(frame, false);
-
-            // TODO use the metadata to push a response
-        }
-        
-        return connection;
-    }
-    
-
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
         private final Connector connector;

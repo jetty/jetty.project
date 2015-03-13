@@ -18,11 +18,18 @@
 
 package org.eclipse.jetty.http2.server;
 
-import org.eclipse.jetty.http2.parser.ServerParser;
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.MetaData.Request;
+import org.eclipse.jetty.io.Connection;
+import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.ConnectionFactory;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.util.annotation.Name;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
@@ -38,8 +45,10 @@ import org.eclipse.jetty.util.annotation.Name;
  * allows a single port to accept either HTTP/1 or HTTP/2 direct 
  * connections.
  */
-public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory
+public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory implements ConnectionFactory.Upgrading 
 {
+    private static final Logger LOG = Log.getLogger(HTTP2CServerConnectionFactory.class);
+
     public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
         super(httpConfiguration,"h2c","h2c-14");
@@ -52,17 +61,21 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory
         return false;
     }
     
-    protected ServerParser newServerParser(Connector connector, ServerParser.Listener listener)
+    @Override
+    public Connection upgradeConnection(Connector connector, EndPoint endPoint, Request request, HttpFields response101) throws BadMessageException
     {
-        ServerParser parser = super.newServerParser(connector,listener);
+        if (LOG.isDebugEnabled())
+            LOG.debug("{} upgraded {}",this,request.toString()+request.getFields());
+
+        if (request.getContentLength()>0)
+            return null;
         
-        if (connector.getDefaultConnectionFactory() instanceof HttpConnectionFactory)
-        {
-            // This must be a sneaky upgrade from HTTP/1
-            // So advance the parsers pointer until after the PRI * HTTP/2.0 request.
-            parser.directUpgrade();
-        }
-        
-        return parser;
+        HTTP2ServerConnection connection = (HTTP2ServerConnection)newConnection(connector,endPoint);
+
+        if (connection.upgrade(request,response101))        
+            return connection;
+        return null;
     }
+    
+    
 }

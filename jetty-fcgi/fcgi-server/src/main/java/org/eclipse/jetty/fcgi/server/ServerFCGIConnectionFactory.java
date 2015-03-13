@@ -42,7 +42,7 @@ public class ServerFCGIConnectionFactory extends AbstractConnectionFactory
     }
 
     @Override
-    public Connection newConnection(Connector connector, EndPoint endPoint, Object attachment)
+    public Connection newConnection(Connector connector, EndPoint endPoint)
     {
         return new ServerFCGIConnection(connector, endPoint, configuration, sendStatus200);
     }
