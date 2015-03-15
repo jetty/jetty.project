@@ -25,7 +25,6 @@ import java.nio.channels.ClosedChannelException;
 import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
@@ -76,11 +75,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Response _response;
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
-    
+
     /** Bytes written after interception (eg after compression) */
     private long _written;
 
-    
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
         _connector = connector;
@@ -105,8 +103,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         return new HttpOutput(this);
     }
-    
-    
+
     public HttpChannelState getState()
     {
         return _state;
@@ -164,7 +161,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         _endPoint.setIdleTimeout(timeoutMs);
     }
-    
+
     public ByteBufferPool getByteBufferPool()
     {
         return _connector.getByteBufferPool();
@@ -234,9 +231,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     public void asyncReadFillInterested()
-    {        
+    {
     }
-    
+
     @Override
     public void run()
     {
@@ -521,7 +518,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onCompleted()
     {
         if (_requestLog!=null )
-            _requestLog.log(_request,_committedMetaData==null?-1:_committedMetaData.getStatus(), _written);   
+            _requestLog.log(_request, _committedMetaData == null ? -1 : _committedMetaData.getStatus(), _written);
         _transport.onCompleted();
     }
     
@@ -689,17 +686,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         @Override
         public void failed(final Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Commit failed", x);
+
             if (x instanceof EofException || x instanceof ClosedChannelException)
             {
-                LOG.debug(x);
                 _callback.failed(x);
                 _response.getHttpOutput().closed();
             }
             else
             {
-                _committed.set(false);
-                LOG.warn("Commit failed",x);
-                sendResponse(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
+                _transport.send(HttpGenerator.RESPONSE_500_INFO, false, null, true, new Callback()
                 {
                     @Override
                     public void succeeded()
@@ -711,7 +708,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     @Override
                     public void failed(Throwable th)
                     {
-                        LOG.ignore(th);
                         _callback.failed(x);
                         _response.getHttpOutput().closed();
                     }
