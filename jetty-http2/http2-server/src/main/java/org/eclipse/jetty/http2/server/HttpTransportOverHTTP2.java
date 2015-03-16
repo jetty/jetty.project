@@ -205,9 +205,11 @@ public class HttpTransportOverHTTP2 implements HttpTransport
     @Override
     public void abort(Throwable failure)
     {
+        IStream stream = this.stream;
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 Response #{} aborted", stream.getId());
-        stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.Adapter.INSTANCE);
+            LOG.debug("HTTP2 Response #{} aborted", stream == null ? -1 : stream.getId());
+        if (stream != null)
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.Adapter.INSTANCE);
     }
 
     private class CommitCallback implements Callback
