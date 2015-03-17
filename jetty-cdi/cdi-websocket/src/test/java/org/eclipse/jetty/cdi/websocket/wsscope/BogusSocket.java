@@ -16,25 +16,21 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.cdi.websocket.scope;
+package org.eclipse.jetty.cdi.websocket.wsscope;
 
 import javax.inject.Inject;
 
-public class Meal
+import org.eclipse.jetty.cdi.websocket.annotation.WebSocketScope;
+import org.eclipse.jetty.websocket.api.Session;
+
+public class BogusSocket
 {
     @Inject
-    private Food entree;
-
-    @Inject
-    private Food side;
-
-    public Food getEntree()
+    @WebSocketScope
+    private Session session;
+    
+    public Session getSession()
     {
-        return entree;
-    }
-
-    public Food getSide()
-    {
-        return side;
+        return session;
     }
 }

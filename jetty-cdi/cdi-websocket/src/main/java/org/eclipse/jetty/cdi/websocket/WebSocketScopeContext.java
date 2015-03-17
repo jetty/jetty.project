@@ -22,7 +22,6 @@ import java.lang.annotation.Annotation;
 import java.util.List;
 import java.util.Set;
 
-import javax.enterprise.context.Dependent;
 import javax.enterprise.context.spi.Context;
 import javax.enterprise.context.spi.Contextual;
 import javax.enterprise.context.spi.CreationalContext;
@@ -33,6 +32,7 @@ import javax.inject.Inject;
 import org.eclipse.jetty.cdi.core.AnyLiteral;
 import org.eclipse.jetty.cdi.core.ScopedInstance;
 import org.eclipse.jetty.cdi.core.SimpleBeanStore;
+import org.eclipse.jetty.cdi.websocket.annotation.WebSocketScope;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -42,42 +42,40 @@ import org.eclipse.jetty.websocket.api.Session;
  * <p>
  * A CDI Context definition for how CDI will use objects defined to belong to the WebSocketScope
  */
-@Dependent
 public class WebSocketScopeContext implements Context
 {
     private static final Logger LOG = Log.getLogger(WebSocketScopeContext.class);
-    public static ThreadLocal<SimpleBeanStore> state = new ThreadLocal<>();
+
+    private static ThreadLocal<WebSocketScopeContext> current = new ThreadLocal<>();
+
+    public static WebSocketScopeContext current()
+    {
+        return current.get();
+    }
 
     private SimpleBeanStore beanStore;
 
     @Inject
     private BeanManager beanManager;
 
-    @Inject
-    private JettyWebSocketSessionProducer jettySessionProducer;
-
-    @Inject
-    private JavaWebSocketSessionProducer javaSessionProducer;
+    private ThreadLocal<org.eclipse.jetty.websocket.api.Session> session = new ThreadLocal<>();
 
     public void begin()
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("begin()");
+            LOG.debug("{} begin()",this);
         }
-        if (state.get() != null)
-        {
-            return;
-        }
-        state.set(beanStore);
+        current.set(this);
     }
 
     public void create()
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("create()");
+            LOG.debug("{} create()",this);
         }
+        current.set(this);
         beanStore = new SimpleBeanStore();
     }
 
@@ -85,7 +83,7 @@ public class WebSocketScopeContext implements Context
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("destroy()");
+            LOG.debug("{} destroy()",this);
         }
 
         beanStore.destroy();
@@ -95,13 +93,9 @@ public class WebSocketScopeContext implements Context
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("end()");
+            LOG.debug("{} end()",this);
         }
-        if (state.get() == null)
-        {
-            return;
-        }
-        state.remove();
+        beanStore.clear();
     }
 
     @SuppressWarnings({ "unchecked" })
@@ -110,15 +104,22 @@ public class WebSocketScopeContext implements Context
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("get({})",contextual);
+            LOG.debug("{} get({})",this,contextual);
         }
-        SimpleBeanStore store = state.get();
-        if (store == null)
+
+        Bean<T> bean = (Bean<T>)contextual;
+
+        if (bean.getBeanClass().isAssignableFrom(Session.class))
+        {
+            return (T)this.session;
+        }
+        
+        if (beanStore == null)
         {
             return null;
         }
 
-        List<ScopedInstance<?>> beans = store.getBeans(contextual);
+        List<ScopedInstance<?>> beans = beanStore.getBeans(contextual);
 
         if ((beans != null) && (!beans.isEmpty()))
         {
@@ -134,25 +135,28 @@ public class WebSocketScopeContext implements Context
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("get({},{})",contextual,creationalContext);
+            LOG.debug("{} get({},{})",this,contextual,creationalContext);
         }
+
         Bean<T> bean = (Bean<T>)contextual;
 
-        SimpleBeanStore store = state.get();
-        if (store == null)
+        if (bean.getBeanClass().isAssignableFrom(Session.class))
         {
-            store = new SimpleBeanStore();
-            state.set(store);
+            return (T)this.session;
         }
 
-        List<ScopedInstance<?>> beans = store.getBeans(contextual);
+        if (beanStore == null)
+        {
+            beanStore = new SimpleBeanStore();
+        }
+
+        List<ScopedInstance<?>> beans = beanStore.getBeans(contextual);
 
         if ((beans != null) && (!beans.isEmpty()))
         {
             for (ScopedInstance<?> instance : beans)
             {
-                // TODO: need to work out the creational context comparison logic better
-                if (instance.creationalContext.equals(creationalContext))
+                if (instance.bean.equals(bean))
                 {
                     return (T)instance.instance;
                 }
@@ -165,7 +169,7 @@ public class WebSocketScopeContext implements Context
         customInstance.bean = bean;
         customInstance.creationalContext = creationalContext;
         customInstance.instance = t;
-        store.addBean(customInstance);
+        beanStore.addBean(customInstance);
         return t;
     }
 
@@ -199,13 +203,28 @@ public class WebSocketScopeContext implements Context
         return (T)beanManager.getReference(bean,clazz,cc);
     }
 
-    public void setSession(Session sess)
+    public void setSession(org.eclipse.jetty.websocket.api.Session sess)
     {
-        LOG.debug("setSession({})",sess);
-        jettySessionProducer.setSession(sess);
-        if (sess instanceof javax.websocket.Session)
+        if (LOG.isDebugEnabled())
         {
-            javaSessionProducer.setSession((javax.websocket.Session)sess);
+            LOG.debug("{} setSession({})",this,sess);
         }
+        current.set(this);
+        this.session.set(sess);
+    }
+
+    public org.eclipse.jetty.websocket.api.Session getSession()
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("{} getSession()",this);
+        }
+        return this.session.get();
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%X[%s]",this.getClass().getSimpleName(),hashCode(),beanStore);
     }
 }

@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.cdi.websocket.scope;
+package org.eclipse.jetty.cdi.websocket.wsscope;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
@@ -44,6 +44,12 @@ public class BogusSession implements Session
     public BogusSession(String id)
     {
         this.id = id;
+    }
+    
+    @Override
+    public String toString()
+    {
+        return String.format("BogusSession[id=%s]",id);
     }
 
     public String getId()

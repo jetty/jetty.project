@@ -16,12 +16,12 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.cdi.websocket.scope;
+package org.eclipse.jetty.cdi.websocket.wsscope;
 
 import javax.annotation.PostConstruct;
 import javax.annotation.PreDestroy;
 
-import org.eclipse.jetty.cdi.websocket.WebSocketScope;
+import org.eclipse.jetty.cdi.websocket.annotation.WebSocketScope;
 
 @WebSocketScope
 public class Food
@@ -29,6 +29,16 @@ public class Food
     private boolean constructed = false;
     private boolean destroyed = false;
     private String name;
+
+    public Food()
+    {
+        // default constructor (for CDI use)
+    }
+
+    public Food(String name)
+    {
+        this.name = name;
+    }
 
     @PreDestroy
     void destroy()
@@ -99,5 +109,11 @@ public class Food
     public void setName(String name)
     {
         this.name = name;
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%X[%s]",Food.class.getSimpleName(),hashCode(),name);
     }
 }

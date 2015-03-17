@@ -47,12 +47,14 @@ public class JettyWeldInitializer
         webapp.addSystemClass("org.jboss.classfilewriter.");
         webapp.addSystemClass("org.jboss.logging.");
         webapp.addSystemClass("com.google.common.");
+        webapp.addSystemClass("org.eclipse.jetty.cdi.websocket.annotation.");
 
         // don't hide weld classes from webapps (allow webapp to use ones from system classloader)
         webapp.addServerClass("-org.jboss.weld.");
         webapp.addServerClass("-org.jboss.classfilewriter.");
         webapp.addServerClass("-org.jboss.logging.");
         webapp.addServerClass("-com.google.common.");
+        webapp.addServerClass("-org.eclipse.jetty.cdi.websocket.annotation.");
     }
 
     public static void initContext(ContextHandler handler) throws NamingException

@@ -18,16 +18,19 @@
 
 package org.eclipse.jetty.cdi.websocket;
 
+import javax.enterprise.context.Destroyed;
+import javax.enterprise.context.Initialized;
 import javax.enterprise.event.Observes;
 import javax.enterprise.inject.spi.AfterBeanDiscovery;
 import javax.enterprise.inject.spi.BeforeBeanDiscovery;
 import javax.enterprise.inject.spi.Extension;
 
+import org.eclipse.jetty.cdi.websocket.annotation.WebSocketScope;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * Register the various WebSocket specific components for CDI  
+ * Register the various WebSocket specific components for CDI
  */
 public class WebSocketScopeExtension implements Extension
 {
@@ -51,5 +54,21 @@ public class WebSocketScopeExtension implements Extension
         }
         // Register our context
         event.addContext(new WebSocketScopeContext());
+    }
+
+    public void logWsScopeInit(@Observes @Initialized(WebSocketScope.class) org.eclipse.jetty.websocket.api.Session sess)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Initialized @WebSocketScope - {}",sess);
+        }
+    }
+
+    public void logWsScopeDestroyed(@Observes @Destroyed(WebSocketScope.class) org.eclipse.jetty.websocket.api.Session sess)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Destroyed @WebSocketScope - {}",sess);
+        }
     }
 }

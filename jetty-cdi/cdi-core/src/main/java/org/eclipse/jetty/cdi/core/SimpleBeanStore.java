@@ -34,17 +34,12 @@ public class SimpleBeanStore
 
     public Map<Contextual<?>, List<ScopedInstance<?>>> beans = new HashMap<>();
 
-    public List<ScopedInstance<?>> getBeans(Contextual<?> contextual)
-    {
-        if (LOG.isDebugEnabled())
-            LOG.debug("getBeans({})",contextual);
-        return beans.get(contextual);
-    }
-
     public void addBean(ScopedInstance<?> instance)
     {
         if (LOG.isDebugEnabled())
+        {
             LOG.debug("addBean({})",instance);
+        }
         List<ScopedInstance<?>> instances = getBeans(instance.bean);
         if (instances == null)
         {
@@ -54,20 +49,46 @@ public class SimpleBeanStore
         instances.add(instance);
     }
 
+    public void clear()
+    {
+        beans.clear();
+    }
+
     public void destroy()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("destroy() - {} beans", beans.size());
+        {
+            LOG.debug("destroy() - {} beans",beans.size());
+        }
         for (List<ScopedInstance<?>> instances : beans.values())
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("destroying - {} instance(s)", instances.size());
+            {
+                LOG.debug("destroying - {} instance(s)",instances.size());
+            }
             for (ScopedInstance<?> instance : instances)
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("destroying {}",instance);
+                {
+                    LOG.debug("destroying instance {}",instance);
+                }
                 instance.destroy();
             }
         }
+    }
+
+    public List<ScopedInstance<?>> getBeans(Contextual<?> contextual)
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("getBeans({})",contextual);
+        }
+        return beans.get(contextual);
+    }
+
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%X[size=%d]",this.getClass().getSimpleName(),hashCode(),beans.size());
     }
 }

@@ -21,6 +21,7 @@ package org.eclipse.jetty.cdi.websocket;
 import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.InjectionPoint;
 
+import org.eclipse.jetty.cdi.websocket.annotation.WebSocketScope;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.Session;
@@ -31,24 +32,24 @@ import org.eclipse.jetty.websocket.api.Session;
 public class JettyWebSocketSessionProducer
 {
     private static final Logger LOG = Log.getLogger(JettyWebSocketSessionProducer.class);
-    private ThreadLocal<Session> sessionInstance;
-
-    public JettyWebSocketSessionProducer()
-    {
-        LOG.debug("ctor<>");
-        sessionInstance = new ThreadLocal<Session>();
-    }
-
-    public void setSession(Session sess)
-    {
-        LOG.debug("setSession()");
-        sessionInstance.set(sess);
-    }
 
     @Produces
     public Session getSession(InjectionPoint injectionPoint)
     {
-        LOG.debug("getSession(" + injectionPoint + ")");
-        return this.sessionInstance.get();
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("getSession({})",injectionPoint);
+        }
+        WebSocketScopeContext ctx = WebSocketScopeContext.current();
+        if (ctx == null)
+        {
+            throw new IllegalStateException("Not in a " + WebSocketScope.class.getName());
+        }
+        org.eclipse.jetty.websocket.api.Session sess = ctx.getSession();
+        if (sess == null)
+        {
+            throw new IllegalStateException("No Session Available");
+        }
+        return sess;
     }
 }

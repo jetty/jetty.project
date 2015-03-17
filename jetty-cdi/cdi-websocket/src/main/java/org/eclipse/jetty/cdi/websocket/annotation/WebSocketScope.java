@@ -16,7 +16,7 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.cdi.websocket;
+package org.eclipse.jetty.cdi.websocket.annotation;
 
 import java.lang.annotation.Documented;
 import java.lang.annotation.ElementType;
