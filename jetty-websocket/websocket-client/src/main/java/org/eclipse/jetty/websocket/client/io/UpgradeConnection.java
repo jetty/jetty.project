@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.client.io;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
@@ -128,6 +129,12 @@ public class UpgradeConnection extends AbstractConnection
         }
     }
 
+    private void failUpgrade(Throwable cause)
+    {
+        close();
+        connectPromise.failed(cause);
+    }
+
     private void notifyConnect(ClientUpgradeResponse response)
     {
         connectPromise.setResponse(response);
@@ -142,6 +149,10 @@ public class UpgradeConnection extends AbstractConnection
     @Override
     public void onFillable()
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("onFillable");
+        }
         ByteBuffer buffer = bufferPool.acquire(getInputBufferSize(),false);
         BufferUtil.clear(buffer);
         boolean readMore = false;
@@ -164,8 +175,30 @@ public class UpgradeConnection extends AbstractConnection
     public void onOpen()
     {
         super.onOpen();
-        // TODO: handle timeout?
         getExecutor().execute(new SendUpgradeRequest());
+    }
+    
+    @Override
+    public void onClose()
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.warn("Closed connection {}",this);
+        }
+        super.onClose();
+    }
+    
+    @Override
+    protected boolean onReadTimeout()
+    {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.warn("Timeout on connection {}",this);
+        }
+        
+        failUpgrade(new IOException("Timeout while performing WebSocket Upgrade"));
+        
+        return super.onReadTimeout();
     }
 
     /**
@@ -189,7 +222,8 @@ public class UpgradeConnection extends AbstractConnection
                 }
                 else if (filled < 0)
                 {
-                    LOG.debug("read - EOF Reached");
+                    LOG.warn("read - EOF Reached");
+                    failUpgrade(new EOFException("Reading WebSocket Upgrade response"));
                     return false;
                 }
                 else
