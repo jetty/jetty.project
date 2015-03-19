@@ -36,8 +36,9 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.SpinLock;
+import org.eclipse.jetty.util.thread.Sweeper;
 
-public class ConnectionPool implements Closeable, Dumpable
+public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
 {
     protected static final Logger LOG = Log.getLogger(ConnectionPool.class);
 
@@ -291,6 +292,36 @@ public class ConnectionPool implements Closeable, Dumpable
         }
         ContainerLifeCycle.dumpObject(out, this);
         ContainerLifeCycle.dump(out, indent, actives, idles);
+    }
+
+    @Override
+    public boolean sweep()
+    {
+        List<Sweeper.Sweepable> toSweep = new ArrayList<>();
+        try (SpinLock.Lock lock = this.lock.lock())
+        {
+            for (Connection connection : getActiveConnections())
+            {
+                if (connection instanceof Sweeper.Sweepable)
+                    toSweep.add(((Sweeper.Sweepable)connection));
+            }
+        }
+
+        for (Sweeper.Sweepable candidate : toSweep)
+        {
+            if (candidate.sweep())
+            {
+                boolean removed = getActiveConnections().remove(candidate);
+                LOG.warn("Connection swept: {}{}{} from active connections{}{}",
+                        candidate,
+                        System.lineSeparator(),
+                        removed ? "Removed" : "Not removed",
+                        System.lineSeparator(),
+                        dump());
+            }
+        }
+
+        return false;
     }
 
     @Override
