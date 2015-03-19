@@ -671,10 +671,16 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 boolean connected = finishConnect(channel);
                 if (connected)
                 {
-                    connect.timeout.cancel();
-                    key.interestOps(0);
-                    EndPoint endpoint = createEndPoint(channel, key);
-                    key.attach(endpoint);
+                    if (connect.timeout.cancel())
+                    {
+                        key.interestOps(0);
+                        EndPoint endpoint = createEndPoint(channel, key);
+                        key.attach(endpoint);
+                    }
+                    else
+                    {
+                        throw new SocketTimeoutException("Concurrent Connect Timeout");
+                    }
                 }
                 else
                 {
@@ -952,7 +958,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
                 {
                     if (LOG.isDebugEnabled())
                         LOG.debug("Channel {} timed out while connecting, closing it", channel);
-                    connect.failed(new SocketTimeoutException());
+                    connect.failed(new SocketTimeoutException("Connect Timeout"));
                 }
             }
         }
