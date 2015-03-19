@@ -542,7 +542,7 @@
       <dependency>
         <groupId>org.mortbay.jasper</groupId>
         <artifactId>apache-jsp</artifactId>
-        <version>8.0.9.M3</version>
+        <version>8.0.20.M0</version>
       </dependency>
 
       <dependency>
