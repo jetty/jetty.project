@@ -26,6 +26,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
+import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.MetaData.Request;
 import org.eclipse.jetty.http2.HTTP2Connection;
@@ -53,6 +54,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final Queue<HttpChannelOverHTTP2> channels = new ConcurrentArrayQueue<>();
     private final ServerSessionListener listener;
     private final HttpConfiguration httpConfig;
+    private MetaData.Request upgrade;
 
     public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, Parser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
@@ -74,6 +76,17 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     {
         super.onOpen();
         notifyAccept(getSession());
+
+        if (upgrade!=null)
+        {
+            MetaData.Request request=upgrade;
+            upgrade=null;
+            
+            // TODO get rid of the downcasts below
+            IStream stream = ((HTTP2Session)getSession()).createUpgradeStream();            
+            Connector connector = ((HTTP2ServerConnectionFactory.HTTPServerSessionListener)listener).getConnector();
+            push(connector,stream,request);
+        }
     }
 
     private void notifyAccept(ISession session)
@@ -127,7 +140,6 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         return channel;
     }
 
-
     public boolean upgrade(Request request, HttpFields response101)
     {
         if (HttpMethod.PRI.is(request.getMethod()))
@@ -153,11 +165,8 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             // SPEC: the required reply to this SETTINGS frame is the 101 response.
             session.onSettings(frame, false);
             
-            
-            // TODO use the metadata a response
-            // Create stream 1
-            // half close it
-            // arrange for the request meta data to be handled AFTER the subsequesnt #onOpen call
+            // TODO why is the metadata recycled???? it should me immutable!!! Oh well guess we have to create a new copy
+            upgrade=new MetaData.Request(request);
         }
         
         return true;

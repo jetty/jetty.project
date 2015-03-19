@@ -76,7 +76,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         return !HTTP2Cipher.isBlackListProtocol(tlsProtocol) || !HTTP2Cipher.isBlackListCipher(tlsCipher);
     }
 
-    private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
+    public class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
     {
         private final Connector connector;
         private final EndPoint endPoint;
@@ -87,6 +87,11 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             this.endPoint = endPoint;
         }
 
+        public Connector getConnector()
+        {
+            return connector;
+        }
+        
         @Override
         public Map<Integer, Integer> onPreface(Session session)
         {

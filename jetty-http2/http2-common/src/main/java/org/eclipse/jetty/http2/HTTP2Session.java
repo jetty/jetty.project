@@ -453,6 +453,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             flusher.iterate();
     }
 
+
     @Override
     public void settings(SettingsFrame frame, Callback callback)
     {
@@ -642,6 +643,20 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             close(ErrorCode.PROTOCOL_ERROR.code, "duplicate_stream", Callback.Adapter.INSTANCE);
             return null;
         }
+    }
+    
+    public IStream createUpgradeStream()
+    {
+        // SPEC: upgrade stream is id=1 and can't exceed maximum
+        remoteStreamCount.incrementAndGet();
+        IStream stream = newStream(1);
+        streams.put(1,stream);
+        updateLastStreamId(1);
+        stream.setIdleTimeout(getStreamIdleTimeout());
+        flowControl.onStreamCreated(stream, false);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created upgrade {}", stream);
+        return stream;
     }
 
     protected IStream newStream(int streamId)
