@@ -589,7 +589,7 @@ public class JettyRunMojo extends AbstractJettyMojo
         for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact artifact = (Artifact) iter.next();            
-            if (artifact.getType().equals("war"))
+            if (artifact.getType().equals("war") || artifact.getType().equals("zip"))
             {
                 try
                 {                  
