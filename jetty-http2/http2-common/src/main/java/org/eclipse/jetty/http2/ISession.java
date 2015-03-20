@@ -53,11 +53,11 @@ public interface ISession extends Session
      * @param frame    the first frame to enqueue
      * @param frames   additional frames to enqueue
      */
-    public void control(IStream stream, Callback callback, Frame frame, Frame... frames);
+    public void frames(IStream stream, Callback callback, Frame frame, Frame... frames);
 
     /**
      * <p>Enqueues the given PUSH_PROMISE frame to be written to the connection.</p>
-     * <p>Differently from {@link #control(IStream, Callback, Frame, Frame...)}, this method
+     * <p>Differently from {@link #frames(IStream, Callback, Frame, Frame...)}, this method
      * generates atomically the stream id for the pushed stream.</p>
      *
      * @param stream   the stream associated to the pushed stream

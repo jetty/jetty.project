@@ -62,7 +62,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             settings = Collections.emptyMap();
         SettingsFrame frame = new SettingsFrame(settings, false);
         // TODO: consider sending a WINDOW_UPDATE to enlarge the session send window of the client.
-        control(null, Callback.Adapter.INSTANCE, frame, Frame.EMPTY_ARRAY);
+        frames(null, Callback.Adapter.INSTANCE, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override

@@ -537,11 +537,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
     private void control(IStream stream, Callback callback, Frame frame)
     {
-        control(stream, callback, frame, Frame.EMPTY_ARRAY);
+        frames(stream, callback, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
-    public void control(IStream stream, Callback callback, Frame frame, Frame... frames)
+    public void frames(IStream stream, Callback callback, Frame frame, Frame... frames)
     {
         // We want to generate as late as possible to allow re-prioritization;
         // generation will happen while processing the entries.

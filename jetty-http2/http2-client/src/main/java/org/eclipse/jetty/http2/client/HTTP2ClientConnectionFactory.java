@@ -114,11 +114,11 @@ public class HTTP2ClientConnectionFactory implements ClientConnectionFactory
             if (windowDelta > 0)
             {
                 session.updateRecvWindow(windowDelta);
-                session.control(null, this, prefaceFrame, settingsFrame, new WindowUpdateFrame(0, windowDelta));
+                session.frames(null, this, prefaceFrame, settingsFrame, new WindowUpdateFrame(0, windowDelta));
             }
             else
             {
-                session.control(null, this, prefaceFrame, settingsFrame);
+                session.frames(null, this, prefaceFrame, settingsFrame);
             }
         }
 
