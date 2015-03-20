@@ -843,6 +843,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
     }
 
+    @Override
+    public void onFrame(Frame frame)
+    {
+        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "upgrade");
+    }
+
     public void disconnect()
     {
         if (LOG.isDebugEnabled())

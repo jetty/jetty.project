@@ -93,7 +93,7 @@ public interface ISession extends Session
     public int updateRecvWindow(int delta);
 
     /**
-     * <p>Callback method invoked when the a WINDOW_UPDATE frame has been received.</p>
+     * <p>Callback method invoked when a WINDOW_UPDATE frame has been received.</p>
      *
      * @param stream the stream the window update belongs to, or null if the window update belongs to the session
      * @param frame  the WINDOW_UPDATE frame received
@@ -120,4 +120,12 @@ public interface ISession extends Session
      * @see #close(int, String, Callback)
      */
     public void onIdleTimeout();
+
+    /**
+     * <p>Callback method invoked during an HTTP/1.1 to HTTP/2 upgrade requests
+     * to process the given synthetic frame.</p>
+     *
+     * @param frame the synthetic frame to process
+     */
+    public void onFrame(Frame frame);
 }

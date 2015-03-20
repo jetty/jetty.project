@@ -125,6 +125,8 @@ public class HTTP2Connection extends AbstractConnection
         tasks.offer(task);
         if (dispatch)
             executionStrategy.dispatch();
+        else
+            executionStrategy.execute();
     }
 
     protected class HTTP2Producer implements ExecutionStrategy.Producer
