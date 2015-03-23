@@ -21,6 +21,7 @@ package org.eclipse.jetty.client.http;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
+import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
@@ -33,13 +34,15 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Sweeper;
 
-public class HttpConnectionOverHTTP extends AbstractConnection implements Connection
+public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
     private final AtomicBoolean closed = new AtomicBoolean();
     private final Promise<Connection> promise;
+    private final AtomicInteger sweeps = new AtomicInteger();
     private final Delegate delegate;
     private final HttpChannelOverHTTP channel;
     private long idleTimeout;
@@ -159,13 +162,26 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     }
 
     @Override
+    public boolean sweep()
+    {
+        if (!closed.get())
+            return false;
+
+        if (sweeps.incrementAndGet() < 4)
+            return false;
+
+        return true;
+    }
+
+    @Override
     public String toString()
     {
-        return String.format("%s@%h(l:%s <-> r:%s)[%s]",
+        return String.format("%s@%h(l:%s <-> r:%s,closed=%b)[%s]",
                 getClass().getSimpleName(),
                 this,
                 getEndPoint().getLocalAddress(),
                 getEndPoint().getRemoteAddress(),
+                closed.get(),
                 channel);
     }
 

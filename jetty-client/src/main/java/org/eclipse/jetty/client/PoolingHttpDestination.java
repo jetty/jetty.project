@@ -25,6 +25,7 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.thread.Sweeper;
 
 public abstract class PoolingHttpDestination<C extends Connection> extends HttpDestination implements Callback
 {
@@ -34,6 +35,9 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     {
         super(client, origin);
         this.connectionPool = newConnectionPool(client);
+        Sweeper sweeper = client.getBean(Sweeper.class);
+        if (sweeper != null)
+            sweeper.offer(connectionPool);
     }
 
     protected ConnectionPool newConnectionPool(HttpClient client)

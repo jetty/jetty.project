@@ -343,17 +343,23 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                 LOG.debug("Connected {} {}", connected, channel);
             if (connected)
             {
-                connect.timeout.cancel();
-                key.interestOps(0);
-                return new CreateEndPoint(channel, key)
+                if (connect.timeout.cancel())
                 {
-                    @Override
-                    protected void failed(Throwable failure)
+                    key.interestOps(0);
+                    return new CreateEndPoint(channel, key)
                     {
-                        super.failed(failure);
-                        connect.failed(failure);
-                    }
-                };
+                        @Override
+                        protected void failed(Throwable failure)
+                        {
+                            super.failed(failure);
+                            connect.failed(failure);
+                        }
+                    };
+                }
+                else
+                {
+                    throw new SocketTimeoutException("Concurrent Connect Timeout");
+                }
             }
             else
             {
@@ -648,7 +654,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             {
                 if (LOG.isDebugEnabled())
                     LOG.debug("Channel {} timed out while connecting, closing it", channel);
-                connect.failed(new SocketTimeoutException());
+                connect.failed(new SocketTimeoutException("Connect Timeout"));
             }
         }
     }

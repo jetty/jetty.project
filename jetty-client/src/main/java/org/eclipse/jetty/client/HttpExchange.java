@@ -36,11 +36,16 @@ public class HttpExchange
     private final HttpRequest request;
     private final List<Response.ResponseListener> listeners;
     private final HttpResponse response;
-    
-    enum State { PENDING, COMPLETED, TERMINATED } ;
+
+    enum State
+    {
+        PENDING, COMPLETED, TERMINATED
+    }
+
+    ;
     private final SpinLock _lock = new SpinLock();
-    private State requestState=State.PENDING;
-    private State responseState=State.PENDING;
+    private State requestState = State.PENDING;
+    private State responseState = State.PENDING;
     private Throwable requestFailure;
     private Throwable responseFailure;
 
@@ -67,7 +72,7 @@ public class HttpExchange
 
     public Throwable getRequestFailure()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
             return requestFailure;
         }
@@ -85,7 +90,7 @@ public class HttpExchange
 
     public Throwable getResponseFailure()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
             return responseFailure;
         }
@@ -105,32 +110,32 @@ public class HttpExchange
 
     public boolean requestComplete()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            if (requestState!=State.PENDING)
+            if (requestState != State.PENDING)
                 return false;
-            requestState=State.COMPLETED;
+            requestState = State.COMPLETED;
             return true;
         }
     }
 
     public boolean responseComplete()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            if (responseState!=State.PENDING)
+            if (responseState != State.PENDING)
                 return false;
-            responseState=State.COMPLETED;
+            responseState = State.COMPLETED;
             return true;
         }
     }
 
     public Result terminateRequest(Throwable failure)
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            requestState=State.TERMINATED;
-            requestFailure=failure;
+            requestState = State.TERMINATED;
+            requestFailure = failure;
             if (State.TERMINATED.equals(responseState))
                 return new Result(getRequest(), requestFailure, getResponse(), responseFailure);
         }
@@ -139,11 +144,11 @@ public class HttpExchange
 
     public Result terminateResponse(Throwable failure)
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            responseState=State.TERMINATED;
-            responseFailure=failure;
-            if (State.TERMINATED.equals(requestState))
+            responseState = State.TERMINATED;
+            responseFailure = failure;
+            if (requestState == State.TERMINATED)
                 return new Result(getRequest(), requestFailure, getResponse(), responseFailure);
         }
         return null;
@@ -173,23 +178,23 @@ public class HttpExchange
 
     private boolean fail(Throwable cause)
     {
-        boolean notify=false;
-        try(SpinLock.Lock lock = _lock.lock())
+        boolean notify = false;
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            if (!Boolean.TRUE.equals(requestState))
+            if (requestState != State.TERMINATED)
             {
-                requestState=State.TERMINATED;
-                notify=true;
-                requestFailure=cause;
+                requestState = State.TERMINATED;
+                notify = true;
+                requestFailure = cause;
             }
-            if (!Boolean.TRUE.equals(responseState))
+            if (responseState != State.TERMINATED)
             {
-                responseState=State.TERMINATED;
-                notify=true;
-                responseFailure=cause;
+                responseState = State.TERMINATED;
+                notify = true;
+                responseFailure = cause;
             }
         }
-        
+
         if (notify)
         {
             if (LOG.isDebugEnabled())
@@ -209,10 +214,10 @@ public class HttpExchange
 
     public void resetResponse()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            responseState=State.PENDING;
-            responseFailure=null;
+            responseState = State.PENDING;
+            responseFailure = null;
         }
     }
 
@@ -226,13 +231,13 @@ public class HttpExchange
     @Override
     public String toString()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
             return String.format("%s@%x req=%s/%s res=%s/%s",
-                HttpExchange.class.getSimpleName(),
-                hashCode(),
-                requestState,requestFailure,
-                responseState,responseFailure);
+                    HttpExchange.class.getSimpleName(),
+                    hashCode(),
+                    requestState, requestFailure,
+                    responseState, responseFailure);
         }
     }
 }
