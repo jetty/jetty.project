@@ -64,29 +64,15 @@ public class HttpChannelOverSPDY extends HttpChannel
     }
 
     @Override
-    public void proceed(HttpExchange exchange, Throwable failure)
+    public void release()
     {
-        sender.proceed(exchange, failure);
-    }
-
-    @Override
-    public boolean abort(Throwable cause)
-    {
-        boolean sendAborted = sender.abort(cause);
-        boolean receiveAborted = abortResponse(cause);
-        return sendAborted || receiveAborted;
-    }
-
-    @Override
-    public boolean abortResponse(Throwable cause)
-    {
-        return receiver.abort(cause);
-    }
-
-    @Override
-    public void exchangeTerminated(Result result)
-    {
-        super.exchangeTerminated(result);
         connection.release(this);
+    }
+
+    @Override
+    public void exchangeTerminated(HttpExchange exchange, Result result)
+    {
+        super.exchangeTerminated(exchange, result);
+        release();
     }
 }

@@ -200,8 +200,10 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
             endPoint.setIdleTimeout(request.getIdleTimeout());
 
             // One channel per connection, just delegate the send
-            channel.associate(exchange);
-            channel.send();
+            if (channel.associate(exchange))
+                channel.send();
+            else
+                channel.release();
         }
 
         @Override

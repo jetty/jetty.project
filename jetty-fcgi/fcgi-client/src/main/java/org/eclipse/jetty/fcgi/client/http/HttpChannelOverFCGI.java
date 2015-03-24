@@ -23,6 +23,8 @@ import java.util.concurrent.TimeoutException;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.HttpReceiver;
+import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.fcgi.generator.Flusher;
 import org.eclipse.jetty.fcgi.generator.Generator;
@@ -59,6 +61,18 @@ public class HttpChannelOverFCGI extends HttpChannel
     }
 
     @Override
+    protected HttpSender getHttpSender()
+    {
+        return sender;
+    }
+
+    @Override
+    protected HttpReceiver getHttpReceiver()
+    {
+        return receiver;
+    }
+
+    @Override
     public void send()
     {
         HttpExchange exchange = getHttpExchange();
@@ -70,23 +84,9 @@ public class HttpChannelOverFCGI extends HttpChannel
     }
 
     @Override
-    public void proceed(HttpExchange exchange, Throwable failure)
+    public void release()
     {
-        sender.proceed(exchange, failure);
-    }
-
-    @Override
-    public boolean abort(Throwable cause)
-    {
-        boolean sendAborted = sender.abort(cause);
-        boolean receiveAborted = abortResponse(cause);
-        return sendAborted || receiveAborted;
-    }
-
-    @Override
-    public boolean abortResponse(Throwable cause)
-    {
-        return receiver.abort(cause);
+        connection.release(this);
     }
 
     protected boolean responseBegin(int code, String reason)
@@ -132,15 +132,15 @@ public class HttpChannelOverFCGI extends HttpChannel
     }
 
     @Override
-    public void exchangeTerminated(Result result)
+    public void exchangeTerminated(HttpExchange exchange, Result result)
     {
-        super.exchangeTerminated(result);
+        super.exchangeTerminated(exchange, result);
         idle.onClose();
         HttpFields responseHeaders = result.getResponse().getHeaders();
         if (result.isFailed())
             connection.close(result.getFailure());
         else if (!connection.closeByHTTP(responseHeaders))
-            connection.release(this);
+            release();
     }
 
     protected void flush(Generator.Result... results)

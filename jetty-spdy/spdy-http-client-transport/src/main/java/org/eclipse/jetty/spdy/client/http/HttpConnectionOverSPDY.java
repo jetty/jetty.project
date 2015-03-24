@@ -48,8 +48,10 @@ public class HttpConnectionOverSPDY extends HttpConnection
         // One connection maps to N channels, so for each exchange we create a new channel
         HttpChannel channel = new HttpChannelOverSPDY(getHttpDestination(), this, session);
         channels.add(channel);
-        channel.associate(exchange);
-        channel.send();
+        if (channel.associate(exchange))
+            channel.send();
+        else
+            channel.release();
     }
 
     protected void release(HttpChannel channel)
