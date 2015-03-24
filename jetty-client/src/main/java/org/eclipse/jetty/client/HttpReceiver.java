@@ -129,10 +129,11 @@ public abstract class HttpReceiver
         ResponseNotifier notifier = destination.getResponseNotifier();
         notifier.notifyBegin(conversation.getResponseListeners(), response);
 
-        if (!updateResponseState(ResponseState.TRANSIENT, ResponseState.BEGIN))
-            terminateResponse(exchange, failure);
+        if (updateResponseState(ResponseState.TRANSIENT, ResponseState.BEGIN))
+            return true;
 
-        return true;
+        terminateResponse(exchange);
+        return false;
     }
 
     /**
@@ -193,10 +194,11 @@ public abstract class HttpReceiver
             }
         }
 
-        if (!updateResponseState(ResponseState.TRANSIENT, ResponseState.HEADER))
-            terminateResponse(exchange, failure);
+        if (updateResponseState(ResponseState.TRANSIENT, ResponseState.HEADER))
+            return true;
 
-        return true;
+        terminateResponse(exchange);
+        return false;
     }
 
     protected void storeCookie(URI uri, HttpField field)
@@ -269,10 +271,11 @@ public abstract class HttpReceiver
             }
         }
 
-        if (!updateResponseState(ResponseState.TRANSIENT, ResponseState.HEADERS))
-            terminateResponse(exchange, failure);
+        if (updateResponseState(ResponseState.TRANSIENT, ResponseState.HEADERS))
+            return true;
 
-        return true;
+        terminateResponse(exchange);
+        return false;
     }
 
     /**
@@ -343,10 +346,11 @@ public abstract class HttpReceiver
             }
         }
 
-        if (!updateResponseState(ResponseState.TRANSIENT, ResponseState.CONTENT))
-            terminateResponse(exchange, failure);
+        if (updateResponseState(ResponseState.TRANSIENT, ResponseState.CONTENT))
+            return true;
 
-        return true;
+        terminateResponse(exchange);
+        return false;
     }
 
     /**
@@ -362,7 +366,7 @@ public abstract class HttpReceiver
     {
         // Mark atomically the response as completed, with respect
         // to concurrency between response success and response failure.
-        boolean completed = exchange.responseComplete();
+        boolean completed = exchange.responseComplete(null);
         if (!completed)
             return false;
 
@@ -371,12 +375,13 @@ public abstract class HttpReceiver
         // Reset to be ready for another response.
         reset();
 
-        // Mark atomically the response as terminated and succeeded,
-        // with respect to concurrency between request and response.
-        Result result = exchange.terminateResponse(null);
+        // Mark atomically the response as terminated, with
+        // respect to concurrency between request and response.
+        Result result = exchange.terminateResponse();
 
-        // It is important to notify *after* we reset and terminate
-        // because the notification may trigger another request/response.
+        // Notify *after* resetting and terminating, because
+        // the notification may  trigger another request/response,
+        // or the reset of the response in case of 100-Continue.
         HttpResponse response = exchange.getResponse();
         if (LOG.isDebugEnabled())
             LOG.debug("Response success {}", response);
@@ -409,60 +414,15 @@ public abstract class HttpReceiver
 
         // Mark atomically the response as completed, with respect
         // to concurrency between response success and response failure.
-        boolean completed = exchange.responseComplete();
-        if (!completed)
-            return false;
+        if (exchange.responseComplete(failure))
+            return abort(exchange, failure);
 
-        this.failure = failure;
-
-        // Update the state to avoid more response processing.
-        boolean fail;
-        while (true)
-        {
-            ResponseState current = responseState.get();
-            if (updateResponseState(current, ResponseState.FAILURE))
-            {
-                fail = current != ResponseState.TRANSIENT;
-                break;
-            }
-        }
-
-        dispose();
-
-        Result result = failResponse(exchange, failure);
-
-        if (fail)
-        {
-            terminateResponse(exchange, result);
-        }
-        else
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Concurrent failure: response termination skipped, performed by helpers");
-        }
-
-        return true;
+        return false;
     }
 
-    private Result failResponse(HttpExchange exchange, Throwable failure)
+    private void terminateResponse(HttpExchange exchange)
     {
-        // Mark atomically the response as terminated and failed,
-        // with respect to concurrency between request and response.
-        Result result = exchange.terminateResponse(failure);
-
-        HttpResponse response = exchange.getResponse();
-        if (LOG.isDebugEnabled())
-            LOG.debug("Response failure {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
-        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
-        ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
-        notifier.notifyFailure(listeners, response, failure);
-
-        return result;
-    }
-
-    private void terminateResponse(HttpExchange exchange, Throwable failure)
-    {
-        Result result = failResponse(exchange, failure);
+        Result result = exchange.terminateResponse();
         terminateResponse(exchange, result);
     }
 
@@ -477,14 +437,14 @@ public abstract class HttpReceiver
         {
             boolean ordered = getHttpDestination().getHttpClient().isStrictEventOrdering();
             if (!ordered)
-                channel.exchangeTerminated(result);
+                channel.exchangeTerminated(exchange, result);
             if (LOG.isDebugEnabled())
                 LOG.debug("Request/Response {}: {}", failure == null ? "succeeded" : "failed", result);
             List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
             ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
             notifier.notifyComplete(listeners, result);
             if (ordered)
-                channel.exchangeTerminated(result);
+                channel.exchangeTerminated(exchange, result);
         }
     }
 
@@ -512,9 +472,56 @@ public abstract class HttpReceiver
         decoder = null;
     }
 
-    public boolean abort(Throwable cause)
+    public boolean abort(HttpExchange exchange, Throwable failure)
     {
-        return responseFailure(cause);
+        // Update the state to avoid more response processing.
+        boolean terminate;
+        out: while (true)
+        {
+            ResponseState current = responseState.get();
+            switch (current)
+            {
+                case FAILURE:
+                {
+                    return false;
+                }
+                default:
+                {
+                    if (updateResponseState(current, ResponseState.FAILURE))
+                    {
+                        terminate = current != ResponseState.TRANSIENT;
+                        break out;
+                    }
+                    break;
+                }
+            }
+        }
+
+        this.failure = failure;
+
+        dispose();
+
+        HttpResponse response = exchange.getResponse();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Response failure {} {} on {}: {}", response, exchange, getHttpChannel(), failure);
+        List<Response.ResponseListener> listeners = exchange.getConversation().getResponseListeners();
+        ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
+        notifier.notifyFailure(listeners, response, failure);
+
+        if (terminate)
+        {
+            // Mark atomically the response as terminated, with
+            // respect to concurrency between request and response.
+            Result result = exchange.terminateResponse();
+            terminateResponse(exchange, result);
+        }
+        else
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Concurrent failure: response termination skipped, performed by helpers");
+        }
+
+        return true;
     }
 
     private boolean updateResponseState(ResponseState from, ResponseState to)

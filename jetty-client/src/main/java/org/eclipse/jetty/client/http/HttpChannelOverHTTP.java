@@ -20,6 +20,8 @@ package org.eclipse.jetty.client.http;
 
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.HttpReceiver;
+import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpFields;
@@ -51,6 +53,18 @@ public class HttpChannelOverHTTP extends HttpChannel
         return new HttpReceiverOverHTTP(this);
     }
 
+    @Override
+    protected HttpSender getHttpSender()
+    {
+        return sender;
+    }
+
+    @Override
+    protected HttpReceiver getHttpReceiver()
+    {
+        return receiver;
+    }
+
     public HttpConnectionOverHTTP getHttpConnection()
     {
         return connection;
@@ -65,23 +79,9 @@ public class HttpChannelOverHTTP extends HttpChannel
     }
 
     @Override
-    public void proceed(HttpExchange exchange, Throwable failure)
+    public void release()
     {
-        sender.proceed(exchange, failure);
-    }
-
-    @Override
-    public boolean abort(Throwable cause)
-    {
-        boolean sendAborted = sender.abort(cause);
-        boolean receiveAborted = abortResponse(cause);
-        return sendAborted || receiveAborted;
-    }
-
-    @Override
-    public boolean abortResponse(Throwable cause)
-    {
-        return receiver.abort(cause);
+        connection.release();
     }
 
     public void receive()
@@ -90,9 +90,9 @@ public class HttpChannelOverHTTP extends HttpChannel
     }
 
     @Override
-    public void exchangeTerminated(Result result)
+    public void exchangeTerminated(HttpExchange exchange, Result result)
     {
-        super.exchangeTerminated(result);
+        super.exchangeTerminated(exchange, result);
 
         Response response = result.getResponse();
         HttpFields responseHeaders = response.getHeaders();
@@ -115,7 +115,7 @@ public class HttpChannelOverHTTP extends HttpChannel
         if (close)
             connection.close();
         else
-            connection.release();
+            release();
     }
 
     @Override

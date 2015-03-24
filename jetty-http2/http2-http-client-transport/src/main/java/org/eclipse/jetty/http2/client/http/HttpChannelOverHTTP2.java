@@ -21,6 +21,8 @@ package org.eclipse.jetty.http2.client.http;
 import org.eclipse.jetty.client.HttpChannel;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.HttpReceiver;
+import org.eclipse.jetty.client.HttpSender;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
@@ -51,6 +53,19 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         return receiver;
     }
 
+    @Override
+    protected HttpSender getHttpSender()
+    {
+        return sender;
+    }
+
+    @Override
+    protected HttpReceiver getHttpReceiver()
+    {
+        return receiver;
+    }
+
+    @Override
     public void send()
     {
         HttpExchange exchange = getHttpExchange();
@@ -59,29 +74,15 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     }
 
     @Override
-    public void proceed(HttpExchange exchange, Throwable failure)
+    public void release()
     {
-        sender.proceed(exchange, failure);
-    }
-
-    @Override
-    public boolean abort(Throwable cause)
-    {
-        boolean sendAborted = sender.abort(cause);
-        boolean receiveAborted = abortResponse(cause);
-        return sendAborted || receiveAborted;
-    }
-
-    @Override
-    public boolean abortResponse(Throwable cause)
-    {
-        return receiver.abort(cause);
-    }
-
-    @Override
-    public void exchangeTerminated(Result result)
-    {
-        super.exchangeTerminated(result);
         connection.release(this);
+    }
+
+    @Override
+    public void exchangeTerminated(HttpExchange exchange, Result result)
+    {
+        super.exchangeTerminated(exchange, result);
+        release();
     }
 }
