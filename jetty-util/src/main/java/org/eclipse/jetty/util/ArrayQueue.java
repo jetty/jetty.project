@@ -255,6 +255,12 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
     }
 
     /* ------------------------------------------------------------ */
+    public int sizeUnsafe()
+    {
+        return _size;
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
     public E get(int index)
     {

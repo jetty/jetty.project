@@ -28,7 +28,6 @@ import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -115,7 +114,6 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private void wake()
     {
-        // TODO review if this is correct
         _channelState.getHttpChannel().getConnector().getExecutor().execute(_channelState.getHttpChannel()); 
     }
     
@@ -349,7 +347,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             throw (IOException)new InterruptedIOException().initCause(e);
         }
     }
-
+    
     /**
      * Adds some content to this input stream.
      *
@@ -360,18 +358,14 @@ public class HttpInput extends ServletInputStream implements Runnable
         boolean woken=false;
         synchronized (_inputQ)
         {
-            boolean wasEmpty = _inputQ.isEmpty();
-            _inputQ.add(item);
+            _inputQ.addUnsafe(item);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} addContent {}", this, item);
             
-            if (wasEmpty) // TODO do we need this guard?
-            {
-                if (_listener==null)
-                    _inputQ.notify();
-                else
-                    woken=_channelState.onReadPossible(); 
-            }
+            if (_listener==null)
+                _inputQ.notify();
+            else
+                woken=_channelState.onReadPossible(); 
         }
         
         return woken;
@@ -381,7 +375,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            return !_inputQ.isEmpty();
+            return _inputQ.sizeUnsafe()>0;
         }
     }
     
@@ -580,7 +574,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             if (error!=null)
             {
-                _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE); // TODO ???
+                _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
                 listener.onError(error);
             }
             else if (aeof)
@@ -596,7 +590,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             {
                 if (aeof || error==null)
                 {
-                    _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE); // TODO ???
+                    _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
                     listener.onError(e);
                 }
             }
