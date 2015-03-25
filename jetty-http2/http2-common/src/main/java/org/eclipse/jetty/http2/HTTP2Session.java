@@ -996,6 +996,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 generator.control(lease, frame);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Generated {}", frame);
+                prepare();
                 return null;
             }
             catch (Throwable x)
@@ -1003,6 +1004,38 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 if (LOG.isDebugEnabled())
                     LOG.debug("Failure generating frame " + frame, x);
                 return x;
+            }
+        }
+
+        /**
+         * <p>Performs actions just before writing the frame to the network.</p>
+         * <p>Some frame, when sent over the network, causes the receiver
+         * to react and send back frames that may be processed by the original
+         * sender *before* {@link #succeeded()} is called.
+         * <p>If the action to perform updates some state, this update may
+         * not be seen by the received frames and cause errors.</p>
+         * <p>For example, suppose the action updates the stream window to a
+         * larger value; the sender sends the frame; the receiver is now entitled
+         * to send back larger data; when the data is received by the original
+         * sender, the action may have not been performed yet, causing the larger
+         * data to be rejected, when it should have been accepted.</p>
+         */
+        private void prepare()
+        {
+            switch (frame.getType())
+            {
+                case SETTINGS:
+                {
+                    SettingsFrame settingsFrame = (SettingsFrame)frame;
+                    Integer initialWindow = settingsFrame.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
+                    if (initialWindow != null)
+                        flowControl.updateInitialStreamWindow(HTTP2Session.this, initialWindow, true);
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
             }
         }
 
@@ -1025,14 +1058,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                         stream.close();
                         removeStream(stream, true);
                     }
-                    break;
-                }
-                case SETTINGS:
-                {
-                    SettingsFrame settingsFrame = (SettingsFrame)frame;
-                    Integer initialWindow = settingsFrame.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
-                    if (initialWindow != null)
-                        flowControl.updateInitialStreamWindow(HTTP2Session.this, initialWindow, true);
                     break;
                 }
                 case PUSH_PROMISE:

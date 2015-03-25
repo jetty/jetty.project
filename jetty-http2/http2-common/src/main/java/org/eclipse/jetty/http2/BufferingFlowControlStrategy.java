@@ -95,7 +95,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
             level = sessionLevel.getAndSet(0);
             session.updateRecvWindow(level);
             if (LOG.isDebugEnabled())
-                LOG.debug("Data consumed, updated session recv window by {} for {}", level, session);
+                LOG.debug("Data consumed, updated session recv window by {}/{} for {}", level, maxLevel, session);
             windowFrame = new WindowUpdateFrame(0, level);
         }
         else
@@ -122,7 +122,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                     level = streamLevel.getAndSet(0);
                     stream.updateRecvWindow(level);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Data consumed, updated stream recv window by {} for {}", level, stream);
+                        LOG.debug("Data consumed, updated stream recv window by {}/{} for {}", level, maxLevel, stream);
                     WindowUpdateFrame frame = new WindowUpdateFrame(stream.getId(), level);
                     if (windowFrame == null)
                         windowFrame = frame;

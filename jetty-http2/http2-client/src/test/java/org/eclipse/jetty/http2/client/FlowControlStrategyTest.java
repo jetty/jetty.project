@@ -648,7 +648,7 @@ public abstract class FlowControlStrategyTest
     }
 
     @Test
-    public void testServerTwoDataFramesWithStalledSession() throws Exception
+    public void testServerTwoDataFramesWithStalledStream() throws Exception
     {
         // Frames in queue = DATA1, DATA2.
         // Server writes part of DATA1, then stalls.
