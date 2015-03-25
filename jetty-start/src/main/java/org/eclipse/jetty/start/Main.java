@@ -824,6 +824,7 @@ public class Main
 
     private void doStop(StartArgs args)
     {
+        String stopHost = args.getProperties().getString("STOP.HOST");
         int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
         String stopKey = args.getProperties().getString("STOP.KEY");
 
@@ -831,41 +832,41 @@ public class Main
         {
             int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
 
-            stop(stopPort,stopKey,stopWait);
+            stop(stopHost,stopPort,stopKey,stopWait);
         }
         else
         {
-            stop(stopPort,stopKey);
+            stop(stopHost,stopPort,stopKey);
         }
     }
 
     /**
      * Stop a running jetty instance.
      */
-    public void stop(int port, String key)
+    public void stop(String host, int port, String key)
     {
-        stop(port,key,0);
+        stop(host,port,key,0);
     }
 
-    public void stop(int port, String key, int timeout)
+    public void stop(String host, int port, String key, int timeout)
     {
-        int _port = port;
-        String _key = key;
-
+        if (host==null || host.length()==0)
+            host="127.0.0.1";
+        
         try
         {
-            if (_port <= 0)
+            if (port <= 0)
             {
                 System.err.println("STOP.PORT system property must be specified");
             }
-            if (_key == null)
+            if (key == null)
             {
-                _key = "";
+                key = "";
                 System.err.println("STOP.KEY system property must be specified");
                 System.err.println("Using empty key");
             }
 
-            try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port))
+            try (Socket s = new Socket(InetAddress.getByName(host),port))
             {
                 if (timeout > 0)
                 {
@@ -874,7 +875,7 @@ public class Main
 
                 try (OutputStream out = s.getOutputStream())
                 {
-                    out.write((_key + "\r\nstop\r\n").getBytes());
+                    out.write((key + "\r\nstop\r\n").getBytes());
                     out.flush();
 
                     if (timeout > 0)

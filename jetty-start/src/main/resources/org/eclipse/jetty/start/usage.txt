@@ -108,6 +108,10 @@ Startup / Shutdown Command Line:
 
 Properties:
 
+    STOP.HOST=[string]
+      The host to use to stop the running Jetty server (defaults to 127.0.0.1)
+      Required along with STOP.PORT if you want to use the --stop option above.
+      
     STOP.PORT=[number]
       The port to use to stop the running Jetty server.
       Required along with STOP.KEY if you want to use the --stop option above.

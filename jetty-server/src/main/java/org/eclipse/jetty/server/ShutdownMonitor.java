@@ -28,10 +28,8 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
-import java.util.List;
 import java.util.Properties;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CopyOnWriteArraySet;
 
 import org.eclipse.jetty.util.component.Destroyable;
@@ -41,8 +39,8 @@ import org.eclipse.jetty.util.thread.ShutdownThread;
 /**
  * Shutdown/Stop Monitor thread.
  * <p>
- * This thread listens on the port specified by the STOP.PORT system parameter (defaults to -1 for not listening) for request authenticated with the key given
- * by the STOP.KEY system parameter (defaults to "eclipse") for admin requests.
+ * This thread listens on the host/port specified by the STOP.HOST/STOP.PORT system parameter (defaults to 127.0.0.1/-1 for not listening) for 
+ * request authenticated with the key given by the STOP.KEY system parameter (defaults to "eclipse") for admin requests.
  * <p>
  * If the stop port is set to zero, then a random port is assigned and the port number is printed to stdout.
  * <p>
@@ -82,7 +80,7 @@ public class ShutdownMonitor
         return getInstance()._lifeCycles.contains(lifeCycle);
     }
     
-
+    /* ------------------------------------------------------------ */
     /**
      * ShutdownMonitorRunnable
      *
@@ -297,7 +295,7 @@ public class ShutdownMonitor
             {
                 serverSocket = new ServerSocket();
                 serverSocket.setReuseAddress(true);
-                serverSocket.bind(new InetSocketAddress(InetAddress.getByName("127.0.0.1"), port), 1);
+                serverSocket.bind(new InetSocketAddress(InetAddress.getByName(host), port), 1);
                 if (port == 0)
                 {
                     // server assigned port in use
@@ -330,6 +328,7 @@ public class ShutdownMonitor
     }
     
     private boolean DEBUG;
+    private String host;
     private int port;
     private String key;
     private boolean exitVm;
@@ -351,6 +350,7 @@ public class ShutdownMonitor
         this.DEBUG = props.containsKey("DEBUG");
 
         // Use values passed thru via /jetty-start/
+        this.host = props.getProperty("STOP.HOST","127.0.0.1");
         this.port = Integer.parseInt(props.getProperty("STOP.PORT","-1"));
         this.key = props.getProperty("STOP.KEY",null);
         this.exitVm = true;
