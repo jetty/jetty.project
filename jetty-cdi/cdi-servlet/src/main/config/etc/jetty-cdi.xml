@@ -10,7 +10,7 @@
     <Call name="addLifeCycleBinding">
       <Arg>
         <New
-          class="org.eclipse.jetty.cdi.WeldDeploymentBinding">
+          class="org.eclipse.jetty.cdi.servlet.WeldDeploymentBinding">
         </New>
       </Arg>
     </Call>
