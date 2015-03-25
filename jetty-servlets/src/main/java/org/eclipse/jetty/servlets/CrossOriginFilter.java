@@ -26,7 +26,6 @@ import java.util.Enumeration;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -69,15 +68,15 @@ import org.eclipse.jetty.util.log.Logger;
  * can be cached by the client. Default value is <b>1800</b> seconds, or 30
  * minutes</li>
  * <li><b>allowCredentials</b>, a boolean indicating if the resource allows
- * requests with credentials. Default value is <b>false</b></li>
+ * requests with credentials. Default value is <b>true</b></li>
  * <li><b>exposedHeaders</b>, a comma separated list of HTTP headers that
  * are allowed to be exposed on the client. Default value is the
  * <b>empty list</b></li>
  * <li><b>chainPreflight</b>, if true preflight requests are chained to their
  * target resource for normal handling (as an OPTION request).  Otherwise the
- * filter will response to the preflight. Default is true.</li>
+ * filter will response to the preflight. Default is <b>true</b>.</li>
  * </ul></p>
- * <p>A typical configuration could be:
+ * <p>A typical configuration could be:</p>
  * <pre>
  * &lt;web-app ...&gt;
  *     ...
@@ -91,7 +90,7 @@ import org.eclipse.jetty.util.log.Logger;
  *     &lt;/filter-mapping&gt;
  *     ...
  * &lt;/web-app&gt;
- * </pre></p>
+ * </pre>
  */
 public class CrossOriginFilter implements Filter
 {
@@ -193,8 +192,8 @@ public class CrossOriginFilter implements Filter
         exposedHeaders.addAll(Arrays.asList(exposedHeadersConfig.split(",")));
 
         String chainPreflightConfig = config.getInitParameter(OLD_CHAIN_PREFLIGHT_PARAM);
-        if (chainPreflightConfig!=null) // TODO remove this
-            LOG.warn("DEPRECATED CONFIGURATION: Use "+CHAIN_PREFLIGHT_PARAM+ " instead of "+OLD_CHAIN_PREFLIGHT_PARAM);
+        if (chainPreflightConfig != null)
+            LOG.warn("DEPRECATED CONFIGURATION: Use " + CHAIN_PREFLIGHT_PARAM + " instead of " + OLD_CHAIN_PREFLIGHT_PARAM);
         else
             chainPreflightConfig = config.getInitParameter(CHAIN_PREFLIGHT_PARAM);
         if (chainPreflightConfig == null)
@@ -204,13 +203,13 @@ public class CrossOriginFilter implements Filter
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Cross-origin filter configuration: " +
-                    ALLOWED_ORIGINS_PARAM + " = " + allowedOriginsConfig + ", " +
-                    ALLOWED_METHODS_PARAM + " = " + allowedMethodsConfig + ", " +
-                    ALLOWED_HEADERS_PARAM + " = " + allowedHeadersConfig + ", " +
-                    PREFLIGHT_MAX_AGE_PARAM + " = " + preflightMaxAgeConfig + ", " +
-                    ALLOW_CREDENTIALS_PARAM + " = " + allowedCredentialsConfig + "," +
-                    EXPOSED_HEADERS_PARAM + " = " + exposedHeadersConfig + "," +
-                    CHAIN_PREFLIGHT_PARAM + " = " + chainPreflightConfig
+                            ALLOWED_ORIGINS_PARAM + " = " + allowedOriginsConfig + ", " +
+                            ALLOWED_METHODS_PARAM + " = " + allowedMethodsConfig + ", " +
+                            ALLOWED_HEADERS_PARAM + " = " + allowedHeadersConfig + ", " +
+                            PREFLIGHT_MAX_AGE_PARAM + " = " + preflightMaxAgeConfig + ", " +
+                            ALLOW_CREDENTIALS_PARAM + " = " + allowedCredentialsConfig + "," +
+                            EXPOSED_HEADERS_PARAM + " = " + exposedHeadersConfig + "," +
+                            CHAIN_PREFLIGHT_PARAM + " = " + chainPreflightConfig
             );
         }
     }
@@ -295,7 +294,7 @@ public class CrossOriginFilter implements Filter
             {
                 if (allowedOrigin.contains("*"))
                 {
-                    Matcher matcher = createMatcher(origin,allowedOrigin);
+                    Matcher matcher = createMatcher(origin, allowedOrigin);
                     if (matcher.matches())
                         return true;
                 }
@@ -317,8 +316,8 @@ public class CrossOriginFilter implements Filter
 
     private String parseAllowedWildcardOriginToRegex(String allowedOrigin)
     {
-        String regex = allowedOrigin.replace(".","\\.");
-        return regex.replace("*",".*"); // we want to be greedy here to match multiple subdomains, thus we use .*
+        String regex = allowedOrigin.replace(".", "\\.");
+        return regex.replace("*", ".*"); // we want to be greedy here to match multiple subdomains, thus we use .*
     }
 
     private boolean isSimpleRequest(HttpServletRequest request)
@@ -360,7 +359,7 @@ public class CrossOriginFilter implements Filter
     private void handlePreflightResponse(HttpServletRequest request, HttpServletResponse response, String origin)
     {
         boolean methodAllowed = isMethodAllowed(request);
-      
+
         if (!methodAllowed)
             return;
         List<String> headersRequested = getAccessControlRequestHeaders(request);
@@ -393,7 +392,7 @@ public class CrossOriginFilter implements Filter
         return result;
     }
 
-    List<String> getAccessControlRequestHeaders (HttpServletRequest request)
+    private List<String> getAccessControlRequestHeaders(HttpServletRequest request)
     {
         String accessControlRequestHeaders = request.getHeader(ACCESS_CONTROL_REQUEST_HEADERS_HEADER);
         LOG.debug("{} is {}", ACCESS_CONTROL_REQUEST_HEADERS_HEADER, accessControlRequestHeaders);
@@ -410,8 +409,7 @@ public class CrossOriginFilter implements Filter
         }
         return requestedHeaders;
     }
-    
-    
+
     private boolean areHeadersAllowed(List<String> requestedHeaders)
     {
         if (anyHeadersAllowed)
@@ -419,13 +417,13 @@ public class CrossOriginFilter implements Filter
             LOG.debug("Any header is allowed");
             return true;
         }
-        
+
         boolean result = true;
-        for (String requestedHeader:requestedHeaders)
+        for (String requestedHeader : requestedHeaders)
         {
             boolean headerAllowed = false;
-            for (String allowedHeader:allowedHeaders)
-            { 
+            for (String allowedHeader : allowedHeaders)
+            {
                 if (requestedHeader.equalsIgnoreCase(allowedHeader.trim()))
                 {
                     headerAllowed = true;
