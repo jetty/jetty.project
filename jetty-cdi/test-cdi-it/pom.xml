@@ -19,14 +19,14 @@
 <project xmlns="http://maven.apache.org/POM/4.0.0" xmlns:xsi="http://www.w3.org/2001/XMLSchema-instance"
   xsi:schemaLocation="http://maven.apache.org/POM/4.0.0 http://maven.apache.org/maven-v4_0_0.xsd">
   <parent>
-    <groupId>org.eclipse.jetty.tests</groupId>
-    <artifactId>test-cdi-parent</artifactId>
+    <groupId>org.eclipse.jetty.cdi</groupId>
+    <artifactId>jetty-cdi-parent</artifactId>
     <version>9.3.0-SNAPSHOT</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>cdi-webapp-it</artifactId>
   <packaging>jar</packaging>
-  <name>Jetty Tests :: CDI :: WebApp Integration Tests</name>
+  <name>Jetty :: CDI :: Test :: WebApp Integration Tests</name>
   <url>http://www.eclipse.org/jetty</url>
   <properties>
     <project.build.sourceEncoding>UTF-8</project.build.sourceEncoding>
@@ -45,8 +45,8 @@
       <scope>runtime</scope>
     </dependency>
     <dependency>
-      <groupId>org.eclipse.jetty.tests</groupId>
-      <artifactId>cdi-webapp</artifactId>
+      <groupId>org.eclipse.jetty.cdi</groupId>
+      <artifactId>test-cdi-webapp</artifactId>
       <version>${project.version}</version>
       <type>war</type>
       <scope>runtime</scope>
@@ -61,6 +61,14 @@
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
+        <artifactId>maven-deploy-plugin</artifactId>
+        <configuration>
+          <!-- DO NOT DEPLOY (or Release) -->
+          <skip>true</skip>
+        </configuration>
+      </plugin>
+      <plugin>
+        <groupId>org.apache.maven.plugins</groupId>
         <artifactId>maven-dependency-plugin</artifactId>
         <executions>
           <execution>
@@ -70,7 +78,7 @@
               <goal>copy-dependencies</goal>
             </goals>
             <configuration>
-              <includeArtifactIds>cdi-webapp</includeArtifactIds>
+              <includeArtifactIds>test-cdi-webapp</includeArtifactIds>
               <includeScope>runtime</includeScope>
               <includeTypes>war</includeTypes>
               <overwriteSnapshots>true</overwriteSnapshots>
