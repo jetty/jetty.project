@@ -32,7 +32,6 @@ import java.util.concurrent.ConcurrentMap;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
-import org.hamcrest.Matchers;
 import org.junit.Test;
 
 public class MappedByteBufferPoolTest

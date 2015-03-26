@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.test.jmx;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertThat;
 
 import java.net.URI;
 

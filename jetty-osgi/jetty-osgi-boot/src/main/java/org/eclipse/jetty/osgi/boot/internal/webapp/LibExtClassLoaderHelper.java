@@ -30,8 +30,6 @@ import java.util.Locale;
 import java.util.Map;
 import java.util.Set;
 
-import org.eclipse.jetty.server.Server;
-
 /**
  * LibExtClassLoaderHelper
  * 

@@ -21,8 +21,6 @@ package org.eclipse.jetty.http;
 import java.util.Collections;
 import java.util.Iterator;
 
-import org.eclipse.jetty.http.MetaData.Request;
-
 public class MetaData implements Iterable<HttpField>
 {
     private HttpVersion _httpVersion;

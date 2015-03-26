@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.StartMatchers.*;
-import static org.junit.Assert.*;
+import static org.eclipse.jetty.start.StartMatchers.fileExists;
+import static org.eclipse.jetty.start.StartMatchers.notPathExists;
+import static org.junit.Assert.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;

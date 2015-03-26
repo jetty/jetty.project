@@ -22,6 +22,7 @@ import java.lang.reflect.Method;
 
 import javax.websocket.Decoder;
 import javax.websocket.EndpointConfig;
+import javax.websocket.OnOpen;
 
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;

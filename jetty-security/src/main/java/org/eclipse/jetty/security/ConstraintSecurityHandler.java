@@ -40,7 +40,6 @@ import javax.servlet.annotation.ServletSecurity.TransportGuarantee;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.PathMap;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;

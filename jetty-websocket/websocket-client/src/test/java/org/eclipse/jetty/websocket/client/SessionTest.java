@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.net.URI;
 import java.util.Set;
 import java.util.concurrent.Future;
@@ -33,9 +36,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
 
 public class SessionTest
 {

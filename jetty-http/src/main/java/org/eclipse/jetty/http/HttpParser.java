@@ -18,13 +18,17 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.http.HttpTokens.*;
+import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
+import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
+import static org.eclipse.jetty.http.HttpTokens.SPACE;
+import static org.eclipse.jetty.http.HttpTokens.TAB;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;

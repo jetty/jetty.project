@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.cdi.websocket;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.util.concurrent.CountDownLatch;

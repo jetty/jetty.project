@@ -20,6 +20,8 @@ package org.eclipse.jetty.server;
 
 import java.net.InetSocketAddress;
 
+import javax.servlet.ServletRequest;
+
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;

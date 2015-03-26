@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.lessThan;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;

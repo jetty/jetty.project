@@ -18,8 +18,11 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.Matchers.instanceOf;
+
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
+
 import javax.websocket.ContainerProvider;
 import javax.websocket.Session;
 import javax.websocket.WebSocketContainer;
@@ -34,8 +37,6 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.instanceOf;
 
 public class EndpointEchoTest
 {

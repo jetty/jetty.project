@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.cdi.websocket.basicapp;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.net.URI;

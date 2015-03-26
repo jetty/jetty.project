@@ -18,13 +18,13 @@
 
 package org.eclipse.jetty.util.thread;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.not;
+import static org.junit.Assert.assertThat;
 
 import java.net.URL;
 import java.net.URLClassLoader;
 
-import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.junit.Test;
 
 public class ThreadClassLoaderScopeTest

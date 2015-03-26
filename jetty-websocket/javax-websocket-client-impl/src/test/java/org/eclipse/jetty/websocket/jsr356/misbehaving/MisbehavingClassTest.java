@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.websocket.jsr356.misbehaving;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
+import static org.hamcrest.Matchers.is;
+
 import java.net.URI;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
@@ -36,8 +38,6 @@ import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class WebSocketOverSSLTest
 {

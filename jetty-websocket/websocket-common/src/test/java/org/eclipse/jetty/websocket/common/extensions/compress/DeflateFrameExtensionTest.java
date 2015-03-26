@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -55,10 +59,6 @@ import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {

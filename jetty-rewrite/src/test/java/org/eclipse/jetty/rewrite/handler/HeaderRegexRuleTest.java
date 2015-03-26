@@ -18,12 +18,13 @@
 
 package org.eclipse.jetty.rewrite.handler;
 
-import org.junit.Before;
-import org.junit.Test;
 import static org.junit.Assert.assertEquals;
 
 import java.io.IOException;
 import java.util.Iterator;
+
+import org.junit.Before;
+import org.junit.Test;
 
 public class HeaderRegexRuleTest extends AbstractRuleTestCase
 {

@@ -21,6 +21,8 @@ package org.eclipse.jetty.websocket.jsr356.messages;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import javax.websocket.OnMessage;
+
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;

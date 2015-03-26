@@ -18,8 +18,10 @@
 
 package org.eclipse.jetty.cdi.websocket.wsscope;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.sameInstance;
+import static org.junit.Assert.assertThat;
 
 import java.util.Set;
 import java.util.concurrent.Callable;
@@ -29,7 +31,6 @@ import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import javax.enterprise.inject.Produces;
 import javax.enterprise.inject.spi.Bean;
 
 import org.eclipse.jetty.cdi.core.AnyLiteral;

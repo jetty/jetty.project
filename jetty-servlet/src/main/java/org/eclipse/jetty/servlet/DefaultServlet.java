@@ -40,7 +40,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.DateParser;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PathMap.MappedEntry;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.HttpOutput;

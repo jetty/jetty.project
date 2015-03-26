@@ -21,6 +21,9 @@ package org.eclipse.jetty.websocket.jsr356.annotations;
 import java.lang.reflect.Method;
 import java.nio.ByteBuffer;
 
+import javax.websocket.OnMessage;
+import javax.websocket.PongMessage;
+
 import org.eclipse.jetty.websocket.jsr356.JsrPongMessage;
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;

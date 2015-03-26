@@ -33,7 +33,6 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.jetty.http.HttpScheme;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.xml.XmlConfiguration;

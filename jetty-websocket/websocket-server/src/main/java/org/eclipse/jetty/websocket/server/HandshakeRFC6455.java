@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.io.IOException;
+
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;

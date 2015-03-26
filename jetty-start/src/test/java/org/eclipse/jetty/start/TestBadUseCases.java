@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
 
 import java.io.File;
 import java.util.ArrayList;

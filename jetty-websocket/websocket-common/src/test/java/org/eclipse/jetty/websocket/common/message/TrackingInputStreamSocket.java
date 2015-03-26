@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.message;
 
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.util.concurrent.CountDownLatch;
@@ -32,8 +34,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketError;
 import org.eclipse.jetty.websocket.api.annotations.OnWebSocketMessage;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
 
 @WebSocket
 public class TrackingInputStreamSocket

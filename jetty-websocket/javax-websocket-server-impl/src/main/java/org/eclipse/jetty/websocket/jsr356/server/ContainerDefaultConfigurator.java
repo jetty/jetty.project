@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.server;
 
 import java.util.List;
+import java.util.ServiceLoader;
 
 import javax.websocket.Extension;
 import javax.websocket.HandshakeResponse;

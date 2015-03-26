@@ -28,8 +28,6 @@ import java.util.logging.LogManager;
 import java.util.logging.LogRecord;
 import java.util.regex.Pattern;
 
-import org.eclipse.jetty.util.log.Log;
-
 /**
  * Redirect java.util.logging events to Jetty Log
  */

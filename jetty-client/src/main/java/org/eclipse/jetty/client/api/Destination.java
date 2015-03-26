@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client.api;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 
 /**

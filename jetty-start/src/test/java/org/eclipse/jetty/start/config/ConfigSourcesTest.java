@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.start.config;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.File;
 import java.io.IOException;

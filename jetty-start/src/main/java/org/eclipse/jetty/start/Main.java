@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.*;
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_GRAPH;
+import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
+import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
+import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
 
 import java.io.BufferedReader;
 import java.io.File;

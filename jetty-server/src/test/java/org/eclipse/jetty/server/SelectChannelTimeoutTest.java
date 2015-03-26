@@ -28,10 +28,8 @@ import java.nio.charset.StandardCharsets;
 import java.util.Locale;
 
 import org.eclipse.jetty.server.session.SessionHandler;
-import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
 import org.junit.Before;
-import org.junit.Rule;
 import org.junit.Test;
 
 public class SelectChannelTimeoutTest extends ConnectorTimeoutTest

@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
+import static org.hamcrest.Matchers.notNullValue;
+
 import java.io.IOException;
+
 import javax.websocket.CloseReason;
 import javax.websocket.Endpoint;
 import javax.websocket.EndpointConfig;
@@ -27,8 +30,6 @@ import javax.websocket.Session;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.notNullValue;
 
 /**
  * Basic Echo Client from extended Endpoint

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.server;
 
+import static org.hamcrest.Matchers.lessThan;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -37,8 +39,6 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.lessThan;
 
 public class SlowClientWithPipelinedRequestTest
 {

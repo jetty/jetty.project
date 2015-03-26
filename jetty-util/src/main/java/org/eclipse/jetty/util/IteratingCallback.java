@@ -19,7 +19,6 @@
 package org.eclipse.jetty.util;
 
 import java.nio.channels.ClosedChannelException;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.thread.SpinLock;
 

@@ -18,7 +18,11 @@
 
 package org.eclipse.jetty.continuation;
 
+import javax.servlet.FilterChain;
+import javax.servlet.Servlet;
+import javax.servlet.ServletRequest;
 import javax.servlet.ServletResponse;
+import javax.servlet.ServletResponseWrapper;
 
 /* ------------------------------------------------------------ */
 /**

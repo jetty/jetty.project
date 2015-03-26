@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.client;
 
 import java.net.InetSocketAddress;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HostPortHttpField;

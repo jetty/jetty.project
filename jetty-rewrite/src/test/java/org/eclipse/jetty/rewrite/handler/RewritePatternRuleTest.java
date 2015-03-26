@@ -23,7 +23,6 @@ import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 
-import org.eclipse.jetty.http.HttpURI;
 import org.junit.Before;
 import org.junit.Test;
 

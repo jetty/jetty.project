@@ -20,7 +20,6 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import org.eclipse.jetty.server.session.AbstractClientCrossContextSessionTest;
 import org.eclipse.jetty.server.session.AbstractTestServer;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest

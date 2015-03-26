@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
+import static org.hamcrest.Matchers.empty;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.io.IOException;
 import java.net.URI;
 import java.util.Queue;
@@ -41,10 +45,6 @@ import org.junit.AfterClass;
 import org.junit.BeforeClass;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.empty;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public class IdleTimeoutTest
 {

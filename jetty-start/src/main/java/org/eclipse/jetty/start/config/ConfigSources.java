@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start.config;
 
-import static org.eclipse.jetty.start.UsageException.*;
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,8 +31,8 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Props;
-import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
 
 /**

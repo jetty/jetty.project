@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.client;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static org.junit.Assert.assertTrue;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -45,6 +48,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -80,9 +84,6 @@ import org.junit.Assert;
 import org.junit.Assume;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.assertTrue;
 
 public class HttpClientTest extends AbstractHttpClientServerTest
 {

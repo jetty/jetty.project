@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
+import static org.hamcrest.Matchers.is;
 
 import java.util.Queue;
 

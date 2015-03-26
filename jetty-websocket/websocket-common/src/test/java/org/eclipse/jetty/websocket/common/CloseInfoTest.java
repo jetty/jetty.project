@@ -18,9 +18,15 @@
 
 package org.eclipse.jetty.websocket.common;
 
-import static org.eclipse.jetty.websocket.api.StatusCode.*;
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.eclipse.jetty.websocket.api.StatusCode.FAILED_TLS_HANDSHAKE;
+import static org.eclipse.jetty.websocket.api.StatusCode.NORMAL;
+import static org.eclipse.jetty.websocket.api.StatusCode.NO_CLOSE;
+import static org.eclipse.jetty.websocket.api.StatusCode.NO_CODE;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.fail;
 
 import java.nio.ByteBuffer;
 

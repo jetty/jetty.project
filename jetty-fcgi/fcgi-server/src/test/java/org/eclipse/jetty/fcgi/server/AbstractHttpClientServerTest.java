@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.fcgi.server;
 
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+
 import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.client.ConnectionPool;
@@ -39,9 +42,6 @@ import org.eclipse.jetty.util.LeakDetector;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Rule;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
 
 public abstract class AbstractHttpClientServerTest
 {

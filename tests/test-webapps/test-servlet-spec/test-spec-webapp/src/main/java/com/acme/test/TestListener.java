@@ -19,7 +19,6 @@
 package com.acme.test;
 import java.util.EventListener;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Queue;
@@ -34,8 +36,6 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.test.BlockheadServer.ServerConnection;
 import org.junit.Assert;
-
-import static org.hamcrest.Matchers.is;
 
 public class ServerReadThread extends Thread
 {

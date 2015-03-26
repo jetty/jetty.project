@@ -23,7 +23,6 @@ import static org.junit.Assert.assertEquals;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 
-import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.util.MultiMap;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.UrlEncoded;

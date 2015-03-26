@@ -20,6 +20,7 @@ package org.eclipse.jetty.server;
 
 import java.util.Set;
 
+import javax.servlet.ServletRequest;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpSession;

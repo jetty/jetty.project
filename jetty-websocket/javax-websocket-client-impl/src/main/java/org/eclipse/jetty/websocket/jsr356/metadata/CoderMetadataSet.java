@@ -24,6 +24,8 @@ import java.util.List;
 import java.util.Map;
 import java.util.concurrent.ConcurrentHashMap;
 
+import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+
 /**
  * An durable collection of {@link CoderMetadata}.
  * <p>

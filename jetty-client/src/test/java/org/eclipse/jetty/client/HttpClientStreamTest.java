@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.client;
 
+import static java.nio.file.StandardOpenOption.CREATE;
+import static org.junit.Assert.fail;
+
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.IOException;
@@ -40,6 +43,7 @@ import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -65,9 +69,6 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.fail;
 
 public class HttpClientStreamTest extends AbstractHttpClientServerTest
 {

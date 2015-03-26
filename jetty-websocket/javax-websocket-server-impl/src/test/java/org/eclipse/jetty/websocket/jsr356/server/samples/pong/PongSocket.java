@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.server.samples.pong;
 
 import java.nio.charset.StandardCharsets;
+
 import javax.websocket.EndpointConfig;
 import javax.websocket.OnMessage;
 import javax.websocket.OnOpen;

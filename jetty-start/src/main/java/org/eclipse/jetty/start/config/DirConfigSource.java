@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start.config;
 
-import static org.eclipse.jetty.start.UsageException.*;
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
@@ -33,11 +33,11 @@ import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.NaturalSort;
 import org.eclipse.jetty.start.PathMatchers;
 import org.eclipse.jetty.start.Props;
-import org.eclipse.jetty.start.RawArgs;
-import org.eclipse.jetty.start.UsageException;
 import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.StartIni;
 import org.eclipse.jetty.start.StartLog;
+import org.eclipse.jetty.start.UsageException;
 
 /**
  * A Directory based {@link ConfigSource}.

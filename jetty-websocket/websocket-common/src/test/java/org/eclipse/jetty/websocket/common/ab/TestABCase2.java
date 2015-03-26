@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.ab;
 
+import static org.hamcrest.Matchers.is;
+
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 
@@ -38,8 +40,6 @@ import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.test.UnitParser;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class TestABCase2
 {
