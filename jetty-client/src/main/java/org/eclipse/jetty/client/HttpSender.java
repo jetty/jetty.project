@@ -303,8 +303,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
             {
                 // Mark atomically the request as completed, with respect
                 // to concurrency between request success and request failure.
-                boolean completed = exchange.requestComplete(null);
-                if (!completed)
+                if (!exchange.requestComplete(null))
                     return false;
 
                 requestState.set(RequestState.QUEUED);

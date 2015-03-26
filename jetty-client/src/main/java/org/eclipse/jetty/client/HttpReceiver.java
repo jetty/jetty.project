@@ -33,6 +33,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
@@ -366,8 +367,7 @@ public abstract class HttpReceiver
     {
         // Mark atomically the response as completed, with respect
         // to concurrency between response success and response failure.
-        boolean completed = exchange.responseComplete(null);
-        if (!completed)
+        if (!exchange.responseComplete(null))
             return false;
 
         responseState.set(ResponseState.IDLE);
@@ -375,13 +375,6 @@ public abstract class HttpReceiver
         // Reset to be ready for another response.
         reset();
 
-        // Mark atomically the response as terminated, with
-        // respect to concurrency between request and response.
-        Result result = exchange.terminateResponse();
-
-        // Notify *after* resetting and terminating, because
-        // the notification may  trigger another request/response,
-        // or the reset of the response in case of 100-Continue.
         HttpResponse response = exchange.getResponse();
         if (LOG.isDebugEnabled())
             LOG.debug("Response success {}", response);
@@ -389,6 +382,14 @@ public abstract class HttpReceiver
         ResponseNotifier notifier = getHttpDestination().getResponseNotifier();
         notifier.notifySuccess(listeners, response);
 
+        // Special case for 100 Continue that cannot
+        // be handled by the ContinueProtocolHandler.
+        if (exchange.getResponse().getStatus() == HttpStatus.CONTINUE_100)
+            return true;
+
+        // Mark atomically the response as terminated, with
+        // respect to concurrency between request and response.
+        Result result = exchange.terminateResponse();
         terminateResponse(exchange, result);
 
         return true;
