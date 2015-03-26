@@ -633,35 +633,51 @@ public class SslContextFactory extends AbstractLifeCycle
         _validatePeerCerts = validatePeerCerts;
     }
 
-
     /**
      * @param password
-     *            The password for the key store
+     *            The password for the key store.  If null is passed then 
+     *            the {@link Password#getPassword(String, String, String) is used to
+     *            obtain a password either from the "org.eclipse.jetty.ssl.password"
+     *            System property or by prompting for manual entry.
      */
     public void setKeyStorePassword(String password)
     {
         checkNotStarted();
-        _keyStorePassword = Password.getPassword(PASSWORD_PROPERTY,password,null);
+        
+        _keyStorePassword = password==null
+            ?Password.getPassword(PASSWORD_PROPERTY,null,null)
+            :new Password(password);
     }
 
     /**
      * @param password
-     *            The password (if any) for the specific key within the key store
+     *            The password (if any) for the specific key within the key store.
+     *            If null is passed then 
+     *            the {@link Password#getPassword(String, String, String) is used to
+     *            obtain a password either from the "org.eclipse.jetty.ssl.keypassword"
+     *            System property or by prompting for manual entry.
      */
     public void setKeyManagerPassword(String password)
     {
         checkNotStarted();
-        _keyManagerPassword = Password.getPassword(KEYPASSWORD_PROPERTY,password,null);
+        _keyManagerPassword = password==null
+            ?Password.getPassword(KEYPASSWORD_PROPERTY,null,null)
+            :new Password(password);
     }
 
     /**
      * @param password
-     *            The password for the trust store
+     *            The password for the trust store. If null is passed then 
+     *            the {@link Password#getPassword(String, String, String) is used to
+     *            obtain a password either from the "org.eclipse.jetty.ssl.password"
+     *            System property or by prompting for manual entry.
      */
     public void setTrustStorePassword(String password)
     {
         checkNotStarted();
-        _trustStorePassword = Password.getPassword(PASSWORD_PROPERTY,password,null);
+        _trustStorePassword = password==null
+            ?Password.getPassword(PASSWORD_PROPERTY,null,null)
+            :new Password(password);
     }
 
     /**
