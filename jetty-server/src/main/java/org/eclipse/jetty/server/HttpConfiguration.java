@@ -222,7 +222,7 @@ public class HttpConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * @param delay if true, delay the application dispatch until content is available
+     * @param delay if true, delay the application dispatch until content is available (default false)
      */
     public void setDelayDispatchUntilContent(boolean delay)
     {
