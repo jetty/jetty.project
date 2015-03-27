@@ -17,6 +17,7 @@
   <modules>
     <module>cdi-core</module>
     <module>cdi-servlet</module>
+    <module>cdi-full-servlet</module>
     <module>cdi-websocket</module>
     <module>test-cdi-webapp</module>
     <!-- needs to be fixed still 
