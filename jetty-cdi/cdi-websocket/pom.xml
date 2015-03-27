@@ -27,6 +27,18 @@
     </dependency>
     <!-- below here lie testing dragons -->
     <dependency>
+       <groupId>org.eclipse.jetty</groupId>
+       <artifactId>apache-jsp</artifactId>
+       <version>${project.version}</version>
+       <scope>test</scope>
+     </dependency>
+    <dependency>
+      <groupId>org.jboss.weld</groupId>
+      <artifactId>weld-core</artifactId>
+      <version>${weld.version}</version>
+      <scope>test</scope>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.weld.se</groupId>
       <artifactId>weld-se-core</artifactId>
       <version>${weld.version}</version>

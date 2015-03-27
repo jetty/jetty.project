@@ -86,6 +86,21 @@
           </execution>
         </executions>
       </plugin>
+      <plugin>
+         <groupId>org.eclipse.jetty</groupId>
+         <artifactId>jetty-maven-plugin</artifactId>
+         <version>${project.version}</version>
+         <configuration>
+         </configuration>
+         <dependencies>
+           <dependency>
+               <groupId>org.eclipse.jetty.cdi</groupId>
+               <artifactId>cdi-full-servlet</artifactId>
+               <version>${project.version}</version>
+               <type>pom</type>
+           </dependency>
+         </dependencies>
+      </plugin>
     </plugins>
   </build>
 </project>

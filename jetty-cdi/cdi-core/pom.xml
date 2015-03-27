@@ -23,9 +23,21 @@
       <version>${project.version}</version>
     </dependency>
     <dependency>
+       <groupId>javax.enterprise</groupId>
+       <artifactId>cdi-api</artifactId>
+       <version>1.2</version>
+       <exclusions>
+         <exclusion>
+           <groupId>javax.el</groupId>
+           <artifactId>javax.el-api</artifactId>
+         </exclusion>
+       </exclusions>
+    </dependency>
+    <dependency>
       <groupId>org.jboss.weld</groupId>
       <artifactId>weld-core</artifactId>
       <version>${weld.version}</version>
+      <scope>test</scope>
     </dependency>
     <dependency>
       <groupId>org.jboss.weld.se</groupId>
