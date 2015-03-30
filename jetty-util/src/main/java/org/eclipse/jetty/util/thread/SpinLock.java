@@ -20,11 +20,9 @@ package org.eclipse.jetty.util.thread;
 
 import java.util.concurrent.atomic.AtomicReference;
 
-
-/* ------------------------------------------------------------ */
-/** Spin Lock
- * <p>This is a lock designed to protect VERY short sections of 
- * critical code.  Threads attempting to take the lock will spin 
+/**
+ * <p>This is a lock designed to protect VERY short sections of
+ * critical code.  Threads attempting to take the lock will spin
  * forever until the lock is available, thus it is important that
  * the code protected by this lock is extremely simple and non
  * blocking. The reason for this lock is that it prevents a thread
@@ -40,32 +38,29 @@ public class SpinLock
 {
     private final AtomicReference<Thread> _lock = new AtomicReference<>(null);
     private final Lock _unlock = new Lock();
-    
+
     public Lock lock()
     {
-        Thread thread = Thread.currentThread();
-        while(true)
+        Thread current = Thread.currentThread();
+        while (true)
         {
-            if (!_lock.compareAndSet(null,thread))
+            // Using test-and-test-and-set for better performance.
+            Thread locker = _lock.get();
+            if (locker != null || !_lock.compareAndSet(null, current))
             {
-                if (_lock.get()==thread)
+                if (locker == current)
                     throw new IllegalStateException("SpinLock is not reentrant");
                 continue;
             }
             return _unlock;
         }
     }
-    
+
     public boolean isLocked()
     {
-        return _lock.get()!=null;
+        return _lock.get() != null;
     }
-    
-    public boolean isLockedThread()
-    {
-        return _lock.get()==Thread.currentThread();
-    }
-    
+
     public class Lock implements AutoCloseable
     {
         @Override

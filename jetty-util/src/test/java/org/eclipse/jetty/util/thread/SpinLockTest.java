@@ -18,17 +18,16 @@
 
 package org.eclipse.jetty.util.thread;
 
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
 
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+
 public class SpinLockTest
 {
-    
     @Test
     public void testLocked()
     {
@@ -69,7 +68,6 @@ public class SpinLockTest
 
         assertFalse(lock.isLocked());
     }
-
 
     @Test
     public void testContend() throws Exception
@@ -121,7 +119,7 @@ public class SpinLockTest
         };
         thread1.start();
         // thread1 will be spinning here
-        assertFalse(held1.await(100,TimeUnit.MILLISECONDS));
+        assertFalse(held1.await(100, TimeUnit.MILLISECONDS));
         
         // Let thread0 complete
         hold0.countDown();
@@ -135,8 +133,5 @@ public class SpinLockTest
         thread1.join();
 
         assertFalse(lock.isLocked());
-        
     }
-    
-    
 }
