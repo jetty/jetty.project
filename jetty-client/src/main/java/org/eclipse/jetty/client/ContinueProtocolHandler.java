@@ -27,17 +27,25 @@ import org.eclipse.jetty.client.util.BufferingResponseListener;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 
+/**
+ * <p>A protocol handler that handles the 100 response code.</p>
+ */
 public class ContinueProtocolHandler implements ProtocolHandler
 {
+    public static final String NAME = "continue";
     private static final String ATTRIBUTE = ContinueProtocolHandler.class.getName() + ".100continue";
 
-    private final HttpClient client;
     private final ResponseNotifier notifier;
 
-    public ContinueProtocolHandler(HttpClient client)
+    public ContinueProtocolHandler()
     {
-        this.client = client;
         this.notifier = new ResponseNotifier();
+    }
+
+    @Override
+    public String getName()
+    {
+        return NAME;
     }
 
     @Override

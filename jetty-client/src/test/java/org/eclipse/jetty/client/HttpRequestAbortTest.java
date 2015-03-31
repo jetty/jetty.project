@@ -25,7 +25,6 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -528,7 +527,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final AtomicBoolean aborted = new AtomicBoolean();
         final CountDownLatch latch = new CountDownLatch(1);
         client.getProtocolHandlers().clear();
-        client.getProtocolHandlers().add(new RedirectProtocolHandler(client)
+        client.getProtocolHandlers().put(new RedirectProtocolHandler(client)
         {
             @Override
             public void onComplete(Result result)

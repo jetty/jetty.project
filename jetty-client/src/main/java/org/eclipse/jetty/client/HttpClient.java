@@ -109,7 +109,7 @@ public class HttpClient extends ContainerLifeCycle
     private static final Logger LOG = Log.getLogger(HttpClient.class);
 
     private final ConcurrentMap<Origin, HttpDestination> destinations = new ConcurrentHashMap<>();
-    private final List<ProtocolHandler> handlers = new ArrayList<>();
+    private final ProtocolHandlers handlers = new ProtocolHandlers();
     private final List<Request.Listener> requestListeners = new ArrayList<>();
     private final AuthenticationStore authenticationStore = new HttpAuthenticationStore();
     private final Set<ContentDecoder.Factory> decoderFactories = new ContentDecoderFactorySet();
@@ -210,10 +210,10 @@ public class HttpClient extends ContainerLifeCycle
 
         resolver = new SocketAddressResolver(executor, scheduler, getAddressResolutionTimeout());
 
-        handlers.add(new ContinueProtocolHandler(this));
-        handlers.add(new RedirectProtocolHandler(this));
-        handlers.add(new WWWAuthenticationProtocolHandler(this));
-        handlers.add(new ProxyAuthenticationProtocolHandler(this));
+        handlers.put(new ContinueProtocolHandler());
+        handlers.put(new RedirectProtocolHandler(this));
+        handlers.put(new WWWAuthenticationProtocolHandler(this));
+        handlers.put(new ProxyAuthenticationProtocolHandler(this));
 
         decoderFactories.add(new GZIPContentDecoder.Factory());
 
@@ -547,22 +547,14 @@ public class HttpClient extends ContainerLifeCycle
         return new HttpConversation();
     }
 
-    protected List<ProtocolHandler> getProtocolHandlers()
+    public ProtocolHandlers getProtocolHandlers()
     {
         return handlers;
     }
 
     protected ProtocolHandler findProtocolHandler(Request request, Response response)
     {
-        // Optimized to avoid allocations of iterator instances
-        List<ProtocolHandler> protocolHandlers = getProtocolHandlers();
-        for (int i = 0; i < protocolHandlers.size(); ++i)
-        {
-            ProtocolHandler handler = protocolHandlers.get(i);
-            if (handler.accept(request, response))
-                return handler;
-        }
-        return null;
+        return handlers.find(request, response);
     }
 
     /**
