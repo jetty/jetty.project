@@ -91,6 +91,7 @@ public class HttpRedirector
             case 302:
             case 303:
             case 307:
+            case 308:
                 return true;
             default:
                 return false;
@@ -260,6 +261,7 @@ public class HttpRedirector
                     return redirect(request, response, listener, newURI, HttpMethod.GET.asString());
             }
             case 307:
+            case 308:
             {
                 // Keep same method
                 return redirect(request, response, listener, newURI, request.getMethod());
