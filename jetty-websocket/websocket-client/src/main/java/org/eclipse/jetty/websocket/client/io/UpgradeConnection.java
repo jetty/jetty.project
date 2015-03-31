@@ -78,6 +78,7 @@ public class UpgradeConnection extends AbstractConnection
         @Override
         public void succeeded()
         {
+            LOG.debug("Upgrade Request Write Success");
             // Writing the request header is complete.
             super.succeeded();
             // start the interest in fill
@@ -87,6 +88,7 @@ public class UpgradeConnection extends AbstractConnection
         @Override
         public void failed(Throwable cause)
         {
+            LOG.warn("Upgrade Request Write Failure", cause);
             super.failed(cause);
             // Fail the connect promise when a fundamental exception during connect occurs.
             connectPromise.failed(cause);
