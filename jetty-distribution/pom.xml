@@ -432,19 +432,6 @@
             </configuration>
           </execution>
           <execution>
-            <id>copy-cdi-deps</id>
-            <phase>generate-resources</phase>
-            <goals>
-              <goal>copy-dependencies</goal>
-            </goals>
-            <configuration>
-              <includeGroupIds>org.eclipse.jetty.cdi</includeGroupIds>
-              <!-- includeArtifactIds>cdi-core,cdi-servlet,cdi-websocket</includeArtifactIds -->
-              <includeTypes>jar</includeTypes>
-              <outputDirectory>${assembly-directory}/lib/cdi</outputDirectory>
-            </configuration>
-          </execution>
-          <execution>
             <id>copy-jndi-deps</id>
             <phase>generate-resources</phase>
             <goals>
