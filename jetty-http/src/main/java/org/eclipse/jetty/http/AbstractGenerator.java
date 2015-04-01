@@ -442,8 +442,10 @@ public abstract class AbstractGenerator implements Generator
         {
             flushBuffer();
 
-            while (now<end && (content!=null && content.length()>0 ||buffer!=null && buffer.length()>0) && _endp.isOpen()&& !_endp.isOutputShutdown())
+            while (now<end && (content!=null && content.length()>0 ||buffer!=null && buffer.length()>0))
             {
+            	if (!_endp.isOpen() || _endp.isOutputShutdown())
+            		throw new EofException();
                 blockForOutput(end-now);
                 now=System.currentTimeMillis();
             }
