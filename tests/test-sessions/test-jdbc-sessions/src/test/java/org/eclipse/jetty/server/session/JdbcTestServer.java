@@ -76,14 +76,14 @@ public class JdbcTestServer extends AbstractTestServer
      * @see org.eclipse.jetty.server.session.AbstractTestServer#newSessionIdManager(String)
      */
     @Override
-    public  SessionIdManager newSessionIdManager(String config)
+    public  SessionIdManager newSessionIdManager(Object config)
     {
         synchronized(JdbcTestServer.class)
         {
             JDBCSessionIdManager idManager = new JDBCSessionIdManager(_server);
             idManager.setScavengeInterval(_scavengePeriod);
             idManager.setWorkerName("w"+(__workers++));
-            idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:config));
+            idManager.setDriverInfo(DRIVER_CLASS, (config==null?DEFAULT_CONNECTION_URL:(String)config));
             JDBCSessionIdManager.SessionIdTableSchema idTableSchema = new JDBCSessionIdManager.SessionIdTableSchema();
             idTableSchema.setTableName("mysessionids");
             idTableSchema.setIdColumn("myid");

@@ -82,8 +82,7 @@ public abstract class AbstractRemoveSessionTest
                 assertTrue(testListener.isDestroyed());
 
 
-                // The session is not there anymore, but we present an old cookie
-                // The server creates a new session, we must ensure we released all locks
+                // The session is not there anymore, even if we present an old cookie
                 request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=check");
                 request.header("Cookie", sessionCookie);
                 response = request.send();

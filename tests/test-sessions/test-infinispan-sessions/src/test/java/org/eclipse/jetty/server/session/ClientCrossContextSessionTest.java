@@ -16,43 +16,45 @@
 //  ========================================================================
 //
 
+
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
+import org.junit.Test;
 
-/**
- * @version $Revision$ $Date$
- */
-public class HashTestServer extends AbstractTestServer
+public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
 {
 
-    public HashTestServer(int port)
+    public static InfinispanTestSupport __testSupport;
+
+    
+    
+    @BeforeClass
+    public static void setup () throws Exception
     {
-        super(port, 30, 10);
+        __testSupport = new InfinispanTestSupport();
+        __testSupport.setup();
     }
-
-    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod)
+    
+    @AfterClass
+    public static void teardown () throws Exception
     {
-        super(port, maxInactivePeriod, scavengePeriod);
+       __testSupport.teardown();
     }
-
-
-    public SessionIdManager newSessionIdManager(Object config)
+    
+    
+    @Override
+    public AbstractTestServer createServer(int port)
     {
-        return new HashSessionIdManager();
+        InfinispanTestSessionServer server = new InfinispanTestSessionServer(port, __testSupport.getCache());
+        return server;
     }
-
-    public SessionManager newSessionManager()
+    
+    @Test
+    public void testCrossContextDispatch() throws Exception
     {
-        HashSessionManager manager = new HashSessionManager();
-        manager.setScavengePeriod(_scavengePeriod);
-        return manager;
+        super.testCrossContextDispatch();
     }
-
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
-    {
-        return new SessionHandler(sessionManager);
-    }
-
+    
 }

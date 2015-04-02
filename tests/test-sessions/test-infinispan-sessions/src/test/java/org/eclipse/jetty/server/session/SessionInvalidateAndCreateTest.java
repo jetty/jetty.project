@@ -16,60 +16,51 @@
 //  ========================================================================
 //
 
+
 package org.eclipse.jetty.server.session;
 
-import java.sql.DriverManager;
-import java.sql.SQLException;
-
-import org.junit.After;
-import org.junit.Test;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
- * SessionExpiryTest
- *
+ * SessionInvalidateAndCreateTest
  *
  *
  */
-public class SessionExpiryTest extends AbstractSessionExpiryTest
+public class SessionInvalidateAndCreateTest extends AbstractSessionInvalidateAndCreateTest
 {
-
+    public static InfinispanTestSupport __testSupport;
+    
+    
+    @BeforeClass
+    public static void setup () throws Exception
+    {
+        __testSupport = new InfinispanTestSupport();
+        __testSupport.setup();
+    }
+    
+    @AfterClass
+    public static void teardown () throws Exception
+    {
+        __testSupport.teardown();
+    }
+    
+    
     /** 
-     * @see org.eclipse.jetty.server.session.AbstractSessionExpiryTest#createServer(int, int, int)
+     * @see org.eclipse.jetty.server.session.AbstractSessionInvalidateAndCreateTest#createServer(int, int, int)
      */
     @Override
     public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return new JdbcTestServer(port,max,scavenge);
+        return new InfinispanTestSessionServer(port, max, scavenge, __testSupport.getCache());
     }
 
-    @Test
-    public void testSessionExpiry() throws Exception
+    @Override
+    public void testSessionScavenge() throws Exception
     {
-        super.testSessionExpiry();
-    }
-    
-    
-    
-    
-    
-    @Test
-    public void testSessionNotExpired() throws Exception
-    {
-        super.testSessionNotExpired();
+        super.testSessionScavenge();
     }
 
-  
     
     
-    @After
-    public void tearDown() throws Exception 
-    {
-        try
-        {
-            DriverManager.getConnection( "jdbc:derby:sessions;shutdown=true" );
-        }
-        catch( SQLException expected )
-        {
-        }
-    }
 }
