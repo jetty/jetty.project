@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.Authentication;
 import org.eclipse.jetty.server.Authentication.User;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.B64Code;
+import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.CertificateUtils;
 import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Constraint;
@@ -106,7 +107,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
 
                 if (_validateCerts)
                 {
-                    KeyStore trustStore = getKeyStore(null,
+                    KeyStore trustStore = getKeyStore(
                             _trustStorePath, _trustStoreType, _trustStoreProvider,
                             _trustStorePassword == null ? null :_trustStorePassword.toString());
                     Collection<? extends CRL> crls = loadCRL(_crlPath);
@@ -147,6 +148,11 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         }
     }
 
+    @Deprecated
+    protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
+    {
+        return getKeyStore(storePath, storeType, storeProvider, storePassword);
+    }
     /* ------------------------------------------------------------ */
     /**
      * Loads keystore using an input stream or a file path in the same
@@ -155,7 +161,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
      * Required for integrations to be able to override the mechanism
      * used to load a keystore in order to provide their own implementation.
      *
-     * @param storeStream keystore input stream
      * @param storePath path of keystore file
      * @param storeType keystore type
      * @param storeProvider keystore provider
@@ -163,9 +168,9 @@ public class ClientCertAuthenticator extends LoginAuthenticator
      * @return created keystore
      * @throws Exception
      */
-    protected KeyStore getKeyStore(InputStream storeStream, String storePath, String storeType, String storeProvider, String storePassword) throws Exception
+    protected KeyStore getKeyStore(String storePath, String storeType, String storeProvider, String storePassword) throws Exception
     {
-        return CertificateUtils.getKeyStore(storeStream, storePath, storeType, storeProvider, storePassword);
+        return CertificateUtils.getKeyStore(Resource.newResource(storePath), storeType, storeProvider, storePassword);
     }
 
     /* ------------------------------------------------------------ */

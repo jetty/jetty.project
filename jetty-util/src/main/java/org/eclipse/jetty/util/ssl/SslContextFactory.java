@@ -19,12 +19,10 @@
 package org.eclipse.jetty.util.ssl;
 
 import java.io.ByteArrayInputStream;
-import java.io.ByteArrayOutputStream;
 import java.io.IOException;
-import java.io.InputStream;
 import java.net.InetAddress;
 import java.net.InetSocketAddress;
-import java.security.InvalidParameterException;
+import java.net.MalformedURLException;
 import java.security.KeyStore;
 import java.security.SecureRandom;
 import java.security.Security;
@@ -59,10 +57,9 @@ import javax.net.ssl.SSLSocket;
 import javax.net.ssl.SSLSocketFactory;
 import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509KeyManager;
+import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509TrustManager;
 
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -124,25 +121,21 @@ public class SslContextFactory extends AbstractLifeCycle
     private List<String> _includeCipherSuites = null;
 
     /** Keystore path. */
-    private String _keyStorePath;
+    private Resource _keyStoreResource;
     /** Keystore provider name */
     private String _keyStoreProvider;
     /** Keystore type */
     private String _keyStoreType = "JKS";
-    /** Keystore input stream */
-    private InputStream _keyStoreInputStream;
 
     /** SSL certificate alias */
     private String _certAlias;
 
     /** Truststore path */
-    private String _trustStorePath;
+    private Resource _trustStoreResource;
     /** Truststore provider name */
     private String _trustStoreProvider;
     /** Truststore type */
     private String _trustStoreType = "JKS";
-    /** Truststore input stream */
-    private InputStream _trustStoreInputStream;
 
     /** Set to true if client certificate authentication is required */
     private boolean _needClientAuth = false;
@@ -150,11 +143,11 @@ public class SslContextFactory extends AbstractLifeCycle
     private boolean _wantClientAuth = false;
 
     /** Keystore password */
-    private transient Password _keyStorePassword;
+    private Password _keyStorePassword;
     /** Key manager password */
-    private transient Password _keyManagerPassword;
+    private Password _keyManagerPassword;
     /** Truststore password */
-    private transient Password _trustStorePassword;
+    private Password _trustStorePassword;
 
     /** SSL provider name */
     private String _sslProvider;
@@ -184,9 +177,9 @@ public class SslContextFactory extends AbstractLifeCycle
     private String _ocspResponderURL;
 
     /** SSL keystore */
-    private KeyStore _keyStore;
+    private KeyStore _setKeyStore;
     /** SSL truststore */
-    private KeyStore _trustStore;
+    private KeyStore _setTrustStore;
     /** Set to true to enable SSL Session caching */
     private boolean _sessionCachingEnabled = true;
     /** SSL session cache size */
@@ -195,7 +188,7 @@ public class SslContextFactory extends AbstractLifeCycle
     private int _sslSessionTimeout;
 
     /** SSL context */
-    private SSLContext _context;
+    private SSLContext _setContext;
 
     /** EndpointIdentificationAlgorithm - when set to "HTTPS" hostname verification will be enabled */
     private String _endpointIdentificationAlgorithm = null;
@@ -206,6 +199,11 @@ public class SslContextFactory extends AbstractLifeCycle
     /** Whether TLS renegotiation is allowed */
     private boolean _renegotiationAllowed = true;
 
+    protected Factory _factory;
+    
+    
+    
+    
     /**
      * Construct an instance of SslContextFactory
      * Default constructor for use in XmlConfiguration files
@@ -241,7 +239,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SslContextFactory(String keyStorePath)
     {
-        _keyStorePath = keyStorePath;
+        setKeyStorePath(keyStorePath);
     }
 
     /**
@@ -251,10 +249,15 @@ public class SslContextFactory extends AbstractLifeCycle
     @Override
     protected void doStart() throws Exception
     {
-        if (_context == null)
+        SSLContext context = _setContext;
+        KeyStore keyStore = _setKeyStore;
+        KeyStore trustStore = _setTrustStore;
+        
+        if (context == null)
         {
-            if (_keyStore==null && _keyStoreInputStream == null && _keyStorePath == null &&
-                _trustStore==null && _trustStoreInputStream == null && _trustStorePath == null )
+            // Is this an empty factory?
+            if (keyStore==null && _keyStoreResource == null &&
+                trustStore==null && _trustStoreResource == null )
             {
                 TrustManager[] trust_managers=null;
 
@@ -267,18 +270,15 @@ public class SslContextFactory extends AbstractLifeCycle
                 }
 
                 SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
-                SSLContext context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
+                context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
                 context.init(null, trust_managers, secureRandom);
-                _context = context;
             }
             else
             {
-                // verify that keystore and truststore
-                // parameters are set up correctly
-                checkKeyStore();
-
-                KeyStore keyStore = loadKeyStore();
-                KeyStore trustStore = loadTrustStore();
+                if (keyStore==null)
+                    keyStore=loadKeyStore(_keyStoreResource);
+                if (trustStore==null)
+                    trustStore=loadTrustStore(_trustStoreResource==null?_keyStoreResource:_trustStoreResource);
 
                 Collection<? extends CRL> crls = loadCRL(_crlPath);
 
@@ -308,24 +308,24 @@ public class SslContextFactory extends AbstractLifeCycle
                 TrustManager[] trustManagers = getTrustManagers(trustStore,crls);
 
                 SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
-                SSLContext context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
+                context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
                 context.init(keyManagers,trustManagers,secureRandom);
-                _context = context;
             }
-
-            SSLEngine engine = newSSLEngine();
-            if (LOG.isDebugEnabled())
-            {
-                LOG.debug("Enabled Protocols {} of {}",Arrays.asList(engine.getEnabledProtocols()),Arrays.asList(engine.getSupportedProtocols()));
-                LOG.debug("Enabled Ciphers   {} of {}",Arrays.asList(engine.getEnabledCipherSuites()),Arrays.asList(engine.getSupportedCipherSuites()));
-            }
+        }
+        
+        _factory = new Factory(keyStore,trustStore,context);
+        SSLEngine engine = newSSLEngine();
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Enabled Protocols {} of {}",Arrays.asList(engine.getEnabledProtocols()),Arrays.asList(engine.getSupportedProtocols()));
+            LOG.debug("Enabled Ciphers   {} of {}",Arrays.asList(engine.getEnabledCipherSuites()),Arrays.asList(engine.getSupportedCipherSuites()));
         }
     }
 
     @Override
     protected void doStop() throws Exception
     {
-        _context = null;
+        _factory = null;
         super.doStop();
     }
 
@@ -436,7 +436,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public String getKeyStorePath()
     {
-        return _keyStorePath;
+        return _keyStoreResource.toString();
     }
 
     /**
@@ -446,7 +446,14 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setKeyStorePath(String keyStorePath)
     {
         checkNotStarted();
-        _keyStorePath = keyStorePath;
+        try
+        {
+            _keyStoreResource = Resource.newResource(keyStorePath);
+        }
+        catch (MalformedURLException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     /**
@@ -502,15 +509,7 @@ public class SslContextFactory extends AbstractLifeCycle
         checkNotStarted();
         _certAlias = certAlias;
     }
-
-    /**
-     * @return The file name or URL of the trust store location
-     */
-    public String getTrustStore()
-    {
-        return _trustStorePath;
-    }
-
+    
     /**
      * @param trustStorePath
      *            The file name or URL of the trust store location
@@ -518,7 +517,14 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setTrustStorePath(String trustStorePath)
     {
         checkNotStarted();
-        _trustStorePath = trustStorePath;
+        try
+        {
+            _trustStoreResource = Resource.newResource(trustStorePath);
+        }
+        catch (MalformedURLException e)
+        {
+            throw new IllegalArgumentException(e);
+        }
     }
 
     /**
@@ -856,9 +862,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SSLContext getSslContext()
     {
-        if (!isStarted())
-            throw new IllegalStateException(getState());
-        return _context;
+        return isStarted()?_factory._context:_setContext;
     }
 
     /**
@@ -868,7 +872,7 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setSslContext(SSLContext sslContext)
     {
         checkNotStarted();
-        _context = sslContext;
+        _setContext = sslContext;
     }
 
     /**
@@ -887,11 +891,9 @@ public class SslContextFactory extends AbstractLifeCycle
      * @return the key store instance
      * @throws Exception if the keystore cannot be loaded
      */
-    protected KeyStore loadKeyStore() throws Exception
+    protected KeyStore loadKeyStore(Resource resource) throws Exception
     {
-        return _keyStore != null ? _keyStore : CertificateUtils.getKeyStore(_keyStoreInputStream,
-                _keyStorePath, _keyStoreType, _keyStoreProvider,
-                _keyStorePassword==null? null: _keyStorePassword.toString());
+        return CertificateUtils.getKeyStore(resource, _keyStoreType, _keyStoreProvider,_keyStorePassword==null? null:_keyStorePassword.toString());
     }
 
     /**
@@ -900,11 +902,9 @@ public class SslContextFactory extends AbstractLifeCycle
      * @return the key store instance
      * @throws Exception if the truststore cannot be loaded
      */
-    protected KeyStore loadTrustStore() throws Exception
+    protected KeyStore loadTrustStore(Resource resource) throws Exception
     {
-        return _trustStore != null ? _trustStore : CertificateUtils.getKeyStore(_trustStoreInputStream,
-                _trustStorePath, _trustStoreType,  _trustStoreProvider,
-                _trustStorePassword==null? null: _trustStorePassword.toString());
+        return CertificateUtils.getKeyStore(resource, _trustStoreType,  _trustStoreProvider,_trustStorePassword==null? null:_trustStorePassword.toString());
     }
 
     /**
@@ -936,9 +936,9 @@ public class SslContextFactory extends AbstractLifeCycle
             {
                 for (int idx = 0; idx < managers.length; idx++)
                 {
-                    if (managers[idx] instanceof X509KeyManager)
+                    if (managers[idx] instanceof X509ExtendedKeyManager)
                     {
-                        managers[idx] = new AliasedX509ExtendedKeyManager(_certAlias,(X509KeyManager)managers[idx]);
+                        managers[idx] = new AliasedX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx],_certAlias);
                     }
                 }
             }
@@ -1001,52 +1001,6 @@ public class SslContextFactory extends AbstractLifeCycle
         }
 
         return managers;
-    }
-
-    /**
-     * Check KeyStore Configuration. Ensures that if keystore has been
-     * configured but there's no truststore, that keystore is
-     * used as truststore.
-     * @throws IllegalStateException if SslContextFactory configuration can't be used.
-     */
-    public void checkKeyStore()
-    {
-        if (_context != null)
-            return;
-
-        if (_keyStore == null && _keyStoreInputStream == null && _keyStorePath == null)
-            throw new IllegalStateException("SSL doesn't have a valid keystore");
-
-        // if the keystore has been configured but there is no
-        // truststore configured, use the keystore as the truststore
-        if (_trustStore == null && _trustStoreInputStream == null && _trustStorePath == null)
-        {
-            _trustStore = _keyStore;
-            _trustStorePath = _keyStorePath;
-            _trustStoreInputStream = _keyStoreInputStream;
-            _trustStoreType = _keyStoreType;
-            _trustStoreProvider = _keyStoreProvider;
-            _trustStorePassword = _keyStorePassword;
-            _trustManagerFactoryAlgorithm = _keyManagerFactoryAlgorithm;
-        }
-
-        // It's the same stream we cannot read it twice, so read it once in memory
-        if (_keyStoreInputStream != null && _keyStoreInputStream == _trustStoreInputStream)
-        {
-            try
-            {
-                ByteArrayOutputStream baos = new ByteArrayOutputStream();
-                IO.copy(_keyStoreInputStream, baos);
-                _keyStoreInputStream.close();
-
-                _keyStoreInputStream = new ByteArrayInputStream(baos.toByteArray());
-                _trustStoreInputStream = new ByteArrayInputStream(baos.toByteArray());
-            }
-            catch (Exception ex)
-            {
-                throw new IllegalStateException(ex);
-            }
-        }
     }
 
     /**
@@ -1140,6 +1094,24 @@ public class SslContextFactory extends AbstractLifeCycle
         if (isStarted())
             throw new IllegalStateException("Cannot modify configuration when "+getState());
     }
+    
+    /**
+     * Check if the lifecycle has been started and throw runtime exception
+     */
+    protected void checkIsStarted()
+    {
+        if (!isStarted())
+            throw new IllegalStateException("!STARTED: "+this);
+    }
+    
+    /**
+     * Check if the lifecycle has been started and throw runtime exception
+     */
+    protected void checkIsRunning()
+    {
+        if (!isRunning())
+            throw new IllegalStateException("!RUNNING: "+this);
+    }
 
     /**
      * @return true if CRL Distribution Points support is enabled
@@ -1198,16 +1170,26 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setKeyStore(KeyStore keyStore)
     {
         checkNotStarted();
-        _keyStore = keyStore;
+        _setKeyStore = keyStore;
     }
 
+    public KeyStore getKeyStore()
+    {
+        return isStarted()?_factory._keyStore:_setKeyStore;
+    }
+    
     /** Set the trust store.
      * @param trustStore the trust store to set
      */
     public void setTrustStore(KeyStore trustStore)
     {
         checkNotStarted();
-        _trustStore = trustStore;
+        _setTrustStore = trustStore;
+    }
+
+    public KeyStore getTrustStore()
+    {
+        return isStarted()?_factory._trustStore:_setTrustStore;
     }
 
     /** Set the key store resource.
@@ -1216,34 +1198,28 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setKeyStoreResource(Resource resource)
     {
         checkNotStarted();
-        try
-        {
-            _keyStoreInputStream = resource.getInputStream();
-        }
-        catch (IOException e)
-        {
-             throw new InvalidParameterException("Unable to get resource "+
-                     "input stream for resource "+resource.toString());
-        }
+        _keyStoreResource=resource;
     }
 
+    public Resource getKeyStoreResource()
+    {
+        return _keyStoreResource;
+    }
+    
     /** Set the trust store resource.
      * @param resource the trust store resource to set
      */
     public void setTrustStoreResource(Resource resource)
     {
         checkNotStarted();
-        try
-        {
-            _trustStoreInputStream = resource.getInputStream();
-        }
-        catch (IOException e)
-        {
-             throw new InvalidParameterException("Unable to get resource "+
-                     "input stream for resource "+resource.toString());
-        }
+        _trustStoreResource=resource;
     }
 
+    public Resource getTrustStoreResource()
+    {
+        return _keyStoreResource;
+    }
+    
     /**
     * @return true if SSL Session caching is enabled
     */
@@ -1295,7 +1271,9 @@ public class SslContextFactory extends AbstractLifeCycle
 
     public SSLServerSocket newSslServerSocket(String host,int port,int backlog) throws IOException
     {
-        SSLServerSocketFactory factory = _context.getServerSocketFactory();
+        checkIsStarted();
+        
+        SSLServerSocketFactory factory = _factory._context.getServerSocketFactory();
 
         SSLServerSocket socket =
             (SSLServerSocket) (host==null ?
@@ -1317,7 +1295,9 @@ public class SslContextFactory extends AbstractLifeCycle
 
     public SSLSocket newSslSocket() throws IOException
     {
-        SSLSocketFactory factory = _context.getSocketFactory();
+        checkIsStarted();
+        
+        SSLSocketFactory factory = _factory._context.getSocketFactory();
 
         SSLSocket socket = (SSLSocket)factory.createSocket();
 
@@ -1345,9 +1325,8 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SSLEngine newSSLEngine()
     {
-        if (!isRunning())
-            throw new IllegalStateException("!STARTED");
-        SSLEngine sslEngine=_context.createSSLEngine();
+        checkIsRunning();
+        SSLEngine sslEngine=_factory._context.createSSLEngine();
         customize(sslEngine);
         return sslEngine;
     }
@@ -1362,11 +1341,10 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     public SSLEngine newSSLEngine(String host, int port)
     {
-        if (!isRunning())
-            throw new IllegalStateException("!STARTED");
+        checkIsStarted();
         SSLEngine sslEngine=isSessionCachingEnabled()
-            ? _context.createSSLEngine(host, port)
-            : _context.createSSLEngine();
+            ? _factory._context.createSSLEngine(host, port)
+            : _factory._context.createSSLEngine();
         customize(sslEngine);
         return sslEngine;
     }
@@ -1508,7 +1486,24 @@ public class SslContextFactory extends AbstractLifeCycle
         return String.format("%s@%x(%s,%s)",
                 getClass().getSimpleName(),
                 hashCode(),
-                _keyStorePath,
-                _trustStorePath);
+                _keyStoreResource,
+                _trustStoreResource);
+    }
+    
+    
+
+    protected static class Factory
+    { 
+        final KeyStore _keyStore;
+        final KeyStore _trustStore;
+        final SSLContext _context;
+        
+        public Factory(KeyStore keyStore, KeyStore trustStore, SSLContext context)
+        {
+            super();
+            _keyStore = keyStore;
+            _trustStore = trustStore;
+            _context = context;
+        }
     }
 }
