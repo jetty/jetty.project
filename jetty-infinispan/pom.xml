@@ -73,11 +73,11 @@
          <groupId>org.infinispan</groupId>
          <artifactId>infinispan-core</artifactId>
          <version>${infinispan.version}</version>
-      </dependency>
-      <dependency>
-         <groupId>org.eclipse.jetty</groupId>
-         <artifactId>jetty-server</artifactId>
-         <version>${project.version}</version>
-      </dependency>
+    </dependency>
+    <dependency>
+       <groupId>org.eclipse.jetty</groupId>
+       <artifactId>jetty-server</artifactId>
+       <version>${project.version}</version>
+    </dependency>
   </dependencies>
 </project>
