@@ -16,43 +16,44 @@
 //  ========================================================================
 //
 
+
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 
 /**
- * @version $Revision$ $Date$
+ * LocalSessionScavengingTest
+ *
+ *
  */
-public class HashTestServer extends AbstractTestServer
+public class LocalSessionScavengingTest extends AbstractLocalSessionScavengingTest
 {
 
-    public HashTestServer(int port)
+    public static InfinispanTestSupport __testSupport;
+    
+    @BeforeClass
+    public static void setup () throws Exception
     {
-        super(port, 30, 10);
+        __testSupport = new InfinispanTestSupport();
+        __testSupport.setUseFileStore(true);
+        __testSupport.setup();
     }
-
-    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod)
+    
+    @AfterClass
+    public static void teardown () throws Exception
     {
-        super(port, maxInactivePeriod, scavengePeriod);
+       __testSupport.teardown();
     }
-
-
-    public SessionIdManager newSessionIdManager(Object config)
+    
+    
+    /** 
+     * @see org.eclipse.jetty.server.session.AbstractLocalSessionScavengingTest#createServer(int, int, int)
+     */
+    @Override
+    public AbstractTestServer createServer(int port, int max, int scavenge)
     {
-        return new HashSessionIdManager();
-    }
-
-    public SessionManager newSessionManager()
-    {
-        HashSessionManager manager = new HashSessionManager();
-        manager.setScavengePeriod(_scavengePeriod);
-        return manager;
-    }
-
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
-    {
-        return new SessionHandler(sessionManager);
+        return new InfinispanTestSessionServer(port, max, scavenge, __testSupport.getCache());
     }
 
 }

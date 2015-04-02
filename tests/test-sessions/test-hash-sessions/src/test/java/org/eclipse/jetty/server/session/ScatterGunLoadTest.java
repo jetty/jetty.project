@@ -18,41 +18,23 @@
 
 package org.eclipse.jetty.server.session;
 
-import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
+import org.junit.Test;
 
 /**
- * @version $Revision$ $Date$
+ * ScatterGunLoadTest
  */
-public class HashTestServer extends AbstractTestServer
+public class ScatterGunLoadTest extends AbstractScatterGunLoadTest
 {
 
-    public HashTestServer(int port)
+    public AbstractTestServer createServer(int port)
     {
-        super(port, 30, 10);
+        return new HashTestServer(port);
     }
 
-    public HashTestServer(int port, int maxInactivePeriod, int scavengePeriod)
+    @Test
+    public void testLightLoad() throws Exception
     {
-        super(port, maxInactivePeriod, scavengePeriod);
-    }
-
-
-    public SessionIdManager newSessionIdManager(Object config)
-    {
-        return new HashSessionIdManager();
-    }
-
-    public SessionManager newSessionManager()
-    {
-        HashSessionManager manager = new HashSessionManager();
-        manager.setScavengePeriod(_scavengePeriod);
-        return manager;
-    }
-
-    public SessionHandler newSessionHandler(SessionManager sessionManager)
-    {
-        return new SessionHandler(sessionManager);
+        super.testLightLoad();
     }
 
 }

@@ -35,6 +35,11 @@ import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.junit.Test;
 
+/**
+ * AbstractStopSessionManagerPreserveSessionTest
+ *
+ *
+ */
 public abstract class AbstractStopSessionManagerPreserveSessionTest
 {
     public String _id;

@@ -33,7 +33,7 @@
     <module>test-sessions-common</module>
     <module>test-hash-sessions</module>
     <module>test-jdbc-sessions</module>
-    <!-- Requires mongodb server running -->
     <module>test-mongodb-sessions</module>
+    <module>test-infinispan-sessions</module>
   </modules>
 </project>

@@ -16,25 +16,45 @@
 //  ========================================================================
 //
 
+
 package org.eclipse.jetty.server.session;
 
+import org.junit.AfterClass;
+import org.junit.BeforeClass;
 import org.junit.Test;
 
-/**
- * LightLoadTest
- */
-public class LightLoadTest extends AbstractLightLoadTest
+public class ClientCrossContextSessionTest extends AbstractClientCrossContextSessionTest
 {
 
+    public static InfinispanTestSupport __testSupport;
+
+    
+    
+    @BeforeClass
+    public static void setup () throws Exception
+    {
+        __testSupport = new InfinispanTestSupport();
+        __testSupport.setup();
+    }
+    
+    @AfterClass
+    public static void teardown () throws Exception
+    {
+       __testSupport.teardown();
+    }
+    
+    
+    @Override
     public AbstractTestServer createServer(int port)
     {
-        return new HashTestServer(port);
+        InfinispanTestSessionServer server = new InfinispanTestSessionServer(port, __testSupport.getCache());
+        return server;
     }
-
+    
     @Test
-    public void testLightLoad() throws Exception
+    public void testCrossContextDispatch() throws Exception
     {
-        super.testLightLoad();
+        super.testCrossContextDispatch();
     }
-
+    
 }
