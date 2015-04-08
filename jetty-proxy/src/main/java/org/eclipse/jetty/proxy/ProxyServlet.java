@@ -220,7 +220,9 @@ public class ProxyServlet extends AbstractProxyServlet
      * @param headerValue the header value
      * @param request the request to proxy
      * @return filteredHeaderValue the new header value
+     * @deprecated use {@link #filterServerResponseHeader(HttpServletRequest, Response, String, String)} instead
      */
+    @Deprecated
     protected String filterResponseHeader(HttpServletRequest request, String headerName, String headerValue)
     {
         return headerValue;
