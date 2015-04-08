@@ -26,12 +26,12 @@ import java.util.LinkedList;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicLong;
-
 import javax.servlet.ServletException;
 import javax.servlet.UnavailableException;
 import javax.servlet.http.Cookie;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.util.URIUtil;
 
 public class BalancerServlet extends ProxyServlet
@@ -130,7 +130,7 @@ public class BalancerServlet extends ProxyServlet
     }
 
     @Override
-    protected URI rewriteURI(HttpServletRequest request)
+    protected String rewriteTarget(HttpServletRequest request)
     {
         BalancerMember balancerMember = selectBalancerMember(request);
         if (_log.isDebugEnabled())
@@ -139,7 +139,7 @@ public class BalancerServlet extends ProxyServlet
         String query = request.getQueryString();
         if (query != null)
             path += "?" + query;
-        return URI.create(balancerMember.getProxyTo() + "/" + path).normalize();
+        return URI.create(balancerMember.getProxyTo() + "/" + path).normalize().toString();
     }
 
     private BalancerMember selectBalancerMember(HttpServletRequest request)
@@ -215,7 +215,7 @@ public class BalancerServlet extends ProxyServlet
     }
 
     @Override
-    protected String filterResponseHeader(HttpServletRequest request, String headerName, String headerValue)
+    protected String filterServerResponseHeader(HttpServletRequest request, Response serverResponse, String headerName, String headerValue)
     {
         if (_proxyPassReverse && REVERSE_PROXY_HEADERS.contains(headerName))
         {

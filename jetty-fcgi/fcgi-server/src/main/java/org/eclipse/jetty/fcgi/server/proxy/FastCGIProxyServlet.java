@@ -22,11 +22,11 @@ import java.net.URI;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
@@ -104,7 +104,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     }
 
     @Override
-    protected void customizeProxyRequest(Request proxyRequest, HttpServletRequest request)
+    protected void sendProxyRequest(HttpServletRequest request, HttpServletResponse proxyResponse, Request proxyRequest)
     {
         proxyRequest.attribute(REMOTE_ADDR_ATTRIBUTE, request.getRemoteAddr());
         proxyRequest.attribute(REMOTE_PORT_ATTRIBUTE, String.valueOf(request.getRemotePort()));
@@ -157,7 +157,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             proxyRequest.header(HttpHeader.COOKIE, builder.toString());
         }
 
-        super.customizeProxyRequest(proxyRequest, request);
+        super.sendProxyRequest(request, proxyResponse, proxyRequest);
     }
 
     protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields fastCGIHeaders)

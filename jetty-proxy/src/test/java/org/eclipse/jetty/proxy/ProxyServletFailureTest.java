@@ -30,7 +30,6 @@ import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -263,7 +262,7 @@ public class ProxyServletFailureTest
             proxyServlet = new AsyncProxyServlet()
             {
                 @Override
-                protected ContentProvider proxyRequestContent(Request proxyRequest, HttpServletRequest request) throws IOException
+                protected ContentProvider proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
                 {
                     return new DeferredContentProvider()
                     {
@@ -282,7 +281,7 @@ public class ProxyServletFailureTest
             proxyServlet = new ProxyServlet()
             {
                 @Override
-                protected ContentProvider proxyRequestContent(Request proxyRequest, HttpServletRequest request) throws IOException
+                protected ContentProvider proxyRequestContent(HttpServletRequest request, HttpServletResponse response, Request proxyRequest) throws IOException
                 {
                     return new BytesContentProvider(content)
                     {
@@ -411,10 +410,5 @@ public class ProxyServletFailureTest
         {
             ((StdErrLog)Log.getLogger(ServletHandler.class)).setHideStacks(false);
         }
-    }
-
-    private interface Function<T, R>
-    {
-        public R apply(T arg);
     }
 }
