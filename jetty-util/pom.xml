@@ -40,6 +40,31 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>java7-only-jetty-util</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <jdk>1.7</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <configuration>
+                <excludes>
+                  <exclude>org/eclipse/jetty/util/ssl/ExtendedSslContextFactory.java</exclude>
+                  <exclude>org/eclipse/jetty/util/ssl/SniX509ExtendedKeyManager.java</exclude>
+                </excludes>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
   <dependencies>
     <dependency>
       <groupId>javax.servlet</groupId>

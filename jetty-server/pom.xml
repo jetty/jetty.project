@@ -54,6 +54,39 @@
       </plugin>
     </plugins>
   </build>
+  <profiles>
+    <profile>
+      <id>java7-only-jetty-server</id>
+      <activation>
+        <activeByDefault>false</activeByDefault>
+        <jdk>1.7</jdk>
+      </activation>
+      <build>
+        <pluginManagement>
+          <plugins>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-compiler-plugin</artifactId>
+              <configuration>
+                <testExcludes>
+                  <testExclude>org/eclipse/jetty/server/ssl/SslConnectionFactoryTest.java</testExclude>
+                </testExcludes>
+              </configuration>
+            </plugin>
+            <plugin>
+              <groupId>org.apache.maven.plugins</groupId>
+              <artifactId>maven-surefire-plugin</artifactId>
+              <configuration>
+                <excludes>
+                  <exclude>org/eclipse/jetty/server/ssl/SslConnectionFactoryTest.java</exclude>
+                </excludes>
+              </configuration>
+            </plugin>
+          </plugins>
+        </pluginManagement>
+      </build>
+    </profile>
+  </profiles>
   <dependencies>
     <dependency>
       <groupId>org.eclipse.jetty.toolchain</groupId>
