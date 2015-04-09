@@ -64,8 +64,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     @Override
     public boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher)
     {
+        // TODO remove this draft protection
+        if ("h2-14".equals(protocol))
+            return true;
+        
         // Implement 9.2.2
-        return !HTTP2Cipher.isBlackListProtocol(tlsProtocol) || !HTTP2Cipher.isBlackListCipher(tlsCipher);
+        return !(HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher));
     }
 
     public class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
