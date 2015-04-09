@@ -52,6 +52,7 @@ import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;
+import org.eclipse.jetty.util.component.Destroyable;
 
 @SuppressWarnings("serial")
 public class AsyncMiddleManServlet extends AbstractProxyServlet
@@ -142,6 +143,19 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         return ContentTransformer.IDENTITY;
     }
 
+    private void transform(ContentTransformer transformer, ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
+    {
+        try
+        {
+            transformer.transform(input, finished, output);
+        }
+        catch (Throwable x)
+        {
+            _log.info("Exception while transforming " + transformer, x);
+            throw x;
+        }
+    }
+
     int readClientRequestContent(ServletInputStream input, byte[] buffer) throws IOException
     {
         return input.read(buffer);
@@ -168,6 +182,16 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             content.get(buffer);
         }
         output.write(buffer, offset, length);
+    }
+
+    private void cleanup(HttpServletRequest clientRequest)
+    {
+        ContentTransformer clientTransformer = (ContentTransformer)clientRequest.getAttribute(CLIENT_TRANSFORMER);
+        if (clientTransformer instanceof Destroyable)
+            ((Destroyable)clientTransformer).destroy();
+        ContentTransformer serverTransformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER);
+        if (serverTransformer instanceof Destroyable)
+            ((Destroyable)serverTransformer).destroy();
     }
 
     protected class ProxyReader extends IteratingCallback implements ReadListener
@@ -218,6 +242,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void onError(Throwable t)
         {
+            cleanup(clientRequest);
             onClientRequestFailure(clientRequest, proxyRequest, proxyResponse, t);
         }
 
@@ -277,7 +302,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             }
 
             int contentBytes = content.remaining();
-            transformer.transform(content, finished, buffers);
+            transform(transformer, content, finished, buffers);
 
             int newContentBytes = 0;
             int size = buffers.size();
@@ -377,7 +402,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 length += contentBytes;
 
                 boolean finished = contentLength > 0 && length == contentLength;
-                transformer.transform(content, finished, buffers);
+                transform(transformer, content, finished, buffers);
 
                 int newContentBytes = 0;
                 int size = buffers.size();
@@ -441,7 +466,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                         ProxyWriter proxyWriter = (ProxyWriter)clientRequest.getAttribute(WRITE_LISTENER_ATTRIBUTE);
                         ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER);
 
-                        transformer.transform(BufferUtil.EMPTY_BUFFER, true, buffers);
+                        transform(transformer, BufferUtil.EMPTY_BUFFER, true, buffers);
 
                         long newContentBytes = 0;
                         int size = buffers.size();
@@ -491,12 +516,14 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         @Override
         public void succeeded()
         {
+            cleanup(clientRequest);
             onProxyResponseSuccess(clientRequest, proxyResponse, response);
         }
 
         @Override
         public void failed(Throwable failure)
         {
+            cleanup(clientRequest);
             onProxyResponseFailure(clientRequest, proxyResponse, response, failure);
         }
     }
@@ -723,4 +750,5 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             return ByteBuffer.wrap(gzipBytes);
         }
     }
+
 }
