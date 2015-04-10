@@ -52,6 +52,6 @@ public class PushPromiseFrame extends Frame
     @Override
     public String toString()
     {
-        return String.format("%s#%d/%d", super.toString(), streamId, promisedStreamId);
+        return String.format("%s#%d/#%d", super.toString(), streamId, promisedStreamId);
     }
 }

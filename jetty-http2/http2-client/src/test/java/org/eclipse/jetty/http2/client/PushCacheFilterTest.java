@@ -23,7 +23,6 @@ import java.nio.charset.StandardCharsets;
 import java.util.EnumSet;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
@@ -318,6 +317,118 @@ public class PushCacheFilterTest extends AbstractTest
                         callback.succeeded();
                         if (frame.isEndStream())
                             pushLatch.countDown();
+                    }
+                };
+            }
+        });
+        Assert.assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testRecursivePush() throws Exception
+    {
+        final String primaryResource = "/primary.html";
+        final String secondaryResource = "/secondary.css";
+        final String tertiaryResource = "/tertiary.png";
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                String requestURI = request.getRequestURI();
+                final ServletOutputStream output = response.getOutputStream();
+                if (requestURI.endsWith(primaryResource))
+                    output.print("<html><head></head><body>PRIMARY</body></html>");
+                else if (requestURI.endsWith(secondaryResource))
+                    output.print("body { background-image: url(\"" + tertiaryResource + "\"); }");
+                if (requestURI.endsWith(tertiaryResource))
+                    output.write("TERTIARY".getBytes(StandardCharsets.UTF_8));
+            }
+        });
+
+        final Session session = newClient(new Session.Listener.Adapter());
+
+        // Request for the primary, secondary and tertiary resource to build the cache.
+        final String primaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        HttpFields primaryFields = new HttpFields();
+        MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
+        final CountDownLatch warmupLatch = new CountDownLatch(1);
+        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                if (frame.isEndStream())
+                {
+                    // Request for the secondary resource.
+                    final String secondaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + secondaryResource;
+                    HttpFields secondaryFields = new HttpFields();
+                    secondaryFields.put(HttpHeader.REFERER, primaryURI);
+                    MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
+                    session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+                    {
+                        @Override
+                        public void onData(Stream stream, DataFrame frame, Callback callback)
+                        {
+                            callback.succeeded();
+                            if (frame.isEndStream())
+                            {
+                                // Request for the tertiary resource.
+                                HttpFields tertiaryFields = new HttpFields();
+                                tertiaryFields.put(HttpHeader.REFERER, secondaryURI);
+                                MetaData.Request tertiaryRequest = newRequest("GET", tertiaryResource, tertiaryFields);
+                                session.newStream(new HeadersFrame(0, tertiaryRequest, null, true), new Promise.Adapter<Stream>(), new Adapter()
+                                {
+                                    @Override
+                                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                                    {
+                                        if (frame.isEndStream())
+                                            warmupLatch.countDown();
+                                    }
+                                });
+                            }
+                        }
+                    });
+                }
+            }
+        });
+        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+
+        Thread.sleep(1000);
+
+        // Request again the primary resource, we should get the secondary and tertiary resource pushed.
+        primaryRequest = newRequest("GET", primaryResource, primaryFields);
+        final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
+        final CountDownLatch pushLatch = new CountDownLatch(2);
+        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
+        {
+
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                if (frame.isEndStream())
+                    primaryResponseLatch.countDown();
+            }
+
+            @Override
+            public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+            {
+                return new Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        callback.succeeded();
+                        if (frame.isEndStream())
+                            pushLatch.countDown();
+                    }
+
+                    @Override
+                    public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+                    {
+                        return this;
                     }
                 };
             }
