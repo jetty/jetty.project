@@ -65,6 +65,11 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  */
 public class WebAppClassLoader extends URLClassLoader
 {
+    static
+    {
+        registerAsParallelCapable();
+    }
+
     private static final Logger LOG = Log.getLogger(WebAppClassLoader.class);
 
     private final Context _context;
@@ -404,60 +409,63 @@ public class WebAppClassLoader extends URLClassLoader
 
     /* ------------------------------------------------------------ */
     @Override
-    protected synchronized Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
+    protected Class<?> loadClass(String name, boolean resolve) throws ClassNotFoundException
     {
-        Class<?> c= findLoadedClass(name);
-        ClassNotFoundException ex= null;
-        boolean tried_parent= false;
-        
-        boolean system_class=_context.isSystemClass(name);
-        boolean server_class=_context.isServerClass(name);
-        
-        if (system_class && server_class)
+        synchronized (getClassLoadingLock(name))
         {
-            return null;
-        }
-        
-        if (c == null && _parent!=null && (_context.isParentLoaderPriority() || system_class) && !server_class)
-        {
-            tried_parent= true;
-            try
+            Class<?> c= findLoadedClass(name);
+            ClassNotFoundException ex= null;
+            boolean tried_parent= false;
+
+            boolean system_class=_context.isSystemClass(name);
+            boolean server_class=_context.isServerClass(name);
+
+            if (system_class && server_class)
             {
+                return null;
+            }
+
+            if (c == null && _parent!=null && (_context.isParentLoaderPriority() || system_class) && !server_class)
+            {
+                tried_parent= true;
+                try
+                {
+                    c= _parent.loadClass(name);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("loaded " + c);
+                }
+                catch (ClassNotFoundException e)
+                {
+                    ex= e;
+                }
+            }
+
+            if (c == null)
+            {
+                try
+                {
+                    c= this.findClass(name);
+                }
+                catch (ClassNotFoundException e)
+                {
+                    ex= e;
+                }
+            }
+
+            if (c == null && _parent!=null && !tried_parent && !server_class )
                 c= _parent.loadClass(name);
-                if (LOG.isDebugEnabled())
-                    LOG.debug("loaded " + c);
-            }
-            catch (ClassNotFoundException e)
-            {
-                ex= e;
-            }
+
+            if (c == null && ex!=null)
+                throw ex;
+
+            if (resolve)
+                resolveClass(c);
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("loaded {} from {}",c,c==null?null:c.getClassLoader());
+
+            return c;
         }
-
-        if (c == null)
-        {
-            try
-            {
-                c= this.findClass(name);
-            }
-            catch (ClassNotFoundException e)
-            {
-                ex= e;
-            }
-        }
-
-        if (c == null && _parent!=null && !tried_parent && !server_class )
-            c= _parent.loadClass(name);
-
-        if (c == null && ex!=null)
-            throw ex;
-
-        if (resolve)
-            resolveClass(c);
-
-        if (LOG.isDebugEnabled())
-            LOG.debug("loaded {} from {}",c,c==null?null:c.getClassLoader());
-        
-        return c;
     }
 
     /* ------------------------------------------------------------ */
