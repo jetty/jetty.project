@@ -36,6 +36,11 @@ public class Classpath implements Iterable<File>
 {
     private static class Loader extends URLClassLoader
     {
+        static
+        {
+            registerAsParallelCapable();
+        }
+
         Loader(URL[] urls, ClassLoader parent)
         {
             super(urls,parent);
