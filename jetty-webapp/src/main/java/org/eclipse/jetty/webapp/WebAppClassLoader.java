@@ -518,10 +518,14 @@ public class WebAppClassLoader extends URLClassLoader
             try
             {
                 content = url.openStream();
-                byte[] bytes =IO.readBytes(content);
+                byte[] bytes = IO.readBytes(content);
                     
                 for (ClassFileTransformer transformer : _transformers)
-                    bytes=transformer.transform(this,name,null,null,bytes);
+                {
+                    byte[] tmp = transformer.transform(this,name,null,null,bytes);
+                    if (tmp != null)
+                        bytes = tmp;
+                }
                 
                 clazz=defineClass(name,bytes,0,bytes.length);
             }
