@@ -11,7 +11,7 @@
   <packaging>pom</packaging>
   <properties>
     <assembly-directory>${basedir}/target/distribution</assembly-directory>
-    <jetty-setuid-version>1.0.1</jetty-setuid-version>
+    <jetty-setuid-version>1.0.3</jetty-setuid-version>
   </properties>
   <build>
     <plugins>
@@ -202,28 +202,6 @@
                   <destFileName>libsetuid-osx.so</destFileName>
                 </artifactItem>
               </artifactItems>
-            </configuration>
-          </execution>
-
-          <execution>
-            <id>unpack-setuid-config</id>
-            <phase>process-resources</phase>
-            <goals>
-              <goal>unpack</goal>
-            </goals>
-            <configuration>
-              <artifactItems>
-                <artifactItem>
-                  <groupId>org.eclipse.jetty.toolchain.setuid</groupId>
-                  <artifactId>jetty-setuid-java</artifactId>
-                  <version>${jetty-setuid-version}</version>
-                  <classifier>config</classifier>
-                  <type>jar</type>
-                  <overWrite>true</overWrite>
-                  <outputDirectory>${assembly-directory}</outputDirectory>
-                </artifactItem>
-              </artifactItems>
-              <excludes>META-INF/**</excludes>
             </configuration>
           </execution>
 
