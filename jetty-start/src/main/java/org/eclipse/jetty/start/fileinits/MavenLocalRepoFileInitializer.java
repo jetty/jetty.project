@@ -93,7 +93,7 @@ public class MavenLocalRepoFileInitializer extends UriFileInitializer implements
     }
 
     @Override
-    public boolean init(URI uri, Path file) throws IOException
+    public boolean init(URI uri, Path file, String fileRef) throws IOException
     {
         Coordinates coords = getCoordinates(uri);
         if (coords == null)
@@ -102,7 +102,7 @@ public class MavenLocalRepoFileInitializer extends UriFileInitializer implements
             return false;
         }
 
-        if (isFilePresent(file))
+        if (isFilePresent(file, baseHome.getPath(fileRef)))
         {
             // All done
             return true;

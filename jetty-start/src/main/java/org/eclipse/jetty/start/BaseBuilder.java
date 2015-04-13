@@ -256,7 +256,7 @@ public class BaseBuilder
             // Process via initializers
             for (FileInitializer finit : fileInitializers)
             {
-                if (finit.init(uri,file))
+                if (finit.init(uri,file,arg.location))
                 {
                     // Completed successfully
                     return true;
