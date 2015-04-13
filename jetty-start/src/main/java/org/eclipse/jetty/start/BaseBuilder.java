@@ -251,6 +251,11 @@ public class BaseBuilder
     {
         if (startArgs.isDownload() && (arg.uri != null))
         {
+            if (!file.startsWith(baseHome.getBasePath()))
+            {
+                throw new IOException("For security reasons, Jetty start is unable to process file resource not in ${jetty.base} - " + file);
+            }
+            
             URI uri = URI.create(arg.uri);
 
             // Process via initializers

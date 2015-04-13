@@ -200,7 +200,7 @@ public class BaseHome
      */
     public Path getBasePath(String path)
     {
-        return baseDir.resolve(path);
+        return baseDir.resolve(path).normalize().toAbsolutePath();
     }
 
     public ConfigSources getConfigSources()
