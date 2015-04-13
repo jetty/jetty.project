@@ -137,7 +137,22 @@ public class WebAppClassLoaderTest
         assertEquals(_loader,iter.next());
         assertEquals("org.acme.other.ClassInClassesC",iter.next());
         assertFalse(iter.hasNext());
-       
+    }
+    
+    @Test
+    public void testNullClassFileTransformer () throws Exception
+    {
+        _loader.addTransformer(new ClassFileTransformer()
+        {
+            public byte[] transform(ClassLoader loader, String className, Class<?> classBeingRedefined, ProtectionDomain protectionDomain, byte[] classfileBuffer)
+                    throws IllegalClassFormatException
+            {
+                return null;
+            }
+        });
+        
+        
+        assertTrue(canLoadClass("org.acme.webapp.ClassInJarA"));
     }
 
     @Test
