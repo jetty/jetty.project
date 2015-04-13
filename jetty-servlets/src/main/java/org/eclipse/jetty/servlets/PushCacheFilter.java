@@ -156,44 +156,47 @@ public class PushCacheFilter implements Filter
             if (port <= 0)
                 port = request.isSecure() ? 443 : 80;
 
-            boolean referred_from_here = _hosts.size() > 0 ? _hosts.contains(host) : host.equals(request.getServerName());
-            referred_from_here &= _ports.size() > 0 ? _ports.contains(port) : port == request.getServerPort();
+            boolean referredFromHere = _hosts.size() > 0 ? _hosts.contains(host) : host.equals(request.getServerName());
+            referredFromHere &= _ports.size() > 0 ? _ports.contains(port) : port == request.getServerPort();
 
-            if (referred_from_here)
+            if (referredFromHere)
             {
-                String referrerPath = referrerURI.getPath();
-                if (referrerPath.startsWith(request.getContextPath()))
+                if ("GET".equalsIgnoreCase(request.getMethod()))
                 {
-                    String referrerPathNoContext = referrerPath.substring(request.getContextPath().length());
-                    PrimaryResource primaryResource = _cache.get(referrerPathNoContext);
-                    if (primaryResource != null)
+                    String referrerPath = referrerURI.getPath();
+                    if (referrerPath.startsWith(request.getContextPath()))
                     {
-                        long primaryTimestamp = primaryResource._timestamp.get();
-                        if (primaryTimestamp != 0)
+                        String referrerPathNoContext = referrerPath.substring(request.getContextPath().length());
+                        PrimaryResource primaryResource = _cache.get(referrerPathNoContext);
+                        if (primaryResource != null)
                         {
-                            RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher(path);
-                            if (now - primaryTimestamp < TimeUnit.MILLISECONDS.toNanos(_associatePeriod))
+                            long primaryTimestamp = primaryResource._timestamp.get();
+                            if (primaryTimestamp != 0)
                             {
-                                ConcurrentMap<String, RequestDispatcher> associated = primaryResource._associated;
-                                // Not strictly concurrent-safe, just best effort to limit associations.
-                                if (associated.size() <= _maxAssociations)
+                                RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher(path);
+                                if (now - primaryTimestamp < TimeUnit.MILLISECONDS.toNanos(_associatePeriod))
                                 {
-                                    if (associated.putIfAbsent(path, dispatcher) == null)
+                                    ConcurrentMap<String, RequestDispatcher> associated = primaryResource._associated;
+                                    // Not strictly concurrent-safe, just best effort to limit associations.
+                                    if (associated.size() <= _maxAssociations)
+                                    {
+                                        if (associated.putIfAbsent(path, dispatcher) == null)
+                                        {
+                                            if (LOG.isDebugEnabled())
+                                                LOG.debug("Associated {} to {}", path, referrerPathNoContext);
+                                        }
+                                    }
+                                    else
                                     {
                                         if (LOG.isDebugEnabled())
-                                            LOG.debug("Associated {} to {}", path, referrerPathNoContext);
+                                            LOG.debug("Not associated {} to {}, exceeded max associations of {}", path, referrerPathNoContext, _maxAssociations);
                                     }
                                 }
                                 else
                                 {
                                     if (LOG.isDebugEnabled())
-                                        LOG.debug("Not associated {} to {}, exceeded max associations of {}", path, referrerPathNoContext, _maxAssociations);
+                                        LOG.debug("Not associated {} to {}, outside associate period of {}ms", path, referrerPathNoContext, _associatePeriod);
                                 }
-                            }
-                            else
-                            {
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Not associated {} to {}, outside associate period of {}ms", path, referrerPathNoContext, _associatePeriod);
                             }
                         }
                     }
