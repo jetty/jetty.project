@@ -28,7 +28,7 @@ public class DemoServer
     {
         String jetty_home = System.getProperty("jetty.home",".");
 
-        Server server = new Server(Integer.getInteger("jetty.port",8080).intValue());
+        Server server = new Server(Integer.getInteger("jetty.http.port",8080).intValue());
                 
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");

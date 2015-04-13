@@ -16,17 +16,17 @@
     <Arg>
       <New id="alpn" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
         <Arg type="String">
-          <Property name="alpn.protocols" default="" />
+          <Property name="jetty.alpn.protocols,alpn.protocols" default="" />
         </Arg>
         <Set name="defaultProtocol">
-          <Property name="alpn.defaultProtocol" />
+          <Property name="jetty.alpn.defaultProtocol,alpn.defaultProtocol" />
         </Set>
       </New>
     </Arg>
   </Call>
 
-  <!-- Enables ALPN debugging on System.err -->
-  <!--<Set class="org.eclipse.jetty.alpn.ALPN" name="debug" type="boolean">true</Set>-->
+  <!-- ALPN debugging on System.err -->
+  <Set class="org.eclipse.jetty.alpn.ALPN" name="debug" type="boolean"><Property name="jetty.alpn.debug" default="false" /></Set>
 
 </Configure>
 

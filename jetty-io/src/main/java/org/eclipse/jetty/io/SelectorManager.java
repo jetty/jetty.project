@@ -28,7 +28,6 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -97,7 +96,9 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         _connectTimeout = milliseconds;
     }
 
-    @ManagedAttribute("The priority delta to apply to selector threads")
+    /**
+     * @deprecated not implemented
+     */
     @Deprecated
     public int getSelectorPriorityDelta()
     {
@@ -105,15 +106,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
-     * Sets the selector thread priority delta to the given amount.
-     * <p>This allows the selector threads to run at a different priority.
-     * Typically this would be used to lower the priority to give preference
-     * to handling previously accepted connections rather than accepting
-     * new connections.</p>
-     *
-     * @param selectorPriorityDelta the amount to change the thread priority
-     *                              delta to (may be negative)
-     * @see Thread#getPriority()
+     * @deprecated not implemented
      */
     @Deprecated
     public void setSelectorPriorityDelta(int selectorPriorityDelta)

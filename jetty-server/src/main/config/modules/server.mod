@@ -20,41 +20,53 @@ lib/jetty-io-${jetty.version}.jar
 etc/jetty.xml
 
 [ini-template]
-##
-## Server Threading Configuration
-##
-# minimum number of threads
-threads.min=10
+### ThreadPool configuration
+## Minimum number of threads
+# jetty.threadPool.minThreads=10
 
-# maximum number of threads
-threads.max=200
+## Maximum number of threads
+# jetty.threadPool.maxThreads=200
 
-# thread idle timeout in milliseconds
-threads.timeout=60000
+## Thread idle timeout (in milliseconds)
+# jetty.threadPool.idleTimeout=60000
 
-# buffer size for output
-jetty.output.buffer.size=32768
+### Common HTTP configuration
+## Scheme to use to build URIs for secure redirects
+# jetty.httpConfig.secureScheme=https
 
-# request header buffer size
-jetty.request.header.size=8192
+## Port to use to build URIs for secure redirects
+# jetty.httpConfig.securePort=8443
 
-# response header buffer size
-jetty.response.header.size=8192
+## Response content buffer size (in bytes)
+# jetty.httpConfig.outputBufferSize=32768
 
-# should jetty send the server version header?
-jetty.send.server.version=true
+## Max response content write length that is buffered (in bytes)
+# jetty.httpConfig.outputAggregationSize=8192
 
-# should jetty send the date header?
-jetty.send.date.header=false
+## Max request headers size (in bytes)
+# jetty.httpConfig.requestHeaderSize=8192
 
-# What host to listen on (leave commented to listen on all interfaces)
-#jetty.host=myhost.com
+## Max response headers size (in bytes)
+# jetty.httpConfig.responseHeaderSize=8192
 
-# Enable delayed dispatch optimisation
-jetty.delayDispatchUntilContent=true
+## Whether to send the Server: header
+# jetty.httpConfig.sendServerVersion=true
 
-# Dump the state of the Jetty server, components, and webapps after startup
-jetty.dump.start=false
+## Whether to send the Date: header
+# jetty.httpConfig.sendDateHeader=false
 
-# Dump the state of the Jetty server, before stop
-jetty.dump.stop=false
+## Max per-connection header cache size (in nodes)
+# jetty.httpConfig.headerCacheSize=512
+
+## Whether, for requests with content, delay dispatch until some content has arrived
+# jetty.httpConfig.delayDispatchUntilContent=true
+
+### Server configuration
+## Whether ctrl+c on the console gracefully stops the Jetty server
+# jetty.server.stopAtShutdown=true
+
+## Dump the state of the Jetty server, components, and webapps after startup
+# jetty.server.dumpAfterStart=false
+
+## Dump the state of the Jetty server, components, and webapps before shutdown
+# jetty.server.dumpBeforeStop=false

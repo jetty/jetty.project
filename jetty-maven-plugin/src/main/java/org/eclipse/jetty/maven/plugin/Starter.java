@@ -31,7 +31,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
@@ -52,7 +51,6 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class Starter
 { 
-    public static final String PORT_SYSPROPERTY = "jetty.port";
     private static final Logger LOG = Log.getLogger(Starter.class);
 
     private List<File> jettyXmls; // list of jetty.xml config files to apply - Mandatory

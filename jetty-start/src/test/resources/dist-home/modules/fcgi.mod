@@ -12,4 +12,4 @@ lib/fcgi/*.jar
 
 [ini-template]
 ## For configuration of FastCGI contexts, see
-## TODO: documentation url here
+## https://www.eclipse.org/jetty/documentation/current/fastcgi.html

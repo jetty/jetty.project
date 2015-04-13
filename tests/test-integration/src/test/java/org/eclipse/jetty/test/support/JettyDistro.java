@@ -525,7 +525,7 @@ public class JettyDistro
         // Do a dry run first to get the exact command line for Jetty process
         commands.add("-jar");
         commands.add("start.jar");
-        commands.add("jetty.port=0");
+        commands.add("jetty.http.port=0");
         if (_debug)
         {
             commands.add("-D.DEBUG=true");

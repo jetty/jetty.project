@@ -38,10 +38,13 @@ lib/alpn/
 # Overrides the order protocols are chosen by the server.
 # The default order is that specified by the order of the
 # modules declared in start.ini.
-# alpn.protocols=h2-14,http/1.1
+# jetty.alpn.protocols=h2-16,http/1.1
 
 # Specifies what protocol to use when negotiation fails.
-# alpn.defaultProtocol=http/1.1
+# jetty.alpn.defaultProtocol=http/1.1
+
+# ALPN debug logging on System.err
+# jetty.alpn.debug=false
 
 [license]
 ALPN is a hosted at github under the GPL v2 with ClassPath Exception.

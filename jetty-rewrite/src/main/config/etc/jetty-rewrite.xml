@@ -8,34 +8,32 @@
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
-    <!-- =========================================================== -->
-    <!-- configure rewrite handler                                   -->
-    <!-- =========================================================== -->
-    <Get id="oldhandler" name="handler"/>
+  <!-- =========================================================== -->
+  <!-- configure rewrite handler                                   -->
+  <!-- =========================================================== -->
+  <Get id="oldhandler" name="handler"/>
 
-    <Set name="handler">
-     <New id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
+  <Set name="handler">
+    <New id="Rewrite" class="org.eclipse.jetty.rewrite.handler.RewriteHandler">
       <Set name="handler"><Ref refid="oldhandler"/></Set>
-      <Set name="rewriteRequestURI"><Property name="rewrite.rewriteRequestURI" default="true"/></Set>
-      <Set name="rewritePathInfo"><Property name="rewrite.rewritePathInfo" default="false"/></Set>
-      <Set name="originalPathAttribute"><Property name="rewrite.originalPathAttribute" default="requestedPath"/></Set>
-     </New>
-    </Set>
+      <Set name="rewriteRequestURI"><Property name="jetty.rewrite.rewriteRequestURI,rewrite.rewriteRequestURI" default="true"/></Set>
+      <Set name="rewritePathInfo"><Property name="jetty.rewrite.rewritePathInfo,rewrite.rewritePathInfo" default="false"/></Set>
+      <Set name="originalPathAttribute"><Property name="jetty.rewrite.originalPathAttribute,rewrite.originalPathAttribute" default="requestedPath"/></Set>
+    </New>
+  </Set>
 
-    <!-- example rule -->
-    <!--
-    <Call name="addRule">
-      <Arg>
-	<New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
-	  <Set name="pattern">/favicon.ico</Set>
-	  <Set name="name">Cache-Control</Set>
-	  <Set name="value">Max-Age=3600,public</Set>
-	  <Set name="terminating">true</Set>
-	</New>
-      </Arg>
-    </Call>
-    -->
-
-    <!-- for example rules see jetty-demo.xml -->
+  <!-- example rule -->
+  <!--
+  <Call name="addRule">
+    <Arg>
+      <New class="org.eclipse.jetty.rewrite.handler.HeaderPatternRule">
+        <Set name="pattern">/favicon.ico</Set>
+        <Set name="name">Cache-Control</Set>
+        <Set name="value">Max-Age=3600,public</Set>
+        <Set name="terminating">true</Set>
+      </New>
+    </Arg>
+  </Call>
+  -->
 
 </Configure>

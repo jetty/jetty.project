@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -40,6 +36,10 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.contains;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public class ModulesTest
 {
@@ -92,7 +92,7 @@ public class ModulesTest
         expected.add("cdi");
         expected.add("client");
         expected.add("continuation");
-        expected.add("debug");
+        expected.add("debuglog");
         expected.add("deploy");
         expected.add("ext");
         expected.add("fcgi");

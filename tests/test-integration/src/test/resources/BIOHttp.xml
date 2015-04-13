@@ -10,7 +10,7 @@
     <Call name="addConnector">
       <Arg>
           <New class="org.eclipse.jetty.server.bio.SocketConnector">
-            <Set name="host"><SystemProperty name="jetty.host" /></Set>
+            <Set name="host"><SystemProperty name="jetty.http.host" /></Set>
             <Set name="idleTimeout">300000</Set>
             <Set name="Acceptors">2</Set>
             <Set name="statsOn">false</Set>

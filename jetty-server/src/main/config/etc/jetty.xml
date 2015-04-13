@@ -46,9 +46,9 @@
     <Arg name="threadpool"><New id="threadpool" class="org.eclipse.jetty.util.thread.QueuedThreadPool"/></Arg>
     -->
     <Get name="ThreadPool">
-      <Set name="minThreads" type="int"><Property name="threads.min" default="10"/></Set>
-      <Set name="maxThreads" type="int"><Property name="threads.max" default="200"/></Set>
-      <Set name="idleTimeout" type="int"><Property name="threads.timeout" default="60000"/></Set>
+      <Set name="minThreads" type="int"><Property name="jetty.threadPool.minThreads,threads.min" default="10"/></Set>
+      <Set name="maxThreads" type="int"><Property name="jetty.threadPool.maxThreads,threads.max" default="200"/></Set>
+      <Set name="idleTimeout" type="int"><Property name="jetty.threadPool.idleTimeout,threads.timeout" default="60000"/></Set>
       <Set name="detailedDump">false</Set>
     </Get>
 
@@ -77,23 +77,22 @@
     <!-- for all configuration that may be set here.                 -->
     <!-- =========================================================== -->
     <New id="httpConfig" class="org.eclipse.jetty.server.HttpConfiguration">
-      <Set name="secureScheme">https</Set>
-      <Set name="securePort"><Property name="jetty.secure.port" default="8443" /></Set>
-      <Set name="outputBufferSize"><Property name="jetty.output.buffer.size" default="32768" /></Set>
-      <Set name="outputAggregationSize"><Property name="jetty.output.aggregation.size" default="8192" /></Set>
-      <Set name="requestHeaderSize"><Property name="jetty.request.header.size" default="8192" /></Set>
-      <Set name="responseHeaderSize"><Property name="jetty.response.header.size" default="8192" /></Set>
-      <Set name="sendServerVersion"><Property name="jetty.send.server.version" default="true" /></Set>
-      <Set name="sendDateHeader"><Property name="jetty.send.date.header" default="false" /></Set>
-      <Set name="headerCacheSize">512</Set>
-      <Set name="delayDispatchUntilContent"><Property name="jetty.delayDispatchUntilContent" default="true"/></Set>
+      <Set name="secureScheme"><Property name="jetty.httpConfig.secureScheme" default="https" /></Set>
+      <Set name="securePort"><Property name="jetty.httpConfig.securePort,jetty.secure.port" default="8443" /></Set>
+      <Set name="outputBufferSize"><Property name="jetty.httpConfig.outputBufferSize,jetty.output.buffer.size" default="32768" /></Set>
+      <Set name="outputAggregationSize"><Property name="jetty.httpConfig.outputAggregationSize,jetty.output.aggregation.size" default="8192" /></Set>
+      <Set name="requestHeaderSize"><Property name="jetty.httpConfig.requestHeaderSize,jetty.request.header.size" default="8192" /></Set>
+      <Set name="responseHeaderSize"><Property name="jetty.httpConfig.responseHeaderSize,jetty.response.header.size" default="8192" /></Set>
+      <Set name="sendServerVersion"><Property name="jetty.httpConfig.sendServerVersion,jetty.send.server.version" default="true" /></Set>
+      <Set name="sendDateHeader"><Property name="jetty.httpConfig.sendDateHeader,jetty.send.date.header" default="false" /></Set>
+      <Set name="headerCacheSize"><Property name="jetty.httpConfig.headerCacheSize" default="512" /></Set>
+      <Set name="delayDispatchUntilContent"><Property name="jetty.httpConfig.delayDispatchUntilContent,jetty.delayDispatchUntilContent" default="true"/></Set>
       <!-- Uncomment to enable handling of X-Forwarded- style headers
       <Call name="addCustomizer">
         <Arg><New class="org.eclipse.jetty.server.ForwardedRequestCustomizer"/></Arg>
       </Call>
       -->
     </New>
-
 
     <!-- =========================================================== -->
     <!-- Set the default handler structure for the Server            -->
@@ -124,9 +123,9 @@
     <!-- =========================================================== -->
     <!-- extra server options                                        -->
     <!-- =========================================================== -->
-    <Set name="stopAtShutdown">true</Set>
+    <Set name="stopAtShutdown"><Property name="jetty.server.stopAtShutdown" default="true"/></Set>
     <Set name="stopTimeout">5000</Set>
-    <Set name="dumpAfterStart"><Property name="jetty.dump.start" default="false"/></Set>
-    <Set name="dumpBeforeStop"><Property name="jetty.dump.stop" default="false"/></Set>
+    <Set name="dumpAfterStart"><Property name="jetty.server.dumpAfterStart,jetty.dump.start" default="false"/></Set>
+    <Set name="dumpBeforeStop"><Property name="jetty.server.dumpBeforeStop,jetty.dump.stop" default="false"/></Set>
 
 </Configure>

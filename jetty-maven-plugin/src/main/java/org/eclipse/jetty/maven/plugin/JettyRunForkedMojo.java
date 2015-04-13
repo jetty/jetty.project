@@ -45,7 +45,6 @@ import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.plugin.descriptor.PluginDescriptor;
 import org.eclipse.jetty.annotations.AnnotationConfiguration;
-import org.eclipse.jetty.quickstart.QuickStartDescriptorGenerator;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.resource.Resource;
@@ -82,17 +81,6 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
  */
 public class JettyRunForkedMojo extends JettyRunMojo
 {    
-    public static final String DEFAULT_WEBAPP_SRC = "src"+File.separator+"main"+File.separator+"webapp";
-    public static final String FAKE_WEBAPP = "webapp-tmp";
-    
-    
-    public String PORT_SYSPROPERTY = "jetty.port";
-
-    
- 
-    
-    
-    
     /**
      * The target directory
      * 

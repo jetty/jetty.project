@@ -40,7 +40,6 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
@@ -491,8 +490,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                 // check that its port was set
                 if (httpConnector.getPort() <= 0)
                 {
-                    //use any jetty.port settings provided
-                    String tmp = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR); 
+                    //use any jetty.http.port settings provided
+                    String tmp = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, System.getProperty("jetty.port", MavenServerConnector.DEFAULT_PORT_STR));
                     httpConnector.setPort(Integer.parseInt(tmp.trim()));
                 }  
                 httpConnector.setServer(server);

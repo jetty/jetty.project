@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -34,6 +30,10 @@ import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 public class MainTest
 {
@@ -54,7 +54,7 @@ public class MainTest
         File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home").getAbsoluteFile();
         cmdLineArgs.add("user.dir=" + testJettyHome);
         cmdLineArgs.add("jetty.home=" + testJettyHome);
-        cmdLineArgs.add("jetty.port=9090");
+        cmdLineArgs.add("jetty.http.port=9090");
 
         Main main = new Main();
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
@@ -90,7 +90,7 @@ public class MainTest
         List<String> cmdLineArgs = new ArrayList<>();
         File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home");
         cmdLineArgs.add("jetty.home=" + testJettyHome);
-        cmdLineArgs.add("jetty.port=9090");
+        cmdLineArgs.add("jetty.http.port=9090");
         cmdLineArgs.add("--list-config");
         // cmdLineArgs.add("--debug");
 

@@ -25,7 +25,7 @@
               </Item>
             </Array>
           </Arg>
-          <Set name="host"><Property name="jetty.host" /></Set>
+          <Set name="host"><Property name="jetty.http.host" /></Set>
           <Set name="idleTimeout">30000</Set>
         </New>
     </Arg>

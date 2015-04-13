@@ -10,9 +10,14 @@ server
 etc/jetty-gzip.xml
 
 [ini-template]
-### Gzip Handler
+## Minimum content length after which gzip is enabled
+# jetty.gzip.minGzipSize=2048
 
-gzip.minGzipSize=2048
-gzip.checkGzExists=false
-gzip.compressionLevel=-1
-gzip.excludedUserAgent=.*MSIE.6\.0.*
+## Check whether a file with *.gz extension exists
+# jetty.gzip.checkGzExists=false
+
+## Gzip compression level (-1 for default)
+# jetty.gzip.compressionLevel=-1
+
+## User agents for which gzip is disabled
+# jetty.gzip.excludedUserAgent=.*MSIE.6\.0.*

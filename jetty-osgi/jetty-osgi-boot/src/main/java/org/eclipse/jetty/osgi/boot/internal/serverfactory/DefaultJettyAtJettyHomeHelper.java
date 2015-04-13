@@ -88,8 +88,8 @@ public class DefaultJettyAtJettyHomeHelper
      * files.
      * </p>
      * <p>
-     * In both cases the system properties jetty.host, jetty.port and
-     * jetty.port.ssl are passed to the configuration files that might use them
+     * In both cases the system properties jetty.http.host, jetty.http.port and
+     * jetty.ssl.port are passed to the configuration files that might use them
      * as part of their properties.
      * </p>
      */
@@ -158,7 +158,7 @@ public class DefaultJettyAtJettyHomeHelper
         String home=properties.get(OSGiServerConstants.JETTY_HOME);
         String base=properties.get(OSGiServerConstants.JETTY_BASE);
         if (base==null)
-        	base=home;
+            base=home;
         LOG.info("JETTY.HOME="+home);
         LOG.info("JETTY.BASE="+base);
         ClassLoader contextCl = Thread.currentThread().getContextClassLoader();
@@ -169,9 +169,9 @@ public class DefaultJettyAtJettyHomeHelper
             // these properties usually are the ones passed to this type of
             // configuration.
             properties.put(OSGiServerConstants.MANAGED_JETTY_SERVER_NAME, OSGiServerConstants.MANAGED_JETTY_SERVER_DEFAULT_NAME);
-            Util.setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST));
-            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT));
-            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL));
+            Util.setProperty(properties, OSGiServerConstants.JETTY_HOST, System.getProperty(OSGiServerConstants.JETTY_HOST, System.getProperty("jetty.host")));
+            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT, System.getProperty(OSGiServerConstants.JETTY_PORT, System.getProperty("jetty.port")));
+            Util.setProperty(properties, OSGiServerConstants.JETTY_PORT_SSL, System.getProperty(OSGiServerConstants.JETTY_PORT_SSL, System.getProperty("ssl.port")));
             Util.setProperty(properties, OSGiServerConstants.JETTY_HOME, home);
             Util.setProperty(properties, OSGiServerConstants.JETTY_BASE, base);
             Server server = ServerInstanceWrapper.configure(null, configURLs, properties);
@@ -185,8 +185,8 @@ public class DefaultJettyAtJettyHomeHelper
         }
         catch (Exception e)
         {
-        	LOG.warn(e);
-        	throw e;
+            LOG.warn(e);
+            throw e;
         }
         finally
         {

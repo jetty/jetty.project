@@ -110,8 +110,8 @@ public class ServerSupport
         {
             //Make a new default connector
             MavenServerConnector tmp = new MavenServerConnector();               
-            //use any jetty.port settings provided
-            String port = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR);
+            //use any jetty.http.port settings provided
+            String port = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, System.getProperty("jetty.port", MavenServerConnector.DEFAULT_PORT_STR));
             tmp.setPort(Integer.parseInt(port.trim()));
             tmp.setServer(server);
             server.setConnectors(new Connector[] {tmp});

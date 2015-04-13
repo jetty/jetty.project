@@ -43,21 +43,20 @@ public class OSGiServerConstants
      * Usual system property used as the hostname for a typical jetty
      * configuration.
      */
-    public static final String JETTY_HOST = "jetty.host";
+    public static final String JETTY_HOST = "jetty.http.host";
 
     /**
      * Usual system property used as the port for http for a typical jetty
      * configuration.
      */
-    public static final String JETTY_PORT = "jetty.port";
+    public static final String JETTY_PORT = "jetty.http.port";
 
     /**
      * Usual system property used as the port for https for a typical jetty
      * configuration.
      */
-    public static final String JETTY_PORT_SSL = "ssl.port";
-    
-    
+    public static final String JETTY_PORT_SSL = "jetty.ssl.port";
+
     //for managed jetty instances, name of the configuration parameters
     /**
      * PID of the jetty servers's ManagedFactory
@@ -86,5 +85,4 @@ public class OSGiServerConstants
      * List of URLs to the folders where the legacy J2EE shared libraries are stored aka lib/ext, lib/jsp etc.
      */
     public static final String MANAGED_JETTY_SHARED_LIB_FOLDER_URLS = "managedJettySharedLibFolderUrls";
-    
 }

@@ -11,7 +11,7 @@ echo \${jetty.base} : $JETTY_BASE
 cd "$JETTY_BASE"
 
 "$JAVA_HOME/bin/java" -jar "$JETTY_HOME/start.jar" \
-    jetty.port=58080 \
+    jetty.http.port=58080 \
     STOP.PORT=58181 STOP.KEY=it
 
 

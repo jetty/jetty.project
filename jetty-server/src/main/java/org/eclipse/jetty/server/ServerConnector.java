@@ -197,7 +197,7 @@ public class ServerConnector extends AbstractNetworkConnector
         @Name("sslContextFactory") SslContextFactory sslContextFactory,
         @Name("factories") ConnectionFactory... factories)
     {
-        this(server,null,null,null,-1,-1,AbstractConnectionFactory.getFactories(sslContextFactory,factories));
+        this(server, null, null, null, -1, -1, AbstractConnectionFactory.getFactories(sslContextFactory, factories));
     }
 
     /** Generic Server Connection.
@@ -259,24 +259,19 @@ public class ServerConnector extends AbstractNetworkConnector
         return channel!=null && channel.isOpen();
     }
 
-
-    @ManagedAttribute("The priority delta to apply to selector threads")
+    /**
+     * @deprecated not implemented
+     */
+    @Deprecated
     public int getSelectorPriorityDelta()
     {
         return _manager.getSelectorPriorityDelta();
     }
 
     /**
-     * Sets the selector thread priority delta to the given amount.
-     * <p>This allows the selector threads to run at a different priority.
-     * Typically this would be used to lower the priority to give preference 
-     * to handling previously accepted connections rather than accepting
-     * new connections.</p>
-     *
-     * @param selectorPriorityDelta the amount to set the thread priority delta to
-     *                              (may be negative)
-     * @see Thread#getPriority()
+     * @deprecated not implemented
      */
+    @Deprecated
     public void setSelectorPriorityDelta(int selectorPriorityDelta)
     {
         _manager.setSelectorPriorityDelta(selectorPriorityDelta);

@@ -51,7 +51,7 @@ public class Activator implements BundleActivator
         Dictionary serverProps = new Hashtable();
         //define the unique name of the server instance
         serverProps.put("managedServerName", serverName);
-        serverProps.put("jetty.port", "9999");
+        serverProps.put("jetty.http.port", "9999");
         //let Jetty apply some configuration files to the Server instance
         serverProps.put("jetty.etc.config.urls", "file:/opt/jetty/etc/jetty.xml,file:/opt/jetty/etc/jetty-selector.xml,file:/opt/jetty/etc/jetty-deployer.xml");
         //register as an OSGi Service for Jetty to find 
