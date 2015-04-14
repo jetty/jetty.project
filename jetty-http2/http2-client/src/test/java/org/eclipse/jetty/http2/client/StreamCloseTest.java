@@ -168,7 +168,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public void succeeded()
             {
-                Assert.assertTrue(((HTTP2Stream)stream).isLocallyClosed());
+                // Here the stream may be just locally closed or fully closed.
                 clientDataLatch.countDown();
             }
         });
