@@ -36,7 +36,7 @@ public class NoSqlSession extends MemSession
 
     private final NoSqlSessionManager _manager;
     private Set<String> _dirty;
-    private final AtomicInteger _active = new AtomicInteger();
+    private int _active = 0;
     private Object _version;
     private long _lastSync;
 
@@ -45,9 +45,9 @@ public class NoSqlSession extends MemSession
     {
         super(manager, request);
         _manager=manager;
-        _active.incrementAndGet();
+        _active = 1;
     }
-    
+
     /* ------------------------------------------------------------ */
     public NoSqlSession(NoSqlSessionManager manager, long created, long accessed, String clusterId, Object version)
     {
@@ -55,7 +55,7 @@ public class NoSqlSession extends MemSession
         _manager=manager;
         _version=version;
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public Object doPutOrRemove(String name, Object value)
@@ -63,7 +63,7 @@ public class NoSqlSession extends MemSession
         synchronized (this)
         {
             Object old = super.doPutOrRemove(name,value);
-            
+
             if (_manager.getSavePeriod()==-2)
             {
                 save(true);
@@ -71,8 +71,8 @@ public class NoSqlSession extends MemSession
             return old;
         }
     }
-    
-    
+
+
 
     @Override
     public void setAttribute(String name, Object value)
@@ -80,19 +80,19 @@ public class NoSqlSession extends MemSession
         Object old = changeAttribute(name,value);
         if (value == null && old == null)
             return; //not dirty, no change
-        
+
         if (value==null || !value.equals(old))
         {
             if (_dirty==null)
             {
                 _dirty=new HashSet<String>();
             }
-            
+
             _dirty.add(name);
         }
     }
-    
-    
+
+
 
     @Override
     protected void timeout() throws IllegalStateException
@@ -101,7 +101,7 @@ public class NoSqlSession extends MemSession
     }
 
 
-    
+
     /* ------------------------------------------------------------ */
     @Override
     protected void checkValid() throws IllegalStateException
@@ -111,10 +111,12 @@ public class NoSqlSession extends MemSession
 
     /* ------------------------------------------------------------ */
     @Override
-    protected boolean access(long time)
+    protected synchronized boolean access(long time)
     {
-        __log.debug("NoSqlSession:access:active {} time {}", _active, time);
-        if (_active.incrementAndGet()==1)
+        __log.debug("NoSqlSession:access {} active {} time {}", this, _active, time);
+        _active += 1;
+
+        if (_active == 1)
         {
             long period=_manager.getStalePeriod()*1000L;
             if (period==0)
@@ -133,14 +135,22 @@ public class NoSqlSession extends MemSession
 
     /* ------------------------------------------------------------ */
     @Override
-    protected void complete()
+    protected synchronized void complete()
     {
         super.complete();
-        if(_active.decrementAndGet()==0)
+
+        __log.debug("NoSqlSession:complete {} active {}", this, _active);
+
+        if (_active > 0)
+        {
+            _active -= 1;
+        }
+
+        if(_active == 0)
         {
             switch(_manager.getSavePeriod())
             {
-                case 0: 
+                case 0:
                     save(isValid());
                     break;
                 case 1:
@@ -160,7 +170,7 @@ public class NoSqlSession extends MemSession
         //jb why save here? if the session is invalidated it should be removed
         save(false);
     }
-    
+
     /* ------------------------------------------------------------ */
     protected void save(boolean activateAfterSave)
     {
@@ -189,7 +199,7 @@ public class NoSqlSession extends MemSession
             return _dirty!=null && !_dirty.isEmpty();
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     public Set<String> takeDirty()
     {
@@ -220,5 +230,12 @@ public class NoSqlSession extends MemSession
     public void setNodeId(String nodeId)
     {
         super.setNodeId(nodeId);
+    }
+
+    /**
+     * Return the count of active requests using this session.
+    */ 
+    public synchronized int getActive() {
+        return _active;
     }
 }
