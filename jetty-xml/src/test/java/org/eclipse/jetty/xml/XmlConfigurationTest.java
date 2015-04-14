@@ -18,13 +18,6 @@
 
 package org.eclipse.jetty.xml;
 
-import static org.hamcrest.CoreMatchers.is;
-import static org.hamcrest.CoreMatchers.not;
-import static org.hamcrest.CoreMatchers.nullValue;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 import java.io.ByteArrayInputStream;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
@@ -35,6 +28,13 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.junit.Assert;
 import org.junit.Ignore;
 import org.junit.Test;
+
+import static org.hamcrest.CoreMatchers.is;
+import static org.hamcrest.CoreMatchers.not;
+import static org.hamcrest.CoreMatchers.nullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 public class XmlConfigurationTest
 {
@@ -219,8 +219,8 @@ public class XmlConfigurationTest
             new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Test\">SetValue</Set><Set name=\"Test\" type=\"int\">2</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
         configuration.configure(tc);
-        assertEquals("Set String 3","SetValue",tc.testObject);
-        assertEquals("Set Type 3",2,tc.testInt);
+        assertEquals("Set String 3", "SetValue", tc.testObject);
+        assertEquals("Set Type 3", 2, tc.testInt);
     }
 
     @Test
@@ -233,7 +233,7 @@ public class XmlConfigurationTest
         assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
         xmlConfiguration.configure(tc);
         assertThat("tc.getList() returns not null",tc.getList(),not(nullValue()));
-        assertThat("tc.getList() has two entries as specified in the xml",tc.getList().size(),is(2));
+        assertThat("tc.getList() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
 
     @Test
@@ -248,7 +248,7 @@ public class XmlConfigurationTest
         assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
         xmlConfiguration.configure(tc);
         assertThat("tc.getList() returns not null",tc.getList(),not(nullValue()));
-        assertThat("tc.getList() has two entries as specified in the xml",tc.getList().size(),is(2));
+        assertThat("tc.getList() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -270,7 +270,7 @@ public class XmlConfigurationTest
         assertThat("tc.getList() returns null as it's not configured yet",tc.getSet(),is(nullValue()));
         xmlConfiguration.configure(tc);
         assertThat("tc.getList() returns not null",tc.getSet(),not(nullValue()));
-        assertThat("tc.getList() has two entries as specified in the xml",tc.getSet().size(),is(2));
+        assertThat("tc.getList() has two entries as specified in the xml", tc.getSet().size(), is(2));
     }
 
     @Test(expected = IllegalArgumentException.class)
@@ -290,7 +290,7 @@ public class XmlConfigurationTest
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
         xmlConfiguration.configure(tc);
-        assertThat("tc.getList() has two entries as specified in the xml",tc.getList().size(),is(2));
+        assertThat("tc.getList() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
 
     @Test
@@ -301,7 +301,7 @@ public class XmlConfigurationTest
         TestConfiguration tc = new TestConfiguration();
         assertThat("tc.getList() returns null as it's not configured yet",tc.getList(),is(nullValue()));
         xmlConfiguration.configure(tc);
-        assertThat("tc.getList() has two entries as specified in the xml",tc.getList().size(),is(2));
+        assertThat("tc.getList() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
 
     @Test(expected=NoSuchMethodException.class)
@@ -310,7 +310,7 @@ public class XmlConfigurationTest
         XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"LinkedList\">"
                 + INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThat("tc.getSet() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        assertThat("tc.getSet() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
     }
 
@@ -320,9 +320,9 @@ public class XmlConfigurationTest
         XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"ArrayList\">"
                 + INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThat("tc.getSet() returns null as it's not configured yet",tc.getList(),is(nullValue()));
+        assertThat("tc.getSet() returns null as it's not configured yet", tc.getList(), is(nullValue()));
         xmlConfiguration.configure(tc);
-        assertThat("tc.getSet() has two entries as specified in the xml",tc.getList().size(),is(2));
+        assertThat("tc.getSet() has two entries as specified in the xml", tc.getList().size(), is(2));
     }
 
     @Test
@@ -331,9 +331,9 @@ public class XmlConfigurationTest
         XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
                 + STRING_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThat("tc.getSet() returns null as it's not configured yet",tc.getSet(),is(nullValue()));
+        assertThat("tc.getSet() returns null as it's not configured yet", tc.getSet(), is(nullValue()));
         xmlConfiguration.configure(tc);
-        assertThat("tc.getSet() has two entries as specified in the xml",tc.getSet().size(),is(2));
+        assertThat("tc.getSet() has two entries as specified in the xml", tc.getSet().size(), is(2));
     }
 
     @Test
@@ -342,9 +342,9 @@ public class XmlConfigurationTest
         XmlConfiguration xmlConfiguration = new XmlConfiguration("<Configure class=\"org.eclipse.jetty.xml.TestConfiguration\"><Set name=\"Set\">"
                 + INT_ARRAY_XML + "</Set></Configure>");
         TestConfiguration tc = new TestConfiguration();
-        assertThat("tc.getSet() returns null as it's not configured yet",tc.getSet(),is(nullValue()));
+        assertThat("tc.getSet() returns null as it's not configured yet", tc.getSet(), is(nullValue()));
         xmlConfiguration.configure(tc);
-        assertThat("tc.getSet() has two entries as specified in the xml",tc.getSet().size(),is(2));
+        assertThat("tc.getSet() has two entries as specified in the xml", tc.getSet().size(), is(2));
     }
 
     @Test
@@ -590,7 +590,7 @@ public class XmlConfigurationTest
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
         Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
         Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
-        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
+        Assert.assertEquals("nested third parameter not wired correctly", "arg3", atc.getNested().getThird());
     }
 
     @Test
@@ -618,7 +618,7 @@ public class XmlConfigurationTest
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
         Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
         Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
-        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
+        Assert.assertEquals("nested third parameter not wired correctly", "arg3", atc.getNested().getThird());
     }
 
     @Test
@@ -645,7 +645,7 @@ public class XmlConfigurationTest
         Assert.assertEquals("third parameter not wired correctly","arg3", atc.getThird());
         Assert.assertEquals("nested first parameter not wired correctly","arg1", atc.getNested().getFirst());
         Assert.assertEquals("nested second parameter not wired correctly","arg2", atc.getNested().getSecond());
-        Assert.assertEquals("nested third parameter not wired correctly","arg3", atc.getNested().getThird());
+        Assert.assertEquals("nested third parameter not wired correctly", "arg3", atc.getNested().getThird());
     }
 
     public static class NativeHolder
@@ -817,6 +817,34 @@ public class XmlConfigurationTest
                 "  <Set name=\"first\"><Property name=\"foo," + name + "\" default=\"baz\"/></Set>  " +
                 "</Configure>");
         xmlConfiguration.getProperties().put(name, value);
+        DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
+        assertEquals(value, config.getFirst());
+    }
+
+    @Test
+    public void testPropertyNotFoundWithPropertyInDefaultValue() throws Exception
+    {
+        String name = "bar";
+        String value = "bar";
+        String defaultValue = "_${bar}_${bar}_";
+        String expectedValue = "_" + value + "_" + value + "_";
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                "  <Set name=\"first\"><Property name=\"not_found\" default=\"" + defaultValue + "\"/></Set>  " +
+                "</Configure>");
+        xmlConfiguration.getProperties().put(name, value);
+        DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
+        assertEquals(expectedValue, config.getFirst());
+    }
+
+    @Test
+    public void testPropertyNotFoundWithPropertyInDefaultValueNotFoundWithDefault() throws Exception
+    {
+        String value = "bar";
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                "  <Set name=\"first\"><Property name=\"not_found\" default=\"${not_found|" + value + "}\"/></Set>  " +
+                "</Configure>");
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
     }

@@ -46,6 +46,8 @@ import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.LazyList;
@@ -79,16 +81,13 @@ import org.xml.sax.SAXException;
 public class XmlConfiguration
 {
     private static final Logger LOG = Log.getLogger(XmlConfiguration.class);
-
     private static final Class<?>[] __primitives =
             {Boolean.TYPE, Character.TYPE, Byte.TYPE, Short.TYPE, Integer.TYPE, Long.TYPE, Float.TYPE, Double.TYPE, Void.TYPE};
-
     private static final Class<?>[] __boxedPrimitives =
             {Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class};
-
     private static final Class<?>[] __supportedCollections =
-            {ArrayList.class, ArrayQueue.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class,};
-
+            {ArrayList.class, ArrayQueue.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class};
+    private static final Pattern __propertyPattern = Pattern.compile("\\$\\{([^\\}]+)\\}");
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
     private static final XmlParser __parser = initParser();
     private static XmlParser initParser()
@@ -629,7 +628,7 @@ public class XmlConfiguration
             Map<Object, Object> map = (Map<Object, Object>)obj;
 
             String name = node.getAttribute("name");
-            Object value = value(obj,node);
+            Object value = value(obj, node);
             map.put(name,value);
             if (LOG.isDebugEnabled())
                 LOG.debug("XML " + obj + ".put(" + name + "," + value + ")");
@@ -674,7 +673,7 @@ public class XmlConfiguration
                 }
             }
             if (id != null)
-                _configuration.getIdMap().put(id,obj);
+                _configuration.getIdMap().put(id, obj);
             return obj;
         }
 
@@ -891,7 +890,7 @@ public class XmlConfiguration
 
             Map<Object, Object> map = new HashMap<>();
             if (id != null)
-                _configuration.getIdMap().put(id,map);
+                _configuration.getIdMap().put(id, map);
 
             for (Object o : node)
             {
@@ -949,32 +948,12 @@ public class XmlConfiguration
             String defaultValue = node.getAttribute("default");
 
             Object value = null;
-            boolean present = false;
             Map<String,String> properties = _configuration.getProperties();
             if (properties != null && nameAttr != null)
-            {
-                String preferredName = null;
-                String[] names = nameAttr.split(",");
-                for (String name : names)
-                {
-                    name = name.trim();
-                    if (name.length() == 0)
-                        continue;
-                    if (preferredName == null)
-                        preferredName = name;
+                value = resolve(properties, nameAttr);
 
-                    if (properties.containsKey(name))
-                    {
-                        if (!name.equals(preferredName))
-                            LOG.warn("Property '{}' is deprecated, use '{}' instead", name, preferredName);
-                        present = true;
-                        value = properties.get(name);
-                        break;
-                    }
-                }
-            }
-            if (!present)
-                value = defaultValue;
+            if (value == null && defaultValue != null)
+                value = interpolate(properties, defaultValue);
 
             if (idAttr != null)
                 _configuration.getIdMap().put(idAttr, value);
@@ -983,6 +962,57 @@ public class XmlConfiguration
                 configure(value, node, 0);
 
             return value;
+        }
+
+        private String resolve(Map<String, String> properties, String nameAttr)
+        {
+            String preferredName = null;
+            String[] names = nameAttr.split(",");
+            for (String name : names)
+            {
+                name = name.trim();
+                if (name.length() == 0)
+                    continue;
+                if (preferredName == null)
+                    preferredName = name;
+
+                String value = properties.get(name);
+                if (value != null)
+                {
+                    if (!name.equals(preferredName))
+                        LOG.warn("Property '{}' is deprecated, use '{}' instead", name, preferredName);
+                    return value;
+                }
+            }
+            return null;
+        }
+
+        private String interpolate(Map<String, String> properties, String text)
+        {
+            StringBuilder result = new StringBuilder();
+            Matcher matcher = __propertyPattern.matcher(text);
+            int start = 0;
+            while (matcher.find(start))
+            {
+                int match = matcher.start();
+                result.append(text.substring(start, match));
+                String name = matcher.group(1);
+                String dftValue = null;
+                int bar = name.indexOf('|');
+                if (bar > 0)
+                {
+                    dftValue = name.substring(bar + 1).trim();
+                    name = name.substring(0, bar).trim();
+                }
+                String value = resolve(properties, name);
+                if (value == null)
+                    value = dftValue;
+                result.append(value);
+                start = matcher.end();
+            }
+            result.append(text.substring(start, text.length()));
+            String r = result.toString();
+            return r.isEmpty() ? null : r;
         }
 
         /*
