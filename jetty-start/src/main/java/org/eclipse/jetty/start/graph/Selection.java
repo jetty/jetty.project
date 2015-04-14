@@ -18,6 +18,14 @@
 
 package org.eclipse.jetty.start.graph;
 
+/**
+ * Represents a selection technique.
+ * <p>
+ * Each <code>Selection</code> can be used [0..n] times in the graph.
+ * The <code>Selection</code> must contain a unique 'how' description that represents 
+ * how this selection was determined (what criteria the selection underwent)
+ * </p>
+ */
 public class Selection
 {
     private final boolean explicit;
@@ -77,6 +85,9 @@ public class Selection
         return true;
     }
 
+    /**
+     * Get how this node was selected.
+     */
     public String getHow()
     {
         return how;

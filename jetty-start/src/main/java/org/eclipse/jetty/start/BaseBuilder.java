@@ -157,25 +157,20 @@ public class BaseBuilder
 
         if (ambiguous.size() > 0)
         {
-            StringBuilder err = new StringBuilder();
-            err.append("Unable to add ");
-            err.append(ambiguous.size());
-            err.append(" module");
-            if (ambiguous.size() > 1)
-            {
-                err.append('s');
-            }
-            err.append(" (found declared via both --add-to-start and --add-to-startd): [");
+            StringBuilder warn = new StringBuilder();
+            warn.append("Ambiguous module locations detected, defaulting to --add-to-start for the following module selections:");
+            warn.append(" [");
+            
             for (int i = 0; i < ambiguous.size(); i++)
             {
                 if (i > 0)
                 {
-                    err.append(", ");
+                    warn.append(", ");
                 }
-                err.append(ambiguous.get(i).getName());
+                warn.append(ambiguous.get(i).getName());
             }
-            err.append(']');
-            throw new RuntimeException(err.toString());
+            warn.append(']');
+            StartLog.warn(warn.toString());
         }
 
         StartLog.debug("Adding %s new module(s)",count);
@@ -198,6 +193,11 @@ public class BaseBuilder
             StartDirBuilder builder = new StartDirBuilder(this);
             for (Module mod : startDModules)
             {
+                if (ambiguous.contains(mod))
+                {
+                    // skip ambiguous module
+                    continue;
+                }
                 dirty |= builder.addModule(mod);
                 for (String file : mod.getFiles())
                 {
