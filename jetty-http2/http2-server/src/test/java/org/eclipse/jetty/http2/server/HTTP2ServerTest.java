@@ -30,7 +30,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicReference;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -345,6 +344,38 @@ public class HTTP2ServerTest extends AbstractServerTest
             // cannot write and therefore cannot even send the GO_AWAY.
             Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
             boolean closed = parseResponse(client, parser, 2 * delay);
+            Assert.assertTrue(closed);
+        }
+    }
+
+    @Test
+    public void testNonISOHeader() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                // Invalid header name, the connection must be closed.
+                response.setHeader("Euro_(\u20AC)", "42");
+            }
+        });
+
+        ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+        generator.control(lease, new PrefaceFrame());
+        MetaData.Request metaData = newRequest("GET", new HttpFields());
+        generator.control(lease, new HeadersFrame(1, metaData, null, true));
+
+        try (Socket client = new Socket("localhost", connector.getLocalPort()))
+        {
+            OutputStream output = client.getOutputStream();
+            for (ByteBuffer buffer : lease.getByteBuffers())
+                output.write(BufferUtil.toArray(buffer));
+            output.flush();
+
+            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter(), 4096, 8192);
+            boolean closed = parseResponse(client, parser);
+
             Assert.assertTrue(closed);
         }
     }
