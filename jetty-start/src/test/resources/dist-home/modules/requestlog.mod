@@ -12,8 +12,11 @@ etc/jetty-requestlog.xml
 logs/
 
 [ini-template]
-## File path (relative to $jetty.base)
-# jetty.requestlog.filePath=/logs/yyyy_mm_dd.request.log
+## Logging directory (relative to $jetty.base)
+# jetty.requestlog.dir=logs
+
+## File path
+# jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
 
 # Date format for rollovered files (uses SimpleDateFormat syntax)
 # jetty.requestlog.filenameDateFormat=yyyy_MM_dd
