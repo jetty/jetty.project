@@ -131,14 +131,14 @@ public abstract class Node<T>
         return selections;
     }
 
-    public Set<String> getSelectedHowSet()
+    public Set<String> getSelectedCriteriaSet()
     {
-        Set<String> hows = new HashSet<>();
+        Set<String> criteriaSet = new HashSet<>();
         for (Selection selection : selections)
         {
-            hows.add(selection.getHow());
+            criteriaSet.add(selection.getCriteria());
         }
-        return hows;
+        return criteriaSet;
     }
 
     public boolean isSelected()

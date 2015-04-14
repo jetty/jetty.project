@@ -22,21 +22,21 @@ import java.util.HashSet;
 import java.util.Set;
 
 /**
- * Should match against the provided set of {@link Selection#getHow()} values.
+ * Should match against the provided set of {@link Selection#getCriteria()} values.
  * <p>
  * Incomplete set is considered to be no-match.
  */
-public class HowSetPredicate implements Predicate
+public class CriteriaSetPredicate implements Predicate
 {
-    private final Set<String> howSet;
+    private final Set<String> criteriaSet;
 
-    public HowSetPredicate(String... hows)
+    public CriteriaSetPredicate(String... criterias)
     {
-        this.howSet = new HashSet<>();
+        this.criteriaSet = new HashSet<>();
 
-        for (String name : hows)
+        for (String name : criterias)
         {
-            this.howSet.add(name);
+            this.criteriaSet.add(name);
         }
     }
 
@@ -50,17 +50,17 @@ public class HowSetPredicate implements Predicate
             return false;
         }
 
-        Set<String> actualHows = node.getSelectedHowSet();
+        Set<String> actualCriterias = node.getSelectedCriteriaSet();
 
-        if (actualHows.size() != howSet.size())
+        if (actualCriterias.size() != criteriaSet.size())
         {
             // non-equal sized set
             return false;
         }
 
-        for (String how : actualHows)
+        for (String actualCriteria : actualCriterias)
         {
-            if (!this.howSet.contains(how))
+            if (!this.criteriaSet.contains(actualCriteria))
             {
                 return false;
             }

@@ -19,16 +19,16 @@
 package org.eclipse.jetty.start.graph;
 
 /**
- * Match against a specific {@link Selection#getHow()}, where
+ * Match against a specific {@link Selection#getCriteria()}, where
  * there are no other {@link Selection#isExplicit()} specified.
  */
-public class HowUniquePredicate implements Predicate
+public class UniqueCriteriaPredicate implements Predicate
 {
-    private final String how;
+    private final String criteria;
 
-    public HowUniquePredicate(String how)
+    public UniqueCriteriaPredicate(String criteria)
     {
-        this.how = how;
+        this.criteria = criteria;
     }
 
     @Override
@@ -45,11 +45,11 @@ public class HowUniquePredicate implements Predicate
         
         for (Selection selection : node.getSelections())
         {
-            if (how.equalsIgnoreCase(selection.getHow()))
+            if (criteria.equalsIgnoreCase(selection.getCriteria()))
             {
                 // Found a match
                 ret = true;
-                continue; // this 'how' is always valid.
+                continue; // this criteria is always valid.
             }
             else if (selection.isExplicit())
             {

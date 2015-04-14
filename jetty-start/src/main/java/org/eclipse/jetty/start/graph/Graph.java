@@ -223,16 +223,16 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
                 }
                 else
                 {
-                    List<String> hows = new ArrayList<>();
+                    List<String> criterias = new ArrayList<>();
                     for (Selection selection : module.getSelections())
                     {
                         if (selection.isExplicit())
                         {
-                            hows.add(selection.getHow());
+                            criterias.add(selection.getCriteria());
                         }
                     }
-                    Collections.sort(hows);
-                    System.out.println(Utils.join(hows,", "));
+                    Collections.sort(criterias);
+                    System.out.println(Utils.join(criterias,", "));
                 }
             }
         }

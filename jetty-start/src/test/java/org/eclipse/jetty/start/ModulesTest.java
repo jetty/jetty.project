@@ -28,7 +28,7 @@ import org.eclipse.jetty.start.config.CommandLineConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.JettyBaseConfigSource;
 import org.eclipse.jetty.start.config.JettyHomeConfigSource;
-import org.eclipse.jetty.start.graph.HowSetPredicate;
+import org.eclipse.jetty.start.graph.CriteriaSetPredicate;
 import org.eclipse.jetty.start.graph.Predicate;
 import org.eclipse.jetty.start.graph.RegexNamePredicate;
 import org.eclipse.jetty.start.graph.Selection;
@@ -479,12 +479,12 @@ public class ModulesTest
         {
             Module altMod = modules.get(expectedAlt);
             assertThat("Alt.mod[" + expectedAlt + "].selected",altMod.isSelected(),is(true));
-            Set<String> sources = altMod.getSelectedHowSet();
+            Set<String> sources = altMod.getSelectedCriteriaSet();
             assertThat("Alt.mod[" + expectedAlt + "].sources: [" + Utils.join(sources,", ") + "]",sources,contains(alt));
         }
 
         // Now collect the unique source list
-        List<Module> alts = modules.getMatching(new HowSetPredicate(alt));
+        List<Module> alts = modules.getMatching(new CriteriaSetPredicate(alt));
 
         // Assert names are correct, and in the right order
         actualNames = new ArrayList<>();

@@ -30,8 +30,8 @@ import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
 import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
-import org.eclipse.jetty.start.graph.HowSetPredicate;
-import org.eclipse.jetty.start.graph.HowUniquePredicate;
+import org.eclipse.jetty.start.graph.CriteriaSetPredicate;
+import org.eclipse.jetty.start.graph.UniqueCriteriaPredicate;
 import org.eclipse.jetty.start.graph.Predicate;
 import org.eclipse.jetty.start.graph.Selection;
 
@@ -137,10 +137,10 @@ public class BaseBuilder
         Modules modules = startArgs.getAllModules();
         boolean dirty = false;
 
-        String dirSource = "<add-to-startd>";
-        String iniSource = "<add-to-start-ini>";
-        Selection startDirSelection = new Selection(dirSource);
-        Selection startIniSelection = new Selection(iniSource);
+        String dirCriteria = "<add-to-startd>";
+        String iniCriteria = "<add-to-start-ini>";
+        Selection startDirSelection = new Selection(dirCriteria);
+        Selection startIniSelection = new Selection(iniCriteria);
         
         List<String> startDNames = new ArrayList<>();
         startDNames.addAll(startArgs.getAddToStartdIni());
@@ -152,7 +152,7 @@ public class BaseBuilder
         count += modules.selectNodes(startIniNames,startIniSelection);
 
         // look for ambiguous declaration found in both places
-        Predicate ambiguousPredicate = new HowSetPredicate(dirSource,iniSource);
+        Predicate ambiguousPredicate = new CriteriaSetPredicate(dirCriteria,iniCriteria);
         List<Module> ambiguous = modules.getMatching(ambiguousPredicate);
 
         if (ambiguous.size() > 0)
@@ -179,9 +179,9 @@ public class BaseBuilder
         ackLicenses();
 
         // Collect specific modules to enable
-        // Should match 'how', with no other selections.explicit
-        Predicate startDMatcher = new HowUniquePredicate(dirSource);
-        Predicate startIniMatcher = new HowUniquePredicate(iniSource);
+        // Should match 'criteria', with no other selections.explicit
+        Predicate startDMatcher = new UniqueCriteriaPredicate(dirCriteria);
+        Predicate startIniMatcher = new UniqueCriteriaPredicate(iniCriteria);
 
         List<Module> startDModules = modules.getMatching(startDMatcher);
         List<Module> startIniModules = modules.getMatching(startIniMatcher);

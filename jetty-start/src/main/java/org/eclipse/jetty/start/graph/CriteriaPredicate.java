@@ -19,15 +19,15 @@
 package org.eclipse.jetty.start.graph;
 
 /**
- * Predicate against a specific {@link Selection#getHow()}
+ * Predicate against a specific {@link Selection#getCriteria()}
  */
-public class HowPredicate implements Predicate
+public class CriteriaPredicate implements Predicate
 {
-    private final String how;
+    private final String criteria;
 
-    public HowPredicate(String how)
+    public CriteriaPredicate(String criteria)
     {
-        this.how = how;
+        this.criteria = criteria;
     }
 
     @Override
@@ -35,7 +35,7 @@ public class HowPredicate implements Predicate
     {
         for (Selection selection : node.getSelections())
         {
-            if (how.equalsIgnoreCase(selection.getHow()))
+            if (criteria.equalsIgnoreCase(selection.getCriteria()))
             {
                 return true;
             }
