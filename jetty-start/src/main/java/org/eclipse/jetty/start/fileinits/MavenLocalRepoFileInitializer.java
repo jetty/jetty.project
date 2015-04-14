@@ -108,11 +108,6 @@ public class MavenLocalRepoFileInitializer extends UriFileInitializer implements
             return true;
         }
 
-        if (!file.startsWith(baseHome.getBasePath()))
-        {
-            throw new IOException("For security reasons, Jetty start is unable to process maven file resource not in ${jetty.base} - " + file);
-        }
-        
         // If using local repository
         if (this.localRepositoryDir != null)
         {
