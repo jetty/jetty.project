@@ -15,7 +15,7 @@ webapps/
 etc/jetty-deploy.xml
 
 [ini-template]
-# Monitored directory name (relative to jetty.base)
+# Monitored directory name (relative to $jetty.base)
 # jetty.deploy.monitoredDir=webapps
 
 # Monitored directory scan period (seconds)

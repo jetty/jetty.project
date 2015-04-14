@@ -23,7 +23,7 @@ resources/
 # Configure jetty logging for java.util.logging
 # -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.JavaUtilLog
 
-## Logging directory (relative to jetty.base)
+## Logging directory (relative to $jetty.base)
 # jetty.logging.dir=logs
 
 ## Whether to append to existing file
