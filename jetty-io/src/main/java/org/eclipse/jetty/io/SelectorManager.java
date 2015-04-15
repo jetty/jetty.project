@@ -97,6 +97,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
+     * @return the selector priority delta
      * @deprecated not implemented
      */
     @Deprecated
@@ -106,6 +107,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
+     * @param selectorPriorityDelta the selector priority delta
      * @deprecated not implemented
      */
     @Deprecated
@@ -189,6 +191,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
+     * @param channel the channel to accept
      * @see #accept(SocketChannel, Object)
      */
     public void accept(SocketChannel channel)
@@ -233,7 +236,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * be overridden by subclasses if a server channel is provided.
      *
      * @param channel the
-     * @throws IOException
+     * @throws IOException if unable to accept channel
      */
     protected void accepted(SocketChannel channel) throws IOException
     {
@@ -368,7 +371,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param endpoint   the endpoint
      * @param attachment the attachment
      * @return a new connection
-     * @throws IOException
+     * @throws IOException if unable to create new connection
      * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
      */
     public abstract Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException;

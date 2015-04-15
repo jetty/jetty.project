@@ -90,6 +90,7 @@ public class MappedByteBufferPoolTest
     /**
      * In a scenario where MappedByteBufferPool is being used improperly, such as releasing a buffer that wasn't created/acquired by the MappedByteBufferPool,
      * an assertion is tested for.
+     * @throws Exception test failure
      */
     @Test
     public void testReleaseAssertion() throws Exception
