@@ -22,7 +22,7 @@ import org.eclipse.jetty.servlet.ServletHolder;
 
 /**
  * RunAs
- * <p/>
+ * <p>
  * Represents a &lt;run-as&gt; element in web.xml, or a runAs annotation.
  */
 public class RunAs

@@ -181,7 +181,7 @@ public class LibExtClassLoaderHelper
      * depending too much directly on a particular logging framework.
      * <p>
      * We can afford to do some implementation specific code for a logging
-     * framework only in a fragment. <br/>
+     * framework only in a fragment. <br>
      * Trying to configure log4j and logback in here.
      * </p>
      * <p>

@@ -42,9 +42,9 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * {@link HttpReceiver} provides the abstract code to implement the various steps of the receive of HTTP responses.
- * <p />
+ * <p>
  * {@link HttpReceiver} maintains a state machine that is updated when the steps of receiving a response are executed.
- * <p />
+ * <p>
  * Subclasses must handle the transport-specific details, for example how to read from the raw socket and how to parse
  * the bytes read from the socket. Then they have to call the methods defined in this class in the following order:
  * <ol>
@@ -59,7 +59,7 @@ import org.eclipse.jetty.util.log.Logger;
  * (for example, because of I/O exceptions).
  * At any time, user threads may abort the response which will cause {@link #responseFailure(Throwable)} to be
  * invoked.
- * <p />
+ * <p>
  * The state machine maintained by this class ensures that the response steps are not executed by an I/O thread
  * if the response has already been failed.
  *
@@ -96,10 +96,10 @@ public abstract class HttpReceiver
 
     /**
      * Method to be invoked when the response status code is available.
-     * <p />
+     * <p>
      * Subclasses must have set the response status code on the {@link Response} object of the {@link HttpExchange}
      * prior invoking this method.
-     * <p />
+     * <p>
      * This method takes case of notifying {@link org.eclipse.jetty.client.api.Response.BeginListener}s.
      *
      * @param exchange the HTTP exchange
@@ -139,10 +139,10 @@ public abstract class HttpReceiver
 
     /**
      * Method to be invoked when a response HTTP header is available.
-     * <p />
+     * <p>
      * Subclasses must not have added the header to the {@link Response} object of the {@link HttpExchange}
      * prior invoking this method.
-     * <p />
+     * <p>
      * This method takes case of notifying {@link org.eclipse.jetty.client.api.Response.HeaderListener}s and storing cookies.
      *
      * @param exchange the HTTP exchange
@@ -223,7 +223,7 @@ public abstract class HttpReceiver
 
     /**
      * Method to be invoked after all response HTTP headers are available.
-     * <p />
+     * <p>
      * This method takes case of notifying {@link org.eclipse.jetty.client.api.Response.HeadersListener}s.
      *
      * @param exchange the HTTP exchange
@@ -281,7 +281,7 @@ public abstract class HttpReceiver
 
     /**
      * Method to be invoked when response HTTP content is available.
-     * <p />
+     * <p>
      * This method takes case of decoding the content, if necessary, and notifying {@link org.eclipse.jetty.client.api.Response.ContentListener}s.
      *
      * @param exchange the HTTP exchange
@@ -356,7 +356,7 @@ public abstract class HttpReceiver
 
     /**
      * Method to be invoked when the response is successful.
-     * <p />
+     * <p>
      * This method takes case of notifying {@link org.eclipse.jetty.client.api.Response.SuccessListener}s and possibly
      * {@link org.eclipse.jetty.client.api.Response.CompleteListener}s (if the exchange is completed).
      *
@@ -397,7 +397,7 @@ public abstract class HttpReceiver
 
     /**
      * Method to be invoked when the response is failed.
-     * <p />
+     * <p>
      * This method takes care of notifying {@link org.eclipse.jetty.client.api.Response.FailureListener}s.
      *
      * @param failure the response failure
@@ -451,9 +451,9 @@ public abstract class HttpReceiver
 
     /**
      * Resets this {@link HttpReceiver} state.
-     * <p />
+     * <p>
      * Subclasses should override (but remember to call {@code super}) to reset their own state.
-     * <p />
+     * <p>
      * Either this method or {@link #dispose()} is called.
      */
     protected void reset()
@@ -463,9 +463,9 @@ public abstract class HttpReceiver
 
     /**
      * Disposes this {@link HttpReceiver} state.
-     * <p />
+     * <p>
      * Subclasses should override (but remember to call {@code super}) to dispose their own state.
-     * <p />
+     * <p>
      * Either this method or {@link #reset()} is called.
      */
     protected void dispose()

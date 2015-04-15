@@ -40,11 +40,11 @@ import org.eclipse.jetty.proxy.ProxyServlet;
 
 /**
  * Specific implementation of {@link ProxyServlet.Transparent} for FastCGI.
- * <p />
+ * <p>
  * This servlet accepts a HTTP request and transforms it into a FastCGI request
  * that is sent to the FastCGI server specified in the <code>proxyTo</code>
  * init-param.
- * <p />
+ * <p>
  * This servlet accepts two additional init-params:
  * <ul>
  *     <li><code>scriptRoot</code>, mandatory, that must be set to the directory where

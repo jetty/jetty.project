@@ -50,11 +50,11 @@ import org.eclipse.jetty.util.log.Logger;
  * <ul>
  * <li><b>allowedOrigins</b>, a comma separated list of origins that are
  * allowed to access the resources. Default value is <b>*</b>, meaning all
- * origins.<br />
+ * origins.<br>
  * If an allowed origin contains one or more * characters (for example
  * http://*.domain.com), then "*" characters are converted to ".*", "."
  * characters are escaped to "\." and the resulting allowed origin
- * interpreted as a regular expression.<br />
+ * interpreted as a regular expression.<br>
  * Allowed origins can therefore be more complex expressions such as
  * https?://*.domain.[a-z]{3} that matches http or https, multiple subdomains
  * and any 3 letter top-level domain (.com, .net, .org, etc.).</li>

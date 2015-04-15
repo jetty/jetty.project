@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.TypeUtil;
 
 /**
  * Implementation of the HTTP "Digest" authentication defined in RFC 2617.
- * <p />
+ * <p>
  * Applications should create objects of this class and add them to the
  * {@link AuthenticationStore} retrieved from the {@link HttpClient}
  * via {@link HttpClient#getAuthenticationStore()}.

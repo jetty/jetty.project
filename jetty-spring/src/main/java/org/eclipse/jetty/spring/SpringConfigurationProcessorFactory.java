@@ -24,7 +24,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 /**
  * Spring ConfigurationProcessor Factory
- * <p/>
+ * <p>
  * Create a {@link SpringConfigurationProcessor} for XML documents with a "beans" element.
  * The factory is discovered by a {@link java.util.ServiceLoader} for {@link ConfigurationProcessorFactory}.
  *

@@ -26,7 +26,7 @@ import org.eclipse.jetty.client.api.ContentProvider;
 
 /**
  * A {@link ContentProvider} for {@link ByteBuffer}s.
- * <p />
+ * <p>
  * The position and limit of the {@link ByteBuffer}s passed to the constructor are not modified,
  * and each invocation of the {@link #iterator()} method returns a {@link ByteBuffer#slice() slice}
  * of the original {@link ByteBuffer}.

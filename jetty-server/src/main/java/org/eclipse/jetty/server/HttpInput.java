@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * {@link HttpInput} provides an implementation of {@link ServletInputStream} for {@link HttpChannel}.
- * <p/>
+ * <p>
  * Content may arrive in patterns such as [content(), content(), messageComplete()] so that this class
  * maintains two states: the content state that tells whether there is content to consume and the EOF
  * state that tells whether an EOF has arrived.
@@ -398,7 +398,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     /**
      * This method should be called to signal that an EOF has been
      * detected before all the expected content arrived.
-     * <p/>
+     * <p>
      * Typically this will result in an EOFException being thrown
      * from a subsequent read rather than a -1 return.
      */

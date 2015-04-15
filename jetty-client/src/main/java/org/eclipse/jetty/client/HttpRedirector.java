@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Utility class that handles HTTP redirects.
- * <p />
+ * <p>
  * Applications can disable redirection via {@link Request#followRedirects(boolean)}
  * and then rely on this class to perform the redirect in a simpler way, for example:
  * <pre>

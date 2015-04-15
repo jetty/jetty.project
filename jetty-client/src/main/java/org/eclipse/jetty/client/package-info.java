@@ -20,11 +20,11 @@
  * Jetty Client : Implementation and Core Classes
  * 
  * This package provides APIs, utility classes and an implementation of an asynchronous HTTP client.
- * <p />
+ * <p>
  * The core class is {@link org.eclipse.jetty.client.api.HttpClient}, which acts as a central configuration object (for example
  * for {@link org.eclipse.jetty.client.api.HttpClient#setIdleTimeout(long) idle timeouts}, {@link org.eclipse.jetty.client.api.HttpClient#setMaxConnectionsPerDestination(int)
  * max connections per destination}, etc.) and as a factory for {@link Request} objects.
- * <p />
+ * <p>
  * The HTTP protocol is based on the request/response paradigm, a unit that in this implementation is called
  * <em>exchange</em> and is represented by {@link org.eclipse.jetty.client.api.HttpExchange}.
  * An initial request may trigger a sequence of exchanges with one or more servers, called a <em>conversation</em>
@@ -32,15 +32,15 @@
  * upon a request for a resource URI, the server replies with a redirect (for example with the 303 status code)
  * to another URI. This conversation is made of a first exchange made of the original request and its 303 response,
  * and of a second exchange made of the request for the new URI and its 200 response.
- * <p />
+ * <p>
  * {@link org.eclipse.jetty.client.api.HttpClient} holds a number of {@link org.eclipse.jetty.client.api.HttpDestination destinations}, which in turn hold a number of
  * pooled {@link org.eclipse.jetty.client.api.HttpConnection connections}.
- * <p />
+ * <p>
  * When a request is sent, its exchange is associated to a connection, either taken from an idle queue or created
  * anew, and when both the request and response are completed, the exchange is disassociated from the connection.
  * Conversations may span multiple connections on different destinations, and therefore are maintained at the
  * {@link org.eclipse.jetty.client.api.HttpClient} level.
- * <p />
+ * <p>
  * Applications may decide to send the request and wait for the response in a blocking way, using
  * {@link org.eclipse.jetty.client.api.Request#send()}.
  * Alternatively, application may ask to be notified of response events asynchronously, using

@@ -37,16 +37,16 @@ import org.eclipse.jetty.util.log.Logger;
  * the transport-specific code to send requests over the wire, implementing
  * {@link #sendHeaders(HttpExchange, HttpContent, Callback)} and
  * {@link #sendContent(HttpExchange, HttpContent, Callback)}.
- * <p />
+ * <p>
  * {@link HttpSender} governs two state machines.
- * <p />
+ * <p>
  * The request state machine is updated by {@link HttpSender} as the various steps of sending a request
  * are executed, see {@link RequestState}.
  * At any point in time, a user thread may abort the request, which may (if the request has not been
  * completely sent yet) move the request state machine to {@link RequestState#FAILURE}.
  * The request state machine guarantees that the request steps are executed (by I/O threads) only if
  * the request has not been failed already.
- * <p />
+ * <p>
  * The sender state machine is updated by {@link HttpSender} from three sources: deferred content notifications
  * (via {@link #onContent()}), 100-continue notifications (via {@link #proceed(HttpExchange, Throwable)})
  * and normal request send (via {@link #sendContent(HttpExchange, HttpContent, Callback)}).
@@ -392,7 +392,7 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
     /**
      * Implementations should send the HTTP headers over the wire, possibly with some content,
      * in a single write, and notify the given {@code callback} of the result of this operation.
-     * <p />
+     * <p>
      * If there is more content to send, then {@link #sendContent(HttpExchange, HttpContent, Callback)}
      * will be invoked.
      *
@@ -404,11 +404,11 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
     /**
      * Implementations should send the content at the {@link HttpContent} cursor position over the wire.
-     * <p />
+     * <p>
      * The {@link HttpContent} cursor is advanced by {@link HttpSender} at the right time, and if more
      * content needs to be sent, this method is invoked again; subclasses need only to send the content
      * at the {@link HttpContent} cursor position.
-     * <p />
+     * <p>
      * This method is invoked one last time when {@link HttpContent#isConsumed()} is true and therefore
      * there is no actual content to send.
      * This is done to allow subclasses to write "terminal" bytes (such as the terminal chunk when the

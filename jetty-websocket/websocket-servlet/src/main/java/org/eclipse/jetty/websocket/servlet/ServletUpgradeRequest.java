@@ -108,7 +108,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
 
     /**
      * Return the underlying HttpServletRequest that existed at Upgrade time.
-     * <p/>
+     * <p>
      * Note: many features of the HttpServletRequest are invalid when upgraded,
      * especially ones that deal with body content, streams, readers, and responses.
      *
@@ -151,7 +151,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
 
     /**
      * Return a {@link InetSocketAddress} for the local socket.
-     * <p/>
+     * <p>
      * Warning: this can cause a DNS lookup
      *
      * @return the local socket address
@@ -230,7 +230,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
 
     /**
      * Return a {@link InetSocketAddress} for the remote socket.
-     * <p/>
+     * <p>
      * Warning: this can cause a DNS lookup
      *
      * @return the remote socket address
@@ -252,7 +252,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
 
     /**
      * Return the HttpSession if it exists.
-     * <p/>
+     * <p>
      * Note: this is equivalent to {@link HttpServletRequest#getSession(boolean)}
      * and will not create a new HttpSession.
      */

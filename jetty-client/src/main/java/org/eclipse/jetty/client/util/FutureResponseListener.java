@@ -34,7 +34,7 @@ import org.eclipse.jetty.client.api.Result;
  * A {@link BufferingResponseListener} that is also a {@link Future}, to allow applications
  * to block (indefinitely or for a timeout) until {@link #onComplete(Result)} is called,
  * or to {@link #cancel(boolean) abort} the request/response conversation.
- * <p />
+ * <p>
  * Typical usage is:
  * <pre>
  * Request request = httpClient.newRequest(...)...;

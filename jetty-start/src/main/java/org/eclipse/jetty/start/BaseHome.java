@@ -336,7 +336,7 @@ public class BaseHome
      * <p>
      * Notes:
      * <ul>
-     * <li>FileSystem case sensitivity is implementation specific (eg: linux is case-sensitive, windows is case-insensitive).<br/>
+     * <li>FileSystem case sensitivity is implementation specific (eg: linux is case-sensitive, windows is case-insensitive).<br>
      * See {@link java.nio.file.FileSystem#getPathMatcher(String)} for more details</li>
      * <li>Pattern slashes are implementation neutral (use '/' always and you'll be fine)</li>
      * <li>Recursive searching is limited to 30 levels deep (not configurable)</li>

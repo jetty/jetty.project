@@ -63,7 +63,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * Denial of Service filter
- * <p/>
+ * <p>
  * <p>
  * This filter is useful for limiting
  * exposure to abuse from request flooding, whether malicious, or as a result of
@@ -82,12 +82,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * implemented, in order to uniquely identify authenticated users.
  * <p>
  * The following init parameters control the behavior of the filter:<dl>
- * <p/>
+ * <p>
  * <dt>maxRequestsPerSec</dt>
  * <dd>the maximum number of requests from a connection per
  * second. Requests in excess of this are first delayed,
  * then throttled.</dd>
- * <p/>
+ * <p>
  * <dt>delayMs</dt>
  * <dd>is the delay given to all requests over the rate limit,
  * before they are considered at all. -1 means just reject request,
@@ -538,12 +538,12 @@ public class DoSFilter implements Filter
      * track of this connection's request rate. If this is not the first request
      * from this connection, return the existing object with the stored stats.
      * If it is the first request, then create a new request tracker.
-     * <p/>
+     * <p>
      * Assumes that each connection has an identifying characteristic, and goes
      * through them in order, taking the first that matches: user id (logged
      * in), session id, client IP address. Unidentifiable connections are lumped
      * into one.
-     * <p/>
+     * <p>
      * When a session expires, its rate tracker is automatically deleted.
      *
      * @param request the current request

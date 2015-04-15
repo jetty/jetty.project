@@ -180,7 +180,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
     /**
      * Creates a {@link HttpClient} instance, configured with init parameters of this servlet.
-     * <p/>
+     * <p>
      * The init parameters used to configure the {@link HttpClient} instance are:
      * <table>
      * <thead>

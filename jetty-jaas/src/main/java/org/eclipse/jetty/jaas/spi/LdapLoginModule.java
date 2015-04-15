@@ -49,7 +49,7 @@ import org.eclipse.jetty.util.security.Credential;
 
 /**
  * A LdapLoginModule for use with JAAS setups
- * <p/>
+ * <p>
  * The jvm should be started with the following parameter:
  * <br><br>
  * <code>
@@ -137,7 +137,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * name of the attribute that a users password is stored under
-     * <p/>
+     * <p>
      * NOTE: not always accessible, see force binding login
      */
     private String _userPasswordAttribute = "userPassword";
@@ -185,10 +185,10 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * get the available information about the user
-     * <p/>
+     * <p>
      * for this LoginModule, the credential can be null which will result in a
      * binding ldap authentication scenario
-     * <p/>
+     * <p>
      * roles are also an optional concept if required
      *
      * @param username
@@ -244,7 +244,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * attempts to get the users credentials from the users context
-     * <p/>
+     * <p>
      * NOTE: this is not an user authenticated operation
      *
      * @param username
@@ -307,7 +307,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * attempts to get the users roles from the root context
-     * <p/>
+     * <p>
      * NOTE: this is not an user authenticated operation
      *
      * @param dirContext
@@ -373,7 +373,7 @@ public class LdapLoginModule extends AbstractLoginModule
 
     /**
      * since ldap uses a context bind for valid authentication checking, we override login()
-     * <p/>
+     * <p>
      * if credentials are not available from the users context or if we are forcing the binding check
      * then we try a binding authentication check, otherwise if we have the users encoded password then
      * we can try authentication via that mechanic

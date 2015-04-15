@@ -134,7 +134,7 @@ public class ProxyServlet extends AbstractProxyServlet
      * <li>proxyTo - a mandatory URI like http://host:80/context to which the request is proxied.</li>
      * <li>prefix - an optional URI prefix that is stripped from the start of the forwarded URI.</li>
      * </ul>
-     * <p/>
+     * <p>
      * For example, if a request is received at "/foo/bar", the 'proxyTo' parameter is "http://host:80/context"
      * and the 'prefix' parameter is "/foo", then the request would be proxied to "http://host:80/context/bar".
      */

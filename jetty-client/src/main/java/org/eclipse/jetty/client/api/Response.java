@@ -93,7 +93,7 @@ public interface Response
         /**
          * Callback method invoked when the response line containing HTTP version,
          * HTTP status code and reason has been received and parsed.
-         * <p />
+         * <p>
          * This method is the best approximation to detect when the first bytes of the response arrived to the client.
          *
          * @param response the response containing the response line data
@@ -193,9 +193,9 @@ public interface Response
         /**
          * Callback method invoked when the request <em><b>and</b></em> the response have been processed,
          * either successfully or not.
-         * <p/>
+         * <p>
          * The {@code result} parameter contains the request, the response, and eventual failures.
-         * <p/>
+         * <p>
          * Requests may complete <em>after</em> response, for example in case of big uploads that are
          * discarded or read asynchronously by the server.
          * This method is always invoked <em>after</em> {@link SuccessListener#onSuccess(Response)} or

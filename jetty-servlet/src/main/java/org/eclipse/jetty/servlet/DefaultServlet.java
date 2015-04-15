@@ -315,7 +315,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     }
 
     /**
-     * Compute the field _contextHandler.<br/>
+     * Compute the field _contextHandler.<br>
      * In the case where the DefaultServlet is deployed on the HttpService it is likely that
      * this method needs to be overwritten to unwrap the ServletContext facade until we reach
      * the original jetty's ContextHandler.

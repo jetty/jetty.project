@@ -25,12 +25,12 @@ import org.eclipse.jetty.util.Attributes;
 
 /**
  * {@link Authentication} represents a mechanism to authenticate requests for protected resources.
- * <p />
+ * <p>
  * {@link Authentication}s are added to an {@link AuthenticationStore}, which is then
  * {@link #matches(String, URI, String) queried} to find the right
  * {@link Authentication} mechanism to use based on its type, URI and realm, as returned by
  * {@code WWW-Authenticate} response headers.
- * <p />
+ * <p>
  * If an {@link Authentication} mechanism is found, it is then
  * {@link #authenticate(Request, ContentResponse, HeaderInfo, Attributes) executed} for the given request,
  * returning an {@link Authentication.Result}, which is then stored in the {@link AuthenticationStore}
@@ -50,7 +50,7 @@ public interface Authentication
     /**
      * Executes the authentication mechanism for the given request, returning a {@link Result} that can be
      * used to actually authenticate the request via {@link Result#apply(Request)}.
-     * <p />
+     * <p>
      * If a request for {@code "/secure"} returns a {@link Result}, then the result may be used for other
      * requests such as {@code "/secure/foo"} or {@code "/secure/bar"}, unless those resources are protected
      * by other realms.

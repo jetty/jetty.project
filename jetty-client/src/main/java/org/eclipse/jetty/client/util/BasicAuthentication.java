@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.B64Code;
 
 /**
  * Implementation of the HTTP "Basic" authentication defined in RFC 2617.
- * <p />
+ * <p>
  * Applications should create objects of this class and add them to the
  * {@link AuthenticationStore} retrieved from the {@link HttpClient}
  * via {@link HttpClient#getAuthenticationStore()}.

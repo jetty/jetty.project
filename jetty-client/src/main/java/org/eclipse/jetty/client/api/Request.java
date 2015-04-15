@@ -386,14 +386,14 @@ public interface Request
 
     /**
      * Sends this request and returns the response.
-     * <p />
+     * <p>
      * This method should be used when a simple blocking semantic is needed, and when it is known
      * that the response content can be buffered without exceeding memory constraints.
-     * <p />
+     * <p>
      * For example, this method is not appropriate to download big files from a server; consider using
      * {@link #send(Response.CompleteListener)} instead, passing your own {@link Response.Listener} or a utility
      * listener such as {@link InputStreamResponseListener}.
-     * <p />
+     * <p>
      * The method returns when the {@link Response.CompleteListener complete event} is fired.
      *
      * @return a {@link ContentResponse} for this request

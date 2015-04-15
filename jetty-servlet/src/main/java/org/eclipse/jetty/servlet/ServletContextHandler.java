@@ -74,7 +74,7 @@ import org.eclipse.jetty.util.component.LifeCycle;
  * session and security handlers, et.<pre>
  *   new ServletContext("/context",Context.SESSIONS|Context.NO_SECURITY);
  * </pre>
- * <p/>
+ * <p>
  * This class should have been called ServletContext, but this would have
  * cause confusion with {@link ServletContext}.
  */

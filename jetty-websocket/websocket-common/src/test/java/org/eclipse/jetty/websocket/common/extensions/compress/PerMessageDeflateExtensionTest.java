@@ -48,7 +48,7 @@ import org.junit.Test;
 
 /**
  * Client side behavioral tests for permessage-deflate extension.
- * <p/>
+ * <p>
  * See: http://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-15
  */
 public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
@@ -58,7 +58,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p/>
+     * <p>
      * Section 8.2.3.4: Using a DEFLATE Block with BFINAL Set to 1
      */
     @Test
@@ -78,7 +78,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p/>
+     * <p>
      * Section 8.2.3.3: Using a DEFLATE Block with No Compression
      */
     @Test
@@ -97,7 +97,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p/>
+     * <p>
      * Section 8.2.3.1: A message compressed using 1 compressed DEFLATE block
      */
     @Test
@@ -116,7 +116,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p/>
+     * <p>
      * Section 8.2.3.1: A message compressed using 1 compressed DEFLATE block (with fragmentation)
      */
     @Test
@@ -139,7 +139,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p/>
+     * <p>
      * Section 8.2.3.2: Sharing LZ77 Sliding Window
      */
     @Test
@@ -162,7 +162,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p/>
+     * <p>
      * Section 8.2.3.2: Sharing LZ77 Sliding Window
      */
     @Test
@@ -186,7 +186,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p/>
+     * <p>
      * Section 8.2.3.5: Two DEFLATE Blocks in 1 Message
      */
     @Test

@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A {@link ContentProvider} for files using JDK 7's {@code java.nio.file} APIs.
- * <p />
+ * <p>
  * It is possible to specify, at the constructor, a buffer size used to read content from the
  * stream, by default 4096 bytes.
  */

@@ -33,20 +33,20 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * A {@link ContentProvider} for an {@link InputStream}.
- * <p />
+ * <p>
  * The input stream is read once and therefore fully consumed.
  * Invocations to the {@link #iterator()} method after the first will return an "empty" iterator
  * because the stream has been consumed on the first invocation.
- * <p />
+ * <p>
  * However, it is possible for subclasses to override {@link #onRead(byte[], int, int)} to copy
  * the content read from the stream to another location (for example a file), and be able to
  * support multiple invocations of {@link #iterator()}, returning the iterator provided by this
  * class on the first invocation, and an iterator on the bytes copied to the other location
  * for subsequent invocations.
- * <p />
+ * <p>
  * It is possible to specify, at the constructor, a buffer size used to read content from the
  * stream, by default 4096 bytes.
- * <p />
+ * <p>
  * The {@link InputStream} passed to the constructor is by default closed when is it fully
  * consumed (or when an exception is thrown while reading it), unless otherwise specified
  * to the {@link #InputStreamContentProvider(java.io.InputStream, int, boolean) constructor}.
@@ -87,7 +87,7 @@ public class InputStreamContentProvider implements ContentProvider, Callback, Cl
      * Callback method invoked just after having read from the stream,
      * but before returning the iteration element (a {@link ByteBuffer}
      * to the caller.
-     * <p />
+     * <p>
      * Subclasses may override this method to copy the content read from
      * the stream to another location (a file, or in memory if the content
      * is known to fit).
@@ -154,12 +154,12 @@ public class InputStreamContentProvider implements ContentProvider, Callback, Cl
      * means that stream reading must be performed by {@link #hasNext()}, which introduces a side-effect
      * on what is supposed to be a simple query method (with respect to the Query Command Separation
      * Principle).
-     * <p />
+     * <p>
      * Alternatively, we could return {@code true} from {@link #hasNext()} even if we don't know that
      * we will read -1, but then when {@link #next()} reads -1 it must return an empty buffer.
      * However this is problematic, since GETs with no content indication would become GET with chunked
      * content, and not understood by servers.
-     * <p />
+     * <p>
      * Therefore we need to make sure that {@link #hasNext()} does not perform any side effect (so that
      * it can be called multiple times) until {@link #next()} is called.
      */
