@@ -1,4 +1,10 @@
-jetty-7.6.17-SNAPSHOT
+jetty-7.6.17.v20150415 - 15 April 2015
+ + 409788 Large POST body causes java.lang.IllegalStateException: SENDING =>
+   HEADERS.
+ + 433802 check EOF in send1xx
+ + 442839 highly fragmented websocket messages can result in corrupt binary
+   messages
+ + 445953 fixed loop closing stream write
 
 jetty-7.6.16.v20140903 - 03 September 2014
  + 409788 Large POST body causes java.lang.IllegalStateException: SENDING =>
