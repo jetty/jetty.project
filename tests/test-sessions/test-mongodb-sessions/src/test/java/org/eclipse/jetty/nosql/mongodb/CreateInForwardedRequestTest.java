@@ -22,6 +22,7 @@ package org.eclipse.jetty.nosql.mongodb;
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.nosql.NoSqlSession;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -77,28 +78,41 @@ public class CreateInForwardedRequestTest
             {
 				// set the value on server 1
 				String value = "TEST_VALUE";
-                ContentResponse response = client.GET("http://localhost:" + serverPort + TEST_CONTEXT_PATH + TEST_FORWARD_SERVLET_PATH + "?action=set&value=" + value);
+                Request request = client.newRequest("http://localhost:" + serverPort + TEST_CONTEXT_PATH + TEST_FORWARD_SERVLET_PATH + "?action=set&value=" + value);
+				request.method(HttpMethod.GET);
+				ContentResponse response = request.send();
                 assertEquals(HttpServletResponse.SC_OK, response.getStatus());
                 String sessionCookie = response.getHeaders().get("Set-Cookie");
                 assertTrue(sessionCookie != null);
+				// Mangle the cookie, replacing Path with $Path, etc.
+				sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
                 assertEquals(value, response.getContentAsString().trim());
 
 
 				// use the same cookie to get the value on server 2, should be the same as server 1
-				ContentResponse response2 = client.GET("http://localhost:" + serverPort2 + TEST_CONTEXT_PATH + TEST_FORWARD_SERVLET_PATH + "?action=get");
+				Request request2 = client.newRequest("http://localhost:" + serverPort2 + TEST_CONTEXT_PATH + TEST_FORWARD_SERVLET_PATH + "?action=get");
+				request2.method(HttpMethod.GET);
+				request2.header("Cookie", sessionCookie);
+				ContentResponse response2 = request2.send();
 				assertEquals(HttpServletResponse.SC_OK, response2.getStatus());
 				assertEquals(value, response2.getContentAsString().trim());
 
 
 				// now update the value on server 2
 				String value2 = "TEST_VALUE2";
-				ContentResponse response3 = client.GET("http://localhost:" + serverPort2 + TEST_CONTEXT_PATH + TEST_FORWARD_SERVLET_PATH + "?action=set&value=" + value2);
+				Request request3 = client.newRequest("http://localhost:" + serverPort2 + TEST_CONTEXT_PATH + TEST_FORWARD_SERVLET_PATH + "?action=set&value=" + value2);
+				request3.method(HttpMethod.GET);
+				request3.header("Cookie", sessionCookie);
+				ContentResponse response3 = request3.send();
 				assertEquals(HttpServletResponse.SC_OK, response3.getStatus());
 				assertEquals(value2, response3.getContentAsString().trim());
 
 
 				// now get the value on server 1 should be the same as server 2
-				ContentResponse response4 = client.GET("http://localhost:" + serverPort + TEST_CONTEXT_PATH + TEST_FORWARD_SERVLET_PATH + "?action=get");
+				Request request4 = client.newRequest("http://localhost:" + serverPort + TEST_CONTEXT_PATH + TEST_FORWARD_SERVLET_PATH + "?action=get");
+				request4.method(HttpMethod.GET);
+				request4.header("Cookie", sessionCookie);
+				ContentResponse response4 = request4.send();
 				assertEquals(HttpServletResponse.SC_OK, response4.getStatus());
 				assertEquals(value2, response4.getContentAsString().trim());
 
