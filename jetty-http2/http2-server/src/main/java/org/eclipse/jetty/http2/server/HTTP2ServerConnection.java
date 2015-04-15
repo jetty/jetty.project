@@ -32,6 +32,7 @@ import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.ISession;
 import org.eclipse.jetty.http2.IStream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
+import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.Parser;
@@ -44,6 +45,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.TypeUtil;
 
@@ -96,7 +98,18 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             LOG.debug("Processing {} on {}", frame, stream);
         HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
         Runnable task = channel.onRequest(frame);
-        offerTask(task, false);
+        if (task != null)
+            offerTask(task, false);
+    }
+
+    public void onData(IStream stream, DataFrame frame, Callback callback)
+    {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Processing {} on {}", frame, stream);
+        HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
+        Runnable task = channel.requestContent(frame, callback);
+        if (task != null)
+            offerTask(task, false);
     }
 
     public void push(Connector connector, IStream stream, MetaData.Request request)
@@ -105,7 +118,8 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
             LOG.debug("Processing push {} on {}", request, stream);
         HttpChannelOverHTTP2 channel = provideHttpChannel(connector, stream);
         Runnable task = channel.onPushRequest(request);
-        offerTask(task, true);
+        if (task != null)
+            offerTask(task, true);
     }
 
     private HttpChannelOverHTTP2 provideHttpChannel(Connector connector, IStream stream)

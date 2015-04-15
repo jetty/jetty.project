@@ -93,6 +93,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
                     System.lineSeparator(), fields);
         }
 
+        // TODO: support HttpConfiguration.delayDispatchUntilContent
         return this;
     }
 
@@ -140,7 +141,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
     }
 
-    public void requestContent(DataFrame frame, final Callback callback)
+    public Runnable requestContent(DataFrame frame, final Callback callback)
     {
         // We must copy the data since we do not know when the
         // application will consume its bytes (we queue them by
@@ -148,17 +149,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         // since there may be frames for other streams.
         final ByteBufferPool byteBufferPool = getByteBufferPool();
         ByteBuffer original = frame.getData();
-        final ByteBuffer copy = byteBufferPool.acquire(original.remaining(), original.isDirect());
+        int length = original.remaining();
+        final ByteBuffer copy = byteBufferPool.acquire(length, original.isDirect());
         BufferUtil.clearToFill(copy);
         copy.put(original).flip();
 
-        if (LOG.isDebugEnabled())
-        {
-            Stream stream = getStream();
-            LOG.debug("HTTP2 Request #{}/{}: {} bytes of content", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), copy.remaining());
-        }
-
-        onContent(new HttpInput.Content(copy)
+        boolean handle = onContent(new HttpInput.Content(copy)
         {
             @Override
             public void succeeded()
@@ -175,10 +171,22 @@ public class HttpChannelOverHTTP2 extends HttpChannel
             }
         });
 
-        if (frame.isEndStream())
+        boolean endStream = frame.isEndStream();
+        if (endStream)
+            handle |= onRequestComplete();
+
+        if (LOG.isDebugEnabled())
         {
-            onRequestComplete();
+            Stream stream = getStream();
+            LOG.debug("HTTP2 Request #{}/{}: {} bytes of {} content, handle: {}",
+                    stream.getId(),
+                    Integer.toHexString(stream.getSession().hashCode()),
+                    length,
+                    endStream ? "last" : "some",
+                    handle);
         }
+
+        return handle ? this : null;
     }
 
     /**
