@@ -57,13 +57,18 @@ public class HttpFields implements Iterable<HttpField>
     private HttpField[] _fields;
     private int _size;
     
+    /**
+     * Initialize an empty HttpFields.
+     */
     public HttpFields()
     {
         _fields=new HttpField[20];
     }
     
     /**
-     * Constructor.
+     * Initialize an empty HttpFields.
+     * 
+     * @param capacity the capacity of the http fields
      */
     public HttpFields(int capacity)
     {
@@ -71,7 +76,9 @@ public class HttpFields implements Iterable<HttpField>
     }
     
     /**
-     * Constructor.
+     * Initialize HttpFields from copy.
+     * 
+     * @param fields the fields to copy data from
      */
     public HttpFields(HttpFields fields)
     {
@@ -92,6 +99,7 @@ public class HttpFields implements Iterable<HttpField>
 
     /**
      * Get Collection of header names.
+     * @return the unique set of field names.
      */
     public Set<String> getFieldNamesCollection()
     {
@@ -107,6 +115,7 @@ public class HttpFields implements Iterable<HttpField>
     /**
      * Get enumeration of header _names. Returns an enumeration of strings representing the header
      * _names for this request.
+     * @return an enumeration of field names
      */
     public Enumeration<String> getFieldNames()
     {
@@ -115,14 +124,14 @@ public class HttpFields implements Iterable<HttpField>
 
     /**
      * Get a Field by index.
+     * @param index the field index 
      * @return A Field value or null if the Field value has not been set
-     *
      */
-    public HttpField getField(int i)
+    public HttpField getField(int index)
     {
-        if (i>=_size)
+        if (index>=_size)
             throw new NoSuchElementException();
-        return _fields[i];
+        return _fields[index];
     }
 
     public HttpField getField(HttpHeader header)
@@ -452,7 +461,7 @@ public class HttpFields implements Iterable<HttpField>
      *
      * @param header the header
      * @param value the value of the field.
-     * @exception IllegalArgumentException 
+     * @exception IllegalArgumentException if value is null
      */
     public void add(HttpHeader header, String value) throws IllegalArgumentException
     {
@@ -466,6 +475,7 @@ public class HttpFields implements Iterable<HttpField>
      * Remove a field.
      *
      * @param name the field to remove
+     * @return the header that was removed
      */
     public HttpField remove(HttpHeader name)
     {
@@ -486,6 +496,7 @@ public class HttpFields implements Iterable<HttpField>
      * Remove a field.
      *
      * @param name the field to remove
+     * @return the header that was removed
      */
     public HttpField remove(String name)
     {
@@ -507,6 +518,7 @@ public class HttpFields implements Iterable<HttpField>
      * case of the field name is ignored.
      *
      * @param name the case-insensitive field name
+     * @return the value of the field as a long
      * @exception NumberFormatException If bad long found
      */
     public long getLongField(String name) throws NumberFormatException
@@ -520,6 +532,7 @@ public class HttpFields implements Iterable<HttpField>
      * of the field name is ignored.
      *
      * @param name the case-insensitive field name
+     * @return the value of the field as a number of milliseconds since unix epoch
      */
     public long getDateField(String name)
     {

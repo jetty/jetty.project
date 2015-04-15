@@ -79,7 +79,7 @@ import org.eclipse.jetty.util.log.Logger;
  * case of the method and/or headers
  * </p>
  * <p>
- * @see http://tools.ietf.org/html/rfc7230
+ * @see <a href="http://tools.ietf.org/html/rfc7230">RFC 7230</a>
  */
 public class HttpParser
 {
@@ -275,7 +275,7 @@ public class HttpParser
 
     /* ------------------------------------------------------------ */
     /** Set if a HEAD response is expected
-     * @param head
+     * @param head true if head response is expected
      */
     public void setHeadResponse(boolean head)
     {
@@ -1153,6 +1153,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     /**
      * Parse until next Event.
+     * @param buffer the buffer to parse
      * @return True if an {@link RequestHandler} method was called and it returned true;
      */
     public boolean parseNext(ByteBuffer buffer)
@@ -1619,7 +1620,7 @@ public class HttpParser
          * This is the method called by parser when the HTTP request line is parsed
          * @param method The method 
          * @param uri The raw bytes of the URI.  These are copied into a ByteBuffer that will not be changed until this parser is reset and reused.
-         * @param version
+         * @param version the http version in use
          * @return true if handling parsing should return.
          */
         public boolean startRequest(String method, String uri, HttpVersion version);
@@ -1633,6 +1634,10 @@ public class HttpParser
     {
         /**
          * This is the method called by parser when the HTTP request line is parsed
+         * @param version the http version in use
+         * @param status the response status
+         * @param reason the response reason phrase
+         * @return true if handling parsing should return
          */
         public boolean startResponse(HttpVersion version, int status, String reason);
     }

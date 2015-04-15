@@ -46,6 +46,7 @@ public class HttpParserTest
      * Parse until {@link State#END} state.
      * If the parser is already in the END state, then it is {@link HttpParser#reset()} and re-parsed.
      * @param parser The parser to test
+     * @param buffer the buffer to parse
      * @throws IllegalStateException If the buffers have already been partially parsed.
      */
     public static void parseAll(HttpParser parser, ByteBuffer buffer)

@@ -79,6 +79,14 @@ public class HttpURI
     /**
      * Construct a normalized URI.
      * Port is not set if it is the default port.
+     * @param scheme the URI scheme
+     * @param host the URI hose
+     * @param port the URI port
+     * @param path the URI path
+     * @param param the URI param
+     * @param query the URI query
+     * @param fragment the URI fragment
+     * @return the normalized URI
      */
     public static HttpURI createHttpURI(String scheme, String host, int port, String path, String param, String query, String fragment)
     {
@@ -671,8 +679,8 @@ public class HttpURI
     
     /* ------------------------------------------------------------ */
     /**
-     * @param host
-     * @param port
+     * @param host the host
+     * @param port the port
      */
     public void setAuthority(String host, int port)
     {
@@ -683,7 +691,7 @@ public class HttpURI
 
     /* ------------------------------------------------------------ */
     /**
-     * @param path
+     * @param path the path
      */
     public void setPath(String path)
     {

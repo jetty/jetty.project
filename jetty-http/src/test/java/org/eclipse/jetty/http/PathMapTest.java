@@ -145,6 +145,7 @@ public class PathMapTest
 
     /**
      * See JIRA issue: JETTY-88.
+     * @throws Exception failed test
      */
     @Test
     public void testPathMappingsOnlyMatchOnDirectoryNames() throws Exception

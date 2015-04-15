@@ -303,8 +303,8 @@ public class MimeTypes
 
     /* ------------------------------------------------------------ */
     /** Set a mime mapping
-     * @param extension
-     * @param type
+     * @param extension the extension
+     * @param type the mime type
      */
     public void addMimeMapping(String extension,String type)
     {
