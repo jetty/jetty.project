@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 
 /**
  * Implementation of {@link Scheduler} based on JDK's {@link ScheduledThreadPoolExecutor}.
- * <p />
+ * <p>
  * While use of {@link ScheduledThreadPoolExecutor} creates futures that will not be used,
  * it has the advantage of allowing to set a property to remove cancelled tasks from its
  * queue even if the task did not fire, which provides a huge benefit in the performance

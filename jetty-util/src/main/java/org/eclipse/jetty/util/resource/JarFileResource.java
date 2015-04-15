@@ -381,7 +381,7 @@ class JarFileResource extends JarResource
     /**
      * Take a Resource that possibly might use URLConnection caching
      * and turn it into one that doesn't.
-     * @param resource
+     * @param resource the JarFileResource to obtain without URLConnection caching. 
      * @return the non-caching resource
      */
     public static Resource getNonCachingResource (Resource resource)
@@ -399,9 +399,9 @@ class JarFileResource extends JarResource
     /**
      * Check if this jar:file: resource is contained in the
      * named resource. Eg <code>jar:file:///a/b/c/foo.jar!/x.html</code> isContainedIn <code>file:///a/b/c/foo.jar</code>
-     * @param resource
+     * @param resource the resource to test for
      * @return true if resource is contained in the named resource
-     * @throws MalformedURLException
+     * @throws MalformedURLException if unable to process is contained due to invalid URL format
      */
     @Override
     public boolean isContainedIn (Resource resource) 

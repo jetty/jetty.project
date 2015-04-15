@@ -53,7 +53,7 @@ public abstract class PatternMatcher
      * @param pattern the pattern
      * @param uris the uris to test the pattern against
      * @param isNullInclusive if true, an empty pattern means all names match, if false, none match
-     * @throws Exception
+     * @throws Exception if fundamental error in pattern matching
      */
     public void match (Pattern pattern, URI[] uris, boolean isNullInclusive)
     throws Exception

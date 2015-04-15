@@ -193,7 +193,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * Delegated to the named or anonymous Pool.
+     * Thread Pool should use Daemon Threading. 
+     *
+     * @param daemon true to enable delegation
+     * @see Thread#setDaemon(boolean)
      */
     public void setDaemon(boolean daemon)
     {
@@ -342,7 +345,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * Delegated to the named or anonymous Pool.
+     * Is thread pool using daemon threading
+     * 
+     * @return true if delegating to named or anonymous pool
+     * @see Thread#setDaemon(boolean)
      */
     @ManagedAttribute("thead pool using a daemon thread")
     public boolean isDaemon()

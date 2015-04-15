@@ -583,6 +583,7 @@ public class FileSystemResourceTest
      * for long filenames.
      * <p>
      * See: http://support.microsoft.com/kb/142982
+     * @throws Exception failed test
      */
     @Test
     public void testCase8dot3Alias() throws Exception
@@ -617,6 +618,7 @@ public class FileSystemResourceTest
      * NTFS Alternative Data / File Streams.
      * <p>
      * See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx
+     * @throws Exception failed test
      */
     @Test
     public void testNTFSFileStreamAlias() throws Exception
@@ -657,6 +659,7 @@ public class FileSystemResourceTest
      * NTFS Alternative Data / File Streams.
      * <p>
      * See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx
+     * @throws Exception failed test
      */
     @Test
     public void testNTFSFileDataStreamAlias() throws Exception
@@ -699,6 +702,7 @@ public class FileSystemResourceTest
      * NTFS Alternative Data / File Streams.
      * <p>
      * See: http://msdn.microsoft.com/en-us/library/windows/desktop/aa364404(v=vs.85).aspx
+     * @throws Exception failed test
      */
     @Test
     public void testNTFSFileEncodedDataStreamAlias() throws Exception
@@ -924,6 +928,7 @@ public class FileSystemResourceTest
 
     /**
      * The most basic access example
+     * @throws Exception failed test
      */
     @Test
     public void testExist_Normal() throws Exception

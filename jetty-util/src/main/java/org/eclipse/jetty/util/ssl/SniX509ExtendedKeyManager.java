@@ -48,8 +48,8 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     /**
      * Construct KeyManager instance
      * @param keyManager Instance of KeyManager to be wrapped
-     * @param dftAlias Alias of the key to be selected if no SNI selection
-     * @throws Exception
+     * @param alias Alias of the key to be selected if no SNI selection
+     * @throws Exception if unable to create X509ExtendedKeyManager
      */
     public SniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager,String alias) throws Exception
     {

@@ -23,8 +23,8 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 
-/* ------------------------------------------------------------ */
 /**
+ * @param <TYPE> the element type
  */
 @SuppressWarnings("serial")
 public class HostMap<TYPE> extends HashMap<String, TYPE>

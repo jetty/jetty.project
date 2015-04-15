@@ -65,6 +65,7 @@ public class ClassPathResourceTest
 
     /**
      * Test a class path resource for directories.
+     * @throws Exception failed test
      */
     @Test
     public void testClassPathResourceDirectory() throws Exception
@@ -84,6 +85,7 @@ public class ClassPathResourceTest
 
     /**
      * Test a class path resource for a file.
+     * @throws Exception failed test
      */
     @Test
     public void testClassPathResourceFile() throws Exception

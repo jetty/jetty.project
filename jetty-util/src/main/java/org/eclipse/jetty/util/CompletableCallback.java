@@ -21,16 +21,18 @@ package org.eclipse.jetty.util;
 import java.util.concurrent.atomic.AtomicReference;
 
 /**
+ * <p>
  * A callback to be used by driver code that needs to know whether the callback has been
  * succeeded or failed (that is, completed) just after the asynchronous operation or not,
  * typically because further processing depends on the callback being completed.
  * The driver code competes with the asynchronous operation to complete the callback.
- * <p />
+ * </p>
+ * <p>
  * If the callback is already completed, the driver code continues the processing,
  * otherwise it suspends it. If it is suspended, the callback will be completed some time
  * later, and {@link #resume()} or {@link #abort(Throwable)} will be called to allow the
  * application to resume the processing.
- * <p />
+ * </p>
  * Typical usage:
  * <pre>
  * CompletableCallback callback = new CompletableCallback()
@@ -124,6 +126,7 @@ public abstract class CompletableCallback implements Callback
 
     /**
      * Callback method invoked when this callback is failed.
+     * @param failure the throwable reprsenting the callback failure
      */
     public abstract void abort(Throwable failure);
 

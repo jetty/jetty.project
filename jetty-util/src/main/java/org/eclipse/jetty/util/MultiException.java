@@ -84,7 +84,7 @@ public class MultiException extends Exception
      * If this multi exception is empty then no action is taken. If it
      * contains a single exception that is thrown, otherwise the this
      * multi exception is thrown. 
-     * @exception Exception 
+     * @exception Exception the Error or Exception if nested is 1, or the MultiException itself if nested is more than 1.
      */
     public void ifExceptionThrow()
         throws Exception
@@ -144,6 +144,7 @@ public class MultiException extends Exception
      * If this multi exception is empty then no action is taken. If it
      * contains a any exceptions then this
      * multi exception is thrown. 
+     * @throws MultiException the multiexception if there are nested exception
      */
     public void ifExceptionThrowMulti()
         throws MultiException

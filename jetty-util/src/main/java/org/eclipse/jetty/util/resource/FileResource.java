@@ -346,7 +346,7 @@ public class FileResource extends Resource
     
     /* ------------------------------------------------------------ */
     /** 
-     * @param o
+     * @param o the object to compare against this instance
      * @return <code>true</code> of the object <code>o</code> is a {@link FileResource} pointing to the same file as this resource. 
      */
     @Override

@@ -642,7 +642,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * @param password
      *            The password for the key store.  If null is passed then 
-     *            the {@link Password#getPassword(String, String, String) is used to
+     *            the {@link Password#getPassword(String, String, String)} is used to
      *            obtain a password either from the "org.eclipse.jetty.ssl.password"
      *            System property or by prompting for manual entry.
      */
@@ -659,7 +659,7 @@ public class SslContextFactory extends AbstractLifeCycle
      * @param password
      *            The password (if any) for the specific key within the key store.
      *            If null is passed then 
-     *            the {@link Password#getPassword(String, String, String) is used to
+     *            the {@link Password#getPassword(String, String, String)} is used to
      *            obtain a password either from the "org.eclipse.jetty.ssl.keypassword"
      *            System property or by prompting for manual entry.
      */
@@ -674,7 +674,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * @param password
      *            The password for the trust store. If null is passed then 
-     *            the {@link Password#getPassword(String, String, String) is used to
+     *            the {@link Password#getPassword(String, String, String)} is used to
      *            obtain a password either from the "org.eclipse.jetty.ssl.password"
      *            System property or by prompting for manual entry.
      */
@@ -887,7 +887,8 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /**
      * Override this method to provide alternate way to load a keystore.
-     *
+     * 
+     * @param resource the resource to load the keystore from 
      * @return the key store instance
      * @throws Exception if the keystore cannot be loaded
      */
@@ -898,7 +899,8 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /**
      * Override this method to provide alternate way to load a truststore.
-     *
+     * 
+     * @param resource the resource to load the truststore from 
      * @return the key store instance
      * @throws Exception if the truststore cannot be loaded
      */
@@ -1317,7 +1319,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * Factory method for "scratch" {@link SSLEngine}s, usually only used for retrieving configuration
      * information such as the application buffer size or the list of protocols/ciphers.
-     * <p />
+     * <p>
      * This method should not be used for creating {@link SSLEngine}s that are used in actual socket
      * communication.
      *
@@ -1351,17 +1353,17 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /**
      * Server-side only factory method for creating {@link SSLEngine}s.
-     * <p />
+     * <p>
      * If the given {@code address} is null, it is equivalent to {@link #newSSLEngine()}, otherwise
      * {@link #newSSLEngine(String, int)} is called.
-     * <p />
+     * <p>
      * If {@link #getNeedClientAuth()} is {@code true}, then the host name is passed to
      * {@link #newSSLEngine(String, int)}, possibly incurring in a reverse DNS lookup, which takes time
      * and may hang the selector (since this method is usually called by the selector thread).
-     * <p />
+     * <p>
      * Otherwise, the host address is passed to {@link #newSSLEngine(String, int)} without DNS lookup
      * penalties.
-     * <p />
+     * <p>
      * Clients that wish to create {@link SSLEngine} instances must use {@link #newSSLEngine(String, int)}.
      *
      * @param address the remote peer address

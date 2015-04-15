@@ -26,29 +26,33 @@ import org.eclipse.jetty.util.thread.SpinLock;
  * This specialized callback implements a pattern that allows
  * a large job to be broken into smaller tasks using iteration
  * rather than recursion.
- * <p/>
+ * <p>
  * A typical example is the write of a large content to a socket,
  * divided in chunks. Chunk C1 is written by thread T1, which
  * also invokes the callback, which writes chunk C2, which invokes
  * the callback again, which writes chunk C3, and so forth.
- * <p/>
+ * </p>
+ * <p>
  * The problem with the example is that if the callback thread
  * is the same that performs the I/O operation, then the process
  * is recursive and may result in a stack overflow.
  * To avoid the stack overflow, a thread dispatch must be performed,
  * causing context switching and cache misses, affecting performance.
- * <p/>
+ * </p>
+ * <p>
  * To avoid this issue, this callback uses an AtomicReference to
  * record whether success callback has been called during the processing
  * of a sub task, and if so then the processing iterates rather than
  * recurring.
- * <p/>
+ * </p>
+ * <p>
  * Subclasses must implement method {@link #process()} where the sub
  * task is executed and a suitable {@link IteratingCallback.Action} is
  * returned to this callback to indicate the overall progress of the job.
  * This callback is passed to the asynchronous execution of each sub
  * task and a call the {@link #succeeded()} on this callback represents
  * the completion of the sub task.
+ * </p>
  */
 public abstract class IteratingCallback implements Callback
 {
@@ -138,9 +142,10 @@ public abstract class IteratingCallback implements Callback
     
     /**
      * Method called by {@link #iterate()} to process the sub task.
-     * <p/>
+     * <p>
      * Implementations must start the asynchronous execution of the sub task
      * (if any) and return an appropriate action:
+     * </p>
      * <ul>
      * <li>{@link Action#IDLE} when no sub tasks are available for execution
      * but the overall job is not completed yet</li>
@@ -148,6 +153,8 @@ public abstract class IteratingCallback implements Callback
      * has been started</li>
      * <li>{@link Action#SUCCEEDED} when the overall job is completed</li>
      * </ul>
+     * 
+     * @return the appropriate Action 
      *
      * @throws Exception if the sub task processing throws
      */
@@ -164,10 +171,11 @@ public abstract class IteratingCallback implements Callback
     
     /**
      * Invoked when the overall task has completed with a failure.
+     * @param cause the throwable to indicate cause of failure
      *
      * @see #onCompleteSuccess()
      */
-    protected void onCompleteFailure(Throwable x)
+    protected void onCompleteFailure(Throwable cause)
     {
     }
 
@@ -464,9 +472,10 @@ public abstract class IteratingCallback implements Callback
 
     /**
      * Resets this callback.
-     * <p/>
+     * <p>
      * A callback can only be reset to IDLE from the
      * SUCCEEDED or FAILED states or if it is already IDLE.
+     * </p>
      *
      * @return true if the reset was successful
      */

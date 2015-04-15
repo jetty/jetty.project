@@ -25,14 +25,13 @@ import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
 /**
- * The @ManagedAttribute annotation is used to indicate that a given method 
+ * The <code>&#064;ManagedAttribute</code> annotation is used to indicate that a given method 
  * exposes a JMX attribute. This annotation is placed always on the reader 
  * method of a given attribute. Unless it is marked as read-only in the 
  * configuration of the annotation a corresponding setter is looked for 
  * following normal naming conventions. For example if this annotation is 
  * on a method called getFoo() then a method called setFoo() would be looked 
  * for and if found wired automatically into the jmx attribute.
- *
  */
 @Retention(RetentionPolicy.RUNTIME)
 @Documented
@@ -42,7 +41,7 @@ public @interface ManagedAttribute
     /**
      * Description of the Managed Attribute
      * 
-     * @returngit checkout
+     * @return value
      */
     String value() default "Not Specified";
     

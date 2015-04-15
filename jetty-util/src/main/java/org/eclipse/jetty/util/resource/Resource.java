@@ -39,6 +39,7 @@ import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
+import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -61,7 +62,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /**
      * Change the default setting for url connection caches.
      * Subsequent URLConnections will use this default.
-     * @param useCaches
+     * @param useCaches true to enable URL connection caches, false otherwise.
      */
     public static void setDefaultUseCaches (boolean useCaches)
     {
@@ -257,6 +258,8 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /* ------------------------------------------------------------ */
     /** Find a classpath resource.
+     * @param resource the relative name of the resource
+     * @return Resource or null
      */
     public static Resource newClassPathResource(String resource)
     {
@@ -320,43 +323,52 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns true if the respresened resource exists.
+     * @return true if the represented resource exists.
      */
     public abstract boolean exists();
     
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns true if the respresenetd resource is a container/directory.
-     * If the resource is not a file, resources ending with "/" are
+     * @return true if the represented resource is a container/directory.
+     * if the resource is not a file, resources ending with "/" are
      * considered directories.
      */
     public abstract boolean isDirectory();
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns the last modified time
+     * Time resource was last modified.
+     * 
+     * @return the last modified time as milliseconds since unix epoch
      */
     public abstract long lastModified();
 
 
     /* ------------------------------------------------------------ */
     /**
-     * Return the length of the resource
+     * Length of the resource.
+     * 
+     * @return the length of the resource
      */
     public abstract long length();
     
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns an URL representing the given resource
+     * URL representing the resource.
+     * 
+     * @return an URL representing the given resource
+     * @deprecated use {{@link #getURI()}.toURL() instead.
      */
-    // TODO: should deprecate this one and only use getURI()
+    @Deprecated
     public abstract URL getURL();
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns an URI representing the given resource
+     * URI representing the resource.
+     * 
+     * @return an URI representing the given resource
      */
     public URI getURI()
     {
@@ -373,8 +385,11 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns an File representing the given resource or NULL if this
+     * File representing the given resource.
+     * 
+     * @return an File representing the given resource or NULL if this
      * is not possible.
+     * @throws IOException if unable to get the resource due to permissions 
      */
     public abstract File getFile()
         throws IOException;
@@ -382,47 +397,60 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns the name of the resource
+     * The name of the resource.
+     * 
+     * @return the name of the resource
      */
     public abstract String getName();
     
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns an input stream to the resource
+     * Input stream to the resource
+     * 
+     * @return an input stream to the resource
+     * @throws IOException if unable to open the input stream
      */
     public abstract InputStream getInputStream()
-        throws java.io.IOException;
+        throws IOException;
     
     /* ------------------------------------------------------------ */
     /**
-     * Returns an readable bytechannel to the resource or null if one is not available.
+     * Readable ByteChannel for the resource.
+     * 
+     * @return an readable bytechannel to the resource or null if one is not available.
+     * @throws IOException if unable to open the readable bytechannel for the resource.
      */
     public abstract ReadableByteChannel getReadableByteChannel()
-        throws java.io.IOException;
+        throws IOException;
 
     /* ------------------------------------------------------------ */
     /**
      * Deletes the given resource
+     * @return true if resource was found and successfully deleted, false if resource didn't exist or was unable to
+     * be deleted.
+     * @throws SecurityException if unable to delete due to permissions 
      */
-    // TODO: can throw IOException
     public abstract boolean delete()
         throws SecurityException;
     
     /* ------------------------------------------------------------ */
     /**
      * Rename the given resource
+     * @param dest the destination name for the resource
+     * @return true if the resource was renamed, false if the resource didn't exist or was unable to be renamed.
+     * @throws SecurityException if unable to rename due to permissions
      */
-    // TODO: can throw IOException
-    public abstract boolean renameTo( Resource dest)
+    public abstract boolean renameTo(Resource dest)
         throws SecurityException;
     
     /* ------------------------------------------------------------ */
     /**
-     * Returns a list of resource names contained in the given resource
-     * The resource names are not URL encoded.
+     * list of resource names contained in the given resource.
+     * 
+     * @return a list of resource names contained in the given resource.
+     * Note: The resource names are not URL encoded.
      */
-    // TODO: can throw IOException
     public abstract String[] list();
 
     /* ------------------------------------------------------------ */
@@ -430,6 +458,9 @@ public abstract class Resource implements ResourceFactory, Closeable
      * Returns the resource contained inside the current resource with the
      * given name.
      * @param path The path segment to add, which is not encoded
+     * @return the Resource for the resolved path within this Resource.
+     * @throws IOException if unable to resolve the path
+     * @throws MalformedURLException if the resolution of the path fails because the input path parameter is malformed.
      */
     public abstract Resource addPath(String path)
         throws IOException,MalformedURLException;
@@ -457,26 +488,36 @@ public abstract class Resource implements ResourceFactory, Closeable
 
     /* ------------------------------------------------------------ */
     /** 
-     * @deprecated
+     * @param uri the uri to encode
+     * @return null (this is deprecated)
+     * @deprecated use {@link URIUtil} or {@link UrlEncoded} instead
      */
+    @Deprecated
     public String encode(String uri)
     {
         return null;
     }
         
     /* ------------------------------------------------------------ */
+    // FIXME: this appears to not be used
+    @SuppressWarnings("javadoc")
     public Object getAssociate()
     {
         return _associate;
     }
 
     /* ------------------------------------------------------------ */
+    // FIXME: this appear to not be used
+    @SuppressWarnings("javadoc")
     public void setAssociate(Object o)
     {
         _associate=o;
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * @return true if this Resource is an alias to another real Resource
+     */
     public boolean isAlias()
     {
         return getAlias()!=null;
@@ -496,6 +537,7 @@ public abstract class Resource implements ResourceFactory, Closeable
      * @param base The base URL
      * @param parent True if the parent directory should be included
      * @return String of HTML
+     * @throws IOException if unable to get the list of resources as HTML
      */
     public String getListHTML(String base,boolean parent)
         throws IOException
@@ -623,9 +665,10 @@ public abstract class Resource implements ResourceFactory, Closeable
     
     /* ------------------------------------------------------------ */
     /** 
-     * @param out 
+     * @param out the output stream to write to 
      * @param start First byte to write
      * @param count Bytes to write or -1 for all of them.
+     * @throws IOException if unable to copy the Resource to the output
      */
     public void writeTo(OutputStream out,long start,long count)
         throws IOException
@@ -641,11 +684,20 @@ public abstract class Resource implements ResourceFactory, Closeable
     }    
     
     /* ------------------------------------------------------------ */
+    /**
+     * Copy the Resource to the new destination file.
+     * <p>
+     * Will not replace existing destination file.
+     * 
+     * @param destination the destination file to create
+     * @throws IOException if unable to copy the resource
+     */
     public void copyTo(File destination)
         throws IOException
     {
         if (destination.exists())
-            throw new IllegalArgumentException(destination+" exists");
+            throw new IllegalArgumentException(destination + " exists");
+        
         try (OutputStream out = new FileOutputStream(destination))
         {
             writeTo(out,0,-1);
@@ -653,6 +705,11 @@ public abstract class Resource implements ResourceFactory, Closeable
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * Generate a weak ETag reference for this Resource.
+     * 
+     * @return the weak ETag reference for this resource.
+     */
     public String getWeakETag()
     {
         try
@@ -709,7 +766,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     /** Generate a properly encoded URL from a {@link File} instance.
      * @param file Target file. 
      * @return URL of the target file.
-     * @throws MalformedURLException 
+     * @throws MalformedURLException if unable to convert File to URL
      */
     public static URL toURL(File file) throws MalformedURLException
     {

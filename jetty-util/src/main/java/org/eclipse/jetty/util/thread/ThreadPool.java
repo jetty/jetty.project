@@ -37,6 +37,7 @@ public interface ThreadPool extends Executor
     /* ------------------------------------------------------------ */
     /**
      * Blocks until the thread pool is {@link LifeCycle#stop stopped}.
+     * @throws InterruptedException if thread was interrupted
      */
     public void join() throws InterruptedException;
 

@@ -37,10 +37,10 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * <dl>
  *   <dt>${name|hierarchy}.LEVEL=(ALL|DEBUG|INFO|WARN|OFF)</dt>
  *   <dd>
- *   Sets the level that the Logger should log at.<br/>
- *   Names can be a package name, or a fully qualified class name.<br/>
- *   Default: INFO<br/>
- *   <br/>
+ *   Sets the level that the Logger should log at.<br>
+ *   Names can be a package name, or a fully qualified class name.<br>
+ *   Default: INFO<br>
+ *   <br>
  *   Examples:
  *   <dl>
  *   <dt>org.eclipse.jetty.LEVEL=WARN</dt>
@@ -56,35 +56,35 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  *   <dt>${name}.SOURCE=(true|false)</dt>
  *   <dd>
  *   Logger specific, attempt to print the java source file name and line number
- *   where the logging event originated from.<br/>
+ *   where the logging event originated from.<br>
  *   Name must be a fully qualified class name (package name hierarchy is not supported
- *   by this configurable)<br/>
- *   Warning: this is a slow operation and will have an impact on performance!<br/>
+ *   by this configurable)<br>
+ *   Warning: this is a slow operation and will have an impact on performance!<br>
  *   Default: false
  *   </dd>
  *   
  *   <dt>${name}.STACKS=(true|false)</dt>
  *   <dd>
- *   Logger specific, control the display of stacktraces.<br/>
+ *   Logger specific, control the display of stacktraces.<br>
  *   Name must be a fully qualified class name (package name hierarchy is not supported
- *   by this configurable)<br/>
+ *   by this configurable)<br>
  *   Default: true
  *   </dd>
  *   
  *   <dt>org.eclipse.jetty.util.log.stderr.SOURCE=(true|false)</dt>
  *   <dd>Special Global Configuration, attempt to print the java source file name and line number
- *   where the logging event originated from.<br/>
+ *   where the logging event originated from.<br>
  *   Default: false
  *   </dd>
  *   
  *   <dt>org.eclipse.jetty.util.log.stderr.LONG=(true|false)</dt>
  *   <dd>Special Global Configuration, when true, output logging events to STDERR using
- *   long form, fully qualified class names.  when false, use abbreviated package names<br/>
+ *   long form, fully qualified class names.  when false, use abbreviated package names<br>
  *   Default: false
  *   </dd>
  *   <dt>org.eclipse.jetty.util.log.stderr.ESCAPE=(true|false)</dt>
  *   <dd>Global Configuration, when true output logging events to STDERR are always
- *   escaped so that control characters are replaced with '?";  '\r' with '<' and '\n' replaced '|'<br/>
+ *   escaped so that control characters are replaced with '?";  '\r' with '&lt;' and '\n' replaced '|'<br>
  *   Default: true
  *   </dd>
  * </dl>
@@ -339,7 +339,6 @@ public class StdErrLog extends AbstractLogger
     /**
      * Condenses a classname by stripping down the package name to just the first character of each package name
      * segment.Configured
-     * <p>
      *
      * <pre>
      * Examples:

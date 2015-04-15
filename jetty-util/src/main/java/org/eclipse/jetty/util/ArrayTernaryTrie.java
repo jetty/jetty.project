@@ -24,20 +24,22 @@ import java.util.HashSet;
 import java.util.Set;
 
 
-/* ------------------------------------------------------------ */
 /** 
  * <p>A Ternary Trie String lookup data structure.</p>
- * This Trie is of a fixed size and cannot grow (which can be a good thing with regards to DOS when used as a cache).
  * <p>
- * The Trie is stored in 3 arrays:<dl>
+ * This Trie is of a fixed size and cannot grow (which can be a good thing with regards to DOS when used as a cache).
+ * </p>
+ * <p>
+ * The Trie is stored in 3 arrays:
+ * </p>
+ * <dl>
  * <dt>char[] _tree</dt><dd>This is semantically 2 dimensional array flattened into a 1 dimensional char array. The second dimension
  * is that every 4 sequential elements represents a row of: character; hi index; eq index; low index, used to build a
  * ternary trie of key strings.</dd>
- * <dt>String[] _key<dt><dd>An array of key values where each element matches a row in the _tree array. A non zero key element 
+ * <dt>String[] _key</dt><dd>An array of key values where each element matches a row in the _tree array. A non zero key element 
  * indicates that the _tree row is a complete key rather than an intermediate character of a longer key.</dd>
  * <dt>V[] _value</dt><dd>An array of values corresponding to the _key array</dd>
  * </dl>
- * </p>
  * <p>The lookup of a value will iterate through the _tree array matching characters. If the equal tree branch is followed,
  * then the _key array is looked up to see if this is a complete match.  If a match is found then the _value array is looked up
  * to return the matching value.
@@ -52,7 +54,7 @@ import java.util.Set;
  * Trie is required external locks need to be applied.
  * </p>
  * 
- * @param <V>
+ * @param <V> the Entry type 
  */
 public class ArrayTernaryTrie<V> extends AbstractTrie<V>
 {
@@ -141,8 +143,8 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
 
     /* ------------------------------------------------------------ */
     /** Copy Trie and change capacity by a factor
-     * @param trie
-     * @param factor
+     * @param trie the trie to copy from
+     * @param factor the factor to grow the capacity by
      */
     public ArrayTernaryTrie(ArrayTernaryTrie<V> trie, double factor)
     {

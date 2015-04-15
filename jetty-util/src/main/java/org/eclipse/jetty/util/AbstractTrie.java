@@ -22,12 +22,13 @@ import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 
 
-/* ------------------------------------------------------------ */
-/** Abstract Trie implementation.
+/** 
+ * Abstract Trie implementation.
  * <p>Provides some common implementations, which may not be the most
  * efficient. For byte operations, the assumption is made that the charset
  * is ISO-8859-1</p>
- * @param <V>
+ * 
+ * @param <V> the type of object that the Trie holds
  */
 public abstract class AbstractTrie<V> implements Trie<V>
 {

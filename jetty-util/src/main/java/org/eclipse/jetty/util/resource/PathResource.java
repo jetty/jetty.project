@@ -89,11 +89,33 @@ public class PathResource extends Resource
         return null;
     }
 
+    /**
+     * Construct a new PathResource from a File object.
+     * <p>
+     * An invocation of this convenience constructor of the form.
+     * </p>
+     * <pre>
+     * new PathResource(file);
+     * </pre>
+     * <p>
+     * behaves in exactly the same way as the expression
+     * </p>
+     * <pre>
+     * new PathResource(file.toPath());
+     * </pre>
+
+     * @param file the file to use
+     */
     public PathResource(File file)
     {
         this(file.toPath());
     }
 
+    /**
+     * Construct a new PathResource from a Path object.
+     * 
+     * @param path the path to use
+     */
     public PathResource(Path path)
     {
         this.path = path.toAbsolutePath();
@@ -101,6 +123,14 @@ public class PathResource extends Resource
         this.alias = checkAliasPath(path);
     }
 
+    /**
+     * Construct a new PathResource from a URI object.
+     * <p>
+     * Must be an absolute URI using the <code>file</code> scheme.
+     * 
+     * @param uri the URI to build this PathResource from.
+     * @throws IOException if unable to construct the PathResource from the URI.
+     */
     public PathResource(URI uri) throws IOException
     {
         if (!uri.isAbsolute())
@@ -137,6 +167,25 @@ public class PathResource extends Resource
         this.alias = checkAliasPath(path);
     }
 
+    /**
+     * Create a new PathResource from a provided URL object.
+     * <p>
+     * An invocation of this convenience constructor of the form.
+     * </p>
+     * <pre>
+     * new PathResource(url);
+     * </pre>
+     * <p>
+     * behaves in exactly the same way as the expression
+     * </p>
+     * <pre>
+     * new PathResource(url.toURI());
+     * </pre>
+     * 
+     * @param url the url to attempt to create PathResource from
+     * @throws IOException if URL doesn't point to a location that can be transformed to a PathResource
+     * @throws URISyntaxException if the provided URL was malformed
+     */
     public PathResource(URL url) throws IOException, URISyntaxException
     {
         this(url.toURI());
@@ -225,7 +274,10 @@ public class PathResource extends Resource
         return path.toFile();
     }
 
-    public Path getPath() throws IOException
+    /**
+     * @return the {@link Path} of the resource
+     */
+    public Path getPath()
     {
         return path;
     }
@@ -324,6 +376,11 @@ public class PathResource extends Resource
         return this.alias!=null;
     }
     
+    /**
+     * The Alias as a Path.
+     * 
+     * @return the alias as a path.
+     */
     public Path getAliasPath()
     {
         return this.alias;

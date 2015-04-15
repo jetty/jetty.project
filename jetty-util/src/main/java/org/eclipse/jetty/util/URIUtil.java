@@ -25,18 +25,20 @@ import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-
-/* ------------------------------------------------------------ */
-/** URI Utility methods.
+/** 
+ * URI Utility methods.
+ * <p>
  * This class assists with the decoding and encoding or HTTP URI's.
  * It differs from the java.net.URL class as it does not provide
  * communications ability, but it does assist with query string
  * formatting.
- * <P>UTF-8 encoding is used by default for % encoded characters. This
+ * </p>
+ * <p>
+ * UTF-8 encoding is used by default for % encoded characters. This
  * may be overridden with the org.eclipse.jetty.util.URI.charset system property.
- * @see UrlEncoded
+ * </p>
  * 
+ * @see UrlEncoded
  */
 public class URIUtil
     implements Cloneable
@@ -479,6 +481,8 @@ public class URIUtil
     /* ------------------------------------------------------------ */
     /** Return the parent Path.
      * Treat a URI like a directory path and return the parent directory.
+     * @param p the path to return a parent reference to
+     * @return the parent path of the URI
      */
     public static String parentPath(String p)
     {
@@ -494,7 +498,7 @@ public class URIUtil
     /** Convert a path to a cananonical form.
      * All instances of "." and ".." are factored out.  Null is returned
      * if the path tries to .. above its root.
-     * @param path 
+     * @param path the path to convert
      * @return path or null.
      */
     public static String canonicalPath(String path)
@@ -628,8 +632,8 @@ public class URIUtil
     /* ------------------------------------------------------------ */
     /** Convert a path to a compact form.
      * All instances of "//" and "///" etc. are factored out to single "/" 
-     * @param path 
-     * @return path
+     * @param path the path to compact 
+     * @return the compacted path 
      */
     public static String compactPath(String path)
     {
@@ -715,11 +719,11 @@ public class URIUtil
     /* ------------------------------------------------------------ */
     /**
      * Create a new URI from the arguments, handling IPv6 host encoding and default ports
-     * @param scheme
-     * @param server
-     * @param port
-     * @param path
-     * @param query
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
+     * @param path the URI path
+     * @param query the URI query
      * @return A String URI
      */
     public static String newURI(String scheme,String server, int port,String path,String query)
@@ -734,9 +738,9 @@ public class URIUtil
     /* ------------------------------------------------------------ */
     /**
      * Create a new URI StringBuilder from the arguments, handling IPv6 host encoding and default ports
-     * @param scheme
-     * @param server
-     * @param port
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
      * @return a StringBuilder containing URI prefix
      */
     public static StringBuilder newURIBuilder(String scheme,String server, int port)
@@ -748,11 +752,11 @@ public class URIUtil
 
     /* ------------------------------------------------------------ */
     /** 
-     * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports</p>
+     * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports
      * @param url StringBuilder to append to
-     * @param scheme
-     * @param server
-     * @param port
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
      */
     public static void appendSchemeHostPort(StringBuilder url,String scheme,String server, int port)
     {
@@ -783,11 +787,11 @@ public class URIUtil
     
     /* ------------------------------------------------------------ */
     /** 
-     * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports</p>
+     * Append scheme, host and port URI prefix, handling IPv6 address encoding and default ports
      * @param url StringBuffer to append to
-     * @param scheme
-     * @param server
-     * @param port
+     * @param scheme the URI scheme
+     * @param server the URI server
+     * @param port the URI port
      */
     public static void appendSchemeHostPort(StringBuffer url,String scheme,String server, int port)
     {

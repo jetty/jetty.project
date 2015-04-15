@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Provides a reusable {@link Callback} that can block the thread
  * while waiting to be completed.
- * <p />
+ * <p>
  * A typical usage pattern is:
  * <pre>
  * void someBlockingCall(Object... args) throws IOException

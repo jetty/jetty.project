@@ -87,6 +87,8 @@ public class MultiPartWriter extends FilterWriter
     
     /* ------------------------------------------------------------ */
     /** Start creation of the next Content.
+     * @param contentType the content type
+     * @throws IOException if unable to write the part
      */
     public void startPart(String contentType)
          throws IOException
@@ -105,6 +107,7 @@ public class MultiPartWriter extends FilterWriter
     
     /* ------------------------------------------------------------ */
     /** end creation of the next Content.
+     * @throws IOException if unable to write the part
      */
     public void endPart()
          throws IOException
@@ -116,6 +119,9 @@ public class MultiPartWriter extends FilterWriter
         
     /* ------------------------------------------------------------ */
     /** Start creation of the next Content.
+     * @param contentType the content type of the part
+     * @param headers the part headers
+     * @throws IOException if unable to write the part
      */
     public void startPart(String contentType, String[] headers)
          throws IOException

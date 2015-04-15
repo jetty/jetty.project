@@ -160,6 +160,7 @@ public class StdErrLogTest
 
     /**
      * Test to make sure that using a Null parameter on parameterized messages does not result in a NPE
+     * @throws NullPointerException failed test
      */
     @Test
     public void testParameterizedMessage_NullValues() throws NullPointerException
@@ -306,6 +307,7 @@ public class StdErrLogTest
      * Tests StdErrLog.warn() methods with level filtering.
      * <p>
      * Should always see WARN level messages, regardless of set level.
+     * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testWarnFiltering() throws UnsupportedEncodingException
@@ -345,6 +347,7 @@ public class StdErrLogTest
      * Tests StdErrLog.info() methods with level filtering.
      * <p>
      * Should only see INFO level messages when level is set to {@link StdErrLog#LEVEL_INFO} and below.
+     * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testInfoFiltering() throws UnsupportedEncodingException
@@ -390,6 +393,7 @@ public class StdErrLogTest
 
     /**
      * Tests {@link StdErrLog#LEVEL_OFF} filtering.
+     * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testOffFiltering() throws UnsupportedEncodingException
@@ -417,6 +421,7 @@ public class StdErrLogTest
      * Tests StdErrLog.debug() methods with level filtering.
      * <p>
      * Should only see DEBUG level messages when level is set to {@link StdErrLog#LEVEL_DEBUG} and below.
+     * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testDebugFiltering() throws UnsupportedEncodingException
@@ -465,6 +470,7 @@ public class StdErrLogTest
      * Tests StdErrLog with {@link Logger#ignore(Throwable)} use.
      * <p>
      * Should only see IGNORED level messages when level is set to {@link StdErrLog#LEVEL_ALL}.
+     * @throws UnsupportedEncodingException failed test
      */
     @Test
     public void testIgnores() throws UnsupportedEncodingException

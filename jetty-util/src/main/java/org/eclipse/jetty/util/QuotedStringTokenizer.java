@@ -472,6 +472,7 @@ public class QuotedStringTokenizer
     /* ------------------------------------------------------------ */
     /** Unquote a string.
      * @param s The string to unquote.
+     * @param lenient true if unquoting should be lenient to escaped content, leaving some alone, false if string unescaping
      * @return quoted string
      */
     public static String unquote(String s, boolean lenient)

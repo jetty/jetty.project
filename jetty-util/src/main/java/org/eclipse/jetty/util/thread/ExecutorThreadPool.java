@@ -65,7 +65,7 @@ public class ExecutorThreadPool extends AbstractLifeCycle implements ThreadPool,
     /* ------------------------------------------------------------ */
     /**
      * Wraps an {@link ThreadPoolExecutor}.
-     * Max pool size is 256, pool thread timeout after 60 seconds, and core pool size is 32 when queueSize >= 0.
+     * Max pool size is 256, pool thread timeout after 60 seconds, and core pool size is 32 when queueSize &gt;= 0.
      * @param queueSize can be -1 for using an unbounded {@link LinkedBlockingQueue}, 0 for using a
      * {@link SynchronousQueue}, greater than 0 for using a {@link ArrayBlockingQueue} of the given size.
      */

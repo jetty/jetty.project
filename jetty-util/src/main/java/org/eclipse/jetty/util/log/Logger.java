@@ -117,6 +117,7 @@ public interface Logger
     /**
      * Ignore an exception.
      * <p>This should be used rather than an empty catch block.
+     * @param ignored the throwable to log as ignored
      */
     public void ignore(Throwable ignored); 
 }

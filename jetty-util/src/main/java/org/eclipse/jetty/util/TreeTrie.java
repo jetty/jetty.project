@@ -39,7 +39,7 @@ import java.util.Set;
  * Trie is required external locks need to be applied.
  * </p>
  * 
- * @param <V>
+ * @param <V> the entry type
  */
 public class TreeTrie<V> extends AbstractTrie<V>
 {

@@ -293,7 +293,7 @@ public class MultiPartInputStreamParser
         /**
          * Only remove tmp files.
          * 
-         * @throws IOException
+         * @throws IOException if unable to delete the file
          */
         public void cleanUp() throws IOException
         {
@@ -303,7 +303,8 @@ public class MultiPartInputStreamParser
 
 
         /**
-         * Get the file, if any, the data has been written to.
+         * Get the file
+         * @return the file, if any, the data has been written to.
          */
         public File getFile ()
         {
@@ -345,6 +346,7 @@ public class MultiPartInputStreamParser
 
     /**
      * Get the already parsed parts.
+     * @return the parts that were parsed
      */
     public Collection<Part> getParsedParts()
     {
@@ -364,7 +366,7 @@ public class MultiPartInputStreamParser
     /**
      * Delete any tmp storage for parts, and clear out the parts list.
      * 
-     * @throws MultiException
+     * @throws MultiException if unable to delete the parts
      */
     public void deleteParts ()
     throws MultiException
@@ -391,8 +393,9 @@ public class MultiPartInputStreamParser
     /**
      * Parse, if necessary, the multipart data and return the list of Parts.
      * 
-     * @throws IOException
-     * @throws ServletException
+     * @return the parts 
+     * @throws IOException if unable to get the parts
+     * @throws ServletException if unable to parse the parts
      */
     public Collection<Part> getParts()
     throws IOException, ServletException
@@ -412,9 +415,10 @@ public class MultiPartInputStreamParser
     /**
      * Get the named Part.
      * 
-     * @param name
-     * @throws IOException
-     * @throws ServletException
+     * @param name the part name
+     * @return the parts
+     * @throws IOException if unable to get the part
+     * @throws ServletException if unable to parse the parts
      */
     public Part getPart(String name)
     throws IOException, ServletException
@@ -427,8 +431,8 @@ public class MultiPartInputStreamParser
     /**
      * Parse, if necessary, the multipart stream.
      * 
-     * @throws IOException
-     * @throws ServletException
+     * @throws IOException if unable to parse
+     * @throws ServletException FIXME, never thrown
      */
     protected void parse ()
     throws IOException, ServletException
