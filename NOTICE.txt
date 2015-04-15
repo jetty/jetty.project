@@ -1,6 +1,6 @@
 ==============================================================
  Jetty Web Container
- Copyright 1995-2014 Mort Bay Consulting Pty Ltd.
+ Copyright 1995-2015 Mort Bay Consulting Pty Ltd.
 ==============================================================
 
 The Jetty Web Container is Copyright Mort Bay Consulting Pty Ltd
