@@ -125,6 +125,7 @@ public class SslConnectionFactoryTest
                 "   cn=  foo.bar  ,  o=other  ",
                 "o=other,cn=foo.bar",
                 "  o=other  ,  cn=  foo.bar   ",
+                "CN=foo.bar,O=other",
             };
         
         for (String n:names)

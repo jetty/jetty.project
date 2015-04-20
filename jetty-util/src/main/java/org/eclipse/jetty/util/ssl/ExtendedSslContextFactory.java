@@ -55,7 +55,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class ExtendedSslContextFactory extends SslContextFactory
 {
     static final Logger LOG = Log.getLogger(ExtendedSslContextFactory.class);
-    public final static Pattern __cnPattern = Pattern.compile(".*cn=\\h*([^,\\h]*).*");
+    public final static Pattern __cnPattern = Pattern.compile(".*[cC][nN]=\\h*([^,\\h]*).*");
     private final Map<String,String> _aliases = new HashMap<>();
     private boolean _useCipherSuitesOrder=true;
 
