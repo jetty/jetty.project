@@ -25,6 +25,7 @@ import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.regex.Matcher;
 
 import javax.net.ssl.SNIHostName;
 import javax.net.ssl.SNIServerName;
@@ -114,6 +115,26 @@ public class SslConnectionFactoryTest
         _server=null;
     }
 
+
+    @Test
+    public void testPattern() throws Exception
+    {
+        String[] names = 
+            {
+                "cn=foo.bar,o=other",
+                "   cn=  foo.bar  ,  o=other  ",
+                "o=other,cn=foo.bar",
+                "  o=other  ,  cn=  foo.bar   ",
+            };
+        
+        for (String n:names)
+        {
+            Matcher matcher = ExtendedSslContextFactory.__cnPattern.matcher(n);
+            Assert.assertTrue(matcher.matches());
+            Assert.assertThat(matcher.group(1),Matchers.equalTo("foo.bar"));
+        }
+    }
+    
     @Test
     public void testConnect() throws Exception
     {

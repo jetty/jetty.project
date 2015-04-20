@@ -74,6 +74,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
     {
         // Look for the aliases that are suitable for the keytype and issuers
         String[] aliases = _delegate.getServerAliases(keyType,issuers);
+        
         if (aliases==null || aliases.length==0)
             return null;
              

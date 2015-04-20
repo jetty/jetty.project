@@ -1494,7 +1494,7 @@ public class SslContextFactory extends AbstractLifeCycle
     
     
 
-    protected static class Factory
+    protected class Factory
     { 
         final KeyStore _keyStore;
         final KeyStore _trustStore;
@@ -1506,6 +1506,12 @@ public class SslContextFactory extends AbstractLifeCycle
             _keyStore = keyStore;
             _trustStore = trustStore;
             _context = context;
+        }
+        
+        @Override
+        public String toString()
+        {
+            return String.format("SslFactory@%x{%s}",System.identityHashCode(this),SslContextFactory.this);
         }
     }
 }

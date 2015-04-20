@@ -24,6 +24,8 @@ import java.security.cert.X509Certificate;
 import java.util.Collections;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.SNIHostName;
@@ -53,6 +55,7 @@ import org.eclipse.jetty.util.log.Logger;
 public class ExtendedSslContextFactory extends SslContextFactory
 {
     static final Logger LOG = Log.getLogger(ExtendedSslContextFactory.class);
+    public final static Pattern __cnPattern = Pattern.compile(".*cn=\\h*([^,\\h]*).*");
     private final Map<String,String> _aliases = new HashMap<>();
     private boolean _useCipherSuitesOrder=true;
 
@@ -84,18 +87,20 @@ public class ExtendedSslContextFactory extends SslContextFactory
                 if ("X.509".equals(certificate.getType()))
                 {
                     X509Certificate x509 = (X509Certificate)certificate;
-                    String cn = x509.getSubjectX500Principal().getName("CANONICAL");
-
-                    if (cn.startsWith("cn="))
+                    
+                    Matcher matcher = __cnPattern.matcher(x509.getSubjectX500Principal().getName("CANONICAL"));
+                    if (matcher.matches())
                     {
-                        cn=cn.substring(3,cn.indexOf(","));
-                        _aliases.put(alias,cn);
+                        String cn = matcher.group(1);
+                        LOG.debug("Certificate alias={} cn={} in {}",alias,cn,_factory);
+                        if (cn!=null)
+                            _aliases.put(alias,cn);
                     }
                 }                    
             }
         }
         
-        LOG.info("aliases={} for {}",_aliases,this);
+        LOG.debug("aliases={} for {}",_aliases,this);
     }
 
     @Override
