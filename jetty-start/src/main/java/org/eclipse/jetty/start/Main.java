@@ -452,28 +452,26 @@ public class Main
     {
         int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
         String stopKey = args.getProperties().getString("STOP.KEY");
+        String host = args.getProperties().getString("STOP.HOST");
+        
+        if (host == null ) host = "127.0.0.1";
 
         if (args.getProperties().getString("STOP.WAIT") != null)
         {
             int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
 
-            stop(stopPort,stopKey,stopWait);
+            stop(stopPort,host,stopKey,stopWait);
         }
         else
         {
-            stop(stopPort,stopKey);
+            stop(stopPort,host,stopKey,0);
         }
     }
 
     /**
      * Stop a running jetty instance.
      */
-    public void stop(int port, String key)
-    {
-        stop(port,key,0);
-    }
-
-    public void stop(int port, String key, int timeout)
+    public void stop(int port, String host, String key, int timeout)
     {
         int _port = port;
         String _key = key;
@@ -491,7 +489,7 @@ public class Main
                 System.err.println("Using empty key");
             }
 
-            try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port))
+            try (Socket s = new Socket(InetAddress.getByName(host),_port))
             {
                 if (timeout > 0)
                 {

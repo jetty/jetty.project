@@ -112,6 +112,11 @@ Properties:
       The port to use to stop the running Jetty server.
       Required along with STOP.KEY if you want to use the --stop option above.
 
+    STOP.HOST=[alphanumeric]
+      The IP address to use to stop the running Jetty server. If not provided 
+      default 127.0.0.1 loopback is used.
+      Required along with STOP.KEY if you want to use the --stop option above.
+
     STOP.KEY=[alphanumeric]
       The passphrase defined to stop the server.
       Requried along with STOP.PORT if you want to use the --stop option above.

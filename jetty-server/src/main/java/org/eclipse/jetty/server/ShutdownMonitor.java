@@ -294,7 +294,7 @@ public class ShutdownMonitor
 
             try
             {
-                serverSocket = new ServerSocket(port,1,InetAddress.getByName("127.0.0.1"));
+                serverSocket = new ServerSocket(port,1,InetAddress.getByName(host));
                 if (port == 0)
                 {
                     // server assigned port in use
@@ -329,6 +329,7 @@ public class ShutdownMonitor
     private boolean DEBUG;
     private int port;
     private String key;
+    private String host;
     private boolean exitVm;
     private ServerSocket serverSocket;
     private Thread thread;
@@ -337,6 +338,7 @@ public class ShutdownMonitor
      * Create a ShutdownMonitor using configuration from the System properties.
      * <p>
      * <code>STOP.PORT</code> = the port to listen on (empty, null, or values less than 0 disable the stop ability)<br>
+     * <code>STOP.HOST</code> = the IP address to listen on (empty, null values will default to 127.0.0.1)<br>
      * <code>STOP.KEY</code> = the magic key/passphrase to allow the stop (defaults to "eclipse")<br>
      * <p>
      * Note: server socket will only listen on localhost, and a successful stop will issue a System.exit() call.
@@ -350,6 +352,7 @@ public class ShutdownMonitor
         // Use values passed thru via /jetty-start/
         this.port = Integer.parseInt(props.getProperty("STOP.PORT","-1"));
         this.key = props.getProperty("STOP.KEY",null);
+        this.host = props.getProperty("STOP.HOST","127.0.0.1");
         this.exitVm = true;
     }
 
@@ -420,6 +423,11 @@ public class ShutdownMonitor
         }
     }
 
+    public String getHost()
+    {
+        return host;
+    }
+    
     public String getKey()
     {
         return key;
