@@ -18,16 +18,9 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.hamcrest.Matchers.nullValue;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assume.assumeFalse;
-import static org.junit.Assume.assumeNoException;
-import static org.junit.Assume.assumeThat;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -41,6 +34,9 @@ import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
+import java.nio.file.DirectoryIteratorException;
+import java.nio.file.DirectoryStream;
+import java.nio.file.FileSystem;
 import java.nio.file.FileSystemException;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
@@ -228,6 +224,63 @@ public class FileSystemResourceTest
         {
             assumeFalse("Unknown OS type",false);
         }   
+    }
+    
+    @Test
+    public void testAddPath() throws Exception
+    {
+        File dir = testdir.getDir();
+        File subdir = new File(dir,"sub");
+        FS.ensureDirExists(subdir);
+
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource sub = base.addPath("sub");
+            assertThat("sub/.isDirectory",sub.isDirectory(),is(true));
+
+            Resource tmp = sub.addPath("/tmp");
+            assertThat("No root",tmp.exists(),is(false));
+        }
+    }
+
+    @Test
+    public void testAddRootPath() throws Exception
+    {
+        File dir = testdir.getDir();
+        File subdir = new File(dir,"sub");
+        FS.ensureDirExists(subdir);
+
+        String readableRootDir = findRootDir(dir.toPath().getFileSystem());
+        assumeThat("Readable Root Dir found",readableRootDir,notNullValue());
+
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource sub = base.addPath("sub");
+            assertThat("sub",sub.isDirectory(),is(true));
+
+            Resource rrd = sub.addPath(readableRootDir);
+            assertThat("Readable Root Dir",rrd.exists(),is(false));
+        }
+    }
+
+    private String findRootDir(FileSystem fs) throws IOException
+    {
+        // look for a directory off of a root path
+        for (Path rootDir : fs.getRootDirectories())
+        {
+            try (DirectoryStream<Path> dir = Files.newDirectoryStream(rootDir))
+            {
+                for (Path entry : dir)
+                {
+                    if (Files.isDirectory(entry))
+                    {
+                        return entry.toAbsolutePath().toString();
+                    }
+                }
+            }
+        }
+
+        return null;
     }
 
     @Test
