@@ -204,12 +204,9 @@ public class PathResource extends Resource
 
         // subpaths are always under PathResource
         // compensate for input subpaths like "/subdir"
-        // where default java.nio.file behavior would be
+        // where default resolve behavior would be
         // to treat that like an absolute path
-        StringBuilder relpath = new StringBuilder();
-        relpath.append(".").append(File.separator);
-        relpath.append(cpath);
-        return new PathResource(this.path.resolve(relpath.toString()).normalize());
+        return new PathResource(this.path.getFileSystem().getPath(path.toString(), subpath));
     }
 
     @Override
