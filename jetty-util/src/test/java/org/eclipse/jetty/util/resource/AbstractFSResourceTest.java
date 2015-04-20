@@ -111,6 +111,23 @@ public abstract class AbstractFSResourceTest
     }
 
     @Test
+    public void testAddPath() throws Exception
+    {
+        File dir = testdir.getDir();
+        File subdir = new File(dir,"sub");
+        FS.ensureDirExists(subdir);
+
+        try (Resource base = newResource(testdir.getDir()))
+        {
+            Resource sub = base.addPath("sub");
+            assertThat("sub/.isDirectory",sub.isDirectory(),is(true));
+            
+            Resource tmp = sub.addPath("/tmp");
+            assertThat("No root",tmp.exists(),is(false));
+        }
+    }
+    
+    @Test
     public void testIsDirectory() throws Exception
     {
         File dir = testdir.getDir();

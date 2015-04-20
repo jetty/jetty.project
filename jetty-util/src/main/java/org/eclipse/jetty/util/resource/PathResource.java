@@ -107,7 +107,7 @@ public class PathResource extends Resource
     @Override
     public Resource addPath(String apath) throws IOException, MalformedURLException
     {
-        return new PathResource(this.path.resolve(apath));
+        return new PathResource(this.path.getFileSystem().getPath(path.toString(), apath));
     }
 
     @Override
