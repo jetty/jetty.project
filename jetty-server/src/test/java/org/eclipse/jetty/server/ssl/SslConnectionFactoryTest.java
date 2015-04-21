@@ -154,6 +154,12 @@ public class SslConnectionFactoryTest
         
         response= getResponse("foo.domain.com","*.domain.com");
         Assert.assertThat(response,Matchers.containsString("host=foo.domain.com"));
+        
+        response= getResponse("m.san.com","san example");
+        Assert.assertThat(response,Matchers.containsString("host=m.san.com"));
+        
+        response= getResponse("www.san.com","san example");
+        Assert.assertThat(response,Matchers.containsString("host=www.san.com"));
     }
 
     

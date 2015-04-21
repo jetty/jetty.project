@@ -21,8 +21,11 @@ package org.eclipse.jetty.util.ssl;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
+import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -36,6 +39,7 @@ import javax.net.ssl.SSLParameters;
 import javax.net.ssl.StandardConstants;
 import javax.net.ssl.X509ExtendedKeyManager;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -57,6 +61,7 @@ public class ExtendedSslContextFactory extends SslContextFactory
     static final Logger LOG = Log.getLogger(ExtendedSslContextFactory.class);
     public final static Pattern __cnPattern = Pattern.compile(".*[cC][nN]=\\h*([^,\\h]*).*");
     private final Map<String,String> _aliases = new HashMap<>();
+    private final Map<String,String> _wild = new HashMap<>();
     private boolean _useCipherSuitesOrder=true;
 
     public boolean isUseCipherSuitesOrder()
@@ -87,20 +92,48 @@ public class ExtendedSslContextFactory extends SslContextFactory
                 if ("X.509".equals(certificate.getType()))
                 {
                     X509Certificate x509 = (X509Certificate)certificate;
+                    boolean named=false;
                     
-                    Matcher matcher = __cnPattern.matcher(x509.getSubjectX500Principal().getName("CANONICAL"));
-                    if (matcher.matches())
+                    Collection<List<?>> altNames = x509.getSubjectAlternativeNames();
+                    if (altNames!=null)
                     {
-                        String cn = matcher.group(1);
-                        LOG.debug("Certificate alias={} cn={} in {}",alias,cn,_factory);
-                        if (cn!=null)
-                            _aliases.put(alias,cn);
+                        for (List<?> list : altNames)
+                        {
+                            if (((Number)list.get(0)).intValue() == 2 )
+                            {
+                                String cn = list.get(1).toString();
+                                LOG.info("Certificate san alias={} cn={} in {}",alias,cn,_factory);
+                                if (cn!=null)
+                                {
+                                    named=true;
+                                    _aliases.put(cn,alias);
+                                }
+                            }
+                        }
+                    }
+                    
+                    if (!named)
+                    {
+                        Matcher matcher = __cnPattern.matcher(x509.getSubjectX500Principal().getName("CANONICAL"));
+                        if (matcher.matches())
+                        {
+                            String cn = matcher.group(1);
+                            LOG.info("Certificate cn alias={} cn={} in {}",alias,cn,_factory);
+                            if (cn!=null)
+                                _aliases.put(cn,alias);
+                        }
                     }
                 }                    
             }
         }
         
-        LOG.debug("aliases={} for {}",_aliases,this);
+        // find wild aliases
+        _wild.clear();
+        for (String name : _aliases.keySet())
+            if (name.startsWith("*."))
+                _wild.put(name.substring(1),_aliases.get(name));
+        
+        LOG.info("aliases={} for {}",_aliases,this);
     }
 
     @Override
@@ -159,28 +192,27 @@ public class ExtendedSslContextFactory extends SslContextFactory
                 if (_name==null || _aliases.size()==0)
                     return true;
 
-                for (String alias:_aliases.keySet())
+                // Try an exact match
+                _alias = _aliases.get(_name.getAsciiName());
+                if (_alias!=null)
                 {
-                    String cn = _aliases.get(alias);
-                    
-                    if (cn.equals(_name.getAsciiName()))
-                    {
-                        _alias=alias;
-                        LOG.debug("matches={}",alias);
-                        return true;
-                    }
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("matched {}->{}",_name.getAsciiName(),_alias);
+                    return true;
+                }
+                
+                // Try wild card matches
+                for (String wild:_wild.keySet())
+                {
+                    String domain = _name.getAsciiName();
+                    domain=domain.substring(domain.indexOf('.'));
 
-                    if (cn.startsWith("*."))
+                    if (wild.equals(domain))
                     {
-                        String domain = _name.getAsciiName();
-                        domain=domain.substring(domain.indexOf('.'));
-                        
-                        if (cn.substring(1).equals(domain))
-                        {
-                            _alias=alias;
-                            LOG.debug("matches={}",alias);
-                            return true;
-                        }
+                        _alias=_wild.get(wild);
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("wild match {}->{}",_name.getAsciiName(),_alias);
+                        return true;
                     }
                 }
             }
