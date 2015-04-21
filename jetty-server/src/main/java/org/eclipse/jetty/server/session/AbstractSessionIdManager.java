@@ -67,13 +67,13 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
 
     /* ------------------------------------------------------------ */
     /**
-     * Set the workname. If set, the workername is dot appended to the session
+     * Set the workername. If set, the workername is dot appended to the session
      * ID and can be used to assist session affinity in a load balancer.
      * A worker name starting with $ is used as a request attribute name to
      * lookup the worker name that can be dynamically set by a request
-     * customiser.
+     * Customizer.
      *
-     * @param workerName
+     * @param workerName the name of the worker
      */
     public void setWorkerName(String workerName)
     {
@@ -244,8 +244,8 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
 
     /** Get the session ID with any worker ID.
      *
-     * @param clusterId
-     * @param request
+     * @param clusterId the cluster id
+     * @param request the request
      * @return sessionId plus any worker ID.
      */
     @Override

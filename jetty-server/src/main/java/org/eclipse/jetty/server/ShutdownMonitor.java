@@ -259,7 +259,7 @@ public class ShutdownMonitor
          * Stop the registered lifecycles, optionally
          * calling destroy on them.
          * 
-         * @param destroy
+         * @param destroy true if {@link Destroyable}'s should also be destroyed.
          */
         public void stopLifeCycles (boolean destroy)
         {
@@ -450,7 +450,7 @@ public class ShutdownMonitor
     }
 
     /**
-     * @param exitVm
+     * @param exitVm true to exit the VM on shutdown
      */
     public void setExitVm(boolean exitVm)
     {

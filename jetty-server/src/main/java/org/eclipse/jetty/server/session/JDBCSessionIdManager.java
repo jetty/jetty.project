@@ -530,7 +530,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
          * Convert a camel case identifier into either upper or lower
          * depending on the way the db stores identifiers.
          *
-         * @param identifier
+         * @param identifier the raw identifier
          * @return the converted identifier
          */
         public String convertIdentifier (String identifier)
@@ -629,8 +629,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     /**
      * Configure jdbc connection information via a jdbc Driver
      *
-     * @param driverClassName
-     * @param connectionUrl
+     * @param driverClassName the driver classname
+     * @param connectionUrl the driver connection url
      */
     public void setDriverInfo (String driverClassName, String connectionUrl)
     {
@@ -641,8 +641,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     /**
      * Configure jdbc connection information via a jdbc Driver
      *
-     * @param driverClass
-     * @param connectionUrl
+     * @param driverClass the driver class
+     * @param connectionUrl the driver connection url
      */
     public void setDriverInfo (Driver driverClass, String connectionUrl)
     {
@@ -682,9 +682,10 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     }
 
     /**
-     * @param name
+     * @param name the name of the blob
      * @deprecated see DbAdaptor.setBlobType
      */
+    @Deprecated
     public void setBlobType (String name)
     {
         _dbAdaptor.setBlobType(name);
@@ -704,27 +705,30 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     }
 
     /**
-     * @return
+     * @return the blob type
      * @deprecated see DbAdaptor.getBlobType
      */
+    @Deprecated
     public String getBlobType ()
     {
         return _dbAdaptor.getBlobType();
     }
 
     /**
-     * @return
+     * @return the long type
      * @deprecated see DbAdaptor.getLogType
      */
+    @Deprecated
     public String getLongType()
     {
         return _dbAdaptor.getLongType();
     }
 
     /**
-     * @param longType
+     * @param longType the long type
      * @deprecated see DbAdaptor.setLongType
      */
+    @Deprecated
     public void setLongType(String longType)
     {
        _dbAdaptor.setLongType(longType);
@@ -1026,7 +1030,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
      * Get a connection from the driver or datasource.
      *
      * @return the connection for the datasource
-     * @throws SQLException
+     * @throws SQLException if unable to get the connection
      */
     protected Connection getConnection ()
     throws SQLException
@@ -1036,11 +1040,6 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         else
             return DriverManager.getConnection(_connectionUrl);
     }
-    
-
-
-
-
 
     /**
      * Set up the tables in the database

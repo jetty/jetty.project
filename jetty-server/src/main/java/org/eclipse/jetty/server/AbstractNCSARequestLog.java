@@ -68,6 +68,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
     /**
      * Is logging enabled
+     * @return true if logging is enabled
      */
     protected abstract boolean isEnabled();
     
@@ -75,6 +76,8 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
     /**
      * Write requestEntry out. (to disk or slf4j log)
+     * @param requestEntry the request entry
+     * @throws IOException if unable to write the entry
      */
     public abstract void write(String requestEntry) throws IOException;
 
@@ -224,7 +227,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      *
      * @param request  request object
      * @param b        StringBuilder to write to
-     * @throws IOException
+     * @throws IOException if unable to log the extended information
      */
     protected void logExtended(Request request,
                                StringBuilder b) throws IOException
@@ -334,15 +337,19 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
 
     /**
+     * @param value true to log dispatch
      * @deprecated use {@link StatisticsHandler}
      */
+    @Deprecated
     public void setLogDispatch(boolean value)
     {
     }
 
     /**
+     * @return true if logging dispatches
      * @deprecated use {@link StatisticsHandler}
      */
+    @Deprecated
     public boolean isLogDispatch()
     {
         return false;

@@ -41,7 +41,6 @@ import org.eclipse.jetty.util.log.Logger;
  * maintains two states: the content state that tells whether there is content to consume and the EOF
  * state that tells whether an EOF has arrived.
  * Only once the content has been consumed the content state is moved to the EOF state.
- * 
  */
 public class HttpInput extends ServletInputStream implements Runnable
 {
@@ -157,7 +156,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * produce more Content and add it via {@link #addContent(Content)}.
      * For protocols that are constantly producing (eg HTTP2) this can
      * be left as a noop;
-     * @throws IOException
+     * @throws IOException if unable to produce content
      */
     protected void produceContent() throws IOException
     {
@@ -351,7 +350,8 @@ public class HttpInput extends ServletInputStream implements Runnable
     /**
      * Adds some content to this input stream.
      *
-     * @param content the content to add
+     * @param item the content to add
+     * @return true if content channel woken for read
      */
     public boolean addContent(Content item)
     {
@@ -401,6 +401,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * <p>
      * Typically this will result in an EOFException being thrown
      * from a subsequent read rather than a -1 return.
+     * @return true if content channel woken for read
      */
     public boolean earlyEOF()
     {
@@ -410,6 +411,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     /**
      * This method should be called to signal that all the expected
      * content arrived.
+     * @return true if content channel woken for read
      */
     public boolean eof()
     {

@@ -217,7 +217,7 @@ public class Response implements HttpServletResponse
      * @param domain the domain
      * @param path the path
      * @param maxAge the maximum age
-     * @param comment the comment (only present on versions > 0)
+     * @param comment the comment (only present on versions &gt; 0)
      * @param isSecure true if secure cookie
      * @param isHttpOnly true if for http only
      * @param version version of cookie logic to use (0 == default behavior)
@@ -634,6 +634,7 @@ public class Response implements HttpServletResponse
      * request has a Expect header starting with 102, then a 102 response is
      * sent. This indicates that the request still be processed and real response
      * can still be sent.   This method is called by sendError if it is passed 102.
+     * @throws IOException if unable to send the 102 response
      * @see javax.servlet.http.HttpServletResponse#sendError(int)
      */
     public void sendProcessing() throws IOException
@@ -646,9 +647,9 @@ public class Response implements HttpServletResponse
     
     /**
      * Sends a response with one of the 300 series redirection codes.
-     * @param code
-     * @param location
-     * @throws IOException
+     * @param code the redirect status code
+     * @param location the location to send in <code>Location</code> headers
+     * @throws IOException if unable to send the redirect
      */
     public void sendRedirect(int code, String location) throws IOException
     {

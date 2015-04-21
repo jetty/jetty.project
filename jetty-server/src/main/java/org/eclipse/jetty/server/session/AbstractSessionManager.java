@@ -53,15 +53,12 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
-/* ------------------------------------------------------------ */
 /**
- * An Abstract implementation of SessionManager. The partial implementation of
- * SessionManager interface provides the majority of the handling required to
- * implement a SessionManager. Concrete implementations of SessionManager based
- * on AbstractSessionManager need only implement the newSession method to return
- * a specialised version of the Session inner class that provides an attribute
- * Map.
+ * An Abstract implementation of SessionManager.
  * <p>
+ * The partial implementation of SessionManager interface provides the majority of the handling required to implement a
+ * SessionManager. Concrete implementations of SessionManager based on AbstractSessionManager need only implement the
+ * newSession method to return a specialized version of the Session inner class that provides an attribute Map.
  */
 @SuppressWarnings("deprecation")
 @ManagedObject("Abstract Session Manager")
@@ -405,6 +402,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     /**
      * HTTPS request. Can be overridden by setting SessionCookieConfig.setSecure(true),
      * in which case the session cookie will be marked as secure on both HTTPS and HTTP.
+     * @param secureRequestOnly true to set Session Cookie Config as secure
      */
     public void setSecureRequestOnly(boolean secureRequestOnly)
     {
@@ -423,7 +421,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * A sessioncookie is marked as secure IFF any of the following conditions are true:
      * <ol>
      * <li>SessionCookieConfig.setSecure == true</li>
-     * <li>SessionCookieConfig.setSecure == false && _secureRequestOnly==true && request is HTTPS</li>
+     * <li>SessionCookieConfig.setSecure == false &amp;&amp; _secureRequestOnly==true &amp;&amp; request is HTTPS</li>
      * </ol>
      * According to SessionCookieConfig javadoc, case 1 can be used when:
      * "... even though the request that initiated the session came over HTTP,
@@ -431,14 +429,16 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * SSL offloading load balancer. In this case, the traffic between the client
      * and the load balancer will be over HTTPS, whereas the traffic between the
      * load balancer and the web container will be over HTTP."
-     *
+     * <p>
      * For case 2, you can use _secureRequestOnly to determine if you want the
-     * Servlet Spec 3.0  default behaviour when SessionCookieConfig.setSecure==false,
+     * Servlet Spec 3.0  default behavior when SessionCookieConfig.setSecure==false,
      * which is:
+     * <cite>
      * "they shall be marked as secure only if the request that initiated the
      * corresponding session was also secure"
-     *
-     * The default for _secureRequestOnly is true, which gives the above behaviour. If
+     * </cite>
+     * <p>
+     * The default for _secureRequestOnly is true, which gives the above behavior. If
      * you set it to false, then a session cookie is NEVER marked as secure, even if
      * the initiating request was secure.
      *
@@ -612,9 +612,6 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param seconds
-     */
     @Override
     public void setMaxInactiveInterval(int seconds)
     {
@@ -669,6 +666,8 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     /**
      * Add the session Registers the session with this manager and registers the
      * session ID with the sessionIDManager;
+     * @param session the session
+     * @param created true if session was created
      */
     protected void addSession(AbstractSession session, boolean created)
     {
@@ -701,7 +700,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     /**
      * Prepare sessions for session manager shutdown
      * 
-     * @throws Exception
+     * @throws Exception if unable to shutdown sesssions
      */
     protected abstract void shutdownSessions() throws Exception;
 
@@ -709,7 +708,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     /* ------------------------------------------------------------ */
     /**
      * Create a new session instance
-     * @param request
+     * @param request the request to build the session from
      * @return the new session
      */
     protected abstract AbstractSession newSession(HttpServletRequest request);
@@ -746,10 +745,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     }
 
     /* ------------------------------------------------------------ */
-    /** Remove session from manager
+    /** 
+     * Remove session from manager
      * @param session The session to remove
      * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
      * {@link SessionIdManager#invalidateAll(String)} should be called.
+     * @return if the session was removed 
      */
     public boolean removeSession(AbstractSession session, boolean invalidate)
     {

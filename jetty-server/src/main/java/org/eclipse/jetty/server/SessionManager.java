@@ -308,10 +308,10 @@ public interface SessionManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /** Change the existing session id.
     * 
-    * @param oldClusterId
-    * @param oldNodeId
-    * @param newClusterId
-    * @param newNodeId
+    * @param oldClusterId the old cluster id
+    * @param oldNodeId the old node id
+    * @param newClusterId the new cluster id
+    * @param newNodeId the new node id
     */
     public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId);  
 }

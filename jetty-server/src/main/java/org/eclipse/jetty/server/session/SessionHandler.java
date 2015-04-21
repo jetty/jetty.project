@@ -228,8 +228,8 @@ public class SessionHandler extends ScopedHandler
     /**
      * Look for a requested session ID in cookies and URI parameters
      *
-     * @param baseRequest
-     * @param request
+     * @param baseRequest the request to check
+     * @param request the request to check
      */
     protected void checkRequestedSessionId(Request baseRequest, HttpServletRequest request)
     {
@@ -321,9 +321,6 @@ public class SessionHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param listener
-     */
     public void addEventListener(EventListener listener)
     {
         if (_sessionManager != null)
@@ -331,9 +328,6 @@ public class SessionHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param listener
-     */
     public void removeEventListener(EventListener listener)
     {
         if (_sessionManager != null)

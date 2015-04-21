@@ -48,23 +48,24 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * JDBCSessionManager
- *
+ * JDBCSessionManager.
+ * <p>
  * SessionManager that persists sessions to a database to enable clustering.
- *
+ * <p>
  * Session data is persisted to the JettySessions table:
- *
- * rowId (unique in cluster: webapp name/path + virtualhost + sessionId)
- * contextPath (of the context owning the session)
- * sessionId (unique in a context)
- * lastNode (name of node last handled session)
- * accessTime (time in milliseconds session was accessed)
- * lastAccessTime (previous time in milliseconds session was accessed)
- * createTime (time in milliseconds session created)
- * cookieTime (time in milliseconds session cookie created)
- * lastSavedTime (last time in milliseconds session access times were saved)
- * expiryTime (time in milliseconds that the session is due to expire)
- * map (attribute map)
+ * <dl>
+ * <dt>rowId</dt><dd>(unique in cluster: webapp name/path + virtualhost + sessionId)</dd>
+ * <dt>contextPath</dt><dd>(of the context owning the session)</dd>
+ * <dt>sessionId</dt><dd>(unique in a context)</dd>
+ * <dt>lastNode</dt><dd>(name of node last handled session)</dd>
+ * <dt>accessTime</dt><dd>(time in milliseconds session was accessed)</dd>
+ * <dt>lastAccessTime</dt><dd>(previous time in milliseconds session was accessed)</dd>
+ * <dt>createTime</dt><dd>(time in milliseconds session created)</dd>
+ * <dt>cookieTime</dt><dd>(time in milliseconds session cookie created)</dd>
+ * <dt>lastSavedTime</dt><dd>(last time in milliseconds session access times were saved)</dd>
+ * <dt>expiryTime</dt><dd>(time in milliseconds that the session is due to expire)</dd>
+ * <dt>map</dt><dd>(attribute map)</dd>
+ * </dl>
  *
  * As an optimization, to prevent thrashing the database, we do not persist
  * the accessTime and lastAccessTime every time the session is accessed. Rather,
@@ -140,7 +141,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         /**
          * Session from a request.
          *
-         * @param request
+         * @param request the request
          */
         protected Session (HttpServletRequest request)
         {
@@ -155,10 +156,11 @@ public class JDBCSessionManager extends AbstractSessionManager
         
         /**
          * Session restored from database
-         * @param sessionId
-         * @param rowId
-         * @param created
-         * @param accessed
+         * @param sessionId the session id
+         * @param rowId the row id
+         * @param created the created timestamp
+         * @param accessed the access timestamp
+         * @param maxInterval the max inactive interval (in seconds)
          */
         protected Session (String sessionId, String rowId, long created, long accessed, long maxInterval)
         {
@@ -407,7 +409,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * If any session attribute does change, then the attributes and
      * the accessed time are persisted.
      *
-     * @param sec
+     * @param sec the save interval in seconds
      */
     public void setSaveInterval (long sec)
     {
@@ -430,7 +432,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * This could be used eg with a JMS backplane to notify nodes
      * that the session has changed and to delete the session from
      * the node's cache, and re-read it from the database.
-     * @param session
+     * @param session the session to invalidate
      */
     public void cacheInvalidate (Session session)
     {
@@ -693,7 +695,7 @@ public class JDBCSessionManager extends AbstractSessionManager
     /**
      * Invalidate a session.
      *
-     * @param idInCluster
+     * @param idInCluster the id in the cluster
      */
     protected void invalidateSession (String idInCluster)
     {
@@ -768,15 +770,6 @@ public class JDBCSessionManager extends AbstractSessionManager
         return new Session(request);
     }
     
-    
-    /**
-     * @param sessionId
-     * @param rowId
-     * @param created
-     * @param accessed
-     * @param maxInterval
-     * @return
-     */
     protected AbstractSession newSession (String sessionId, String rowId, long created, long accessed, long maxInterval)
     {
         return new Session(sessionId, rowId, created, accessed, maxInterval);
@@ -810,7 +803,8 @@ public class JDBCSessionManager extends AbstractSessionManager
      * Expire any Sessions we have in memory matching the list of
      * expired Session ids.
      *
-     * @param sessionIds
+     * @param sessionIds the session ids to expire
+     * @return the set of successfully expired ids
      */
     protected Set<String> expire (Set<String> sessionIds)
     {
@@ -875,9 +869,11 @@ public class JDBCSessionManager extends AbstractSessionManager
   
     /**
      * Load a session from the database
-     * @param id
+     * @param id the id
+     * @param canonicalContextPath the canonical context path
+     * @param vhost the virtual host
      * @return the session data that was loaded
-     * @throws Exception
+     * @throws Exception if unable to load the session
      */
     protected Session loadSession (final String id, final String canonicalContextPath, final String vhost)
     throws Exception
@@ -957,8 +953,8 @@ public class JDBCSessionManager extends AbstractSessionManager
     /**
      * Insert a session into the database.
      *
-     * @param session
-     * @throws Exception
+     * @param session the session
+     * @throws Exception if unable to store the session
      */
     protected void storeSession (Session session)
     throws Exception
@@ -1010,7 +1006,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * Update data on an existing persisted session.
      *
      * @param data the session
-     * @throws Exception
+     * @throws Exception if unable to update the session
      */
     protected void updateSession (Session data)
     throws Exception
@@ -1053,7 +1049,7 @@ public class JDBCSessionManager extends AbstractSessionManager
      * Update the node on which the session was last seen to be my node.
      *
      * @param data the session
-     * @throws Exception
+     * @throws Exception if unable to update the session node
      */
     protected void updateSessionNode (Session data)
     throws Exception
@@ -1107,8 +1103,8 @@ public class JDBCSessionManager extends AbstractSessionManager
      * Delete a session from the database. Should only be called
      * when the session has been invalidated.
      *
-     * @param data
-     * @throws Exception
+     * @param data the session data
+     * @throws Exception if unable to delete the session
      */
     protected void deleteSession (Session data)
     throws Exception

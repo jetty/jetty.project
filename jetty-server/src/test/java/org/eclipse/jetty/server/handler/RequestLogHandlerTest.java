@@ -376,6 +376,7 @@ public class RequestLogHandlerTest
 
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection. all other configuration on server at defaults.
+     * @throws Exception if test failure
      */
     @Test(timeout = 4000)
     public void testLogHandlerCollection() throws Exception
@@ -439,6 +440,7 @@ public class RequestLogHandlerTest
 
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the default ErrorHandler as server bean in place.
+     * @throws Exception if test failure
      */
     @Test(timeout = 4000)
     public void testLogHandlerCollection_ErrorHandler_ServerBean() throws Exception
@@ -505,6 +507,7 @@ public class RequestLogHandlerTest
 
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the ErrorHandler in place.
+     * @throws Exception if test failure
      */
     @Test(timeout=4000)
     public void testLogHandlerCollection_AltErrorHandler() throws Exception
@@ -578,6 +581,7 @@ public class RequestLogHandlerTest
     
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the ErrorHandler in place.
+     * @throws Exception if test failure
      */
     @Test(timeout=4000)
     public void testLogHandlerCollection_OKErrorHandler() throws Exception
@@ -651,6 +655,7 @@ public class RequestLogHandlerTest
     
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the ErrorHandler in place.
+     * @throws Exception if test failure
      */
     @Test(timeout=4000)
     public void testLogHandlerCollection_DispatchErrorHandler() throws Exception

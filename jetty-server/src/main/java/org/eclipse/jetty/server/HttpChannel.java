@@ -147,6 +147,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * Get the idle timeout.
      * <p>This is implemented as a call to {@link EndPoint#getIdleTimeout()}, but may be
      * overridden by channels that have timeouts different from their connections.
+     * @return the idle timeout (in milliseconds)
      */
     public long getIdleTimeout()
     {
@@ -155,8 +156,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     /**
      * Set the idle timeout.
-     * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long), but may be
+     * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long)}, but may be
      * overridden by channels that have timeouts different from their connections.
+     * @param timeoutMs the idle timeout in milliseconds
      */
     public void setIdleTimeout(long timeoutMs)
     {
@@ -213,7 +215,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
      * is ready for the request body and thus a 100 Continue response is sent.
-     *
+     * 
+     * @param available estimate of the number of bytes that are available 
      * @throws IOException if the InputStream cannot be created
      */
     public void continue100(int available) throws IOException

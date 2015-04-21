@@ -60,6 +60,7 @@ public interface Connector extends LifeCycle, Graceful
     public ByteBufferPool getByteBufferPool();
 
     /**
+     * @param nextProtocol the next protocol
      * @return the {@link ConnectionFactory} associated with the protocol name
      */
     public ConnectionFactory getConnectionFactory(String nextProtocol);

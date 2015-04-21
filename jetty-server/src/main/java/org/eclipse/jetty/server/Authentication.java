@@ -24,14 +24,12 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 
-/* ------------------------------------------------------------ */
 /** The Authentication state of a request.
  * <p>
  * The Authentication state can be one of several sub-types that
  * reflects where the request is in the many different authentication
  * cycles. Authentication might not yet be checked or it might be checked
  * and failed, checked and deferred or succeeded. 
- * 
  */
 public interface Authentication
 {
@@ -75,6 +73,7 @@ public interface Authentication
         /** Authenticate if possible without sending a challenge.
          * This is used to check credentials that have been sent for 
          * non-manditory authentication.
+         * @param request the request
          * @return The new Authentication state.
          */
         Authentication authenticate(ServletRequest request);
@@ -83,6 +82,8 @@ public interface Authentication
         /** Authenticate and possibly send a challenge.
          * This is used to initiate authentication for previously 
          * non-manditory authentication.
+         * @param request the request
+         * @param response the response
          * @return The new Authentication state.
          */
         Authentication authenticate(ServletRequest request,ServletResponse response);
@@ -90,8 +91,9 @@ public interface Authentication
         
         /* ------------------------------------------------------------ */
         /** Login with the LOGIN authenticator
-         * @param username
-         * @param password
+         * @param username the username
+         * @param password the password
+         * @param request the request
          * @return The new Authentication state
          */
         Authentication login(String username,Object password,ServletRequest request);

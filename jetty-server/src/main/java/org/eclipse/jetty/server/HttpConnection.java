@@ -32,6 +32,7 @@ import org.eclipse.jetty.http.HttpParser;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
+import org.eclipse.jetty.http.HttpParser.RequestHandler;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.Connection;
@@ -260,7 +261,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     
     /* ------------------------------------------------------------ */
     /** Fill and parse data looking for content
-     * @throws IOException
+     * @return true if an {@link RequestHandler} method was called and it returned true; 
      */
     protected boolean fillAndParseForContent() 
     {

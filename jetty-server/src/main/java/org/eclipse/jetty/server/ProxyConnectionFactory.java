@@ -35,11 +35,12 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
-/** ConnectionFactory for the PROXY Protocol.
+/** 
+ * ConnectionFactory for the PROXY Protocol.
  * <p>This factory can be placed in front of any other connection factory
  * to process the proxy line before the normal protocol handling</p>
  * 
- * @see http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt
+ * @see <a href="http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt">http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt</a>
  */
 public class ProxyConnectionFactory extends AbstractConnectionFactory
 {

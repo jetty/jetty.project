@@ -64,6 +64,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
 
     /* ------------------------------------------------------------ */
     /**
+     * @param id the id of the session
      * @return Collection of Sessions for the passed session ID
      */
     public Collection<HttpSession> getSession(String id)

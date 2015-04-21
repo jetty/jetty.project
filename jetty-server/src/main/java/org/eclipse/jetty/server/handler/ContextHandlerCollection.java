@@ -234,6 +234,7 @@ public class ContextHandlerCollection extends HandlerCollection
     /* ------------------------------------------------------------ */
     /** Add a context handler.
      * @param contextPath  The context path to add
+     * @param resourceBase the base (root) Resource
      * @return the ContextHandler just added
      */
     public ContextHandler addContext(String contextPath,String resourceBase)

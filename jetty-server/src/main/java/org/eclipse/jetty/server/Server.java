@@ -110,8 +110,11 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /** Convenience constructor
+    /** 
+     * Convenience constructor
+     * <p>
      * Creates server and a {@link ServerConnector} at the passed address.
+     * @param addr the inet socket address to create the connector from 
      */
     public Server(@Name("address")InetSocketAddress addr)
     {

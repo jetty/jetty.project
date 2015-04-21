@@ -53,7 +53,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * use all the commons services (eg {@link Executor}, {@link Scheduler})  of the
  * passed {@link Server} instance, but all services may also be constructor injected
  * into the connector so that it may operate with dedicated or otherwise shared services.
- * <p>
  * <h2>Connection Factories</h2>
  * Various convenience constructors are provided to assist with common configurations of
  * ConnectionFactories, whose generic use is described in {@link AbstractConnector}.
@@ -61,7 +60,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * default to use a {@link HttpConnectionFactory}.  If an non null {@link SslContextFactory}
  * instance is passed, then this used to instantiate a {@link SslConnectionFactory} which is
  * prepended to the other passed or default factories.
- * <p>
  * <h2>Selectors</h2>
  * The connector will use the {@link Executor} service to execute a number of Selector Tasks,
  * which are implemented to each use a NIO {@link Selector} instance to asynchronously
@@ -107,7 +105,7 @@ public class ServerConnector extends AbstractNetworkConnector
      *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
      *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or <=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      */
     public ServerConnector(
         @Name("server") Server server,
@@ -125,7 +123,7 @@ public class ServerConnector extends AbstractNetworkConnector
      *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
      *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or <=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      * @param factories Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
     public ServerConnector(
@@ -174,7 +172,7 @@ public class ServerConnector extends AbstractNetworkConnector
      *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
      *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or <=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      */
     public ServerConnector(
         @Name("server") Server server,
@@ -214,7 +212,7 @@ public class ServerConnector extends AbstractNetworkConnector
      *          the number of acceptor threads to use, or -1 for a default value. Acceptors accept new TCP/IP connections.  If 0, then 
      *          the selector threads are used to accept connections.
      * @param selectors
-     *          the number of selector threads, or <=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
+     *          the number of selector threads, or &lt;=0 for a default value. Selectors notice and schedule established connection that can make IO progress.
      * @param factories 
      *          Zero or more {@link ConnectionFactory} instances used to create and configure connections.
      */
@@ -260,6 +258,7 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
+     * @return the selector priority delta
      * @deprecated not implemented
      */
     @Deprecated
@@ -269,6 +268,7 @@ public class ServerConnector extends AbstractNetworkConnector
     }
 
     /**
+     * @param selectorPriorityDelta the selector priority delta
      * @deprecated not implemented
      */
     @Deprecated
@@ -342,7 +342,7 @@ public class ServerConnector extends AbstractNetworkConnector
     @Override
     public Future<Void> shutdown()
     {
-        // TODO shutdown all the connections
+        // shutdown all the connections
         return super.shutdown();
     }
 

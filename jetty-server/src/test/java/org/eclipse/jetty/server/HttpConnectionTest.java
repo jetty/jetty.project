@@ -56,9 +56,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- *
- */
 public class HttpConnectionTest
 {
     private Server server;
@@ -686,6 +683,7 @@ public class HttpConnectionTest
 
     /**
      * Creates a request header over 1k in size, by creating a single header entry with an huge value.
+     * @throws Exception if test failure
      */
     @Test
     public void testOversizedBuffer() throws Exception
@@ -714,6 +712,7 @@ public class HttpConnectionTest
 
     /**
      * Creates a request header with over 1000 entries.
+     * @throws Exception if test failure
      */
     @Test
     public void testExcessiveHeader() throws Exception

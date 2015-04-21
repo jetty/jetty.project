@@ -90,12 +90,16 @@ public class HandlerWrapper extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    /** Replace the current handler with another HandlerWrapper
-     * linked to the current handler.  This is equivalent to:<pre>
+    /** 
+     * Replace the current handler with another HandlerWrapper
+     * linked to the current handler.  
+     * <p>
+     * This is equivalent to:
+     * <pre>
      *   wrapper.setHandler(getHandler());
      *   setHandler(wrapper);
      * </pre>
-     * @param wrapper
+     * @param wrapper the wrapper to insert
      */
     public void insertHandler(HandlerWrapper wrapper)
     {

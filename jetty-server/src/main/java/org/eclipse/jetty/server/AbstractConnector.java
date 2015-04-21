@@ -53,7 +53,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * <p>An abstract implementation of {@link Connector} that provides a {@link ConnectionFactory} mechanism
- * for creating {@link Connection} instances for various protocols (HTTP, SSL, etc).</p>
+ * for creating {@link org.eclipse.jetty.io.Connection} instances for various protocols (HTTP, SSL, etc).</p>
  *
  * <h2>Connector Services</h2>
  * The abstract connector manages the dependent services needed by all specific connector instances:
@@ -79,7 +79,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * an {@link SslConnectionFactory} that has been instantiated with the {@link HttpConnectionFactory} as it's
  * next protocol.
  *
- * <h4>Configuring Connection Factories</h4>
+ * <h2>Configuring Connection Factories</h2>
  * The collection of available {@link ConnectionFactory} may be constructor injected or modified with the
  * methods {@link #addConnectionFactory(ConnectionFactory)}, {@link #removeConnectionFactory(String)} and
  * {@link #setConnectionFactories(Collection)}.  Only a single {@link ConnectionFactory} instance may be configured
@@ -94,20 +94,20 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * (or other factories that can also provide HTTP Semantics).  Similarly the {@link SslConnectionFactory} is
  * configured by passing it a {@link SslContextFactory} and a next protocol name.
  *
- * <h4>Connection Factory Operation</h4>
- * {@link ConnectionFactory}s may simply create a {@link Connection} instance to support a specific
+ * <h2>Connection Factory Operation</h2>
+ * {@link ConnectionFactory}s may simply create a {@link org.eclipse.jetty.io.Connection} instance to support a specific
  * protocol.  For example, the {@link HttpConnectionFactory} will create a {@link HttpConnection} instance
  * that can handle http/1.1, http/1.0 and http/0.9.
  * <p>
- * {@link ConnectionFactory}s may also create a chain of {@link Connection} instances, using other {@link ConnectionFactory} instances.
+ * {@link ConnectionFactory}s may also create a chain of {@link org.eclipse.jetty.io.Connection} instances, using other {@link ConnectionFactory} instances.
  * For example, the {@link SslConnectionFactory} is configured with a next protocol name, so that once it has accepted
  * a connection and created an {@link SslConnection}, it then used the next {@link ConnectionFactory} from the
- * connector using the {@link #getConnectionFactory(String)} method, to create a {@link Connection} instance that
- * will handle the unecrypted bytes from the {@link SslConnection}.   If the next protocol is "http/1.1", then the
+ * connector using the {@link #getConnectionFactory(String)} method, to create a {@link org.eclipse.jetty.io.Connection} instance that
+ * will handle the unencrypted bytes from the {@link SslConnection}.   If the next protocol is "http/1.1", then the
  * {@link SslConnectionFactory} will have a protocol name of "SSL-http/1.1" and lookup "http/1.1" for the protocol
  * to run over the SSL connection.
  * <p>
- * {@link ConnectionFactory}s may also create temporary {@link Connection} instances that will exchange bytes
+ * {@link ConnectionFactory}s may also create temporary {@link org.eclipse.jetty.io.Connection} instances that will exchange bytes
  * over the connection to determine what is the next protocol to use.  For example the ALPN protocol is an extension
  * of SSL to allow a protocol to be specified during the SSL handshake. ALPN is used by the HTTP/2 protocol to
  * negotiate the protocol that the client and server will speak.  Thus to accept a HTTP/2 connection, the
@@ -118,18 +118,17 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * could be "h2" or the default of "http/1.1".  Once the next protocol is determined, the ALPN connection
  * calls {@link #getConnectionFactory(String)} to create a connection instance that will replace the ALPN connection as
  * the connection chained to the SSL connection.
- * <p>
  * <h2>Acceptors</h2>
  * The connector will execute a number of acceptor tasks to the {@link Exception} service passed to the constructor.
  * The acceptor tasks run in a loop while the connector is running and repeatedly call the abstract {@link #accept(int)} method.
  * The implementation of the accept method must:
- * <nl>
- * <li>block waiting for new connections
- * <li>accept the connection (eg socket accept)
- * <li>perform any configuration of the connection (eg. socket linger times)
+ * <ol>
+ * <li>block waiting for new connections</li>
+ * <li>accept the connection (eg socket accept)</li>
+ * <li>perform any configuration of the connection (eg. socket linger times)</li>
  * <li>call the {@link #getDefaultConnectionFactory()} {@link ConnectionFactory#newConnection(Connector, org.eclipse.jetty.io.EndPoint)}
- * method to create a new Connection instance.
- * </nl>
+ * method to create a new Connection instance.</li>
+ * </ol>
  * The default number of acceptor tasks is the minimum of 1 and half the number of available CPUs. Having more acceptors may reduce
  * the latency for servers that see a high rate of new connections (eg HTTP/1.0 without keep-alive).  Typically the default is
  * sufficient for modern persistent protocols (HTTP/1.1, HTTP/2 etc.)
@@ -464,7 +463,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
      * Typically this would be used to lower the priority to give preference 
      * to handling previously accepted connections rather than accepting 
      * new connections</p>
-     * @param acceptorPriorityDelta
+     * @param acceptorPriorityDelta the acceptor priority delta
      */
     public void setAcceptorPriorityDelta(int acceptorPriorityDelta)
     {

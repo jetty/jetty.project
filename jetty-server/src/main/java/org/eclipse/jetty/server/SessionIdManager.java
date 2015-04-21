@@ -42,7 +42,7 @@ public interface SessionIdManager extends LifeCycle
     
     /**
      * Remove session from the list of known sessions for a given ID.
-     * @param session
+     * @param session the session to remove
      */
     public void removeSession(HttpSession session);
     
@@ -53,8 +53,10 @@ public interface SessionIdManager extends LifeCycle
     public void invalidateAll(String id);
     
     /**
-     * @param request
-     * @param created
+     * Create a new Session ID.
+     * 
+     * @param request the request with the sesion
+     * @param created the timestamp for when the session was created
      * @return the new session id
      */
     public String newSessionId(HttpServletRequest request,long created);
@@ -67,7 +69,7 @@ public interface SessionIdManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /** Get a cluster ID from a node ID.
      * Strip node identifier from a located session ID.
-     * @param nodeId
+     * @param nodeId the node id
      * @return the cluster id
      */
     public String getClusterId(String nodeId);
@@ -84,9 +86,9 @@ public interface SessionIdManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /** Change the existing session id.
     * 
-    * @param oldClusterId
-    * @param oldNodeId
-    * @param request
+    * @param oldClusterId the old cluster id
+    * @param oldNodeId the old node id
+    * @param request the request containing the session
     */
     public void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request);    
 
