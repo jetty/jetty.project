@@ -114,27 +114,6 @@ public class SslConnectionFactoryTest
         _server.stop();
         _server=null;
     }
-
-
-    @Test
-    public void testPattern() throws Exception
-    {
-        String[] names = 
-            {
-                "cn=foo.bar,o=other",
-                "   cn=  foo.bar  ,  o=other  ",
-                "o=other,cn=foo.bar",
-                "  o=other  ,  cn=  foo.bar   ",
-                "CN=foo.bar,O=other",
-            };
-        
-        for (String n:names)
-        {
-            Matcher matcher = ExtendedSslContextFactory.__cnPattern.matcher(n);
-            Assert.assertTrue(matcher.matches());
-            Assert.assertThat(matcher.group(1),Matchers.equalTo("foo.bar"));
-        }
-    }
     
     @Test
     public void testConnect() throws Exception
