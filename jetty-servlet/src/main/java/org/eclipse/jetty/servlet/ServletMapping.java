@@ -86,9 +86,6 @@ public class ServletMapping
     
     
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     @ManagedAttribute(value="default", readonly=true)
     public boolean isDefault()
     {
@@ -97,9 +94,6 @@ public class ServletMapping
     
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param fromDefault
-     */
     public void setDefault(boolean fromDefault)
     {
         _default = fromDefault;

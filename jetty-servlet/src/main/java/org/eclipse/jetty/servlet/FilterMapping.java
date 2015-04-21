@@ -45,6 +45,8 @@ public class FilterMapping implements Dumpable
 
     /* ------------------------------------------------------------ */
     /** Dispatch type from name
+     * @param type the type name
+     * @return the dispatcher type
      */
     public static DispatcherType dispatch(String type)
     {
@@ -63,6 +65,8 @@ public class FilterMapping implements Dumpable
 
     /* ------------------------------------------------------------ */
     /** Dispatch type from name
+     * @param type the dispatcher type
+     * @return the type constant ({@link #REQUEST}, {@link #ASYNC}, {@link #FORWARD}, {@link #INCLUDE}, or {@link #ERROR})
      */
     public static int dispatch(DispatcherType type)
     {

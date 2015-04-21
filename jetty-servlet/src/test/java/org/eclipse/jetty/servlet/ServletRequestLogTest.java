@@ -298,6 +298,7 @@ public class ServletRequestLogTest
      * Test a RequestLogHandler at the end of a HandlerCollection.
      * This handler chain is setup to look like Jetty versions up to 9.2. 
      * Default configuration.
+     * @throws Exception on test failure
      */
     @Test(timeout=4000)
     public void testLogHandlerCollection() throws Exception
@@ -382,6 +383,7 @@ public class ServletRequestLogTest
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection.
      * and also with the default ErrorHandler as server bean in place.
+     * @throws Exception on test failure
      */
     @Test(timeout=4000)
     public void testLogHandlerCollection_ErrorHandler_ServerBean() throws Exception
@@ -469,6 +471,7 @@ public class ServletRequestLogTest
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection
      * using servlet specific error page mapping.
+     * @throws Exception on test failure
      */
     @Test(timeout=4000)
     public void testLogHandlerCollection_SimpleErrorPageMapping() throws Exception
@@ -558,6 +561,7 @@ public class ServletRequestLogTest
     
     /**
      * Test an alternate (proposed) setup for using RequestLogHandler in a wrapped style
+     * @throws Exception on test failure
      */
     @Test(timeout=4000)
     public void testLogHandlerWrapped() throws Exception

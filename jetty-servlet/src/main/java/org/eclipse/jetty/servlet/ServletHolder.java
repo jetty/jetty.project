@@ -56,17 +56,13 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-
-
-/* --------------------------------------------------------------------- */
-/** Servlet Instance and Context Holder.
+/** 
+ * Servlet Instance and Context Holder.
+ * <p>
  * Holds the name, params and some state of a javax.servlet.Servlet
  * instance. It implements the ServletConfig interface.
  * This class will organise the loading of the servlet when needed or
  * requested.
- *
- *
  */
 @ManagedObject("Servlet Holder")
 public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope, Comparable<ServletHolder>
@@ -107,6 +103,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     /* ---------------------------------------------------------------- */
     /** Constructor .
+     * @param creator the holder source
      */
     public ServletHolder(Holder.Source creator)
     {
@@ -115,6 +112,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     /* ---------------------------------------------------------------- */
     /** Constructor for existing servlet.
+     * @param servlet the servlet
      */
     public ServletHolder(Servlet servlet)
     {
@@ -124,6 +122,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     /* ---------------------------------------------------------------- */
     /** Constructor for servlet class.
+     * @param name the name of the servlet
+     * @param servlet the servlet class
      */
     public ServletHolder(String name, Class<? extends Servlet> servlet)
     {
@@ -134,6 +134,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     /* ---------------------------------------------------------------- */
     /** Constructor for servlet class.
+     * @param name the servlet name
+     * @param servlet the servlet
      */
     public ServletHolder(String name, Servlet servlet)
     {
@@ -144,6 +146,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     /* ---------------------------------------------------------------- */
     /** Constructor for servlet class.
+     * @param servlet the servlet class
      */
     public ServletHolder(Class<? extends Servlet> servlet)
     {
@@ -181,10 +184,13 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the initialize order.
-     * Holders with order<0, are initialized on use. Those with
-     * order>=0 are initialized in increasing order when the handler
+    /** 
+     * Set the initialize order.
+     * <p>
+     * Holders with order&lt;0, are initialized on use. Those with
+     * order&gt;=0 are initialized in increasing order when the handler
      * is started.
+     * @param order the servlet init order
      */
     public void setInitOrder(int order)
     {
@@ -193,7 +199,8 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
-    /** Comparitor by init order.
+    /** 
+     * Comparator by init order.
      */
     @Override
     public int compareTo(ServletHolder sh)
@@ -452,6 +459,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /* ------------------------------------------------------------ */
     /** Get the servlet.
      * @return The servlet
+     * @throws ServletException if unable to init the servlet on first use
      */
     public synchronized Servlet getServlet()
         throws ServletException
@@ -482,7 +490,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /* ------------------------------------------------------------ */
     /**
      * Check to ensure class of servlet is acceptable.
-     * @throws UnavailableException
+     * @throws UnavailableException if Servlet class is not of type {@link javax.servlet.Servlet}
      */
     public void checkServletType ()
         throws UnavailableException
@@ -644,7 +652,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
 
     /* ------------------------------------------------------------ */
     /**
-     * @throws Exception
+     * @throws Exception if unable to init the JSP Servlet
      */
     protected void initJspServlet () throws Exception
     {
@@ -681,7 +689,7 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
      * Register a ServletRequestListener that will ensure tmp multipart
      * files are deleted when the request goes out of scope.
      * 
-     * @throws Exception
+     * @throws Exception if unable to init the multipart
      */
     protected void initMultiPart () throws Exception
     {
@@ -734,11 +742,11 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /**
      * Prepare to service a request.
      * 
-     * @param baseRequest
-     * @param request
-     * @param response
-     * @throws ServletException
-     * @throws UnavailableException
+     * @param baseRequest the base request
+     * @param request the request
+     * @param response the response
+     * @throws ServletException if unable to prepare the servlet
+     * @throws UnavailableException if not available
      */
     protected void prepare (Request baseRequest, ServletRequest request, ServletResponse response)
     throws ServletException, UnavailableException
@@ -766,13 +774,15 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     }
 
     /* ------------------------------------------------------------ */
-    /** Service a request with this servlet.
-     * @param baseRequest
-     * @param request
-     * @param response
-     * @throws ServletException
-     * @throws UnavailableException
-     * @throws IOException
+    /** 
+     * Service a request with this servlet.
+     * 
+     * @param baseRequest the base request
+     * @param request the request
+     * @param response the response
+     * @throws ServletException if unable to process the servlet
+     * @throws UnavailableException if servlet is unavailable
+     * @throws IOException if unable to process the request or response
      */
     public void handle(Request baseRequest,
                        ServletRequest request,
@@ -1170,9 +1180,9 @@ public class ServletHolder extends Holder<Servlet> implements UserIdentity.Scope
     /* ------------------------------------------------------------ */
     /**
      * @return the newly created Servlet instance
-     * @throws ServletException
-     * @throws IllegalAccessException
-     * @throws InstantiationException
+     * @throws ServletException if unable to create a new instance
+     * @throws IllegalAccessException if not allowed to create a new instance
+     * @throws InstantiationException if creating new instance resulted in error
      */
     protected Servlet newInstance() throws ServletException, IllegalAccessException, InstantiationException
     {

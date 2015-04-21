@@ -69,16 +69,15 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 
-
-/* ------------------------------------------------------------ */
-/** The default servlet.
- * 
+/** 
+ * The default servlet.
+ * <p>
  * This servlet, normally mapped to /, provides the handling for static
  * content, OPTION and TRACE methods for the context.
  * The following initParameters are supported, these can be set either
  * on the servlet itself or as ServletContext initParameters with a prefix
  * of org.eclipse.jetty.servlet.Default. :
- * <PRE>
+ * <pre>
  *  acceptRanges      If true, range requests and responses are
  *                    supported
  *
@@ -137,10 +136,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *                    Other file extensions that signify that a file is gzip compressed. Eg ".svgz"
  *
  *
- * </PRE>
- *
- *
- *
+ * </pre>
  *
  */
 public class DefaultServlet extends HttpServlet implements ResourceFactory
@@ -616,10 +612,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     }
 
-    /**
-     * @param resource
-     * @return
-     */
     protected boolean isGzippedContent(String path)
     {
         if (path == null) return false;

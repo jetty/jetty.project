@@ -366,8 +366,9 @@ public class ServletContextHandlerTest
     }
     
     /**
-     * Test behavior of legacy {@link ServletContextHandler.Decorator}, with
+     * Test behavior of legacy ServletContextHandler.Decorator, with
      * new DecoratedObjectFactory class
+     * @throws Exception on test failure
      */
     @SuppressWarnings("deprecation")
     @Test
@@ -395,6 +396,7 @@ public class ServletContextHandlerTest
     /**
      * Test behavior of new {@link org.eclipse.jetty.util.Decorator}, with
      * new DecoratedObjectFactory class
+     * @throws Exception on test failure
      */
     @Test
     public void testUtilDecorator() throws Exception
