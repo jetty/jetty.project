@@ -37,7 +37,6 @@ import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.log.Log;
@@ -395,10 +394,9 @@ public class MultiPartInputStreamParser
      * 
      * @return the parts 
      * @throws IOException if unable to get the parts
-     * @throws ServletException if unable to parse the parts
      */
     public Collection<Part> getParts()
-    throws IOException, ServletException
+    throws IOException
     {
         parse();
         Collection<List<Part>> values = _parts.values();
@@ -421,7 +419,7 @@ public class MultiPartInputStreamParser
      * @throws ServletException if unable to parse the parts
      */
     public Part getPart(String name)
-    throws IOException, ServletException
+    throws IOException
     {
         parse();
         return (Part)_parts.getValue(name, 0);
@@ -432,10 +430,9 @@ public class MultiPartInputStreamParser
      * Parse, if necessary, the multipart stream.
      * 
      * @throws IOException if unable to parse
-     * @throws ServletException FIXME, never thrown
      */
     protected void parse ()
-    throws IOException, ServletException
+    throws IOException
     {
         //have we already parsed the input?
         if (_parts != null)
