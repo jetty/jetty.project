@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
+import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.ServletInputStream;
 import javax.servlet.ServletOutputStream;
@@ -191,6 +192,29 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         ContentTransformer serverTransformer = (ContentTransformer)clientRequest.getAttribute(SERVER_TRANSFORMER);
         if (serverTransformer instanceof Destroyable)
             ((Destroyable)serverTransformer).destroy();
+    }
+
+    /**
+     * <p>Convenience extension of {@link AsyncMiddleManServlet} that offers transparent proxy functionalities.</p>
+     *
+     * @see TransparentDelegate
+     */
+    public static class Transparent extends ProxyServlet
+    {
+        private final TransparentDelegate delegate = new TransparentDelegate(this);
+
+        @Override
+        public void init(ServletConfig config) throws ServletException
+        {
+            super.init(config);
+            delegate.init(config);
+        }
+
+        @Override
+        protected String rewriteTarget(HttpServletRequest request)
+        {
+            return delegate.rewriteTarget(request);
+        }
     }
 
     protected class ProxyReader extends IteratingCallback implements ReadListener
@@ -745,5 +769,4 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             return ByteBuffer.wrap(gzipBytes);
         }
     }
-
 }
