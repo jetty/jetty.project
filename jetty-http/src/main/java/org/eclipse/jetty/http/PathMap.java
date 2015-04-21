@@ -396,10 +396,8 @@ public class PathMap<O> extends HashMap<String,O>
      * @param pathSpec the path spec
      * @param path the path
      * @return true if match.
-     * @throws IllegalArgumentException if the matcher experienced a failure
      */
     public static boolean match(String pathSpec, String path)
-        throws IllegalArgumentException
     {
         return match(pathSpec, path, false);
     }
@@ -410,10 +408,8 @@ public class PathMap<O> extends HashMap<String,O>
      * @param path the path
      * @param noDefault true to not handle the default path "/" special, false to allow matcher rules to run  
      * @return true if match.
-     * @throws IllegalArgumentException if matcher experienced a failure 
      */
     public static boolean match(String pathSpec, String path, boolean noDefault)
-        throws IllegalArgumentException
     {
         if (pathSpec.length()==0)
             return "/".equals(path);
