@@ -99,6 +99,11 @@ public class AsyncProxyServlet extends ProxyServlet
         return new StreamWriter(request, proxyResponse);
     }
 
+    /**
+     * <p>Convenience extension of {@link AsyncProxyServlet} that offers transparent proxy functionalities.</p>
+     *
+     * @see TransparentDelegate
+     */
     public static class Transparent extends AsyncProxyServlet
     {
         private final TransparentDelegate delegate = new TransparentDelegate(this);

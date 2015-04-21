@@ -20,6 +20,7 @@ package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
 import java.net.InetAddress;
+import java.net.URI;
 import java.net.UnknownHostException;
 import java.util.Collections;
 import java.util.Enumeration;
@@ -33,6 +34,7 @@ import java.util.concurrent.TimeoutException;
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
+import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -610,5 +612,74 @@ public abstract class AbstractProxyServlet extends HttpServlet
     protected int getRequestId(HttpServletRequest clientRequest)
     {
         return System.identityHashCode(clientRequest);
+    }
+
+    /**
+     * <p>Utility class that implement transparent proxy functionalities.</p>
+     * <p>Configuration parameters:</p>
+     * <ul>
+     * <li>{@code proxyTo} - a mandatory URI like http://host:80/context to which the request is proxied.</li>
+     * <li>{@code prefix} - an optional URI prefix that is stripped from the start of the forwarded URI.</li>
+     * </ul>
+     * <p>For example, if a request is received at "/foo/bar", the {@code proxyTo} parameter is
+     * "http://host:80/context" and the {@code prefix} parameter is "/foo", then the request would
+     * be proxied to "http://host:80/context/bar".
+     */
+    protected static class TransparentDelegate
+    {
+        private final ProxyServlet proxyServlet;
+        private String _proxyTo;
+        private String _prefix;
+
+        protected TransparentDelegate(ProxyServlet proxyServlet)
+        {
+            this.proxyServlet = proxyServlet;
+        }
+
+        protected void init(ServletConfig config) throws ServletException
+        {
+            _proxyTo = config.getInitParameter("proxyTo");
+            if (_proxyTo == null)
+                throw new UnavailableException("Init parameter 'proxyTo' is required.");
+
+            String prefix = config.getInitParameter("prefix");
+            if (prefix != null)
+            {
+                if (!prefix.startsWith("/"))
+                    throw new UnavailableException("Init parameter 'prefix' must start with a '/'.");
+                _prefix = prefix;
+            }
+
+            // Adjust prefix value to account for context path
+            String contextPath = config.getServletContext().getContextPath();
+            _prefix = _prefix == null ? contextPath : (contextPath + _prefix);
+
+            if (proxyServlet._log.isDebugEnabled())
+                proxyServlet._log.debug(config.getServletName() + " @ " + _prefix + " to " + _proxyTo);
+        }
+
+        protected String rewriteTarget(HttpServletRequest request)
+        {
+            String path = request.getRequestURI();
+            if (!path.startsWith(_prefix))
+                return null;
+
+            StringBuilder uri = new StringBuilder(_proxyTo);
+            if (_proxyTo.endsWith("/"))
+                uri.setLength(uri.length() - 1);
+            String rest = path.substring(_prefix.length());
+            if (!rest.startsWith("/"))
+                uri.append("/");
+            uri.append(rest);
+            String query = request.getQueryString();
+            if (query != null)
+                uri.append("?").append(query);
+            URI rewrittenURI = URI.create(uri.toString()).normalize();
+
+            if (!proxyServlet.validateDestination(rewrittenURI.getHost(), rewrittenURI.getPort()))
+                return null;
+
+            return rewrittenURI.toString();
+        }
     }
 }
