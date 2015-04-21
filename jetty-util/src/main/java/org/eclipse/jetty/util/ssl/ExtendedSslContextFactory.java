@@ -37,6 +37,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLParameters;
 import javax.net.ssl.StandardConstants;
 import javax.net.ssl.X509ExtendedKeyManager;
+import javax.security.auth.x500.X500Principal;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -113,7 +114,7 @@ public class ExtendedSslContextFactory extends SslContextFactory
                     // If no names found, look up the cn from the subject
                     if (!named)
                     {
-                        LdapName name=new LdapName(x509.getSubjectX500Principal().getName("CANONICAL"));
+                        LdapName name=new LdapName(x509.getSubjectX500Principal().getName(X500Principal.RFC2253));
                         for (Rdn rdn : name.getRdns())
                         {
                             if (rdn.getType().equalsIgnoreCase("cn"))
