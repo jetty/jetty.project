@@ -118,7 +118,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /** Excluded cipher suites. */
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
     /** Included cipher suites. */
-    private List<String> _includeCipherSuites = null;
+    private final List<String> _includeCipherSuites = new CopyOnWriteArrayList<String>();
 
     /** Keystore path. */
     private Resource _keyStoreResource;
@@ -428,7 +428,8 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setIncludeCipherSuites(String... cipherSuites)
     {
         checkNotStarted();
-        _includeCipherSuites = new CopyOnWriteArrayList<>(Arrays.asList(cipherSuites));
+        _includeCipherSuites.clear();
+        _includeCipherSuites.addAll(Arrays.asList(cipherSuites));
     }
 
     /**
@@ -1048,7 +1049,7 @@ public class SslContextFactory extends AbstractLifeCycle
         List<String> selected_ciphers = new CopyOnWriteArrayList<>(); // TODO is this the most efficient?
 
         // Set the starting ciphers - either from the included or enabled list
-        if (_includeCipherSuites!=null)
+        if (_includeCipherSuites.size()>0)
             processIncludeCipherSuites(supportedCipherSuites, selected_ciphers);
         else
             selected_ciphers.addAll(Arrays.asList(enabledCipherSuites));
