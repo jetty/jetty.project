@@ -416,7 +416,6 @@ public class MultiPartInputStreamParser
      * @param name the part name
      * @return the parts
      * @throws IOException if unable to get the part
-     * @throws ServletException if unable to parse the parts
      */
     public Part getPart(String name)
     throws IOException
