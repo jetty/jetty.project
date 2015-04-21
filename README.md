@@ -11,5 +11,5 @@ distribution for webapp deployment.
 
 - [https://projects.eclipse.org/projects/rt.jetty](https://projects.eclipse.org/projects/rt.jetty)
 
-This fork adds ability to create ShutdownListener on a specific local IP address assigend by a new STOP.HOST startup parameter. This is usefule in multi-home vurtualized environments like OpenShift with ability to listen on any address (0.0.0.0) or default 127.0.0.1 loopback not allowed.
+This fork adds ability to create ShutdownListener on a specific local IP address assigned by a new STOP.HOST startup parameter. This is usefule in multi-home vurtualized environments like OpenShift with ability to listen on any address (0.0.0.0) or default 127.0.0.1 loopback not allowed.
 
