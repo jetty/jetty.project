@@ -96,9 +96,8 @@ public class ExtendedSslContextFactory extends SslContextFactory
                     if (x509.getKeyUsage()!=null)
                     {
                         boolean[] b=x509.getKeyUsage();
-                        for (int i=0;i<b.length;i++)
-                            if (b[i])
-                                continue loop;
+                        if (b[5]/* keyCertSign */)
+                            continue loop;
                     }
                     
                     // Look for alternative name extensions
