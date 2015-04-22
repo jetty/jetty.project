@@ -37,30 +37,25 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /**
- * ContextFactory.java
- *
+ * ContextFactory
+ * <p>
  * This is an object factory that produces a jndi naming
  * context based on a classloader.
- *
- *  It is used for the java:comp context.
- *
- *  This object factory is bound at java:comp. When a
- *  lookup arrives for java:comp,  this object factory
- *  is invoked and will return a context specific to
- *  the caller's environment (so producing the java:comp/env
- *  specific to a webapp).
- *
- *  The context selected is based on classloaders. First
- *  we try looking at the thread context classloader if it is set, and walk its
- *  hierarchy, creating a context if none is found. If the thread context classloader
- *  is not set, then we use the classloader associated with the current Context.
- *  
- *  If there is no current context, or no classloader, we return null.
- *
- * Created: Fri Jun 27 09:26:40 2003
- *
- *
- *
+ * <p>
+ * It is used for the <code>java:comp</code> context.
+ * <p>
+ * This object factory is bound at <code>java:comp</code>. When a
+ * lookup arrives for java:comp,  this object factory
+ * is invoked and will return a context specific to
+ * the caller's environment (so producing the <code>java:comp/env</code>
+ * specific to a webapp).
+ * <p>
+ * The context selected is based on classloaders. First
+ * we try looking at the thread context classloader if it is set, and walk its
+ * hierarchy, creating a context if none is found. If the thread context classloader
+ * is not set, then we use the classloader associated with the current Context.
+ * <p> 
+ * If there is no current context, or no classloader, we return null.
  */
 public class ContextFactory implements ObjectFactory
 {
@@ -87,15 +82,15 @@ public class ContextFactory implements ObjectFactory
 
     /**
      * Find or create a context which pertains to a classloader.
-     *
+     * <p>
      * If the thread context classloader is set, we try to find an already-created naming context
      * for it. If one does not exist, we walk its classloader hierarchy until one is found, or we 
      * run out of parent classloaders. In the latter case, we will create a new naming context associated
      * with the original thread context classloader.
-     * 
+     * <p>
      * If the thread context classloader is not set, we obtain the classloader from the current 
      * jetty Context, and look for an already-created naming context. 
-     * 
+     * <p>
      * If there is no current jetty Context, or it has no associated classloader, we 
      * return null.
      * @see javax.naming.spi.ObjectFactory#getObjectInstance(java.lang.Object, javax.naming.Name, javax.naming.Context, java.util.Hashtable)
@@ -177,12 +172,13 @@ public class ContextFactory implements ObjectFactory
 
     /**
      * Create a new NamingContext.
-     * @param obj
-     * @param loader
-     * @param env
-     * @param name
-     * @param parentCtx
-     * @throws Exception
+     * @param obj the object to create
+     * @param loader the classloader for the naming context
+     * @param env the jndi env for the entry
+     * @param name the name of the entry
+     * @param parentCtx the parent context of the entry
+     * @return the newly created naming context
+     * @throws Exception if unable to create a new naming context
      */
     public NamingContext newNamingContext(Object obj, ClassLoader loader, Hashtable env, Name name, Context parentCtx)
     throws Exception
@@ -201,7 +197,8 @@ public class ContextFactory implements ObjectFactory
   
     /**
      * Find the naming Context for the given classloader
-     * @param loader
+     * @param loader the classloader for the context
+     * @return the context for the classloader
      */
     public Context getContextForClassLoader(ClassLoader loader)
     {

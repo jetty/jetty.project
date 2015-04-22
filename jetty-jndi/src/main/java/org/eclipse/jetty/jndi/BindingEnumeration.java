@@ -25,14 +25,8 @@ import javax.naming.Binding;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
-/** BindingEnumeration
- * <p>Implementation of NamingEnumeration
- *
- * <p><h4>Notes</h4>
- * <p>Used to return results of Context.listBindings();
- *
- * <p><h4>Usage</h4>
- *
+/** 
+ * BindingEnumeration
  */
 public class BindingEnumeration implements NamingEnumeration<Binding>
 {

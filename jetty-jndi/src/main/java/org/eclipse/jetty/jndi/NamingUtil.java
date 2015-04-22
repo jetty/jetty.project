@@ -33,13 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /**
- * Util.java
- *
- *
- * Created: Tue Jul  1 18:26:17 2003
- *
- *
- * @version 1.0
+ * Naming Utility Methods
  */
 public class NamingUtil
 {
@@ -53,6 +47,7 @@ public class NamingUtil
      * @param ctx the context into which to bind
      * @param nameStr the name relative to context to bind
      * @param obj the object to be bound
+     * @return the bound context
      * @exception NamingException if an error occurs
      */
     public static Context bind (Context ctx, String nameStr, Object obj)
@@ -112,7 +107,7 @@ public class NamingUtil
      * @param ctx the context containing the name for which to list the bindings
      * @param name the name in the context to list
      * @return map: key is fully qualified name, value is the bound object
-     * @throws NamingException
+     * @throws NamingException if unable to flatten bindings
      */
     public static Map flattenBindings (Context ctx, String name)
     throws NamingException

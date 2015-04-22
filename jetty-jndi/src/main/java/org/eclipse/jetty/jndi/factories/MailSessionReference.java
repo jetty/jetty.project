@@ -92,17 +92,8 @@ public class MailSessionReference extends Reference implements ObjectFactory
         {
             this.password = password;
         }
-
-
     };
 
-
-
-
-
-    /**
-     *
-     */
     public MailSessionReference()
     {
        super ("javax.mail.Session", MailSessionReference.class.getName(), null);
@@ -117,7 +108,7 @@ public class MailSessionReference extends Reference implements ObjectFactory
      * @param arg2 not used
      * @param arg3 not used
      * @return the object found
-     * @throws Exception
+     * @throws Exception if unable to get object instance
      */
     public Object getObjectInstance(Object ref, Name arg1, Context arg2, Hashtable arg3) throws Exception
     {
