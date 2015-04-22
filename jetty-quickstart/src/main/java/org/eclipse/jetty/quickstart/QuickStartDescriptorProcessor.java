@@ -44,9 +44,6 @@ import org.eclipse.jetty.xml.XmlParser;
  */
 public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
 {
-    /**
-     * 
-     */
     public QuickStartDescriptorProcessor()
     {
         try
@@ -74,13 +71,7 @@ public class QuickStartDescriptorProcessor extends IterativeDescriptorProcessor
     public void end(WebAppContext context, Descriptor descriptor)
     { 
     }
-    
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitContextParam (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
             throws Exception
     {

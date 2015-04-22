@@ -28,12 +28,9 @@ import javax.mail.URLName;
 
 /**
  * MockTransport
- *
- *
  */
 public class MockTransport extends Transport
 {
-
     /**
      * @param session
      * @param urlname

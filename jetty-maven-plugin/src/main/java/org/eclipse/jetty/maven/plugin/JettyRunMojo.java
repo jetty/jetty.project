@@ -36,28 +36,22 @@ import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 
-
 /**
- *  <p>
  *  This goal is used in-situ on a Maven project without first requiring that the project 
  *  is assembled into a war, saving time during the development cycle.
+ *  <p>
  *  The plugin forks a parallel lifecycle to ensure that the "compile" phase has been completed before invoking Jetty. This means
  *  that you do not need to explicity execute a "mvn compile" first. It also means that a "mvn clean jetty:run" will ensure that
  *  a full fresh compile is done before invoking Jetty.
- *  </p>
  *  <p>
  *  Once invoked, the plugin can be configured to run continuously, scanning for changes in the project and automatically performing a 
  *  hot redeploy when necessary. This allows the developer to concentrate on coding changes to the project using their IDE of choice and have those changes
  *  immediately and transparently reflected in the running web container, eliminating development time that is wasted on rebuilding, reassembling and redeploying.
- *  </p>
  *  <p>
  *  You may also specify the location of a jetty.xml file whose contents will be applied before any plugin configuration.
  *  This can be used, for example, to deploy a static webapp that is not part of your maven build. 
- *  </p>
  *  <p>
  *  There is a <a href="http://www.eclipse.org/jetty/documentation/current/maven-and-jetty.html">reference guide</a> to the configuration parameters for this plugin.
- *  </p>
- * 
  * 
  * @goal run
  * @requiresDependencyResolution test
@@ -605,13 +599,6 @@ public class JettyRunMojo extends AbstractJettyMojo
         return warArtifacts;
     }
 
-    
-    
-    /**
-     * @param o
-     * @param warArtifacts
-     * @return
-     */
     protected Artifact getArtifactForOverlay (OverlayConfig o, List<Artifact> warArtifacts)
     {
         if (o == null || warArtifacts == null || warArtifacts.isEmpty())

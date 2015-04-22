@@ -46,14 +46,14 @@ import org.eclipse.jetty.xml.XmlConfiguration;
  */
 public class ServerSupport
 {
-
-
     /**
      * Set up the handler structure to receive a webapp.
      * Also put in a DefaultHandler so we get a nice page
      * than a 404 if we hit the root and the webapp's
      * context isn't at root.
-     * @throws Exception
+     * @param server the server
+     * @param requestLog the request log
+     * @throws Exception if unable to configure the handlers
      */
     public static void configureHandlers (Server server, RequestLog requestLog) throws Exception 
     {
@@ -87,8 +87,8 @@ public class ServerSupport
     /**
      * Configure at least one connector for the server
      * 
-     * @param server
-     * @param connector
+     * @param server the server
+     * @param connector the connector
      */
     public static void configureConnectors (Server server, Connector connector)
     {
@@ -122,8 +122,8 @@ public class ServerSupport
     /**
      * Set up any security LoginServices provided.
      * 
-     * @param server
-     * @param loginServices
+     * @param server the server
+     * @param loginServices the login services
      */
     public static void configureLoginServices (Server server, LoginService[] loginServices)
     {
@@ -140,10 +140,6 @@ public class ServerSupport
         }
     }
     
-    
-    /**
-     * @see org.eclipse.jetty.server.handler.HandlerCollection#addHandler(org.eclipse.jetty.server.Handler)
-     */
     public static void addWebApplication(Server server, WebAppContext webapp) throws Exception
     {  
         if (server == null)
@@ -168,8 +164,10 @@ public class ServerSupport
      * Apply xml files to server startup, passing in ourselves as the 
      * "Server" instance.
      * 
-     * @param files
-     * @throws Exception
+     * @param server the server to apply the xml to
+     * @param files the list of xml files
+     * @return the Server implementation, after the xml is applied
+     * @throws Exception if unable to apply the xml configuration
      */
     public static Server applyXmlConfigurations (Server server, List<File> files) 
     throws Exception

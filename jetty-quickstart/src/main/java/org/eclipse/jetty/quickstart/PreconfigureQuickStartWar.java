@@ -30,7 +30,6 @@ public class PreconfigureQuickStartWar
     private static final Logger LOG = Log.getLogger(PreconfigureQuickStartWar.class);
     static final boolean ORIGIN=LOG.isDebugEnabled();
     
-
     public static void main(String... args) throws Exception
     {
         Resource war = null;
@@ -80,7 +79,7 @@ public class PreconfigureQuickStartWar
      * @param war The war (or directory) to preconfigure
      * @param dir The directory to expand the war into (or null if war is a directory)
      * @param xml A context XML to apply (or null if none)
-     * @throws Exception
+     * @throws Exception if unable to pre configure
      */
     public static void preconfigure(Resource war, Resource dir, Resource xml) throws Exception 
     {

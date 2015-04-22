@@ -21,7 +21,6 @@ package org.eclipse.jetty.maven.plugin;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
-import java.lang.reflect.InvocationTargetException;
 import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
@@ -207,7 +206,7 @@ public class JettyWebAppContext extends WebAppContext
     /**
      * Ordered list of wars to overlay on top of the current project. The list
      * may contain an overlay that represents the current project.
-     * @param overlays
+     * @param overlays the list of overlays
      */
     public void setOverlays (List<Overlay> overlays)
     {

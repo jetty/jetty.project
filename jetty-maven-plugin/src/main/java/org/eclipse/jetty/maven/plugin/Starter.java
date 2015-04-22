@@ -44,10 +44,7 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 
 /**
- * Starter
- * 
- * Class which is exec'ed to create a new jetty process. Used by the JettyRunForked mojo.
- *
+ * Starter Class which is exec'ed to create a new jetty process. Used by the JettyRunForked mojo.
  */
 public class Starter
 { 
@@ -114,9 +111,6 @@ public class Starter
     
     
     
-    /**
-     * @throws Exception
-     */
     public void configureJetty () throws Exception
     {
         LOG.debug("Starting Jetty Server ...");
@@ -168,10 +162,6 @@ public class Starter
         }
     }
     
-    
-    /**
-     * @throws Exception
-     */
     public void configureWebApp ()
     throws Exception
     {
@@ -318,10 +308,6 @@ public class Starter
         
     }
 
-    /**
-     * @param args
-     * @throws Exception
-     */
     public void getConfiguration (String[] args)
     throws Exception
     {
@@ -372,9 +358,6 @@ public class Starter
     }
 
 
-    /**
-     * @throws Exception
-     */
     public void run() throws Exception
     {
         LOG.info("Started Jetty Server");
@@ -382,18 +365,12 @@ public class Starter
     }
 
     
-    /**
-     * @throws Exception
-     */
     public void join () throws Exception
     {
         server.join();
     }
     
     
-    /**
-     * @param e
-     */
     public void communicateStartupResult (Exception e)
     {
         if (token != null)
@@ -408,7 +385,7 @@ public class Starter
     
     /**
      * Apply any jetty xml files given
-     * @throws Exception
+     * @throws Exception if unable to apply the xml
      */
     public void applyJettyXml() throws Exception
     {
@@ -423,10 +400,6 @@ public class Starter
 
 
 
-    /**
-     * @param handler
-     * @param handlers
-     */
     protected void prependHandler (Handler handler, HandlerCollection handlers)
     {
         if (handler == null || handlers == null)
@@ -441,11 +414,6 @@ public class Starter
     
     
     
-    /**
-     * @param c
-     * @param wars
-     * @return
-     */
     protected Artifact getArtifactForOverlayConfig (OverlayConfig c, List<Artifact> wars)
     {
         if (wars == null || wars.isEmpty() || c == null)
@@ -480,11 +448,6 @@ public class Starter
         return list;
     }
     
-    
-    
-    /**
-     * @param args
-     */
     public static final void main(String[] args)
     {
         if (args == null)

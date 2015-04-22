@@ -53,25 +53,20 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 
 /**
+ * This goal is used to deploy your unassembled webapp into a forked JVM.
  * <p>
- *  This goal is used to deploy your unassembled webapp into a forked JVM.
- *  </p>
- *  <p>
- *  You need to define a jetty.xml file to configure connectors etc. You can use the normal setters of o.e.j.webapp.WebAppContext on the <b>webApp</b>
- *  configuration element for this plugin. You may also need context xml file for any particularly complex webapp setup.
- *  about your webapp.
- *  </p>
- *  <p>
- *  Unlike the other jetty goals, this does NOT support the <b>scanIntervalSeconds</b> parameter: the webapp will be deployed only once.
- *  </p>
- *  <p>
- *  The <b>stopKey</b>, <b>stopPort</b> configuration elements can be used to control the stopping of the forked process. By default, this plugin will launch
- *  the forked jetty instance and wait for it to complete (in which case it acts much like the <b>jetty:run</b> goal, and you will need to Cntrl-C to stop).
- *  By setting the configuration element <b>waitForChild</b> to <b>false</b>, the plugin will terminate after having forked the jetty process. In this case
- *  you can use the <b>jetty:stop</b> goal to terminate the process.
- *  <p>
- *  See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
- *  </p>
+ * You need to define a jetty.xml file to configure connectors etc. You can use the normal setters of o.e.j.webapp.WebAppContext on the <b>webApp</b>
+ * configuration element for this plugin. You may also need context xml file for any particularly complex webapp setup.
+ * about your webapp.
+ * <p>
+ * Unlike the other jetty goals, this does NOT support the <b>scanIntervalSeconds</b> parameter: the webapp will be deployed only once.
+ * <p>
+ * The <b>stopKey</b>, <b>stopPort</b> configuration elements can be used to control the stopping of the forked process. By default, this plugin will launch
+ * the forked jetty instance and wait for it to complete (in which case it acts much like the <b>jetty:run</b> goal, and you will need to Cntrl-C to stop).
+ * By setting the configuration element <b>waitForChild</b> to <b>false</b>, the plugin will terminate after having forked the jetty process. In this case
+ * you can use the <b>jetty:stop</b> goal to terminate the process.
+ * <p>
+ * See <a href="http://www.eclipse.org/jetty/documentation/">http://www.eclipse.org/jetty/documentation</a> for more information on this and other jetty plugins.
  * 
  * @goal run-forked
  * @requiresDependencyResolution test
@@ -415,13 +410,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
         }
     }
 
-
-
-
-    /**
-     * @return
-     * @throws MojoExecutionException
-     */
     public List<String> getProvidedJars() throws MojoExecutionException
     {  
         //if we are configured to include the provided dependencies on the plugin's classpath
@@ -448,13 +436,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
             return null;
     }
     
-   
-    
-    
-    /**
-     * @return
-     * @throws MojoExecutionException
-     */
     public File prepareConfiguration() throws MojoExecutionException
     {
         try
@@ -602,15 +583,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
         return warArtifacts;
     }
     
-    
-    
-    
-    
-    
-    /**
-     * @param artifact
-     * @return
-     */
     public boolean isPluginArtifact(Artifact artifact)
     {
         if (pluginArtifacts == null || pluginArtifacts.isEmpty())
@@ -628,13 +600,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
         return isPluginArtifact;
     }
     
-    
-    
-    
-    /**
-     * @return
-     * @throws Exception
-     */
     private Set<Artifact> getExtraJars()
     throws Exception
     {
@@ -660,15 +625,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
         return extraJars;
     }
 
-    
-
-   
-
-    
-    /**
-     * @return
-     * @throws Exception
-     */
     public String getContainerClassPath() throws Exception
     {
         StringBuilder classPath = new StringBuilder();
@@ -734,13 +690,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
         return "java";
     }
     
-
-    
-    
-    /**
-     * @param path
-     * @return
-     */
     public static String fileSeparators(String path)
     {
         StringBuilder ret = new StringBuilder();
@@ -758,13 +707,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
         return ret.toString();
     }
 
-
-    
-    
-    /**
-     * @param path
-     * @return
-     */
     public static String pathSeparators(String path)
     {
         StringBuilder ret = new StringBuilder();
@@ -782,24 +724,11 @@ public class JettyRunForkedMojo extends JettyRunMojo
         return ret.toString();
     }
 
-
-    
-    
-    /**
-     * @return
-     */
     private String createToken ()
     {
         return Long.toString(random.nextLong()^System.currentTimeMillis(), 36).toUpperCase(Locale.ENGLISH);
     }
     
-
-    
-    
-    /**
-     * @param mode
-     * @param inputStream
-     */
     private void startPump(String mode, InputStream inputStream)
     {
         ConsoleStreamer pump = new ConsoleStreamer(mode,inputStream);
@@ -808,13 +737,6 @@ public class JettyRunForkedMojo extends JettyRunMojo
         thread.start();
     }
 
-
-    
-    
-    /**
-     * @param strings
-     * @return
-     */
     private String toCSV (List<String> strings)
     {
         if (strings == null)

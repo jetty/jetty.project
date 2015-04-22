@@ -29,11 +29,9 @@ import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
 
-
-
 /**
  * WarPluginInfo
- *
+ * <p>
  * Information about the maven-war-plugin contained in the pom
  */
 public class WarPluginInfo
@@ -45,10 +43,6 @@ public class WarPluginInfo
     private List<OverlayConfig> _overlayConfigs;
     
     
-    
-    /**
-     * @param project
-     */
     public WarPluginInfo (MavenProject project)
     {
         _project = project;
@@ -59,7 +53,7 @@ public class WarPluginInfo
     
     /**
      * Find the maven-war-plugin, if one is configured
-     * @return
+     * @return the plugin
      */
     public Plugin getPlugin()
     {
@@ -86,7 +80,7 @@ public class WarPluginInfo
 
     /**
      * Get value of dependentWarIncludes for maven-war-plugin
-     * @return
+     * @return the list of dependent war includes
      */
     public List<String> getDependentMavenWarIncludes()
     {
@@ -115,7 +109,7 @@ public class WarPluginInfo
     
     /**
      * Get value of dependentWarExcludes for maven-war-plugin
-     * @return
+     * @return the list of dependent war excludes
      */
     public List<String> getDependentMavenWarExcludes()
     {
@@ -145,7 +139,7 @@ public class WarPluginInfo
     /**
      * Get config for any overlays that have been declared for the maven-war-plugin.
      * 
-     * @return
+     * @return the list of overlay configs
      */
     public List<OverlayConfig> getMavenWarOverlayConfigs ()
     {
