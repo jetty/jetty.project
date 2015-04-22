@@ -21,6 +21,7 @@ package org.eclipse.jetty.util.ssl;
 import java.security.KeyStore;
 import java.security.cert.Certificate;
 import java.security.cert.X509Certificate;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.HashMap;
@@ -84,15 +85,24 @@ public class ExtendedSslContextFactory extends SslContextFactory
         _aliases.clear();
         if (_factory._keyStore!=null)
         {
-            for (String alias : Collections.list(_factory._keyStore.aliases()))
+            loop: for (String alias : Collections.list(_factory._keyStore.aliases()))
             {
                 Certificate certificate = _factory._keyStore.getCertificate(alias);
                 if ("X.509".equals(certificate.getType()))
                 {
                     X509Certificate x509 = (X509Certificate)certificate;
-                    boolean named=false;
+                    
+                    // Exclude certificates with special uses
+                    if (x509.getKeyUsage()!=null)
+                    {
+                        boolean[] b=x509.getKeyUsage();
+                        for (int i=0;i<b.length;i++)
+                            if (b[i])
+                                continue loop;
+                    }
                     
                     // Look for alternative name extensions
+                    boolean named=false;
                     Collection<List<?>> altNames = x509.getSubjectAlternativeNames();
                     if (altNames!=null)
                     {
