@@ -95,7 +95,7 @@ public class HostnameVerificationTest
      * http://www.ietf.org/rfc/rfc2818.txt section 3.1. It uses a certificate with a common name different to localhost
      * and sends a request to localhost. This should fail with a SSLHandshakeException.
      *
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void simpleGetWithHostnameVerificationEnabledTest() throws Exception
@@ -133,7 +133,8 @@ public class HostnameVerificationTest
      * This test has hostname verification disabled and connecting, ssl handshake and sending the request should just
      * work fine.
      *
-     * @throws Exception
+     * @throws Exception on test failure
+     * 
      */
     @Test
     public void simpleGetWithHostnameVerificationDisabledTest() throws Exception
@@ -154,7 +155,7 @@ public class HostnameVerificationTest
      * This test has hostname verification disabled by setting trustAll to true and connecting,
      * ssl handshake and sending the request should just work fine.
      *
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void trustAllDisablesHostnameVerificationTest() throws Exception

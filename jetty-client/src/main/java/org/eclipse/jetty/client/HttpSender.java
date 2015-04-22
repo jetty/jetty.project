@@ -41,9 +41,9 @@ import org.eclipse.jetty.util.log.Logger;
  * {@link HttpSender} governs two state machines.
  * <p>
  * The request state machine is updated by {@link HttpSender} as the various steps of sending a request
- * are executed, see {@link RequestState}.
+ * are executed, see <code>RequestState</code>.
  * At any point in time, a user thread may abort the request, which may (if the request has not been
- * completely sent yet) move the request state machine to {@link RequestState#FAILURE}.
+ * completely sent yet) move the request state machine to <code>RequestState#FAILURE</code>.
  * The request state machine guarantees that the request steps are executed (by I/O threads) only if
  * the request has not been failed already.
  * <p>

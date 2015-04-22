@@ -133,6 +133,7 @@ public class GzipContentLengthTest
     /**
      * Test with content servlet that does:  
      * AsyncContext create -> timeout -> onTimeout -> write-response -> complete
+     * @throws Exception on test failure
      */
     @Test
     public void testAsyncTimeoutCompleteWrite_Default() throws Exception
@@ -143,6 +144,7 @@ public class GzipContentLengthTest
     /**
      * Test with content servlet that does:  
      * AsyncContext create -> timeout -> onTimeout -> write-response -> complete
+     * @throws Exception on test failure
      */
     @Test
     public void testAsyncTimeoutCompleteWrite_Passed() throws Exception
@@ -153,6 +155,7 @@ public class GzipContentLengthTest
     /**
      * Test with content servlet that does:  
      * AsyncContext create -> timeout -> onTimeout -> dispatch -> write-response
+     * @throws Exception on test failure
      */
     @Test
     public void testAsyncTimeoutDispatchWrite_Default() throws Exception
@@ -163,6 +166,7 @@ public class GzipContentLengthTest
     /**
      * Test with content servlet that does:  
      * AsyncContext create -> timeout -> onTimeout -> dispatch -> write-response
+     * @throws Exception on test failure
      */
     @Test
     public void testAsyncTimeoutDispatchWrite_Passed() throws Exception
@@ -173,6 +177,7 @@ public class GzipContentLengthTest
     /**
      * Test with content servlet that does:  
      * AsyncContext create -> no-timeout -> scheduler.schedule -> dispatch -> write-response
+     * @throws Exception on test failure
      */
     @Test
     public void testAsyncScheduledDispatchWrite_Default() throws Exception
@@ -183,6 +188,7 @@ public class GzipContentLengthTest
     /**
      * Test with content servlet that does:  
      * AsyncContext create -> no-timeout -> scheduler.schedule -> dispatch -> write-response
+     * @throws Exception on test failure
      */
     @Test
     public void testAsyncScheduledDispatchWrite_Passed() throws Exception
@@ -197,7 +203,8 @@ public class GzipContentLengthTest
      * 3) setHeader(content-type)
      * 4) outputStream.write()
      * 
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @throws Exception on test failure
+     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @Test
     public void testServletLengthStreamTypeWrite() throws Exception
@@ -212,7 +219,8 @@ public class GzipContentLengthTest
      * 3) getOutputStream()
      * 4) outputStream.write()
      * 
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @throws Exception on test failure
+     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @Test
     public void testServletLengthTypeStreamWrite() throws Exception
@@ -227,7 +235,8 @@ public class GzipContentLengthTest
      * 3) setHeader(content-type)
      * 4) outputStream.write()
      * 
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @throws Exception on test failure
+     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @Test
     public void testServletStreamLengthTypeWrite() throws Exception
@@ -242,7 +251,8 @@ public class GzipContentLengthTest
      * 3) setHeader(content-type)
      * 4) outputStream.write() (with frequent response flush)
      * 
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @throws Exception on test failure
+     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @Test
     public void testServletStreamLengthTypeWriteWithFlush() throws Exception
@@ -257,7 +267,8 @@ public class GzipContentLengthTest
      * 3) setHeader(content-length)
      * 4) outputStream.write()
      * 
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @throws Exception on test failure
+     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @Test
     public void testServletStreamTypeLengthWrite() throws Exception
@@ -272,7 +283,8 @@ public class GzipContentLengthTest
      * 3) getOutputStream()
      * 4) outputStream.write()
      * 
-     * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
+     * @throws Exception on test failure
+     * @see <a href="http://bugs.eclipse.org/354014">Eclipse Bug 354014</a>
      */
     @Test
     public void testServletTypeLengthStreamWrite() throws Exception
@@ -287,6 +299,7 @@ public class GzipContentLengthTest
      * 3) setHeader(content-length)
      * 4) outputStream.write()
      * 
+     * @throws Exception on test failure
      * @see <a href="Eclipse Bug 354014">http://bugs.eclipse.org/354014</a>
      */
     @Test
@@ -305,7 +318,8 @@ public class GzipContentLengthTest
      * This is done to demonstrate a bug with using HttpOutput.write()
      * while also using GzipFilter
      * 
-     * @see <a href="Eclipse Bug 450873">http://bugs.eclipse.org/450873</a>
+     * @throws Exception on test failure
+     * @see <a href="http://bugs.eclipse.org/450873">Eclipse Bug 450873</a>
      */
     @Test
     public void testHttpOutputWrite() throws Exception

@@ -49,7 +49,7 @@ public interface Authentication
 
     /**
      * Executes the authentication mechanism for the given request, returning a {@link Result} that can be
-     * used to actually authenticate the request via {@link Result#apply(Request)}.
+     * used to actually authenticate the request via {@link org.eclipse.jetty.client.api.Authentication.Result#apply(Request)}.
      * <p>
      * If a request for {@code "/secure"} returns a {@link Result}, then the result may be used for other
      * requests such as {@code "/secure/foo"} or {@code "/secure/bar"}, unless those resources are protected
@@ -117,7 +117,7 @@ public interface Authentication
     }
 
     /**
-     * {@link Result} holds the information needed to authenticate a {@link Request} via {@link #apply(Request)}.
+     * {@link Result} holds the information needed to authenticate a {@link Request} via {@link org.eclipse.jetty.client.api.Authentication.Result#apply(org.eclipse.jetty.client.api.Request)}.
      */
     public static interface Result
     {

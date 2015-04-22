@@ -57,7 +57,7 @@ public class ConnectorServer extends AbstractLifeCycle
      * The actual address of the new connector server, as returned
      * by its getAddress method, will not necessarily be exactly the same.
      * @param name object name string to be assigned to connector server bean
-     * @throws Exception
+     * @throws Exception if unable to setup connector server
      */
     public ConnectorServer(JMXServiceURL serviceURL, String name)
         throws Exception
@@ -77,7 +77,7 @@ public class ConnectorServer extends AbstractLifeCycle
      * be Strings. The appropriate type of each associated value depends on
      * the attribute. The contents of environment are not changed by this call.
      * @param name object name string to be assigned to connector server bean
-     * @throws Exception
+     * @throws Exception if unable to create connector server
      */
     public ConnectorServer(JMXServiceURL svcUrl, Map<String,?> environment, String name)
          throws Exception

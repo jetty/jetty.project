@@ -309,6 +309,9 @@ public class HttpClient extends ContainerLifeCycle
      *
      * @param uri the URI to GET
      * @return the {@link ContentResponse} for the request
+     * @throws InterruptedException if send threading has been interrupted
+     * @throws ExecutionException the execution failed
+     * @throws TimeoutException the send timed out
      * @see #GET(URI)
      */
     public ContentResponse GET(String uri) throws InterruptedException, ExecutionException, TimeoutException
@@ -321,6 +324,9 @@ public class HttpClient extends ContainerLifeCycle
      *
      * @param uri the URI to GET
      * @return the {@link ContentResponse} for the request
+     * @throws InterruptedException if send threading has been interrupted
+     * @throws ExecutionException the execution failed
+     * @throws TimeoutException the send timed out
      * @see #newRequest(URI)
      */
     public ContentResponse GET(URI uri) throws InterruptedException, ExecutionException, TimeoutException
@@ -334,6 +340,9 @@ public class HttpClient extends ContainerLifeCycle
      * @param uri the URI to POST
      * @param fields the fields composing the form name/value pairs
      * @return the {@link ContentResponse} for the request
+     * @throws InterruptedException if send threading has been interrupted
+     * @throws ExecutionException the execution failed
+     * @throws TimeoutException the send timed out
      */
     public ContentResponse FORM(String uri, Fields fields) throws InterruptedException, ExecutionException, TimeoutException
     {
@@ -346,6 +355,9 @@ public class HttpClient extends ContainerLifeCycle
      * @param uri the URI to POST
      * @param fields the fields composing the form name/value pairs
      * @return the {@link ContentResponse} for the request
+     * @throws InterruptedException if send threading has been interrupted
+     * @throws ExecutionException the execution failed
+     * @throws TimeoutException the send timed out
      */
     public ContentResponse FORM(URI uri, Fields fields) throws InterruptedException, ExecutionException, TimeoutException
     {

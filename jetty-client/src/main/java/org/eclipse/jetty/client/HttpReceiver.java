@@ -286,6 +286,7 @@ public abstract class HttpReceiver
      *
      * @param exchange the HTTP exchange
      * @param buffer the response HTTP content buffer
+     * @param callback the callback
      * @return whether the processing should continue
      */
     protected boolean responseContent(HttpExchange exchange, ByteBuffer buffer, final Callback callback)

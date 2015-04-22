@@ -205,6 +205,7 @@ public interface Request
 
     /**
      * @param content the content provider of this request
+     * @param contentType the content type
      * @return this request object
      */
     Request content(ContentProvider content, String contentType);
@@ -285,6 +286,7 @@ public interface Request
     /**
      * @param listenerClass the class of the listener, or null for all listeners classes
      * @return the listeners for request events of the given class
+     * @param <T> the type of listener class
      */
     <T extends RequestListener> List<T> getRequestListeners(Class<T> listenerClass);
 
@@ -397,6 +399,9 @@ public interface Request
      * The method returns when the {@link Response.CompleteListener complete event} is fired.
      *
      * @return a {@link ContentResponse} for this request
+     * @throws InterruptedException if send thread is interrupted
+     * @throws TimeoutException if send times out
+     * @throws ExecutionException if execution fails
      * @see Response.CompleteListener#onComplete(Result)
      */
     ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException;
@@ -498,6 +503,7 @@ public interface Request
          * Callback method invoked when a chunk of request content has been sent successfully.
          * Changes to bytes in the given buffer have no effect, as the content has already been sent.
          * @param request the request that has been committed
+         * @param content the content
          */
         public void onContent(Request request, ByteBuffer content);
     }

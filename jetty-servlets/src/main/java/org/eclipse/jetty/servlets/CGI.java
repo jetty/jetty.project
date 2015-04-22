@@ -44,11 +44,9 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-//-----------------------------------------------------------------------------
 /**
  * CGI Servlet.
  * <p>
- * 
  * The following init parameters are used to configure this servlet:
  * <dl>
  * <dt>cgibinResourceBase</dt>
@@ -69,7 +67,6 @@ import org.eclipse.jetty.util.log.Logger;
  * <dt>ignoreExitState</dt>
  * <dd>If true then do not act on a non-zero exec exit status")</dd>
  * </dl>
- * 
  */
 public class CGI extends HttpServlet
 {
@@ -546,13 +543,18 @@ public class CGI extends HttpServlet
 
         /**
          * Set a name/value pair, null values will be treated as an empty String
+         * @param name the name
+         * @param value the value
          */
         public void set(String name, String value)
         {
             envMap.put(name,name + "=" + StringUtil.nonNull(value));
         }
 
-        /** Get representation suitable for passing to exec. */
+        /** 
+         * Get representation suitable for passing to exec. 
+         * @return the env map as an array 
+         */
         public String[] getEnvArray()
         {
             return envMap.values().toArray(new String[envMap.size()]);

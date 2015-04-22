@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  *      |   |  |   |  |   |  |   |  |   |
  *      +---+  +---+  +---+  +---+  +---+
  *   ^           ^                    ^    ^
- *   |           | --> advance()      |    |
+ *   |           | --&gt; advance()      |    |
  *   |           |                  last   |
  *   |           |                         |
  * before        |                        after

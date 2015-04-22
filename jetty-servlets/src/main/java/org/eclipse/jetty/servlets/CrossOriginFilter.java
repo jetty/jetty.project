@@ -40,44 +40,62 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /**
- * <p>Implementation of the
- * <a href="http://www.w3.org/TR/cors/">cross-origin resource sharing</a>.</p>
- * <p>A typical example is to use this filter to allow cross-domain
+ * Implementation of the
+ * <a href="http://www.w3.org/TR/cors/">cross-origin resource sharing</a>.
+ * <p>
+ * A typical example is to use this filter to allow cross-domain
  * <a href="http://cometd.org">cometd</a> communication using the standard
  * long polling transport instead of the JSONP transport (that is less
- * efficient and less reactive to failures).</p>
- * <p>This filter allows the following configuration parameters:
- * <ul>
- * <li><b>allowedOrigins</b>, a comma separated list of origins that are
+ * efficient and less reactive to failures).
+ * <p>
+ * This filter allows the following configuration parameters:
+ * <dl>
+ * <dt>allowedOrigins</dt>
+ * <dd>a comma separated list of origins that are
  * allowed to access the resources. Default value is <b>*</b>, meaning all
- * origins.<br>
+ * origins.
+ * <p>
  * If an allowed origin contains one or more * characters (for example
  * http://*.domain.com), then "*" characters are converted to ".*", "."
  * characters are escaped to "\." and the resulting allowed origin
- * interpreted as a regular expression.<br>
+ * interpreted as a regular expression.
+ * <p>
  * Allowed origins can therefore be more complex expressions such as
  * https?://*.domain.[a-z]{3} that matches http or https, multiple subdomains
- * and any 3 letter top-level domain (.com, .net, .org, etc.).</li>
- * <li><b>allowedMethods</b>, a comma separated list of HTTP methods that
+ * and any 3 letter top-level domain (.com, .net, .org, etc.).</dd>
+ * 
+ * <dt>allowedMethods</dt>
+ * <dd>a comma separated list of HTTP methods that
  * are allowed to be used when accessing the resources. Default value is
- * <b>GET,POST,HEAD</b></li>
- * <li><b>allowedHeaders</b>, a comma separated list of HTTP headers that
+ * <b>GET,POST,HEAD</b></dd>
+ * 
+ * <dt>allowedHeaders</dt>
+ * <dd>a comma separated list of HTTP headers that
  * are allowed to be specified when accessing the resources. Default value
  * is <b>X-Requested-With,Content-Type,Accept,Origin</b>. If the value is a single "*",
- * this means that any headers will be accepted.</li>
- * <li><b>preflightMaxAge</b>, the number of seconds that preflight requests
+ * this means that any headers will be accepted.</dd>
+ * 
+ * <dt>preflightMaxAge</dt>
+ * <dd>the number of seconds that preflight requests
  * can be cached by the client. Default value is <b>1800</b> seconds, or 30
- * minutes</li>
- * <li><b>allowCredentials</b>, a boolean indicating if the resource allows
- * requests with credentials. Default value is <b>true</b></li>
- * <li><b>exposedHeaders</b>, a comma separated list of HTTP headers that
+ * minutes</dd>
+ * 
+ * <dt>allowCredentials</dt>
+ * <dd>a boolean indicating if the resource allows
+ * requests with credentials. Default value is <b>true</b></dd>
+ * 
+ * <dt>exposedHeaders</dt>
+ * <dd>a comma separated list of HTTP headers that
  * are allowed to be exposed on the client. Default value is the
- * <b>empty list</b></li>
- * <li><b>chainPreflight</b>, if true preflight requests are chained to their
+ * <b>empty list</b></dd>
+ * 
+ * <dt>chainPreflight</dt>
+ * <dd>if true preflight requests are chained to their
  * target resource for normal handling (as an OPTION request).  Otherwise the
- * filter will response to the preflight. Default is <b>true</b>.</li>
- * </ul></p>
- * <p>A typical configuration could be:</p>
+ * filter will response to the preflight. Default is <b>true</b>.</dd>
+ * 
+ * </dl>
+ * A typical configuration could be:
  * <pre>
  * &lt;web-app ...&gt;
  *     ...

@@ -59,18 +59,18 @@ import org.eclipse.jetty.util.annotation.Name;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
-/** ObjectMBean.
+/** 
+ * ObjectMBean.
+ * <p>
  * A dynamic MBean that can wrap an arbitary Object instance.
  * the attributes and methods exposed by this bean are controlled by
  * the merge of property bundles discovered by names related to all
  * superclasses and all superinterfaces.
- *
+ * <p>
  * Attributes and methods exported may be "Object" and must exist on the
  * wrapped object, or "MBean" and must exist on a subclass of OBjectMBean
  * or "MObject" which exists on the wrapped object, but whose values are
  * converted to MBean object names.
- *
  */
 public class ObjectMBean implements DynamicMBean
 {
@@ -592,7 +592,7 @@ public class ObjectMBean implements DynamicMBean
      * getter and setter methods. Descriptions are obtained with a call to findDescription with the
      * attribute name.
      *
-     * @param method
+     * @param method the method to define
      * @param attributeAnnotation "description" or "access:description" or "type:access:description"  where type is
      * one of: <ul>
      * <li>"Object" The field/method is on the managed object.
@@ -601,6 +601,7 @@ public class ObjectMBean implements DynamicMBean
      * <li>"MMBean" The field/method is on the mbean proxy object and value should be converted to MBean reference
      * </ul>
      * the access is either "RW" or "RO".
+     * @return the mbean attribute info for the method
      */
     public MBeanAttributeInfo defineAttribute(Method method, ManagedAttribute attributeAnnotation)
     {

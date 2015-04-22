@@ -64,7 +64,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 /**
  * Denial of Service filter
  * <p>
- * <p>
  * This filter is useful for limiting
  * exposure to abuse from request flooding, whether malicious, or as a result of
  * a misconfigured client.
@@ -81,13 +80,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * The {@link #extractUserId(ServletRequest request)} function should be
  * implemented, in order to uniquely identify authenticated users.
  * <p>
- * The following init parameters control the behavior of the filter:<dl>
- * <p>
+ * The following init parameters control the behavior of the filter:
+ * <dl>
  * <dt>maxRequestsPerSec</dt>
  * <dd>the maximum number of requests from a connection per
  * second. Requests in excess of this are first delayed,
  * then throttled.</dd>
- * <p>
  * <dt>delayMs</dt>
  * <dd>is the delay given to all requests over the rate limit,
  * before they are considered at all. -1 means just reject request,
@@ -120,7 +118,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <dd>The status code to send if there are too many requests.  By default is 429 (too many requests), but 503 (Unavailable) is 
  * another option</dd>
  * </dl>
- * </p>
  * <p>
  * This filter should be configured for {@link DispatcherType#REQUEST} and {@link DispatcherType#ASYNC} and with 
  * <code>&lt;async-supported&gt;true&lt;/async-supported&gt;</code>.
@@ -787,6 +784,7 @@ public class DoSFilter implements Filter
     /**
      * Get delay (in milliseconds) that is applied to all requests
      * over the rate limit, before they are considered at all.
+     * @return the delay in milliseconds
      */
     @ManagedAttribute("delay applied to all requests over the rate limit (in ms)")
     public long getDelayMs()
@@ -1112,6 +1110,7 @@ public class DoSFilter implements Filter
         }
 
         /**
+         * @param now the time now (in milliseconds)
          * @return the current calculated request rate over the last second
          */
         public boolean isRateExceeded(long now)

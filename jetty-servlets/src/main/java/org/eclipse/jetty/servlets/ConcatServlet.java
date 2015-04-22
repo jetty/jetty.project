@@ -27,8 +27,9 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-/* ------------------------------------------------------------ */
-/** Concatenation Servlet
+/** 
+ * Concatenation Servlet
+ * <p>
  * This servlet may be used to concatenate multiple resources into
  * a single response.  It is intended to be used to load multiple
  * javascript or css files, but may be used for any content of the
@@ -42,11 +43,11 @@ import javax.servlet.http.HttpServletResponse;
  * relative to the context root.  So these script tags:
  * <pre>
  *  &lt;script type="text/javascript" src="../js/behaviour.js"&gt;&lt;/script&gt;
- *  &lt;script type="text/javascript" src="../js/ajax.js&/chat/chat.js"&gt;&lt;/script&gt;
+ *  &lt;script type="text/javascript" src="../js/ajax.js&amp;/chat/chat.js"&gt;&lt;/script&gt;
  *  &lt;script type="text/javascript" src="../chat/chat.js"&gt;&lt;/script&gt;
  * </pre> can be replaced with the single tag (with the ConcatServlet mapped to /concat):
  * <pre>
- *  &lt;script type="text/javascript" src="../concat?/js/behaviour.js&/js/ajax.js&/chat/chat.js"&gt;&lt;/script&gt;
+ *  &lt;script type="text/javascript" src="../concat?/js/behaviour.js&amp;/js/ajax.js&amp;/chat/chat.js"&gt;&lt;/script&gt;
  * </pre>
  * The {@link ServletContext#getMimeType(String)} method is used to determine the
  * mime type of each resource.  If the types of all resources do not match, then a 415
