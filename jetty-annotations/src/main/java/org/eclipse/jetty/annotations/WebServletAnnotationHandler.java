@@ -29,7 +29,6 @@ import org.eclipse.jetty.webapp.WebAppContext;
  * WebServletAnnotationHandler
  *
  * Process a WebServlet annotation on a class.
- *
  */
 public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationHandler
 {
@@ -43,8 +42,6 @@ public class WebServletAnnotationHandler extends AbstractDiscoverableAnnotationH
 
     /**
      * Handle discovering a WebServlet annotation.
-     *
-     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(ClassInfo, String)
      */
     @Override
     public void handle(ClassInfo info, String annotationName)

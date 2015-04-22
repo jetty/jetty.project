@@ -58,8 +58,6 @@ import org.eclipse.jetty.webapp.WebDescriptor;
 
 /**
  * Configuration for Annotations
- *
- *
  */
 public class AnnotationConfiguration extends AbstractConfiguration
 {
@@ -292,8 +290,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
         
         /**
-         * True if "*" is one of the values.
-         * @return
+         * @return true if "*" is one of the values.
          */
         public boolean hasWildcard()
         {
@@ -301,8 +298,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
         
         /**
-         * Get the index of the "*" element, if it is specified. -1 otherwise.
-         * @return
+         * @return the index of the "*" element, if it is specified. -1 otherwise.
          */
         public int getWildcardIndex()
         {
@@ -312,8 +308,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         }
         
         /**
-         * True if the ordering contains a single value of "*"
-         * @return
+         * @return true if the ordering contains a single value of "*"
          */
         public boolean isDefaultOrder ()
         {
@@ -322,8 +317,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
         
         /**
          * Get the order index of the given classname
-         * @param name
-         * @return
+         * @param name the classname to look up
+         * @return the index of the class name (or -1 if not found)
          */
         public int getIndexOf (String name)
         {
@@ -335,7 +330,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
         
         /**
          * Get the number of elements of the ordering
-         * @return
+         * @return the size of the index
          */
         public int getSize()
         {
@@ -498,8 +493,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Perform scanning of classes for annotations
      * 
-     * @param context
-     * @throws Exception
+     * @param context the context for the scan
+     * @throws Exception if unable to scan
      */
     protected void scanForAnnotations (WebAppContext context)
     throws Exception
@@ -591,8 +586,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     
     /**
      * Check if we should use multiple threads to scan for annotations or not
-     * @param context
-     * @return
+     * @param context the context of the multi threaded setting
+     * @return true if multi threading is enabled on the context, server, or via a System property.
+     * @see #MULTI_THREADED
      */
     protected boolean isUseMultiThreading(WebAppContext context)
     {
@@ -617,8 +613,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Work out how long we should wait for the async scanning to occur.
      * 
-     * @param context
-     * @return
+     * @param context the context of the max scan wait setting
+     * @return the max scan wait setting on the context, or server, or via a System property.
+     * @see #MAX_SCAN_WAIT
      */
     protected int getMaxScanWait (WebAppContext context)
     {
@@ -638,8 +635,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return Integer.getInteger(MAX_SCAN_WAIT, DEFAULT_MAX_SCAN_WAIT).intValue();
     }
     
-    
-    
     /** 
      * @see org.eclipse.jetty.webapp.AbstractConfiguration#cloneConfigure(org.eclipse.jetty.webapp.WebAppContext, org.eclipse.jetty.webapp.WebAppContext)
      */
@@ -649,13 +644,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         context.getObjectFactory().addDecorator(new AnnotationDecorator(context));
     }
 
-
-    
-    /**
-     * @param context
-     * @param scis
-     * @throws Exception
-     */
     public void createServletContainerInitializerAnnotationHandlers (WebAppContext context, List<ServletContainerInitializer> scis)
     throws Exception
     {
@@ -723,7 +711,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         context.addBean(starter, true);
     }
 
-    
     public Resource getJarFor (ServletContainerInitializer service) 
     throws MalformedURLException, IOException
     {
@@ -746,13 +733,15 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return Resource.newResource(loadingJarName);
     }
     
-
     /**
      * Check to see if the ServletContainerIntializer loaded via the ServiceLoader came
      * from a jar that is excluded by the fragment ordering. See ServletSpec 3.0 p.85.
-     * @param context
-     * @param sci
+     * 
+     * @param context the context for the jars
+     * @param sci the servlet container initializer
+     * @param sciResource  the resource for the servlet container initializer
      * @return true if excluded
+     * @throws Exception if unable to determine exclusion
      */
     public boolean isFromExcludedJar (WebAppContext context, ServletContainerInitializer sci, Resource sciResource)
     throws Exception
@@ -799,9 +788,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Test if the ServletContainerIntializer is excluded by the 
      * o.e.j.containerInitializerExclusionPattern
-     * @param context
-     * @param sci
-     * @return
+     * 
+     * @param sci the ServletContainerIntializer
+     * @return true if the ServletContainerIntializer is excluded
      */
     public boolean matchesExclusionPattern(ServletContainerInitializer sci)
     {
@@ -818,9 +807,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Test if the ServletContainerInitializer is from the container classpath
      * 
-     * @param context
-     * @param sci
-     * @return
+     * @param context the context for the webapp classpath
+     * @param sci the ServletContainerIntializer
+     * @return true if ServletContainerIntializer is from container classpath
      */
     public boolean isFromContainerClassPath (WebAppContext context, ServletContainerInitializer sci)
     {
@@ -829,11 +818,6 @@ public class AnnotationConfiguration extends AbstractConfiguration
         return sci.getClass().getClassLoader()==context.getClassLoader().getParent();
     }
 
-    /**
-     * @param context
-     * @return list of non-excluded {@link ServletContainerInitializer}s
-     * @throws Exception
-     */
     public List<ServletContainerInitializer> getNonExcludedInitializers (WebAppContext context)
     throws Exception
     {
@@ -952,7 +936,8 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Jetty-specific extension that allows an ordering to be applied across ALL ServletContainerInitializers.
      * 
-     * @return
+     * @param context the context for the initializer ordering configuration 
+     * @return the ordering of the ServletContainerIntializer's
      */
     public ServletContainerInitializerOrdering getInitializerOrdering (WebAppContext context)
     {
@@ -970,9 +955,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Scan jars on container path.
      * 
-     * @param context
-     * @param parser
-     * @throws Exception
+     * @param context the context for the scan
+     * @param parser the parser to scan with
+     * @throws Exception if unable to scan
      */
     public void parseContainerPath (final WebAppContext context, final AnnotationParser parser) throws Exception
     {
@@ -1003,9 +988,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Scan jars in WEB-INF/lib
      * 
-     * @param context
-     * @param parser
-     * @throws Exception
+     * @param context the context for the scan
+     * @param parser the annotation parser to use
+     * @throws Exception if unable to scan and/or parse
      */
     public void parseWebInfLib (final WebAppContext context, final AnnotationParser parser) throws Exception
     {   
@@ -1066,9 +1051,9 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Scan classes in WEB-INF/classes
      * 
-     * @param context
-     * @param parser
-     * @throws Exception
+     * @param context the context for the scan
+     * @param parser the annotation parser to use
+     * @throws Exception if unable to scan and/or parse
      */
     public void parseWebInfClasses (final WebAppContext context, final AnnotationParser parser)
     throws Exception
@@ -1099,10 +1084,10 @@ public class AnnotationConfiguration extends AbstractConfiguration
     /**
      * Get the web-fragment.xml from a jar
      * 
-     * @param jar
-     * @param frags
-     * @return the fragment if found, or null of not found
-     * @throws Exception
+     * @param jar the jar to look in for a fragment
+     * @param frags the fragments previously found
+     * @return true if the fragment if found, or null of not found
+     * @throws Exception if unable to determine the the fragment contains
      */
     public FragmentDescriptor getFragmentFromJar (Resource jar,  List<FragmentDescriptor> frags)
     throws Exception
