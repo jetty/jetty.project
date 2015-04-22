@@ -577,7 +577,7 @@ public class DoSFilter implements Filter
 
         if (tracker == null)
         {
-            boolean allowed = checkWhitelist(_whitelist, request.getRemoteAddr());
+            boolean allowed = checkWhitelist(request.getRemoteAddr());
             int maxRequestsPerSec = getMaxRequestsPerSec();
             tracker = allowed ? new FixedRateTracker(loadId, type, maxRequestsPerSec)
                     : new RateTracker(loadId, type, maxRequestsPerSec);
@@ -600,6 +600,25 @@ public class DoSFilter implements Filter
         return tracker;
     }
 
+    protected boolean checkWhitelist(String candidate)
+    {
+        for (String address : _whitelist)
+        {
+            if (address.contains("/"))
+            {
+                if (subnetMatch(address, candidate))
+                    return true;
+            }
+            else
+            {
+                if (address.equals(candidate))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    @Deprecated
     protected boolean checkWhitelist(List<String> whitelist, String candidate)
     {
         for (String address : whitelist)
