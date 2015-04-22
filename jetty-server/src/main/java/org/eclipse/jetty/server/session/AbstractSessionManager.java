@@ -575,6 +575,9 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
             _sessionAttributeListeners.remove(listener);
         if (listener instanceof HttpSessionListener)
             _sessionListeners.remove(listener);
+        if (listener instanceof HttpSessionIdListener)
+            _sessionIdListeners.remove(listener);
+        removeBean(listener);
     }
     
     /* ------------------------------------------------------------ */
