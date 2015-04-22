@@ -41,9 +41,7 @@ import org.eclipse.jetty.webapp.WebAppContext;
  */
 public class JettyRunTask extends Task
 {
-
     private int scanIntervalSeconds; 
-    
     
     /** Temporary files directory. */
     private File tempDirectory;
@@ -79,9 +77,6 @@ public class JettyRunTask extends Task
 
     private boolean daemon;
     
-  
-
-
     public JettyRunTask()
     {
         TaskLog.setTask(this);
@@ -89,17 +84,16 @@ public class JettyRunTask extends Task
 
     /**
      * Creates a new <code>WebApp</code> Ant object.
-     *
+     * @param webapp the webapp context 
      */
     public void addWebApp(AntWebAppContext webapp)
     {
        webapps.add(webapp);
     }
-    
-    
 
     /**
      * Adds a new Ant's connector tag object if it have not been created yet.
+     * @param connectors the connectors 
      */
     public void addConnectors(Connectors connectors)
     {
@@ -108,10 +102,6 @@ public class JettyRunTask extends Task
         this.connectors = connectors;
     }
 
-
-    /**
-     * @param services
-     */
     public void addLoginServices(LoginServices services)
     {        
         if (this.loginServices != null )
@@ -126,9 +116,6 @@ public class JettyRunTask extends Task
         this.systemProperties = systemProperties;
     }
     
-    /**
-     * @param handlers
-     */
     public void addContextHandlers (ContextHandlers handlers)
     {
         if (this.contextHandlers != null)
@@ -141,9 +128,6 @@ public class JettyRunTask extends Task
         return tempDirectory;
     }
 
-    /**
-     * @param tempDirectory
-     */
     public void setTempDirectory(File tempDirectory)
     {
         this.tempDirectory = tempDirectory;
@@ -154,17 +138,11 @@ public class JettyRunTask extends Task
         return jettyXml;
     }
 
-    /**
-     * @param jettyXml
-     */
     public void setJettyXml(File jettyXml)
     {
         this.jettyXml = jettyXml;
     }
 
-    /**
-     * @param className
-     */
     public void setRequestLog(String className)
     {
         try
@@ -209,7 +187,7 @@ public class JettyRunTask extends Task
      * Executes this Ant task. The build flow is being stopped until Jetty
      * server stops.
      *
-     * @throws BuildException
+     * @throws BuildException if unable to build
      */
     public void execute() throws BuildException
     {
@@ -297,16 +275,11 @@ public class JettyRunTask extends Task
         return scanIntervalSeconds;
     }
 
-    /**
-     * @param secs
-     */
     public void setScanIntervalSeconds(int secs)
     {
         scanIntervalSeconds = secs;
         TaskLog.log("scanIntervalSecs="+secs);
     }
-    
-
     
     /**
      * Sets the system properties.

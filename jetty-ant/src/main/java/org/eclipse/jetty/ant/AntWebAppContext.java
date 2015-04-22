@@ -16,7 +16,6 @@
 //  ========================================================================
 //
 
-
 package org.eclipse.jetty.ant;
 
 import java.io.File;
@@ -67,13 +66,8 @@ import org.eclipse.jetty.webapp.WebInfConfiguration;
 import org.eclipse.jetty.webapp.WebXmlConfiguration;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-
-
 /**
- * AntWebAppContext
- * 
  * Extension of WebAppContext to allow configuration via Ant environment.
- *
  */
 public class AntWebAppContext extends WebAppContext
 {
@@ -432,6 +426,7 @@ public class AntWebAppContext extends WebAppContext
      * Default constructor. Takes project as an argument
      *
      * @param project the project.
+     * @throws Exception if unable to create webapp context
      */
     public AntWebAppContext(Project project) throws Exception
     {
@@ -445,6 +440,7 @@ public class AntWebAppContext extends WebAppContext
 
     /**
      * Adds a new Ant's attributes tag object if it have not been created yet.
+     * @param atts the attributes
      */
     public void addAttributes(Attributes atts)
     {

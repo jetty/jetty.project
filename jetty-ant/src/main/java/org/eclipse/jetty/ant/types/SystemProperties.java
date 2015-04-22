@@ -27,9 +27,8 @@ import org.eclipse.jetty.ant.utils.TaskLog;
 
 /**
  * SystemProperties
- * 
- * Ant <systemProperties/> tag definition.
- * 
+ * <p> 
+ * Ant &lt;systemProperties/&gt; tag definition.
  */
 public class SystemProperties
 {
@@ -48,8 +47,8 @@ public class SystemProperties
 
     /**
      * Set a System.property with this value if it is not already set.
-     * 
-     * @returns true if property has been set
+     * @param property the property to test 
+     * @return true if property has been set
      */
     public static boolean setIfNotSetAlready(Property property)
     {

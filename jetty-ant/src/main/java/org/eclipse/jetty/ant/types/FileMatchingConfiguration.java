@@ -27,10 +27,9 @@ import java.util.List;
 import org.apache.tools.ant.DirectoryScanner;
 
 /**
- * Describes set of files matched by <fileset/> elements in ant configuration
+ * Describes set of files matched by <code>&lt;fileset/&gt;</code> elements in ant configuration
  * file. It is used to group application classes, libraries, and scannedTargets
  * elements.
- * 
  */
 public class FileMatchingConfiguration
 {
@@ -44,7 +43,7 @@ public class FileMatchingConfiguration
 
     /**
      * @param directoryScanner new directory scanner retrieved from the
-     *            <fileset/> element.
+     *            <code>&lt;fileset/&gt;</code> element.
      */
     public void addDirectoryScanner(DirectoryScanner directoryScanner)
     {
