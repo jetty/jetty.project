@@ -28,15 +28,13 @@ import javax.naming.NamingException;
 import org.eclipse.jetty.jndi.NamingUtil;
 import org.eclipse.jetty.util.log.Logger;
 
-
-
 /**
  * NamingEntry
- *
+ * <p>
  * Base class for all jndi related entities. Instances of
  * subclasses of this class are declared in jetty.xml or in a 
  * webapp's WEB-INF/jetty-env.xml file.
- *
+ * <p>
  * NOTE: that all NamingEntries will be bound in a single namespace.
  *  The "global" level is just in the top level context. The "local"
  *  level is a context specific to a webapp.
@@ -73,7 +71,7 @@ public abstract class NamingEntry
      * be linked to the webapp's env-entry, resource-ref etc entries.
      * 
      * @param jndiName the name of the object which will eventually be in java:comp/env
-     * @throws NamingException
+     * @throws NamingException if unable to create naming entry
      */
     protected NamingEntry (String jndiName)
     throws NamingException
@@ -85,14 +83,15 @@ public abstract class NamingEntry
  
     
     /**
-     * Add a java:comp/env binding for the object represented by this NamingEntry,
+     * Add a <code>java:comp/env</code> binding for the object represented by this NamingEntry,
      * but bind it as the name supplied
-     * @throws NamingException
+     * @param localName the local name to bind
+     * @throws NamingException if unable to bind
      */
     public void bindToENC(String localName)
     throws NamingException
     {
-        //TODO - check on the whole overriding/non-overriding thing
+        // TODO - check on the whole overriding/non-overriding thing
         InitialContext ic = new InitialContext();
         Context env = (Context)ic.lookup("java:comp/env");
         __log.debug("Binding java:comp/env/"+localName+" to "+_objectNameString);
@@ -160,22 +159,24 @@ public abstract class NamingEntry
     
     /**
      * Save the NamingEntry for later use.
-     * 
+     * <p>
      * Saving is done by binding the NamingEntry
      * itself, and the value it represents into
      * JNDI. In this way, we can link to the
      * value it represents later, but also
      * still retrieve the NamingEntry itself too.
-     * 
+     * <p>
      * The object is bound at the jndiName passed in.
      * This NamingEntry is bound at __/jndiName.
-     * 
+     * <p>
      * eg
-     * 
+     * <pre>
      * jdbc/foo    : DataSource
      * __/jdbc/foo : NamingEntry
+     * </pre>
      * 
-     * @throws NamingException
+     * @param object the object to save 
+     * @throws NamingException if unable to save
      */
     protected void save (Object object)
     throws NamingException

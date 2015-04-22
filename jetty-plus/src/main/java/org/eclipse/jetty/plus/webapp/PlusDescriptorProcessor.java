@@ -48,10 +48,7 @@ import org.eclipse.jetty.xml.XmlParser;
 
 /**
  * PlusDescriptorProcessor
- *
- *
  */
-
 public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 {
     private static final Logger LOG = Log.getLogger(PlusDescriptorProcessor.class);
@@ -109,14 +106,13 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
     {
     }
 
-
-
-
     /**
      * JavaEE 5.4.1.3
-     *
-     * @param node
-     * @throws Exception
+     * 
+     * @param context the context 
+     * @param descriptor the descriptor 
+     * @param node the xml node
+     * @throws Exception if unable to process jndi bindings
      */
     public void visitEnvEntry (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     throws Exception
@@ -188,18 +184,20 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
     /**
      * Common Annotations Spec section 2.3:
+     * <p>
      *  resource-ref is for:
-     *    - javax.sql.DataSource
-     *    - javax.jms.ConnectionFactory
-     *    - javax.jms.QueueConnectionFactory
-     *    - javax.jms.TopicConnectionFactory
-     *    - javax.mail.Session
-     *    - java.net.URL
-     *    - javax.resource.cci.ConnectionFactory
-     *    - org.omg.CORBA_2_3.ORB
-     *    - any other connection factory defined by a resource adapter
+     * <ul>
+     * <li>javax.sql.DataSource</li>
+     * <li>javax.jms.ConnectionFactory</li>
+     * <li>javax.jms.QueueConnectionFactory</li>
+     * <li>javax.jms.TopicConnectionFactory</li>
+     * <li>javax.mail.Session</li>
+     * <li>java.net.URL</li>
+     * <li>javax.resource.cci.ConnectionFactory</li>
+     * <li>org.omg.CORBA_2_3.ORB</li>
+     * <li>any other connection factory defined by a resource adapter</li>
+     * </ul>
      *
-     * TODO
      * If web.xml contains a resource-ref with injection targets, all resource-ref entries
      * of the same name are ignored in web fragments. If web.xml does not contain any
      * injection-targets, then they are merged from all the fragments.
@@ -211,8 +209,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * a real resource in the environment. At the moment, we insist that the
      * jetty.xml file name of the resource has to be exactly the same as the
      * name in web.xml deployment descriptor, but it shouldn't have to be
-     *
+     * 
+     * <p>
      * Maintenance update 3.0a to spec:
+     * <p>
      *   Update Section 8.2.3.h.ii with the following -  If a resource reference
      *   element is specified in two fragments, while absent from the main web.xml,
      *   and all the attributes and child elements of the resource reference element
@@ -220,13 +220,15 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      *   It is considered an error if a resource reference element has the same name
      *   specified in two fragments, while absent from the main web.xml and the attributes
      *   and child elements are not identical in the two fragments. For example, if two
-     *   web fragments declare a <resource-ref> with the same <resource-ref-name> element
+     *   web fragments declare a <code>&lt;resource-ref&gt;</code> with the same <code>&lt;resource-ref-name&gt;</code> element
      *   but the type in one is specified as javax.sql.DataSource while the type in the
      *   other is that of a java mail resource, then an error must be reported and the
      *   application MUST fail to deploy.
-     *
-     * @param node
-     * @throws Exception
+     *   
+     * @param context the context  
+     * @param descriptor the descriptor
+     * @param node the xml node
+     * @throws Exception if unable to bind nodes, or load classes
      */
     public void visitResourceRef (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     throws Exception
@@ -338,13 +340,18 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
     /**
      * Common Annotations Spec section 2.3:
-     *   resource-env-ref is for:
-     *     - javax.transaction.UserTransaction
-     *     - javax.resource.cci.InteractionSpec
-     *     - anything else that is not a connection factory
-     *
-     * @param node
-     * @throws Exception
+     * <p>
+     * resource-env-ref is for:
+     * <ul>
+     * <li>javax.transaction.UserTransaction</li>
+     * <li>javax.resource.cci.InteractionSpec</li>
+     * <li>anything else that is not a connection factory</li>
+     * </ul>
+     * 
+     * @param context the context 
+     * @param descriptor the descriptor 
+     * @param node the xml node
+     * @throws Exception if unable to load classes, or bind jndi entries
      */
     public void visitResourceEnvRef (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     throws Exception
@@ -438,11 +445,17 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
     /**
      * Common Annotations Spec section 2.3:
-     *   message-destination-ref is for:
-     *     - javax.jms.Queue
-     *     - javax.jms.Topic
-     * @param node
-     * @throws Exception
+     * <p>
+     * message-destination-ref is for:
+     * <ul>
+     * <li>javax.jms.Queue</li>
+     * <li>javax.jms.Topic</li>
+     * </ul>
+     *     
+     * @param context the context 
+     * @param descriptor the descriptor 
+     * @param node the xml node
+     * @throws Exception if unable to load classes or bind jndi entries
      */
     public void visitMessageDestinationRef (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     throws Exception
@@ -536,7 +549,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * are ignored. Otherwise, post-constructs from fragments are merged.
      * post-construct is the name of a class and method to call after all
      * resources have been setup but before the class is put into use
-     * @param node
+     * 
+     * @param context the context 
+     * @param descriptor the descriptor 
+     * @param node the xml node
      */
     public void visitPostConstruct(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
@@ -624,7 +640,10 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      *
      * pre-destroy is the name of a class and method to call just as
      * the instance is being destroyed
-     * @param node
+     * 
+     * @param context the context 
+     * @param descriptor the descriptor 
+     * @param node the xml node
      */
     public void visitPreDestroy(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
@@ -705,12 +724,13 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
 
     /**
-     * Iterate over the &lt;injection-target&gt; entries for a node
-     *
-     * @param descriptor
-     * @param node
-     * @param jndiName
-     * @param valueClass
+     * Iterate over the <code>&lt;injection-target&gt;</code> entries for a node
+     * 
+     * @param context the context 
+     * @param descriptor the descriptor 
+     * @param node the xml node
+     * @param jndiName the jndi name
+     * @param valueClass the value class
      */
     public void addInjections (WebAppContext context, Descriptor descriptor, XmlParser.Node node, String jndiName, Class<?> valueClass)
     {
@@ -763,9 +783,9 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
 
     /**
-     * @param name
-     * @param value
-     * @throws Exception
+     * @param name the jndi name
+     * @param value the value
+     * @throws Exception if unable to bind entry
      */
     public void bindEnvEntry(String name, Object value) throws Exception
     {
@@ -799,12 +819,14 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
 
     /**
      * Bind a resource reference.
-     *
+     * <p>
      * If a resource reference with the same name is in a jetty-env.xml
      * file, it will already have been bound.
-     *
-     * @param name
-     * @throws Exception
+     * 
+     * @param context the context 
+     * @param name the jndi name
+     * @param typeClass the type class
+     * @throws Exception if unable to bind resource
      */
     public void bindResourceRef(WebAppContext context, String name, Class<?> typeClass)
     throws Exception
@@ -812,10 +834,6 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
         bindEntry(context, name, typeClass);
     }
 
-    /**
-     * @param name
-     * @throws Exception
-     */
     public void bindResourceEnvRef(WebAppContext context, String name, Class<?> typeClass)
     throws Exception
     {
@@ -834,16 +852,17 @@ public class PlusDescriptorProcessor extends IterativeDescriptorProcessor
      * Bind a resource with the given name from web.xml of the given type
      * with a jndi resource from either the server or the webapp's naming
      * environment.
-     *
+     * <p>
      * As the servlet spec does not cover the mapping of names in web.xml with
      * names from the execution environment, jetty uses the concept of a Link, which is
      * a subclass of the NamingEntry class. A Link defines a mapping of a name
      * from web.xml with a name from the execution environment (ie either the server or the
      * webapp's naming environment).
-     *
+     * 
+     * @param context the context
      * @param name name of the resource from web.xml
-     * @param typeClass
-     * @throws Exception
+     * @param typeClass the type class
+     * @throws Exception the exception
      */
     protected void bindEntry (WebAppContext context, String name, Class<?> typeClass)
     throws Exception

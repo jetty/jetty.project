@@ -46,9 +46,8 @@ import org.eclipse.jetty.util.security.Credential;
 
 
 /**
- *
  * DataSourceUserRealm
- *
+ * <p>
  * Obtain user/password/role information from a database
  * via jndi DataSource.
  */
@@ -289,7 +288,7 @@ public class DataSourceLoginService extends MappedLoginService
     /* ------------------------------------------------------------ */
     /** Load user's info from database.
      *
-     * @param userName
+     * @param userName the user name
      */
     @Override
     protected UserIdentity loadUser (String userName)
@@ -356,7 +355,8 @@ public class DataSourceLoginService extends MappedLoginService
      * necessary sql query strings based on the configured table
      * and column names.
      *
-     * @throws NamingException
+     * @throws NamingException if unable to init jndi
+     * @throws SQLException if unable to init database
      */
     public void initDb() throws NamingException, SQLException
     {
@@ -367,9 +367,9 @@ public class DataSourceLoginService extends MappedLoginService
         InitialContext ic = new InitialContext();
         assert ic!=null;
 
-        //TODO Should we try webapp scope too?
+        // TODO Should we try webapp scope too?
 
-        //try finding the datasource in the Server scope
+        // try finding the datasource in the Server scope
         if (_server != null)
         {
             try

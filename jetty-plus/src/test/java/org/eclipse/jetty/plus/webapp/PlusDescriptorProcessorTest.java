@@ -42,8 +42,6 @@ import org.junit.Test;
 
 /**
  * PlusDescriptorProcessorTest
- *
- *
  */
 public class PlusDescriptorProcessorTest
 {
@@ -53,9 +51,7 @@ public class PlusDescriptorProcessorTest
     protected FragmentDescriptor fragDescriptor3;
     protected FragmentDescriptor fragDescriptor4;
     protected WebAppContext context;
-    /**
-     * @throws java.lang.Exception
-     */
+    
     @Before
     public void setUp() throws Exception
     {

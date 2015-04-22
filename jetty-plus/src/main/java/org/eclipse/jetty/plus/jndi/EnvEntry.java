@@ -24,8 +24,6 @@ import javax.naming.NamingException;
 
 /**
  * EnvEntry
- *
- *
  */
 public class EnvEntry extends NamingEntry
 {
