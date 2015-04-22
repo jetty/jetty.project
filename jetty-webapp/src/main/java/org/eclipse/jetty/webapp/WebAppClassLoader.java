@@ -37,6 +37,8 @@ import java.util.Set;
 import java.util.StringTokenizer;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import javax.jws.soap.SOAPBinding.Use;
+
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -45,11 +47,12 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
 
-/* ------------------------------------------------------------ */
-/** ClassLoader for HttpContext.
+/** 
+ * ClassLoader for HttpContext.
+ * <p>
  * Specializes URLClassLoader with some utility and file mapping
  * methods.
- *
+ * <p>
  * This loader defaults to the 2.3 servlet spec behavior where non
  * system classes are loaded from the classpath in preference to the
  * parent loader.  Java2 compliant loading, where the parent loader
@@ -57,11 +60,10 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * {@link org.eclipse.jetty.webapp.WebAppContext#setParentLoaderPriority(boolean)} 
  * method and influenced with {@link WebAppContext#isServerClass(String)} and 
  * {@link WebAppContext#isSystemClass(String)}.
- *
+ * <p>
  * If no parent class loader is provided, then the current thread 
  * context classloader will be used.  If that is null then the 
  * classloader that loaded this class is used as the parent.
- * 
  */
 public class WebAppClassLoader extends URLClassLoader
 {
@@ -135,7 +137,10 @@ public class WebAppClassLoader extends URLClassLoader
     }
     
     /* ------------------------------------------------------------ */
-    /** Constructor.
+    /** 
+     * Constructor.
+     * @param context the context for this classloader
+     * @throws IOException if unable to initialize from context
      */
     public WebAppClassLoader(Context context)
         throws IOException
@@ -144,7 +149,12 @@ public class WebAppClassLoader extends URLClassLoader
     }
     
     /* ------------------------------------------------------------ */
-    /** Constructor.
+    /** 
+     * Constructor.
+     * 
+     * @param parent the parent classloader 
+     * @param context the context for this classloader
+     * @throws IOException if unable to initialize classloader
      */
     public WebAppClassLoader(ClassLoader parent, Context context)
         throws IOException
@@ -204,6 +214,7 @@ public class WebAppClassLoader extends URLClassLoader
      * @param resource Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
+     * @throws IOException if unable to add classpath from resource
      */
     public void addClassPath(Resource resource)
         throws IOException
@@ -224,6 +235,7 @@ public class WebAppClassLoader extends URLClassLoader
      * @param classPath Comma or semicolon separated path of filenames or URLs
      * pointing to directories or jar files. Directories should end
      * with '/'.
+     * @throws IOException if unable to add classpath
      */
     public void addClassPath(String classPath)
         throws IOException
@@ -470,9 +482,10 @@ public class WebAppClassLoader extends URLClassLoader
 
     /* ------------------------------------------------------------ */
     /**
-     * @see addTransformer
-     * @deprecated
+     * @param transformer the transformer to add
+     * @deprecated {@link #addTransformer(ClassFileTransformer)} instead
      */
+    @Deprecated
     public void addClassFileTransformer(ClassFileTransformer transformer)
     {
         _transformers.add(transformer);
@@ -480,27 +493,23 @@ public class WebAppClassLoader extends URLClassLoader
     
     /* ------------------------------------------------------------ */
     /**
-     * @see removeTransformer
-     * @deprecated
+     * @param transformer the transformer to remove
+     * @return true if transformer was removed
+     * @deprecated use {@link #removeTransformer(ClassFileTransformer)} instead
      */
+    @Deprecated
     public boolean removeClassFileTransformer(ClassFileTransformer transformer)
     {
         return _transformers.remove(transformer);
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see addClassFileTransformer
-     */
     public void addTransformer(ClassFileTransformer transformer)
     {
         _transformers.add(transformer);
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @see removeClassFileTransformer
-     */
     public boolean removeTransformer(ClassFileTransformer transformer)
     {
         return _transformers.remove(transformer);

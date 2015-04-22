@@ -58,9 +58,9 @@ import org.eclipse.jetty.xml.XmlParser;
 import org.eclipse.jetty.xml.XmlParser.Node;
 
 /**
- * StandardDescriptorProcessor
- *
- * Process a web.xml, web-defaults.xml, web-overrides.xml, web-fragment.xml.
+ * StandardDescriptorProcessor.
+ * <p>
+ * Process the web.xml, web-defaults.xml, web-overrides.xml, and web-fragment.xml descriptors.
  */
 public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 {
@@ -148,11 +148,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         _servletMappings.clear();
     }
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitContextParam (WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String name = node.getString("param-name", false, true);
@@ -196,13 +191,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     }
 
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitDisplayName(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //Servlet Spec 3.0 p. 74 Ignore from web-fragments
@@ -213,12 +201,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitServlet(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String id = node.getAttribute("id");
@@ -621,13 +603,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-
-
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitServletMapping(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //Servlet Spec 3.0, p74
@@ -669,12 +644,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitSessionConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         XmlParser.Node tNode = node.get("session-timeout");
@@ -997,13 +966,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-
-
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitMimeMapping(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String extension = node.getString("extension", false, true);
@@ -1046,11 +1008,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitWelcomeFileList(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         switch (context.getMetaData().getOrigin("welcome-file-list"))
@@ -1095,11 +1052,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitLocaleEncodingList(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         Iterator<XmlParser.Node> iter = node.iterator("locale-encoding-mapping");
@@ -1146,11 +1098,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitErrorPage(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String error = node.getString("error-code", false, true);
@@ -1212,10 +1159,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     }
 
-    /**
-     * @param context
-     * @param node
-     */
     public void addWelcomeFiles(WebAppContext context, XmlParser.Node node)
     {
         Iterator<XmlParser.Node> iter = node.iterator("welcome-file");
@@ -1230,12 +1173,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-
-    /**
-     * @param servletName
-     * @param node
-     * @param context
-     */
     public ServletMapping addServletMapping (String servletName, XmlParser.Node node, WebAppContext context, Descriptor descriptor)
     {
         ServletMapping mapping = new ServletMapping();
@@ -1295,11 +1232,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         return mapping;
     }
 
-    /**
-     * @param filterName
-     * @param node
-     * @param context
-     */
     public void addFilterMapping (String filterName, XmlParser.Node node, WebAppContext context, Descriptor descriptor)
     {
         FilterMapping mapping = new FilterMapping();
@@ -1340,12 +1272,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         _filterMappings.add(mapping);
     }
 
-
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitTagLib(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //Additive across web.xml and web-fragment.xml
@@ -1367,11 +1293,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         config.addTaglibDescriptor(tl);
     }
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitJspConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //Additive across web.xml and web-fragment.xml
@@ -1448,11 +1369,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitSecurityConstraint(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         Constraint scBase = new Constraint();
@@ -1562,12 +1478,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     * @throws Exception
-     */
     public void visitLoginConfig(WebAppContext context, Descriptor descriptor, XmlParser.Node node) throws Exception
     {
         //ServletSpec 3.0 p74 says elements present 0/1 time if specified in web.xml take
@@ -1732,11 +1642,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitSecurityRole(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //ServletSpec 3.0, p74 elements with multiplicity >1 are additive when merged
@@ -1745,12 +1650,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         ((ConstraintAware)context.getSecurityHandler()).addRole(role);
     }
 
-
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitFilter(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String name = node.getString("filter-name", false, true);
@@ -1882,11 +1781,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitFilterMapping(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         //Servlet Spec 3.0, p74
@@ -1925,12 +1819,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitListener(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         String className = node.getString("listener-class", false, true);
@@ -1972,11 +1860,6 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
         }
     }
 
-    /**
-     * @param context
-     * @param descriptor
-     * @param node
-     */
     public void visitDistributable(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         // the element has no content, so its simple presence
@@ -1989,25 +1872,18 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
     /**
      * Servlet spec 3.1. When present in web.xml, this means that http methods that are
      * not covered by security constraints should have access denied.
-     * 
+     * <p>
      * See section 13.8.4, pg 145
-     * @param context
-     * @param descriptor
-     * @param node
+     * 
+     * @param context the of the processing
+     * @param descriptor the descriptor
+     * @param node the xml node
      */
     public void visitDenyUncoveredHttpMethods(WebAppContext context, Descriptor descriptor, XmlParser.Node node)
     {
         ((ConstraintAware)context.getSecurityHandler()).setDenyUncoveredHttpMethods(true);
     }
 
-    /**
-     * @param context
-     * @param clazz
-     * @return the new event listener
-     * @throws ServletException
-     * @throws InstantiationException
-     * @throws IllegalAccessException
-     */
     public EventListener newListenerInstance(WebAppContext context,Class<? extends EventListener> clazz) throws Exception
     {
         ListenerHolder h = context.getServletHandler().newListenerHolder(Source.DESCRIPTOR);
@@ -2018,15 +1894,9 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
 
     }
 
-    /**
-     * @param p
-     * @return the normalized pattern
-     */
     public String normalizePattern(String p)
     {
         if (p != null && p.length() > 0 && !p.startsWith("/") && !p.startsWith("*")) return "/" + p;
         return p;
     }
-
-
 }

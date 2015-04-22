@@ -35,12 +35,13 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * MetaInfConfiguration
+ * <p>
  *
  * Scan META-INF of jars to find:
  * <ul>
- * <li>tlds
- * <li>web-fragment.xml
- * <li>resources
+ * <li>tlds</li>
+ * <li>web-fragment.xml</li>
+ * <li>resources</li>
  * </ul>
  * 
  * The jars which are scanned are:
@@ -91,10 +92,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * cache the info discovered indexed by the jar in which it was discovered: this speeds
      * up subsequent context deployments.
      * 
-     * @param context
-     * @param jars
-     * @param useCaches
-     * @throws Exception
+     * @param context the context for the scan
+     * @param jars the jars resources to scan
+     * @param useCaches if true, cache the info discovered
+     * @throws Exception if unable to scan the jars
      */
     public void scanJars (final WebAppContext context, Collection<Resource> jars, boolean useCaches)
     throws Exception
@@ -140,10 +141,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /**
      * Scan for META-INF/resources dir in the given jar.
      * 
-     * @param context
-     * @param target
-     * @param cache
-     * @throws Exception
+     * @param context the context for the scan
+     * @param target the target resource to scan for
+     * @param cache the resource cache
+     * @throws Exception if unable to scan for resources
      */
     public void scanForResources (WebAppContext context, Resource target, ConcurrentHashMap<Resource,Resource> cache)
     throws Exception
@@ -205,10 +206,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /**
      * Scan for META-INF/web-fragment.xml file in the given jar.
      * 
-     * @param context
-     * @param jar
-     * @param cache
-     * @throws Exception
+     * @param context the context for the scan
+     * @param jar the jar resource to scan for fragements in
+     * @param cache the resource cache
+     * @throws Exception if unable to scan for fragments
      */
     public void scanForFragment (WebAppContext context, Resource jar, ConcurrentHashMap<Resource,Resource> cache)
     throws Exception
@@ -270,10 +271,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /**
      * Discover META-INF/*.tld files in the given jar
      * 
-     * @param context
-     * @param jar
-     * @param cache
-     * @throws Exception
+     * @param context the context for the scan
+     * @param jar the jar resources to scan tlds for
+     * @param cache the resource cache
+     * @throws Exception if unable to scan for tlds
      */
     public void scanForTlds (WebAppContext context, Resource jar, ConcurrentHashMap<Resource, Collection<URL>> cache)
     throws Exception

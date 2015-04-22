@@ -29,17 +29,13 @@ import org.eclipse.jetty.util.resource.Resource;
 
 
 /**
- * Ordering
- *
  * Ordering options for jars in WEB-INF lib.
  */
 public interface Ordering
 {  
-
     public List<Resource> order(List<Resource> fragments);
     public boolean isAbsolute ();
     public boolean hasOther();
-
 
     /**
      * AbsoluteOrdering
@@ -350,9 +346,10 @@ public interface Ordering
     
        /**
         * Is fragment with name a before fragment with name b?
-        * @param list
-        * @param fragNameA
-        * @param fragNameB
+        * 
+        * @param list the list of resources
+        * @param fragNameA the first fragment
+        * @param fragNameB the second fragment
         * @return true if fragment name A is before fragment name B 
         */
        protected boolean isBefore (List<Resource> list, String fragNameA, String fragNameB)
@@ -397,9 +394,10 @@ public interface Ordering
     
        /**
         * Is fragment name "a" after fragment name "b"?
-        * @param list
-        * @param fragNameA
-        * @param fragNameB
+        * 
+        * @param list the list of resources
+        * @param fragNameA the first fragment
+        * @param fragNameB the second fragment
         * @return true if fragment name A is after fragment name B
         */
        protected boolean isAfter(List<Resource> list, String fragNameA, String fragNameB)
@@ -441,9 +439,9 @@ public interface Ordering
         * Insert the resource matching the fragName into the list of resources
         * at the location indicated by index.
         * 
-        * @param list
-        * @param index
-        * @param fragName
+        * @param list the list of resources
+        * @param index the index to insert into
+        * @param fragName the fragment name to insert
         */
        protected void insert(List<Resource> list, int index, String fragName)
        {

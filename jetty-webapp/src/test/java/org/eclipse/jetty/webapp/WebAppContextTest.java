@@ -123,7 +123,7 @@ public class WebAppContextTest
     /**
      * tests that the servlet context white list works
      *
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void testContextWhiteList() throws Exception
