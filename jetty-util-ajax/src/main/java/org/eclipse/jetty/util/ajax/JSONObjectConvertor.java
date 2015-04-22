@@ -28,12 +28,8 @@ import java.util.Set;
 
 import org.eclipse.jetty.util.ajax.JSON.Output;
 
-/* ------------------------------------------------------------ */
 /**
  * Convert an Object to JSON using reflection on getters methods.
- * 
- * 
- *
  */
 public class JSONObjectConvertor implements JSON.Convertor
 {
@@ -52,7 +48,7 @@ public class JSONObjectConvertor implements JSON.Convertor
     
     /* ------------------------------------------------------------ */
     /**
-     * @param fromJSON
+     * @param fromJSON true to convert from JSON
      * @param excluded An array of field names to exclude from the conversion
      */
     public JSONObjectConvertor(boolean fromJSON,String[] excluded)

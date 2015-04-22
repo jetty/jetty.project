@@ -44,25 +44,25 @@ import org.eclipse.jetty.util.log.Logger;
  * notation. The mapping from JSON to java is:
  *
  * <pre>
- *   object ==> Map
- *   array  ==> Object[]
- *   number ==> Double or Long
- *   string ==> String
- *   null   ==> null
- *   bool   ==> Boolean
+ *   object --&gt; Map
+ *   array  --&gt; Object[]
+ *   number --&gt; Double or Long
+ *   string --&gt; String
+ *   null   --&gt; null
+ *   bool   --&gt; Boolean
  * </pre>
 
  * The java to JSON mapping is:
  *
  * <pre>
- *   String --> string
- *   Number --> number
- *   Map    --> object
- *   List   --> array
- *   Array  --> array
- *   null   --> null
- *   Boolean--> boolean
- *   Object --> string (dubious!)
+ *   String --&gt; string
+ *   Number --&gt; number
+ *   Map    --&gt; object
+ *   List   --&gt; array
+ *   Array  --&gt; array
+ *   null   --&gt; null
+ *   Boolean--&gt; boolean
+ *   Object --&gt; string (dubious!)
  * </pre>
  *
  * The interface {@link JSON.Convertible} may be implemented by classes that
@@ -188,6 +188,7 @@ public class JSON
      * @param in
      *            Reader containing JSON object or array.
      * @return A Map, Object array or primitive array parsed from the JSON.
+     * @throws IOException if unable to parse
      */
     public static Object parse(Reader in) throws IOException
     {
@@ -200,6 +201,7 @@ public class JSON
      * @param stripOuterComment
      *            If true, an outer comment around the JSON is ignored.
      * @return A Map, Object array or primitive array parsed from the JSON.
+     * @throws IOException if unable to parse
      */
     public static Object parse(Reader in, boolean stripOuterComment) throws IOException
     {
@@ -207,10 +209,11 @@ public class JSON
     }
 
     /**
-     * @deprecated use {@link #parse(Reader)}
      * @param in
      *            Reader containing JSON object or array.
      * @return A Map, Object array or primitive array parsed from the JSON.
+     * @throws IOException if unable to parse
+     * @deprecated use {@link #parse(Reader)}
      */
     @Deprecated
     public static Object parse(InputStream in) throws IOException
@@ -219,12 +222,13 @@ public class JSON
     }
 
     /**
-     * @deprecated use {@link #parse(Reader, boolean)}
      * @param in
      *            Stream containing JSON object or array.
      * @param stripOuterComment
      *            If true, an outer comment around the JSON is ignored.
      * @return A Map, Object array or primitive array parsed from the JSON.
+     * @throws IOException if unable to parse
+     * @deprecated use {@link #parse(Reader, boolean)}
      */
     @Deprecated
     public static Object parse(InputStream in, boolean stripOuterComment) throws IOException
