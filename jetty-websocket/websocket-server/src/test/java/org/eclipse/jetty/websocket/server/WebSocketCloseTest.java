@@ -155,6 +155,7 @@ public class WebSocketCloseTest
 
     /**
      * Test fast close (bug #403817)
+     * @throws Exception on test failure
      */
     @Test
     public void testFastClose() throws Exception
@@ -185,6 +186,7 @@ public class WebSocketCloseTest
 
     /**
      * Test fast fail (bug #410537)
+     * @throws Exception on test failure
      */
     @Test
     public void testFastFail() throws Exception

@@ -48,6 +48,7 @@ public class WebSocketInvalidVersionTest
 
     /**
      * Test the requirement of responding with an http 400 when using a Sec-WebSocket-Version that is unsupported.
+     * @throws Exception on test failure
      */
     @Test
     public void testRequestVersion29() throws Exception

@@ -124,6 +124,7 @@ public class TooFastClientTest
      * to completely overfill the {@link org.eclipse.jetty.io.AbstractConnection#getInputBufferSize()}
      * to test a situation where the WebSocket connection opens with prefill that exceeds 
      * the normal input buffer sizes.
+     * @throws Exception on test failure
      */
     @Test
     public void testUpgradeWithLargeFrame() throws Exception

@@ -96,7 +96,6 @@ public abstract class WebSocketFrame implements Frame
 
     /**
      * Combined FIN + RSV1 + RSV2 + RSV3 + OpCode byte.
-     * <p>
      * 
      * <pre>
      *   1000_0000 (0x80) = fin
@@ -119,6 +118,7 @@ public abstract class WebSocketFrame implements Frame
 
     /**
      * Construct form opcode
+     * @param opcode the opcode the frame is based on
      */
     protected WebSocketFrame(byte opcode)
     {
@@ -341,6 +341,7 @@ public abstract class WebSocketFrame implements Frame
      * 
      * @param buf
      *            the bytebuffer to set
+     * @return the frame itself
      */
     public WebSocketFrame setPayload(ByteBuffer buf)
     {

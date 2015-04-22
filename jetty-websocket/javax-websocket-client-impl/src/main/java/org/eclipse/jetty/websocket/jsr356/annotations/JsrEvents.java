@@ -40,6 +40,8 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 /**
  * The live event methods found for a specific Annotated Endpoint
+ * @param <T> the annotation type
+ * @param <C> the endpoint config type
  */
 public class JsrEvents<T extends Annotation, C extends EndpointConfig>
 {

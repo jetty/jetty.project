@@ -46,7 +46,7 @@ public class SpnegoAuthenticator extends LoginAuthenticator
 
     /**
      * Allow for a custom authMethod value to be set for instances where SPENGO may not be appropriate
-     * @param authMethod
+     * @param authMethod the auth method
      */
     public SpnegoAuthenticator( String authMethod )
     {

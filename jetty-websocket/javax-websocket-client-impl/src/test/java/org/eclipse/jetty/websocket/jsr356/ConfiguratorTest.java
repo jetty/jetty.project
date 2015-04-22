@@ -40,7 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests of {@link Configurator}
+ * Tests of {@link javax.websocket.ClientEndpointConfig.Configurator}
  */
 public class ConfiguratorTest
 {

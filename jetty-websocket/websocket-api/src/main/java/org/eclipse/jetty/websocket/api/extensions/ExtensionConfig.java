@@ -128,6 +128,7 @@ public class ExtensionConfig
 
     /**
      * Copy constructor
+     * @param copy the extension config to copy
      */
     public ExtensionConfig(ExtensionConfig copy)
     {

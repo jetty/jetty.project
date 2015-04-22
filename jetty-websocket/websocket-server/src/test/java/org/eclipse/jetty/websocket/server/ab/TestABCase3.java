@@ -43,6 +43,7 @@ public class TestABCase3 extends AbstractABCase
 {
     /**
      * Send small text frame, with RSV1 == true, with no extensions defined.
+     * @throws Exception on test failure
      */
     @Test
     public void testCase3_1() throws Exception
@@ -62,6 +63,7 @@ public class TestABCase3 extends AbstractABCase
 
     /**
      * Send small text frame, send again with RSV2 == true, then ping, with no extensions defined.
+     * @throws Exception on test failure
      */
     @Test
     public void testCase3_2() throws Exception
@@ -86,6 +88,7 @@ public class TestABCase3 extends AbstractABCase
 
     /**
      * Send small text frame, send again with (RSV1 & RSV2), then ping, with no extensions defined.
+     * @throws Exception on test failure
      */
     @Test
     public void testCase3_3() throws Exception
@@ -110,6 +113,7 @@ public class TestABCase3 extends AbstractABCase
 
     /**
      * Send small text frame, send again with (RSV3), then ping, with no extensions defined.
+     * @throws Exception on test failure
      */
     @Test
     public void testCase3_4() throws Exception
@@ -135,6 +139,7 @@ public class TestABCase3 extends AbstractABCase
 
     /**
      * Send binary frame with (RSV3 & RSV1), with no extensions defined.
+     * @throws Exception on test failure
      */
     @Test
     public void testCase3_5() throws Exception
@@ -159,6 +164,7 @@ public class TestABCase3 extends AbstractABCase
 
     /**
      * Send ping frame with (RSV3 & RSV2), with no extensions defined.
+     * @throws Exception on test failure
      */
     @Test
     public void testCase3_6() throws Exception
@@ -183,6 +189,7 @@ public class TestABCase3 extends AbstractABCase
 
     /**
      * Send close frame with (RSV3 & RSV2 & RSV1), with no extensions defined.
+     * @throws Exception on test failure
      */
     @Test
     public void testCase3_7() throws Exception

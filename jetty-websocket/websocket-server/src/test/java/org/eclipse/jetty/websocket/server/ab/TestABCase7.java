@@ -52,6 +52,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * Basic message then close frame, normal behavior
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_1_1() throws Exception
@@ -75,6 +76,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * Close frame, then another close frame (send frame ignored)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_1_2() throws Exception
@@ -98,6 +100,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * Close frame, then ping frame (no pong received)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_1_3() throws Exception
@@ -121,6 +124,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * Close frame, then ping frame (no pong received)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_1_4() throws Exception
@@ -144,6 +148,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * Text fin=false, close, then continuation fin=true
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_1_5() throws Exception
@@ -168,6 +173,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * 256k msg, then close, then ping
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_1_6() throws Exception
@@ -197,6 +203,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with no payload (payload length 0)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_3_1() throws Exception
@@ -219,6 +226,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with invalid payload (payload length 1)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_3_2() throws Exception
@@ -244,6 +252,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with valid payload (payload length 2)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_3_3() throws Exception
@@ -266,6 +275,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with valid payload (with reason)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_3_4() throws Exception
@@ -288,6 +298,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with valid payload (with 123 byte reason)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_3_5() throws Exception
@@ -314,6 +325,7 @@ public class TestABCase7 extends AbstractABCase
 
     /**
      * close with invalid UTF8 in payload
+     * @throws Exception on test failure
      */
     @Test
     public void testCase7_5_1() throws Exception

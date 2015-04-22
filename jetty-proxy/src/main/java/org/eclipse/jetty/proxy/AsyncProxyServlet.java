@@ -101,8 +101,6 @@ public class AsyncProxyServlet extends ProxyServlet
 
     /**
      * <p>Convenience extension of {@link AsyncProxyServlet} that offers transparent proxy functionalities.</p>
-     *
-     * @see TransparentDelegate
      */
     public static class Transparent extends AsyncProxyServlet
     {

@@ -25,7 +25,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 import org.eclipse.jetty.websocket.jsr356.metadata.DecoderMetadata;
 
 /**
- * Param handling for Text or Binary &#064;{@link OnMessage} parameters declared as {@link Decoder}s
+ * Param handling for Text or Binary &#064;{@link OnMessage} parameters declared as {@link javax.websocket.Decoder}s
  */
 public class JsrParamIdDecoder extends JsrParamIdOnMessage implements IJsrParamId
 {

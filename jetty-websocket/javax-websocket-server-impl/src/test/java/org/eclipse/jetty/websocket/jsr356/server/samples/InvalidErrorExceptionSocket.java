@@ -28,6 +28,7 @@ public class InvalidErrorExceptionSocket extends TrackingSocket
 {
     /**
      * Invalid Error Method Declaration (parameter type Exception)
+     * @param e the exception
      */
     @OnError
     public void onError(Exception e)

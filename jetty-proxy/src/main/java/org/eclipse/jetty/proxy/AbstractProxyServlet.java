@@ -185,6 +185,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
      * <p>
      * The init parameters used to configure the {@link HttpClient} instance are:
      * <table>
+     * <caption>Init Parameters</caption>
      * <thead>
      * <tr>
      * <th>init-param</th>

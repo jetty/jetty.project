@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 /**
  * Callable for {@link OnMessage} annotated methods for {@link InputStream} based binary message objects
  * 
- * @see BinaryStream
+ * @see javax.websocket.Decoder.BinaryStream
  */
 public class OnMessageBinaryStreamCallable extends OnMessageCallable
 {
@@ -46,6 +46,7 @@ public class OnMessageBinaryStreamCallable extends OnMessageCallable
 
     /**
      * Copy Constructor
+     * @param copy the callable to copy from
      */
     public OnMessageBinaryStreamCallable(OnMessageCallable copy)
     {

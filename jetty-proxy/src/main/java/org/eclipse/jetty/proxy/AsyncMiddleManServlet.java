@@ -197,8 +197,6 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     /**
      * <p>Convenience extension of {@link AsyncMiddleManServlet} that offers transparent proxy functionalities.</p>
-     *
-     * @see TransparentDelegate
      */
     public static class Transparent extends ProxyServlet
     {
@@ -672,19 +670,19 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
          * <p>Typical implementations:</p>
          * <pre>
          * // Identity transformation (no transformation, the input is copied to the output)
-         * public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output)
+         * public void transform(ByteBuffer input, boolean finished, List&lt;ByteBuffer&gt; output)
          * {
          *     output.add(input);
          * }
          *
          * // Discard transformation (all input is discarded)
-         * public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output)
+         * public void transform(ByteBuffer input, boolean finished, List&lt;ByteBuffer&gt; output)
          * {
          *     // Empty
          * }
          *
          * // Buffering identity transformation (all input is buffered aside until it is finished)
-         * public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output)
+         * public void transform(ByteBuffer input, boolean finished, List&lt;ByteBuffer&gt; output)
          * {
          *     ByteBuffer copy = ByteBuffer.allocate(input.remaining());
          *     copy.put(input).flip();

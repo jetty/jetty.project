@@ -361,6 +361,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     /**
      * Make sure that the server generated compressed form for "Hello" is consistent with what PyWebSocket creates.
+     * @throws IOException on test failure
      */
     @Test
     public void testServerGeneratedHello() throws IOException
@@ -370,6 +371,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
 
     /**
      * Make sure that the server generated compressed form for "There" is consistent with what PyWebSocket creates.
+     * @throws IOException on test failure
      */
     @Test
     public void testServerGeneratedThere() throws IOException

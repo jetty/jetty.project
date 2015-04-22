@@ -417,6 +417,7 @@ public class ConfiguratorTest
     
     /**
      * Test of Sec-WebSocket-Protocol, as seen in RFC-6455, 1 protocol
+     * @throws Exception on test failure
      */
     @Test
     public void testProtocol_Single() throws Exception
@@ -440,6 +441,7 @@ public class ConfiguratorTest
     
     /**
      * Test of Sec-WebSocket-Protocol, as seen in RFC-6455, 3 protocols
+     * @throws Exception on test failure
      */
     @Test
     public void testProtocol_Triple() throws Exception
@@ -463,6 +465,7 @@ public class ConfiguratorTest
     
     /**
      * Test of Sec-WebSocket-Protocol, using all lowercase header
+     * @throws Exception on test failure
      */
     @Test
     public void testProtocol_LowercaseHeader() throws Exception
@@ -486,6 +489,7 @@ public class ConfiguratorTest
     
     /**
      * Test of Sec-WebSocket-Protocol, using non-spec case header
+     * @throws Exception on test failure
      */
     @Test
     public void testProtocol_AltHeaderCase() throws Exception

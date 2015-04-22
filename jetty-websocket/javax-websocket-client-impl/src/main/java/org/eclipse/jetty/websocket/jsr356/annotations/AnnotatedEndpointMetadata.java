@@ -37,6 +37,8 @@ import org.eclipse.jetty.websocket.jsr356.metadata.EndpointMetadata;
  * 
  * @param <T>
  *            the annotation this metadata is based off of
+ * @param <C>
+ *            the endpoint configuration this is based off of
  */
 public abstract class AnnotatedEndpointMetadata<T extends Annotation, C extends EndpointConfig> implements EndpointMetadata
 {

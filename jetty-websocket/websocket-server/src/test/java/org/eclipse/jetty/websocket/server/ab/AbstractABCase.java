@@ -176,6 +176,8 @@ public abstract class AbstractABCase implements Fuzzed
     public TestName testname = new TestName();
 
     /**
+     * @param clazz the class to enable
+     * @param enabled true to enable the stack traces (or not)
      * @deprecated use {@link StacklessLogging} in a try-with-resources block instead
      */
     @Deprecated

@@ -40,6 +40,7 @@ public class OnMessagePongCallable extends OnMessageCallable
 
     /**
      * Copy Constructor
+     * @param copy the callable to copy from
      */
     public OnMessagePongCallable(OnMessageCallable copy)
     {

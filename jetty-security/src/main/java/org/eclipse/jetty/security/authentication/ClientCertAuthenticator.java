@@ -42,9 +42,6 @@ import org.eclipse.jetty.util.security.CertificateValidator;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 
-/**
- * @version $Rev: 4793 $ $Date: 2009-03-19 00:00:01 +0100 (Thu, 19 Mar 2009) $
- */
 public class ClientCertAuthenticator extends LoginAuthenticator
 {
     /** String name of keystore password property. */
@@ -83,12 +80,6 @@ public class ClientCertAuthenticator extends LoginAuthenticator
         return Constraint.__CERT_AUTH;
     }
 
-    
-
-    /**
-     * @return Authentication for request
-     * @throws ServerAuthException
-     */
     @Override
     public Authentication validateRequest(ServletRequest req, ServletResponse res, boolean mandatory) throws ServerAuthException
     {
@@ -166,7 +157,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
      * @param storeProvider keystore provider
      * @param storePassword keystore password
      * @return created keystore
-     * @throws Exception
+     * @throws Exception if unable to get keystore
      */
     protected KeyStore getKeyStore(String storePath, String storeType, String storeProvider, String storePassword) throws Exception
     {
@@ -183,7 +174,7 @@ public class ClientCertAuthenticator extends LoginAuthenticator
      * @param crlPath path of certificate revocation list file
      * @return a (possibly empty) collection view of java.security.cert.CRL objects initialized with the data from the
      *         input stream.
-     * @throws Exception
+     * @throws Exception if unable to load CRL
      */
     protected Collection<? extends CRL> loadCRL(String crlPath) throws Exception
     {

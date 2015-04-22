@@ -32,7 +32,7 @@ import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
  * This is a write-only collection, and cannot be modified once initialized.
  * 
  * @param <T>
- *            The type of coder ({@link Decoder} or {@link Encoder}
+ *            The type of coder ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder}
  * @param <M>
  *            The metadata for the coder
  */

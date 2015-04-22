@@ -33,7 +33,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
  * <p>
  * Not for use with {@link Reader} based {@link OnMessage} method objects.
  * 
- * @see Text
+ * @see javax.websocket.Decoder.Text
  */
 public class OnMessageTextCallable extends OnMessageCallable
 {
@@ -46,6 +46,7 @@ public class OnMessageTextCallable extends OnMessageCallable
 
     /**
      * Copy Constructor
+     * @param copy the callable to copy from
      */
     public OnMessageTextCallable(OnMessageCallable copy)
     {

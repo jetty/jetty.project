@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.metadata;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
 
 /**
- * Thrown when a duplicate coder is encountered when attempting to identify a Endpoint's metadata ( {@link Decoder} or {@link Encoder})
+ * Thrown when a duplicate coder is encountered when attempting to identify a Endpoint's metadata ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder})
  */
 public class DuplicateCoderException extends InvalidWebSocketException
 {

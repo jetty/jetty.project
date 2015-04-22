@@ -21,10 +21,10 @@ package org.eclipse.jetty.websocket.jsr356.metadata;
 import org.eclipse.jetty.websocket.jsr356.MessageType;
 
 /**
- * The immutable base metadata for a coder ({@link Decoder} or {@link Encoder}
+ * The immutable base metadata for a coder ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder}
  * 
  * @param <T>
- *            the specific type of coder ({@link Decoder} or {@link Encoder}
+ *            the specific type of coder ({@link javax.websocket.Decoder} or {@link javax.websocket.Encoder}
  */
 public abstract class CoderMetadata<T>
 {

@@ -51,6 +51,10 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * Jetty Native approach.
      * <p>
      * Note: this will add the Upgrade filter to the existing list, with no regard for order.  It will just be tacked onto the end of the list.
+     * 
+     * @param context the servlet context handler
+     * @return the created websocket server container
+     * @throws ServletException if unable to create the websocket server container
      */
     public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
@@ -71,6 +75,11 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * Servlet 3.1 approach.
      * <p>
      * This will use Servlet 3.1 techniques on the {@link ServletContext} to add a filter at the start of the filter chain.
+     * 
+     * @param context the servlet context
+     * @param jettyContext the jetty servlet context handler
+     * @return the created websocket server container
+     * @throws ServletException if unable to create the websocket server container
      */
     public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
     {

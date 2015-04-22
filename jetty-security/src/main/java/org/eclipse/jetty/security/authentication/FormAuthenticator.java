@@ -64,8 +64,6 @@ import org.eclipse.jetty.util.security.Constraint;
  * to the /j_security_check URI within the context.  FormAuthentication uses
  * {@link SessionAuthentication} to wrap Authentication results so that they
  * are  associated with the session.</p>
- *
- *
  */
 public class FormAuthenticator extends LoginAuthenticator
 {
@@ -109,7 +107,7 @@ public class FormAuthenticator extends LoginAuthenticator
      * be remembered. If false, only the first uri that leads to a login
      * page redirect is remembered.
      * See https://bugs.eclipse.org/bugs/show_bug.cgi?id=379909
-     * @param alwaysSave
+     * @param alwaysSave true to always save the uri
      */
     public void setAlwaysSaveUri (boolean alwaysSave)
     {

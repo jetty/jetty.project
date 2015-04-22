@@ -46,12 +46,12 @@ import org.eclipse.jetty.util.security.Credential;
 
 /**
  * PropertyUserStore
- *
+ * <p>
  * This class monitors a property file of the format mentioned below and notifies registered listeners of the changes to the the given file.
  *
- * <PRE>
+ * <pre>
  *  username: password [,rolename ...]
- * </PRE>
+ * </pre>
  *
  * Passwords may be clear text, obfuscated or checksummed. The class com.eclipse.Util.Password should be used to generate obfuscated passwords or password
  * checksums.
@@ -93,7 +93,8 @@ public class PropertyUserStore extends AbstractLifeCycle
 
     /* ------------------------------------------------------------ */
     /**
-     * returns the resource associated with the configured properties file, creating it if necessary
+     * @return the resource associated with the configured properties file, creating it if necessary
+     * @throws IOException if unable to get the resource
      */
     public Resource getConfigResource() throws IOException
     {
@@ -108,15 +109,16 @@ public class PropertyUserStore extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * sets the refresh interval (in seconds)
+     * @param sec the refresh interval
      */
-    public void setRefreshInterval(int msec)
+    public void setRefreshInterval(int sec)
     {
-        _refreshInterval = msec;
+        _refreshInterval = sec;
     }
 
     /* ------------------------------------------------------------ */
     /**
-     * refresh interval in seconds for how often the properties file should be checked for changes
+     * @return refresh interval in seconds for how often the properties file should be checked for changes
      */
     public int getRefreshInterval()
     {
@@ -334,6 +336,7 @@ public class PropertyUserStore extends AbstractLifeCycle
 
     /**
      * registers a listener to be notified of the contents of the property file
+     * @param listener the user listener
      */
     public void registerUserListener(UserListener listener)
     {

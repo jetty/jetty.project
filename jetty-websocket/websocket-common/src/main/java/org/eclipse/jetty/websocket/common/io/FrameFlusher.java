@@ -40,7 +40,7 @@ import org.eclipse.jetty.websocket.common.OpCode;
 import org.eclipse.jetty.websocket.common.frames.BinaryFrame;
 
 /**
- * Interface for working with bytes destined for {@link EndPoint#write(Callback, ByteBuffer...)}
+ * Interface for working with bytes destined for {@link EndPoint#write(org.eclipse.jetty.util.Callback, ByteBuffer...)}
  */
 public class FrameFlusher
 {

@@ -26,7 +26,6 @@ import org.eclipse.jetty.websocket.api.annotations.OnWebSocketClose;
 
 /**
  * Session represents an active link of communications with a Remote WebSocket Endpoint.
- * <p>
  */
 public interface Session extends Closeable
 {
@@ -82,7 +81,11 @@ public interface Session extends Closeable
      * Once called, any read/write activity on the websocket from this point will be indeterminate.
      * <p>
      * Once the underlying connection has been determined to be closed, the various onClose() events (either
-     * {@link WebSocketListener#onWebSocketClose(int, String)} or {@link OnWebSocketClose}) will be called on your websocket.
+     * {@link WebSocketListener#onWebSocketClose(int, String)} or {@link OnWebSocketClose}) will be called on your
+     * websocket.
+     * 
+     * @throws IOException
+     *             if unable to disconnect
      * 
      * @see #close()
      * @see #close(CloseStatus)

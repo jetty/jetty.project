@@ -58,6 +58,7 @@ public class JsrExtension implements Extension
 
     /**
      * A configured extension
+     * @param cfg the configuration for the extension 
      */
     public JsrExtension(ExtensionConfig cfg)
     {
@@ -73,6 +74,7 @@ public class JsrExtension implements Extension
 
     /**
      * A potential (unconfigured) extension
+     * @param name the name of the extension
      */
     public JsrExtension(String name)
     {

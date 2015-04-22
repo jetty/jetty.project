@@ -54,6 +54,7 @@ public class PerMessageDeflateExtensionTest
 
     /**
      * Default configuration for permessage-deflate
+     * @throws Exception on test failure
      */
     @Test
     public void testPerMessageDeflateDefault() throws Exception

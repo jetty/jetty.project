@@ -298,6 +298,7 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 
     /**
      * Outgoing PING (Control Frame) should pass through extension unmodified
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingPing() throws IOException

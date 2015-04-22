@@ -49,6 +49,8 @@ public class TestABCase6 extends AbstractABCase
 {
     /**
      * Split a message byte array into a series of fragments (frames + continuations) of 1 byte message contents each.
+     * @param frames the frames
+     * @param msg the message
      */
     protected void fragmentText(List<WebSocketFrame> frames, byte msg[])
     {
@@ -78,6 +80,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * text message, 1 frame, 0 length
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_1_1() throws Exception
@@ -101,6 +104,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * text message, 0 length, 3 fragments
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_1_2() throws Exception
@@ -126,6 +130,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * text message, small length, 3 fragments (only middle frame has payload)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_1_3() throws Exception
@@ -151,6 +156,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * valid utf8 text message, 2 fragments (on UTF8 code point boundary)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_2_2() throws Exception
@@ -185,6 +191,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * valid utf8 text message, many fragments (1 byte each)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_2_3() throws Exception
@@ -211,6 +218,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * valid utf8 text message, many fragments (1 byte each)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_2_4() throws Exception
@@ -236,6 +244,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * invalid utf8 text message, many fragments (1 byte each)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase6_3_2() throws Exception
@@ -264,6 +273,7 @@ public class TestABCase6 extends AbstractABCase
      * fragment #1 and fragment #3 are both valid in themselves.
      * <p>
      * fragment #2 contains the invalid utf8 code point.
+     * @throws Exception on test failure
      */
     @Test
     @Slow
@@ -299,6 +309,7 @@ public class TestABCase6 extends AbstractABCase
      * fragment #2 finishes the UTF8 code point but it is invalid
      * <p>
      * fragment #3 contains the remainder of the message.
+     * @throws Exception on test failure
      */
     @Test
     @Slow
@@ -326,6 +337,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * invalid text message, 1 frame/fragment (slowly, and split within code points)
+     * @throws Exception on test failure
      */
     @Test
     @Slow
@@ -378,6 +390,7 @@ public class TestABCase6 extends AbstractABCase
 
     /**
      * invalid text message, 1 frame/fragment (slowly, and split within code points)
+     * @throws Exception on test failure
      */
     @Test
     @Slow

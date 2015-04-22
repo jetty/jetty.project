@@ -136,13 +136,15 @@ public class UpgradeResponse
     /**
      * Issue a forbidden upgrade response.
      * <p>
-     * This means that the websocket endpoint was valid, but the conditions to use a WebSocket resulted in a forbidden access.
+     * This means that the websocket endpoint was valid, but the conditions to use a WebSocket resulted in a forbidden
+     * access.
      * <p>
      * Use this when the origin or authentication is invalid.
      * 
      * @param message
      *            the short 1 line detail message about the forbidden response
      * @throws IOException
+     *             if unable to send the forbidden
      */
     public void sendForbidden(String message) throws IOException
     {

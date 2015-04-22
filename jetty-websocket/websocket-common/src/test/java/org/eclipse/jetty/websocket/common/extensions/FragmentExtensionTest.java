@@ -140,6 +140,7 @@ public class FragmentExtensionTest
 
     /**
      * Verify that outgoing text frames are fragmented by the maxLength configuration.
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingFramesByMaxLength() throws IOException
@@ -212,6 +213,7 @@ public class FragmentExtensionTest
 
     /**
      * Verify that outgoing text frames are fragmented by default configuration
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingFramesDefaultConfig() throws IOException
@@ -276,6 +278,7 @@ public class FragmentExtensionTest
 
     /**
      * Outgoing PING (Control Frame) should pass through extension unmodified
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingPing() throws IOException

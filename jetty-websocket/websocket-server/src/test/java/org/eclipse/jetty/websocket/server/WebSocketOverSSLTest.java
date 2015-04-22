@@ -65,6 +65,7 @@ public class WebSocketOverSSLTest
 
     /**
      * Test the requirement of issuing socket and receiving echo response
+     * @throws Exception on test failure
      */
     @Test
     public void testEcho() throws Exception
@@ -106,6 +107,7 @@ public class WebSocketOverSSLTest
 
     /**
      * Test that server session reports as secure
+     * @throws Exception on test failure
      */
     @Test
     public void testServerSessionIsSecure() throws Exception
@@ -147,6 +149,7 @@ public class WebSocketOverSSLTest
 
     /**
      * Test that server session.upgradeRequest.requestURI reports correctly
+     * @throws Exception on test failure
      */
     @Test
     public void testServerSessionRequestURI() throws Exception

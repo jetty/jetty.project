@@ -116,6 +116,8 @@ public class BlockheadServer
 
         /**
          * Add an extra header for the upgrade response (from the server). No extra work is done to ensure the key and value are sane for http.
+         * @param rawkey the raw key
+         * @param rawvalue the raw value
          */
         public void addResponseHeader(String rawkey, String rawvalue)
         {

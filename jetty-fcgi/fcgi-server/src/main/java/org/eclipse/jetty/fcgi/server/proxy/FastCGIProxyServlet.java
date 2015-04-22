@@ -36,10 +36,9 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.proxy.AsyncProxyServlet;
-import org.eclipse.jetty.proxy.ProxyServlet;
 
 /**
- * Specific implementation of {@link ProxyServlet.Transparent} for FastCGI.
+ * Specific implementation of {@link org.eclipse.jetty.proxy.AsyncProxyServlet.Transparent} for FastCGI.
  * <p>
  * This servlet accepts a HTTP request and transforms it into a FastCGI request
  * that is sent to the FastCGI server specified in the <code>proxyTo</code>

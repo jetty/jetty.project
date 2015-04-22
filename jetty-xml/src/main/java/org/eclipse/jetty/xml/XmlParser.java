@@ -50,11 +50,9 @@ import org.xml.sax.helpers.DefaultHandler;
 /**
  * XML Parser wrapper. This class wraps any standard JAXP1.1 parser with convieniant error and
  * entity handlers and a mini dom-like document tree.
- * <P>
+ * <p>
  * By default, the parser is created as a validating parser only if xerces is present. This can be
  * configured by setting the "org.eclipse.jetty.xml.XmlParser.Validating" system property.
- *
- *
  */
 public class XmlParser
 {
@@ -82,9 +80,6 @@ public class XmlParser
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * Constructor.
-     */
     public XmlParser(boolean validating)
     {
         setValidating(validating);
@@ -139,10 +134,6 @@ public class XmlParser
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param name
-     * @param entity
-     */
     public synchronized void redirectEntity(String name, URL entity)
     {
         if (entity != null)
@@ -218,6 +209,10 @@ public class XmlParser
     /* ------------------------------------------------------------ */
     /**
      * Parse String URL.
+     * @param url the url to the xml to parse
+     * @return the root node of the xml
+     * @throws IOException if unable to load the xml
+     * @throws SAXException if unable to parse the xml
      */
     public synchronized Node parse(String url) throws IOException, SAXException
     {
@@ -229,6 +224,10 @@ public class XmlParser
     /* ------------------------------------------------------------ */
     /**
      * Parse File.
+     * @param file the file to the xml to parse 
+     * @return the root node of the xml
+     * @throws IOException if unable to load the xml
+     * @throws SAXException if unable to parse the xml
      */
     public synchronized Node parse(File file) throws IOException, SAXException
     {
@@ -240,6 +239,10 @@ public class XmlParser
     /* ------------------------------------------------------------ */
     /**
      * Parse InputStream.
+     * @param in the input stream of the xml to parse
+     * @return the root node of the xml
+     * @throws IOException if unable to load the xml
+     * @throws SAXException if unable to parse the xml
      */
     public synchronized Node parse(InputStream in) throws IOException, SAXException
     {
@@ -557,6 +560,7 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Get an array of element attributes.
+         * @return the attributes
          */
         public Attribute[] getAttributes()
         {
@@ -566,7 +570,8 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Get an element attribute.
-         *
+         * 
+         * @param name the name of the attribute 
          * @return attribute or null.
          */
         public String getAttribute(String name)
@@ -577,7 +582,9 @@ public class XmlParser
         /* ------------------------------------------------------------ */
         /**
          * Get an element attribute.
-         *
+         * 
+         * @param name the name of the element 
+         * @param dft the default value
          * @return attribute or null.
          */
         public String getAttribute(String name, String dft)
@@ -618,7 +625,7 @@ public class XmlParser
         /**
          * Get the first child node with the tag.
          *
-         * @param tag
+         * @param tag the name of the tag
          * @return Node or null.
          */
         public Node get(String tag)
@@ -702,6 +709,7 @@ public class XmlParser
          * Convert to a string.
          *
          * @param tag If false, only _content is shown.
+         * @return the string value
          */
         public synchronized String toString(boolean tag)
         {
@@ -715,6 +723,8 @@ public class XmlParser
          * Convert to a string.
          *
          * @param tag If false, only _content is shown.
+         * @param trim true to trim the content
+         * @return the trimmed content
          */
         public synchronized String toString(boolean tag, boolean trim)
         {

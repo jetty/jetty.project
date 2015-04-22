@@ -35,7 +35,7 @@ import org.junit.Rule;
 import org.junit.Test;
 
 /**
- * Example of an {@link Endpoint} extended echo server added programmatically via the
+ * Example of an {@link javax.websocket.Endpoint} extended echo server added programmatically via the
  * {@link ServerContainer#addEndpoint(javax.websocket.server.ServerEndpointConfig)}
  */
 public class BasicEndpointTest

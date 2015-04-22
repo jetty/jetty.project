@@ -56,7 +56,7 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
 /**
- * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link Connection} framework of {@code jetty-io}.
+ * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link org.eclipse.jetty.io.Connection} framework of {@code jetty-io}.
  */
 public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, ConnectionStateListener, Dumpable
 {
@@ -518,6 +518,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Extra bytes from the initial HTTP upgrade that need to
      * be processed by the websocket parser before starting
      * to read bytes from the connection
+     * @param prefilled the bytes of prefilled content encountered during upgrade
      */
     protected void setInitialBuffer(ByteBuffer prefilled)
     {

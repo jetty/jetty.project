@@ -27,6 +27,7 @@ public class BadDuplicateFrameSocket
 {
     /**
      * The get a frame
+     * @param frame the frame
      */
     @OnWebSocketFrame
     public void frameMe(Frame frame)
@@ -36,6 +37,7 @@ public class BadDuplicateFrameSocket
 
     /**
      * This is a duplicate frame type (should throw an exception attempting to use)
+     * @param frame the frame
      */
     @OnWebSocketFrame
     public void watchMe(Frame frame)

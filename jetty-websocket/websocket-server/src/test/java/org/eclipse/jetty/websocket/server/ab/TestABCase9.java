@@ -131,6 +131,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 64KB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase9_1_1() throws Exception
@@ -158,6 +159,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 256KB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase9_1_2() throws Exception
@@ -185,6 +187,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 1MB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase9_1_3() throws Exception
@@ -212,6 +215,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 4MB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase9_1_4() throws Exception
@@ -239,6 +243,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 8MB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -267,6 +272,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 16MB text message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -295,6 +301,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 64KB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase9_2_1() throws Exception
@@ -321,6 +328,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 256KB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase9_2_2() throws Exception
@@ -348,6 +356,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 1MB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -376,6 +385,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 4MB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -404,6 +414,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 8MB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -432,6 +443,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Echo 16MB binary message (1 frame)
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -460,6 +472,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -470,6 +483,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -480,6 +494,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -490,6 +505,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -500,6 +516,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -510,6 +527,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -520,6 +538,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -530,6 +549,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -540,6 +560,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB text message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -550,6 +571,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -560,6 +582,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -570,6 +593,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -580,6 +604,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -590,6 +615,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -600,6 +626,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -610,6 +637,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -620,6 +648,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -630,6 +659,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 4MB binary message in multiple frames.
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -640,6 +670,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -650,6 +681,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -660,6 +692,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -670,6 +703,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -680,6 +714,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -690,6 +725,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB text message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -700,6 +736,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -710,6 +747,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -720,6 +758,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -730,6 +769,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -740,6 +780,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")
@@ -750,6 +791,7 @@ public class TestABCase9 extends AbstractABCase
 
     /**
      * Send 1MB binary message in 1 frame, but slowly
+     * @throws Exception on test failure
      */
     @Test
     @Stress("High I/O use")

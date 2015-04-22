@@ -330,6 +330,7 @@ public class ClientContainer extends ContainerLifeCycle implements WebSocketCont
 
     /**
      * Used in {@link Session#getOpenSessions()}
+     * @return the set of open sessions
      */
     public Set<Session> getOpenSessions()
     {

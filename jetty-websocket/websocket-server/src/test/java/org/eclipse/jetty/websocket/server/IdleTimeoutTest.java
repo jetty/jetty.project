@@ -68,6 +68,7 @@ public class IdleTimeoutTest
 
     /**
      * Test IdleTimeout on server.
+     * @throws Exception on test failure
      */
     @Test
     public void testIdleTimeout() throws Exception

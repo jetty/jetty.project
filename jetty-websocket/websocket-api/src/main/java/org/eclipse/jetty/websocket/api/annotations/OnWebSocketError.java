@@ -31,7 +31,6 @@ import org.eclipse.jetty.websocket.api.Session;
  * <p>
  * Acceptable method patterns.<br>
  * Note: <code>methodName</code> can be any name you want to use.
- * <p>
  * <ol>
  * <li><code>public void methodName({@link Throwable} error)</code></li>
  * <li><code>public void methodName({@link Session} session, {@link Throwable} error)</code></li>

@@ -71,6 +71,7 @@ public class IdentityExtensionTest
 
     /**
      * Verify that outgoing frames are unmodified
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingFrames() throws IOException

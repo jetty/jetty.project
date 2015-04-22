@@ -220,8 +220,8 @@ public class ConstraintTest
 
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-1
-     * @ServletSecurity
-     * @throws Exception
+     * &#064;ServletSecurity
+     * @throws Exception if test fails
      */
     @Test
     public void testSecurityElementExample13_1() throws Exception
@@ -234,9 +234,9 @@ public class ConstraintTest
    
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-2
-     * @ServletSecurity(@HttpConstraint(transportGuarantee = TransportGuarantee.CONFIDENTIAL))
+     * &#064;ServletSecurity(@HttpConstraint(transportGuarantee = TransportGuarantee.CONFIDENTIAL))
      * 
-     * @throws Exception
+     * @throws Exception if test fails
      */
     @Test
     public void testSecurityElementExample13_2() throws Exception
@@ -253,7 +253,7 @@ public class ConstraintTest
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-3
      * @ServletSecurity(@HttpConstraint(EmptyRoleSemantic.DENY))
-     * @throws Exception
+     * @throws Exception if test fails
      */
     @Test
     public void testSecurityElementExample13_3() throws Exception
@@ -270,7 +270,7 @@ public class ConstraintTest
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-4
      * @ServletSecurity(@HttpConstraint(rolesAllowed = "R1"))
-     * @throws Exception
+     * @throws Exception if test fails
      */
     @Test
     public void testSecurityElementExample13_4() throws Exception
@@ -294,7 +294,7 @@ public class ConstraintTest
      * @HttpMethodConstraint(value = "GET", rolesAllowed = "R1"),
      * @HttpMethodConstraint(value = "POST", rolesAllowed = "R1",
      *         transportGuarantee = TransportGuarantee.CONFIDENTIAL)})
-     * @throws Exception
+     * @throws Exception if test fails
      */ 
     @Test
     public void testSecurityElementExample13_5() throws Exception
@@ -319,7 +319,7 @@ public class ConstraintTest
     /**
      * Equivalent of Servlet Spec 3.1 pg 132, sec 13.4.1.1, Example 13-6
      * @ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"), httpMethodConstraints = @HttpMethodConstraint("GET"))
-     * @throws Exception
+     * @throws Exception if test fails
      */
     @Test
     public void testSecurityElementExample13_6 () throws Exception
@@ -345,7 +345,7 @@ public class ConstraintTest
      * @ServletSecurity(value = @HttpConstraint(rolesAllowed = "R1"), 
      *                  httpMethodConstraints = @HttpMethodConstraint(value="TRACE",
      *                  emptyRoleSemantic = EmptyRoleSemantic.DENY))
-     * @throws Exception
+     * @throws Exception if test fails
      */
     @Test
     public void testSecurityElementExample13_7() throws Exception

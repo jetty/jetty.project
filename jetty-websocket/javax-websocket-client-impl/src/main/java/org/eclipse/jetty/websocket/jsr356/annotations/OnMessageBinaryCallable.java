@@ -31,9 +31,9 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 /**
  * Callable for {@link OnMessage} annotated methods with a whole or partial binary messages.
  * <p>
- * Not for use with {@link InputStream} based {@link OnMessage} method objects.
+ * Not for use with {@link java.io.InputStream} based {@link OnMessage} method objects.
  * 
- * @see Binary
+ * @see javax.websocket.Decoder.Binary
  */
 public class OnMessageBinaryCallable extends OnMessageCallable
 {
@@ -46,6 +46,7 @@ public class OnMessageBinaryCallable extends OnMessageCallable
 
     /**
      * Copy Constructor
+     * @param copy the callable to copy
      */
     public OnMessageBinaryCallable(OnMessageCallable copy)
     {

@@ -127,8 +127,6 @@ public class ProxyServlet extends AbstractProxyServlet
 
     /**
      * <p>Convenience extension of {@link ProxyServlet} that offers transparent proxy functionalities.</p>
-     *
-     * @see TransparentDelegate
      */
     public static class Transparent extends ProxyServlet
     {

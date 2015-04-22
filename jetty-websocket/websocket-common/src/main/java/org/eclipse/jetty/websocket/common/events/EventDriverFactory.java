@@ -101,7 +101,7 @@ public class EventDriverFactory
      * Wrap the given WebSocket object instance in a suitable EventDriver
      * 
      * @param websocket
-     *            the websocket instance to wrap. Must either implement {@link WebSocketListener} or be annotated with {@link WebSocket &#064WebSocket}
+     *            the websocket instance to wrap. Must either implement {@link WebSocketListener} or be annotated with {@link WebSocket &#064;WebSocket}
      * @return appropriate EventDriver for this websocket instance.
      */
     public EventDriver wrap(Object websocket)

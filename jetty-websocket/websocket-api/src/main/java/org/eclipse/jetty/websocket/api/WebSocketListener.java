@@ -66,7 +66,7 @@ public interface WebSocketListener
      * <p>
      * This will result in the {@link Session} being closed by the implementing side.
      * 
-     * @param error
+     * @param cause
      *            the error that occurred.
      */
     void onWebSocketError(Throwable cause);
@@ -74,7 +74,7 @@ public interface WebSocketListener
     /**
      * A WebSocket Text frame was received.
      * 
-     * @param message
+     * @param message the message
      */
     void onWebSocketText(String message);
 }

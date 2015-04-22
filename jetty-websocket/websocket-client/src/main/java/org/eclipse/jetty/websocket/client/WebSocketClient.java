@@ -512,6 +512,7 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
     }
 
     /**
+     * @param bindAddress the address to bind to
      * @deprecated use {@link #setBindAddress(SocketAddress)} instead
      */
     @Deprecated

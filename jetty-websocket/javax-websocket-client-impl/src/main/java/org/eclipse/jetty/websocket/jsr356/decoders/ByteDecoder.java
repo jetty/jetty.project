@@ -23,7 +23,7 @@ import javax.websocket.Decoder;
 
 
 /**
- * Default implementation of the {@link Text} Message to {@link Byte} decoder
+ * Default implementation of the {@link javax.websocket.Decoder.Text} Message to {@link Byte} decoder
  */
 public class ByteDecoder extends AbstractDecoder implements Decoder.Text<Byte>
 {

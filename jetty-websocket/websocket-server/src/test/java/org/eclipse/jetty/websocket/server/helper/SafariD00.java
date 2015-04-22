@@ -56,7 +56,7 @@ public class SafariD00
      * Open the Socket to the destination endpoint and
      *
      * @return the open java Socket.
-     * @throws IOException
+     * @throws IOException on test failure
      */
     public Socket connect() throws IOException
     {
@@ -77,7 +77,7 @@ public class SafariD00
     /**
      * Issue an Http websocket (Draft-0) upgrade request using the Safari particulars.
      *
-     * @throws UnsupportedEncodingException
+     * @throws IOException on test failure
      */
     public void issueHandshake() throws IOException
     {

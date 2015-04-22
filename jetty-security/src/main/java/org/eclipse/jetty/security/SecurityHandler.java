@@ -44,6 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Abstract SecurityHandler.
+ * <p>
  * Select and apply an {@link Authenticator} to a request.
  * <p>
  * The Authenticator may either be directly set on the handler
@@ -54,7 +55,6 @@ import org.eclipse.jetty.util.log.Logger;
  * Authentication.Configuration. At startup, any context init parameters
  * that start with "org.eclipse.jetty.security." that do not have
  * values in the SecurityHandler init parameters, are copied.
- *
  */
 public abstract class SecurityHandler extends HandlerWrapper implements Authenticator.AuthConfiguration
 {
@@ -129,8 +129,9 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     }
 
     /* ------------------------------------------------------------ */
-    /** Set the authenticator.
-     * @param authenticator
+    /** 
+     * Set the authenticator.
+     * @param authenticator the authenticator
      * @throws IllegalStateException if the SecurityHandler is running
      */
     public void setAuthenticator(Authenticator authenticator)
@@ -247,8 +248,8 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
 
     /* ------------------------------------------------------------ */
     /** Set an initialization parameter.
-     * @param key
-     * @param value
+     * @param key the init key
+     * @param value the init value
      * @return previous value
      * @throws IllegalStateException if the SecurityHandler is running
      */
@@ -414,6 +415,7 @@ public abstract class SecurityHandler extends HandlerWrapper implements Authenti
     /** Set renew the session on Authentication.
      * <p>
      * If set to true, then on authentication, the session associated with a reqeuest is invalidated and replaced with a new session.
+     * @param renew true to renew the authentication on session
      * @see org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()
      */
     public void setSessionRenewedOnAuthentication(boolean renew)

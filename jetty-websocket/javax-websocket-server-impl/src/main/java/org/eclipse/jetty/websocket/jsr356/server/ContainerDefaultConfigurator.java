@@ -34,7 +34,7 @@ import org.eclipse.jetty.websocket.api.util.QuoteUtil;
 /**
  * The "Container Default Configurator" per the JSR-356 spec.
  * 
- * @see ServiceLoader behavior of {@link ServerEndpointConfig.Configurator}
+ * @see ServiceLoader behavior of {@link javax.websocket.server.ServerEndpointConfig.Configurator}
  */
 public final class ContainerDefaultConfigurator extends Configurator
 {

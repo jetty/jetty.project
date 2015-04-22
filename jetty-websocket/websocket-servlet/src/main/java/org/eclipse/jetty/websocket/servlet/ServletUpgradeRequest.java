@@ -182,6 +182,7 @@ public class ServletUpgradeRequest extends UpgradeRequest
     }
 
     /**
+     * @return the principal
      * @deprecated use {@link #getUserPrincipal()} instead
      */
     @Deprecated
