@@ -94,8 +94,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     /**
      * Writes the request and response information to the output stream.
      *
-     * @see org.eclipse.jetty.server.RequestLog#log(org.eclipse.jetty.server.Request,
-     *      int, long)
+     * @see org.eclipse.jetty.server.RequestLog#log(Request, Response)
      */
     @Override
     public void log(Request request, Response response)
