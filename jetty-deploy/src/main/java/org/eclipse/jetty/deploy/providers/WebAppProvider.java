@@ -34,8 +34,8 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-/* ------------------------------------------------------------ */
-/** The webapps directory scanning provider.
+/** 
+ * The webapps directory scanning provider.
  * <p>
  * This provider scans one or more directories (typically "webapps") for contexts to
  * deploy, which may be:<ul>
@@ -214,9 +214,6 @@ public class WebAppProvider extends ScanningAppProvider
     }  
     
     /* ------------------------------------------------------------ */
-    /**
-     *
-     */
     @ManagedAttribute("configuration classes for webapps to be processed through")
     public String[] getConfigurationClasses()
     {

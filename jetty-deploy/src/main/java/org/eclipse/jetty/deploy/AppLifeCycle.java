@@ -144,6 +144,7 @@ public class AppLifeCycle extends Graph
     /**
      * Get all objects bound to a specific {@link Node}
      * 
+     * @param node the deployment graph node 
      * @return Set of Object(s) for specific lifecycle bindings. never null.
      */
     public Set<AppLifeCycle.Binding> getBindings(Node node)
@@ -154,6 +155,7 @@ public class AppLifeCycle extends Graph
     /**
      * Get all objects bound to a specific {@link Node}
      * 
+     * @param nodeName the node name 
      * @return Set of Object(s) for specific lifecycle bindings. never null.
      */
     public Set<AppLifeCycle.Binding> getBindings(String nodeName)

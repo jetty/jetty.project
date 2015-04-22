@@ -29,22 +29,14 @@ import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-
-/* ---------------------------------------------------- */
-/** JDBCLoginModule
- * <p>JAAS LoginModule to retrieve user information from
- *  a database and authenticate the user.
- *
- * <p><h4>Notes</h4>
+/** 
+ * JDBCLoginModule
+ * <p>
+ * JAAS LoginModule to retrieve user information from
+ * a database and authenticate the user.
+ * <h1>Notes</h1>
  * <p>This version uses plain old JDBC connections NOT
  * Datasources.
- *
- * <p><h4>Usage</h4>
- * <pre>
- * </pre>
- *
- * @version 1.0 Tue Apr 15 2003
  */
 public class JDBCLoginModule extends AbstractDatabaseLoginModule
 {
@@ -55,12 +47,11 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
     private String dbUserName;
     private String dbPassword;
 
-
     /**
      * Get a connection from the DriverManager
      * @see AbstractDatabaseLoginModule#getConnection()
      * @return the connection for this datasource
-     * @throws Exception
+     * @throws Exception if unable to get the connection
      */
     public Connection getConnection ()
     throws Exception
@@ -80,12 +71,15 @@ public class JDBCLoginModule extends AbstractDatabaseLoginModule
 
 
     /* ------------------------------------------------ */
-    /** Init LoginModule.
+    /** 
+     * Init LoginModule.
+     * <p>
      * Called once by JAAS after new instance created.
-     * @param subject
-     * @param callbackHandler
-     * @param sharedState
-     * @param options
+     * 
+     * @param subject the subject
+     * @param callbackHandler the callback handler
+     * @param sharedState the shared state map
+     * @param options the options map
      */
     public void initialize(Subject subject,
                            CallbackHandler callbackHandler,
