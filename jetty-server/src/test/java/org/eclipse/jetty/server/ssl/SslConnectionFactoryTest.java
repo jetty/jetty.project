@@ -125,7 +125,9 @@ public class SslConnectionFactoryTest
     @Test
     public void testSNIConnect() throws Exception
     {
-        String response= getResponse("jetty.eclipse.org","jetty.eclipse.org");
+        String response;
+        
+        response= getResponse("jetty.eclipse.org","jetty.eclipse.org");
         Assert.assertThat(response,Matchers.containsString("host=jetty.eclipse.org"));
         
         response= getResponse("www.example.com","www.example.com");
@@ -139,10 +141,29 @@ public class SslConnectionFactoryTest
         
         response= getResponse("www.san.com","san example");
         Assert.assertThat(response,Matchers.containsString("host=www.san.com"));
+      
+    }
+    
+    @Test
+    public void testBadSNIConnect() throws Exception
+    {
+        String response;
+        
+        response= getResponse("www.example.com","some.other.com","www.example.com");
+        Assert.assertThat(response,Matchers.containsString("HTTP/1.1 400 "));
+        Assert.assertThat(response,Matchers.containsString("Host does not match SNI"));
     }
 
-    
+
     private String getResponse(String host,String cn) throws Exception
+    {
+        String response = getResponse(host,host,cn);
+        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
+        Assert.assertThat(response,Matchers.containsString("url=/ctx/path"));
+        return response;
+    }
+    
+    private String getResponse(String sniHost,String reqHost, String cn) throws Exception
     {
         SslContextFactory clientContextFactory = new SslContextFactory(true);
         clientContextFactory.start();
@@ -152,7 +173,7 @@ public class SslConnectionFactoryTest
 
         if (cn!=null)
         {        
-            SNIHostName serverName = new SNIHostName(host);
+            SNIHostName serverName = new SNIHostName(sniHost);
             List<SNIServerName> serverNames = new ArrayList<>();
             serverNames.add(serverName);
 
@@ -170,10 +191,8 @@ public class SslConnectionFactoryTest
             Assert.assertThat(cert.getSubjectX500Principal().getName("CANONICAL"), Matchers.startsWith("cn="+cn));
         }
 
-        sslSocket.getOutputStream().write(("GET /ctx/path HTTP/1.0\r\nHost: "+host+":"+_port+"\r\n\r\n").getBytes(StandardCharsets.ISO_8859_1));
+        sslSocket.getOutputStream().write(("GET /ctx/path HTTP/1.0\r\nHost: "+reqHost+":"+_port+"\r\n\r\n").getBytes(StandardCharsets.ISO_8859_1));
         String response = IO.toString(sslSocket.getInputStream());
-        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
-        Assert.assertThat(response,Matchers.containsString("url=/ctx/path"));
         
         sslSocket.close();
         clientContextFactory.stop();

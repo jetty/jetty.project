@@ -30,6 +30,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -353,7 +354,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     }
                 }
-                catch (EofException|QuietServletException e)
+                catch (EofException|QuietServletException|BadMessageException e)
                 {
                     error=true;
                     LOG.debug(e);
@@ -465,7 +466,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             else
             {
                 _response.setHeader(HttpHeader.CONNECTION.asString(),HttpHeaderValue.CLOSE.asString());
-                _response.sendError(500, x.getMessage());
+
+                if (x instanceof BadMessageException)
+                {
+                    BadMessageException bme = (BadMessageException)x;
+                    _response.sendError(bme.getCode(), bme.getReason());
+                }
+                else
+                    _response.sendError(500, x.getClass().toString());
             }
         }
         catch (IOException e)

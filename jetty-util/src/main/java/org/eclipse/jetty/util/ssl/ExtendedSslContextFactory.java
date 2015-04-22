@@ -223,9 +223,9 @@ public class ExtendedSslContextFactory extends SslContextFactory
             return _alias;
         }
         
-        public SNIHostName getServerName()
+        public String getServerName()
         {
-            return _name;
+            return _name==null?null:_name.getAsciiName();
         }
     }
 }

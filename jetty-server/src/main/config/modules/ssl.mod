@@ -38,6 +38,9 @@ http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/
 ## Thread priority delta to give to acceptor threads
 # jetty.ssl.acceptorPriorityDelta=0
 
+## Whether request host names are checked to match any SNI names
+# jetty.ssl.sniHostCheck=true
+
 ### SslContextFactory Configuration
 
 ## Keystore file path (relative to $jetty.base)
