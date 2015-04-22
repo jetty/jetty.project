@@ -28,5 +28,14 @@ import org.eclipse.jetty.server.handler.RequestLogHandler;
  */
 public interface RequestLog
 {
-    public void log(Request request, int status, long written);
+    /* ------------------------------------------------------------ */
+    /**
+     * @param request The request to log.
+     * @param response The response to log.  Note that for some requests
+     * the response instance may not have been fully populated (Eg 400 bad request
+     * responses are sent without a servlet response object).  Thus for basic
+     * log information it is best to consult {@link Response#getCommittedMetaData()}
+     * and {@link Response#getHttpChannel()} directly.
+     */
+    public void log(Request request, Response response);
 }

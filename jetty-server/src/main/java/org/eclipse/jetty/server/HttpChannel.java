@@ -110,6 +110,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         return _state;
     }
 
+    public long getBytesWritten()
+    {
+        return _written;
+    }
+    
     /**
      * @return the number of requests handled by this connection
      */
@@ -138,7 +143,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _requestLog = requestLog;
     }
 
-    public MetaData.Response getCommittedInfo()
+    public MetaData.Response getCommittedMetaData()
     {
         return _committedMetaData;
     }
@@ -522,7 +527,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onCompleted()
     {
         if (_requestLog!=null )
-            _requestLog.log(_request, _committedMetaData == null ? -1 : _committedMetaData.getStatus(), _written);
+            _requestLog.log(_request, _response);
+        
         _transport.onCompleted();
     }
     

@@ -77,8 +77,9 @@ public class RequestLogHandlerTest
         public List<String> captured = new ArrayList<>();
 
         @Override
-        public void log(Request request, int status, long written)
+        public void log(Request request, Response response)
         {
+            int status = response.getCommittedMetaData().getStatus();
             captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),status));
         }
     }

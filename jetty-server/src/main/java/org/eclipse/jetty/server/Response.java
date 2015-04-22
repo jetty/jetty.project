@@ -121,7 +121,7 @@ public class Response implements HttpServletResponse
         _out = out;
     }
 
-    protected HttpChannel getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }
@@ -829,7 +829,7 @@ public class Response implements HttpServletResponse
                 _contentLength = value;
         }
     }
-
+    
     @Override
     public void setStatus(int sc)
     {
@@ -1234,6 +1234,22 @@ public class Response implements HttpServletResponse
     protected MetaData.Response newResponseMetaData()
     {
         return new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
+    }
+    
+    /** Get the MetaData.Response committed for this response.
+     * This may differ from the meta data in this response for 
+     * exceptional responses (eg 4xx and 5xx responses generated
+     * by the container) and the committedMetaData should be used 
+     * for logging purposes.
+     * @return The committed MetaData or a {@link #newResponseMetaData()}
+     * if not yet committed.
+     */
+    public MetaData.Response getCommittedMetaData()
+    {
+        MetaData.Response meta = _channel.getCommittedMetaData();
+        if (meta==null)
+            return newResponseMetaData();
+        return meta;
     }
 
     @Override

@@ -98,10 +98,13 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      *      int, long)
      */
     @Override
-    public void log(Request request, int status, long written)
+    public void log(Request request, Response response)
     {
         try
         {
+            int status = response.getCommittedMetaData().getStatus();
+            long written = response.getHttpChannel().getBytesWritten();
+            
             if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getRequestURI()) != null)
                 return;
 

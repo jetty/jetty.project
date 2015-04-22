@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
  * formats.
  */
 @ManagedObject("NCSA standard format request log")
-public class NCSARequestLog extends AbstractNCSARequestLog implements RequestLog
+public class NCSARequestLog extends AbstractNCSARequestLog
 {
     private String _filename;
     private boolean _append;
