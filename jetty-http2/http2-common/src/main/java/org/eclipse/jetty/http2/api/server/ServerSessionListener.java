@@ -21,7 +21,7 @@ package org.eclipse.jetty.http2.api.server;
 import org.eclipse.jetty.http2.api.Session;
 
 /**
- * <p>Server-side extension of {@link Session.Listener} that exposes additional events.</p>
+ * <p>Server-side extension of {@link org.eclipse.jetty.http2.api.Session.Listener} that exposes additional events.</p>
  */
 public interface ServerSessionListener extends Session.Listener
 {

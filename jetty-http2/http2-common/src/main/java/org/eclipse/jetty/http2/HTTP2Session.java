@@ -323,7 +323,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
      * * NOT_CLOSED: we move to REMOTELY_CLOSED and queue a disconnect, so
      *   that the content of the queue is written, and then the connection
      *   closed. We notify the application after being terminated.
-     *   See {@link HTTP2Session.ControlEntry#succeeded()}
+     *   See <code>HTTP2Session.ControlEntry#succeeded()</code>
      *
      * * In all other cases, we do nothing since other methods are already
      *   performing their actions.
