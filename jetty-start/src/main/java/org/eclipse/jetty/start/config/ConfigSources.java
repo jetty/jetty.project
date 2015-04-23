@@ -37,7 +37,6 @@ import org.eclipse.jetty.start.UsageException;
 
 /**
  * Weighted List of ConfigSources.
- * <p>
  */
 public class ConfigSources implements Iterable<ConfigSource>
 {

@@ -23,7 +23,6 @@ package org.eclipse.jetty.start.graph;
  * <p>
  * Each <code>Selection</code> can be used [0..n] times in the graph. The <code>Selection</code> must contain a unique
  * 'criteria' description that how selection was determined.
- * </p>
  */
 public class Selection
 {
@@ -94,6 +93,7 @@ public class Selection
 
     /**
      * Get the criteria for this selection
+     * @return the criteria
      */
     public String getCriteria()
     {

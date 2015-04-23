@@ -109,7 +109,7 @@ public class HeaderRegexRule extends RegexRule
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns the add flag value.
+     * @return the add flag value.
      */
     public boolean isAdd()
     {
@@ -118,7 +118,7 @@ public class HeaderRegexRule extends RegexRule
 
     /* ------------------------------------------------------------ */
     /**
-     * Returns the header contents.
+     * @return the header contents.
      */
     @Override
     public String toString()

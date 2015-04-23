@@ -56,13 +56,10 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-
-
 /**
  * Runner
- *
+ * <p>
  * Combine jetty classes into a single executable jar and run webapps based on the args to it.
- *
  */
 public class Runner
 {
@@ -96,8 +93,6 @@ public class Runner
 
     /**
      * Classpath
-     *
-     *
      */
     public class Classpath
     {
@@ -149,22 +144,15 @@ public class Runner
         }
     }
 
-
-
-
-    /**
-     *
-     */
     public Runner()
     {
-
     }
 
 
     /**
      * Generate helpful usage message and exit
      *
-     * @param error
+     * @param error the error header
      */
     public void usage(String error)
     {
@@ -204,8 +192,8 @@ public class Runner
     /**
      * Configure a jetty instance and deploy the webapps presented as args
      *
-     * @param args
-     * @throws Exception
+     * @param args the command line arguments
+     * @throws Exception if unable to configure
      */
     public void configure(String[] args) throws Exception
     {
@@ -494,10 +482,6 @@ public class Runner
     }
 
 
-    /**
-     * @param handler
-     * @param handlers
-     */
     protected void prependHandler (Handler handler, HandlerCollection handlers)
     {
         if (handler == null || handlers == null)
@@ -513,9 +497,6 @@ public class Runner
 
 
 
-    /**
-     * @throws Exception
-     */
     public void run() throws Exception
     {
         _server.start();
@@ -546,9 +527,6 @@ public class Runner
 
 
 
-    /**
-     * @param args
-     */
     public static void main(String[] args)
     {
         Runner runner = new Runner();

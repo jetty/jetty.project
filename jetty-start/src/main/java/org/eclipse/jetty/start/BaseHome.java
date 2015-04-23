@@ -323,13 +323,12 @@ public class BaseHome
      * <dt><code>lib/**&#47;*-dev.jar</code></dt>
      * <dd>Relative pattern, recursive search <code>${jetty.home}</code> then <code>${jetty.base}</code> for files under <code>lib</code> ending in
      * <code>-dev.jar</code></dd>
-     * </dl>
      * 
      * <dt><code>etc/jetty.xml</code></dt>
      * <dd>Relative pattern, no glob, search for <code>${jetty.home}/etc/jetty.xml</code> then <code>${jetty.base}/etc/jetty.xml</code></dd>
      * 
      * <dt><code>glob:/opt/app/common/*-corp.jar</code></dt>
-     * <dd>PathMapper pattern, glob, search <code>/opt/app/common/</code> for <code>*-corp.jar</code></code></dd>
+     * <dd>PathMapper pattern, glob, search <code>/opt/app/common/</code> for <code>*-corp.jar</code></dd>
      * 
      * </dl>
      * 
@@ -414,6 +413,8 @@ public class BaseHome
 
     /**
      * Convenience method for <code>toShortForm(file.toPath())</code>
+     * @param path the path to shorten
+     * @return the short form of the path as a String
      */
     public String toShortForm(final File path)
     {

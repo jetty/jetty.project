@@ -30,12 +30,11 @@ import java.util.Map;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 
-/* ------------------------------------------------------------ */
 /**
  * Derived from the JMX bean classes created by Kees Jan Koster for the java-monitor
  * J2EE probe http://code.google.com/p/java-monitor-probes/source/browse/.
  * 
- * @author kjkoster <kjkoster@gmail.com>
+ * @author <a href="mailto:kjkoster@gmail.com">Kees Jan Koster</a>
  */
 @ManagedObject("Java Monitoring Tools")
 public class JavaMonitorTools

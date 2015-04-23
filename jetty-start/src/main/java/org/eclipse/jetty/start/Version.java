@@ -20,12 +20,9 @@ package org.eclipse.jetty.start;
 
 /**
  * Utility class for parsing and comparing version strings. JDK 1.1 compatible.
- * 
  */
-
 public class Version
 {
-
     int _version = 0;
     int _revision = 0;
     int _subrevision = 0;
@@ -44,6 +41,7 @@ public class Version
     /**
      * Compares with other version. Does not take extension into account, as there is no reliable way to order them.
      * 
+     * @param other the other version to compare this to 
      * @return -1 if this is older version that other, 0 if its same version, 1 if it's newer version than other
      */
     public int compare(Version other)
@@ -81,6 +79,9 @@ public class Version
 
     /**
      * Check whether this verion is in range of versions specified
+     * @param low the low part of the range
+     * @param high the high part of the range
+     * @return true if this version is within the provided range
      */
     public boolean isInRange(Version low, Version high)
     {
@@ -89,6 +90,7 @@ public class Version
 
     /**
      * parses version string in the form version[.revision[.subrevision[extension]]] into this instance.
+     * @param version_string the version string
      */
     public void parse(String version_string)
     {

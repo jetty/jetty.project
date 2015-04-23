@@ -20,14 +20,13 @@ package org.eclipse.jetty.monitor.triggers;
 
 import javax.management.MalformedObjectNameException;
 
-
-/* ------------------------------------------------------------ */
 /**
  * RangeInclAttrEventTrigger
- * 
+ * <p>
  * Event trigger that polls a value of an MXBean attribute and
  * checks if it is in a range from specified min value to
  * specified max value including the range bounds. 
+ * @param <TYPE> event trigger type
  */
 public class RangeInclAttrEventTrigger<TYPE extends Comparable<TYPE>> extends AttrEventTrigger<TYPE>
 {
@@ -45,8 +44,8 @@ public class RangeInclAttrEventTrigger<TYPE extends Comparable<TYPE>> extends At
      * @param min minimum value of the attribute
      * @param max maximum value of the attribute
      * 
-     * @throws MalformedObjectNameException
-     * @throws IllegalArgumentException
+     * @throws MalformedObjectNameException on bad object name
+     * @throws IllegalArgumentException on bad parameters
      */
     public RangeInclAttrEventTrigger(String objectName, String attributeName,TYPE min, TYPE max)
         throws MalformedObjectNameException, IllegalArgumentException
@@ -79,7 +78,7 @@ public class RangeInclAttrEventTrigger<TYPE extends Comparable<TYPE>> extends At
     /* ------------------------------------------------------------ */
     /**
      * Returns the string representation of this event trigger
-     * in the format "min<=name<=max". 
+     * in the format "min&lt;=name&lt;=max". 
      * 
      * @return string representation of the event trigger
      * 

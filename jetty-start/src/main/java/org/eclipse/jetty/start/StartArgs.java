@@ -377,8 +377,8 @@ public class StartArgs
     /**
      * Expand any command line added <code>--lib</code> lib references.
      * 
-     * @param baseHome
-     * @throws IOException
+     * @param baseHome the base home in use
+     * @throws IOException if unable to expand the libraries
      */
     public void expandLibs(BaseHome baseHome) throws IOException
     {
@@ -402,9 +402,9 @@ public class StartArgs
     /**
      * Build up the Classpath and XML file references based on enabled Module list.
      * 
-     * @param baseHome
-     * @param activeModules
-     * @throws IOException
+     * @param baseHome the base home in use
+     * @param activeModules the active (selected) modules
+     * @throws IOException if unable to expand the modules
      */
     public void expandModules(BaseHome baseHome, List<Module> activeModules) throws IOException
     {

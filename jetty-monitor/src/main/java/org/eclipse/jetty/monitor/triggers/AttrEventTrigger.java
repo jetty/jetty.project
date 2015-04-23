@@ -32,11 +32,9 @@ import org.eclipse.jetty.monitor.jmx.EventTrigger;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
-/* ------------------------------------------------------------ */
 /**
  * AttrEventTrigger
- * 
+ * <p>
  * Event trigger that polls a value of an MXBean attribute
  * and matches every invocation of this trigger. It can be
  * used to send notifications of the value of an attribute
@@ -44,6 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  * a base class for the event triggers that match the 
  * value of an attribute of the MXBean being polled against
  * some specified criteria.
+ * @param <TYPE> the event trigger type
  */
 public class AttrEventTrigger<TYPE extends Comparable<TYPE>> 
     extends EventTrigger
@@ -64,8 +63,8 @@ public class AttrEventTrigger<TYPE extends Comparable<TYPE>>
      * @param objectName object name of an MBean to be polled
      * @param attributeName name of an MBean attribute to be polled
      * 
-     * @throws MalformedObjectNameException
-     * @throws IllegalArgumentException
+     * @throws MalformedObjectNameException if unable to find object due to malformed name reference
+     * @throws IllegalArgumentException if parameters are invalid
      */
     public AttrEventTrigger(String objectName, String attributeName)
         throws MalformedObjectNameException, IllegalArgumentException
@@ -91,7 +90,7 @@ public class AttrEventTrigger<TYPE extends Comparable<TYPE>>
      * @param nameObject object name of an MBean to be polled
      * @param attributeName name of an MBean attribute to be polled
      * 
-     * @throws IllegalArgumentException
+     * @throws IllegalArgumentException if parameters are invalid
      */
     public AttrEventTrigger(ObjectName nameObject, String attributeName)
         throws IllegalArgumentException
@@ -113,7 +112,7 @@ public class AttrEventTrigger<TYPE extends Comparable<TYPE>>
     /**
      * Verify if the event trigger conditions are in the 
      * appropriate state for an event to be triggered.
-     * This event trigger uses the match(Comparable<TYPE>)
+     * This event trigger uses the match(Comparable&lt;TYPE&gt;)
      * method to compare the value of the MXBean attribute
      * to the conditions specified by the subclasses.
      * 
@@ -162,6 +161,8 @@ public class AttrEventTrigger<TYPE extends Comparable<TYPE>>
      * appropriate state for an event to be triggered.
      * Allows subclasses to override the default behavior
      * that matches every invocation of this trigger
+     * @param value the value to match
+     * @return always true
      */
     public boolean match(Comparable<TYPE> value)
     {

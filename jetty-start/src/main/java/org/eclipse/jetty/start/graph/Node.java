@@ -26,6 +26,7 @@ import java.util.Set;
 
 /**
  * Basic Graph Node
+ * @param <T> the node type
  */
 public abstract class Node<T>
 {

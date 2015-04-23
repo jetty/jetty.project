@@ -50,7 +50,7 @@ public class BaseBuilder
          *            the module to add
          * @return true if module was added, false if module was not added
          *         (because that module already exists)
-         * @throws IOException
+         * @throws IOException if unable to add the module
          */
         public boolean addModule(Module module) throws IOException;
     }
@@ -130,7 +130,7 @@ public class BaseBuilder
      * Build out the Base directory (if needed)
      * 
      * @return true if base directory was changed, false if left unchanged.
-     * @throws IOException
+     * @throws IOException if unable to build
      */
     public boolean build() throws IOException
     {

@@ -29,10 +29,9 @@ import org.eclipse.jetty.monitor.jmx.MonitorTask;
 import org.eclipse.jetty.monitor.jmx.ServiceConnection;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-/* ------------------------------------------------------------ */
 /**
  * JMXMonitor
- *
+ * <p>
  * Performs monitoring of the values of the attributes of MBeans
  * and executes specified actions as well as sends notifications
  * of the specified events that have occurred.
@@ -120,7 +119,7 @@ public class JMXMonitor
      * Retrieves a connection to JMX service
      *
      * @return server connection
-     * @throws IOException
+     * @throws IOException if unable to obtain server connection
      */
     public static MBeanServerConnection getServiceConnection()
         throws IOException

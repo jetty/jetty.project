@@ -58,7 +58,9 @@ public abstract class EventTrigger
      * Abstract method to verify if the event trigger conditions
      * are in the appropriate state for an event to be triggered
      * 
+     * @param timestamp the timestamp to match 
      * @return true to trigger an event
+     * @throws Exception if unable to match
      */
     public abstract boolean match(long timestamp) throws Exception;
 

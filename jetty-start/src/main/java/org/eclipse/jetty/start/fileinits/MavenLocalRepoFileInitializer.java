@@ -36,13 +36,13 @@ import org.eclipse.jetty.start.Utils;
  * <p>
  * Valid URI Formats:
  * <dl>
- * <dt><code>maven://&lt;groupId>/&lt;artifactId>/&lt;version></code></dt>
+ * <dt><code>maven://&lt;groupId&gt;/&lt;artifactId&gt;/&lt;version&gt;</code></dt>
  * <dd>minimum requirement (type defaults to <code>jar</code>, with no
  * classifier)</dd>
- * <dt><code>maven://&lt;groupId>/&lt;artifactId>/&lt;version>/&lt;type></code></dt>
+ * <dt><code>maven://&lt;groupId&gt;/&lt;artifactId&gt;/&lt;version&gt;/&lt;type&gt;</code></dt>
  * <dd>optional type requirement</dd>
  * <dt>
- * <code>maven://&lt;groupId>/&lt;artifactId>/&lt;version>/&lt;type>/&lt;classifier></code>
+ * <code>maven://&lt;groupId&gt;/&lt;artifactId&gt;/&lt;version&gt;/&lt;type&gt;/&lt;classifier&gt;</code>
  * </dt>
  * <dd>optional type and classifier requirement</dd>
  * </dl>

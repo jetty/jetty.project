@@ -144,6 +144,7 @@ public class ModulesTest
      * In other words. ${search-dir}/modules/*.mod should be the only
      * valid references, but ${search-dir}/alt/foo/modules/*.mod should
      * not be considered valid.
+     * @throws IOException on test failures
      */
     @Test
     public void testLoadShallowModulesOnly() throws IOException

@@ -21,12 +21,12 @@ package org.eclipse.jetty.monitor.triggers;
 import javax.management.MalformedObjectNameException;
 
 
-/* ------------------------------------------------------------ */
 /**
  * EqualToAttrEventTrigger
- * 
+ * <p> 
  * Event trigger that polls a value of an MXBean attribute and
  * checks if it is equal to specified value. 
+ * @param <TYPE> the event trigger type
  */
 public class EqualToAttrEventTrigger<TYPE extends Comparable<TYPE>> extends AttrEventTrigger<TYPE>
 {
@@ -42,8 +42,8 @@ public class EqualToAttrEventTrigger<TYPE extends Comparable<TYPE>> extends Attr
      * @param attributeName name of an MBean attribute to be polled
      * @param value target value of the attribute
      * 
-     * @throws MalformedObjectNameException
-     * @throws IllegalArgumentException
+     * @throws MalformedObjectNameException if unable to find object due to name issue
+     * @throws IllegalArgumentException on invalid parameters
      */
     public EqualToAttrEventTrigger(String objectName, String attributeName, TYPE value)
         throws MalformedObjectNameException, IllegalArgumentException

@@ -37,6 +37,8 @@ public class JettyWeldInitializer
      * level.
      * <p>
      * Includes {@link #initContext(ContextHandler)} behavior as well.
+     * @param webapp the webapp
+     * @throws NamingException if unable to bind BeanManager context
      */
     public static void initWebApp(WebAppContext webapp) throws NamingException
     {

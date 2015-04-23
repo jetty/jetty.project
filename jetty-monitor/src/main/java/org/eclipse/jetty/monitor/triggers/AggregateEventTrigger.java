@@ -72,27 +72,18 @@ public class AggregateEventTrigger extends EventTrigger
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param trigger
-     */
     public void add(EventTrigger trigger)
     {
         _triggers.add(trigger);
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param triggers
-     */
     public void addAll(List<EventTrigger> triggers)
     {
         _triggers.addAll(triggers);
     }
         
     /* ------------------------------------------------------------ */
-    /**
-     * @param triggers
-     */
     public void addAll(EventTrigger... triggers)
     {
         _triggers.addAll(Arrays.asList(triggers));

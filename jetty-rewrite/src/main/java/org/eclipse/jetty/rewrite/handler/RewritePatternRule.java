@@ -56,12 +56,6 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     }
 
     /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     *
-     * @see org.eclipse.jetty.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest,
-     * javax.servlet.http.HttpServletResponse)
-     */
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
@@ -73,14 +67,14 @@ public class RewritePatternRule extends PatternRule implements Rule.ApplyURI
     /**
      * This method will add _query to the requests's queryString and also combine it with existing queryStrings in
      * the request. However it won't take care for duplicate. E.g. if request.getQueryString contains a parameter
-     * "param1 = true" and _query will contain "param1=false" the result will be param1=true&param1=false.
+     * <code>param1 = true</code> and _query will contain <code>param1=false</code> the result will be <code>param1=true&amp;param1=false</code>.
      * To cover this use case some more complex pattern matching is necessary. We can implement this if there's use
      * cases.
      *
-     * @param request
-     * @param oldURI
-     * @param newURI
-     * @throws IOException
+     * @param request the request
+     * @param oldURI the old URI
+     * @param newURI the new URI
+     * @throws IOException if unable to apply the URI
      */
     @Override
     public void applyURI(Request request, String oldURI, String newURI) throws IOException

@@ -36,7 +36,6 @@ import org.springframework.beans.PropertyValues;
 import org.springframework.beans.factory.config.BeanDefinition;
 import org.springframework.beans.factory.support.DefaultListableBeanFactory;
 import org.springframework.beans.factory.xml.XmlBeanDefinitionReader;
-import org.springframework.beans.factory.xml.XmlBeanFactory;
 import org.springframework.core.io.ByteArrayResource;
 import org.springframework.core.io.Resource;
 import org.springframework.core.io.UrlResource;
@@ -52,7 +51,7 @@ import org.springframework.core.io.UrlResource;
  * <p>
  * The objects mapped by {@link XmlConfiguration#getIdMap()} are set as singletons before any configuration calls
  * and if the spring configuration file contains a definition for the singleton id, the the singleton is updated
- * with a call to {@link XmlBeanFactory#configureBean(Object, String)}.
+ * with a call to {@link DefaultListableBeanFactory#configureBean(Object, String)}.
  * <p>
  * The property map obtained via {@link XmlConfiguration#getProperties()} is set as a singleton called "properties"
  * and values can be accessed by somewhat verbose

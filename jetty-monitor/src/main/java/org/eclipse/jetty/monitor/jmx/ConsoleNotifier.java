@@ -35,7 +35,7 @@ public class ConsoleNotifier implements EventNotifier
      * Constructs a new notifier with specified format string
      * 
      * @param format the {@link java.util.Formatter format string}
-     * @throws IllegalArgumentException
+     * @throws IllegalArgumentException if format is invalid
      */
     public ConsoleNotifier(String format)
         throws IllegalArgumentException

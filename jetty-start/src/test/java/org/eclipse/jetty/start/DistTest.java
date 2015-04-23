@@ -91,6 +91,7 @@ public class DistTest
     
     /**
      * Test for https://bugs.eclipse.org/452329
+     * @throws Exception on test failure
      */
     @Test
     public void testReAddServerModule() throws Exception
@@ -120,6 +121,7 @@ public class DistTest
     
     /**
      * Test for https://bugs.eclipse.org/452329
+     * @throws Exception on test failure
      */
     @Test
     public void testReAddServerViaHttpModule() throws Exception
@@ -149,6 +151,7 @@ public class DistTest
     
     /**
      * Test for https://bugs.eclipse.org/452329
+     * @throws Exception on test failure
      */
     @Test
     public void testReAddHttpThenDeployViaStartD() throws Exception

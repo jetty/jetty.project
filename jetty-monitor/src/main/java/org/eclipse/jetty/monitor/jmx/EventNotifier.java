@@ -31,7 +31,8 @@ public interface EventNotifier
     /* ------------------------------------------------------------ */
     /**
      * This method is called when a notification event is received by the containing object
-     *  
+     * 
+     * @param trigger the event trigger 
      * @param state an {@link org.eclipse.jetty.monitor.jmx.EventState event state} 
      * @param timestamp time stamp of the event
      */

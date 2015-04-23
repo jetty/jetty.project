@@ -39,6 +39,7 @@ import org.eclipse.jetty.start.Utils;
 
 /**
  * Basic Graph
+ * @param <T> the node type
  */
 public abstract class Graph<T extends Node<T>> implements Iterable<T>
 {
@@ -264,6 +265,7 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
 
     /**
      * Get the list of Selected nodes.
+     * @return the list of selected nodes
      */
     public List<T> getSelected()
     {
@@ -358,6 +360,8 @@ public abstract class Graph<T extends Node<T>> implements Iterable<T>
      * Resolve a node just in time.
      * <p>
      * Useful for nodes that are virtual/transient in nature (such as the jsp/jstl/alpn modules)
+     * @param name the name of the node to resolve
+     * @return the node
      */
     public abstract T resolveNode(String name);
 

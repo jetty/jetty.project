@@ -29,12 +29,13 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * This rule can be used to protect against invalid unicode characters in a url making it into applications.
- *
+ * <p>
  * The logic is as follows.
- * 
- * - if decoded uri character is an iso control character return code/reason
- * - if no UnicodeBlock is found for character return code/reason
- * - if character is in UnicodeBlock.SPECIALS return code/reason
+ * <ul>
+ * <li>if decoded uri character is an iso control character return code/reason</li>
+ * <li>if no UnicodeBlock is found for character return code/reason</li>
+ * <li>if character is in UnicodeBlock.SPECIALS return code/reason</li>
+ * </ul>
  */
 public class ValidUrlRule extends Rule
 {
@@ -65,7 +66,7 @@ public class ValidUrlRule extends Rule
     /**
      * Sets the reason for the response status code. Reasons will only reflect if the code value is greater or equal to 400.
      * 
-     * @param reason
+     * @param reason the reason
      */
     public void setReason(String reason)
     {

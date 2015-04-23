@@ -47,7 +47,7 @@ import com.mongodb.WriteConcern;
 
 /**
  * MongoSessionManager
- *
+ * <p>
  * Clustered session manager using MongoDB as the shared DB instance.
  * The document model is an outer object that contains the elements:
  * <ul>
@@ -69,7 +69,7 @@ import com.mongodb.WriteConcern;
  * </p>
  * <p>
  * For example:
- * <code>
+ * <pre>
  * { "_id"       : ObjectId("52845534a40b66410f228f23"), 
  *    "accessed" :  NumberLong("1384818548903"), 
  *    "maxIdle"  : 1,
@@ -85,14 +85,12 @@ import com.mongodb.WriteConcern;
  *    "id"       : "w01ijx2vnalgv1sqrpjwuirprp7", 
  *    "valid"    : true 
  * }
- * </code>
- * </p>
+ * </pre>
  * <p>
  * In MongoDB, the nesting level is indicated by "." separators for the key name. Thus to
  * interact with a session attribute, the key is composed of:
- * "context".unique_context_name.attribute_name
- *  Eg  "context"."::/contextA"."A"
- *  </p>
+ * <code>"context".unique_context_name.attribute_name</code>
+ *  Eg  <code>"context"."::/contextA"."A"</code>
  */
 @ManagedObject("Mongo Session Manager")
 public class MongoSessionManager extends NoSqlSessionManager
@@ -701,6 +699,7 @@ public class MongoSessionManager extends NoSqlSessionManager
      * 
      * the count() operation itself is optimized to perform on the server side
      * and avoid loading to client side.
+     * @return the session store count
      */
     @ManagedAttribute("total number of known sessions in the store")
     public long getSessionStoreCount()
