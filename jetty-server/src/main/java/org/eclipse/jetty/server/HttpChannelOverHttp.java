@@ -262,12 +262,17 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         {
             case HTTP_1_0:
             {
-                if (_connection!=null)
+                if (getHttpConfiguration().isPersistentConnectionsEnabled())
                 {
-                    if (_connection.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
-                        persistent=true;
+                    if (_connection!=null)
+                    {
+                        if (_connection.contains(HttpHeaderValue.KEEP_ALIVE.asString()))
+                            persistent=true;
+                        else
+                            persistent=_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                    }
                     else
-                        persistent=_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE.asString());
+                        persistent=false;
                 }
                 else
                     persistent=false;
@@ -288,15 +293,20 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     return false;
                 }
                 
-                if (_connection!=null)
+                if (getHttpConfiguration().isPersistentConnectionsEnabled())
                 {
-                    if (_connection.contains(HttpHeaderValue.CLOSE.asString()))
-                        persistent=false;
+                    if (_connection!=null)
+                    {
+                        if (_connection.contains(HttpHeaderValue.CLOSE.asString()))
+                            persistent=false;
+                        else
+                            persistent=!_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()); // handle multiple connection fields
+                    }
                     else
-                        persistent=!_fields.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()); // handle multiple connection fields
+                        persistent=true;
                 }
                 else
-                    persistent=true;
+                    persistent=false;
                 
                 if (!persistent)
                     persistent = HttpMethod.CONNECT.is(_metadata.getMethod());

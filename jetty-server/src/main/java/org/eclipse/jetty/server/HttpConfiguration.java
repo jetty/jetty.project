@@ -55,6 +55,7 @@ public class HttpConfiguration
     private boolean _sendXPoweredBy = false;
     private boolean _sendDateHeader = true;
     private boolean _delayDispatchUntilContent = true;
+    private boolean _persistentConnectionsEnabled = true;
 
     /* ------------------------------------------------------------ */
     /** 
@@ -179,6 +180,19 @@ public class HttpConfiguration
     public String getSecureScheme()
     {
         return _secureScheme;
+    }
+
+    /* ------------------------------------------------------------ */
+    @ManagedAttribute("True if HTTP/1 persistent connection are enabled")
+    public boolean isPersistentConnectionsEnabled()
+    {
+        return _persistentConnectionsEnabled;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setPersistentConnectionsEnabled(boolean persistentConnectionsEnabled)
+    {
+        _persistentConnectionsEnabled = persistentConnectionsEnabled;
     }
 
     /* ------------------------------------------------------------ */
