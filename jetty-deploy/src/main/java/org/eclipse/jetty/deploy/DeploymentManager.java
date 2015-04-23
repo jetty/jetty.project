@@ -51,14 +51,14 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * Responsibilities:
  * <p>
- * <img src="doc-files/DeploymentManager_Roles.png">
+ * <img alt="deployment manager roles graph" src="doc-files/DeploymentManager_Roles.png">
  * <ol>
  * <li>Tracking Apps and their LifeCycle Location</li>
  * <li>Managing AppProviders and the Apps that they provide.</li>
  * <li>Executing AppLifeCycle on App based on current and desired LifeCycle Location.</li>
  * </ol>
  * <p>
- * <img src="doc-files/DeploymentManager.png">
+ * <img alt="deployment manager graph" src="doc-files/DeploymentManager.png">
  */
 @ManagedObject("Deployment Manager")
 public class DeploymentManager extends ContainerLifeCycle

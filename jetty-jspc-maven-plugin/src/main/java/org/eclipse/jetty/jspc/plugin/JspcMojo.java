@@ -51,29 +51,21 @@ import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
- * <p>
  * This goal will compile jsps for a webapp so that they can be included in a
  * war.
- * </p>
  * <p>
  * At runtime, the plugin will use the jsp2.0 jspc compiler if you are running
  * on a 1.4 or lower jvm. If you are using a 1.5 jvm, then the jsp2.1 compiler
  * will be selected. (this is the same behaviour as the <a
- * href="http://jetty.mortbay.org/maven-plugin">jetty plugin</a> for executing
+ * href="https://www.eclipse.org/jetty/documentation/current/maven-and-jetty.html">jetty plugin</a> for executing
  * webapps).
- * </p>
  * <p>
  * Note that the same java compiler will be used as for on-the-fly compiled
  * jsps, which will be the Eclipse java compiler.
- * </p>
- * 
  * <p>
  * See <a
- * href="http://docs.codehaus.org/display/JETTY/Maven+Jetty+Jspc+Plugin">Usage
+ * href="https://www.eclipse.org/jetty/documentation/current/jetty-jspc-maven-plugin.html">Usage
  * Guide</a> for instructions on using this plugin.
- * </p>
- * 
- * @author janb
  * 
  * @goal jspc
  * @phase process-classes
@@ -387,7 +379,7 @@ public class JspcMojo extends AbstractMojo
      * Until Jasper supports the option to generate the srcs in a different dir
      * than the classes, this is the best we can do.
      * 
-     * @throws Exception
+     * @throws Exception if unable to clean srcs
      */
     public void cleanupSrcs() throws Exception
     {
@@ -433,7 +425,7 @@ public class JspcMojo extends AbstractMojo
      * If you dont specify the insertionMarker, then the fragment will be
      * inserted at the end of the file just before the &lt;/webapp&gt;
      * 
-     * @throws Exception
+     * @throws Exception if unable to merge the web xml
      */
     public void mergeWebXml() throws Exception
     {

@@ -34,10 +34,7 @@ import org.eclipse.jetty.util.B64Code;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 
-/**
- * @deprecated use *ServerAuthentication
- * @version $Rev: 4530 $ $Date: 2009-02-13 00:47:44 +0100 (Fri, 13 Feb 2009) $
- */
+@Deprecated
 public class ClientCertAuthModule extends BaseAuthModule
 {
 

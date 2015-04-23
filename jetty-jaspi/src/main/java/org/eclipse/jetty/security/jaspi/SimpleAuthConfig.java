@@ -26,9 +26,6 @@ import javax.security.auth.message.MessageInfo;
 import javax.security.auth.message.config.ServerAuthConfig;
 import javax.security.auth.message.config.ServerAuthContext;
 
-/**
- * @version $Rev: 4660 $ $Date: 2009-02-25 17:29:53 +0100 (Wed, 25 Feb 2009) $
- */
 public class SimpleAuthConfig implements ServerAuthConfig
 {
     public static final String HTTP_SERVLET = "HttpServlet";

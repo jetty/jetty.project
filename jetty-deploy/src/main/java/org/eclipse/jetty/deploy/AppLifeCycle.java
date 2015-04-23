@@ -32,11 +32,11 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * The lifecycle of an App in the {@link DeploymentManager}.
- * 
+ * <p>
  * Setups a the default {@link Graph}, and manages the bindings to the life cycle via the {@link AppLifeCycle.Binding}
  * annotation.
  * <p>
- * <img src="doc-files/AppLifeCycle.png">
+ * <img alt="app lifecycle graph" src="doc-files/AppLifeCycle.png">
  */
 public class AppLifeCycle extends Graph
 {
