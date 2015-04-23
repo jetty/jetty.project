@@ -605,7 +605,11 @@ public class Response implements HttpServletResponse
                     writer.write(message);
                     writer.write("</pre>");
                     writer.write("</p>\n<hr />");
-                    writer.write(Jetty.POWERED_BY_HTML);
+                    if (getHttpChannel().getHttpConfiguration().getSendServerVersion())
+                    {
+                        writer.write(Jetty.POWERED_BY_HTML);
+                        writer.write("<hr />");
+                    }
                     writer.write("\n</body>\n</html>\n");
 
                     writer.flush();

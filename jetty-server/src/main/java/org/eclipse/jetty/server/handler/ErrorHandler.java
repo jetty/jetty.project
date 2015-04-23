@@ -162,7 +162,9 @@ public class ErrorHandler extends AbstractHandler
         writeErrorPageMessage(request,writer,code,message,uri);
         if (showStacks)
             writeErrorPageStacks(request,writer);
-        writer.write("<hr>"+Jetty.POWERED_BY_HTML+"<hr/>\n");
+        
+        if (Request.getBaseRequest(request).getHttpChannel().getHttpConfiguration().getSendServerVersion())
+            writer.write("<hr>"+Jetty.POWERED_BY_HTML+"<hr/>\n");
     }
 
     /* ------------------------------------------------------------ */
