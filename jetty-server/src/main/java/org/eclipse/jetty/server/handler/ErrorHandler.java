@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -161,7 +162,7 @@ public class ErrorHandler extends AbstractHandler
         writeErrorPageMessage(request,writer,code,message,uri);
         if (showStacks)
             writeErrorPageStacks(request,writer);
-        writer.write("<hr><i><small>Powered by Jetty://</small></i><hr/>\n");
+        writer.write("<hr>"+Jetty.POWERED_BY_HTML+"<hr/>\n");
     }
 
     /* ------------------------------------------------------------ */

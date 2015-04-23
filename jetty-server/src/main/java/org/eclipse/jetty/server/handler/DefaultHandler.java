@@ -34,6 +34,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -164,7 +165,7 @@ public class DefaultHandler extends AbstractHandler
 
             writer.write("</ul><hr>");
             writer.write("<a href=\"http://eclipse.org/jetty\"><img border=0 src=\"/favicon.ico\"/></a>&nbsp;");
-            writer.write("<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// Java Web Server</a><hr/>\n");
+            writer.write(Jetty.POWERED_BY_HTML+"<hr/>\n");
 
             writer.write("\n</BODY>\n</HTML>\n");
             writer.flush();

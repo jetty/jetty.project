@@ -53,6 +53,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -603,7 +604,8 @@ public class Response implements HttpServletResponse
                     writer.write(". Reason:\n<pre>    ");
                     writer.write(message);
                     writer.write("</pre>");
-                    writer.write("</p>\n<hr /><i><small>Powered by Jetty://</small></i>");
+                    writer.write("</p>\n<hr />");
+                    writer.write(Jetty.POWERED_BY_HTML);
                     writer.write("\n</body>\n</html>\n");
 
                     writer.flush();
