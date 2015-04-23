@@ -206,7 +206,7 @@ public class ServerInstanceWrapper
      * The classloader that should be the parent classloader for each webapp
      * deployed on this server.
      * 
-     * @return
+     * @return the classloader
      */
     public ClassLoader getParentClassLoaderForWebapps()
     {

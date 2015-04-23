@@ -38,12 +38,9 @@ import org.osgi.framework.Bundle;
 
 /**
  * DefaultFileLocatorHelper
- * 
- * 
+ * <p> 
  * From a bundle to its location on the filesystem. Assumes the bundle is not a
  * jar.
- * 
- * @author hmalphettes
  */
 public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
 {
@@ -89,7 +86,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * 
      * @param bundle The bundle
      * @return Its installation location as a file.
-     * @throws Exception
+     * @throws Exception if unable to get the bundle install location
      */
     public File getBundleInstallLocation(Bundle bundle) throws Exception
     {
@@ -212,10 +209,10 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
     /**
      * Locate a file inside a bundle.
      * 
-     * @param bundle
-     * @param path
+     * @param bundle the bundle
+     * @param path the path
      * @return file object
-     * @throws Exception
+     * @throws Exception if unable to get the file in the bundle
      */
     public File getFileInBundle(Bundle bundle, String path) throws Exception
     {
@@ -239,8 +236,8 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * it searches for entries in the fragments by using the Bundle#findEntries
      * method.
      * 
-     * @param bundle
-     * @param entryPath
+     * @param bundle the bundle
+     * @param entryPath the entry path
      * @return null or all the entries found for that path.
      */
     public Enumeration<URL> findEntries(Bundle bundle, String entryPath)
@@ -266,7 +263,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * kept in a jar.
      * </p>
      * 
-     * @param bundle
+     * @param bundle the bundle
      * @return The jar(s) file that is either the bundle itself, either the jars
      *         embedded inside it.
      */
@@ -349,7 +346,7 @@ public class DefaultFileLocatorHelper implements BundleFileLocatorHelper
      * @return a URL to the content of the bundle entry that uses the file:
      *         protocol
      *         </p>
-     * @throws IOException 
+     * @throws Exception if unable to get the file url 
      */
     public URL getFileURL(URL url) throws Exception
  

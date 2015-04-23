@@ -36,13 +36,12 @@ import org.osgi.util.tracker.ServiceTracker;
 
 /**
  * JettyBootstrapActivator
- * 
+ * <p>
  * Bootstrap jetty and publish a default Server instance as an OSGi service.
- * 
+ * <p>
  * Listen for other Server instances to be published as services and support them as deployment targets.
- * 
+ * <p>
  * Listen for Bundles to be activated, and deploy those that represent webapps/ContextHandlers to one of the known Server instances.
- * 
  */
 public class JettyBootstrapActivator implements BundleActivator
 {
@@ -74,7 +73,7 @@ public class JettyBootstrapActivator implements BundleActivator
      * webapps. Setup the BundleListener that supports the extender pattern for
      * the jetty ContextHandler.
      * 
-     * @param context
+     * @param context the bundle context
      */
     public void start(final BundleContext context) throws Exception
     {

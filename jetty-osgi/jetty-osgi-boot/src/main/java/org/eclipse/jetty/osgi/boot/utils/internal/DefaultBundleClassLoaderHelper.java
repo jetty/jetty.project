@@ -29,8 +29,7 @@ import org.osgi.framework.Bundle;
 
 /**
  * DefaultBundleClassLoaderHelper
- * 
- * 
+ * <p>
  * Default implementation of the BundleClassLoaderHelper. Uses introspection to
  * support equinox-3.5 and felix-2.0.0
  */
@@ -133,7 +132,7 @@ public class DefaultBundleClassLoaderHelper implements BundleClassLoaderHelper
     /**
      * Assuming the bundle is started.
      * 
-     * @param bundle
+     * @param bundle the bundle
      * @return classloader object
      */
     public ClassLoader getBundleClassLoader(Bundle bundle)

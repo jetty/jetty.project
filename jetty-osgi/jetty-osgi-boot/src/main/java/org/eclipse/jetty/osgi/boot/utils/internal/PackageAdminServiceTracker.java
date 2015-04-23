@@ -36,11 +36,10 @@ import org.osgi.service.startlevel.StartLevel;
 
 /**
  * PackageAdminServiceTracker
- * 
- * 
+ * <p>
  * When the PackageAdmin service is activated we can look for the fragments
  * attached to this bundle and do a fake "activate" on them.
- * 
+ * <p> 
  * See particularly the jetty-osgi-boot-jsp fragment bundle that uses this
  * facility.
  */
@@ -124,8 +123,8 @@ public class PackageAdminServiceTracker implements ServiceListener
      * bundle. when we drop the support for the older versions of OSGi, we will
      * stop using the PackageAdmin service.
      * 
-     * @param bundle
-     * @return
+     * @param bundle the bundle
+     * @return the bundle fragment list
      */
     public Bundle[] getFragments(Bundle bundle)
     {
@@ -143,9 +142,8 @@ public class PackageAdminServiceTracker implements ServiceListener
      * collect the required-bundles and fragment when the directive
      * visibility:=reexport is added to a required-bundle.
      * 
-     * @param bundle
-     * @param webFragOrAnnotationOrResources
-     * @return
+     * @param bundle the bundle
+     * @return the bundle fragment and required list
      */
     public Bundle[] getFragmentsAndRequiredBundles(Bundle bundle)
     {
@@ -165,9 +163,13 @@ public class PackageAdminServiceTracker implements ServiceListener
      * transitively when the directive 'visibility:=reexport' is added to a
      * required-bundle.
      * 
-     * @param bundle
-     * @param webFragOrAnnotationOrResources
-     * @return
+     * @param bundle the bundle
+     * @param admin the admin package
+     * @param deps The map of fragment and required bundles associated to the value of the
+     *         jetty-web attribute.
+     * @param onlyReexport true to collect resources and web-fragments
+     *            transitively if and only if the directive visibility is
+     *            reexport.
      */
     protected void collectFragmentsAndRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
     {
@@ -193,12 +195,13 @@ public class PackageAdminServiceTracker implements ServiceListener
      * A simplistic but good enough parser for the Require-Bundle header. Parses
      * the version range attribute and the visibility directive.
      * 
+     * @param bundle the bundle
+     * @param admin the admin package 
+     * @param deps The map of required bundles associated to the value of the
+     *         jetty-web attribute.
      * @param onlyReexport true to collect resources and web-fragments
      *            transitively if and only if the directive visibility is
      *            reexport.
-     * @param bundle
-     * @return The map of required bundles associated to the value of the
-     *         jetty-web attribute.
      */
     protected void collectRequiredBundles(Bundle bundle, PackageAdmin admin, Map<String, Bundle> deps, boolean onlyReexport)
     {

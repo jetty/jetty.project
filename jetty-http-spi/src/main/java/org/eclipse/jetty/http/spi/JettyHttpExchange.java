@@ -32,9 +32,6 @@ import com.sun.net.httpserver.HttpContext;
 import com.sun.net.httpserver.HttpExchange;
 import com.sun.net.httpserver.HttpPrincipal;
 
-/* ------------------------------------------------------------ */
-/**
- */
 public class JettyHttpExchange extends HttpExchange implements JettyExchange
 {
     private JettyHttpExchangeDelegate _delegate;
@@ -46,9 +43,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#hashCode()
-     */
     @Override
     public int hashCode()
     {
@@ -56,9 +50,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getRequestHeaders()
-     */
     @Override
     public Headers getRequestHeaders()
     {
@@ -66,9 +57,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getResponseHeaders()
-     */
     @Override
     public Headers getResponseHeaders()
     {
@@ -76,9 +64,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getRequestURI()
-     */
     @Override
     public URI getRequestURI()
     {
@@ -86,9 +71,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getRequestMethod()
-     */
     @Override
     public String getRequestMethod()
     {
@@ -96,9 +78,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getHttpContext()
-     */
     @Override
     public HttpContext getHttpContext()
     {
@@ -106,9 +85,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#close()
-     */
     @Override
     public void close()
     {
@@ -116,9 +92,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#equals(java.lang.Object)
-     */
     @Override
     public boolean equals(Object obj)
     {
@@ -126,9 +99,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getRequestBody()
-     */
     @Override
     public InputStream getRequestBody()
     {
@@ -136,9 +106,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getResponseBody()
-     */
     @Override
     public OutputStream getResponseBody()
     {
@@ -146,9 +113,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#sendResponseHeaders(int, long)
-     */
     @Override
     public void sendResponseHeaders(int rCode, long responseLength) throws IOException
     {
@@ -156,9 +120,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getRemoteAddress()
-     */
     @Override
     public InetSocketAddress getRemoteAddress()
     {
@@ -166,9 +127,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getResponseCode()
-     */
     @Override
     public int getResponseCode()
     {
@@ -176,9 +134,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getLocalAddress()
-     */
     @Override
     public InetSocketAddress getLocalAddress()
     {
@@ -186,9 +141,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getProtocol()
-     */
     @Override
     public String getProtocol()
     {
@@ -196,9 +148,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#getAttribute(java.lang.String)
-     */
     @Override
     public Object getAttribute(String name)
     {
@@ -206,9 +155,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#setAttribute(java.lang.String, java.lang.Object)
-     */
     @Override
     public void setAttribute(String name, Object value)
     {
@@ -216,9 +162,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see JettyHttpExchangeDelegate#setStreams(java.io.InputStream, java.io.OutputStream)
-     */
     @Override
     public void setStreams(InputStream i, OutputStream o)
     {
@@ -226,9 +169,6 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#getPrincipal()
-     */
     @Override
     public HttpPrincipal getPrincipal()
     {
@@ -236,18 +176,12 @@ public class JettyHttpExchange extends HttpExchange implements JettyExchange
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#setPrincipal(com.sun.net.httpserver.HttpPrincipal)
-     */
     public void setPrincipal(HttpPrincipal principal)
     {
         _delegate.setPrincipal(principal);
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @see org.eclipse.jetty.http.spi.JettyExchange#toString()
-     */
     @Override
     public String toString()
     {

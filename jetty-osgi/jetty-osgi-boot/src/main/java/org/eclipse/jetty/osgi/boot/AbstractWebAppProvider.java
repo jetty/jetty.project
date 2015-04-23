@@ -46,15 +46,11 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
 
-
-
-
 /**
  * AbstractWebAppProvider
- *
+ * <p>
  * Base class for Jetty DeploymentManager Providers that are capable of deploying a webapp,
  * either from a bundle or an OSGi service.
- * 
  */
 public abstract class AbstractWebAppProvider extends AbstractLifeCycle implements AppProvider
 {
@@ -603,9 +599,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * 
-     */
     public String[] getConfigurationClasses()
     {
         return _configurationClasses;
@@ -623,9 +616,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     public DeploymentManager getDeploymentManager()
     {
         return _deploymentManager;

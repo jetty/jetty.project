@@ -51,9 +51,10 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
     
     /**
      * Keep track of a jetty URI Resource and its associated OSGi bundle.
-     * @param uri
-     * @param bundle
-     * @throws Exception 
+     * 
+     * @param bundle the bundle to index
+     * @return the resource for the bundle
+     * @throws Exception if unable to create the resource reference
      */
     protected Resource indexBundle(Bundle bundle) throws Exception
     {

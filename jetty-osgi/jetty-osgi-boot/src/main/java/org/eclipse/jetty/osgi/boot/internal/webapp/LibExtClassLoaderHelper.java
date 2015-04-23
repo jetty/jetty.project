@@ -32,10 +32,9 @@ import java.util.Set;
 
 /**
  * LibExtClassLoaderHelper
- * 
- * 
+ * <p>
  * Helper to create a URL class-loader with the jars inside
- * ${jetty.home}/lib/ext and ${jetty.home}/resources. In an ideal world, every
+ * <code>${jetty.home}/lib/ext</code> and <code>${jetty.home}/resources</code>. In an ideal world, every
  * library is an OSGi bundle that does loads nicely. To support standard jars or
  * bundles that cannot be loaded in the current OSGi environment, we support
  * inserting the jars in the usual jetty/lib/ext folders in the proper classpath
@@ -43,7 +42,6 @@ import java.util.Set;
  * <p>
  * The drawback is that those jars will not be available in the OSGi
  * classloader.
- * </p>
  * <p>
  * Alternatives to placing jars in lib/ext:
  * <ol>
@@ -54,7 +52,6 @@ import java.util.Set;
  * <li>Use equinox Buddy-Policy: register a buddy of the jetty bootstrapper
  * bundle. (Note: it will work only on equinox)</li>
  * </ol>
- * </p>
  */
 public class LibExtClassLoaderHelper
 {
@@ -76,11 +73,12 @@ public class LibExtClassLoaderHelper
     
     /* ------------------------------------------------------------ */
     /**
-     * @param server
+     * @param jettyHome the jetty home 
+     * @param parentClassLoader the parent classloader
      * @return a url classloader with the jars of resources, lib/ext and the
      *         jars passed in the other argument. The parent classloader usually
      *         is the JettyBootStrapper (an osgi classloader.
-     * @throws MalformedURLException
+     * @throws MalformedURLException if the jetty home reference is invalid
      */
     public static ClassLoader createLibEtcClassLoader(File jettyHome, ClassLoader parentClassLoader) throws MalformedURLException
     {
@@ -132,12 +130,14 @@ public class LibExtClassLoaderHelper
     
     /* ------------------------------------------------------------ */
     /**
-     * @param server
+     * @param jarsContainerOrJars the jars via file references
+     * @param otherJarsOrFolder more jars via url references
+     * @param parentClassLoader the parent classloader
      * @return a url classloader with the jars of resources, lib/ext and the
      *         jars passed in the other argument. The parent classloader usually
      *         is the JettyBootStrapper (an osgi classloader). If there was no
      *         extra jars to insert, then just return the parentClassLoader.
-     * @throws MalformedURLException
+     * @throws MalformedURLException if there is a bad jar file reference
      */
     public static ClassLoader createLibExtClassLoader(List<File> jarsContainerOrJars, List<URL> otherJarsOrFolder, ClassLoader parentClassLoader) 
     throws MalformedURLException
@@ -181,13 +181,14 @@ public class LibExtClassLoaderHelper
      * depending too much directly on a particular logging framework.
      * <p>
      * We can afford to do some implementation specific code for a logging
-     * framework only in a fragment. <br>
+     * framework only in a fragment.
+     * <p>
      * Trying to configure log4j and logback in here.
-     * </p>
      * <p>
      * We recommend that slf4j jars are all placed in the osgi framework. And a
      * single implementation if possible packaged as an osgi bundle is there.
-     * </p>
+     * @param jettyHome the jetty home reference
+     * @param childrenFiles the map of child files
      */
     protected static void processFilesInResourcesFolder(File jettyHome, Map<String, File> childrenFiles)
     {

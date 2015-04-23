@@ -42,12 +42,11 @@ import org.osgi.framework.BundleContext;
 
 /**
  * DefaultJettyAtJettyHomeHelper
- * 
- * 
+ * <p>
  * Creates a default instance of Jetty, based on the values of the
  * System properties "jetty.home" or "jetty.home.bundle", one of which
  * must be specified in order to create the default instance.
- * 
+ * <p> 
  * Called by the {@link JettyBootstrapActivator} during the starting of the
  * bundle. 
  */
@@ -92,6 +91,9 @@ public class DefaultJettyAtJettyHomeHelper
      * jetty.ssl.port are passed to the configuration files that might use them
      * as part of their properties.
      * </p>
+     * @param bundleContext the bundle context
+     * @return the configured server
+     * @throws Exception if unable to create / configure / or start the server
      */
     public static Server startJettyAtJettyHome(BundleContext bundleContext) throws Exception
     {
@@ -288,9 +290,9 @@ public class DefaultJettyAtJettyHomeHelper
     /**
      * Get a resource representing a directory inside a bundle. If the dir is null,
      * return a resource representing the installation location of the bundle.
-     * @param bundle
-     * @param dir
-     * @return
+     * @param bundle the bundle
+     * @param dir the directory
+     * @return the resource found
      */
     public static Resource findDir (Bundle bundle, String dir)
     {
