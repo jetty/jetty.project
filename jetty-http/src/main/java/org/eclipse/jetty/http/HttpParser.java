@@ -124,6 +124,7 @@ public class HttpParser
         CHUNK_SIZE,
         CHUNK_PARAMS,
         CHUNK,
+        CHUNK_END,
         END,
         CLOSE,  // The associated stream/endpoint should be closed
         CLOSED  // The associated stream/endpoint is at EOF
@@ -1409,10 +1410,7 @@ public class HttpParser
                     if (ch == HttpTokens.LINE_FEED)
                     {
                         if (_chunkLength == 0)
-                        {
-                            setState(State.END);
-                            return _handler.messageComplete();
-                        }
+                            setState(State.CHUNK_END);
                         else
                             setState(State.CHUNK);
                     }
@@ -1429,10 +1427,7 @@ public class HttpParser
                     if (ch == HttpTokens.LINE_FEED)
                     {
                         if (_chunkLength == 0)
-                        {
-                            setState(State.END);
-                            return _handler.messageComplete();
-                        }
+                            setState(State.CHUNK_END);
                         else
                             setState(State.CHUNK);
                     }
@@ -1461,6 +1456,20 @@ public class HttpParser
                             return true;
                     }
                     break;
+                }
+                
+                case CHUNK_END:
+                {
+                    // TODO handle chunk trailer
+                    ch=next(buffer);
+                    if (ch==0)
+                        break;
+                    if (ch == HttpTokens.LINE_FEED)
+                    {
+                        setState(State.END);
+                        return _handler.messageComplete();
+                    }
+                    throw new IllegalCharacterException(_state,ch,buffer);
                 }
                 
                 case CLOSED:
