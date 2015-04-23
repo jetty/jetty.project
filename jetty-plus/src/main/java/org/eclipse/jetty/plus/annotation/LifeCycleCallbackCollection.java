@@ -25,17 +25,11 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
-import javax.annotation.PostConstruct;
-import javax.annotation.PreDestroy;
-
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-
 /**
  * LifeCycleCallbackCollection
- *
- *
  */
 public class LifeCycleCallbackCollection
 {
@@ -98,7 +92,7 @@ public class LifeCycleCallbackCollection
     }
     
     /**
-     * Call the method, if one exists, that is annotated with {@link PostConstruct}
+     * Call the method, if one exists, that is annotated with <code>&#064;PostConstruct</code>
      * or with <code>&lt;post-construct&gt;</code> in web.xml
      * @param o the object on which to attempt the callback
      * @throws Exception if unable to call {@link PostConstructCallback}
@@ -123,7 +117,7 @@ public class LifeCycleCallbackCollection
 
     
     /**
-     * Call the method, if one exists, that is annotated with {@link PreDestroy}
+     * Call the method, if one exists, that is annotated with <code>&#064;PreDestroy</code>
      * or with <code>&lt;pre-destroy&gt;</code> in web.xml
      * @param o the object on which to attempt the callback
      * @throws Exception if unable to call {@link PreDestroyCallback}
