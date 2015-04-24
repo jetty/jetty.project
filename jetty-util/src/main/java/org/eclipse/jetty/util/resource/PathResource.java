@@ -72,6 +72,10 @@ public class PathResource extends Resource
             if (Files.exists(path))
             {
                 Path real = abs.toRealPath(FOLLOW_LINKS);
+                // We don't use (!Files.isSameFile(abs,real)) here as this
+                // results in invalid alias detection on systems like OSX.
+                // Where a real file "foo" can be referenced via Path "FOO",
+                // this results in Files.isSameFile(Path("foo"), Path("FOO")) == true
                 if (!abs.equals(real))
                     return real;
             }
