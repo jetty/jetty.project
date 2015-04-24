@@ -193,7 +193,7 @@ public abstract class Resource implements ResourceFactory, Closeable
             }
         }
 
-        return newResource(url);
+        return newResource(url, useCaches);
     }
 
     /* ------------------------------------------------------------ */
