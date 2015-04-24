@@ -28,14 +28,10 @@ import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 
 /**
  * ContainerInitializerAnnotationHandler
- *
+ * <p>
  *  Discovers classes that contain the specified annotation, either at class or
- *  method level. The specified annotation is derived from an @HandlesTypes on
+ *  method level. The specified annotation is derived from an <code>&#064;HandlesTypes</code> on
  *  a ServletContainerInitializer class.
- */
-/**
- * @author janb
- *
  */
 public class ContainerInitializerAnnotationHandler extends AbstractHandler
 {
@@ -51,7 +47,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     /**
      * Handle finding a class that is annotated with the annotation we were constructed with.
      * 
-     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(ClassInfo, String)
+     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.annotations.AnnotationParser.ClassInfo, String)
      */
     public void handle(ClassInfo info, String annotationName)
     {
@@ -64,7 +60,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     /**
      * Handle finding a field that is annotated with the annotation we were constructed with.
      * 
-     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(FieldInfo, String)
+     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.annotations.AnnotationParser.FieldInfo, String)
      */
     public void handle(FieldInfo info, String annotationName)
     {        
@@ -76,7 +72,7 @@ public class ContainerInitializerAnnotationHandler extends AbstractHandler
     /**
      * Handle finding a method that is annotated with the annotation we were constructed with. 
      * 
-     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(MethodInfo, String)
+     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(org.eclipse.jetty.annotations.AnnotationParser.MethodInfo, String)
      */
     public void handle(MethodInfo info, String annotationName)
     {
