@@ -153,8 +153,9 @@ public class PurgeInvalidSessionTest
         int port=server.getPort();
         try
         {
-            // cleanup any previous sessions so that we are starting fresh
+            // cleanup any previous sessions that are invalid so that we are starting fresh
             idManager.purgeFully();
+            int sessionCountAtTestStart = sessionManager.getSessionStoreCount();
 
             HttpClient client = new HttpClient();
             client.start();
@@ -181,12 +182,12 @@ public class PurgeInvalidSessionTest
                 Thread.sleep(purgeInvalidAge * 2);
 
                 // validate that we have the right number of sessions before we purge
-                assertEquals("Expected to find right number of sessions before purge", purgeLimit * 2, sessionManager.getSessionStoreCount());
+                assertEquals("Expected to find right number of sessions before purge", sessionCountAtTestStart + (purgeLimit * 2), sessionManager.getSessionStoreCount());
 
                 // run our purge we should still have items in the DB
                 idManager.purge();
                 assertEquals("Expected to find sessions remaining in db after purge run with limit set",
-                        purgeLimit, sessionManager.getSessionStoreCount());
+                        sessionCountAtTestStart + purgeLimit, sessionManager.getSessionStoreCount());
             }
             finally
             {
