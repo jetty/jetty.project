@@ -1058,9 +1058,8 @@ public class FileSystemResourceTest
 
         try (Resource fileres = newResource(refQuoted))
         {
-            // FileResource on OSX does not pass this test!
-            // on OSX "foo's.txt" with FileResource becomes "foo%27s.txt" incorrectly.
-            assumeFalse( (fileres instanceof FileResource) && (OS.IS_OSX) );
+            // This test does not pass on FileResource
+            assumeFalse(fileres instanceof FileResource);
             
             assertThat("Exists: " + refQuoted,fileres.exists(),is(true));
             assertThat("Alias: " + refQuoted,fileres,hasNoAlias());

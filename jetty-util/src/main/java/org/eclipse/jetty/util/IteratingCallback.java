@@ -411,7 +411,6 @@ public abstract class IteratingCallback implements Callback
                 case IDLE:
                 case SUCCEEDED:
                 case FAILED:
-                case PROCESSING:
                     _state=State.CLOSED;
                     break;
 
