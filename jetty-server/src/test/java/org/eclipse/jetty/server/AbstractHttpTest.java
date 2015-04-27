@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-
 import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStreamReader;
@@ -29,22 +26,29 @@ import java.io.PrintWriter;
 import java.net.Socket;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.io.ArrayByteBufferPool;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.junit.After;
 import org.junit.Before;
+import org.junit.Rule;
+
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
 
 public abstract class AbstractHttpTest
 {
+    @Rule
+    public TestTracker tracker = new TestTracker();
+
     protected static Server server;
     protected static ServerConnector connector;
     protected String httpVersion;
@@ -80,11 +84,10 @@ public abstract class AbstractHttpTest
         socket.setSoTimeout((int)connector.getIdleTimeout());
         BufferedReader reader = new BufferedReader(new InputStreamReader(socket.getInputStream(), StandardCharsets.UTF_8));
         PrintWriter writer = new PrintWriter(new OutputStreamWriter(socket.getOutputStream()));
-        String request = "GET / " + httpVersion + "\r\n";
 
-        writer.write(request);
-        writer.write("Host: localhost");
-        writer.println("\r\n");
+        writer.write("GET / " + httpVersion + "\r\n");
+        writer.write("Host: localhost\r\n");
+        writer.write("\r\n");
         writer.flush();
 
         SimpleHttpResponse response = httpParser.readResponse(reader);
