@@ -30,6 +30,7 @@ import java.io.InputStreamReader;
 import java.io.StringReader;
 import java.io.StringWriter;
 import java.lang.reflect.InvocationTargetException;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.nio.ByteBuffer;
@@ -251,8 +252,16 @@ public class FileSystemResourceTest
             Resource sub = base.addPath("sub");
             assertThat("sub",sub.isDirectory(),is(true));
 
-            Resource rrd = sub.addPath(readableRootDir);
-            assertThat("Readable Root Dir",rrd.exists(),is(false));
+            try
+            {
+                Resource rrd = sub.addPath(readableRootDir);
+                // valid path for unix and OSX
+                assertThat("Readable Root Dir",rrd.exists(),is(false));
+            }
+            catch (MalformedURLException | InvalidPathException e)
+            {
+                // valid path on Windows
+            }
         }
     }
 
@@ -265,7 +274,7 @@ public class FileSystemResourceTest
             {
                 for (Path entry : dir)
                 {
-                    if (Files.isDirectory(entry))
+                    if (Files.isDirectory(entry) && !Files.isHidden(entry))
                     {
                         return entry.toAbsolutePath().toString();
                     }
@@ -324,7 +333,7 @@ public class FileSystemResourceTest
         try (Resource base = newResource(dir.toFile()))
         {
             Resource res = base.addPath("foo");
-            assertThat("foo.lastModified",res.lastModified()/1000*1000,is(expected));
+            assertThat("foo.lastModified",res.lastModified()/1000*1000, lessThanOrEqualTo(expected));
         }
     }
 
