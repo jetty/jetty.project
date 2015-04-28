@@ -24,7 +24,7 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.strategy.ExecuteProduceRun;
+import org.eclipse.jetty.util.thread.strategy.ExecuteProduceConsume;
 
 /**
  * <p>An {@link ExecutionStrategy} executes {@link Runnable} tasks produced by a {@link Producer}.
@@ -94,7 +94,7 @@ public interface ExecutionStrategy
                 }
             }
             
-            return new ExecuteProduceRun(producer,executor);
+            return new ExecuteProduceConsume(producer,executor);
         }
     }
 }

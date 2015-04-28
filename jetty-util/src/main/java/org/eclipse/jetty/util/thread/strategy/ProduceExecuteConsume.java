@@ -28,13 +28,13 @@ import org.eclipse.jetty.util.thread.ExecutionStrategy;
  * <p>A strategy where the caller thread iterates over task production, submitting each
  * task to an {@link Executor} for execution.</p>
  */
-public class ProduceExecuteRun implements ExecutionStrategy
+public class ProduceExecuteConsume implements ExecutionStrategy
 {
     private static final Logger LOG = Log.getLogger(ExecutionStrategy.class);
     private final Producer _producer;
     private final Executor _executor;
 
-    public ProduceExecuteRun(Producer producer, Executor executor)
+    public ProduceExecuteConsume(Producer producer, Executor executor)
     {
         this._producer = producer;
         this._executor = executor;

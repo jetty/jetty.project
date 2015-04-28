@@ -41,9 +41,9 @@ import org.eclipse.jetty.util.thread.SpinLock.Lock;
  * pressure on producers.
  * </p>
  */
-public class ExecuteProduceRun implements ExecutionStrategy, Runnable
+public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
 {
-    private static final Logger LOG = Log.getLogger(ExecuteProduceRun.class);
+    private static final Logger LOG = Log.getLogger(ExecuteProduceConsume.class);
     private final SpinLock _lock = new SpinLock();
     private final Runnable _runExecute = new RunExecute();
     private final Producer _producer;
@@ -53,7 +53,7 @@ public class ExecuteProduceRun implements ExecutionStrategy, Runnable
     private boolean _producing;
     private boolean _pending;
 
-    public ExecuteProduceRun(Producer producer, Executor executor)
+    public ExecuteProduceConsume(Producer producer, Executor executor)
     {
         this._producer = producer;
         this._executor = executor;

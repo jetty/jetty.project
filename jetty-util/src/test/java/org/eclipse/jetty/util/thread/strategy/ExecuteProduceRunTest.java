@@ -47,7 +47,7 @@ public class ExecuteProduceRunTest
     };
     
     
-    ExecuteProduceRun _ewyk;
+    ExecuteProduceConsume _ewyk;
     final BlockingQueue<Runnable> _produce = new BlockingArrayQueue<>();
     final Queue<Runnable> _executions = new ConcurrentArrayQueue<>();
     volatile Thread _producer;
@@ -91,7 +91,7 @@ public class ExecuteProduceRunTest
             }
         };
 
-        _ewyk = new ExecuteProduceRun(producer,executor);
+        _ewyk = new ExecuteProduceConsume(producer,executor);
     }
 
     @After
