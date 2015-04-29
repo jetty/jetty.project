@@ -34,33 +34,33 @@ import org.eclipse.jetty.util.log.Logger;
 
 /* ------------------------------------------------------------ */
 /** HTTP2 Clear Text Connection factory.
- * <p>This extension of HTTP2ServerConnection Factory sets the 
+ * <p>This extension of HTTP2ServerConnection Factory sets the
  * protocol name to "h2c" as used by the clear text upgrade mechanism
  * for HTTP2 and marks all TLS ciphers as unacceptable.
  * </p>
- * <p>If used in combination with a {@link HttpConnectionFactory} as the 
+ * <p>If used in combination with a {@link HttpConnectionFactory} as the
  * default protocol, this factory can support the non-standard direct
- * update mechanism, where a HTTP1 request of the form "PRI * HTTP/2.0" 
+ * update mechanism, where a HTTP1 request of the form "PRI * HTTP/2.0"
  * is used to trigger a switch to a HTTP2 connection.    This approach
- * allows a single port to accept either HTTP/1 or HTTP/2 direct 
+ * allows a single port to accept either HTTP/1 or HTTP/2 direct
  * connections.
  */
-public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory implements ConnectionFactory.Upgrading 
+public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory implements ConnectionFactory.Upgrading
 {
     private static final Logger LOG = Log.getLogger(HTTP2CServerConnectionFactory.class);
 
     public HTTP2CServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        super(httpConfiguration,"h2c","h2c-14");
+        super(httpConfiguration,"h2c","h2c-17","h2c-16","h2c-15","h2c-14");
     }
-    
+
     @Override
     public boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher)
     {
         // Never use TLS with h2c
         return false;
     }
-    
+
     @Override
     public Connection upgradeConnection(Connector connector, EndPoint endPoint, Request request, HttpFields response101) throws BadMessageException
     {
@@ -69,9 +69,9 @@ public class HTTP2CServerConnectionFactory extends HTTP2ServerConnectionFactory 
 
         if (request.getContentLength() > 0)
             return null;
-        
+
         HTTP2ServerConnection connection = (HTTP2ServerConnection)newConnection(connector, endPoint);
-        if (connection.upgrade(request, response101))
+        if (connection.upgrade(request))
             return connection;
         return null;
     }

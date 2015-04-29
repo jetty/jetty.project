@@ -23,7 +23,7 @@ import java.util.Queue;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.http.BadMessageException;
-import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MetaData;
@@ -35,7 +35,6 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
-import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.http2.parser.SettingsBodyParser;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -56,7 +55,7 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     private final HttpConfiguration httpConfig;
     private HeadersFrame upgradeRequest;
 
-    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, Parser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
+    public HTTP2ServerConnection(ByteBufferPool byteBufferPool, Executor executor, EndPoint endPoint, HttpConfiguration httpConfig, ServerParser parser, ISession session, int inputBufferSize, ServerSessionListener listener)
     {
         super(byteBufferPool, executor, endPoint, parser, session, inputBufferSize);
         this.listener = listener;
@@ -64,11 +63,17 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
     }
 
     @Override
-    public void onUpgradeTo(ByteBuffer prefilled)
+    protected ServerParser getParser()
+    {
+        return (ServerParser)super.getParser();
+    }
+
+    @Override
+    public void onUpgradeTo(ByteBuffer buffer)
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDetailString(prefilled));
-        prefill(prefilled);
+            LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDetailString(buffer));
+        setInputBuffer(buffer);
     }
 
     @Override
@@ -143,16 +148,19 @@ public class HTTP2ServerConnection extends HTTP2Connection implements Connection
         return channel;
     }
 
-    public boolean upgrade(Request request, HttpFields response101)
+    public boolean upgrade(Request request)
     {
         if (HttpMethod.PRI.is(request.getMethod()))
         {
-            ((ServerParser)getParser()).directUpgrade();
+            getParser().directUpgrade();
         }
         else
         {
-            String value = request.getFields().getField(HttpHeader.HTTP2_SETTINGS).getValue();
-            final byte[] settings = B64Code.decodeRFC4648URL(value);
+            HttpField settingsField = request.getFields().getField(HttpHeader.HTTP2_SETTINGS);
+            if (settingsField == null)
+                throw new BadMessageException("Missing " + HttpHeader.HTTP2_SETTINGS + " header");
+            String value = settingsField.getValue();
+            final byte[] settings = B64Code.decodeRFC4648URL(value == null ? "" : value);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("{} settings {}",this,TypeUtil.toHexString(settings));

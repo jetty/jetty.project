@@ -60,17 +60,17 @@ public class HTTP2Connection extends AbstractConnection
         return session;
     }
 
-    
+
     protected Parser getParser()
     {
         return parser;
     }
-    
-    protected void prefill(ByteBuffer buffer)
+
+    protected void setInputBuffer(ByteBuffer buffer)
     {
-        producer.buffer=buffer;
+        producer.buffer = buffer;
     }
-    
+
     @Override
     public void onOpen()
     {

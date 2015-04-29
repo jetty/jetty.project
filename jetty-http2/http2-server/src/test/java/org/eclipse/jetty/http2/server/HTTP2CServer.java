@@ -31,35 +31,29 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
 public class HTTP2CServer extends Server
 {
     public HTTP2CServer(int port)
     {
-        // HTTP connector
         HttpConfiguration config = new HttpConfiguration();
+        // HTTP + HTTP/2 connector
         ServerConnector http = new ServerConnector(this,new HttpConnectionFactory(config), new HTTP2CServerConnectionFactory(config));
-        http.setHost("localhost");
         http.setPort(port);
-        http.setIdleTimeout(30000);
-
-        // Set the connector
         addConnector(http);
 
-        // Set a handler
+        ((QueuedThreadPool)getThreadPool()).setName("server");
+
         setHandler(new SimpleHandler());
     }
-    
+
     public static void main(String... args ) throws Exception
     {
-        // The Server
         HTTP2CServer server = new HTTP2CServer(8080);
-
-        // Start the server
         server.start();
-        server.join();
     }
-    
+
     private static class SimpleHandler extends AbstractHandler
     {
         @Override
@@ -69,15 +63,14 @@ public class HTTP2CServer extends Server
             String code=request.getParameter("code");
             if (code!=null)
                 response.setStatus(Integer.parseInt(code));
-            
+
             response.setHeader("Custom","Value");
             response.setContentType("text/plain");
             String content = "Hello from Jetty using "+request.getProtocol() +"\n";
             content+="uri="+request.getRequestURI()+"\n";
             content+="date="+new Date()+"\n";
             response.setContentLength(content.length());
-            response.getOutputStream().print(content);            
+            response.getOutputStream().print(content);
         }
-        
     }
 }

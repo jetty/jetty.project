@@ -25,7 +25,6 @@ import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Connection;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.generator.Generator;
-import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.http2.parser.ServerParser;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
@@ -40,12 +39,12 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int initialStreamSendWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
     private final HttpConfiguration httpConfiguration;
-    
+
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
     {
-        this(httpConfiguration,"h2-17","h2-16","h2-15","h2-14","h2");
+        this(httpConfiguration,"h2","h2-17","h2-16","h2-15","h2-14");
     }
-    
+
     protected AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration, String... protocols)
     {
         super(protocols);
@@ -86,7 +85,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     {
         return httpConfiguration;
     }
-    
+
     @Override
     public Connection newConnection(Connector connector, EndPoint endPoint)
     {
@@ -102,8 +101,8 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         // the typical case is that the connection will be busier and the
         // stream idle timeout will expire earlier that the connection's.
         session.setStreamIdleTimeout(endPoint.getIdleTimeout());
-        
-        Parser parser = newServerParser(connector, session);
+
+        ServerParser parser = newServerParser(connector, session);
         HTTP2Connection connection = new HTTP2ServerConnection(connector.getByteBufferPool(), connector.getExecutor(),
                         endPoint, httpConfiguration, parser, session, getInputBufferSize(), listener);
 
