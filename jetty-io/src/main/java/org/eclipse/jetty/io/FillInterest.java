@@ -21,6 +21,8 @@ package org.eclipse.jetty.io;
 import java.io.IOException;
 import java.nio.channels.ClosedChannelException;
 import java.nio.channels.ReadPendingException;
+import java.text.SimpleDateFormat;
+import java.util.Date;
 import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.util.Callback;
@@ -59,7 +61,7 @@ public abstract class FillInterest
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("{} register {}",this,callback);
-                _lastSet=new Throwable();
+                _lastSet=new Throwable(new SimpleDateFormat("yyyy-MM-dd HH:mm:ss.SSS").format(new Date()) + ":" + Thread.currentThread().getName());
             }
         }
         else
@@ -102,11 +104,11 @@ public abstract class FillInterest
     {
         return _interested.get() != null;
     }
-    
+
     /**
      * Call to signal a failure to a registered interest
-     * 
-     * @param cause the cause of the failure 
+     *
+     * @param cause the cause of the failure
      * @return true if the cause was passed to a {@link Callback} instance
      */
     public boolean onFail(Throwable cause)
@@ -132,7 +134,7 @@ public abstract class FillInterest
     {
         return String.format("FillInterest@%x{%b,%s}", hashCode(), _interested.get(), _interested.get());
     }
-    
+
     /**
      * Register the read interest
      * Abstract method to be implemented by the Specific ReadInterest to
