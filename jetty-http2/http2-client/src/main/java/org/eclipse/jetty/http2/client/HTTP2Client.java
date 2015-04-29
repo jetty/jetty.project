@@ -18,6 +18,20 @@
 
 package org.eclipse.jetty.http2.client;
 
+import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
+import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.ISession;
+import org.eclipse.jetty.http2.api.Session;
+import org.eclipse.jetty.io.*;
+import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
+import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
+
 import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
@@ -27,27 +41,6 @@ import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.Executor;
-
-import org.eclipse.jetty.alpn.client.ALPNClientConnectionFactory;
-import org.eclipse.jetty.http2.ErrorCode;
-import org.eclipse.jetty.http2.ISession;
-import org.eclipse.jetty.http2.api.Session;
-import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.ClientConnectionFactory;
-import org.eclipse.jetty.io.Connection;
-import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.io.ManagedSelector;
-import org.eclipse.jetty.io.MappedByteBufferPool;
-import org.eclipse.jetty.io.SelectChannelEndPoint;
-import org.eclipse.jetty.io.SelectorManager;
-import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
-import org.eclipse.jetty.util.Callback;
-import org.eclipse.jetty.util.Promise;
-import org.eclipse.jetty.util.component.ContainerLifeCycle;
-import org.eclipse.jetty.util.ssl.SslContextFactory;
-import org.eclipse.jetty.util.thread.QueuedThreadPool;
-import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
-import org.eclipse.jetty.util.thread.Scheduler;
 
 public class HTTP2Client extends ContainerLifeCycle
 {
@@ -196,7 +189,7 @@ public class HTTP2Client extends ContainerLifeCycle
         try
         {
             SocketChannel channel = SocketChannel.open();
-            channel.socket().setTcpNoDelay(true);
+            configure(channel);
             channel.configureBlocking(false);
 
             context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
@@ -216,6 +209,11 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             promise.failed(x);
         }
+    }
+
+    protected void configure(SocketChannel channel) throws IOException
+    {
+        channel.socket().setTcpNoDelay(true);
     }
 
     private void closeConnections()
