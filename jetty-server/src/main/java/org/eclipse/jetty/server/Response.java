@@ -917,16 +917,18 @@ public class Response implements HttpServletResponse
                 }
             }
             
-            if (_writer != null && _writer.isFor(encoding))
+            Locale locale = getLocale();
+            
+            if (_writer != null && _writer.isFor(locale,encoding))
                 _writer.reopen();
             else
             {
                 if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
-                    _writer = new ResponseWriter(new Iso88591HttpWriter(_out),encoding);
+                    _writer = new ResponseWriter(new Iso88591HttpWriter(_out),locale,encoding);
                 else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
-                    _writer = new ResponseWriter(new Utf8HttpWriter(_out),encoding);
+                    _writer = new ResponseWriter(new Utf8HttpWriter(_out),locale,encoding);
                 else
-                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding),encoding);
+                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding),locale,encoding);
             }
             
             // Set the output type at the end, because setCharacterEncoding() checks for it
@@ -1320,30 +1322,6 @@ public class Response implements HttpServletResponse
         return String.format("%s %d %s%n%s", _channel.getRequest().getHttpVersion(), _status, _reason == null ? "" : _reason, _fields);
     }
     
-
-    private static class ResponseWriter extends PrintWriter
-    {
-        private final String _encoding;
-        private final HttpWriter _httpWriter;
-        
-        public ResponseWriter(HttpWriter httpWriter,String encoding)
-        {
-            super(httpWriter);
-            _httpWriter=httpWriter;
-            _encoding=encoding;
-        }
-
-        public boolean isFor(String encoding)
-        {
-            return _encoding.equalsIgnoreCase(encoding);
-        }
-        
-        protected void reopen()
-        {
-            super.clearError();
-            out=_httpWriter;
-        }
-    }
 
     public void putHeaders(HttpContent content,long contentLength, boolean etag)
     {
