@@ -47,7 +47,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
 {
     private static final Logger LOG = Log.getLogger(HttpChannelOverHttp.class);
     private final static HttpField PREAMBLE_UPGRADE_H2C = new HttpField(HttpHeader.UPGRADE,"h2c");
-    
+
     private final HttpFields _fields = new HttpFields();
     private final MetaData.Request _metadata = new MetaData.Request(_fields);
     private final HttpConnection _httpConnection;
@@ -58,14 +58,14 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     private boolean _expect100Continue = false;
     private boolean _expect102Processing = false;
 
-    
+
     public HttpChannelOverHttp(HttpConnection httpConnection, Connector connector, HttpConfiguration config, EndPoint endPoint, HttpTransport transport)
     {
         super(connector,config,endPoint,transport);
         _httpConnection = httpConnection;
         _metadata.setURI(new HttpURI());
     }
-    
+
     @Override
     protected HttpInput newHttpInput(HttpChannelState state)
     {
@@ -182,7 +182,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         }
         _fields.add(field);
     }
-    
+
     /**
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
@@ -225,7 +225,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
     @Override
     public boolean content(ByteBuffer content)
     {
-        HttpInput.Content c = _httpConnection.newContent(content);        
+        HttpInput.Content c = _httpConnection.newContent(content);
         boolean handle = onContent(c) || _delayedForContent;
         _delayedForContent=false;
         return handle;
@@ -233,9 +233,9 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
 
     public void asyncReadFillInterested()
     {
-        _httpConnection.asyncReadFillInterested();        
+        _httpConnection.asyncReadFillInterested();
     }
-    
+
     @Override
     public void badMessage(int status, String reason)
     {
@@ -249,7 +249,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         {
             LOG.ignore(e);
         }
-        
+
         onBadMessage(status,reason);
     }
 
@@ -276,15 +276,15 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                 }
                 else
                     persistent=false;
-                        
+
                 if (!persistent)
                     persistent = HttpMethod.CONNECT.is(_metadata.getMethod());
                 if (persistent)
                     getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.KEEP_ALIVE);
-                    
+
                 break;
             }
-            
+
             case HTTP_1_1:
             {
                 if (_unknownExpectation)
@@ -292,7 +292,7 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                     badMessage(HttpStatus.EXPECTATION_FAILED_417,null);
                     return false;
                 }
-                
+
                 if (getHttpConfiguration().isPersistentConnectionsEnabled())
                 {
                     if (_connection!=null)
@@ -307,33 +307,33 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
                 }
                 else
                     persistent=false;
-                
+
                 if (!persistent)
                     persistent = HttpMethod.CONNECT.is(_metadata.getMethod());
                 if (!persistent)
                     getResponse().getHttpFields().add(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE);
-                
+
                 if (_upgrade!=null && upgrade())
                     return true;
-                
+
                 break;
             }
-            
+
             case HTTP_2:
             {
                 // Allow direct "upgrade" to HTTP_2_0 only if the connector supports h2, but not protocol negotiation
                 _upgrade=PREAMBLE_UPGRADE_H2C;
-                
+
                 if (HttpMethod.PRI.is(_metadata.getMethod()) &&
                     "*".equals(_metadata.getURI().toString()) &&
                     _fields.size()==0 &&
                     upgrade())
                     return false;
-              
+
                 badMessage(HttpStatus.UPGRADE_REQUIRED_426,null);
                 return false;
             }
-                
+
             default:
             {
                 throw new IllegalStateException();
@@ -348,40 +348,42 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         // Should we delay dispatch until we have some content?
         // We should not delay if there is no content expect or client is expecting 100 or the response is already committed or the request buffer already has something in it to parse
         _delayedForContent =  (getHttpConfiguration().isDelayDispatchUntilContent() && _httpConnection.getParser().getContentLength()>0 && !isExpecting100Continue() && !isCommitted() && _httpConnection.isRequestBufferEmpty());
-        
+
         return !_delayedForContent;
     }
 
-    
+
     /**
-     * Attempt to upgrade using a {@link ConnectionFactory.Upgrading} from the connector.
-     * The upgrade may succeed, be ignored (which can allow a later handler to implement)
-     * or fail with a {@link BadMessageException}.
-     * @return
-     * @throws BadMessageException
+     * <p>Attempts to perform a HTTP/1.1 upgrade.</p>
+     * <p>The upgrade looks up a {@link ConnectionFactory.Upgrading} from the connector
+     * matching the protocol specified in the {@code Upgrade} header.</p>
+     * <p>The upgrade may succeed, be ignored (which can allow a later handler to implement)
+     * or fail with a {@link BadMessageException}.</p>
+     * @return true if the upgrade was performed, false if it was ignored
+     * @throws BadMessageException if the upgrade failed
      */
     private boolean upgrade() throws BadMessageException
     {
         if (LOG.isDebugEnabled())
             LOG.debug("upgrade {} {}",this,_upgrade);
-        
+
         if (_upgrade!=PREAMBLE_UPGRADE_H2C && (_connection==null || !_connection.getValue().contains("Upgrade")))
             throw new BadMessageException(HttpStatus.BAD_REQUEST_400);
-        
+
         // Find the upgrade factory
         ConnectionFactory.Upgrading factory=null;
-        loop: for (ConnectionFactory f : getConnector().getConnectionFactories())
+        for (ConnectionFactory f : getConnector().getConnectionFactories())
         {
             if (f instanceof ConnectionFactory.Upgrading)
             {
                 if (f.getProtocols().contains(_upgrade.getValue()))
                 {
                     factory=(ConnectionFactory.Upgrading)f;
-                    break loop;
+                    break;
                 }
             }
         }
-        
+
         if (factory==null)
         {
             if (LOG.isDebugEnabled())
@@ -409,12 +411,12 @@ class HttpChannelOverHttp extends HttpChannel implements HttpParser.RequestHandl
         {
             throw new BadMessageException(HttpStatus.INTERNAL_SERVER_ERROR_500,null,e);
         }
-        
+
         if (LOG.isDebugEnabled())
             LOG.debug("Upgrade from {} to {}", getEndPoint().getConnection(),upgrade_connection);
         getRequest().setAttribute(HttpConnection.UPGRADE_CONNECTION_ATTRIBUTE,upgrade_connection);
         getResponse().setStatus(101);
-        getHttpTransport().onCompleted();                
+        getHttpTransport().onCompleted();
         return true;
     }
 
