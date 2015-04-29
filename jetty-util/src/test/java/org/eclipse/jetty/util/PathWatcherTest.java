@@ -43,9 +43,11 @@ import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEventType;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
+@Ignore
 public class PathWatcherTest
 {
     public static class PathWatchEventCapture implements PathWatcher.Listener
