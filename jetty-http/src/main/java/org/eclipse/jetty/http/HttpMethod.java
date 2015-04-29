@@ -76,7 +76,7 @@ public enum HttpMethod
                     return HEAD;
                 break;
             case 'O':
-                if (bytes[position+1]=='O' && bytes[position+2]=='T' && bytes[position+3]=='I' && length>=8 &&
+                if (bytes[position+1]=='P' && bytes[position+2]=='T' && bytes[position+3]=='I' && length>=8 &&
                     bytes[position+4]=='O' && bytes[position+5]=='N' && bytes[position+6]=='S' && bytes[position+7]==' ' )
                     return OPTIONS;
                 break;

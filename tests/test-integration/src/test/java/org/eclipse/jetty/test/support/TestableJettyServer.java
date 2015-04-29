@@ -177,7 +177,7 @@ public class TestableJettyServer
         _server.start();
 
         // Find the active server port.
-        this._serverPort = ((NetworkConnector)_server.getConnectors()[0]).getPort();
+        this._serverPort = ((NetworkConnector)_server.getConnectors()[0]).getLocalPort();
         System.err.println("Server Port="+_serverPort);
         Assert.assertTrue("Server Port is between 1 and 65535. Actually <" + _serverPort + ">",(1 <= this._serverPort) && (this._serverPort <= 65535));
     }
