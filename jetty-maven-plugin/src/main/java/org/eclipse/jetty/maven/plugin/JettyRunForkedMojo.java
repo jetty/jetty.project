@@ -162,6 +162,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
  
     
     private Resource originalBaseResource;
+    private boolean originalPersistTemp;
     
     
     /**
@@ -267,6 +268,9 @@ public class JettyRunForkedMojo extends JettyRunMojo
             //copy the base resource as configured by the plugin
             originalBaseResource = webApp.getBaseResource();
             
+            //get the original persistance setting
+            originalPersistTemp = webApp.isPersistTempDirectory();
+            
             //set the webapp up to do very little other than generate the quickstart-web.xml
             webApp.setCopyWebDir(false);
             webApp.setCopyWebInf(false);
@@ -289,8 +293,11 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 tpool.start();
             else
                 webApp.setAttribute(AnnotationConfiguration.MULTI_THREADED, Boolean.FALSE.toString());
+
+            //leave everything unpacked for the forked process to use
+            webApp.setPersistTempDirectory(true);
             
-             webApp.start(); //just enough to generate the quickstart           
+            webApp.start(); //just enough to generate the quickstart           
            
             //save config of the webapp BEFORE we stop
             File props = prepareConfiguration();
@@ -498,31 +505,23 @@ public class JettyRunForkedMojo extends JettyRunMojo
 
             //tmp dir
             props.put("tmp.dir", webApp.getTempDirectory().getAbsolutePath());
-            props.put("tmp.dir.persist", Boolean.toString(webApp.isPersistTempDirectory()));
+            props.put("tmp.dir.persist", Boolean.toString(originalPersistTemp));
+
+            //send over the original base resources before any overlays were added
+            if (originalBaseResource instanceof ResourceCollection)
+                props.put("base.dirs.orig", toCSV(((ResourceCollection)originalBaseResource).getResources()));
+            else
+                props.put("base.dirs.orig", originalBaseResource.toString());
+
+            //send over the calculated resource bases that includes unpacked overlays, but none of the
+            //meta-inf resources
+            Resource postOverlayResources = (Resource)webApp.getAttribute(MavenWebInfConfiguration.RESOURCE_BASES_POST_OVERLAY);
+            if (postOverlayResources instanceof ResourceCollection)
+                props.put("base.dirs", toCSV(((ResourceCollection)postOverlayResources).getResources()));
+            else
+                props.put("base.dirs", postOverlayResources.toString());
+        
             
-            //resource bases - these are what has been configured BEFORE the webapp started and 
-            //potentially reordered them and included any resources from META-INF
-            if (originalBaseResource != null)
-            {
-                StringBuffer rb = new StringBuffer();
-                if (originalBaseResource instanceof ResourceCollection)
-                {
-                    ResourceCollection resources = ((ResourceCollection)originalBaseResource);
-                    for (Resource r:resources.getResources())
-                    {
-                        if (rb.length() > 0) rb.append(",");
-                        rb.append(r.toString());
-                    }        
-                }
-                else  
-                    rb.append(originalBaseResource.toString());
-                
-               props.put("base.dirs", rb.toString());                    
-            }
-
-            //sort out the resource base directories of the webapp
-            props.put("base.first", Boolean.toString(webApp.getBaseAppFirst()));
-
             //web-inf classes
             if (webApp.getClasses() != null)
             {
@@ -837,5 +836,18 @@ public class JettyRunForkedMojo extends JettyRunMojo
                 strbuff.append(",");
         }
         return strbuff.toString();
+    }
+
+    private String toCSV (Resource[] resources)
+    {
+        StringBuffer rb = new StringBuffer();
+
+        for (Resource r:resources)
+        {
+            if (rb.length() > 0) rb.append(",");
+            rb.append(r.toString());
+        }        
+
+        return rb.toString();
     }
 }

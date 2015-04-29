@@ -221,21 +221,23 @@ public class Starter
         str = (String)props.getProperty("tmp.dir.persist");
         if (str != null)
             webApp.setPersistTempDirectory(Boolean.valueOf(str));
-
-        // - the base directories
+        
+        //Get the calculated base dirs which includes the overlays
         str = (String)props.getProperty("base.dirs");
         if (str != null && !"".equals(str.trim()))
         {
             ResourceCollection bases = new ResourceCollection(str.split(","));
-            webApp.setWar(bases.getResources()[0].toString());
+            webApp.setWar(null);
             webApp.setBaseResource(bases);
         }
-        
-        // - put virtual webapp base resource first on resource path or not
-        str = (String)props.getProperty("base.first");
+
+        //Get the original base dirs without the overlays
+        str = (String)props.get("base.dirs.orig");
         if (str != null && !"".equals(str.trim()))
-            webApp.setBaseAppFirst(Boolean.valueOf(str));
-        
+        {
+            ResourceCollection bases = new ResourceCollection(str.split(","));
+            webApp.setAttribute ("org.eclipse.jetty.resources.originalBases", bases);
+        }
         
         //For overlays
         str = (String)props.getProperty("maven.war.includes");
