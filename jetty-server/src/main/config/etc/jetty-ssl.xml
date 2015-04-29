@@ -35,7 +35,7 @@
       </New>
     </Arg>
   </Call>
-  
+
   <!-- ============================================================= -->
   <!-- Create a TLS (SSL) Context Factory  for later reuse           -->
   <!-- ============================================================= -->
@@ -60,7 +60,7 @@
      </Array>
     </Set>
   </New>
-  
+
   <!-- =========================================================== -->
   <!-- Create a TLS specific HttpConfiguration based on the        -->
   <!-- common HttpConfiguration defined in jetty.xml               -->
@@ -72,7 +72,7 @@
     <Call name="addCustomizer">
       <Arg>
         <New class="org.eclipse.jetty.server.SecureRequestCustomizer">
-          <Property name="jetty.ssl.sniHostCheck" default="true"/>
+          <Arg type="boolean"><Property name="jetty.ssl.sniHostCheck" default="true"/></Arg>
         </New>
       </Arg>
     </Call>
