@@ -723,6 +723,10 @@ public class DoSFilter implements Filter
             prefix -= 8;
             ++index;
         }
+        
+        if (index == result.length)
+            return result;
+               
         // Sets the _prefix_ most significant bits to 1
         result[index] = (byte)~((1 << (8 - prefix)) - 1);
         return result;
@@ -1037,6 +1041,18 @@ public class DoSFilter implements Filter
         clearWhitelist();
         _whitelist.addAll(result);
         LOG.debug("Whitelisted IP addresses: {}", result);
+    }
+    
+    /**
+     * Set a list of IP addresses that will not be rate limited.
+     *
+     * @param values whitelist
+     */
+    public void setWhitelist(List<String> values)
+    {
+        clearWhitelist();
+        _whitelist.addAll(values);
+        LOG.debug("Whitelisted IP addresses: {}", values);
     }
 
     /**
