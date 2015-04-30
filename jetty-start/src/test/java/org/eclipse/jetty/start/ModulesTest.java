@@ -134,7 +134,6 @@ public class ModulesTest
         expected.add("stats");
         expected.add("webapp");
         expected.add("websocket");
-        expected.add("xinetd");
         
         ConfigurationAssert.assertContainsUnordered("All Modules",expected,moduleNames);
     }
