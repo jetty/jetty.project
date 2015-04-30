@@ -224,6 +224,10 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
 
                 // Parse the request buffer
                 boolean handle = parseRequestBuffer();
+                // If there was a connection upgrade, the other
+                // connection took over, nothing more to do here.
+                if (getEndPoint().getConnection()!=this)
+                    break;
 
                 // Handle close parser
                 if (_parser.isClose())
@@ -245,8 +249,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                 // Continue or break?
                 else if (filled<=0)
                 {
-                    // Be fill interested only if there was no connection upgrade.
-                    if (filled==0 && getEndPoint().getConnection()==this)
+                    if (filled==0)
                         fillInterested();
                     break;
                 }
