@@ -73,16 +73,25 @@ public class StartArgs
 
     /** List of enabled modules */
     private Set<String> modules = new HashSet<>();
+    
+    /** List of modules to skip [files] section validation */
+    private Set<String> skipFileValidationModules = new HashSet<>();
+    
     /** Map of enabled modules to the source of where that activation occurred */
     private Map<String, List<String>> sources = new HashMap<>();
+    
     /** Map of properties to where that property was declared */
     private Map<String, String> propertySource = new HashMap<>();
+    
     /** List of all active [files] sections from enabled modules */
     private List<FileArg> files = new ArrayList<>();
+    
     /** List of all active [lib] sections from enabled modules */
     private Classpath classpath;
+    
     /** List of all active [xml] sections from enabled modules */
     private List<Path> xmls = new ArrayList<>();
+    
     /** JVM arguments, found via commmand line and in all active [exec] sections from enabled modules */
     private List<String> jvmArgs = new ArrayList<>();
 
@@ -137,6 +146,12 @@ public class StartArgs
 
     private void addFile(Module module, String uriLocation)
     {
+        if(module.isSkipFilesValidation())
+        {
+            StartLog.debug("Not validating %s [files] for %s",module,uriLocation);
+            return;
+        }
+        
         FileArg arg = new FileArg(module, uriLocation);
         if (!files.contains(arg))
         {
@@ -602,6 +617,11 @@ public class StartArgs
     {
         return properties;
     }
+    
+    public Set<String> getSkipFileValidationModules()
+    {
+        return skipFileValidationModules;
+    }
 
     public List<String> getSources(String module)
     {
@@ -884,6 +904,17 @@ public class StartArgs
         {
             List<String> moduleNames = Props.getValues(arg);
             enableModules(source,moduleNames);
+            return;
+        }
+        
+        // Skip [files] validation on a module
+        if (arg.startsWith("--skip-file-validation="))
+        {
+            List<String> moduleNames = Props.getValues(arg);
+            for (String moduleName : moduleNames)
+            {
+                skipFileValidationModules.add(moduleName);
+            }
             return;
         }
 

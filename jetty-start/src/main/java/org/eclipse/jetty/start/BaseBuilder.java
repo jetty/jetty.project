@@ -198,10 +198,18 @@ public class BaseBuilder
                     // skip ambiguous module
                     continue;
                 }
-                dirty |= builder.addModule(mod);
-                for (String file : mod.getFiles())
+                
+                if (mod.isSkipFilesValidation())
                 {
-                    files.add(new FileArg(mod,file));
+                    StartLog.debug("Skipping [files] validation on %s",mod.getName());
+                } 
+                else 
+                {
+                    dirty |= builder.addModule(mod);
+                    for (String file : mod.getFiles())
+                    {
+                        files.add(new FileArg(mod,file));
+                    }
                 }
             }
         }
@@ -211,10 +219,17 @@ public class BaseBuilder
             StartIniBuilder builder = new StartIniBuilder(this);
             for (Module mod : startIniModules)
             {
-                dirty |= builder.addModule(mod);
-                for (String file : mod.getFiles())
+                if (mod.isSkipFilesValidation())
                 {
-                    files.add(new FileArg(mod,file));
+                    StartLog.debug("Skipping [files] validation on %s",mod.getName());
+                } 
+                else 
+                {
+                    dirty |= builder.addModule(mod);
+                    for (String file : mod.getFiles())
+                    {
+                        files.add(new FileArg(mod,file));
+                    }
                 }
             }
         }

@@ -308,6 +308,12 @@ public class Main
 
             args.setAllModules(modules);
             List<Module> activeModules = modules.getSelected();
+            
+            for(String name: args.getSkipFileValidationModules())
+            {
+                Module module = modules.get(name);
+                module.setSkipFilesValidation(true);
+            }
 
             // ------------------------------------------------------------
             // 5) Lib & XML Expansion / Resolution

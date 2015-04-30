@@ -56,20 +56,28 @@ public class Module extends Node<Module>
 
     /** The file of the module */
     private Path file;
+    
     /** The name of this Module (as a filesystem reference) */
     private String fileRef;
 
     /** List of xml configurations for this Module */
     private List<String> xmls;
+    
     /** List of ini template lines */
     private List<String> defaultConfig;
     private boolean hasDefaultConfig = false;
+    
     /** List of library options for this Module */
     private List<String> libs;
+    
     /** List of files for this Module */
     private List<String> files;
+    /** Skip File Validation (default: false) */
+    private boolean skipFilesValidation = false;
+    
     /** List of jvm Args */
     private List<String> jvmArgs;
+    
     /** License lines */
     private List<String> license;
 
@@ -137,6 +145,11 @@ public class Module extends Node<Module>
         return files;
     }
 
+    public boolean isSkipFilesValidation()
+    {
+        return skipFilesValidation;
+    }
+
     public String getFilesystemRef()
     {
         return fileRef;
@@ -156,7 +169,7 @@ public class Module extends Node<Module>
     {
         return license;
     }
-
+    
     public List<String> getXmls()
     {
         return xmls;
@@ -306,7 +319,12 @@ public class Module extends Node<Module>
     {
         throw new RuntimeException("Don't enable directly");
     }
-
+    
+    public void setSkipFilesValidation(boolean skipFilesValidation)
+    {
+        this.skipFilesValidation = skipFilesValidation;
+    }
+    
     @Override
     public String toString()
     {
