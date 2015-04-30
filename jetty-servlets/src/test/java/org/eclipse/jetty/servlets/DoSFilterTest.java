@@ -82,7 +82,7 @@ public class DoSFilterTest extends AbstractDoSFilterTest
         whitelist.add("10.0.0.0/8");
         whitelist.add("4d8:0:a:1234:ABc:1F:b18:17");
         whitelist.add("4d8:0:a:1234:ABc:1F:0:0/96");
-        filter.setWhitelist(whitelist);
+        filter.setWhitelist("192.168.0.1/32,10.0.0.0/8,4d8:0:a:1234:ABc:1F:b18:17,4d8:0:a:1234:ABc:1F:0:0/96");
         Assert.assertTrue(filter.checkWhitelist("192.168.0.1"));
         Assert.assertFalse(filter.checkWhitelist("192.168.0.2"));
         Assert.assertFalse(filter.checkWhitelist("11.12.13.14"));
