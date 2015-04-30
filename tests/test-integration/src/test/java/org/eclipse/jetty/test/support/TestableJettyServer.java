@@ -33,6 +33,7 @@ import java.util.Map;
 import java.util.Properties;
 
 import org.eclipse.jetty.http.HttpScheme;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.xml.XmlConfiguration;
@@ -119,7 +120,7 @@ public class TestableJettyServer
         for (int i = 0; i < this._xmlConfigurations.size(); i++)
         {
             URL configURL = this._xmlConfigurations.get(i);
-            // System.err.println("configuring: "+configURL);
+            System.err.println("configuring: "+configURL);
             XmlConfiguration configuration = new XmlConfiguration(configURL);
             if (last != null)
             {
@@ -177,7 +178,6 @@ public class TestableJettyServer
 
         // Find the active server port.
         this._serverPort = ((NetworkConnector)_server.getConnectors()[0]).getLocalPort();
-        // System.err.println("Server Port="+_serverPort);
         Assert.assertTrue("Server Port is between 1 and 65535. Actually <" + _serverPort + ">",(1 <= this._serverPort) && (this._serverPort <= 65535));
     }
 

@@ -25,7 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Locale;
 
-import org.eclipse.jetty.util.IO;
+
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -46,7 +46,7 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
 {
     private static final Logger LOG = Log.getLogger(MavenWebInfConfiguration.class);
 
-    
+    public static final String RESOURCE_BASES_POST_OVERLAY = "org.eclipse.jetty.resource.postOverlay";
     protected static int COUNTER = 0; 
     protected Resource _originalResourceBase;
     protected List<Resource>  _unpackedOverlayResources;
@@ -115,24 +115,11 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
      */
     public void deconfigure(WebAppContext context) throws Exception
     {   
-        //remove the unpacked wars
-        if (_unpackedOverlayResources != null && !_unpackedOverlayResources.isEmpty())
-        {
-            try
-            {
-                for (Resource r:_unpackedOverlayResources)
-                {
-                    IO.delete(r.getFile());
-                }
-            }
-            catch (IOException e)
-            {
-                LOG.ignore(e);
-            }
-        }
         super.deconfigure(context);
         //restore whatever the base resource was before we might have included overlaid wars
         context.setBaseResource(_originalResourceBase);
+        //undo the setting of the overlayed resources
+        context.removeAttribute(RESOURCE_BASES_POST_OVERLAY);
     }
 
     
@@ -190,9 +177,10 @@ public class MavenWebInfConfiguration extends WebInfConfiguration
                     resourceBaseCollection.add(_originalResourceBase);
                 }
             }
-
             jwac.setBaseResource(new ResourceCollection(resourceBaseCollection.toArray(new Resource[resourceBaseCollection.size()])));
         }
+        
+        jwac.setAttribute(RESOURCE_BASES_POST_OVERLAY, jwac.getBaseResource());
     }
 
 

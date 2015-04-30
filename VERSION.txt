@@ -1,5 +1,6 @@
 jetty-9.3.0-SNAPSHOT
 
+
 jetty-9.2.11.M0 - 25 March 2015
  + 454934 WebSocketClient / connectToServer can block indefinitely during
    upgrade failure
