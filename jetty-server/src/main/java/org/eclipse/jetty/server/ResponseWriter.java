@@ -26,13 +26,14 @@ import java.util.Locale;
 
 import javax.servlet.ServletResponse;
 
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
-/** 
+/** Specialized PrintWriter for servlet Responses
  * <p>An instance of ResponseWriter is the {@link PrintWriter} subclass returned by {@link Response#getWriter()}.
  * It differs from the standard {@link PrintWriter} in that:<ul>
  * <li>It does not support autoflush</li>
@@ -42,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
  * </ul>
  * 
  */
-class ResponseWriter extends PrintWriter
+public class ResponseWriter extends PrintWriter
 {
     private static final Logger LOG = Log.getLogger(ResponseWriter.class);
     private final static String __lineSeparator = System.getProperty("line.separator");
@@ -132,7 +133,7 @@ class ResponseWriter extends PrintWriter
             throw new RuntimeIOException(_ioException); 
         
         if (_isClosed)
-            throw new IOException("Stream closed");
+            throw new EofException("Stream closed");
     }
 
     @Override

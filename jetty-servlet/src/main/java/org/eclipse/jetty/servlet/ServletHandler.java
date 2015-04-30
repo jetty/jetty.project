@@ -589,6 +589,11 @@ public class ServletHandler extends ScopedHandler
         }
         catch(RuntimeIOException e)
         {
+            if (e.getCause() instanceof IOException)
+            {
+                LOG.debug(e);
+                throw (IOException)e.getCause();
+            }
             throw e;
         }
         catch(Exception e)
