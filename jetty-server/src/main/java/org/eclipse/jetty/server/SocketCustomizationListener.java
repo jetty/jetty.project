@@ -29,11 +29,13 @@ import org.eclipse.jetty.io.EndPoint;
 
 
 /* ------------------------------------------------------------ */
-/** A Connection Lister for customization of SocketConnections.
- * <p>Instances of this listener may be added to a {@link Connector} ( or 
+/** 
+ * A Connection Lister for customization of SocketConnections.
+ * <p>
+ * Instances of this listener may be added to a {@link Connector} (or 
  * {@link ConnectionFactory}) so that they are applied to all connections
  * for that connector (or protocol) and thus allow additional Socket
- * configuration to be applied by implementing {@link #customize(Socket, Connection)}
+ * configuration to be applied by implementing {@link #customize(Socket, Class, boolean)}
  */
 public class SocketCustomizationListener implements Listener
 {
