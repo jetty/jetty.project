@@ -20,6 +20,7 @@ package org.eclipse.jetty.util;
 
 import static java.nio.file.StandardWatchEventKinds.*;
 
+import java.io.File;
 import java.io.IOException;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystem;
@@ -41,6 +42,7 @@ import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
+import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
 import java.util.concurrent.TimeUnit;
@@ -60,8 +62,40 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class PathWatcher extends AbstractLifeCycle implements Runnable
 {
+    /**
+     * Set to true to enable super noisy debug logging
+     */
+    private static final boolean NOISY = false;
+    
+    private static final boolean IS_WINDOWS;
+    
+    static
+    {
+        String os = System.getProperty("os.name");
+        if (os == null)
+        {
+            IS_WINDOWS = false;
+        }
+        else
+        {
+            IS_WINDOWS = os.toLowerCase(Locale.ENGLISH).contains("windows");
+        }
+    }
+
     public static class Config
     {
+        private static final String PATTERN_SEP;
+
+        static
+        {
+            String sep = File.separator;
+            if (File.separatorChar == '\\')
+            {
+                sep = "\\\\";
+            }
+            PATTERN_SEP = sep;
+        }
+        
         protected final Path dir;
         protected int recurseDepth = 0; // 0 means no sub-directories are scanned
         protected List<PathMatcher> includes;
@@ -87,19 +121,44 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
 
         /**
-         * Add an exclude PathMatcher
+         * Add an exclude PathMatcher.
+         * <p>
+         * Note: this pattern is FileSystem specific (so use "/" for Linux and OSX, and "\\" for Windows)
          *
          * @param syntaxAndPattern
          *            the PathMatcher syntax and pattern to use
          * @see FileSystem#getPathMatcher(String) for detail on syntax and pattern
          */
-        public void addExclude(String syntaxAndPattern)
+        public void addExclude(final String syntaxAndPattern)
         {
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("Adding exclude: [{}]",syntaxAndPattern);
             }
             addExclude(dir.getFileSystem().getPathMatcher(syntaxAndPattern));
+        }
+
+        /**
+         * Add a <code>glob:</code> syntax pattern exclude reference in a directory relative, os neutral, pattern.
+         * <p>
+         * 
+         * <pre>
+         *    On Linux:
+         *    Config config = new Config(Path("/home/user/example"));
+         *    config.addExcludeGlobRelative("*.war") => "glob:/home/user/example/*.war"
+         *    
+         *    On Windows
+         *    Config config = new Config(Path("D:/code/examples"));
+         *    config.addExcludeGlobRelative("*.war") => "glob:D:\\code\\examples\\*.war"
+         * 
+         * </pre>
+         * 
+         * @param pattern
+         *            the pattern, in unixy format, relative to config.dir
+         */
+        public void addExcludeGlobRelative(String pattern)
+        {
+            addExclude(toGlobPattern(dir,pattern));
         }
 
         /**
@@ -114,8 +173,9 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                     LOG.debug("Adding hidden files and directories to exclusions");
                 }
                 excludeHidden = true;
-                addExclude("regex:^.*/\\..*$"); // ignore hidden files
-                addExclude("regex:^.*/\\..*/.*$"); // ignore files in hidden directories
+
+                addExclude("regex:^.*" + PATTERN_SEP + "\\..*$"); // ignore hidden files
+                addExclude("regex:^.*" + PATTERN_SEP + "\\..*" + PATTERN_SEP + ".*$"); // ignore files in hidden directories
             }
         }
 
@@ -162,6 +222,29 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
 
         /**
+         * Add a <code>glob:</code> syntax pattern reference in a directory relative, os neutral, pattern.
+         * <p>
+         * 
+         * <pre>
+         *    On Linux:
+         *    Config config = new Config(Path("/home/user/example"));
+         *    config.addIncludeGlobRelative("*.war") => "glob:/home/user/example/*.war"
+         *    
+         *    On Windows
+         *    Config config = new Config(Path("D:/code/examples"));
+         *    config.addIncludeGlobRelative("*.war") => "glob:D:\\code\\examples\\*.war"
+         * 
+         * </pre>
+         * 
+         * @param pattern
+         *            the pattern, in unixy format, relative to config.dir
+         */
+        public void addIncludeGlobRelative(String pattern)
+        {
+            addInclude(toGlobPattern(dir,pattern));
+        }
+
+        /**
          * Add multiple include PathMatchers
          *
          * @param syntaxAndPatterns
@@ -205,9 +288,12 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             {
                 if (matcher.matches(path))
                 {
+                    if(NOISY) LOG.debug("Matched TRUE on {}",path);
                     return true;
                 }
             }
+
+            if(NOISY) LOG.debug("Matched FALSE on {}",path);
             return false;
         }
 
@@ -267,8 +353,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
 
         /**
-         * Determine if the provided child directory should be recursed into
-         * based on the configured {@link #setRecurseDepth(int)}
+         * Determine if the provided child directory should be recursed into based on the configured {@link #setRecurseDepth(int)}
          *
          * @param child
          *            the child directory to test against
@@ -284,6 +369,47 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
             int childDepth = dir.relativize(child).getNameCount();
             return (childDepth <= recurseDepth);
+        }
+
+        private String toGlobPattern(Path path, String subPattern)
+        {
+            StringBuilder s = new StringBuilder();
+            s.append("glob:");
+
+            if (path.getRoot() != null)
+            {
+                for (char c : path.getRoot().toString().toCharArray())
+                {
+                    if (c == '\\')
+                    {
+                        s.append(PATTERN_SEP);
+                    }
+                    else
+                    {
+                        s.append(c);
+                    }
+                }
+            }
+
+            for (Path segment : path)
+            {
+                s.append(segment);
+                s.append(PATTERN_SEP);
+            }
+
+            for (char c : subPattern.toCharArray())
+            {
+                if (c == '/')
+                {
+                    s.append(PATTERN_SEP);
+                }
+                else
+                {
+                    s.append(c);
+                }
+            }
+
+            return s.toString();
         }
 
         @Override
@@ -394,7 +520,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             long now = System.currentTimeMillis();
             long pastdue = this.timestamp + expiredUnit.toMillis(expiredDuration);
-            if (now >= pastdue)
+            if (now > pastdue)
             {
                 return true;
             }
@@ -427,8 +553,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             final int prime = 31;
             int result = 1;
-            result = (prime * result) + ((path == null) ? 0 : path.hashCode());
-            result = (prime * result) + ((type == null) ? 0 : type.hashCode());
+            result = (prime * result) + ((path == null)?0:path.hashCode());
+            result = (prime * result) + ((type == null)?0:type.hashCode());
             return result;
         }
 
@@ -464,7 +590,10 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     private Map<WatchKey, Config> keys = new HashMap<>();
     private List<Listener> listeners = new ArrayList<>();
     private List<PathWatchEvent> pendingAddEvents = new ArrayList<>();
-    private long updateQuietTimeDuration = 500;
+    /**
+     * Update Quiet Time - set to 1000 ms as default (a lower value in Windows is not supported)
+     */
+    private long updateQuietTimeDuration = 1000;
     private TimeUnit updateQuietTimeUnit = TimeUnit.MILLISECONDS;
     private Thread thread;
 
@@ -560,9 +689,9 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
         Config config = new Config(abs.getParent());
         // the include for the directory itself
-        config.addInclude("glob:" + abs.getParent().toString());
+        config.addIncludeGlobRelative("");
         // the include for the file
-        config.addInclude("glob:" + abs.toString());
+        config.addIncludeGlobRelative(file.getFileName().toString());
         addDirectoryWatch(config);
     }
 
@@ -684,19 +813,13 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 // Process new events
                 if (pendingUpdateEvents.isEmpty())
                 {
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("Waiting for take()");
-                    }
+                    if(NOISY) LOG.debug("Waiting for take()");
                     // wait for any event
                     key = watcher.take();
                 }
                 else
                 {
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("Waiting for poll({}, {})",updateQuietTimeDuration,updateQuietTimeUnit);
-                    }
+                    if(NOISY) LOG.debug("Waiting for poll({}, {})",updateQuietTimeDuration,updateQuietTimeUnit);
                     key = watcher.poll(updateQuietTimeDuration,updateQuietTimeUnit);
                     if (key == null)
                     {
@@ -823,8 +946,20 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
     public void setUpdateQuietTime(long duration, TimeUnit unit)
     {
-        this.updateQuietTimeDuration = duration;
-        this.updateQuietTimeUnit = unit;
+        long desiredMillis = unit.toMillis(duration);
+        
+        if (IS_WINDOWS && desiredMillis < 1000)
+        {
+            LOG.warn("Quiet Time is too low for Microsoft Windows: {} < 1000 ms (defaulting to 1000 ms)",desiredMillis);
+            this.updateQuietTimeDuration = 1000;
+            this.updateQuietTimeUnit = TimeUnit.MILLISECONDS;
+        }
+        else
+        {
+            // All other OS's can use desired setting
+            this.updateQuietTimeDuration = duration;
+            this.updateQuietTimeUnit = unit;
+        }
     }
 
     @Override
