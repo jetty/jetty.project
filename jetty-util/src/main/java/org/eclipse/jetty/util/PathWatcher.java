@@ -22,6 +22,7 @@ import static java.nio.file.StandardWatchEventKinds.*;
 
 import java.io.File;
 import java.io.IOException;
+import java.lang.reflect.Field;
 import java.nio.file.ClosedWatchServiceException;
 import java.nio.file.FileSystem;
 import java.nio.file.FileSystems;
@@ -268,17 +269,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             {
                 if (matcher.matches(path))
                 {
-                    if (NOISY_LOG.isDebugEnabled())
-                    {
-                        NOISY_LOG.debug("Matched TRUE on {}",path);
-                    }
                     return true;
                 }
-            }
-
-            if (NOISY_LOG.isDebugEnabled())
-            {
-                NOISY_LOG.debug("Matched FALSE on {}",path);
             }
             return false;
         }
@@ -289,6 +281,10 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             {
                 if (Files.isHidden(dir))
                 {
+                    if (NOISY_LOG.isDebugEnabled())
+                    {
+                        NOISY_LOG.debug("isExcluded [Hidden] on {}",dir);
+                    }
                     return true;
                 }
             }
@@ -299,7 +295,12 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 return false;
             }
 
-            return hasMatch(dir,excludes);
+            boolean matched = hasMatch(dir,excludes);
+            if (NOISY_LOG.isDebugEnabled())
+            {
+                NOISY_LOG.debug("isExcluded [{}] on {}",matched,dir);
+            }
+            return matched;
         }
 
         public boolean isIncluded(Path dir)
@@ -307,9 +308,19 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             if (includes.isEmpty())
             {
                 // no includes == everything allowed
+                if (NOISY_LOG.isDebugEnabled())
+                {
+                    NOISY_LOG.debug("isIncluded [All] on {}",dir);
+                }
                 return true;
             }
-            return hasMatch(dir,includes);
+
+            boolean matched = hasMatch(dir,includes);
+            if (NOISY_LOG.isDebugEnabled())
+            {
+                NOISY_LOG.debug("isIncluded [{}] on {}",matched,dir);
+            }
+            return matched;
         }
 
         public boolean matches(Path path)
@@ -339,8 +350,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
 
         /**
-         * Determine if the provided child directory should be recursed into based on the configured
-         * {@link #setRecurseDepth(int)}
+         * Determine if the provided child directory should be recursed into based on the configured {@link #setRecurseDepth(int)}
          *
          * @param child
          *            the child directory to test against
@@ -446,6 +456,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         private final PathWatchEventType type;
         private int count;
         private long timestamp;
+        private long lastFileSize = -1;
 
         public PathWatchEvent(Path path, PathWatchEventType type)
         {
@@ -513,9 +524,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
 
         /**
-         * Check the timestamp to see if it is expired.
+         * Check to see if the file referenced by this Event is quiet.
          * <p>
-         * Updates timestamp to 'now' on use of this method.
+         * Will validate the timestamp to see if it is expired, as well as if the file size hasn't changed within the quiet period.
+         * <p>
+         * Always updates timestamp to 'now' on use of this method.
          *
          * @param expiredDuration
          *            the expired duration past the timestamp to be considered expired
@@ -523,15 +536,36 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          *            the unit of time for the expired check
          * @return true if expired, false if not
          */
-        public boolean expiredCheck(long expiredDuration, TimeUnit expiredUnit)
+        public boolean isQuiet(long expiredDuration, TimeUnit expiredUnit)
         {
             long now = System.currentTimeMillis();
             long pastdue = this.timestamp + expiredUnit.toMillis(expiredDuration);
-            if (now > pastdue)
-            {
-                return true;
-            }
             this.timestamp = now;
+
+            try
+            {
+                long fileSize = Files.size(path);
+                boolean fileSizeChanged = (this.lastFileSize != fileSize);
+                this.lastFileSize = fileSize;
+
+                if ((now > pastdue) && !fileSizeChanged)
+                {
+                    // Quiet period timestamp has expired, and file size hasn't changed.
+                    // Consider this a quiet event now.
+                    return true;
+                }
+            }
+            catch (IOException e)
+            {
+                // Currently we consider this a bad event.
+                // However, should we permanently consider this a bad event?
+                // The file size is the only trigger for this.
+                // If the filesystem prevents access to the file during updates
+                // (Like Windows), then this file size indicator has to be tried
+                // later.
+                LOG.debug("Cannot read file size: " + path,e);
+            }
+
             return false;
         }
 
@@ -560,8 +594,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             final int prime = 31;
             int result = 1;
-            result = (prime * result) + ((path == null) ? 0 : path.hashCode());
-            result = (prime * result) + ((type == null) ? 0 : type.hashCode());
+            result = (prime * result) + ((path == null)?0:path.hashCode());
+            result = (prime * result) + ((type == null)?0:type.hashCode());
             return result;
         }
 
@@ -579,10 +613,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
     public static enum PathWatchEventType
     {
-        ADDED,
-        DELETED,
-        MODIFIED,
-        UNKNOWN;
+        ADDED, DELETED, MODIFIED, UNKNOWN;
     }
 
     private static final boolean IS_WINDOWS;
@@ -596,7 +627,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
         else
         {
-            IS_WINDOWS = os.toLowerCase(Locale.ENGLISH).contains("windows");
+            String osl = os.toLowerCase(Locale.ENGLISH);
+            IS_WINDOWS = osl.contains("windows");
         }
     }
 
@@ -612,7 +644,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         return (WatchEvent<T>)event;
     }
 
-    private WatchService watcher;
+    private static final WatchEvent.Kind<?> WATCH_EVENT_KINDS[] = { ENTRY_CREATE, ENTRY_DELETE, ENTRY_MODIFY };
+    private final WatchService watcher;
+    private final WatchEvent.Modifier watchModifiers[];
+    private final boolean nativeWatchService;
+    
     private Map<WatchKey, Config> keys = new HashMap<>();
     private List<Listener> listeners = new ArrayList<>();
     private List<PathWatchEvent> pendingAddEvents = new ArrayList<>();
@@ -626,6 +662,35 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     public PathWatcher() throws IOException
     {
         this.watcher = FileSystems.getDefault().newWatchService();
+        
+        WatchEvent.Modifier modifiers[] = null;
+        boolean nativeService = true;
+        // Try to determine native behavior
+        // See http://stackoverflow.com/questions/9588737/is-java-7-watchservice-slow-for-anyone-else
+        try
+        {
+            ClassLoader cl = Thread.currentThread().getContextClassLoader();
+            Class<?> pollingWatchServiceClass = Class.forName("sun.nio.fs.PollingWatchService",false,cl);
+            if (pollingWatchServiceClass.isAssignableFrom(this.watcher.getClass()))
+            {
+                nativeService = false;
+                LOG.info("Using Non-Native Java {}",pollingWatchServiceClass.getName());
+                Class<?> c = Class.forName("com.sun.nio.file.SensitivityWatchEventModifier");
+                Field f = c.getField("HIGH");
+                modifiers = new WatchEvent.Modifier[]
+                {
+                    (WatchEvent.Modifier)f.get(c)
+                };
+            }
+        }
+        catch (Throwable t)
+        {
+            // Unknown JVM environment, assuming native.
+            LOG.ignore(t);
+        }
+        
+        this.watchModifiers = modifiers;
+        this.nativeWatchService = nativeService;
     }
 
     /**
@@ -669,10 +734,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                         pendingAddEvents.add(event);
                     }
 
+                    register(dir,baseDir);
+
                     // Recurse Directory, based on configured depth
-                    if (baseDir.shouldRecurseDirectory(dir))
+                    if (baseDir.shouldRecurseDirectory(dir) || baseDir.dir.equals(dir))
                     {
-                        register(dir,baseDir);
                         result = FileVisitResult.CONTINUE;
                     }
                 }
@@ -801,8 +867,15 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     protected void register(Path dir, Config root) throws IOException
     {
         LOG.debug("Registering watch on {}",dir);
-        WatchKey key = dir.register(watcher,ENTRY_CREATE,ENTRY_DELETE,ENTRY_MODIFY);
-        keys.put(key,root.asSubConfig(dir));
+        if(watchModifiers != null) {
+            // Java Watcher
+            WatchKey key = dir.register(watcher,WATCH_EVENT_KINDS,watchModifiers);
+            keys.put(key,root.asSubConfig(dir));
+        } else {
+            // Native Watcher
+            WatchKey key = dir.register(watcher,WATCH_EVENT_KINDS);
+            keys.put(key,root.asSubConfig(dir));
+        }
     }
 
     public boolean removeListener(Listener listener)
@@ -859,7 +932,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                         for (Path path : new HashSet<Path>(pendingUpdateEvents.keySet()))
                         {
                             PathWatchEvent pending = pendingUpdateEvents.get(path);
-                            if (pending.expiredCheck(updateQuietTimeDuration,updateQuietTimeUnit))
+                            if (pending.isQuiet(updateQuietTimeDuration,updateQuietTimeUnit))
                             {
                                 // it is expired
                                 // notify that update is complete
@@ -944,7 +1017,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                         else
                         {
                             // see if pending is expired
-                            if (pending.expiredCheck(updateQuietTimeDuration,updateQuietTimeUnit))
+                            if (pending.isQuiet(updateQuietTimeDuration,updateQuietTimeUnit))
                             {
                                 // it is expired, notify that update is complete
                                 notifyOnPathWatchEvent(pending);
@@ -979,19 +1052,26 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     public void setUpdateQuietTime(long duration, TimeUnit unit)
     {
         long desiredMillis = unit.toMillis(duration);
+        
+        if (!this.nativeWatchService && (desiredMillis < 5000))
+        {
+            LOG.warn("Quiet Time is too low for non-native WatchService [{}]: {} < 5000 ms (defaulting to 5000 ms)",watcher.getClass().getName(),desiredMillis);
+            this.updateQuietTimeDuration = 5000;
+            this.updateQuietTimeUnit = TimeUnit.MILLISECONDS;
+            return;
+        }
 
         if (IS_WINDOWS && (desiredMillis < 1000))
         {
             LOG.warn("Quiet Time is too low for Microsoft Windows: {} < 1000 ms (defaulting to 1000 ms)",desiredMillis);
             this.updateQuietTimeDuration = 1000;
             this.updateQuietTimeUnit = TimeUnit.MILLISECONDS;
+            return;
         }
-        else
-        {
-            // All other OS's can use desired setting
-            this.updateQuietTimeDuration = duration;
-            this.updateQuietTimeUnit = unit;
-        }
+        
+        // All other OS and watch service combinations can use desired setting
+        this.updateQuietTimeDuration = duration;
+        this.updateQuietTimeUnit = unit;
     }
 
     @Override
