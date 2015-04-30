@@ -1038,28 +1038,16 @@ public class DoSFilter implements Filter
     /**
      * Set a list of IP addresses that will not be rate limited.
      *
-     * @param value comma-separated whitelist
+     * @param commaSeparatedList comma-separated whitelist
      */
-    public void setWhitelist(String value)
+    public void setWhitelist(String commaSeparatedList)
     {
         List<String> result = new ArrayList<>();
-        for (String address : value.split(","))
+        for (String address : commaSeparatedList.split(","))
             addWhitelistAddress(result, address);
         clearWhitelist();
         _whitelist.addAll(result);
         LOG.debug("Whitelisted IP addresses: {}", result);
-    }
-    
-    /**
-     * Set a list of IP addresses that will not be rate limited.
-     *
-     * @param values whitelist
-     */
-    public void setWhitelist(List<String> values)
-    {
-        clearWhitelist();
-        _whitelist.addAll(values);
-        LOG.debug("Whitelisted IP addresses: {}", values);
     }
 
     /**
