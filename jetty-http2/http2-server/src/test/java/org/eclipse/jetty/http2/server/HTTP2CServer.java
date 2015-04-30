@@ -19,17 +19,20 @@
 package org.eclipse.jetty.http2.server;
 
 import java.io.IOException;
+import java.net.Socket;
 import java.util.Date;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.SocketCustomizationListener;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
@@ -39,13 +42,17 @@ public class HTTP2CServer extends Server
     {
         HttpConfiguration config = new HttpConfiguration();
         // HTTP + HTTP/2 connector
-        ServerConnector http = new ServerConnector(this,new HttpConnectionFactory(config), new HTTP2CServerConnectionFactory(config));
-        http.setPort(port);
-        addConnector(http);
+        
+        HttpConnectionFactory http1 = new HttpConnectionFactory(config);
+        HTTP2CServerConnectionFactory http2c = new HTTP2CServerConnectionFactory(config);
+        ServerConnector connector = new ServerConnector(this,http1,http2c);
+        connector.setPort(port);
+        addConnector(connector);
 
         ((QueuedThreadPool)getThreadPool()).setName("server");
 
         setHandler(new SimpleHandler());
+        
     }
 
     public static void main(String... args ) throws Exception
