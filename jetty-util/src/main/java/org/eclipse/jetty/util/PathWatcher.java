@@ -62,26 +62,6 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class PathWatcher extends AbstractLifeCycle implements Runnable
 {
-    /**
-     * Set to true to enable super noisy debug logging
-     */
-    private static final boolean NOISY = false;
-    
-    private static final boolean IS_WINDOWS;
-    
-    static
-    {
-        String os = System.getProperty("os.name");
-        if (os == null)
-        {
-            IS_WINDOWS = false;
-        }
-        else
-        {
-            IS_WINDOWS = os.toLowerCase(Locale.ENGLISH).contains("windows");
-        }
-    }
-
     public static class Config
     {
         private static final String PATTERN_SEP;
@@ -95,7 +75,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             }
             PATTERN_SEP = sep;
         }
-        
+
         protected final Path dir;
         protected int recurseDepth = 0; // 0 means no sub-directories are scanned
         protected List<PathMatcher> includes;
@@ -141,18 +121,18 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         /**
          * Add a <code>glob:</code> syntax pattern exclude reference in a directory relative, os neutral, pattern.
          * <p>
-         * 
+         *
          * <pre>
          *    On Linux:
          *    Config config = new Config(Path("/home/user/example"));
          *    config.addExcludeGlobRelative("*.war") => "glob:/home/user/example/*.war"
-         *    
+         * 
          *    On Windows
          *    Config config = new Config(Path("D:/code/examples"));
          *    config.addExcludeGlobRelative("*.war") => "glob:D:\\code\\examples\\*.war"
-         * 
+         *
          * </pre>
-         * 
+         *
          * @param pattern
          *            the pattern, in unixy format, relative to config.dir
          */
@@ -224,18 +204,18 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         /**
          * Add a <code>glob:</code> syntax pattern reference in a directory relative, os neutral, pattern.
          * <p>
-         * 
+         *
          * <pre>
          *    On Linux:
          *    Config config = new Config(Path("/home/user/example"));
          *    config.addIncludeGlobRelative("*.war") => "glob:/home/user/example/*.war"
-         *    
+         * 
          *    On Windows
          *    Config config = new Config(Path("D:/code/examples"));
          *    config.addIncludeGlobRelative("*.war") => "glob:D:\\code\\examples\\*.war"
-         * 
+         *
          * </pre>
-         * 
+         *
          * @param pattern
          *            the pattern, in unixy format, relative to config.dir
          */
@@ -288,12 +268,18 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             {
                 if (matcher.matches(path))
                 {
-                    if(NOISY) LOG.debug("Matched TRUE on {}",path);
+                    if (NOISY_LOG.isDebugEnabled())
+                    {
+                        NOISY_LOG.debug("Matched TRUE on {}",path);
+                    }
                     return true;
                 }
             }
 
-            if(NOISY) LOG.debug("Matched FALSE on {}",path);
+            if (NOISY_LOG.isDebugEnabled())
+            {
+                NOISY_LOG.debug("Matched FALSE on {}",path);
+            }
             return false;
         }
 
@@ -353,7 +339,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
 
         /**
-         * Determine if the provided child directory should be recursed into based on the configured {@link #setRecurseDepth(int)}
+         * Determine if the provided child directory should be recursed into based on the configured
+         * {@link #setRecurseDepth(int)}
          *
          * @param child
          *            the child directory to test against
@@ -376,11 +363,14 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             StringBuilder s = new StringBuilder();
             s.append("glob:");
 
+            boolean needDelim = false;
+
+            // Add root (aka "C:\" for Windows)
             if (path.getRoot() != null)
             {
                 for (char c : path.getRoot().toString().toCharArray())
                 {
-                    if (c == '\\')
+                    if (c != '\\')
                     {
                         s.append(PATTERN_SEP);
                     }
@@ -390,22 +380,39 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                     }
                 }
             }
-
-            for (Path segment : path)
+            else
             {
-                s.append(segment);
-                s.append(PATTERN_SEP);
+                needDelim = true;
             }
 
-            for (char c : subPattern.toCharArray())
+            // Add the individual path segments
+            for (Path segment : path)
             {
-                if (c == '/')
+                if (needDelim)
                 {
                     s.append(PATTERN_SEP);
                 }
-                else
+                s.append(segment);
+                needDelim = true;
+            }
+
+            // Add the sub pattern (if specified)
+            if ((subPattern != null) && (subPattern.length() > 0))
+            {
+                if (needDelim)
                 {
-                    s.append(c);
+                    s.append(PATTERN_SEP);
+                }
+                for (char c : subPattern.toCharArray())
+                {
+                    if (c == '/')
+                    {
+                        s.append(PATTERN_SEP);
+                    }
+                    else
+                    {
+                        s.append(c);
+                    }
                 }
             }
 
@@ -553,8 +560,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             final int prime = 31;
             int result = 1;
-            result = (prime * result) + ((path == null)?0:path.hashCode());
-            result = (prime * result) + ((type == null)?0:type.hashCode());
+            result = (prime * result) + ((path == null) ? 0 : path.hashCode());
+            result = (prime * result) + ((type == null) ? 0 : type.hashCode());
             return result;
         }
 
@@ -578,7 +585,26 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         UNKNOWN;
     }
 
+    private static final boolean IS_WINDOWS;
+
+    static
+    {
+        String os = System.getProperty("os.name");
+        if (os == null)
+        {
+            IS_WINDOWS = false;
+        }
+        else
+        {
+            IS_WINDOWS = os.toLowerCase(Locale.ENGLISH).contains("windows");
+        }
+    }
+
     private static final Logger LOG = Log.getLogger(PathWatcher.class);
+    /**
+     * super noisy debug logging
+     */
+    private static final Logger NOISY_LOG = Log.getLogger(PathWatcher.class.getName() + ".Noisy");
 
     @SuppressWarnings("unchecked")
     protected static <T> WatchEvent<T> cast(WatchEvent<?> event)
@@ -813,13 +839,19 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 // Process new events
                 if (pendingUpdateEvents.isEmpty())
                 {
-                    if(NOISY) LOG.debug("Waiting for take()");
+                    if (NOISY_LOG.isDebugEnabled())
+                    {
+                        NOISY_LOG.debug("Waiting for take()");
+                    }
                     // wait for any event
                     key = watcher.take();
                 }
                 else
                 {
-                    if(NOISY) LOG.debug("Waiting for poll({}, {})",updateQuietTimeDuration,updateQuietTimeUnit);
+                    if (NOISY_LOG.isDebugEnabled())
+                    {
+                        NOISY_LOG.debug("Waiting for poll({}, {})",updateQuietTimeDuration,updateQuietTimeUnit);
+                    }
                     key = watcher.poll(updateQuietTimeDuration,updateQuietTimeUnit);
                     if (key == null)
                     {
@@ -947,8 +979,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     public void setUpdateQuietTime(long duration, TimeUnit unit)
     {
         long desiredMillis = unit.toMillis(duration);
-        
-        if (IS_WINDOWS && desiredMillis < 1000)
+
+        if (IS_WINDOWS && (desiredMillis < 1000))
         {
             LOG.warn("Quiet Time is too low for Microsoft Windows: {} < 1000 ms (defaulting to 1000 ms)",desiredMillis);
             this.updateQuietTimeDuration = 1000;

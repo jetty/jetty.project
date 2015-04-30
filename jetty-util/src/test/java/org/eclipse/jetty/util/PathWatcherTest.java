@@ -18,17 +18,10 @@
 
 package org.eclipse.jetty.util;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static java.nio.file.StandardOpenOption.TRUNCATE_EXISTING;
-import static java.nio.file.StandardOpenOption.WRITE;
-import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.ADDED;
-import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.DELETED;
-import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.MODIFIED;
-import static org.hamcrest.Matchers.contains;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
+import static org.eclipse.jetty.util.PathWatcher.PathWatchEventType.*;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
-import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
@@ -40,6 +33,7 @@ import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.toolchain.test.FS;
@@ -49,15 +43,14 @@ import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEventType;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-@Ignore("Temporary ignore until all platforms are tested")
 public class PathWatcherTest
 {
     public static class PathWatchEventCapture implements PathWatcher.Listener
     {
+        public final static String FINISH_TAG = "#finished#.tag";
         private static final Logger LOG = Log.getLogger(PathWatcherTest.PathWatchEventCapture.class);
         private final Path baseDir;
 
@@ -65,6 +58,10 @@ public class PathWatcherTest
          * Map of relative paths seen, to their events seen (in order seen)
          */
         public Map<String, List<PathWatchEventType>> events = new HashMap<>();
+
+        public CountDownLatch finishedLatch = new CountDownLatch(1);
+        private PathWatchEventType triggerType;
+        private Path triggerPath;
 
         public PathWatchEventCapture(Path baseDir)
         {
@@ -76,6 +73,15 @@ public class PathWatcherTest
         {
             synchronized (events)
             {
+                if (triggerPath != null)
+                {
+                    if (triggerPath.equals(event.getPath()) && (event.getType() == triggerType))
+                    {
+                        LOG.debug("Encountered finish trigger: {} on {}",event.getType(),event.getPath());
+                        finishedLatch.countDown();
+                    }
+                }
+
                 Path relativePath = this.baseDir.relativize(event.getPath());
                 String key = relativePath.toString().replace(File.separatorChar,'/');
 
@@ -131,14 +137,52 @@ public class PathWatcherTest
                 assertThat("Events for path [" + relativePath + "]",actualEvents,contains(expectedEvents));
             }
         }
+
+        /**
+         * Set the path and type that will trigger this capture to be finished
+         * 
+         * @param triggerPath
+         *            the trigger path we look for to know that the capture is complete
+         * @param triggerType
+         *            the trigger type we look for to know that the capture is complete
+         */
+        public void setFinishTrigger(Path triggerPath, PathWatchEventType triggerType)
+        {
+            this.triggerPath = triggerPath;
+            this.triggerType = triggerType;
+            LOG.debug("Setting finish trigger {} for path {}",triggerType,triggerPath);
+        }
+
+        /**
+         * Await the countdown latch on the finish trigger
+         * 
+         * @param pathWatcher
+         *            the watcher instance we are waiting on
+         * @throws IOException
+         *             if unable to create the finish tag file
+         * @throws InterruptedException
+         *             if unable to await the finish of the run
+         * @see #setFinishTrigger(Path, PathWatchEventType)
+         */
+        public void awaitFinish(PathWatcher pathWatcher) throws IOException, InterruptedException
+        {
+            assertThat("Trigger Path must be set",triggerPath,notNullValue());
+            assertThat("Trigger Type must be set",triggerType,notNullValue());
+            double multiplier = 8.0;
+            long awaitMillis = (long)((double)pathWatcher.getUpdateQuietTimeMillis() * multiplier);
+            LOG.debug("Waiting for finish ({} ms)",awaitMillis);
+            assertThat("Timed Out (" + awaitMillis + "ms) waiting for capture to finish",finishedLatch.await(awaitMillis,TimeUnit.MILLISECONDS),is(true));
+            LOG.debug("Finished capture");
+        }
     }
 
     private static void updateFile(Path path, String newContents) throws IOException
     {
-        try (BufferedWriter writer = Files.newBufferedWriter(path,StandardCharsets.UTF_8,CREATE,TRUNCATE_EXISTING,WRITE))
+        try (FileOutputStream out = new FileOutputStream(path.toFile()))
         {
-            writer.append(newContents);
-            writer.flush();
+            out.write(newContents.getBytes(StandardCharsets.UTF_8));
+            out.flush();
+            out.getFD().sync();
         }
     }
 
@@ -193,19 +237,22 @@ public class PathWatcherTest
             }
         }
     }
-    
+
     /**
      * Sleep longer than the quiet time.
-     * @param pathWatcher the path watcher to inspect for its quiet time
-     * @throws InterruptedException if unable to sleep
+     * 
+     * @param pathWatcher
+     *            the path watcher to inspect for its quiet time
+     * @throws InterruptedException
+     *             if unable to sleep
      */
     private static void awaitQuietTime(PathWatcher pathWatcher) throws InterruptedException
     {
-        double multiplier = 1.5;
+        double multiplier = 2.0;
         if (OS.IS_WINDOWS)
         {
             // Microsoft Windows filesystem is too slow for a lower multiplier
-            multiplier = 2.5;
+            multiplier = 3.0;
         }
         TimeUnit.MILLISECONDS.sleep((long)((double)pathWatcher.getUpdateQuietTimeMillis() * multiplier));
     }
@@ -358,19 +405,24 @@ public class PathWatcherTest
             awaitQuietTime(pathWatcher);
 
             // Update web.xml
-            updateFile(dir.resolve("bar/WEB-INF/web.xml"),"Hello Update");
-            FS.touch(dir.resolve("bar/WEB-INF/web.xml").toFile());
+            Path webFile = dir.resolve("bar/WEB-INF/web.xml");
+            capture.setFinishTrigger(webFile,MODIFIED);
+            updateFile(webFile,"Hello Update");
 
             // Delete war
             Files.delete(dir.resolve("foo.war"));
 
-            // Let quiet time elapse
-            awaitQuietTime(pathWatcher);
+            // Add a another new war
+            Files.createFile(dir.resolve("bar.war"));
+
+            // Let capture complete
+            capture.awaitFinish(pathWatcher);
 
             Map<String, PathWatchEventType[]> expected = new HashMap<>();
 
             expected.put("bar/WEB-INF/web.xml",new PathWatchEventType[] { ADDED, MODIFIED });
             expected.put("foo.war",new PathWatchEventType[] { ADDED, DELETED });
+            expected.put("bar.war",new PathWatchEventType[] { ADDED });
 
             capture.assertEvents(expected);
         }
@@ -413,10 +465,12 @@ public class PathWatcherTest
             awaitQuietTime(pathWatcher);
 
             // New war added
-            updateFile(dir.resolve("hello.war"),"Hello Update");
+            Path warFile = dir.resolve("hello.war");
+            capture.setFinishTrigger(warFile,MODIFIED);
+            updateFile(warFile,"Hello Update");
 
-            // Let quiet time elapse
-            awaitQuietTime(pathWatcher);
+            // Let capture finish
+            capture.awaitFinish(pathWatcher);
 
             Map<String, PathWatchEventType[]> expected = new HashMap<>();
 
@@ -453,7 +507,7 @@ public class PathWatcherTest
         Files.createFile(dir.resolve("bar/WEB-INF/web.xml"));
 
         PathWatcher pathWatcher = new PathWatcher();
-        pathWatcher.setUpdateQuietTime(300,TimeUnit.MILLISECONDS);
+        pathWatcher.setUpdateQuietTime(500,TimeUnit.MILLISECONDS);
 
         // Add listener
         PathWatchEventCapture capture = new PathWatchEventCapture(dir);
@@ -475,10 +529,12 @@ public class PathWatcherTest
             awaitQuietTime(pathWatcher);
 
             // New war added (slowly)
-            updateFileOverTime(dir.resolve("hello.war"),50 * MB,3,TimeUnit.SECONDS);
+            Path warFile = dir.resolve("hello.war");
+            capture.setFinishTrigger(warFile,MODIFIED);
+            updateFileOverTime(warFile,50 * MB,3,TimeUnit.SECONDS);
 
-            // Let quiet time elapse
-            awaitQuietTime(pathWatcher);
+            // Let capture finish
+            capture.awaitFinish(pathWatcher);
 
             Map<String, PathWatchEventType[]> expected = new HashMap<>();
 
