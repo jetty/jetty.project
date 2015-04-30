@@ -446,7 +446,9 @@ public class ResourceHandler extends HandlerWrapper
         // handle directories
         if (resource.isDirectory())
         {
-            if (!request.getPathInfo().endsWith(URIUtil.SLASH))
+            String pathInfo = request.getPathInfo();
+            boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
+            if (!endsWithSlash)
             {
                 response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH)));
                 return;
