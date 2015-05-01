@@ -30,6 +30,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -271,12 +274,11 @@ public class MultiPartInputStreamParser
             {
                 //the part data is already written to a temporary file, just rename it
                 _temporary = false;
-                
-                File f = new File(_tmpDir, fileName);
-                if (_file.renameTo(f))
-                    _file = f;
-                else
-                    throw new IOException("Part rename failure: from "+_file.getName()+" to "+fileName + " in "+_tmpDir.getAbsolutePath());
+
+                Path src = _file.toPath();
+                Path target = src.resolveSibling(fileName);
+                Files.move(src, target, StandardCopyOption.REPLACE_EXISTING);
+                _file = target.toFile();
             }
         }
 
