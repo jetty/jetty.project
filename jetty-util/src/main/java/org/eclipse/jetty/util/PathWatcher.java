@@ -376,11 +376,16 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             boolean needDelim = false;
 
             // Add root (aka "C:\" for Windows)
-            if (path.getRoot() != null)
+            Path root = path.getRoot();
+            if (root != null)
             {
-                for (char c : path.getRoot().toString().toCharArray())
+                if (NOISY_LOG.isDebugEnabled())
                 {
-                    if (c != '\\')
+                    NOISY_LOG.debug("Path: {} -> Root: {}",path,root);
+                }
+                for (char c : root.toString().toCharArray())
+                {
+                    if (c == '\\')
                     {
                         s.append(PATTERN_SEP);
                     }
