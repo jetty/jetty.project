@@ -20,6 +20,7 @@ package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
 
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -50,7 +51,8 @@ public class RequestLogHandler extends HandlerWrapper
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response)
             throws IOException, ServletException
     {
-        baseRequest.getHttpChannel().setRequestLog(_requestLog);
+        if (baseRequest.getDispatcherType()==DispatcherType.REQUEST)
+            baseRequest.getHttpChannel().setRequestLog(_requestLog);
         if (_handler!=null)
             _handler.handle(target,baseRequest, request, response);
     }

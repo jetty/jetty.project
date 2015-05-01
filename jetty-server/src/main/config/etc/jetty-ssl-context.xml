@@ -1,0 +1,29 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+
+<!-- ============================================================= -->
+<!-- SSL ContextFactory configuration                              -->
+<!-- For java 8 and beyond the keystore is created in              -->
+<!--   jetty-ssl-extended-context.xml                              -->
+<!-- ============================================================= -->
+<Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
+  <Set name="KeyStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath,jetty.keystore" default="etc/keystore"/></Set>
+  <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword,jetty.keystore.password" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
+  <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword,jetty.keymanager.password" default="OBF:1u2u1wml1z7s1z7a1wnl1u2g"/></Set>
+  <Set name="TrustStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.trustStorePath,jetty.truststore" default="etc/keystore"/></Set>
+  <Set name="TrustStorePassword"><Property name="jetty.sslContext.trustStorePassword,jetty.truststore.password" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
+  <Set name="EndpointIdentificationAlgorithm"></Set>
+  <Set name="NeedClientAuth"><Property name="jetty.sslContext.needClientAuth,jetty.ssl.needClientAuth" default="false"/></Set>
+  <Set name="WantClientAuth"><Property name="jetty.sslContext.wantClientAuth,jetty.ssl.wantClientAuth" default="false"/></Set>
+  <Set name="ExcludeCipherSuites">
+   <Array type="String">
+    <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
+    <Item>SSL_DHE_RSA_WITH_DES_CBC_SHA</Item>
+    <Item>SSL_DHE_DSS_WITH_DES_CBC_SHA</Item>
+    <Item>SSL_RSA_EXPORT_WITH_RC4_40_MD5</Item>
+    <Item>SSL_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+    <Item>SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA</Item>
+    <Item>SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA</Item>
+   </Array>
+  </Set>
+</Configure>

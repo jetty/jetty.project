@@ -1,15 +1,18 @@
 #
 # SSL Keystore module
 #
+[name]
+ssl
 
 [depend]
-server
+ssl-impl/ssl-java${java.version.minor}
 
 [xml]
 etc/jetty-ssl.xml
+etc/jetty-ssl-context.xml
 
 [files]
-http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/main/config/etc/keystore|etc/keystore
+http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/main/config/etc/example-keystore|etc/keystore
 
 [ini-template]
 ### TLS(SSL) Connector Configuration
@@ -42,27 +45,30 @@ jetty.ssl.port=8443
 # jetty.ssl.sniHostCheck=true
 
 ### SslContextFactory Configuration
-
-## Keystore file path (relative to $jetty.base)
-# jetty.sslConfig.keyStorePath=etc/keystore
-
-## Truststore file path (relative to $jetty.base)
-# jetty.sslConfig.trustStorePath=etc/keystore
-
 ## Note that OBF passwords are not secure, just protected from casual observation
 ## See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
 
+## Keystore file path (relative to $jetty.base)
+# jetty.sslContext.keyStorePath=etc/keystore
+
+## Truststore file path (relative to $jetty.base)
+# jetty.sslContext.trustStorePath=etc/keystore
+
 ## Keystore password
-# jetty.sslConfig.keyStorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+# jetty.sslContext.keyStorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 
 ## KeyManager password
-# jetty.sslConfig.keyManagerPassword=OBF:1u2u1wml1z7s1z7a1wnl1u2g
+# jetty.sslContext.keyManagerPassword=OBF:1u2u1wml1z7s1z7a1wnl1u2g
 
 ## Truststore password
-# jetty.sslConfig.trustStorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+# jetty.sslContext.trustStorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 
 ## whether client certificate authentication is required
-# jetty.sslConfig.needClientAuth=false
+# jetty.sslContext.needClientAuth=false
 
 ## Whether client certificate authentication is desired
-# jetty.sslConfig.wantClientAuth=false
+# jetty.sslContext.wantClientAuth=false
+
+## Whether cipher order is significant (since java 8 only)
+# jetty.sslContext.useCipherSuitesOrder=true
+

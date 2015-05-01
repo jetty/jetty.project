@@ -110,7 +110,8 @@ public class ExtendedSslContextFactory extends SslContextFactory
                             if (((Number)list.get(0)).intValue() == 2 )
                             {
                                 String cn = list.get(1).toString();
-                                LOG.info("Certificate san alias={} cn={} in {}",alias,cn,_factory);
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Certificate san alias={} cn={} in {}",alias,cn,_factory);
                                 if (cn!=null)
                                 {
                                     named=true;
@@ -129,7 +130,8 @@ public class ExtendedSslContextFactory extends SslContextFactory
                             if (rdn.getType().equalsIgnoreCase("cn"))
                             {
                                 String cn = rdn.getValue().toString();
-                                LOG.info("Certificate cn alias={} cn={} in {}",alias,cn,_factory);
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Certificate cn alias={} cn={} in {}",alias,cn,_factory);
                                 if (cn!=null)
                                     _aliases.put(cn,alias);
                             }
@@ -145,7 +147,7 @@ public class ExtendedSslContextFactory extends SslContextFactory
             if (name.startsWith("*."))
                 _wild.put(name.substring(1),_aliases.get(name));
         
-        LOG.info("aliases={} for {}",_aliases,this);
+        LOG.info("x509={} for {}",_aliases,this);
     }
 
     @Override
