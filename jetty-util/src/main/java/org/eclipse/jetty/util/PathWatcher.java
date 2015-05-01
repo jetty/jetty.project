@@ -121,16 +121,15 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
         /**
          * Add a <code>glob:</code> syntax pattern exclude reference in a directory relative, os neutral, pattern.
-         * <p>
          *
          * <pre>
          *    On Linux:
          *    Config config = new Config(Path("/home/user/example"));
-         *    config.addExcludeGlobRelative("*.war") => "glob:/home/user/example/*.war"
+         *    config.addExcludeGlobRelative("*.war") =&gt; "glob:/home/user/example/*.war"
          * 
          *    On Windows
          *    Config config = new Config(Path("D:/code/examples"));
-         *    config.addExcludeGlobRelative("*.war") => "glob:D:\\code\\examples\\*.war"
+         *    config.addExcludeGlobRelative("*.war") =&gt; "glob:D:\\code\\examples\\*.war"
          *
          * </pre>
          *
@@ -204,16 +203,15 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
         /**
          * Add a <code>glob:</code> syntax pattern reference in a directory relative, os neutral, pattern.
-         * <p>
          *
          * <pre>
          *    On Linux:
          *    Config config = new Config(Path("/home/user/example"));
-         *    config.addIncludeGlobRelative("*.war") => "glob:/home/user/example/*.war"
+         *    config.addIncludeGlobRelative("*.war") =&gt; "glob:/home/user/example/*.war"
          * 
          *    On Windows
          *    Config config = new Config(Path("D:/code/examples"));
-         *    config.addIncludeGlobRelative("*.war") => "glob:D:\\code\\examples\\*.war"
+         *    config.addIncludeGlobRelative("*.war") =&gt; "glob:D:\\code\\examples\\*.war"
          *
          * </pre>
          *
