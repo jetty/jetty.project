@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -65,13 +65,13 @@ public class TestUseCases
     @Test
     public void testUseCase() throws Exception
     {
-        File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName);
+        Path homeDir = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
+        Path baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName).toPath().toRealPath();
 
         Main main = new Main();
         List<String> cmdLine = new ArrayList<>();
-        cmdLine.add("jetty.home=" + homeDir.getAbsolutePath());
-        cmdLine.add("jetty.base=" + baseDir.getAbsolutePath());
+        cmdLine.add("jetty.home=" + homeDir.toString());
+        cmdLine.add("jetty.base=" + baseDir.toString());
         // cmdLine.add("--debug");
 
         if (commandLineArgs != null)

@@ -64,7 +64,14 @@ public class StartIni extends TextFile
     @Override
     public void init()
     {
-        basedir = getFile().getParent().toAbsolutePath();
+        try
+        {
+            basedir = getFile().getParent().toRealPath();
+        }
+        catch (IOException e)
+        {
+            basedir = getFile().getParent().normalize().toAbsolutePath();
+        }
     }
 
     public Path getBaseDir()

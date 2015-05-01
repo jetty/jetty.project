@@ -100,7 +100,7 @@ public class DirConfigSource implements ConfigSource
 
         if (canHaveArgs)
         {
-            Path iniFile = dir.resolve("start.ini");
+            Path iniFile = dir.resolve("start.ini").toRealPath();
             if (FS.canReadFile(iniFile))
             {
                 StartIni ini = new StartIni(iniFile);

@@ -53,7 +53,7 @@ public class ConfigurationAssert
      */
     public static void assertConfiguration(BaseHome baseHome, StartArgs args, String filename) throws FileNotFoundException, IOException
     {
-        Path testResourcesDir = MavenTestingUtils.getTestResourcesDir().toPath().toAbsolutePath();
+        Path testResourcesDir = MavenTestingUtils.getTestResourcesDir().toPath().toRealPath();
         File file = MavenTestingUtils.getTestResourceFile(filename);
         TextFile textFile = new TextFile(file.toPath());
 
