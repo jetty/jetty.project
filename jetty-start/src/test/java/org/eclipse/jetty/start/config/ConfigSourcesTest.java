@@ -20,6 +20,7 @@ package org.eclipse.jetty.start.config;
 
 import java.io.File;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -112,24 +113,25 @@ public class ConfigSourcesTest
         TestEnv.copyTestDir("dist-home",home);
 
         // Create common
-        File common = testdir.getFile("common");
-        FS.ensureEmpty(common);
+        Path common = testdir.getFile("common").toPath();
+        FS.ensureEmpty(common.toFile());
+        common = common.toRealPath();
 
         // Create base
         File base = testdir.getFile("base");
         FS.ensureEmpty(base);
         TestEnv.makeFile(base,"start.ini", //
                 "jetty.http.host=127.0.0.1",//
-                "--include-jetty-dir=" + common.getAbsolutePath());
+                "--include-jetty-dir=" + common.toString());
 
         ConfigSources sources = new ConfigSources();
 
         String[] cmdLine = new String[0];
         sources.add(new CommandLineConfigSource(cmdLine));
-        sources.add(new JettyHomeConfigSource(home.toPath()));
-        sources.add(new JettyBaseConfigSource(base.toPath()));
+        sources.add(new JettyHomeConfigSource(home.toPath().toRealPath()));
+        sources.add(new JettyBaseConfigSource(base.toPath().toRealPath()));
 
-        assertIdOrder(sources,"<command-line>","${jetty.base}",common.getAbsolutePath(),"${jetty.home}");
+        assertIdOrder(sources,"<command-line>","${jetty.base}",common.toString(),"${jetty.home}");
     }
 
     @Test

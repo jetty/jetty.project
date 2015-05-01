@@ -23,6 +23,7 @@ import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 import java.io.IOException;
 import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
+import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.PathMatcher;
 import java.util.ArrayList;
@@ -100,12 +101,21 @@ public class DirConfigSource implements ConfigSource
 
         if (canHaveArgs)
         {
-            Path iniFile = dir.resolve("start.ini").toRealPath();
-            if (FS.canReadFile(iniFile))
+            Path iniFile = dir.resolve("start.ini").normalize().toAbsolutePath();
+            
+            try
             {
-                StartIni ini = new StartIni(iniFile);
-                args.addAll(ini.getLines(),iniFile);
-                parseAllArgs(ini.getLines(),iniFile.toString());
+                iniFile = iniFile.toRealPath();
+                if (FS.canReadFile(iniFile))
+                {
+                    StartIni ini = new StartIni(iniFile);
+                    args.addAll(ini.getLines(),iniFile);
+                    parseAllArgs(ini.getLines(),iniFile.toString());
+                }
+            }
+            catch (NoSuchFileException ignore)
+            {
+                // ignore
             }
 
             Path startDdir = dir.resolve("start.d");

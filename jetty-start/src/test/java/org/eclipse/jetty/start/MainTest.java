@@ -51,7 +51,7 @@ public class MainTest
     public void testBasicProcessing() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
-        File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home").getAbsoluteFile();
+        Path testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
         cmdLineArgs.add("user.dir=" + testJettyHome);
         cmdLineArgs.add("jetty.home=" + testJettyHome);
         cmdLineArgs.add("jetty.http.port=9090");
@@ -112,9 +112,9 @@ public class MainTest
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        File homePath = MavenTestingUtils.getTestResourceDir("dist-home").getAbsoluteFile();
-        cmdLineArgs.add("jetty.home=" + homePath);
-        cmdLineArgs.add("user.dir=" + homePath);
+        Path homePath = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
+        cmdLineArgs.add("jetty.home=" + homePath.toString());
+        cmdLineArgs.add("user.dir=" + homePath.toString());
 
         // JVM args
         cmdLineArgs.add("--exec");
@@ -122,11 +122,8 @@ public class MainTest
         cmdLineArgs.add("-Xmx1024m");
 
         // Arbitrary Libs
-        Path extraJar = MavenTestingUtils.getTestResourceFile("extra-libs/example.jar").toPath().normalize();
-        Path extraDir = MavenTestingUtils.getTestResourceDir("extra-resources").toPath().normalize();
-        
-        extraJar = extraJar.toAbsolutePath();
-        extraDir = extraDir.toAbsolutePath();
+        Path extraJar = MavenTestingUtils.getTestResourceFile("extra-libs/example.jar").toPath().toRealPath();
+        Path extraDir = MavenTestingUtils.getTestResourceDir("extra-resources").toPath().toRealPath();
         
         assertThat("Extra Jar exists: " + extraJar,Files.exists(extraJar),is(true));
         assertThat("Extra Dir exists: " + extraDir,Files.exists(extraDir),is(true));
@@ -149,8 +146,8 @@ public class MainTest
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         BaseHome baseHome = main.getBaseHome();
 
-        assertThat("jetty.home",baseHome.getHome(),is(homePath.getAbsolutePath()));
-        assertThat("jetty.base",baseHome.getBase(),is(homePath.getAbsolutePath()));
+        assertThat("jetty.home",baseHome.getHome(),is(homePath.toString()));
+        assertThat("jetty.base",baseHome.getBase(),is(homePath.toString()));
 
         ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-jvm.txt");
     }
@@ -160,7 +157,7 @@ public class MainTest
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        File homePath = MavenTestingUtils.getTestResourceDir("dist-home").getAbsoluteFile();
+        Path homePath = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
         cmdLineArgs.add("jetty.home=" + homePath);
         cmdLineArgs.add("user.dir=" + homePath);
         cmdLineArgs.add("java.version=1.7.0_60");
@@ -174,8 +171,8 @@ public class MainTest
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         BaseHome baseHome = main.getBaseHome();
 
-        assertThat("jetty.home",baseHome.getHome(),is(homePath.getAbsolutePath()));
-        assertThat("jetty.base",baseHome.getBase(),is(homePath.getAbsolutePath()));
+        assertThat("jetty.home",baseHome.getHome(),is(homePath.toString()));
+        assertThat("jetty.base",baseHome.getBase(),is(homePath.toString()));
 
         ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-http2.txt");
     }
@@ -185,7 +182,7 @@ public class MainTest
     {
         List<String> cmdLineArgs = new ArrayList<>();
 
-        File homePath = MavenTestingUtils.getTestResourceDir("jetty home with spaces").getAbsoluteFile();
+        Path homePath = MavenTestingUtils.getTestResourceDir("jetty home with spaces").toPath().toRealPath();
         cmdLineArgs.add("user.dir=" + homePath);
         cmdLineArgs.add("jetty.home=" + homePath);
 
@@ -193,8 +190,8 @@ public class MainTest
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
         BaseHome baseHome = main.getBaseHome();
 
-        assertThat("jetty.home",baseHome.getHome(),is(homePath.getAbsolutePath()));
-        assertThat("jetty.base",baseHome.getBase(),is(homePath.getAbsolutePath()));
+        assertThat("jetty.home",baseHome.getHome(),is(homePath.toString()));
+        assertThat("jetty.base",baseHome.getBase(),is(homePath.toString()));
 
         ConfigurationAssert.assertConfiguration(baseHome,args,"assert-home-with-spaces.txt");
     }
