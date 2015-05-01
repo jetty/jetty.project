@@ -275,6 +275,8 @@ public class MultiPartInputStreamParser
                 File f = new File(_tmpDir, fileName);
                 if (_file.renameTo(f))
                     _file = f;
+                else
+                    throw new IOException("Part rename failure: from "+_file.getName()+" to "+fileName + " in "+_tmpDir.getAbsolutePath());
             }
         }
 
