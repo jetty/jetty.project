@@ -12,7 +12,7 @@ etc/jetty-ssl.xml
 etc/jetty-ssl-context.xml
 
 [files]
-http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/main/config/etc/keystore|etc/keystore
+http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/main/config/etc/example-keystore|etc/keystore
 
 [ini-template]
 ### TLS(SSL) Connector Configuration
