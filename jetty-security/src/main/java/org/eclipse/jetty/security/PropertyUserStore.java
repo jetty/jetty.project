@@ -19,8 +19,8 @@
 package org.eclipse.jetty.security;
 
 import java.io.File;
-import java.io.FilenameFilter;
 import java.io.IOException;
+import java.nio.file.Path;
 import java.security.Principal;
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -36,11 +36,12 @@ import javax.security.auth.Subject;
 import org.eclipse.jetty.security.MappedLoginService.KnownUser;
 import org.eclipse.jetty.security.MappedLoginService.RolePrincipal;
 import org.eclipse.jetty.server.UserIdentity;
-import org.eclipse.jetty.util.Scanner;
-import org.eclipse.jetty.util.Scanner.BulkListener;
+import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.security.Credential;
 
@@ -58,14 +59,15 @@ import org.eclipse.jetty.util.security.Credential;
  *
  * If DIGEST Authentication is used, the password must be in a recoverable format, either plain text or OBF:.
  */
-public class PropertyUserStore extends AbstractLifeCycle
+public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.Listener
 {
     private static final Logger LOG = Log.getLogger(PropertyUserStore.class);
 
-    private String _config;
+    private Path _configPath;
     private Resource _configResource;
-    private Scanner _scanner;
-    private int _refreshInterval = 0;// default is not to reload
+    
+    private PathWatcher pathWatcher;
+    private boolean hotReload = false; // default is not to reload
 
     private IdentityService _identityService = new DefaultIdentityService();
     private boolean _firstLoad = true; // true if first load, false from that point on
@@ -73,23 +75,76 @@ public class PropertyUserStore extends AbstractLifeCycle
     private final Map<String, UserIdentity> _knownUserIdentities = new HashMap<String, UserIdentity>();
     private List<UserListener> _listeners;
 
-    /* ------------------------------------------------------------ */
+    /**
+     * Get the config (as a string)
+     * @return the config path as a string
+     * @deprecated use {@link #getConfigPath()} instead
+     */
+    @Deprecated
     public String getConfig()
     {
-        return _config;
+        return _configPath.toString();
     }
 
-    /* ------------------------------------------------------------ */
-    public void setConfig(String config)
+    /**
+     * Set the Config Path from a String reference to a file
+     * @param configFile the config file
+     * @deprecated use {@link #setConfigPath(String)} instead
+     */
+    @Deprecated
+    public void setConfig(String configFile)
     {
-        _config = config;
+        setConfigPath(configFile);
+    }
+    
+    /**
+     * Get the Config {@link Path} reference.
+     * @return the config path
+     */
+    public Path getConfigPath()
+    {
+        return _configPath;
     }
 
-    /* ------------------------------------------------------------ */
-        public UserIdentity getUserIdentity(String userName)
+    /**
+     * Set the Config Path from a String reference to a file
+     * @param configFile the config file
+     */
+    public void setConfigPath(String configFile)
+    {
+        if (configFile == null)
         {
-            return _knownUserIdentities.get(userName);
+            _configPath = null;
         }
+        else
+        {
+            _configPath = new File(configFile).toPath();
+        }
+    }
+
+    /**
+     * Set the Config Path from a {@link File} reference
+     * @param configFile the config file
+     */
+    public void setConfigPath(File configFile)
+    {
+        _configPath = configFile.toPath();
+    }
+
+    /**
+     * Set the Config Path
+     * @param configPath the config path
+     */
+    public void setConfigPath(Path configPath)
+    {
+        _configPath = configPath;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public UserIdentity getUserIdentity(String userName)
+    {
+        return _knownUserIdentities.get(userName);
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -100,42 +155,85 @@ public class PropertyUserStore extends AbstractLifeCycle
     {
         if (_configResource == null)
         {
-            _configResource = Resource.newResource(_config);
+            _configResource = new PathResource(_configPath);
         }
 
         return _configResource;
+    }
+    
+    /**
+     * Is hot reload enabled on this user store
+     * 
+     * @return true if hot reload was enabled before startup
+     */
+    public boolean isHotReload()
+    {
+        return hotReload;
+    }
+
+    /**
+     * Enable Hot Reload of the Property File
+     * 
+     * @param enable true to enable, false to disable
+     */
+    public void setHotReload(boolean enable)
+    {
+        if (isRunning())
+        {
+            throw new IllegalStateException("Cannot set hot reload while user store is running");
+        }
+        this.hotReload = enable;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * sets the refresh interval (in seconds)
      * @param sec the refresh interval
+     * @deprecated use {@link #setHotReload(boolean)} instead
      */
+    @Deprecated
     public void setRefreshInterval(int sec)
     {
-        _refreshInterval = sec;
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @return refresh interval in seconds for how often the properties file should be checked for changes
+     * @deprecated use {@link #isHotReload()} instead
      */
+    @Deprecated
     public int getRefreshInterval()
     {
-        return _refreshInterval;
+        return (hotReload)?1:0;
+    }
+    
+    @Override
+    public String toString()
+    {
+        StringBuilder s = new StringBuilder();
+        s.append(this.getClass().getName());
+        s.append("[");
+        s.append("users.count=").append(this._knownUsers.size());
+        s.append("identityService=").append(this._identityService);
+        s.append("]");
+        return s.toString();
     }
 
     /* ------------------------------------------------------------ */
     private void loadUsers() throws IOException
     {
-        if (_config == null)
+        if (_configPath == null)
             return;
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Load " + this + " from " + _config);
+        {
+            LOG.debug("Loading " + this + " from " + _configPath);
+        }
+        
         Properties properties = new Properties();
         if (getConfigResource().exists())
             properties.load(getConfigResource().getInputStream());
+        
         Set<String> known = new HashSet<String>();
 
         for (Map.Entry<Object, Object> entry : properties.entrySet())
@@ -212,8 +310,13 @@ public class PropertyUserStore extends AbstractLifeCycle
          * set initial load to false as there should be no more initial loads
          */
         _firstLoad = false;
+        
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Loaded " + this + " from " + _configPath);
+        }
     }
-
+    
     /* ------------------------------------------------------------ */
     /**
      * Depending on the value of the refresh interval, this method will either start up a scanner thread that will monitor the properties file for changes after
@@ -226,65 +329,29 @@ public class PropertyUserStore extends AbstractLifeCycle
     {
         super.doStart();
 
-        if (getRefreshInterval() > 0)
+        if ( isHotReload() && (_configPath != null) )
         {
-            _scanner = new Scanner();
-            _scanner.setScanInterval(getRefreshInterval());
-            List<File> dirList = new ArrayList<File>(1);
-            dirList.add(getConfigResource().getFile().getParentFile());
-            _scanner.setScanDirs(dirList);
-            _scanner.setFilenameFilter(new FilenameFilter()
-            {
-                public boolean accept(File dir, String name)
-                {
-                    File f = new File(dir,name);
-                    try
-                    {
-                        if (f.compareTo(getConfigResource().getFile()) == 0)
-                        {
-                            return true;
-                        }
-                    }
-                    catch (IOException e)
-                    {
-                        return false;
-                    }
-
-                    return false;
-                }
-
-            });
-
-            _scanner.addListener(new BulkListener()
-            {
-                public void filesChanged(List<String> filenames) throws Exception
-                {
-                    if (filenames == null)
-                        return;
-                    if (filenames.isEmpty())
-                        return;
-                    if (filenames.size() == 1)
-                    {
-                        Resource r = Resource.newResource(filenames.get(0));
-                        if (r.getFile().equals(_configResource.getFile()))
-                            loadUsers();
-                    }
-                }
-
-                public String toString()
-                {
-                    return "PropertyUserStore$Scanner";
-                }
-
-            });
-
-            _scanner.setReportExistingFilesOnStartup(true);
-            _scanner.setRecursive(false);
-            _scanner.start();
+            this.pathWatcher = new PathWatcher();
+            this.pathWatcher.addFileWatch(_configPath);
+            this.pathWatcher.addListener(this);
+            this.pathWatcher.start();
         }
         else
         {
             loadUsers();
+        }
+    }
+    
+    @Override
+    public void onPathWatchEvent(PathWatchEvent event)
+    {
+        try
+        {
+            loadUsers();
+        }
+        catch (IOException e)
+        {
+            LOG.warn(e);
         }
     }
 
@@ -295,9 +362,8 @@ public class PropertyUserStore extends AbstractLifeCycle
     protected void doStop() throws Exception
     {
         super.doStop();
-        if (_scanner != null)
-            _scanner.stop();
-        _scanner = null;
+        if (this.pathWatcher != null)
+            this.pathWatcher.stop();
     }
 
     /**
