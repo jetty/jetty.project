@@ -19,7 +19,7 @@
 package org.eclipse.jetty.http2.client;
 
 import java.net.InetSocketAddress;
-import java.util.concurrent.CountDownLatch;
+import java.util.concurrent.Phaser;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.http.HttpFields;
@@ -31,6 +31,7 @@ import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.PushPromiseFrame;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Jetty;
@@ -43,7 +44,6 @@ public class Client
     {
         HTTP2Client client = new HTTP2Client();
         SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setIncludeProtocols("TLSv1.2", "TLSv1.1", "TLSv1");
         client.addBean(sslContextFactory);
         client.start();
 
@@ -58,27 +58,36 @@ public class Client
         requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
         MetaData.Request metaData = new MetaData.Request("GET", new HttpURI("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
         HeadersFrame headersFrame = new HeadersFrame(0, metaData, null, true);
-        final CountDownLatch latch = new CountDownLatch(1);
+        final Phaser phaser = new Phaser(2);
         session.newStream(headersFrame, new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                System.err.println(frame.getMetaData());
+                System.err.println(frame);
                 if (frame.isEndStream())
-                    latch.countDown();
+                    phaser.arrive();
             }
 
             @Override
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
+                System.err.println(frame);
                 callback.succeeded();
                 if (frame.isEndStream())
-                    latch.countDown();
+                    phaser.arrive();
+            }
+
+            @Override
+            public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+            {
+                System.err.println(frame);
+                phaser.register();
+                return this;
             }
         });
 
-        latch.await(5, TimeUnit.SECONDS);
+        phaser.awaitAdvanceInterruptibly(phaser.arrive(), 5, TimeUnit.SECONDS);
 
         client.stop();
     }
