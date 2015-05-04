@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.security;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.BufferedWriter;
 import java.io.File;
 import java.io.FileWriter;
@@ -25,17 +28,65 @@ import java.io.Writer;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.security.Credential;
-import org.junit.Assert;
+import org.hamcrest.Matcher;
 import org.junit.Rule;
 import org.junit.Test;
 
 public class PropertyUserStoreTest
 {
+    private final class UserCount implements PropertyUserStore.UserListener
+    {
+        private final AtomicInteger userCount = new AtomicInteger();
+        private final List<String> users = new ArrayList<String>();
+
+        private UserCount()
+        {
+        }
+
+        public void update(String username, Credential credential, String[] roleArray)
+        {
+            if (!users.contains(username))
+            {
+                users.add(username);
+                userCount.getAndIncrement();
+            }
+        }
+
+        public void remove(String username)
+        {
+            users.remove(username);
+            userCount.getAndDecrement();
+        }
+
+        public void awaitCount(int expectedCount) throws InterruptedException
+        {
+            long timeout = System.currentTimeMillis() + TimeUnit.SECONDS.toMillis(10);
+            
+            while (userCount.get() != expectedCount && (System.currentTimeMillis() < timeout))
+            {
+                TimeUnit.MILLISECONDS.sleep(100);
+            }
+            
+            assertThatCount(is(expectedCount));
+        }
+
+        public void assertThatCount(Matcher<Integer> matcher)
+        {
+            assertThat("User count",userCount.get(),matcher);
+        }
+
+        public void assertThatUsers(Matcher<Iterable<? super String>> matcher)
+        {
+            assertThat("Users list",users,matcher);
+        }
+    }
+
     @Rule
     public TestingDir testdir = new TestingDir();
 
@@ -67,88 +118,57 @@ public class PropertyUserStoreTest
     @Test
     public void testPropertyUserStoreLoad() throws Exception
     {
-        final AtomicInteger userCount = new AtomicInteger();
+        final UserCount userCount = new UserCount();
         final File usersFile = initUsersText();
 
         PropertyUserStore store = new PropertyUserStore();
         store.setConfigPath(usersFile);
 
-        store.registerUserListener(new PropertyUserStore.UserListener()
-        {
-            public void update(String username, Credential credential, String[] roleArray)
-            {
-                userCount.getAndIncrement();
-            }
-
-            public void remove(String username)
-            {
-
-            }
-        });
+        store.registerUserListener(userCount);
 
         store.start();
 
-        Assert.assertNotNull("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("tom"));
-        Assert.assertNotNull("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("dick"));
-        Assert.assertNotNull("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("harry"));
-        Assert.assertEquals(3,userCount.get());
+        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("tom"), notNullValue());
+        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("dick"), notNullValue());
+        assertThat("Failed to retrieve UserIdentity directly from PropertyUserStore", store.getUserIdentity("harry"), notNullValue());
+        userCount.assertThatCount(is(3));
+        userCount.awaitCount(3);
     }
 
     @Test
     public void testPropertyUserStoreLoadUpdateUser() throws Exception
     {
-        final AtomicInteger userCount = new AtomicInteger();
-        final List<String> users = new ArrayList<String>();
+        final UserCount userCount = new UserCount();
         final File usersFile = initUsersText();
 
         PropertyUserStore store = new PropertyUserStore();
         store.setHotReload(true);
         store.setConfigPath(usersFile);
 
-        store.registerUserListener(new PropertyUserStore.UserListener()
-        {
-            public void update(String username, Credential credential, String[] roleArray)
-            {
-                if (!users.contains(username))
-                {
-                    users.add(username);
-                    userCount.getAndIncrement();
-                }
-            }
-
-            public void remove(String username)
-            {
-
-            }
-        });
+        store.registerUserListener(userCount);
 
         store.start();
         
         Thread.sleep(2000);
         
-        Assert.assertEquals(3,userCount.get());
+        userCount.assertThatCount(is(3));
 
         addAdditionalUser(usersFile,"skip: skip, roleA\n");
 
-        long start = System.currentTimeMillis();
-        while (userCount.get() < 4 && (System.currentTimeMillis() - start) < 10000)
-        {
-            Thread.sleep(10);
-        }
+        userCount.awaitCount(4);
 
-        Assert.assertNotNull("Failed to retrieve UserIdentity from PropertyUserStore directly", store.getUserIdentity("skip"));
-        Assert.assertEquals(4,userCount.get());
-
-        Assert.assertTrue(users.contains("skip"));
+        assertThat("Failed to retrieve UserIdentity from PropertyUserStore directly", store.getUserIdentity("skip"), notNullValue());
+        
+        userCount.assertThatCount(is(4));
+        userCount.assertThatUsers(hasItem("skip"));
     }
 
     @Test
     public void testPropertyUserStoreLoadRemoveUser() throws Exception
     {
+        final UserCount userCount = new UserCount();
         // initial user file (3) users
         final File usersFile = initUsersText();
-        final AtomicInteger userCount = new AtomicInteger();
-        final List<String> users = new ArrayList<String>();
         
         // adding 4th user
         addAdditionalUser(usersFile,"skip: skip, roleA\n");
@@ -157,33 +177,17 @@ public class PropertyUserStoreTest
         store.setHotReload(true);
         store.setConfigPath(usersFile);
 
-        store.registerUserListener(new PropertyUserStore.UserListener()
-        {
-            public void update(String username, Credential credential, String[] roleArray)
-            {
-                if (!users.contains(username))
-                {
-                    users.add(username);
-                    userCount.getAndIncrement();
-                }
-            }
-
-            public void remove(String username)
-            {
-                users.remove(username);
-                userCount.getAndDecrement();
-            }
-        });
+        store.registerUserListener(userCount);
 
         store.start();
 
         Thread.sleep(2000);
 
-        Assert.assertEquals(4,userCount.get());
+        userCount.assertThatCount(is(4));
 
         // rewrite file with original 3 users
         initUsersText();
-        Thread.sleep(3000);
-        Assert.assertEquals(3,userCount.get());
+        
+        userCount.awaitCount(3);
     }
 }
