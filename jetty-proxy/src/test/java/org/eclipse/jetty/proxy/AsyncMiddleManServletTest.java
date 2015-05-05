@@ -76,6 +76,7 @@ import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.eclipse.jetty.util.ajax.JSON;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Assert;
@@ -108,12 +109,12 @@ public class AsyncMiddleManServletTest
         server.start();
     }
 
-    private void startProxy(HttpServlet proxyServlet) throws Exception
+    private void startProxy(AsyncMiddleManServlet proxyServlet) throws Exception
     {
         startProxy(proxyServlet, new HashMap<String, String>());
     }
 
-    private void startProxy(HttpServlet proxyServlet, Map<String, String> initParams) throws Exception
+    private void startProxy(AsyncMiddleManServlet proxyServlet, Map<String, String> initParams) throws Exception
     {
         QueuedThreadPool proxyPool = new QueuedThreadPool();
         proxyPool.setName("proxy");
@@ -134,6 +135,8 @@ public class AsyncMiddleManServletTest
         proxyContext.addServlet(proxyServletHolder, "/*");
 
         proxy.start();
+
+        ((StdErrLog)proxyServlet._log).setHideStacks(true);
     }
 
     private void startClient() throws Exception
@@ -893,7 +896,7 @@ public class AsyncMiddleManServletTest
                 return new AfterContentTransformer()
                 {
                     @Override
-                    public void transform(Source source, Sink sink) throws IOException
+                    public boolean transform(Source source, Sink sink) throws IOException
                     {
                         InputStream input = source.getInputStream();
                         @SuppressWarnings("unchecked")
@@ -903,6 +906,7 @@ public class AsyncMiddleManServletTest
                         try (OutputStream output = sink.getOutputStream())
                         {
                             output.write(JSON.toString(obj).getBytes(StandardCharsets.UTF_8));
+                            return true;
                         }
                     }
                 };
@@ -963,7 +967,7 @@ public class AsyncMiddleManServletTest
                     }
 
                     @Override
-                    public void transform(Source source, Sink sink) throws IOException
+                    public boolean transform(Source source, Sink sink) throws IOException
                     {
                         // Consume the stream once.
                         InputStream input = source.getInputStream();
@@ -972,6 +976,7 @@ public class AsyncMiddleManServletTest
                         // Reset the stream and re-read it.
                         input.reset();
                         IO.copy(input, sink.getOutputStream());
+                        return true;
                     }
                 };
             }
@@ -1016,7 +1021,7 @@ public class AsyncMiddleManServletTest
                 AfterContentTransformer transformer = new AfterContentTransformer()
                 {
                     @Override
-                    public void transform(Source source, Sink sink) throws IOException
+                    public boolean transform(Source source, Sink sink) throws IOException
                     {
                         InputStream input = source.getInputStream();
                         @SuppressWarnings("unchecked")
@@ -1026,6 +1031,7 @@ public class AsyncMiddleManServletTest
                         try (OutputStream output = sink.getOutputStream())
                         {
                             output.write(JSON.toString(obj).getBytes(StandardCharsets.UTF_8));
+                            return true;
                         }
                     }
                 };
@@ -1090,9 +1096,10 @@ public class AsyncMiddleManServletTest
                     }
 
                     @Override
-                    public void transform(Source source, Sink sink) throws IOException
+                    public boolean transform(Source source, Sink sink) throws IOException
                     {
                         IO.copy(source.getInputStream(), sink.getOutputStream());
+                        return true;
                     }
 
                     @Override
@@ -1162,9 +1169,10 @@ public class AsyncMiddleManServletTest
                     }
 
                     @Override
-                    public void transform(Source source, Sink sink) throws IOException
+                    public boolean transform(Source source, Sink sink) throws IOException
                     {
                         IO.copy(source.getInputStream(), sink.getOutputStream());
+                        return true;
                     }
 
                     @Override
@@ -1185,6 +1193,74 @@ public class AsyncMiddleManServletTest
         Assert.assertTrue(serviceLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(destroyLatch.await(5, TimeUnit.SECONDS));
         Assert.assertEquals(HttpStatus.BAD_GATEWAY_502, response.getStatus());
+    }
+
+    @Test
+    public void testAfterContentTransformerDoNotReadSourceDoNotTransform() throws Exception
+    {
+        testAfterContentTransformerDoNoTransform(false, false);
+    }
+
+    @Test
+    public void testAfterContentTransformerReadSourceDoNotTransform() throws Exception
+    {
+        testAfterContentTransformerDoNoTransform(true, true);
+    }
+
+    private void testAfterContentTransformerDoNoTransform(final boolean readSource, final boolean useDisk) throws Exception
+    {
+        final String key0 = "id";
+        long value0 = 1;
+        final String key1 = "channel";
+        String value1 = "foo";
+        final String json = "{ \"" + key0 + "\":" + value0 + ", \"" + key1 + "\":\"" + value1 + "\" }";
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.getOutputStream().write(json.getBytes(StandardCharsets.UTF_8));
+            }
+        });
+        startProxy(new AsyncMiddleManServlet()
+        {
+            @Override
+            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            {
+                return new AfterContentTransformer()
+                {
+                    {
+                        if (useDisk)
+                            setMaxInputBufferSize(0);
+                    }
+
+                    @Override
+                    public boolean transform(Source source, Sink sink) throws IOException
+                    {
+                        if (readSource)
+                        {
+                            InputStream input = source.getInputStream();
+                            JSON.parse(new InputStreamReader(input, "UTF-8"));
+                        }
+                        // No transformation.
+                        return false;
+                    }
+                };
+            }
+        });
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(200, response.getStatus());
+        @SuppressWarnings("unchecked")
+        Map<String, Object> obj = (Map<String, Object>)JSON.parse(response.getContentAsString());
+        Assert.assertNotNull(obj);
+        Assert.assertEquals(2, obj.size());
+        Assert.assertEquals(value0, obj.get(key0));
+        Assert.assertEquals(value1, obj.get(key1));
     }
 
     private Path prepareTargetTestsDir() throws IOException

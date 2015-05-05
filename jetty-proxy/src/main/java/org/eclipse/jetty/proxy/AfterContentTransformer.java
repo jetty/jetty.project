@@ -59,7 +59,7 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
 {
     private static final Logger LOG = Log.getLogger(AfterContentTransformer.class);
 
-    private final List<ByteBuffer> buffers = new ArrayList<>();
+    private final List<ByteBuffer> sourceBuffers = new ArrayList<>();
     private Path overflowDirectory = Paths.get(System.getProperty("java.io.tmpdir"));
     private String inputFilePrefix = "amms_adct_in_";
     private String outputFilePrefix = "amms_adct_out_";
@@ -188,7 +188,7 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
             {
                 ByteBuffer copy = ByteBuffer.allocate(input.remaining());
                 copy.put(input).flip();
-                buffers.add(copy);
+                sourceBuffers.add(copy);
             }
         }
 
@@ -196,8 +196,10 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
         {
             Source source = new Source();
             Sink sink = new Sink();
-            transform(source, sink);
-            sink.drainTo(output);
+            if (transform(source, sink))
+                sink.drainTo(output);
+            else
+                source.drainTo(output);
         }
     }
 
@@ -211,20 +213,28 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
      * method is invoked only when the whole content is available, and offers
      * a blocking API via the InputStream and OutputStream that can be obtained
      * from {@link Source} and {@link Sink} respectively.</p>
+     * <p>Implementations may read the source, inspect the input bytes and decide
+     * that no transformation is necessary, and therefore the source must be copied
+     * unchanged to the sink. In such case, the implementation must return false to
+     * indicate that it wishes to just pipe the bytes from the source to the sink.</p>
      * <p>Typical implementations:</p>
      * <pre>
      * // Identity transformation (no transformation, the input is copied to the output)
-     * public void transform(Source source, Sink sink)
+     * public boolean transform(Source source, Sink sink)
      * {
      *     org.eclipse.jetty.util.IO.copy(source.getInputStream(), sink.getOutputStream());
+     *     return true;
      * }
      * </pre>
      *
      * @param source where the original content is read
      * @param sink where the transformed content is written
+     * @return true if the transformation happened and the transformed bytes have
+     * been written to the sink, false if no transformation happened and the source
+     * must be copied to the sink.
      * @throws IOException if the transformation fails
      */
-    public abstract void transform(Source source, Sink sink) throws IOException;
+    public abstract boolean transform(Source source, Sink sink) throws IOException;
 
     private void overflow(ByteBuffer input) throws IOException
     {
@@ -236,11 +246,11 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
                     StandardOpenOption.READ,
                     StandardOpenOption.WRITE,
                     StandardOpenOption.DELETE_ON_CLOSE);
-            int size = buffers.size();
+            int size = sourceBuffers.size();
             if (size > 0)
             {
-                inputFile.write(buffers.toArray(new ByteBuffer[size]));
-                buffers.clear();
+                inputFile.write(sourceBuffers.toArray(new ByteBuffer[size]));
+                sourceBuffers.clear();
             }
         }
         inputFile.write(input);
@@ -251,6 +261,22 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
     {
         close(inputFile);
         close(outputFile);
+    }
+
+    private void drain(FileChannel file, List<ByteBuffer> output) throws IOException
+    {
+        long position = 0;
+        long length = file.size();
+        file.position(position);
+        while (length > 0)
+        {
+            // At most 1 GiB file maps.
+            long size = Math.min(1024 * 1024 * 1024, length);
+            ByteBuffer buffer = file.map(FileChannel.MapMode.READ_ONLY, position, size);
+            output.add(buffer);
+            position += size;
+            length -= size;
+        }
     }
 
     private void close(Closeable closeable)
@@ -297,6 +323,19 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
         {
             return stream;
         }
+
+        private void drainTo(List<ByteBuffer> output) throws IOException
+        {
+            if (inputFile == null)
+            {
+                output.addAll(sourceBuffers);
+                sourceBuffers.clear();
+            }
+            else
+            {
+                drain(inputFile, output);
+            }
+        }
     }
 
     private class ChannelInputStream extends InputStream
@@ -333,11 +372,11 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
         {
             if (len == 0)
                 return 0;
-            if (index == buffers.size())
+            if (index == sourceBuffers.size())
                 return -1;
 
             if (slice == null)
-                slice = buffers.get(index).slice();
+                slice = sourceBuffers.get(index).slice();
 
             int size = Math.min(len, slice.remaining());
             slice.get(b, off, size);
@@ -371,7 +410,7 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
      */
     public class Sink
     {
-        private final List<ByteBuffer> buffers = new ArrayList<>();
+        private final List<ByteBuffer> sinkBuffers = new ArrayList<>();
         private final OutputStream stream = new SinkOutputStream();
 
         /**
@@ -392,11 +431,11 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
                         StandardOpenOption.READ,
                         StandardOpenOption.WRITE,
                         StandardOpenOption.DELETE_ON_CLOSE);
-                int size = buffers.size();
+                int size = sinkBuffers.size();
                 if (size > 0)
                 {
-                    outputFile.write(buffers.toArray(new ByteBuffer[size]));
-                    buffers.clear();
+                    outputFile.write(sinkBuffers.toArray(new ByteBuffer[size]));
+                    sinkBuffers.clear();
                 }
             }
             outputFile.write(output);
@@ -406,24 +445,13 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
         {
             if (outputFile == null)
             {
-                output.addAll(buffers);
-                buffers.clear();
+                output.addAll(sinkBuffers);
+                sinkBuffers.clear();
             }
             else
             {
                 outputFile.force(true);
-                long position = 0;
-                long length = outputFile.size();
-                outputFile.position(position);
-                while (length > 0)
-                {
-                    // At most 1 GiB file maps.
-                    long size = Math.min(1024 * 1024 * 1024, length);
-                    ByteBuffer buffer = outputFile.map(FileChannel.MapMode.READ_ONLY, position, size);
-                    output.add(buffer);
-                    position += size;
-                    length -= size;
-                }
+                drain(outputFile, output);
             }
         }
 
@@ -447,7 +475,7 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
                     // application so we need to copy it.
                     byte[] copy = new byte[len];
                     System.arraycopy(b, off, copy, 0, len);
-                    buffers.add(ByteBuffer.wrap(copy));
+                    sinkBuffers.add(ByteBuffer.wrap(copy));
                 }
             }
 
