@@ -23,8 +23,8 @@ import java.nio.ByteBuffer;
 
 import javax.websocket.OnMessage;
 
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.websocket.common.message.MessageAppender;
+import org.eclipse.jetty.websocket.common.util.Utf8PartialBuilder;
 import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 
 /**
@@ -33,12 +33,14 @@ import org.eclipse.jetty.websocket.jsr356.endpoints.JsrAnnotatedEventDriver;
 public class TextPartialOnMessage implements MessageAppender
 {
     private final JsrAnnotatedEventDriver driver;
+    private final Utf8PartialBuilder utf8Partial;
     private boolean finished;
 
     public TextPartialOnMessage(JsrAnnotatedEventDriver driver)
     {
         this.driver = driver;
         this.finished = false;
+        this.utf8Partial = new Utf8PartialBuilder();
     }
 
     @Override
@@ -48,15 +50,9 @@ public class TextPartialOnMessage implements MessageAppender
         {
             throw new IOException("Cannot append to finished buffer");
         }
-        if (payload == null)
-        {
-            driver.onPartialTextMessage("",isLast);
-        }
-        else
-        {
-            String text = BufferUtil.toUTF8String(payload);
-            driver.onPartialTextMessage(text,isLast);
-        }
+        
+        String text = utf8Partial.toPartialString(payload);
+        driver.onPartialTextMessage(text,isLast);
     }
 
     @Override
