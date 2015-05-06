@@ -50,6 +50,7 @@ public class StartArgs
     static
     {
         String ver = System.getProperty("jetty.version",null);
+        String tag = System.getProperty("jetty.tag.version",null);
 
         if (ver == null)
         {
@@ -57,16 +58,29 @@ public class StartArgs
             if ((pkg != null) && "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) && (pkg.getImplementationVersion() != null))
             {
                 ver = pkg.getImplementationVersion();
+                if (tag == null)
+                {
+                    tag = "jetty-" + ver;
+                }
             }
         }
 
         if (ver == null)
         {
             ver = "TEST";
+            if (tag == null)
+            {
+                tag = "master";
+            }
+        }
+        else if (ver.contains("-SNAPSHOT"))
+        {
+            tag = "master";
         }
 
         VERSION = ver;
         System.setProperty("jetty.version",VERSION);
+        System.setProperty("jetty.tag.version",tag);
     }
 
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
@@ -152,7 +166,7 @@ public class StartArgs
             return;
         }
         
-        FileArg arg = new FileArg(module, uriLocation);
+        FileArg arg = new FileArg(module, properties.expand(uriLocation));
         if (!files.contains(arg))
         {
             files.add(arg);
@@ -231,6 +245,7 @@ public class StartArgs
         System.out.println("Jetty Environment:");
         System.out.println("-----------------");
         dumpProperty("jetty.version");
+        dumpProperty("jetty.tag.version");
         dumpProperty("jetty.home");
         dumpProperty("jetty.base");
         
