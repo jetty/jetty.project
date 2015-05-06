@@ -165,7 +165,7 @@ public class EventDriverTest
     }
 
     @Test
-    public void testListener_Text() throws Exception
+    public void testListenerBasic_Text() throws Exception
     {
         ListenerBasicSocket socket = new ListenerBasicSocket();
         EventDriver driver = wrap(socket);

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.common.events;
 
+import org.eclipse.jetty.websocket.api.WebSocketConnectionListener;
 import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 
@@ -26,7 +27,7 @@ public class JettyListenerImpl implements EventDriverImpl
     @Override
     public EventDriver create(Object websocket, WebSocketPolicy policy)
     {
-        WebSocketListener listener = (WebSocketListener)websocket;
+        WebSocketConnectionListener listener = (WebSocketConnectionListener)websocket;
         return new JettyListenerEventDriver(policy,listener);
     }
 
@@ -39,6 +40,6 @@ public class JettyListenerImpl implements EventDriverImpl
     @Override
     public boolean supports(Object websocket)
     {
-        return (websocket instanceof WebSocketListener);
+        return (websocket instanceof WebSocketConnectionListener);
     }
 }
