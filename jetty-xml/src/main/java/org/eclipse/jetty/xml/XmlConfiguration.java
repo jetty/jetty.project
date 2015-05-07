@@ -298,6 +298,9 @@ public class XmlConfiguration
                 String loaders = (oClass.getClassLoader()==obj.getClass().getClassLoader())?"":"Object Class and type Class are from different loaders.";
                 throw new IllegalArgumentException("Object of class '"+obj.getClass().getCanonicalName()+"' is not of type '" + oClass.getCanonicalName()+"'. "+loaders+" in "+_url);
             }
+            String id=_root.getAttribute("id");
+            if (id!=null)
+                _configuration.getIdMap().put(id,obj);
             configure(obj,_root,0);
             return obj;
         }
@@ -352,8 +355,10 @@ public class XmlConfiguration
                     throw new IllegalStateException(String.format("No constructor %s(%s,%s) in %s",oClass,arguments,namedArgMap,_url));
                 }
             }
+            if (id!=null)
+                _configuration.getIdMap().put(id,obj);
+                
             _configuration.initializeDefaults(obj);
-
             configure(obj, _root, index);
             return obj;
         }
@@ -378,10 +383,6 @@ public class XmlConfiguration
          */
         public void configure(Object obj, XmlParser.Node cfg, int i) throws Exception
         {
-            String id = cfg.getAttribute("id");
-            if (id != null)
-                _configuration.getIdMap().put(id,obj);
-
             // Object already constructed so skip any arguments
             for (; i < cfg.size(); i++)
             {
@@ -668,6 +669,8 @@ public class XmlConfiguration
                 // try calling a getXxx method.
                 Method method = oClass.getMethod("get" + name.substring(0,1).toUpperCase(Locale.ENGLISH) + name.substring(1),(java.lang.Class[])null);
                 obj = method.invoke(obj,(java.lang.Object[])null);
+                if (id!=null)
+                    _configuration.getIdMap().put(id,obj);
                 configure(obj,node,0);
             }
             catch (NoSuchMethodException nsme)
@@ -683,8 +686,6 @@ public class XmlConfiguration
                     throw nsme;
                 }
             }
-            if (id != null)
-                _configuration.getIdMap().put(id, obj);
             return obj;
         }
 
@@ -723,11 +724,11 @@ public class XmlConfiguration
 
             try
             {
-                Object n= TypeUtil.call(oClass,name,obj,args.toArray(new Object[args.size()]));
+                Object nobj= TypeUtil.call(oClass,name,obj,args.toArray(new Object[args.size()]));
                 if (id != null)
-                    _configuration.getIdMap().put(id,n);
-                configure(n,node,aoeNode.getNext());
-                return n;
+                    _configuration.getIdMap().put(id,nobj);
+                configure(nobj,node,aoeNode.getNext());
+                return nobj;
             }
             catch (NoSuchMethodException e)
             {
@@ -747,59 +748,44 @@ public class XmlConfiguration
          */
         private Object newObj(Object obj, XmlParser.Node node) throws Exception
         {
-            Class<?> oClass = nodeClass(node);
-            int argIndex = node.size();
-            
-            Map<String, Object> namedArgMap = new HashMap<>();
-            List<Object> arguments = new LinkedList<>();
-            XmlParser.Node child;
-
-            // Find the <Arg> elements
-            for (int i = 0; i < node.size(); i++)
-            {
-                Object o = node.get(i);
-                if (o instanceof String)
-                {
-                    // Skip raw String nodes
-                    continue;
-                }
-                
-                child = (XmlParser.Node)o;
-                if(child.getTag().equals("Arg"))
-                {
-                    String namedAttribute = child.getAttribute("name");
-                    Object value=value(obj,child);
-                    if (namedAttribute != null)
-                    {
-                        // named arguments
-                        namedArgMap.put(namedAttribute,value);
-                    }
-                    // raw arguments
-                    arguments.add(value);
-                } else {
-                    // The first non <Arg> child is the start of 
-                    // elements that configure the class, such as
-                    // <Set> and <Call> nodes
-                    argIndex = i;
-                    break;
-                }
-            }
+            AttrOrElementNode aoeNode=new AttrOrElementNode(obj,node,"Id","Class","Arg");
+            String id = aoeNode.getString("Id");
+            String clazz = aoeNode.getString("Class");
+            List<XmlParser.Node> argNodes = aoeNode.getNodes("Arg");
 
             if (LOG.isDebugEnabled())
-                LOG.debug("XML new " + oClass);
+                LOG.debug("XML new " + clazz);
+            
+            Class<?> oClass = Loader.loadClass(XmlConfiguration.class,clazz);
+            
+            // Find the <Arg> elements
+            Map<String, Object> namedArgMap = new HashMap<>();
+            List<Object> arguments = new LinkedList<>();
+            for (XmlParser.Node child : argNodes)
+            {
+                String namedAttribute = child.getAttribute("name");
+                Object value=value(obj,child);
+                if (namedAttribute != null)
+                {
+                    // named arguments
+                    namedArgMap.put(namedAttribute,value);
+                }
+                // raw arguments
+                arguments.add(value);
+            }
 
-            Object n;
+            Object nobj;
             try
             {
                 if (namedArgMap.size() > 0)
                 {
                    LOG.debug("using named mapping");
-                   n = TypeUtil.construct(oClass, arguments.toArray(), namedArgMap);
+                   nobj = TypeUtil.construct(oClass, arguments.toArray(), namedArgMap);
                 }
                 else
                 {
                     LOG.debug("using normal mapping");
-                    n = TypeUtil.construct(oClass, arguments.toArray());
+                    nobj = TypeUtil.construct(oClass, arguments.toArray());
                 }
             }
             catch (NoSuchMethodException e)
@@ -807,9 +793,12 @@ public class XmlConfiguration
                 throw new IllegalStateException("No suitable constructor: " + node + " on " + obj);
             }
 
-            _configuration.initializeDefaults(n);
-            configure(n,node,argIndex);
-            return n;
+            if (id != null)
+                _configuration.getIdMap().put(id, nobj);
+            
+            _configuration.initializeDefaults(nobj);
+            configure(nobj,node,aoeNode.getNext());
+            return nobj;
         }
 
         /*
@@ -1369,6 +1358,42 @@ public class XmlConfiguration
                 
                 if (manditory && values.isEmpty())
                     throw new IllegalStateException("Must have attr '"+attrName+"' or element '"+elementName+"'");
+
+                return values;
+            }
+            
+            public List<XmlParser.Node> getNodes(String elementName) throws Exception
+            {
+                String attrName=StringUtil.asciiToLowerCase(elementName);
+                final List<XmlParser.Node> values=new ArrayList<>();
+                
+                String attr = _node.getAttribute(attrName);
+                if (attr!=null)
+                {
+                    for (String a : attr.split(","))
+                    {
+                        // create a fake node
+                        XmlParser.Node n = new XmlParser.Node(null,elementName,null);
+                        n.add(a);
+                        values.add(n);
+                    }
+                }
+
+                for (int i=0;i<_next;i++)
+                {
+                    Object o = _node.get(i);
+                    if (!(o instanceof XmlParser.Node))
+                        continue;
+                    XmlParser.Node n = (XmlParser.Node)o;
+                    
+                    if (elementName.equals(n.getTag()))
+                    {
+                        if (attr!=null)
+                            throw new IllegalStateException("Cannot have attr '"+attrName+"' and element '"+elementName+"'");
+
+                        values.add(n);
+                    }
+                }
 
                 return values;
             }

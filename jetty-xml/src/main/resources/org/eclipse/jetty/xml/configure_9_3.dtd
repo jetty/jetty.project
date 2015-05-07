@@ -158,9 +158,8 @@ This is equivalent to:
  Object o = new com.acme.MyClass("value1");
  o.setTest("Value2");
 -->
-<!ELEMENT New (Arg*,(%CONFIG;)*) >
-<!ATTLIST New %CLASSATTR; %IDATTR;>
-
+<!ELEMENT New (Id?,Name?,Class?,Arg*,(%CONFIG;)*) >
+<!ATTLIST New %IDATTR; %IMPLIEDCLASSATTR; %ARGATTR; >
 
 <!--
 Ref Element.

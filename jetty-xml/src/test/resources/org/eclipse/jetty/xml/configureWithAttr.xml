@@ -22,30 +22,18 @@
   <Put name="NullTrim">
   </Put>
 
-  <Put name="Object"><New class="java.lang.Double">
-      <Arg>1.2345</Arg>
-  </New></Put>
+  <Put name="Object"><New class="java.lang.Double" arg="1.2345"/></Put>
  
   <Put name="ObjectTrim">
-    <New class="java.lang.Double">
-      <Arg>1.2345</Arg>
-    </New>
+    <New class="java.lang.Double" arg="1.2345"/>
   </Put>
 
-  <Put name="Objects"><New class="java.lang.Integer">
-      <Arg>-1</Arg>
-  </New><New class="java.lang.String">
-      <Arg>String</Arg>
-  </New></Put>
-
+  <Put name="Objects"><New class="java.lang.Integer" arg="-1"/><New class="java.lang.String" arg="String"/></Put>
 
   <Put name="ObjectsTrim">
-    <New class="java.lang.Integer">
-      <Arg>-1</Arg>
-  </New><New class="java.lang.String">
-      <Arg>String</Arg>
+    <New class="java.lang.Integer" arg="-1">
+  </New><New class="java.lang.String" arg="String">
   </New></Put>
-
 
   <Put name="String" type="String">
     PutValue
@@ -62,19 +50,12 @@
     </New>
   </Put>
 
-  <Put name="ObjectsString" type="String"><New class="java.lang.Integer">
-      <Arg>-1</Arg>
-  </New><New class="java.lang.String">
-      <Arg>String</Arg>
-  </New></Put>
-
+  <Put name="ObjectsString" type="String"><New class="java.lang.Integer" arg="-1"/><New class="java.lang.String" arg="String"/></Put>
 
   <Put name="ObjectsWhiteString">
-    <New class="java.lang.Integer">
-      <Arg>-1</Arg>
+    <New class="java.lang.Integer" arg="-1">
   </New>
-  <New class="java.lang.String">
-      <Arg>String</Arg>
+  <New class="java.lang.String" arg="String">
   </New></Put>
 
   <Put name="SystemProperty" ><SystemProperty name="user.dir"/>/stuff</Put>
