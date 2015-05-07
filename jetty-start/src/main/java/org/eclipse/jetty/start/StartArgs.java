@@ -50,7 +50,7 @@ public class StartArgs
     static
     {
         String ver = System.getProperty("jetty.version",null);
-        String tag = System.getProperty("jetty.tag.version",null);
+        String tag = System.getProperty("jetty.tag.version","master");
 
         if (ver == null)
         {
@@ -73,7 +73,8 @@ public class StartArgs
                 tag = "master";
             }
         }
-        else if (ver.contains("-SNAPSHOT"))
+        
+        if (tag == null || tag.contains("-SNAPSHOT"))
         {
             tag = "master";
         }

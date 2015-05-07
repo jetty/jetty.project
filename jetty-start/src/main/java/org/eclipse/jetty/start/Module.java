@@ -221,11 +221,11 @@ public class Module extends Node<Module>
         return !getName().equals(fileRef);
     }
 
-    public boolean hasFiles(BaseHome baseHome)
+    public boolean hasFiles(BaseHome baseHome, Props props)
     {
         for (String ref : getFiles())
         {
-            FileArg farg = new FileArg(this,ref);
+            FileArg farg = new FileArg(this,props.expand(ref));
             Path refPath = baseHome.getBasePath(farg.location);
             if (!Files.exists(refPath))
             {

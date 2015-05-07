@@ -107,7 +107,7 @@ public class BaseBuilder
                 Licensing licensing = new Licensing();
                 for (Module module : startArgs.getAllModules().getSelected())
                 {
-                    if (!module.hasFiles(baseHome))
+                    if (!module.hasFiles(baseHome,startArgs.getProperties()))
                     {
                         licensing.addModule(module);
                     }
@@ -208,7 +208,7 @@ public class BaseBuilder
                     dirty |= builder.addModule(mod);
                     for (String file : mod.getFiles())
                     {
-                        files.add(new FileArg(mod,file));
+                        files.add(new FileArg(mod,startArgs.getProperties().expand(file)));
                     }
                 }
             }
@@ -228,12 +228,12 @@ public class BaseBuilder
                     dirty |= builder.addModule(mod);
                     for (String file : mod.getFiles())
                     {
-                        files.add(new FileArg(mod,file));
+                        files.add(new FileArg(mod,startArgs.getProperties().expand(file)));
                     }
                 }
             }
         }
-
+        
         // Process files
         files.addAll(startArgs.getFiles());
         dirty |= processFileResources(files);
