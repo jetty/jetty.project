@@ -9,38 +9,87 @@
   <groupId>org.eclipse.jetty.aggregate</groupId>
   <artifactId>jetty-all</artifactId>
   <name>Jetty :: Aggregate :: All core Jetty</name>
+  <description>UberJar for Core Jetty features</description>
   <packaging>pom</packaging>
   <url>http://www.eclipse.org/jetty</url>
+  <properties>
+    <uber-jar>${project.build.directory}/${project.artifactId}-${project.version}-uber.jar</uber-jar>
+  </properties>
   <build>
     <plugins>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
-        <artifactId>maven-assembly-plugin</artifactId>
-        <version>2.5.1</version>
+        <artifactId>maven-shade-plugin</artifactId>
+        <version>2.3</version>
         <executions>
           <execution>
             <id>uberjar</id>
             <phase>package</phase>
             <goals>
-              <goal>single</goal>
+              <goal>shade</goal>
             </goals>
             <configuration>
-              <descriptors>
-                <descriptor>src/main/assembly/uberjar.xml</descriptor>
-              </descriptors>
-              <attach>true</attach>
-              <archive>
-                <manifest>
-                </manifest>
-                <manifestEntries>
-                  <mode>development</mode>
-                  <url>http://eclipse.org/jetty</url>
-                  <Built-By>${user.name}</Built-By>
-                  <package>org.eclipse.jetty</package>
-                  <Bundle-License>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/NOTICE.txt</Bundle-License>
-                  <Bundle-Name>Jetty</Bundle-Name>
-                </manifestEntries>
-              </archive>
+              <shadedClassifierName>uber</shadedClassifierName>
+              <outputFile>${uber-jar}</outputFile>
+              <transformers>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ManifestResourceTransformer">
+                  <manifestEntries>
+                    <mode>development</mode>
+                    <url>http://eclipse.org/jetty</url>
+                    <Built-By>${user.name}</Built-By>
+                    <package>org.eclipse.jetty</package>
+                    <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
+                    <Import-Package>javax.naming,javax.net.ssl,javax.security.auth,javax.servlet;version="[3.1,4)",javax.servlet.descriptor;version="[3.1,4)",javax.servlet.http;version="[3.1,4)",javax.sql,javax.annotation;version="[1.2,2)",javax.annotation.security;version="[1.2,2)",javax.servlet.annotation;version="[3.1,4)",org.objectweb.asm;version="[5.1,6)",javax.websocket;version="[1.0,2)",javax.websocket.server;version="[1.0,2)"</Import-Package>
+                    <Bundle-SymbolicName>${project.groupId}.all</Bundle-SymbolicName>
+                    <Bundle-Description>${project.description}</Bundle-Description>
+                    <Bundle-License>http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/tree/NOTICE.txt</Bundle-License>
+                    <Bundle-Name>Jetty Core UberJar</Bundle-Name>
+                  </manifestEntries>
+                </transformer>
+              </transformers>
+              <artifactSet>
+                <excludes>
+                  <exclude>javax:*</exclude>
+                  <exclude>org.eclipse.jetty.orbit:*</exclude>
+                  <exclude>org.mortbay.jetty:*</exclude>
+                  <exclude>org.mortbay.jetty.alpn:*</exclude>
+                  <exclude>org.slf4j:*</exclude>
+                  <exclude>org.ow2.asm:*</exclude>
+                  <exclude>*:javax</exclude>
+                </excludes>
+              </artifactSet>
+              <filters>
+                <filter>
+                  <artifact>*</artifact>
+                  <excludes>
+                    <exclude>META-INF/MANIFEST.MF</exclude>
+                  </excludes>
+                </filter>
+              </filters>
+            </configuration>
+          </execution>
+        </executions>
+      </plugin>
+      <plugin>
+        <groupId>org.codehaus.mojo</groupId>
+        <artifactId>build-helper-maven-plugin</artifactId>
+        <version>1.9.1</version>
+        <executions>
+          <execution>
+            <id>attach-artifacts</id>
+            <phase>package</phase>
+            <goals>
+              <goal>attach-artifact</goal>
+            </goals>
+            <configuration>
+              <artifacts>
+                <artifact>
+                  <file>${uber-jar}</file>
+                  <type>jar</type>
+                  <classifier>uber</classifier>
+                </artifact>
+              </artifacts>
             </configuration>
           </execution>
         </executions>
