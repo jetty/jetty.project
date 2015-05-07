@@ -23,6 +23,7 @@ import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Properties;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.junit.Assert;
@@ -54,7 +55,6 @@ public class XmlConfigurationTest
     @Test
     public void testPassedObject() throws Exception
     {
-
         for (String configure : _configure)
         {
             Map<String,String> properties = new HashMap<>();
@@ -123,6 +123,9 @@ public class XmlConfigurationTest
             assertEquals("static to field",tc.testField1,77);
             assertEquals("field to field",tc.testField2,2);
             assertEquals("literal to static",TestConfiguration.VALUE,42);
+            
+            assertEquals("value0",((Map<String,String>)configuration.getIdMap().get("map")).get("key0"));
+            assertEquals("value1",((Map<String,String>)configuration.getIdMap().get("map")).get("key1"));
         }
     }
 

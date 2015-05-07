@@ -30,6 +30,7 @@ my be specified if a match is not achieved.
 <!ENTITY % DEFAULTATTR "default CDATA #IMPLIED" >
 <!ENTITY % IDATTR "id ID #IMPLIED" >
 <!ENTITY % ARGATTR "arg CDATA #IMPLIED" >
+<!ENTITY % ITEMATTR "item CDATA #IMPLIED" >
 <!ENTITY % REFATTR "refid CDATA #IMPLIED" >
 <!ENTITY % REQUIREDIDATTR "id ID #REQUIRED" >
 
@@ -192,8 +193,8 @@ are used for each element of the array:
 This is equivalent to:
  String[] a = new String[] { "value0", new String("value1") };
 -->
-<!ELEMENT Array (Item*) >
-<!ATTLIST Array %TYPEATTR; %IDATTR; >
+<!ELEMENT Array (Id?,Type?,Item*) >
+<!ATTLIST Array %IDATTR;%TYPEATTR;%ITEMATTR; >
 
 
 <!--
@@ -214,7 +215,7 @@ This is equivalent to:
  Map m = new HashMap();
  m.put("keyName", new String("value1"));
 -->
-<!ELEMENT Map (Entry*) >
+<!ELEMENT Map (Id?,Entry*) >
 <!ATTLIST Map %IDATTR; >
 <!ELEMENT Entry (Item,Item) >
 

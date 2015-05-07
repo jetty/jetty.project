@@ -46,7 +46,6 @@ import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.ArrayQueue;
@@ -58,7 +57,6 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.xml.XmlParser.Node;
 import org.xml.sax.InputSource;
 import org.xml.sax.SAXException;
 
@@ -428,6 +426,9 @@ public class XmlConfiguration
                             break;
                         case "Array":
                             newArray(obj, node);
+                            break;
+                        case "Map":
+                            newMap(obj,node);
                             break;
                         case "Ref":
                             refObj(obj, node);
@@ -823,10 +824,13 @@ public class XmlConfiguration
          */
         private Object newArray(Object obj, XmlParser.Node node) throws Exception
         {
+            AttrOrElementNode aoeNode=new AttrOrElementNode(obj,node,"Id","Type","Item");
+            String id = aoeNode.getString("Id");
+            String type = aoeNode.getString("Type");
+            List<XmlParser.Node> items = aoeNode.getNodes("Item");
+            
             // Get the type
             Class<?> aClass = java.lang.Object.class;
-            String type = node.getAttribute("type");
-            final String id = node.getAttribute("id");
             if (type != null)
             {
                 aClass = TypeUtil.fromName(type);
@@ -849,12 +853,11 @@ public class XmlConfiguration
                     }
                 }
             }
-
+            
             Object al = null;
 
-            for (Object nodeObject : node)
+            for (XmlParser.Node item : items)
             {
-                XmlParser.Node item = (Node)nodeObject;
                 String nid = item.getAttribute("id");
                 Object v = value(obj,item);
                 al = LazyList.add(al,(v == null && aClass.isPrimitive())?0:v);
@@ -873,17 +876,16 @@ public class XmlConfiguration
          */
         private Object newMap(Object obj, XmlParser.Node node) throws Exception
         {
-            String id = node.getAttribute("id");
+            AttrOrElementNode aoeNode=new AttrOrElementNode(node,"Id","Entry");
+            String id = aoeNode.getString("Id");
+            List<XmlParser.Node> entries = aoeNode.getNodes("Entry");
 
             Map<Object, Object> map = new HashMap<>();
             if (id != null)
                 _configuration.getIdMap().put(id, map);
 
-            for (Object o : node)
+            for (XmlParser.Node entry : entries)
             {
-                if (o instanceof String)
-                    continue;
-                XmlParser.Node entry = (XmlParser.Node)o;
                 if (!entry.getTag().equals("Entry"))
                     throw new IllegalStateException("Not an Entry");
 

@@ -138,7 +138,9 @@
 
   <Call>
     <Name>call</Name>
-    <Arg><Array type="int">
+    <Arg><Array>
+      <Id>array</Id>
+      <Type>int</Type>
       <Item type="int">1</Item>
       <Item type="int">2</Item>
       <Item type="int">3</Item>
@@ -149,6 +151,18 @@
   <Set name="testField1"><Get class="org.eclipse.jetty.xml.TestConfiguration" name="VALUE"/></Set>
   <Set name="testField2"><Get name="testInt"/></Set>
   <Set name="VALUE" type="int">42</Set>
+  
+  <Map>
+    <Id>map</Id>
+    <Entry>
+      <Item id="key0">key0</Item>
+      <Item id="value0">value0</Item>
+    </Entry>
+    <Entry>
+      <Item id="key1">key1</Item>
+      <Item id="value1">value1</Item>
+    </Entry>
+  </Map>
 
 </Configure>
 

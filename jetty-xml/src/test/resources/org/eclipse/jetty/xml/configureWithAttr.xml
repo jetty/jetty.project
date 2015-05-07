@@ -121,6 +121,17 @@
   <Set name="testField2"><Get name="testInt"/></Set>
   <Set name="VALUE" type="int">42</Set>
 
+  <Map id="map">
+    <Entry>
+      <Item id="key0">key0</Item>
+      <Item id="value0">value0</Item>
+    </Entry>
+    <Entry>
+      <Item id="key1">key1</Item>
+      <Item id="value1">value1</Item>
+    </Entry>
+  </Map>
+
 </Configure>
 
 
