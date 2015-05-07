@@ -99,7 +99,7 @@ public class HttpSpiContextHandler extends ContextHandler
             ex.printStackTrace(writer);
             writer.println("</pre>");
 
-            writer.println("<p>"+Jetty.POWERED_BY_HTML+"</p>");
+            baseRequest.getHttpChannel().getHttpConfiguration().writePoweredBy(writer,"<p>","</p>");
 
             writer.close();
         }

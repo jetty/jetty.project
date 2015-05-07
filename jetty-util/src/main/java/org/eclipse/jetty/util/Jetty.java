@@ -22,7 +22,6 @@ public class Jetty
 {
     public static final String VERSION;
     public static final String POWERED_BY;
-    public static final String POWERED_BY_HTML;
 
     static
     {
@@ -34,8 +33,7 @@ public class Jetty
         else
             VERSION = System.getProperty("jetty.version", "9.3.z-SNAPSHOT");
         
-        POWERED_BY="Powered by Jetty://"+VERSION;
-        POWERED_BY_HTML="<a href=\"http://eclipse.org/jetty\">"+POWERED_BY+"</a>";
+        POWERED_BY="<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// "+VERSION+"</a>";
     }
 
     private Jetty()

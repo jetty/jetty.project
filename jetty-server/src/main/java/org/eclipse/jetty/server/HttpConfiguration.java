@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -208,6 +209,19 @@ public class HttpConfiguration
         return _sendServerVersion;
     }
 
+    /* ------------------------------------------------------------ */
+    public void writePoweredBy(Appendable out,String preamble,String postamble) throws IOException
+    {
+        if (getSendServerVersion())
+        {
+            if (preamble!=null)
+                out.append(preamble);
+            out.append(Jetty.POWERED_BY);
+            if (postamble!=null)
+                out.append(postamble);
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     public void setSendXPoweredBy (boolean sendXPoweredBy)
     {
