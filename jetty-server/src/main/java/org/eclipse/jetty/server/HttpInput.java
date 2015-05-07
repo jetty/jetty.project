@@ -502,8 +502,11 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             synchronized (_inputQ)
             {
+                if (_listener != null)
+                    throw new IllegalStateException("ReadListener already set");
                 if (_state != STREAM)
-                    throw new IllegalStateException("state=" + _state);
+                    throw new IllegalStateException("State "+STREAM+" != " + _state);
+
                 _state = ASYNC;
                 _listener = readListener;
                 boolean content=nextContent()!=null;
