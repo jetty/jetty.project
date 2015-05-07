@@ -29,15 +29,9 @@
       <Arg>
         <Ref id="Server"/>
       </Arg>
-      <Set name="workerName">fred</Set>
+      <Set name="workerName"><Property name="jetty.infinispanSession.workerName" default="node1"/></Set>
       <Set name="cache"><Ref id="cache"/></Set> 
     </New>
   </Set>
-  <Call name="setAttribute">
-    <Arg>idMgr</Arg>
-    <Arg>
-      <Ref id="idMgr"/>
-    </Arg>
-  </Call>
 
 </Configure>

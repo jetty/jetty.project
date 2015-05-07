@@ -27,3 +27,9 @@ Infinispan is an open source project hosted on Github and released under the Apa
 http://infinispan.org/
 http://www.apache.org/licenses/LICENSE-2.0.html
 
+[ini-template]
+## Infinispan Session config
+
+## Unique identifier for this node in the cluster
+jetty.infinispanSession.workerName=node1
+
