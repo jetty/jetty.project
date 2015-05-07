@@ -52,6 +52,7 @@ import java.util.regex.Pattern;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.LazyList;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
@@ -96,6 +97,7 @@ public class XmlConfiguration
         URL config60 = Loader.getResource(XmlConfiguration.class, "org/eclipse/jetty/xml/configure_6_0.dtd");
         URL config76 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_7_6.dtd");
         URL config90 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_0.dtd");
+        URL config93 = Loader.getResource(XmlConfiguration.class,"org/eclipse/jetty/xml/configure_9_3.dtd");
         parser.redirectEntity("configure.dtd",config90);
         parser.redirectEntity("configure_1_0.dtd",config60);
         parser.redirectEntity("configure_1_1.dtd",config60);
@@ -104,13 +106,14 @@ public class XmlConfiguration
         parser.redirectEntity("configure_6_0.dtd",config60);
         parser.redirectEntity("configure_7_6.dtd",config76);
         parser.redirectEntity("configure_9_0.dtd",config90);
+        parser.redirectEntity("configure_9_3.dtd",config93);
 
-        parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config90);
-        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config90);
-        parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config90);
+        parser.redirectEntity("http://jetty.mortbay.org/configure.dtd",config93);
+        parser.redirectEntity("http://jetty.eclipse.org/configure.dtd",config93);
+        parser.redirectEntity("http://www.eclipse.org/jetty/configure.dtd",config93);
 
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config90);
-        parser.redirectEntity("-//Jetty//Configure//EN",config90);
+        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN",config93);
+        parser.redirectEntity("-//Jetty//Configure//EN",config93);
 
         return parser;
     }
@@ -270,9 +273,11 @@ public class XmlConfiguration
     public void initializeDefaults(Object object)
     {
     }
+    
 
     private static class JettyXmlConfiguration implements ConfigurationProcessor
     {
+        
         private String _url;
         XmlParser.Node _root;
         XmlConfiguration _configuration;
@@ -428,6 +433,12 @@ public class XmlConfiguration
                             break;
                         case "Property":
                             propertyObj(node);
+                            break;
+                        case "SystemProperty":
+                            systemPropertyObj(node);
+                            break;
+                        case "Env":
+                            envObj(node);
                             break;
                         default:
                             throw new IllegalStateException("Unknown tag: " + tag + " in " + _url);
@@ -686,49 +697,36 @@ public class XmlConfiguration
          */
         private Object call(Object obj, XmlParser.Node node) throws Exception
         {
-            String id = node.getAttribute("id");
-            Class<?> oClass = nodeClass(node);
-            if (oClass != null)
-                obj = null;
-            else if (obj != null)
-                oClass = obj.getClass();
-            if (oClass == null)
-                throw new IllegalArgumentException(node.toString());
+            AttrOrElementNode aoeNode=new AttrOrElementNode(obj,node,"Id","Name","Class","Arg");
+            String id = aoeNode.getString("Id");
+            String name = aoeNode.getString("Name");
+            String clazz = aoeNode.getString("Class");
+            List<Object> args = aoeNode.getList("Arg");
             
-            int size = 0;
-            int argIndex = node.size();
-            for (int i = 0; i < node.size(); i++)
+            
+            Class<?> oClass;
+            if (clazz!=null)
             {
-                Object o = node.get(i);
-                if (o instanceof String)
-                    continue;
-                if (!((XmlParser.Node)o).getTag().equals("Arg"))
-                {
-                    argIndex = i;
-                    break;
-                }
-                size++;
+                // static call
+                oClass=Loader.loadClass(XmlConfiguration.class,clazz);
+                obj=null;
             }
-
-            Object[] arg = new Object[size];
-            for (int i = 0, j = 0; j < size; i++)
+            else if (obj!=null)
             {
-                Object o = node.get(i);
-                if (o instanceof String)
-                    continue;
-                arg[j++] = value(obj,(XmlParser.Node)o);
+                oClass = obj.getClass();
             }
-
-            String method = node.getAttribute("name");
+            else
+                throw new IllegalArgumentException(node.toString());
+           
             if (LOG.isDebugEnabled())
-                LOG.debug("XML call " + method);
+                LOG.debug("XML call " + name);
 
             try
             {
-                Object n= TypeUtil.call(oClass,method,obj,arg);
+                Object n= TypeUtil.call(oClass,name,obj,args.toArray(new Object[args.size()]));
                 if (id != null)
                     _configuration.getIdMap().put(id,n);
-                configure(n,node,argIndex);
+                configure(n,node,aoeNode.getNext());
                 return n;
             }
             catch (NoSuchMethodException e)
@@ -943,76 +941,124 @@ public class XmlConfiguration
          */
         private Object propertyObj(XmlParser.Node node) throws Exception
         {
-            String idAttr = node.getAttribute("id");
-            String nameAttr = node.getAttribute("name");
-            String defaultValue = node.getAttribute("default");
+            AttrOrElementNode aoeNode=new AttrOrElementNode(node,"Id","Name","Deprecated","Default");
+            String id = aoeNode.getString("Id");
+            String name = aoeNode.getString("Name",true);
+            List<Object> deprecated = aoeNode.getList("Deprecated");
+            String dftValue = aoeNode.getString("Default");
 
-            Object value = null;
+            // Look for a value
             Map<String,String> properties = _configuration.getProperties();
-            if (properties != null && nameAttr != null)
-                value = resolve(properties, nameAttr);
+            String value = properties.get(name);
+            
+            // Look for a deprecated name value
+            if (value==null && !deprecated.isEmpty())
+            {
+                for (Object d : deprecated)
+                {
+                    value = properties.get(StringUtil.valueOf(d));
+                    if (value!=null)
+                    {
+                        LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
+                        break;
+                    }
+                }
+            }
+            
+            // use default value
+            if (value==null)
+                value=dftValue;
 
-            if (value == null && defaultValue != null)
-                value = interpolate(properties, defaultValue);
-
-            if (idAttr != null)
-                _configuration.getIdMap().put(idAttr, value);
-
-            if (value != null)
-                configure(value, node, 0);
-
+            // Set value if ID set
+            if (id != null)
+                _configuration.getIdMap().put(id, value);
             return value;
         }
 
-        private String resolve(Map<String, String> properties, String nameAttr)
+        /*
+         * Get a SystemProperty.
+         *
+         * @param node
+         * @return
+         * @exception Exception
+         */
+        private Object systemPropertyObj(XmlParser.Node node) throws Exception
         {
-            String preferredName = null;
-            String[] names = nameAttr.split(",");
-            for (String name : names)
-            {
-                name = name.trim();
-                if (name.length() == 0)
-                    continue;
-                if (preferredName == null)
-                    preferredName = name;
+            AttrOrElementNode aoeNode=new AttrOrElementNode(node,"Id","Name","Deprecated","Default");
+            String id = aoeNode.getString("Id");
+            String name = aoeNode.getString("Name",true);
+            List<Object> deprecated = aoeNode.getList("Deprecated");
+            String dftValue = aoeNode.getString("Default");
 
-                String value = properties.get(name);
-                if (value != null)
+            // Look for a value
+            String value = System.getProperty(name);
+            
+            // Look for a deprecated name value
+            if (value==null && !deprecated.isEmpty())
+            {
+                for (Object d : deprecated)
                 {
-                    if (!name.equals(preferredName))
-                        LOG.warn("Property '{}' is deprecated, use '{}' instead", name, preferredName);
-                    return value;
+                    value = System.getProperty(StringUtil.valueOf(d));
+                    if (value!=null)
+                    {
+                        LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
+                        break;
+                    }
                 }
             }
-            return null;
+            
+            // use default value
+            if (value==null)
+                value=dftValue;
+
+            // Set value if ID set
+            if (id != null)
+                _configuration.getIdMap().put(id, value);
+
+            return value;
         }
-
-        private String interpolate(Map<String, String> properties, String text)
+        
+        /*
+         * Get a Environment Property.
+         *
+         * @param node
+         * @return
+         * @exception Exception
+         */
+        private Object envObj(XmlParser.Node node) throws Exception
         {
-            StringBuilder result = new StringBuilder();
-            Matcher matcher = __propertyPattern.matcher(text);
-            int start = 0;
-            while (matcher.find(start))
+            AttrOrElementNode aoeNode=new AttrOrElementNode(node,"Id","Name","Deprecated","Default");
+            String id = aoeNode.getString("Id");
+            String name = aoeNode.getString("Name",true);
+            List<Object> deprecated = aoeNode.getList("Deprecated");
+            String dftValue = aoeNode.getString("Default");
+
+            // Look for a value
+            String value = System.getenv(name);
+            
+            // Look for a deprecated name value
+            if (value==null && !deprecated.isEmpty())
             {
-                int match = matcher.start();
-                result.append(text.substring(start, match));
-                String name = matcher.group(1);
-                String dftValue = null;
-                int bar = name.indexOf('|');
-                if (bar > 0)
+                for (Object d : deprecated)
                 {
-                    dftValue = name.substring(bar + 1).trim();
-                    name = name.substring(0, bar).trim();
+                    value = System.getenv(StringUtil.valueOf(d));
+                    if (value!=null)
+                    {
+                        LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
+                        break;
+                    }
                 }
-                String value = resolve(properties, name);
-                if (value == null)
-                    value = dftValue;
-                result.append(value);
-                start = matcher.end();
             }
-            result.append(text.substring(start, text.length()));
-            String r = result.toString();
-            return r.isEmpty() ? null : r;
+            
+            // use default value
+            if (value==null)
+                value=dftValue;
+
+            // Set value if ID set
+            if (id != null)
+                _configuration.getIdMap().put(id, value);
+
+            return value;
         }
 
         /*
@@ -1186,21 +1232,146 @@ public class XmlConfiguration
             if ("Property".equals(tag))
                 return propertyObj(node);
             if ("SystemProperty".equals(tag))
-            {
-                String name = node.getAttribute("name");
-                String defaultValue = node.getAttribute("default");
-                return System.getProperty(name,defaultValue);
-            }
+                return systemPropertyObj(node);
             if ("Env".equals(tag))
-            {
-                String name = node.getAttribute("name");
-                String defaultValue = node.getAttribute("default");
-                String value=System.getenv(name);
-                return value==null?defaultValue:value;
-            }
+                return envObj(node);
 
             LOG.warn("Unknown value tag: " + node,new Throwable());
             return null;
+        }
+        
+
+        private class AttrOrElementNode
+        {
+            final Object _obj;
+            final XmlParser.Node _node;
+            final Set<String> _elements = new HashSet<>();
+            final int _next;
+
+            AttrOrElementNode(XmlParser.Node node,String... elements )
+            {
+                this(null,node,elements);
+            }
+            
+            AttrOrElementNode(Object obj, XmlParser.Node node,String... elements )
+            {
+                _obj=obj;
+                _node=node;
+                for (String e:elements)
+                    _elements.add(e);
+                
+                int next=0;
+                for (Object o: _node)
+                {
+                    if (o instanceof String)
+                    {
+                        if (((String)o).trim().length()==0)
+                        {
+                            next++;
+                            continue;
+                        }
+                        break;
+                    }
+                    
+                    if (!(o instanceof XmlParser.Node))
+                        break;
+                    
+                    XmlParser.Node n = (XmlParser.Node)o;
+                    if (!_elements.contains(n.getTag()))
+                        break;
+                    
+                    next++;
+                }
+                _next=next;
+            }
+
+            public int getNext()
+            {
+                return _next;
+            }
+
+            public String getString(String elementName) throws Exception
+            {
+                return StringUtil.valueOf(get(elementName,false));
+            }
+            
+            public Object get(String elementName) throws Exception
+            {
+                return get(elementName,false);
+            }
+            
+            public String getString(String elementName, boolean manditory) throws Exception
+            {
+                return StringUtil.valueOf(get(elementName,manditory));
+            }
+            
+            
+            public Object get(String elementName, boolean manditory) throws Exception
+            {
+                String attrName=StringUtil.asciiToLowerCase(elementName);
+                String attr = _node.getAttribute(attrName);
+                Object value=attr;
+                
+                for (int i=0;i<_next;i++)
+                {
+                    Object o = _node.get(i);
+                    if (!(o instanceof XmlParser.Node))
+                        continue;
+                    XmlParser.Node n = (XmlParser.Node)o;
+                    if (elementName.equals(n.getTag()))
+                    {
+                        if (attr!=null)
+                            throw new IllegalStateException("Cannot have attr '"+attrName+"' and element '"+elementName+"'");
+
+                        value=value(_obj,n);
+                        break;
+                    }
+                }
+                
+                if (manditory && value==null)
+                    throw new IllegalStateException("Must have attr '"+attrName+"' or element '"+elementName+"'");
+                
+                return value;
+            }
+
+            public List<Object> getList(String elementName) throws Exception
+            {
+                return getList(elementName,false);
+            }
+            
+            public List<Object> getList(String elementName, boolean manditory) throws Exception
+            {
+                String attrName=StringUtil.asciiToLowerCase(elementName);
+                final List<Object> values=new ArrayList<>();
+                
+                String attr = _node.getAttribute(attrName);
+                if (attr!=null)
+                {
+                    for (String a : attr.split(","))
+                        values.add(a);
+                }
+
+                for (int i=0;i<_next;i++)
+                {
+                    Object o = _node.get(i);
+                    if (!(o instanceof XmlParser.Node))
+                        continue;
+                    XmlParser.Node n = (XmlParser.Node)o;
+                    
+                    if (elementName.equals(n.getTag()))
+                    {
+                        if (attr!=null)
+                            throw new IllegalStateException("Cannot have attr '"+attrName+"' and element '"+elementName+"'");
+
+                        values.add(value(_obj,n));
+                    }
+                }
+                
+                if (manditory && values.isEmpty())
+                    throw new IllegalStateException("Must have attr '"+attrName+"' or element '"+elementName+"'");
+
+                return values;
+            }
         }
     }
 
@@ -1231,7 +1402,6 @@ public class XmlConfiguration
             {
                 try
                 {
-
                     Properties properties = null;
 
                     // Look for properties from start.jar

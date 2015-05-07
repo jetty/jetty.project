@@ -26,8 +26,10 @@ my be specified if a match is not achieved.
 <!ENTITY % CLASSATTR "class CDATA #REQUIRED" >
 <!ENTITY % NAMEATTR "name CDATA #REQUIRED" >
 <!ENTITY % IMPLIEDNAMEATTR "name CDATA #IMPLIED" >
+<!ENTITY % DEPRECATEDATTR "deprecated CDATA #IMPLIED" >
 <!ENTITY % DEFAULTATTR "default CDATA #IMPLIED" >
 <!ENTITY % IDATTR "id ID #IMPLIED" >
+<!ENTITY % ARGATTR "arg CDATA #IMPLIED" >
 <!ENTITY % REFATTR "refid CDATA #IMPLIED" >
 <!ENTITY % REQUIREDIDATTR "id ID #REQUIRED" >
 
@@ -115,8 +117,8 @@ This is equivalent to:
 
 A Call with a class attribute is treated as a static call.
 -->
-<!ELEMENT Call (Arg*,(%CONFIG;)*) >
-<!ATTLIST Call %NAMEATTR; %IMPLIEDCLASSATTR; %IDATTR; >
+<!ELEMENT Call (Id?,Name?,Class?,Arg*,(%CONFIG;)*) >
+<!ATTLIST Call %ARGATTR; %IMPLIEDNAMEATTR; %IMPLIEDCLASSATTR; %IDATTR; >
 
 
 <!--
@@ -246,9 +248,8 @@ This is equivalent to:
 
  System.getProperty("Test","value");
 -->
-<!ELEMENT SystemProperty EMPTY >
-<!ATTLIST SystemProperty %NAMEATTR; %DEFAULTATTR; %IDATTR; >
-
+<!ELEMENT SystemProperty (Id?,Name?,Deprecated*,Default?) >
+<!ATTLIST SystemProperty %IMPLIEDNAMEATTR; %DEFAULTATTR; %DEPRECATEDATTR; %IDATTR; >
 
 <!--
 Environment variable Element.
@@ -265,8 +266,8 @@ This is equivalent to:
  if (v==null) v="value";
 
 -->
-<!ELEMENT Env EMPTY >
-<!ATTLIST Env %NAMEATTR; %DEFAULTATTR; %IDATTR; >
+<!ELEMENT Env (Id?,Name?,Deprecated*,Default?) >
+<!ATTLIST Env %IMPLIEDNAMEATTR; %DEFAULTATTR; %DEPRECATEDATTR; %IDATTR; >
 
 
 <!--
@@ -275,5 +276,5 @@ This element allows arbitrary properties to be retrieved by name.
 The name attribute specifies the property name and the optional
 default argument provides a default value.
 -->
-<!ELEMENT Property (%CONFIG;)* >
-<!ATTLIST Property %NAMEATTR; %DEFAULTATTR; %IDATTR; >
+<!ELEMENT Property (Id?,Name?,Deprecated*,Default?) >
+<!ATTLIST Property %IMPLIEDNAMEATTR; %DEFAULTATTR; %DEPRECATEDATTR; %IDATTR; >

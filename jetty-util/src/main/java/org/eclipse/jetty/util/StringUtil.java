@@ -746,4 +746,17 @@ public class StringUtil
         return s.substring(1,s.length()-1).split(" *, *");
     }
 
+    
+    /* ------------------------------------------------------------ */
+    /** The String value of an Object
+     * <p>This method calls {@link String#valueOf(Object)} unless the object is null,
+     * in which case null is returned</p>
+     * @param object The object
+     * @return String value or null
+     */
+    public static String valueOf(Object object)
+    {
+        return object==null?null:String.valueOf(object);
+    }
+
 }

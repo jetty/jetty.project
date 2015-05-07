@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_0.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure id="sslConnector" class="org.eclipse.jetty.server.ServerConnector">
 
@@ -16,10 +16,10 @@
     <Arg>
       <New id="alpn" class="org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory">
         <Arg type="String">
-          <Property name="jetty.alpn.protocols,alpn.protocols" default="" />
+          <Property name="jetty.alpn.protocols" deprecated="alpn.protocols" default="" />
         </Arg>
         <Set name="defaultProtocol">
-          <Property name="jetty.alpn.defaultProtocol,alpn.defaultProtocol" />
+          <Property name="jetty.alpn.defaultProtocol" deprecated="alpn.defaultProtocol" />
         </Set>
       </New>
     </Arg>

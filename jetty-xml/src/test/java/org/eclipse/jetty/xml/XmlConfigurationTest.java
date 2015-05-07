@@ -787,7 +787,7 @@ public class XmlConfigurationTest
         String defolt = "baz";
         XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
                 "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\"><Property name=\"foo,bar\" default=\"" + defolt + "\"/></Set>  " +
+                "  <Set name=\"first\"><Property name=\"wibble\" deprecated=\"foo,bar\" default=\"" + defolt + "\"/></Set>  " +
                 "</Configure>");
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(defolt, config.getFirst());
@@ -800,7 +800,7 @@ public class XmlConfigurationTest
         String value = "foo";
         XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
                 "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\"><Property name=\"" + name + ",bar\" default=\"baz\"/></Set>  " +
+                "  <Set name=\"first\"><Property name=\"" + name + "\" deprecated=\"other,bar\" default=\"baz\"/></Set>  " +
                 "</Configure>");
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
@@ -814,7 +814,42 @@ public class XmlConfigurationTest
         String value = "bar";
         XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
                 "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\"><Property name=\"foo," + name + "\" default=\"baz\"/></Set>  " +
+                "  <Set name=\"first\"><Property name=\"foo\" deprecated=\"" + name + "\" default=\"baz\"/></Set>  " +
+                "</Configure>");
+        xmlConfiguration.getProperties().put(name, value);
+        DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
+        assertEquals(value, config.getFirst());
+    }
+
+    @Test
+    public void testWithMultiplePropertyNamesWithDeprecatedThenThirdIsChosen() throws Exception
+    {
+        String name = "bar";
+        String value = "bar";
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                "  <Set name=\"first\"><Property name=\"foo\" deprecated=\"other," + name + "\" default=\"baz\"/></Set>  " +
+                "</Configure>");
+        xmlConfiguration.getProperties().put(name, value);
+        DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
+        assertEquals(value, config.getFirst());
+    }
+
+    @Test
+    public void testWithMultiplePropertyNameElementsWithDeprecatedThenThirdIsChosen() throws Exception
+    {
+        String name = "bar";
+        String value = "bar";
+        XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
+                "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
+                "  <Set name=\"first\">" +
+                "  <Property>  " +
+                "    <Name>foo</Name>" +
+                "    <Deprecated>foo</Deprecated>" +
+                "    <Deprecated>"+name+"</Deprecated>" +
+                "    <Default>baz</Default>" +
+                "  </Property>  " +
+                "  </Set>  " +
                 "</Configure>");
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
@@ -826,11 +861,16 @@ public class XmlConfigurationTest
     {
         String name = "bar";
         String value = "bar";
-        String defaultValue = "_${bar}_${bar}_";
+        String defaultValue = "_<Property name=\"bar\"/>_<Property name=\"bar\"/>_";
         String expectedValue = "_" + value + "_" + value + "_";
         XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
                 "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\"><Property name=\"not_found\" default=\"" + defaultValue + "\"/></Set>  " +
+                "  <Set name=\"first\">" +
+                "    <Property>" +
+                "      <Name>not_found</Name>" +
+                "      <Default>" + defaultValue + "</Default>" +
+                "    </Property>" +
+                "  </Set>  " +
                 "</Configure>");
         xmlConfiguration.getProperties().put(name, value);
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
@@ -843,7 +883,11 @@ public class XmlConfigurationTest
         String value = "bar";
         XmlConfiguration xmlConfiguration = new XmlConfiguration("" +
                 "<Configure class=\"org.eclipse.jetty.xml.DefaultTestConfiguration\">" +
-                "  <Set name=\"first\"><Property name=\"not_found\" default=\"${not_found|" + value + "}\"/></Set>  " +
+                "  <Set name=\"first\">" +
+                "    <Property name=\"not_found\">" +
+                "      <Default><Property name=\"also_not_found\" default=\"" + value + "\"/></Default>" +
+                "    </Property>" +
+                "  </Set>  " +
                 "</Configure>");
         DefaultTestConfiguration config = (DefaultTestConfiguration)xmlConfiguration.configure();
         assertEquals(value, config.getFirst());
