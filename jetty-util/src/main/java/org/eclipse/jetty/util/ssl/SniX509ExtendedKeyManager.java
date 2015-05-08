@@ -96,7 +96,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("choose {} from {}",alias,Arrays.asList(aliases));
+            LOG.debug("matched {}/{} from {}",alias,host,Arrays.asList(aliases));
         
         // Check if the SNI selected alias is allowable
         if (alias!=null)
@@ -120,14 +120,22 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         SSLSocket sslSocket = (SSLSocket)socket;
         
         String alias = chooseServerAlias(keyType,issuers,sslSocket.getSSLParameters().getSNIMatchers(),sslSocket.getHandshakeSession());
-        return alias==NO_MATCHERS?_delegate.chooseServerAlias(keyType,issuers,socket):alias;
+        if (alias==NO_MATCHERS)
+            alias=_delegate.chooseServerAlias(keyType,issuers,socket);
+        if (LOG.isDebugEnabled())
+            LOG.debug("chose {}/{} on {}",alias,keyType,socket);
+        return alias;
     }
         
     @Override
     public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
     {
         String alias = chooseServerAlias(keyType,issuers,engine.getSSLParameters().getSNIMatchers(),engine.getHandshakeSession());
-        return alias==NO_MATCHERS?_delegate.chooseEngineServerAlias(keyType,issuers,engine):alias;
+        if (alias==NO_MATCHERS)
+            alias=_delegate.chooseEngineServerAlias(keyType,issuers,engine);
+        if (LOG.isDebugEnabled())
+            LOG.debug("chose {}/{} on {}",alias,keyType,engine);
+        return alias;
     }   
     
     @Override

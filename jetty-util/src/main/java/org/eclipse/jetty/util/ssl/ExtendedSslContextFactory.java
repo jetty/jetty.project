@@ -132,7 +132,7 @@ public class ExtendedSslContextFactory extends SslContextFactory
                                 String cn = rdn.getValue().toString();
                                 if (LOG.isDebugEnabled())
                                     LOG.debug("Certificate cn alias={} cn={} in {}",alias,cn,_factory);
-                                if (cn!=null)
+                                if (cn!=null && cn.contains(".") && !cn.contains(" "))
                                     _aliases.put(cn,alias);
                             }
                         }
@@ -197,6 +197,14 @@ public class ExtendedSslContextFactory extends SslContextFactory
         public boolean matches(SNIServerName serverName)
         {
             LOG.debug("matches={} for {}",serverName,this);
+            
+            if (_aliases.size()==0 && _wild.size()==0)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("No SNI ready certificates for {} in {}",serverName,ExtendedSslContextFactory.this);
+                return true;
+            }
+            
             if (serverName instanceof SNIHostName)
             {
                 _name=(SNIHostName)serverName;
