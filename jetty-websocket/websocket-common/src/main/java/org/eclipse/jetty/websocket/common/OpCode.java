@@ -99,7 +99,8 @@ public final class OpCode
                 return "CONTINUATION";
             case TEXT:
                 return "TEXT";
-            case BINARY: return "BINARY";
+            case BINARY:
+                return "BINARY";
             case CLOSE:
                 return "CLOSE";
             case PING:

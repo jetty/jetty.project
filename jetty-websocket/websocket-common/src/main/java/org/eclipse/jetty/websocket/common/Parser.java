@@ -330,9 +330,9 @@ public class Parser
                                 policy.getBehavior(),
                                 OpCode.name(opcode),
                                 fin,
-                                (isRsv1InUse()?'1':'.'),
-                                (isRsv2InUse()?'1':'.'),
-                                (isRsv3InUse()?'1':'.'));
+                                (((b & 0x40) != 0)?'1':'.'),
+                                (((b & 0x20) != 0)?'1':'.'),
+                                (((b & 0x10) != 0)?'1':'.'));
 
                     // base framing flags
                     switch(opcode)
@@ -651,7 +651,7 @@ public class Parser
         builder.append(",c=").append(cursor);
         builder.append(",len=").append(payloadLength);
         builder.append(",f=").append(frame);
-        builder.append(",p=").append(policy);
+        // builder.append(",p=").append(policy);
         builder.append("]");
         return builder.toString();
     }
