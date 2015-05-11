@@ -36,6 +36,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -446,6 +447,11 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
                 LOG.debug("open -> {}",dump());
             }
         }
+        catch (CloseException ce)
+        {
+            LOG.warn(ce);
+            close(ce.getStatusCode(),ce.getMessage());
+        }
         catch (Throwable t)
         {
             LOG.warn(t);
@@ -456,7 +462,6 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Web
             {
                 statusCode = StatusCode.POLICY_VIOLATION;
             }
-            
             close(statusCode,t.getMessage());
         }
     }
