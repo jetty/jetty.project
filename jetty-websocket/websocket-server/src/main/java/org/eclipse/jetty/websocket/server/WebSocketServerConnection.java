@@ -19,7 +19,6 @@
 package org.eclipse.jetty.websocket.server;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
@@ -54,17 +53,6 @@ public class WebSocketServerConnection extends AbstractWebSocketConnection imple
     public InetSocketAddress getRemoteAddress()
     {
         return getEndPoint().getRemoteAddress();
-    }
-
-    /**
-     * Extra bytes from the initial HTTP upgrade that need to
-     * be processed by the websocket parser before starting
-     * to read bytes from the connection
-     */
-    @Override
-    public void onUpgradeTo(ByteBuffer prefilled)
-    {
-        setInitialBuffer(prefilled);
     }
 
     @Override

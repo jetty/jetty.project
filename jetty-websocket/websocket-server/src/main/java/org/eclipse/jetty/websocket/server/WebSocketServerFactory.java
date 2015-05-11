@@ -40,6 +40,7 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
@@ -65,6 +66,7 @@ import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.events.EventDriverFactory;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
+import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
 import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -601,11 +603,12 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         // Get original HTTP connection
         EndPoint endp = http.getEndPoint();
-        Executor executor = http.getConnector().getExecutor();
-        ByteBufferPool bufferPool = http.getConnector().getByteBufferPool();
+        Connector connector = http.getConnector();
+        Executor executor = connector.getExecutor();
+        ByteBufferPool bufferPool = connector.getByteBufferPool();
 
         // Setup websocket connection
-        WebSocketServerConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool);
+        AbstractWebSocketConnection wsConnection = new WebSocketServerConnection(endp, executor, scheduler, driver.getPolicy(), bufferPool);
 
         extensionStack.setPolicy(driver.getPolicy());
         extensionStack.configure(wsConnection.getParser());
@@ -659,7 +662,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         if (LOG.isDebugEnabled())
             LOG.debug("Handshake Response: {}", handshaker);
-
+        
         // Process (version specific) handshake response
         handshaker.doHandshakeResponse(request, response);
 
