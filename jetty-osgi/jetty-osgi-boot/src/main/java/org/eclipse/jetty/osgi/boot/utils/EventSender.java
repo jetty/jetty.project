@@ -28,10 +28,7 @@ import org.osgi.service.event.Event;
 import org.osgi.service.event.EventAdmin;
 
 /**
- * EventSender
- *
  * Utility class for emiting OSGi EventAdmin events
- * 
  */
 public class EventSender
 {    
@@ -42,18 +39,10 @@ public class EventSender
     public static final String UNDEPLOYED_EVENT = "org/osgi/service/web/UNDEPLOYED"; 
     public static final String FAILED_EVENT = "org/osgi/service/web/FAILED"; 
     
-    
     private static final EventSender __instance = new EventSender();
     private Bundle _myBundle;
     private EventAdmin _eventAdmin;
     
-    
-    
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * 
-     */
     private EventSender ()
     {
         _myBundle = FrameworkUtil.getBundle(EventSender.class);
@@ -62,26 +51,11 @@ public class EventSender
             _eventAdmin = (EventAdmin)_myBundle.getBundleContext().getService(ref);
     }
     
-    
-    
-
-    /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     public static EventSender getInstance()
     {
         return __instance;
     }
 
-    
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param topic
-     * @param wab
-     * @param contextPath
-     */
     public  void send (String topic, Bundle wab, String contextPath)
     {
         if (topic==null || wab==null || contextPath==null)
@@ -90,15 +64,6 @@ public class EventSender
         send(topic, wab, contextPath, null);
     }
     
-    
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * @param topic
-     * @param wab
-     * @param contextPath
-     * @param ex
-     */
     public  void send (String topic, Bundle wab, String contextPath, Exception ex)
     {        
         if (_eventAdmin == null)

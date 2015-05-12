@@ -18,13 +18,17 @@
 
 package org.eclipse.jetty.http;
 
-import static org.eclipse.jetty.http.HttpTokens.*;
+import static org.eclipse.jetty.http.HttpTokens.CARRIAGE_RETURN;
+import static org.eclipse.jetty.http.HttpTokens.LINE_FEED;
+import static org.eclipse.jetty.http.HttpTokens.SPACE;
+import static org.eclipse.jetty.http.HttpTokens.TAB;
 
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.Arrays;
 import java.util.EnumSet;
 
+import org.eclipse.jetty.http.HttpTokens.EndOfContent;
 import org.eclipse.jetty.util.ArrayTernaryTrie;
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.BufferUtil;
@@ -75,7 +79,7 @@ import org.eclipse.jetty.util.log.Logger;
  * case of the method and/or headers
  * </p>
  * <p>
- * @see http://tools.ietf.org/html/rfc7230
+ * @see <a href="http://tools.ietf.org/html/rfc7230">RFC 7230</a>
  */
 public class HttpParser
 {
@@ -120,6 +124,7 @@ public class HttpParser
         CHUNK_SIZE,
         CHUNK_PARAMS,
         CHUNK,
+        CHUNK_END,
         END,
         CLOSE,  // The associated stream/endpoint should be closed
         CLOSED  // The associated stream/endpoint is at EOF
@@ -271,7 +276,7 @@ public class HttpParser
 
     /* ------------------------------------------------------------ */
     /** Set if a HEAD response is expected
-     * @param head
+     * @param head true if head response is expected
      */
     public void setHeadResponse(boolean head)
     {
@@ -1149,6 +1154,7 @@ public class HttpParser
     /* ------------------------------------------------------------------------------- */
     /**
      * Parse until next Event.
+     * @param buffer the buffer to parse
      * @return True if an {@link RequestHandler} method was called and it returned true;
      */
     public boolean parseNext(ByteBuffer buffer)
@@ -1404,10 +1410,7 @@ public class HttpParser
                     if (ch == HttpTokens.LINE_FEED)
                     {
                         if (_chunkLength == 0)
-                        {
-                            setState(State.END);
-                            return _handler.messageComplete();
-                        }
+                            setState(State.CHUNK_END);
                         else
                             setState(State.CHUNK);
                     }
@@ -1424,10 +1427,7 @@ public class HttpParser
                     if (ch == HttpTokens.LINE_FEED)
                     {
                         if (_chunkLength == 0)
-                        {
-                            setState(State.END);
-                            return _handler.messageComplete();
-                        }
+                            setState(State.CHUNK_END);
                         else
                             setState(State.CHUNK);
                     }
@@ -1456,6 +1456,20 @@ public class HttpParser
                             return true;
                     }
                     break;
+                }
+                
+                case CHUNK_END:
+                {
+                    // TODO handle chunk trailer
+                    ch=next(buffer);
+                    if (ch==0)
+                        break;
+                    if (ch == HttpTokens.LINE_FEED)
+                    {
+                        setState(State.END);
+                        return _handler.messageComplete();
+                    }
+                    throw new IllegalCharacterException(_state,ch,buffer);
                 }
                 
                 case CLOSED:
@@ -1615,7 +1629,7 @@ public class HttpParser
          * This is the method called by parser when the HTTP request line is parsed
          * @param method The method 
          * @param uri The raw bytes of the URI.  These are copied into a ByteBuffer that will not be changed until this parser is reset and reused.
-         * @param version
+         * @param version the http version in use
          * @return true if handling parsing should return.
          */
         public boolean startRequest(String method, String uri, HttpVersion version);
@@ -1629,6 +1643,10 @@ public class HttpParser
     {
         /**
          * This is the method called by parser when the HTTP request line is parsed
+         * @param version the http version in use
+         * @param status the response status
+         * @param reason the response reason phrase
+         * @return true if handling parsing should return
          */
         public boolean startResponse(HttpVersion version, int status, String reason);
     }

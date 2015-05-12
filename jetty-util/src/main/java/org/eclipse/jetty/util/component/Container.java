@@ -20,6 +20,9 @@ package org.eclipse.jetty.util.component;
 
 import java.util.Collection;
 
+/**
+ * A Container
+ */
 public interface Container
 {
     /* ------------------------------------------------------------ */
@@ -39,6 +42,7 @@ public interface Container
     /**
      * @param clazz the class of the beans
      * @return the list of beans of the given class (or subclass)
+     * @param <T> the Bean type
      * @see #getBeans()
      */
     public <T> Collection<T> getBeans(Class<T> clazz);
@@ -46,12 +50,14 @@ public interface Container
     /**
      * @param clazz the class of the bean
      * @return the first bean of a specific class (or subclass), or null if no such bean exist
+     * @param <T> the Bean type 
      */
     public <T> T getBean(Class<T> clazz);
 
     /**
      * Removes the given bean.
      * If the bean is-a {@link Listener}, then also do an implicit {@link #removeEventListener(Listener)}.
+     * @param o the bean to remove
      * @return whether the bean was removed
      */
     public boolean removeBean(Object o);
@@ -59,14 +65,14 @@ public interface Container
     /**
      * Add an event listener. 
      * @see Container#addBean(Object)
-     * @param listener
+     * @param listener the listener to add
      */
     public void addEventListener(Listener listener);
     
     /**
      * Remove an event listener. 
      * @see Container#removeBean(Object)
-     * @param listener
+     * @param listener the listener to remove
      */
     public void removeEventListener(Listener listener);
 

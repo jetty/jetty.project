@@ -26,7 +26,7 @@ import org.eclipse.jetty.util.annotation.ManagedOperation;
 /* ------------------------------------------------------------ */
 /**
  * The lifecycle interface for generic components.
- * <br />
+ * <br>
  * Classes implementing this interface have a defined life cycle
  * defined by the methods of this interface.
  *

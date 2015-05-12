@@ -46,12 +46,11 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
 /**
  * A Handler that can dynamically GZIP compress responses.   Unlike 
  * previous and 3rd party GzipFilters, this mechanism works with asynchronously
  * generated responses and does not need to wrap the response or it's output
- * stream.  Instead it uses the efficient {@link HttpOutput.Interceptor} mechanism.
+ * stream.  Instead it uses the efficient {@link org.eclipse.jetty.server.HttpOutput.Interceptor} mechanism.
  * <p>
  * The handler can be applied to the entire server (a gzip.mod is included in
  * the distribution) or it may be applied to individual contexts.

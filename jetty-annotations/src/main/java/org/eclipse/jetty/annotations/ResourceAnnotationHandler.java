@@ -206,9 +206,12 @@ public class ResourceAnnotationHandler extends AbstractIntrospectableAnnotationH
 
     /**
      * Process a Resource annotation on a Method.
-     *
+     * <p>
      * This will generate a JNDI entry, and an Injection to be
      * processed when an instance of the class is created.
+     * 
+     * @param clazz the class to process 
+     * @param method the method to process
      */
     public void handleMethod(Class<?> clazz, Method method)
     {

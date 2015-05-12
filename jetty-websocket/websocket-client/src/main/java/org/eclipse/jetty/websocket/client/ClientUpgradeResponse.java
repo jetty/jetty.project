@@ -21,11 +21,15 @@ package org.eclipse.jetty.websocket.client;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.UpgradeResponse;
 import org.eclipse.jetty.websocket.common.io.http.HttpResponseHeaderParseListener;
 
 public class ClientUpgradeResponse extends UpgradeResponse implements HttpResponseHeaderParseListener
 {
+    private static final Logger LOG = Log.getLogger(ClientUpgradeResponse.class);
     private ByteBuffer remainingBuffer;
 
     public ClientUpgradeResponse()
@@ -47,6 +51,10 @@ public class ClientUpgradeResponse extends UpgradeResponse implements HttpRespon
     @Override
     public void setRemainingBuffer(ByteBuffer remainingBuffer)
     {
+        if (LOG.isDebugEnabled())
+        {
+            LOG.debug("Saving remaining header: {}",BufferUtil.toDetailString(remainingBuffer));
+        }
         this.remainingBuffer = remainingBuffer;
     }
 }

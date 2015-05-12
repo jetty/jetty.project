@@ -215,6 +215,7 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
         if (LOG.isDebugEnabled())
             LOG.debug("openSession({})",session);
         this.session = session;
+        this.session.getContainerScope().getObjectFactory().decorate(this.websocket);
         try
         {
             this.onConnect();
@@ -237,6 +238,12 @@ public abstract class AbstractEventDriver implements IncomingFrames, EventDriver
     {
         TARGET_LOG.warn("Unhandled Error (closing connection)",t);
         onError(t);
+        
+        if (t instanceof CloseException)
+        {
+            terminateConnection(((CloseException)t).getStatusCode(),t.getClass().getSimpleName());
+            return;
+        }
 
         // Unhandled Error, close the connection.
         switch (policy.getBehavior())

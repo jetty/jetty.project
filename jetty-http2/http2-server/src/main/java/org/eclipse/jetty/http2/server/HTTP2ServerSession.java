@@ -62,7 +62,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             settings = Collections.emptyMap();
         SettingsFrame frame = new SettingsFrame(settings, false);
         // TODO: consider sending a WINDOW_UPDATE to enlarge the session send window of the client.
-        control(null, Callback.Adapter.INSTANCE, frame, Frame.EMPTY_ARRAY);
+        frames(null, Callback.Adapter.INSTANCE, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
@@ -101,6 +101,24 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
         {
             LOG.info("Failure while notifying listener " + listener, x);
             return null;
+        }
+    }
+
+    @Override
+    public void onFrame(Frame frame)
+    {
+        switch (frame.getType())
+        {
+            case SETTINGS:
+                // SPEC: the required reply to this SETTINGS frame is the 101 response.
+                onSettings((SettingsFrame)frame, false);
+                break;
+            case HEADERS:
+                onHeaders((HeadersFrame)frame);
+                break;
+            default:
+                super.onFrame(frame);
+                break;
         }
     }
 }

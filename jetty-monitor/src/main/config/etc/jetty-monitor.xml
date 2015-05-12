@@ -1,5 +1,5 @@
 <?xml version="1.0"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
   <!-- Create Thread Monitor, and add to the Server as a lifecycle -->
@@ -13,15 +13,15 @@
         <!-- To enable logging CPU utilization for threads above specified threshold, -->
         <!-- uncomment the following lines, changing log interval (in milliseconds)  -->
         <!-- and log threshold (in percent) as desired.                              -->
-        <!-- 
+        <!--
         <Set name="logInterval">10000</Set>
         <Set name="logThreshold">1</Set>
         -->
-        
+
         <!-- To enable detail dump of the server whenever a thread is detected as spinning, -->
         <!-- uncomment the following lines. -->
         <!--
-        <Set name="dumpable"><Ref id="Server"/></Set>
+        <Set name="dumpable"><Ref refid="Server"/></Set>
         -->
       </New>
     </Arg>

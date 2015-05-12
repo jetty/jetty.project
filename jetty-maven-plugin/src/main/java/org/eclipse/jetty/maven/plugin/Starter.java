@@ -31,7 +31,6 @@ import java.util.Properties;
 import java.util.Set;
 import java.util.TreeMap;
 
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
@@ -45,14 +44,10 @@ import org.eclipse.jetty.xml.XmlConfiguration;
 
 
 /**
- * Starter
- * 
- * Class which is exec'ed to create a new jetty process. Used by the JettyRunForked mojo.
- *
+ * Starter Class which is exec'ed to create a new jetty process. Used by the JettyRunForked mojo.
  */
 public class Starter
 { 
-    public static final String PORT_SYSPROPERTY = "jetty.port";
     private static final Logger LOG = Log.getLogger(Starter.class);
 
     private List<File> jettyXmls; // list of jetty.xml config files to apply - Mandatory
@@ -116,9 +111,6 @@ public class Starter
     
     
     
-    /**
-     * @throws Exception
-     */
     public void configureJetty () throws Exception
     {
         LOG.debug("Starting Jetty Server ...");
@@ -170,10 +162,6 @@ public class Starter
         }
     }
     
-    
-    /**
-     * @throws Exception
-     */
     public void configureWebApp ()
     throws Exception
     {
@@ -204,21 +192,23 @@ public class Starter
         str = (String)props.getProperty("tmp.dir.persist");
         if (str != null)
             webApp.setPersistTempDirectory(Boolean.valueOf(str));
-
-        // - the base directories
+        
+        //Get the calculated base dirs which includes the overlays
         str = (String)props.getProperty("base.dirs");
         if (str != null && !"".equals(str.trim()))
         {
             ResourceCollection bases = new ResourceCollection(str.split(","));
-            webApp.setWar(bases.getResources()[0].toString());
+            webApp.setWar(null);
             webApp.setBaseResource(bases);
         }
-        
-        // - put virtual webapp base resource first on resource path or not
-        str = (String)props.getProperty("base.first");
+
+        //Get the original base dirs without the overlays
+        str = (String)props.get("base.dirs.orig");
         if (str != null && !"".equals(str.trim()))
-            webApp.setBaseAppFirst(Boolean.valueOf(str));
-        
+        {
+            ResourceCollection bases = new ResourceCollection(str.split(","));
+            webApp.setAttribute ("org.eclipse.jetty.resources.originalBases", bases);
+        }
         
         //For overlays
         str = (String)props.getProperty("maven.war.includes");
@@ -320,10 +310,6 @@ public class Starter
         
     }
 
-    /**
-     * @param args
-     * @throws Exception
-     */
     public void getConfiguration (String[] args)
     throws Exception
     {
@@ -374,9 +360,6 @@ public class Starter
     }
 
 
-    /**
-     * @throws Exception
-     */
     public void run() throws Exception
     {
         LOG.info("Started Jetty Server");
@@ -384,18 +367,12 @@ public class Starter
     }
 
     
-    /**
-     * @throws Exception
-     */
     public void join () throws Exception
     {
         server.join();
     }
     
     
-    /**
-     * @param e
-     */
     public void communicateStartupResult (Exception e)
     {
         if (token != null)
@@ -410,7 +387,7 @@ public class Starter
     
     /**
      * Apply any jetty xml files given
-     * @throws Exception
+     * @throws Exception if unable to apply the xml
      */
     public void applyJettyXml() throws Exception
     {
@@ -425,10 +402,6 @@ public class Starter
 
 
 
-    /**
-     * @param handler
-     * @param handlers
-     */
     protected void prependHandler (Handler handler, HandlerCollection handlers)
     {
         if (handler == null || handlers == null)
@@ -443,11 +416,6 @@ public class Starter
     
     
     
-    /**
-     * @param c
-     * @param wars
-     * @return
-     */
     protected Artifact getArtifactForOverlayConfig (OverlayConfig c, List<Artifact> wars)
     {
         if (wars == null || wars.isEmpty() || c == null)
@@ -482,11 +450,6 @@ public class Starter
         return list;
     }
     
-    
-    
-    /**
-     * @param args
-     */
     public static final void main(String[] args)
     {
         if (args == null)

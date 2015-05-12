@@ -22,6 +22,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
 /** ThreadPool.
@@ -36,6 +37,7 @@ public interface ThreadPool extends Executor
     /* ------------------------------------------------------------ */
     /**
      * Blocks until the thread pool is {@link LifeCycle#stop stopped}.
+     * @throws InterruptedException if thread was interrupted
      */
     public void join() throws InterruptedException;
 

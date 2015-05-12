@@ -18,19 +18,33 @@
 
 package org.eclipse.jetty.start.graph;
 
+/**
+ * Represents a selection criteria.
+ * <p>
+ * Each <code>Selection</code> can be used [0..n] times in the graph. The <code>Selection</code> must contain a unique
+ * 'criteria' description that how selection was determined.
+ */
 public class Selection
 {
     private final boolean explicit;
-    private final String how;
+    private final String criteria;
 
-    public Selection(String how)
+    public Selection(String criteria)
     {
-        this(how,true);
+        this(criteria,true);
     }
 
-    public Selection(String how, boolean explicit)
+    /**
+     * The Selection criteria
+     * 
+     * @param criteria
+     *            the selection criteria
+     * @param explicit
+     *            true if explicitly selected, false if transitively selected.
+     */
+    public Selection(String criteria, boolean explicit)
     {
-        this.how = how;
+        this.criteria = criteria;
         this.explicit = explicit;
     }
 
@@ -38,7 +52,7 @@ public class Selection
     {
         if (this.explicit)
         {
-            return new Selection(how,false);
+            return new Selection(criteria,false);
         }
         return this;
     }
@@ -63,23 +77,27 @@ public class Selection
         {
             return false;
         }
-        if (how == null)
+        if (criteria == null)
         {
-            if (other.how != null)
+            if (other.criteria != null)
             {
                 return false;
             }
         }
-        else if (!how.equals(other.how))
+        else if (!criteria.equals(other.criteria))
         {
             return false;
         }
         return true;
     }
 
-    public String getHow()
+    /**
+     * Get the criteria for this selection
+     * @return the criteria
+     */
+    public String getCriteria()
     {
-        return how;
+        return criteria;
     }
 
     @Override
@@ -87,8 +105,8 @@ public class Selection
     {
         final int prime = 31;
         int result = 1;
-        result = (prime * result) + (explicit?1231:1237);
-        result = (prime * result) + ((how == null)?0:how.hashCode());
+        result = (prime * result) + (explicit ? 1231 : 1237);
+        result = (prime * result) + ((criteria == null) ? 0 : criteria.hashCode());
         return result;
     }
 
@@ -105,7 +123,7 @@ public class Selection
         {
             str.append("<transitive from> ");
         }
-        str.append(how);
+        str.append(criteria);
         return str.toString();
     }
 }

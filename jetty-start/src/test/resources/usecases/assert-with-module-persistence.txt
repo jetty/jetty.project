@@ -33,12 +33,12 @@ LIB|${jetty.home}/lib/websocket/websocket-server-TEST.jar
 LIB|${jetty.home}/lib/websocket/websocket-servlet-TEST.jar
 
 # The Properties we expect (order is irrelevant)
-PROP|jetty.port=12345
-PROP|jetty.keystore=etc/keystore
-PROP|jetty.keystore.password=friendly
-PROP|jetty.keymanager.password=icecream
-PROP|jetty.truststore=etc/keystore
-PROP|jetty.truststore.password=sundae
+PROP|jetty.http.port=12345
+PROP|jetty.sslConfig.keyStorePath=etc/keystore
+PROP|jetty.sslConfig.keyStorePassword=friendly
+PROP|jetty.sslConfig.keyManagerPassword=icecream
+PROP|jetty.sslConfig.trustStorePath=etc/keystore
+PROP|jetty.sslConfig.trustStorePassword=sundae
 
 # JVM Args
 # JVM|-Xms1024m

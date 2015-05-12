@@ -26,6 +26,8 @@ import java.nio.channels.ReadPendingException;
 import java.nio.channels.WritePendingException;
 
 import org.eclipse.jetty.util.Callback;
+import org.eclipse.jetty.util.FutureCallback;
+import org.eclipse.jetty.util.IteratingCallback;
 
 /**
  *
@@ -38,21 +40,21 @@ import org.eclipse.jetty.util.Callback;
  * some inefficiencies.</p>
  * <p>This class will frequently be used in conjunction with some of the utility
  * implementations of {@link Callback}, such as {@link FutureCallback} and
- * {@link ExecutorCallback}. Examples are:</p>
+ * {@link IteratingCallback}. Examples are:</p>
  *
  * <h3>Blocking Read</h3>
  * <p>A FutureCallback can be used to block until an endpoint is ready to be filled
- * from:
+ * from:</p>
  * <blockquote><pre>
  * FutureCallback&lt;String&gt; future = new FutureCallback&lt;&gt;();
  * endpoint.fillInterested("ContextObj",future);
  * ...
  * String context = future.get(); // This blocks
  * int filled=endpoint.fill(mybuffer);
- * </pre></blockquote></p>
+ * </pre></blockquote>
  *
  * <h3>Dispatched Read</h3>
- * <p>By using a different callback, the read can be done asynchronously in its own dispatched thread:
+ * <p>By using a different callback, the read can be done asynchronously in its own dispatched thread:</p>
  * <blockquote><pre>
  * endpoint.fillInterested("ContextObj",new ExecutorCallback&lt;String&gt;(executor)
  * {
@@ -63,22 +65,22 @@ import org.eclipse.jetty.util.Callback;
  *   }
  *   public void onFailed(String context,Throwable cause) {...}
  * });
- * </pre></blockquote></p>
+ * </pre></blockquote>
  * <p>The executor callback can also be customized to not dispatch in some circumstances when
  * it knows it can use the callback thread and does not need to dispatch.</p>
  *
  * <h3>Blocking Write</h3>
  * <p>The write contract is that the callback complete is not called until all data has been
- * written or there is a failure.  For blocking this looks like:
+ * written or there is a failure.  For blocking this looks like:</p>
  * <blockquote><pre>
  * FutureCallback&lt;String&gt; future = new FutureCallback&lt;&gt;();
  * endpoint.write("ContextObj",future,headerBuffer,contentBuffer);
  * String context = future.get(); // This blocks
- * </pre></blockquote></p>
+ * </pre></blockquote>
  *
  * <h3>Dispatched Write</h3>
  * <p>Note also that multiple buffers may be passed in write so that gather writes
- * can be done:
+ * can be done:</p>
  * <blockquote><pre>
  * endpoint.write("ContextObj",new ExecutorCallback&lt;String&gt;(executor)
  * {
@@ -89,7 +91,7 @@ import org.eclipse.jetty.util.Callback;
  *   }
  *   public void onFailed(String context,Throwable cause) {...}
  * },headerBuffer,contentBuffer);
- * </pre></blockquote></p>
+ * </pre></blockquote>
  */
 public interface EndPoint extends Closeable
 {
@@ -158,7 +160,7 @@ public interface EndPoint extends Closeable
      * operation, the position is unchanged and the limit is increased to reflect the new data filled.
      * @return an <code>int</code> value indicating the number of bytes
      * filled or -1 if EOF is read or the input is shutdown.
-     * @throws EofException If the endpoint is closed.
+     * @throws IOException if the endpoint is closed.
      */
     int fill(ByteBuffer buffer) throws IOException;
 
@@ -167,10 +169,10 @@ public interface EndPoint extends Closeable
      * Flush data from the passed header/buffer to this endpoint.  As many bytes as can be consumed
      * are taken from the header/buffer position up until the buffer limit.  The header/buffers position
      * is updated to indicate how many bytes have been consumed.
+     * @param buffer the buffers to flush
      * @return True IFF all the buffers have been consumed and the endpoint has flushed the data to its 
      * destination (ie is not buffering any data).
-     *
-     * @throws EofException If the endpoint is closed or output is shutdown.
+     * @throws IOException If the endpoint is closed or output is shutdown.
      */
     boolean flush(ByteBuffer... buffer) throws IOException;
 
@@ -184,13 +186,13 @@ public interface EndPoint extends Closeable
     /** Get the max idle time in ms.
      * <p>The max idle time is the time the endpoint can be idle before
      * extraordinary handling takes place.
-     * @return the max idle time in ms or if ms <= 0 implies an infinite timeout
+     * @return the max idle time in ms or if ms &lt;= 0 implies an infinite timeout
      */
     long getIdleTimeout();
 
     /* ------------------------------------------------------------ */
     /** Set the idle timeout.
-     * @param idleTimeout the idle timeout in MS. Timeout <= 0 implies an infinite timeout
+     * @param idleTimeout the idle timeout in MS. Timeout &lt;= 0 implies an infinite timeout
      */
     void setIdleTimeout(long idleTimeout);
 

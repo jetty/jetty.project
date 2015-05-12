@@ -28,7 +28,7 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 
 /**
  * The configuration of the forward proxy to use with {@link org.eclipse.jetty.client.HttpClient}.
- * <p />
+ * <p>
  * Applications add subclasses of {@link Proxy} to this configuration via:
  * <pre>
  * ProxyConfiguration proxyConfig = httpClient.getProxyConfiguration();

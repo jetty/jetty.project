@@ -24,6 +24,7 @@ import java.net.URI;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -33,7 +34,9 @@ import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.ThreadClassLoaderScope;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.CloseException;
 import org.eclipse.jetty.websocket.api.CloseStatus;
 import org.eclipse.jetty.websocket.api.RemoteEndpoint;
 import org.eclipse.jetty.websocket.api.Session;
@@ -51,11 +54,14 @@ import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
 import org.eclipse.jetty.websocket.common.events.EventDriver;
 import org.eclipse.jetty.websocket.common.io.IOState;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 
 @ManagedObject("A Jetty WebSocket Session")
-public class WebSocketSession extends ContainerLifeCycle implements Session, IncomingFrames, ConnectionStateListener
+public class WebSocketSession extends ContainerLifeCycle implements Session, WebSocketSessionScope, IncomingFrames, ConnectionStateListener
 {
     private static final Logger LOG = Log.getLogger(WebSocketSession.class);
+    private final WebSocketContainerScope containerScope;
     private final URI requestURI;
     private final EventDriver websocket;
     private final LogicalConnection connection;
@@ -72,14 +78,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
 
-    public WebSocketSession(URI requestURI, EventDriver websocket, LogicalConnection connection, SessionListener... sessionListeners)
+    public WebSocketSession(WebSocketContainerScope containerScope, URI requestURI, EventDriver websocket, LogicalConnection connection, SessionListener... sessionListeners)
     {
-        if (requestURI == null)
-        {
-            throw new RuntimeException("Request URI cannot be null");
-        }
+        Objects.requireNonNull(containerScope,"Container Scope cannot be null");
+        Objects.requireNonNull(requestURI,"Request URI cannot be null");
 
         this.classLoader = Thread.currentThread().getContextClassLoader();
+        this.containerScope = containerScope;
         this.requestURI = requestURI;
         this.websocket = websocket;
         this.connection = connection;
@@ -124,7 +129,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     {
         executor.execute(runnable);
     }
-
+    
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
@@ -193,6 +198,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     public LogicalConnection getConnection()
     {
         return connection;
+    }
+
+    @Override
+    public WebSocketContainerScope getContainerScope()
+    {
+        return this.containerScope;
     }
 
     public ExtensionFactory getExtensionFactory()
@@ -273,6 +284,13 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     public UpgradeResponse getUpgradeResponse()
     {
         return this.upgradeResponse;
+    }
+    
+
+    @Override
+    public WebSocketSession getWebSocketSession()
+    {
+        return this;
     }
 
     @Override
@@ -410,10 +428,8 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
             return;
         }
         
-        ClassLoader old = Thread.currentThread().getContextClassLoader();
-        try {
-            Thread.currentThread().setContextClassLoader(classLoader);
-
+        try(ThreadClassLoaderScope scope = new ThreadClassLoaderScope(classLoader)) 
+        {
             // Upgrade success
             connection.getIOState().onConnected();
     
@@ -431,8 +447,14 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
                 LOG.debug("open -> {}",dump());
             }
         }
+        catch (CloseException ce)
+        {
+            LOG.warn(ce);
+            close(ce.getStatusCode(),ce.getMessage());
+        }
         catch (Throwable t)
         {
+            LOG.warn(t);
             // Exception on end-user WS-Endpoint.
             // Fast-fail & close connection with reason.
             int statusCode = StatusCode.SERVER_ERROR;
@@ -440,12 +462,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
             {
                 statusCode = StatusCode.POLICY_VIOLATION;
             }
-            
             close(statusCode,t.getMessage());
-        }
-        finally
-        {
-            Thread.currentThread().setContextClassLoader(old);
         }
     }
 

@@ -18,6 +18,13 @@
 
 package org.eclipse.jetty.server;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
+
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.io.LineNumberReader;
@@ -43,6 +50,7 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.AbstractEndPoint;
 import org.eclipse.jetty.io.ByteArrayEndPoint;
+import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.session.HashSessionIdManager;
@@ -56,13 +64,6 @@ import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNotNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
 
 public class ResponseTest
 {
@@ -83,10 +84,15 @@ public class ResponseTest
         AbstractEndPoint endp = new ByteArrayEndPoint(_scheduler, 5000);
         _channel = new HttpChannel(connector, new HttpConfiguration(), endp, new HttpTransport()
         {
+            private Throwable _channelError;
+            
             @Override
             public void send(MetaData.Response info, boolean head, ByteBuffer content, boolean lastContent, Callback callback)
             {
-                callback.succeeded();
+                if (_channelError==null)
+                    callback.succeeded();
+                else
+                    callback.failed(_channelError);
             }
 
             @Override
@@ -108,6 +114,7 @@ public class ResponseTest
             @Override
             public void abort(Throwable failure)
             {
+                _channelError=failure;
             }
 
             @Override
@@ -416,6 +423,32 @@ public class ResponseTest
         assertEquals(406, response.getStatus());
         assertEquals("Super Nanny", response.getReason());
         assertEquals("must-revalidate,no-cache,no-store", response.getHeader(HttpHeader.CACHE_CONTROL.asString()));
+    }
+
+    @Test
+    public void testWriteRuntimeIOException() throws Exception
+    {
+        Response response = newResponse();
+
+        PrintWriter writer = response.getWriter();
+        writer.println("test");
+        writer.flush();
+        Assert.assertFalse(writer.checkError());
+        
+        Throwable cause = new IOException("problem at mill");
+        _channel.abort(cause);
+        writer.println("test");
+        Assert.assertTrue(writer.checkError());
+        try
+        {
+            writer.println("test");
+            Assert.fail();
+        }
+        catch(RuntimeIOException e)
+        {
+            Assert.assertEquals(cause,e.getCause());
+        }
+        
     }
 
     @Test

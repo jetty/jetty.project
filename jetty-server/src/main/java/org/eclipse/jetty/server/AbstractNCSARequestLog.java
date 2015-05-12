@@ -25,6 +25,7 @@ import javax.servlet.http.Cookie;
 
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.PathMap;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.DateCache;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -67,6 +68,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
     /**
      * Is logging enabled
+     * @return true if logging is enabled
      */
     protected abstract boolean isEnabled();
     
@@ -74,6 +76,8 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
 
     /**
      * Write requestEntry out. (to disk or slf4j log)
+     * @param requestEntry the request entry
+     * @throws IOException if unable to write the entry
      */
     public abstract void write(String requestEntry) throws IOException;
 
@@ -90,14 +94,16 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     /**
      * Writes the request and response information to the output stream.
      *
-     * @see org.eclipse.jetty.server.RequestLog#log(org.eclipse.jetty.server.Request,
-     *      int, long)
+     * @see org.eclipse.jetty.server.RequestLog#log(Request, Response)
      */
     @Override
-    public void log(Request request, int status, long written)
+    public void log(Request request, Response response)
     {
         try
         {
+            int status = response.getCommittedMetaData().getStatus();
+            long written = response.getHttpChannel().getBytesWritten();
+            
             if (_ignorePathMap != null && _ignorePathMap.getMatch(request.getRequestURI()) != null)
                 return;
 
@@ -223,7 +229,7 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
      *
      * @param request  request object
      * @param b        StringBuilder to write to
-     * @throws IOException
+     * @throws IOException if unable to log the extended information
      */
     protected void logExtended(Request request,
                                StringBuilder b) throws IOException
@@ -333,15 +339,19 @@ public abstract class AbstractNCSARequestLog extends AbstractLifeCycle implement
     }
 
     /**
+     * @param value true to log dispatch
      * @deprecated use {@link StatisticsHandler}
      */
+    @Deprecated
     public void setLogDispatch(boolean value)
     {
     }
 
     /**
+     * @return true if logging dispatches
      * @deprecated use {@link StatisticsHandler}
      */
+    @Deprecated
     public boolean isLogDispatch()
     {
         return false;

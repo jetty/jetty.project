@@ -18,15 +18,17 @@
 
 package org.eclipse.jetty.client.api;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.Promise;
 
 /**
  * {@link Destination} represents the triple made of the {@link #getScheme}, the {@link #getHost}
  * and the {@link #getPort}.
- * <p />
+ * <p>
  * {@link Destination} holds a pool of {@link Connection}s, but allows to create unpooled
  * connections if the application wants full control over connection management via {@link #newConnection(Promise)}.
- * <p />
+ * <p>
  * {@link Destination}s may be obtained via {@link HttpClient#getDestination(String, String, int)}
  */
 public interface Destination
@@ -49,7 +51,7 @@ public interface Destination
     /**
      * Creates asynchronously a new, unpooled, {@link Connection} that will be returned
      * at a later time through the given {@link Promise}.
-     * <p />
+     * <p>
      * Use {@link FuturePromise} to wait for the connection:
      * <pre>
      * Destination destination = ...;

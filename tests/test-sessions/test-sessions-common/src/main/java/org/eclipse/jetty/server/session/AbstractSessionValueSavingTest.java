@@ -37,7 +37,7 @@ import org.junit.Test;
 
 
 /**
- * AbstractLastAccessTimeTest
+ * AbstractSessionValueSavingTest
  */
 public abstract class AbstractSessionValueSavingTest
 {

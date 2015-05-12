@@ -25,7 +25,6 @@ import java.security.cert.X509Certificate;
 
 import javax.net.ssl.SSLEngine;
 import javax.net.ssl.X509ExtendedKeyManager;
-import javax.net.ssl.X509KeyManager;
 
 
 /* ------------------------------------------------------------ */
@@ -36,20 +35,26 @@ import javax.net.ssl.X509KeyManager;
  */
 public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
 {
-    private String _keyAlias;
-    private X509KeyManager _keyManager;
+    private final String _alias;
+    private final X509ExtendedKeyManager _delegate;
 
     /* ------------------------------------------------------------ */
     /**
      * Construct KeyManager instance
      * @param keyAlias Alias of the key to be selected
      * @param keyManager Instance of KeyManager to be wrapped
-     * @throws Exception
+     * @throws Exception if unable to create X509ExtendedKeyManager
      */
-    public AliasedX509ExtendedKeyManager(String keyAlias, X509KeyManager keyManager) throws Exception
+    public AliasedX509ExtendedKeyManager(X509ExtendedKeyManager keyManager, String keyAlias) throws Exception
     {
-        _keyAlias = keyAlias;
-        _keyManager = keyManager;
+        _alias = keyAlias;
+        _delegate = keyManager;
+    }
+
+    /* ------------------------------------------------------------ */
+    public X509ExtendedKeyManager getDelegate()
+    {
+        return _delegate;
     }
 
     /* ------------------------------------------------------------ */
@@ -58,7 +63,21 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
      */
     public String chooseClientAlias(String[] keyType, Principal[] issuers, Socket socket)
     {
-        return _keyAlias == null ? _keyManager.chooseClientAlias(keyType, issuers, socket) : _keyAlias;
+        if (_alias==null)
+            return _delegate.chooseClientAlias(keyType,issuers,socket);
+        
+        for (String kt : keyType)
+        {
+            String[] aliases = _delegate.getClientAliases(kt,issuers);
+            if (aliases!=null)
+            {
+                for (String a:aliases)
+                    if (_alias.equals(a))
+                        return _alias;
+            }
+        }
+        
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -67,7 +86,18 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
      */
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
     {
-        return _keyAlias == null ? _keyManager.chooseServerAlias(keyType, issuers, socket) : _keyAlias;
+        if (_alias==null)
+            return _delegate.chooseServerAlias(keyType,issuers,socket);
+
+        String[] aliases = _delegate.getServerAliases(keyType,issuers);
+        if (aliases!=null)
+        {
+            for (String a:aliases)
+                if (_alias.equals(a))
+                    return _alias;
+        }
+
+        return null;
     }
 
     /* ------------------------------------------------------------ */
@@ -76,7 +106,7 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
      */
     public String[] getClientAliases(String keyType, Principal[] issuers)
     {
-        return _keyManager.getClientAliases(keyType, issuers);
+        return _delegate.getClientAliases(keyType, issuers);
     }
 
 
@@ -86,7 +116,7 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
      */
     public String[] getServerAliases(String keyType, Principal[] issuers)
     {
-        return _keyManager.getServerAliases(keyType, issuers);
+        return _delegate.getServerAliases(keyType, issuers);
     }
 
     /* ------------------------------------------------------------ */
@@ -95,7 +125,7 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
      */
     public X509Certificate[] getCertificateChain(String alias)
     {
-        return _keyManager.getCertificateChain(alias);
+        return _delegate.getCertificateChain(alias);
     }
 
     /* ------------------------------------------------------------ */
@@ -104,7 +134,7 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
      */
     public PrivateKey getPrivateKey(String alias)
     {
-        return _keyManager.getPrivateKey(alias);
+        return _delegate.getPrivateKey(alias);
     }
 
     /* ------------------------------------------------------------ */
@@ -114,7 +144,18 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
     @Override
     public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
     {
-        return _keyAlias == null ? super.chooseEngineServerAlias(keyType,issuers,engine) : _keyAlias;
+        if (_alias==null)
+            return _delegate.chooseEngineServerAlias(keyType,issuers,engine);
+
+        String[] aliases = _delegate.getServerAliases(keyType,issuers);
+        if (aliases!=null)
+        {
+            for (String a:aliases)
+                if (_alias.equals(a))
+                    return _alias;
+        }
+        
+        return null;
     }
 
 
@@ -125,6 +166,20 @@ public class AliasedX509ExtendedKeyManager extends X509ExtendedKeyManager
     @Override
     public String chooseEngineClientAlias(String keyType[], Principal[] issuers, SSLEngine engine)
     {
-        return _keyAlias == null ? super.chooseEngineClientAlias(keyType,issuers,engine) : _keyAlias;
+        if (_alias==null)
+            return _delegate.chooseEngineClientAlias(keyType,issuers,engine);
+        
+        for (String kt : keyType)
+        {
+            String[] aliases = _delegate.getClientAliases(kt,issuers);
+            if (aliases!=null)
+            {
+                for (String a:aliases)
+                    if (_alias.equals(a))
+                        return _alias;
+            }
+        }
+        
+        return null;
     }
 }

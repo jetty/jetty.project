@@ -33,22 +33,26 @@ import org.eclipse.jetty.util.Utf8Appendable.NotUtf8Exception;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
-/** Handles coding of MIME  "x-www-form-urlencoded".
+/** 
+ * Handles coding of MIME  "x-www-form-urlencoded".
  * <p>
  * This class handles the encoding and decoding for either
  * the query string of a URL or the _content of a POST HTTP request.
- *
- * <h4>Notes</h4>
+ * </p>
+ * <b>Notes</b>
+ * <p>
  * The UTF-8 charset is assumed, unless otherwise defined by either
  * passing a parameter or setting the "org.eclipse.jetty.util.UrlEncoding.charset"
  * System property.
+ * </p>
  * <p>
  * The hashtable either contains String single values, vectors
  * of String or arrays of Strings.
+ * </p>
  * <p>
  * This class is only partially synchronised.  In particular, simple
  * get operations are not protected from concurrent updates.
+ * </p>
  *
  * @see java.net.URLEncoder
  */
@@ -103,7 +107,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     }
     
     /* -------------------------------------------------------------- */
-    /** Encode Hashtable with % encoding.
+    /** Encode MultiMap with % encoding for UTF8 sequences.
+     * @return the MultiMap as a string with % encoding
      */
     public String encode()
     {
@@ -111,7 +116,9 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     }
     
     /* -------------------------------------------------------------- */
-    /** Encode Hashtable with % encoding.
+    /** Encode MultiMap with % encoding for arbitrary Charset sequences.
+     * @param charset the charset to use for encoding
+     * @return the MultiMap as a string encoded with % encodings
      */
     public String encode(Charset charset)
     {
@@ -119,9 +126,12 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     }
     
     /* -------------------------------------------------------------- */
-    /** Encode Hashtable with % encoding.
+    /** 
+     * Encode MultiMap with % encoding.
+     * @param charset the charset to encode with
      * @param equalsForNullValue if True, then an '=' is always used, even
-     * for parameters without a value. e.g. "blah?a=&b=&c=".
+     * for parameters without a value. e.g. <code>"blah?a=&amp;b=&amp;c="</code>.
+     * @return the MultiMap as a string encoded with % encodings
      */
     public synchronized String encode(Charset charset, boolean equalsForNullValue)
     {
@@ -129,9 +139,12 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     }
     
     /* -------------------------------------------------------------- */
-    /** Encode Hashtable with % encoding.
+    /** Encode MultiMap with % encoding.
+     * @param map the map to encode
+     * @param charset the charset to use for encoding (uses default encoding if null)
      * @param equalsForNullValue if True, then an '=' is always used, even
-     * for parameters without a value. e.g. "blah?a=&b=&c=".
+     * for parameters without a value. e.g. <code>"blah?a=&amp;b=&amp;c="</code>.
+     * @return the MultiMap as a string encoded with % encodings. 
      */
     public static String encode(MultiMap<String> map, Charset charset, boolean equalsForNullValue)
     {
@@ -190,6 +203,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     /* -------------------------------------------------------------- */
     /** Decoded parameters to Map.
      * @param content the string containing the encoded parameters
+     * @param map the MultiMap to put parsed query parameters into
+     * @param charset the charset to use for decoding
      */
     public static void decodeTo(String content, MultiMap<String> map, String charset)
     {
@@ -199,6 +214,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     /* -------------------------------------------------------------- */
     /** Decoded parameters to Map.
      * @param content the string containing the encoded parameters
+     * @param map the MultiMap to put parsed query parameters into
+     * @param charset the charset to use for decoding
      */
     public static void decodeTo(String content, MultiMap<String> map, Charset charset)
     {
@@ -282,7 +299,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     
     /* -------------------------------------------------------------- */
     /** Decoded parameters to Map.
-     * @param raw the byte[] containing the encoded parameters
+     * @param query the string containing the encoded parameters
      * @param offset the offset within raw to decode from
      * @param length the length of the section to decode
      * @param map the {@link MultiMap} to populate
@@ -398,10 +415,13 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     }
 
     /* -------------------------------------------------------------- */
-    /** Decoded parameters to Map.
+    /** Decoded parameters to MultiMap, using ISO8859-1 encodings.
+     * 
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum number of keys to read or -1 for no limit
+     * @param maxLength maximum length of form to read
+     * @param maxKeys maximum number of keys to read or -1 for no limit
+     * @throws IOException if unable to decode inputstream as ISO8859-1
      */
     public static void decode88591To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
     throws IOException
@@ -499,7 +519,9 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     /** Decoded parameters to Map.
      * @param in InputSteam to read
      * @param map MultiMap to add parameters to
-     * @param maxLength maximum number of keys to read or -1 for no limit
+     * @param maxLength maximum form length to decode
+     * @param maxKeys the maximum number of keys to read or -1 for no limit 
+     * @throws IOException if unable to decode input stream
      */
     public static void decodeUtf8To(InputStream in, MultiMap<String> map, int maxLength, int maxKeys)
     throws IOException
@@ -637,6 +659,11 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     /* -------------------------------------------------------------- */
     /** Decoded parameters to Map.
      * @param in the stream containing the encoded parameters
+     * @param map the MultiMap to decode into
+     * @param charset the charset to use for decoding
+     * @param maxLength the maximum length of the form to decode
+     * @param maxKeys the maximum number of keys to decode
+     * @throws IOException if unable to decode input stream
      */
     public static void decodeTo(InputStream in, MultiMap<String> map, String charset, int maxLength, int maxKeys)
     throws IOException
@@ -661,6 +688,11 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     /* -------------------------------------------------------------- */
     /** Decoded parameters to Map.
      * @param in the stream containing the encoded parameters
+     * @param map the MultiMap to decode into
+     * @param charset the charset to use for decoding
+     * @param maxLength the maximum length of the form to decode
+     * @param maxKeys the maximum number of keys to decode
+     * @throws IOException if unable to decode input stream
      */
     public static void decodeTo(InputStream in, MultiMap<String> map, Charset charset, int maxLength, int maxKeys)
     throws IOException
@@ -785,6 +817,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     /** Decode String with % encoding.
      * This method makes the assumption that the majority of calls
      * will need no decoding.
+     * @param encoded the encoded string to decode
+     * @return the decoded string
      */
     public static String decodeString(String encoded)
     {
@@ -795,6 +829,11 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     /** Decode String with % encoding.
      * This method makes the assumption that the majority of calls
      * will need no decoding.
+     * @param encoded the encoded string to decode
+     * @param offset the offset in the encoded string to decode from
+     * @param length the length of characters in the encoded string to decode
+     * @param charset the charset to use for decoding
+     * @return the decoded string
      */
     public static String decodeString(String encoded,int offset,int length,Charset charset)
     {
@@ -1012,7 +1051,7 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     
     /* ------------------------------------------------------------ */
     /** Perform URL encoding.
-     * @param string 
+     * @param string the string to encode
      * @return encoded string.
      */
     public static String encodeString(String string)
@@ -1022,7 +1061,8 @@ public class UrlEncoded extends MultiMap<String> implements Cloneable
     
     /* ------------------------------------------------------------ */
     /** Perform URL encoding.
-     * @param string 
+     * @param string the string to encode
+     * @param charset the charset to use for encoding
      * @return encoded string.
      */
     public static String encodeString(String string,Charset charset)

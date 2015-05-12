@@ -27,9 +27,7 @@ import java.util.List;
 import java.util.StringTokenizer;
 
 /**
- * Util
- *
- * Various useful functions used widely.
+ * Various useful functions utility methods for OSGi wide use.
  */
 public class Util
 {
@@ -41,8 +39,8 @@ public class Util
      * 
      * @param name the name of the header
      * @param altName an alternative name for the header (useful for deprecated names)
-     * @param manifest
-     * @return
+     * @param manifest the dictionary
+     * @return the value from the manifest
      */
     public static String getManifestHeaderValue (String name, String altName, Dictionary manifest)
     {
@@ -62,10 +60,10 @@ public class Util
      * Treating the string as a separated list of filenames,
      * convert and return the list of urls.
      * 
-     * @param val the separated list
-     * @param delims the separators (default is ,;)
-     * @return
-     * @throws MalformedURLException 
+     * @param val the separated list of filenames
+     * @param delims the separators (default is <code>,;</code>)
+     * @return the list of URLs found in the input list
+     * @throws Exception if unable to convert entry to a URL
      */
     public static List<URL> fileNamesAsURLs(String val, String delims) 
     throws Exception
@@ -96,13 +94,13 @@ public class Util
     
     /* ------------------------------------------------------------ */
     /**
-     * recursively substitute the ${sysprop} by their actual system property.
-     * ${sysprop,defaultvalue} will use 'defaultvalue' as the value if no
+     * recursively substitute the <code>${sysprop}</code> by their actual system property.
+     * <code>${sysprop,defaultvalue}</code> will use <code>'defaultvalue'</code> as the value if no
      * sysprop is defined. Not the most efficient code but we are shooting for
      * simplicity and speed of development here.
      * 
-     * @param value
-     * @return
+     * @param value the input string
+     * @return the string with replaced properties
      */
     public static String resolvePropertyValue(String value)
     {

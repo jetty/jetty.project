@@ -32,11 +32,10 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Injection
- *
+ * <p>
  * Represents the injection of a resource into a target (method or field).
  * The injection is performed by doing an ENC lookup using the jndi
  * name provided, and setting the object obtained on the target.
- *
  */
 public class Injection
 {
@@ -168,7 +167,7 @@ public class Injection
 
     /**
      * Inject a value for a Resource from JNDI into an object
-     * @param injectable
+     * @param injectable the object to inject 
      */
     public void inject (Object injectable)
     {
@@ -187,7 +186,7 @@ public class Injection
     /**
      * The Resource must already exist in the ENC of this webapp.
      * @return the injected valud
-     * @throws NamingException
+     * @throws NamingException if unable to lookup value
      */
     public Object lookupInjectedValue ()
     throws NamingException
@@ -200,8 +199,8 @@ public class Injection
 
     /**
      * Inject value from jndi into a field of an instance
-     * @param field
-     * @param injectable
+     * @param field the field to inject into
+     * @param injectable the value to inject
      */
     protected void injectField (Field field, Object injectable)
     {
@@ -221,8 +220,8 @@ public class Injection
 
     /**
      * Inject value from jndi into a setter method of an instance
-     * @param method
-     * @param injectable
+     * @param method the method to inject into
+     * @param injectable the value to inject
      */
     protected void injectMethod (Method method, Object injectable)
     {

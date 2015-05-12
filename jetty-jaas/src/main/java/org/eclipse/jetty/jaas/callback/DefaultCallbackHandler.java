@@ -29,28 +29,11 @@ import javax.security.auth.callback.UnsupportedCallbackException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.security.Password;
 
-
-
-/* ---------------------------------------------------- */
-/** DefaultUsernameCredentialCallbackHandler
- * <p>
- *
- * <p><h4>Notes</h4>
- * <p>
- *
- * <p><h4>Usage</h4>
- * <pre>
- */
-/*
- * </pre>
- *
- * @see
- * @version 1.0 Tue Apr 15 2003
- *
+/** 
+ * DefaultUsernameCredentialCallbackHandler
  */
 public class DefaultCallbackHandler extends AbstractCallbackHandler
 {
-
     private Request _request;
 
     public void setRequest (Request request)

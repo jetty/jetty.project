@@ -48,7 +48,9 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     private static final Logger LOG = Log.getLogger(HttpChannelOverHTTP2.class);
     private static final HttpField SERVER_VERSION = new PreEncodedHttpField(HttpHeader.SERVER, HttpConfiguration.SERVER_VERSION);
     private static final HttpField POWERED_BY = new PreEncodedHttpField(HttpHeader.X_POWERED_BY, HttpConfiguration.SERVER_VERSION);
-    private boolean _expect100Continue = false;
+
+    private boolean _expect100Continue;
+    private boolean _delayedUntilContent;
 
     public HttpChannelOverHTTP2(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransportOverHTTP2 transport)
     {
@@ -81,19 +83,24 @@ public class HttpChannelOverHTTP2 extends HttpChannel
 
         onRequest(request);
 
-        if (frame.isEndStream())
+        boolean endStream = frame.isEndStream();
+        if (endStream)
             onRequestComplete();
+
+        _delayedUntilContent = getHttpConfiguration().isDelayDispatchUntilContent() &&
+                !endStream && !_expect100Continue;
 
         if (LOG.isDebugEnabled())
         {
             Stream stream = getStream();
-            LOG.debug("HTTP2 Request #{}/{}:{}{} {} {}{}{}",
-                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()), System.lineSeparator(),
+            LOG.debug("HTTP2 Request #{}/{}, delayed={}:{}{} {} {}{}{}",
+                    stream.getId(), Integer.toHexString(stream.getSession().hashCode()),
+                    _delayedUntilContent, System.lineSeparator(),
                     request.getMethod(), request.getURI(), request.getVersion(),
                     System.lineSeparator(), fields);
         }
 
-        return this;
+        return _delayedUntilContent ? null : this;
     }
 
     public Runnable onPushRequest(MetaData.Request request)
@@ -123,6 +130,8 @@ public class HttpChannelOverHTTP2 extends HttpChannel
     @Override
     public void recycle()
     {
+        _expect100Continue = false;
+        _delayedUntilContent = false;
         super.recycle();
         getHttpTransport().recycle();
     }
@@ -140,7 +149,7 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         }
     }
 
-    public void requestContent(DataFrame frame, final Callback callback)
+    public Runnable requestContent(DataFrame frame, final Callback callback)
     {
         // We must copy the data since we do not know when the
         // application will consume its bytes (we queue them by
@@ -148,17 +157,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         // since there may be frames for other streams.
         final ByteBufferPool byteBufferPool = getByteBufferPool();
         ByteBuffer original = frame.getData();
-        final ByteBuffer copy = byteBufferPool.acquire(original.remaining(), original.isDirect());
+        int length = original.remaining();
+        final ByteBuffer copy = byteBufferPool.acquire(length, original.isDirect());
         BufferUtil.clearToFill(copy);
         copy.put(original).flip();
 
-        if (LOG.isDebugEnabled())
-        {
-            Stream stream = getStream();
-            LOG.debug("HTTP2 Request #{}/{}: {} bytes of content", stream.getId(), Integer.toHexString(stream.getSession().hashCode()), copy.remaining());
-        }
-
-        onContent(new HttpInput.Content(copy)
+        boolean handle = onContent(new HttpInput.Content(copy)
         {
             @Override
             public void succeeded()
@@ -175,10 +179,25 @@ public class HttpChannelOverHTTP2 extends HttpChannel
             }
         });
 
-        if (frame.isEndStream())
+        boolean endStream = frame.isEndStream();
+        if (endStream)
+            handle |= onRequestComplete();
+
+        if (LOG.isDebugEnabled())
         {
-            onRequestComplete();
+            Stream stream = getStream();
+            LOG.debug("HTTP2 Request #{}/{}: {} bytes of {} content, handle: {}",
+                    stream.getId(),
+                    Integer.toHexString(stream.getSession().hashCode()),
+                    length,
+                    endStream ? "last" : "some",
+                    handle);
         }
+
+        boolean delayed = _delayedUntilContent;
+        _delayedUntilContent = false;
+
+        return handle || delayed ? this : null;
     }
 
     /**

@@ -27,6 +27,7 @@ import org.eclipse.jetty.websocket.common.events.ParamList;
 
 /**
  * Basic scanner for Annotated Methods
+ * @param <T> The type of metadata
  */
 public abstract class AbstractMethodAnnotationScanner<T>
 {

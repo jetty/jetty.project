@@ -24,40 +24,40 @@ import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.junit.AfterClass;
+import org.junit.After;
 import org.junit.Assert;
-import org.junit.BeforeClass;
+import org.junit.Before;
 import org.junit.Test;
 
 public class IteratingCallbackTest
 {
-    static Scheduler scheduler = new ScheduledExecutorScheduler();
-   
-    @BeforeClass
-    public static void beforeClass() throws Exception
+    private Scheduler scheduler;
+
+    @Before
+    public void prepare() throws Exception
     {
+        scheduler = new ScheduledExecutorScheduler();
         scheduler.start();
     }
-    
-    @AfterClass
-    public static void afterClass() throws Exception
+
+    @After
+    public void dispose() throws Exception
     {
         scheduler.stop();
     }
-    
+
     @Test
     public void testNonWaitingProcess() throws Exception
     {
-        
-        TestCB cb=new TestCB()
+        TestCB cb = new TestCB()
         {
-            int i=10;
-            
+            int i = 10;
+
             @Override
             protected Action process() throws Exception
             {
                 processed++;
-                if (i-->1)      
+                if (i-- > 1)
                 {
                     succeeded(); // fake a completed IO operation
                     return Action.SCHEDULED;
@@ -65,61 +65,59 @@ public class IteratingCallbackTest
                 return Action.SUCCEEDED;
             }
         };
-        
+
         cb.iterate();
-        Assert.assertTrue(cb.waitForComplete()); 
-        Assert.assertEquals(10,cb.processed);
+        Assert.assertTrue(cb.waitForComplete());
+        Assert.assertEquals(10, cb.processed);
     }
-
-
 
     @Test
     public void testWaitingProcess() throws Exception
     {
-        TestCB cb=new TestCB()
+        TestCB cb = new TestCB()
         {
-            int i=4;
-            
+            int i = 4;
+
             @Override
             protected Action process() throws Exception
             {
                 processed++;
-                if (i-->1)      
+                if (i-- > 1)
                 {
-                    scheduler.schedule(successTask,50,TimeUnit.MILLISECONDS);
+                    scheduler.schedule(successTask, 50, TimeUnit.MILLISECONDS);
                     return Action.SCHEDULED;
                 }
                 return Action.SUCCEEDED;
             }
         };
-        
+
         cb.iterate();
-        
+
         Assert.assertTrue(cb.waitForComplete());
-         
-        Assert.assertEquals(4,cb.processed);
+
+        Assert.assertEquals(4, cb.processed);
     }
 
     @Test
-    public void testWaitingProcessSpuriousInterate() throws Exception
+    public void testWaitingProcessSpuriousIterate() throws Exception
     {
-        final TestCB cb=new TestCB()
+        final TestCB cb = new TestCB()
         {
-            int i=4;
-            
+            int i = 4;
+
             @Override
             protected Action process() throws Exception
             {
                 processed++;
-                if (i-->1)      
+                if (i-- > 1)
                 {
-                    scheduler.schedule(successTask,50,TimeUnit.MILLISECONDS);
+                    scheduler.schedule(successTask, 50, TimeUnit.MILLISECONDS);
                     return Action.SCHEDULED;
                 }
                 return Action.SUCCEEDED;
             }
         };
-        
+
         cb.iterate();
         scheduler.schedule(new Runnable()
         {
@@ -128,29 +126,29 @@ public class IteratingCallbackTest
             {
                 cb.iterate();
                 if (!cb.isSucceeded())
-                    scheduler.schedule(this,50,TimeUnit.MILLISECONDS);
+                    scheduler.schedule(this, 50, TimeUnit.MILLISECONDS);
             }
-        },49,TimeUnit.MILLISECONDS);
-        
+        }, 49, TimeUnit.MILLISECONDS);
+
         Assert.assertTrue(cb.waitForComplete());
-         
-        Assert.assertEquals(4,cb.processed);
+
+        Assert.assertEquals(4, cb.processed);
     }
 
     @Test
     public void testNonWaitingProcessFailure() throws Exception
     {
-        TestCB cb=new TestCB()
+        TestCB cb = new TestCB()
         {
-            int i=10;
-            
+            int i = 10;
+
             @Override
             protected Action process() throws Exception
             {
                 processed++;
-                if (i-->1)      
+                if (i-- > 1)
                 {
-                    if (i>5)
+                    if (i > 5)
                         succeeded(); // fake a completed IO operation
                     else
                         failed(new Exception("testing"));
@@ -159,63 +157,63 @@ public class IteratingCallbackTest
                 return Action.SUCCEEDED;
             }
         };
-        
+
         cb.iterate();
-        Assert.assertFalse(cb.waitForComplete()); 
-        Assert.assertEquals(5,cb.processed);
+        Assert.assertFalse(cb.waitForComplete());
+        Assert.assertEquals(5, cb.processed);
     }
 
     @Test
     public void testWaitingProcessFailure() throws Exception
     {
-        TestCB cb=new TestCB()
+        TestCB cb = new TestCB()
         {
-            int i=4;
-            
+            int i = 4;
+
             @Override
             protected Action process() throws Exception
             {
                 processed++;
-                if (i-->1)      
+                if (i-- > 1)
                 {
-                    scheduler.schedule(i>2?successTask:failTask,50,TimeUnit.MILLISECONDS);
+                    scheduler.schedule(i > 2 ? successTask : failTask, 50, TimeUnit.MILLISECONDS);
                     return Action.SCHEDULED;
                 }
                 return Action.SUCCEEDED;
             }
         };
-        
+
         cb.iterate();
-        
+
         Assert.assertFalse(cb.waitForComplete());
-        Assert.assertEquals(2,cb.processed);
+        Assert.assertEquals(2, cb.processed);
     }
-    
+
 
     @Test
     public void testIdleWaiting() throws Exception
     {
         final CountDownLatch idle = new CountDownLatch(1);
-        
-        TestCB cb=new TestCB()
+
+        TestCB cb = new TestCB()
         {
-            int i=5;
-            
+            int i = 5;
+
             @Override
             protected Action process()
             {
                 processed++;
-                
-                switch(i--)
+
+                switch (i--)
                 {
                     case 5:
                         succeeded();
                         return Action.SCHEDULED;
-                        
+
                     case 4:
-                        scheduler.schedule(successTask,5,TimeUnit.MILLISECONDS);
+                        scheduler.schedule(successTask, 5, TimeUnit.MILLISECONDS);
                         return Action.SCHEDULED;
-                        
+
                     case 3:
                         scheduler.schedule(new Runnable()
                         {
@@ -224,49 +222,99 @@ public class IteratingCallbackTest
                             {
                                 idle.countDown();
                             }
-                        },5,TimeUnit.MILLISECONDS);
+                        }, 5, TimeUnit.MILLISECONDS);
                         return Action.IDLE;
 
                     case 2:
                         succeeded();
                         return Action.SCHEDULED;
-                        
+
                     case 1:
-                        scheduler.schedule(successTask,5,TimeUnit.MILLISECONDS);
+                        scheduler.schedule(successTask, 5, TimeUnit.MILLISECONDS);
                         return Action.SCHEDULED;
-                        
+
                     case 0:
                         return Action.SUCCEEDED;
-                        
-                    default: 
+
+                    default:
                         throw new IllegalStateException();
-                    
+
                 }
             }
         };
-        
+
         cb.iterate();
-        idle.await(10,TimeUnit.SECONDS);
+        idle.await(10, TimeUnit.SECONDS);
         Assert.assertTrue(cb.isIdle());
-        
+
         cb.iterate();
         Assert.assertTrue(cb.waitForComplete());
-        Assert.assertEquals(6,cb.processed);
+        Assert.assertEquals(6, cb.processed);
     }
-    
-    
-    
+
+    @Test
+    public void testCloseDuringProcessingReturningScheduled() throws Exception
+    {
+        testCloseDuringProcessing(IteratingCallback.Action.SCHEDULED);
+    }
+
+    @Test
+    public void testCloseDuringProcessingReturningSucceeded() throws Exception
+    {
+        testCloseDuringProcessing(IteratingCallback.Action.SUCCEEDED);
+    }
+
+    private void testCloseDuringProcessing(final IteratingCallback.Action action) throws Exception
+    {
+        final CountDownLatch failureLatch = new CountDownLatch(1);
+        IteratingCallback callback = new IteratingCallback()
+        {
+            @Override
+            protected Action process() throws Exception
+            {
+                close();
+                return action;
+            }
+
+            @Override
+            protected void onCompleteFailure(Throwable cause)
+            {
+                failureLatch.countDown();
+            }
+        };
+
+        callback.iterate();
+
+        Assert.assertTrue(failureLatch.await(5, TimeUnit.SECONDS));
+    }
+
     private abstract static class TestCB extends IteratingCallback
     {
-        CountDownLatch completed = new CountDownLatch(1);
-        int processed=0;
+        protected Runnable successTask = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                succeeded();
+            }
+        };
+        protected Runnable failTask = new Runnable()
+        {
+            @Override
+            public void run()
+            {
+                failed(new Exception("testing failure"));
+            }
+        };
+        protected CountDownLatch completed = new CountDownLatch(1);
+        protected int processed = 0;
 
         @Override
         protected void onCompleteSuccess()
         {
             completed.countDown();
         }
-        
+
         @Override
         public void onCompleteFailure(Throwable x)
         {
@@ -275,26 +323,8 @@ public class IteratingCallbackTest
 
         boolean waitForComplete() throws InterruptedException
         {
-            completed.await(10,TimeUnit.SECONDS);
+            completed.await(10, TimeUnit.SECONDS);
             return isSucceeded();
         }
-        
-        Runnable successTask = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                succeeded();
-            }
-        };
-        Runnable failTask = new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                failed(new Exception("testing failure"));
-            }
-        };
     }
-
 }

@@ -48,7 +48,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 /* ---------------------------------------------------- */
-/** JAASLoginService
+/** 
+ * JAASLoginService
  *
  * @org.apache.xbean.XBean element="jaasUserRealm" description="Creates a UserRealm suitable for use with JAAS"
  */

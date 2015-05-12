@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start.config;
 
-import static org.eclipse.jetty.start.UsageException.*;
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 import java.io.IOException;
 import java.nio.file.Path;
@@ -31,13 +31,12 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.start.FS;
 import org.eclipse.jetty.start.Props;
-import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.Props.Prop;
+import org.eclipse.jetty.start.RawArgs;
 import org.eclipse.jetty.start.UsageException;
 
 /**
  * Weighted List of ConfigSources.
- * <p>
  */
 public class ConfigSources implements Iterable<ConfigSource>
 {
@@ -74,7 +73,7 @@ public class ConfigSources implements Iterable<ConfigSource>
             {
                 String ref = getValue(arg.getLine());
                 String dirName = props.expand(ref);
-                Path dir = FS.toPath(dirName);
+                Path dir = FS.toPath(dirName).normalize().toAbsolutePath();
                 DirConfigSource dirsource = new DirConfigSource(ref,dir,sourceWeight.incrementAndGet(),true);
                 add(dirsource);
             }

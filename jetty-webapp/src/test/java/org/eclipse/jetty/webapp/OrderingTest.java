@@ -37,8 +37,6 @@ import org.junit.Test;
 
 /**
  * OrderingTest
- *
- *
  */
 public class OrderingTest
 {
@@ -111,9 +109,6 @@ public class OrderingTest
             return _name;
         }
         
-        /**
-         * @see org.eclipse.jetty.util.resource.Resource#getURL()
-         */
         @Override
         public URL getURL()
         {

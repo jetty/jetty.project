@@ -37,7 +37,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Utility class that handles HTTP redirects.
- * <p />
+ * <p>
  * Applications can disable redirection via {@link Request#followRedirects(boolean)}
  * and then rely on this class to perform the redirect in a simpler way, for example:
  * <pre>
@@ -91,6 +91,7 @@ public class HttpRedirector
             case 302:
             case 303:
             case 307:
+            case 308:
                 return true;
             default:
                 return false;
@@ -260,6 +261,7 @@ public class HttpRedirector
                     return redirect(request, response, listener, newURI, HttpMethod.GET.asString());
             }
             case 307:
+            case 308:
             {
                 // Keep same method
                 return redirect(request, response, listener, newURI, request.getMethod());

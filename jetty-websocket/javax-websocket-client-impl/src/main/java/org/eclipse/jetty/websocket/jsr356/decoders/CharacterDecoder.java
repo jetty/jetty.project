@@ -23,7 +23,7 @@ import javax.websocket.Decoder;
 
 
 /**
- * Default implementation of the {@link Text} Message to {@link Character} decoder
+ * Default implementation of the {@link javax.websocket.Decoder.Text} Message to {@link Character} decoder
  */
 public class CharacterDecoder extends AbstractDecoder implements Decoder.Text<Character>
 {

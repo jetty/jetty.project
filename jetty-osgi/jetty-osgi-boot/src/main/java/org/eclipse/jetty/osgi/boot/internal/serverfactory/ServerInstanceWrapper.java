@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.boot.internal.serverfactory;
 
 import java.io.File;
-import java.io.InputStream;
 import java.net.URL;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -52,12 +51,10 @@ import org.eclipse.jetty.osgi.boot.utils.TldBundleDiscoverer;
 import org.eclipse.jetty.osgi.boot.utils.Util;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
-import org.xml.sax.SAXParseException;
 
 /**
  * ServerInstanceWrapper
@@ -209,7 +206,7 @@ public class ServerInstanceWrapper
      * The classloader that should be the parent classloader for each webapp
      * deployed on this server.
      * 
-     * @return
+     * @return the classloader
      */
     public ClassLoader getParentClassLoaderForWebapps()
     {

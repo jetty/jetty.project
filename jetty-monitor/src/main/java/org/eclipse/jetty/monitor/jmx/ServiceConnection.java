@@ -54,7 +54,7 @@ public class ServiceConnection
     /**
      * Construct a loopback connection to an internal server
      * 
-     * @throws IOException
+     * @throws IOException if unable to construct service connection
      */
     public ServiceConnection()
         throws IOException
@@ -67,7 +67,7 @@ public class ServiceConnection
      * Construct a connection to specified server
      * 
      * @param url URL of JMX server
-     * @throws IOException
+     * @throws IOException if unable to construct service connection
      */
     public ServiceConnection(String url)
         throws IOException

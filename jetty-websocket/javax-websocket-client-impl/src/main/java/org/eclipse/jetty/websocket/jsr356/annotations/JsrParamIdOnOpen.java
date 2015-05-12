@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.jsr356.annotations;
 
 import javax.websocket.EndpointConfig;
+import javax.websocket.OnOpen;
 
 import org.eclipse.jetty.websocket.common.events.annotated.InvalidSignatureException;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;

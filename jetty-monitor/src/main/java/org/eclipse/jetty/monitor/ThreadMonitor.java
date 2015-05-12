@@ -60,7 +60,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
     /**
      * Instantiates a new thread monitor.
      *
-     * @throws Exception
+     * @throws Exception if unable to instantiate thread monitor
      */
     public ThreadMonitor() throws Exception
     {
@@ -72,7 +72,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      * Instantiates a new thread monitor.
      *
      * @param intervalMs scan interval
-     * @throws Exception
+     * @throws Exception if unable to instantiate thread monitor
      */
     public ThreadMonitor(int intervalMs) throws Exception
     {
@@ -85,7 +85,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      *
      * @param intervalMs scan interval
      * @param threshold busy threshold
-     * @throws Exception
+     * @throws Exception if unable to instantiate thread monitor
      */
     public ThreadMonitor(int intervalMs, int threshold) throws Exception
     {
@@ -99,7 +99,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      * @param intervalMs scan interval
      * @param threshold busy threshold
      * @param depth stack compare depth
-     * @throws Exception
+     * @throws Exception if unable to instantiate thread monitor
      */
     public ThreadMonitor(int intervalMs, int threshold, int depth) throws Exception
     {
@@ -114,7 +114,7 @@ public class ThreadMonitor extends AbstractLifeCycle implements Runnable
      * @param threshold busy threshold
      * @param depth stack compare depth
      * @param trail length of stack trail
-     * @throws Exception
+     * @throws Exception if unable to instantiate thread monitor
      */
     public ThreadMonitor(int intervalMs, int threshold, int depth, int trail) throws Exception
     {

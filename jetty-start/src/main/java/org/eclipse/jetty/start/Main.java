@@ -18,7 +18,10 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.*;
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_GRAPH;
+import static org.eclipse.jetty.start.UsageException.ERR_INVOKE_MAIN;
+import static org.eclipse.jetty.start.UsageException.ERR_NOT_STOPPED;
+import static org.eclipse.jetty.start.UsageException.ERR_UNKNOWN;
 
 import java.io.BufferedReader;
 import java.io.File;
@@ -47,25 +50,16 @@ import org.eclipse.jetty.start.graph.Selection;
  * This class is intended to be the main class listed in the MANIFEST.MF of the start.jar archive. It allows the Jetty Application server to be started with the
  * command "java -jar start.jar".
  * <p>
- * Argument processing steps:
+ * <b>Argument processing steps:</b>
  * <ol>
- * <li>Directory Locations:
- * <ul>
- * <li>jetty.home=[directory] (the jetty.home location)</li>
- * <li>jetty.base=[directory] (the jetty.base location)</li>
- * </ul>
- * </li>
- * <li>Start Logging behavior:
- * <ul>
- * <li>--debug (debugging enabled)</li>
- * <li>--start-log-file=logs/start.log (output start logs to logs/start.log location)</li>
- * </ul>
- * </li>
+ * <li>Directory Location: jetty.home=[directory] (the jetty.home location)</li>
+ * <li>Directory Location: jetty.base=[directory] (the jetty.base location)</li>
+ * <li>Start Logging behavior: --debug (debugging enabled)</li>
+ * <li>Start Logging behavior: --start-log-file=logs/start.log (output start logs to logs/start.log location)</li>
  * <li>Module Resolution</li>
  * <li>Properties Resolution</li>
  * <li>Present Optional Informational Options</li>
  * <li>Normal Startup</li>
- * </li>
  * </ol>
  */
 public class Main
@@ -261,6 +255,9 @@ public class Main
 
     /**
      * Convenience for <code>processCommandLine(cmdLine.toArray(new String[cmdLine.size()]))</code>
+     * @param cmdLine the command line
+     * @return the start args parsed from the command line
+     * @throws Exception if unable to process the command line
      */
     public StartArgs processCommandLine(List<String> cmdLine) throws Exception
     {
@@ -311,6 +308,12 @@ public class Main
 
             args.setAllModules(modules);
             List<Module> activeModules = modules.getSelected();
+            
+            for(String name: args.getSkipFileValidationModules())
+            {
+                Module module = modules.get(name);
+                module.setSkipFilesValidation(true);
+            }
 
             // ------------------------------------------------------------
             // 5) Lib & XML Expansion / Resolution
@@ -450,6 +453,7 @@ public class Main
 
     private void doStop(StartArgs args)
     {
+        String stopHost = args.getProperties().getString("STOP.HOST");
         int stopPort = Integer.parseInt(args.getProperties().getString("STOP.PORT"));
         String stopKey = args.getProperties().getString("STOP.KEY");
 
@@ -457,41 +461,44 @@ public class Main
         {
             int stopWait = Integer.parseInt(args.getProperties().getString("STOP.WAIT"));
 
-            stop(stopPort,stopKey,stopWait);
+            stop(stopHost,stopPort,stopKey,stopWait);
         }
         else
         {
-            stop(stopPort,stopKey);
+            stop(stopHost,stopPort,stopKey);
         }
     }
 
     /**
      * Stop a running jetty instance.
+     * @param host the host
+     * @param port the port
+     * @param key the key
      */
-    public void stop(int port, String key)
+    public void stop(String host, int port, String key)
     {
-        stop(port,key,0);
+        stop(host,port,key,0);
     }
 
-    public void stop(int port, String key, int timeout)
+    public void stop(String host, int port, String key, int timeout)
     {
-        int _port = port;
-        String _key = key;
-
+        if (host==null || host.length()==0)
+            host="127.0.0.1";
+        
         try
         {
-            if (_port <= 0)
+            if (port <= 0)
             {
                 System.err.println("STOP.PORT system property must be specified");
             }
-            if (_key == null)
+            if (key == null)
             {
-                _key = "";
+                key = "";
                 System.err.println("STOP.KEY system property must be specified");
                 System.err.println("Using empty key");
             }
 
-            try (Socket s = new Socket(InetAddress.getByName("127.0.0.1"),_port))
+            try (Socket s = new Socket(InetAddress.getByName(host),port))
             {
                 if (timeout > 0)
                 {
@@ -500,7 +507,7 @@ public class Main
 
                 try (OutputStream out = s.getOutputStream())
                 {
-                    out.write((_key + "\r\nstop\r\n").getBytes());
+                    out.write((key + "\r\nstop\r\n").getBytes());
                     out.flush();
 
                     if (timeout > 0)

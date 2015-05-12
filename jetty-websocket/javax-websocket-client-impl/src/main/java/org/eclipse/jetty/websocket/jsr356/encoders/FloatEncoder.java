@@ -21,7 +21,7 @@ package org.eclipse.jetty.websocket.jsr356.encoders;
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 /**
- * Default encoder for {@link Float} to {@link Text} Message encoder
+ * Default encoder for {@link Float} to {@link javax.websocket.Encoder.Text} Message encoder
  */
 public class FloatEncoder extends AbstractEncoder implements Encoder.Text<Float>
 {

@@ -40,7 +40,7 @@ public class LoggingNotifier implements EventNotifier
      * Constructs a new notifier with specified format string
      * 
      * @param format the {@link java.util.Formatter format string}
-     * @throws IllegalArgumentException
+     * @throws IllegalArgumentException if format is invalid
      */
     public LoggingNotifier(String format)
         throws IllegalArgumentException

@@ -19,7 +19,6 @@
 package org.eclipse.jetty.client;
 
 import java.util.List;
-import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Result;
@@ -31,16 +30,14 @@ public class HttpExchange
 {
     private static final Logger LOG = Log.getLogger(HttpExchange.class);
 
-    private final AtomicReference<HttpChannel> channel = new AtomicReference<>();
     private final HttpDestination destination;
     private final HttpRequest request;
     private final List<Response.ResponseListener> listeners;
     private final HttpResponse response;
-    
-    enum State { PENDING, COMPLETED, TERMINATED } ;
     private final SpinLock _lock = new SpinLock();
-    private State requestState=State.PENDING;
-    private State responseState=State.PENDING;
+    private State requestState = State.PENDING;
+    private State responseState = State.PENDING;
+    private HttpChannel _channel;
     private Throwable requestFailure;
     private Throwable responseFailure;
 
@@ -67,7 +64,7 @@ public class HttpExchange
 
     public Throwable getRequestFailure()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
             return requestFailure;
         }
@@ -85,140 +82,207 @@ public class HttpExchange
 
     public Throwable getResponseFailure()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
             return responseFailure;
         }
     }
 
-    public void associate(HttpChannel channel)
+    /**
+     * <p>Associates the given {@code channel} to this exchange.</p>
+     * <p>Works in strict collaboration with {@link HttpChannel#associate(HttpExchange)}.</p>
+     *
+     * @param channel the channel to associate to this exchange
+     * @return true if the channel could be associated, false otherwise
+     */
+    boolean associate(HttpChannel channel)
     {
-        if (!this.channel.compareAndSet(null, channel))
-            request.abort(new IllegalStateException());
-    }
-
-    public void disassociate(HttpChannel channel)
-    {
-        if (!this.channel.compareAndSet(channel, null))
-            request.abort(new IllegalStateException());
-    }
-
-    public boolean requestComplete()
-    {
-        try(SpinLock.Lock lock = _lock.lock())
+        boolean result = false;
+        boolean abort = false;
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            if (requestState!=State.PENDING)
-                return false;
-            requestState=State.COMPLETED;
+            // Only associate if the exchange state is initial,
+            // as the exchange could be already failed.
+            if (requestState == State.PENDING && responseState == State.PENDING)
+            {
+                abort = _channel != null;
+                if (!abort)
+                {
+                    _channel = channel;
+                    result = true;
+                }
+            }
+        }
+
+        if (abort)
+            request.abort(new IllegalStateException(toString()));
+
+        return result;
+    }
+
+    void disassociate(HttpChannel channel)
+    {
+        boolean abort = false;
+        try (SpinLock.Lock lock = _lock.lock())
+        {
+            if (_channel != channel || requestState != State.TERMINATED || responseState != State.TERMINATED)
+                abort = true;
+            _channel = null;
+        }
+
+        if (abort)
+            request.abort(new IllegalStateException(toString()));
+    }
+
+    private HttpChannel getHttpChannel()
+    {
+        try (SpinLock.Lock lock = _lock.lock())
+        {
+            return _channel;
+        }
+    }
+
+    public boolean requestComplete(Throwable failure)
+    {
+        try (SpinLock.Lock lock = _lock.lock())
+        {
+            return completeRequest(failure);
+        }
+    }
+
+    private boolean completeRequest(Throwable failure)
+    {
+        if (requestState == State.PENDING)
+        {
+            requestState = State.COMPLETED;
+            requestFailure = failure;
             return true;
         }
+        return false;
     }
 
-    public boolean responseComplete()
+    public boolean responseComplete(Throwable failure)
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            if (responseState!=State.PENDING)
-                return false;
-            responseState=State.COMPLETED;
+            return completeResponse(failure);
+        }
+    }
+
+    private boolean completeResponse(Throwable failure)
+    {
+        if (responseState == State.PENDING)
+        {
+            responseState = State.COMPLETED;
+            responseFailure = failure;
             return true;
         }
+        return false;
     }
 
-    public Result terminateRequest(Throwable failure)
+    public Result terminateRequest()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        Result result = null;
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            requestState=State.TERMINATED;
-            requestFailure=failure;
-            if (State.TERMINATED.equals(responseState))
-                return new Result(getRequest(), requestFailure, getResponse(), responseFailure);
+            if (requestState == State.COMPLETED)
+                requestState = State.TERMINATED;
+            if (requestState == State.TERMINATED && responseState == State.TERMINATED)
+                result = new Result(getRequest(), requestFailure, getResponse(), responseFailure);
         }
-        return null;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Terminated request for {}, result: {}", this, result);
+
+        return result;
     }
 
-    public Result terminateResponse(Throwable failure)
+    public Result terminateResponse()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        Result result = null;
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            responseState=State.TERMINATED;
-            responseFailure=failure;
-            if (State.TERMINATED.equals(requestState))
-                return new Result(getRequest(), requestFailure, getResponse(), responseFailure);
+            if (responseState == State.COMPLETED)
+                responseState = State.TERMINATED;
+            if (requestState == State.TERMINATED && responseState == State.TERMINATED)
+                result = new Result(getRequest(), requestFailure, getResponse(), responseFailure);
         }
-        return null;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Terminated response for {}, result: {}", this, result);
+
+        return result;
     }
 
-
-    public boolean abort(Throwable cause)
+    public boolean abort(Throwable failure)
     {
+        // Atomically change the state of this exchange to be completed.
+        // This will avoid that this exchange can be associated to a channel.
+        boolean abortRequest;
+        boolean abortResponse;
+        try (SpinLock.Lock lock = _lock.lock())
+        {
+            abortRequest = completeRequest(failure);
+            abortResponse = completeResponse(failure);
+        }
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Failed {}: req={}/rsp={} {}", this, abortRequest, abortResponse, failure);
+
+        if (!abortRequest && !abortResponse)
+            return false;
+
+        // We failed this exchange, deal with it.
+
+        // Case #1: exchange was in the destination queue.
         if (destination.remove(this))
         {
             if (LOG.isDebugEnabled())
-                LOG.debug("Aborting while queued {}: {}", this, cause);
-            return fail(cause);
-        }
-        else
-        {
-            HttpChannel channel = this.channel.get();
-            if (channel == null)
-                return fail(cause);
-
-            boolean aborted = channel.abort(cause);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Aborted ({}) while active {}: {}", aborted, this, cause);
-            return aborted;
-        }
-    }
-
-    private boolean fail(Throwable cause)
-    {
-        boolean notify=false;
-        try(SpinLock.Lock lock = _lock.lock())
-        {
-            if (!Boolean.TRUE.equals(requestState))
-            {
-                requestState=State.TERMINATED;
-                notify=true;
-                requestFailure=cause;
-            }
-            if (!Boolean.TRUE.equals(responseState))
-            {
-                responseState=State.TERMINATED;
-                notify=true;
-                responseFailure=cause;
-            }
-        }
-        
-        if (notify)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Failing {}: {}", this, cause);
-            destination.getRequestNotifier().notifyFailure(request, cause);
-            List<Response.ResponseListener> listeners = getConversation().getResponseListeners();
-            ResponseNotifier responseNotifier = destination.getResponseNotifier();
-            responseNotifier.notifyFailure(listeners, response, cause);
-            responseNotifier.notifyComplete(listeners, new Result(request, cause, response, cause));
+                LOG.debug("Aborting while queued {}: {}", this, failure);
+            notifyFailureComplete(failure);
             return true;
         }
-        else
+
+        HttpChannel channel = getHttpChannel();
+        if (channel == null)
         {
-            return false;
+            // Case #2: exchange was not yet associated.
+            // Because this exchange is failed, when associate() is called
+            // it will return false, and the caller will dispose the channel.
+            if (LOG.isDebugEnabled())
+                LOG.debug("Aborted before association {}: {}", this, failure);
+            notifyFailureComplete(failure);
+            return true;
         }
+
+        // Case #3: exchange was already associated.
+        boolean aborted = channel.abort(this, abortRequest ? failure : null, abortResponse ? failure : null);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Aborted ({}) while active {}: {}", aborted, this, failure);
+        return aborted;
+    }
+
+    private void notifyFailureComplete(Throwable failure)
+    {
+        destination.getRequestNotifier().notifyFailure(request, failure);
+        List<Response.ResponseListener> listeners = getConversation().getResponseListeners();
+        ResponseNotifier responseNotifier = destination.getResponseNotifier();
+        responseNotifier.notifyFailure(listeners, response, failure);
+        responseNotifier.notifyComplete(listeners, new Result(request, failure, response, failure));
     }
 
     public void resetResponse()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            responseState=State.PENDING;
-            responseFailure=null;
+            responseState = State.PENDING;
+            responseFailure = null;
         }
     }
 
     public void proceed(Throwable failure)
     {
-        HttpChannel channel = this.channel.get();
+        HttpChannel channel = getHttpChannel();
         if (channel != null)
             channel.proceed(this, failure);
     }
@@ -226,13 +290,18 @@ public class HttpExchange
     @Override
     public String toString()
     {
-        try(SpinLock.Lock lock = _lock.lock())
+        try (SpinLock.Lock lock = _lock.lock())
         {
-            return String.format("%s@%x req=%s/%s res=%s/%s",
-                HttpExchange.class.getSimpleName(),
-                hashCode(),
-                requestState,requestFailure,
-                responseState,responseFailure);
+            return String.format("%s@%x req=%s/%s@%h res=%s/%s@%h",
+                    HttpExchange.class.getSimpleName(),
+                    hashCode(),
+                    requestState, requestFailure, requestFailure,
+                    responseState, responseFailure, responseFailure);
         }
+    }
+
+    private enum State
+    {
+        PENDING, COMPLETED, TERMINATED
     }
 }

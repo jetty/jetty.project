@@ -30,7 +30,7 @@ import org.eclipse.jetty.websocket.common.OpCode;
 
 /**
  * Per Message Deflate Compression extension for WebSocket.
- * <p/>
+ * <p>
  * Attempts to follow <a href="https://tools.ietf.org/html/draft-ietf-hybi-permessage-compression-12">draft-ietf-hybi-permessage-compression-12</a>
  */
 public class PerMessageDeflateExtension extends CompressExtension

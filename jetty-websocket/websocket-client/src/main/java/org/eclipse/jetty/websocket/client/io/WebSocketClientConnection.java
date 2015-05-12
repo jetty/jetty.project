@@ -19,13 +19,10 @@
 package org.eclipse.jetty.websocket.client.io;
 
 import java.net.InetSocketAddress;
-import java.nio.ByteBuffer;
 import java.util.concurrent.Executor;
 import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.io.EndPoint;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
@@ -41,7 +38,6 @@ import org.eclipse.jetty.websocket.common.io.AbstractWebSocketConnection;
  */
 public class WebSocketClientConnection extends AbstractWebSocketConnection
 {
-    private static final Logger LOG = Log.getLogger(WebSocketClientConnection.class);
     private final ConnectPromise connectPromise;
     private final Masker masker;
     private final AtomicBoolean opened = new AtomicBoolean(false);
@@ -84,14 +80,6 @@ public class WebSocketClientConnection extends AbstractWebSocketConnection
             ConnectionManager connectionManager = connectPromise.getClient().getConnectionManager();
             connectionManager.addSession(session);
             connectPromise.succeeded(session);
-
-            ByteBuffer extraBuf = connectPromise.getResponse().getRemainingBuffer();
-            setInitialBuffer(extraBuf);
-            if (extraBuf.hasRemaining())
-            {
-                LOG.debug("Parsing extra remaining buffer from UpgradeConnection");
-                getParser().parse(extraBuf);
-            }
         }
         super.onOpen();
     }

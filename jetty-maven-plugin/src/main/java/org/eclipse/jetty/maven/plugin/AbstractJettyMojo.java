@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.InputStream;
@@ -40,7 +39,6 @@ import org.apache.maven.plugin.MojoFailureException;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.FileUtils;
 import org.eclipse.jetty.security.LoginService;
-import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.RequestLog;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ShutdownMonitor;
@@ -51,19 +49,11 @@ import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-
-
 /**
- * AbstractJettyMojo
- *
  * Common base class for most jetty mojos.
- * 
- * 
  */
 public abstract class AbstractJettyMojo extends AbstractMojo
 {
-
-    
     /**
      * Whether or not to include dependencies on the plugin's classpath with &lt;scope&gt;provided&lt;/scope&gt;
      * Use WITH CAUTION as you may wind up with duplicate jars/classes.
@@ -73,7 +63,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected boolean useProvidedScope;
     
-    
     /**
      * List of goals that are NOT to be used
      * 
@@ -81,9 +70,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @parameter
      */
     protected String[] excludedGoals;
-    
-
-  
     
     /**
      * List of other contexts to set up. Consider using instead
@@ -95,7 +81,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected ContextHandler[] contextHandlers;
     
-    
     /**
      * List of security realms to set up. Consider using instead
      * the &lt;jettyXml&gt; element to specify external jetty xml config file. 
@@ -105,7 +90,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @parameter
      */
     protected LoginService[] loginServices;
-    
 
     /**
      * A RequestLog implementation to use for the webapp at runtime.
@@ -117,7 +101,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected RequestLog requestLog;
     
-    
     /**
      * An instance of org.eclipse.jetty.webapp.WebAppContext that represents the webapp.
      * Use any of its setters to configure the webapp. This is the preferred and most
@@ -128,7 +111,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      */
     protected JettyWebAppContext webApp;
 
-
     /**
      * The interval in seconds to scan the webapp for changes 
      * and restart the context if necessary. Ignored if reload
@@ -138,7 +120,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @required
      */
     protected int scanIntervalSeconds;
-    
     
     /**
      * reload can be set to either 'automatic' or 'manual'
@@ -207,8 +188,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * @parameter expression"${dumponStart}" default-value="false"
      */
     protected boolean dumpOnStart;
-    
-   
     
     
     /**  
@@ -362,9 +341,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     
     
     
-    /**
-     * @throws MojoExecutionException
-     */
     public void configurePluginClasspath() throws MojoExecutionException
     {  
         //if we are configured to include the provided dependencies on the plugin's classpath
@@ -404,13 +380,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
     }
     
-    
-    
-    
-    /**
-     * @param artifact
-     * @return
-     */
     public boolean isPluginArtifact(Artifact artifact)
     {
         if (pluginArtifacts == null || pluginArtifacts.isEmpty())
@@ -428,12 +397,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         return isPluginArtifact;
     }
 
-    
-    
-    
-    /**
-     * @throws Exception
-     */
     public void finishConfigurationBeforeStart() throws Exception
     {
         HandlerCollection contexts = (HandlerCollection)server.getChildHandlerByClass(ContextHandlerCollection.class);
@@ -446,12 +409,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
     }
 
-   
-   
-
-    /**
-     * @throws Exception
-     */
     public void applyJettyXml() throws Exception
     {        
         Server tmp = ServerSupport.applyXmlConfigurations(server, getJettyXmlFiles());
@@ -462,12 +419,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             server = new Server();
     }
 
-
-
-    
-    /**
-     * @throws MojoExecutionException
-     */
     public void startJetty () throws MojoExecutionException
     {
         try
@@ -491,8 +442,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
                 // check that its port was set
                 if (httpConnector.getPort() <= 0)
                 {
-                    //use any jetty.port settings provided
-                    String tmp = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, MavenServerConnector.DEFAULT_PORT_STR); 
+                    //use any jetty.http.port settings provided
+                    String tmp = System.getProperty(MavenServerConnector.PORT_SYSPROPERTY, System.getProperty("jetty.port", MavenServerConnector.DEFAULT_PORT_STR));
                     httpConnector.setPort(Integer.parseInt(tmp.trim()));
                 }  
                 httpConnector.setServer(server);
@@ -569,7 +520,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * Subclasses should invoke this to setup basic info
      * on the webapp
      * 
-     * @throws MojoExecutionException
+     * @throws Exception if unable to configure web application 
      */
     public void configureWebApplication () throws Exception
     {
@@ -652,6 +603,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     
     /**
      * Run a thread that monitors the console input to detect ENTER hits.
+     * @throws Exception if unable to start the console
      */
     protected void startConsoleScanner() throws Exception
     {
@@ -663,12 +615,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }       
     }
 
-    
-    
-    
-    /**
-     * 
-     */
     protected void printSystemProperties ()
     {
         // print out which system properties were set up
@@ -686,13 +632,10 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
     }
 
-    
-    
-    
     /**
      * Try and find a jetty-web.xml file, using some
      * historical naming conventions if necessary.
-     * @param webInfDir
+     * @param webInfDir the web inf directory
      * @return the jetty web xml file
      */
     public File findJettyWebXmlFile (File webInfDir)
@@ -714,13 +657,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         return null;
     }
 
-
-   
-    
-    /**
-     * @param file
-     * @throws Exception
-     */
     public void setSystemPropertiesFile(File file) throws Exception
     {
         this.systemPropertiesFile = file;
@@ -746,12 +682,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         } 
     }
     
-    
-    
-    
-    /**
-     * @param systemProperties
-     */
     public void setSystemProperties(SystemProperties systemProperties)
     {
         if (this.systemProperties == null)
@@ -765,15 +695,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
     }
     
-
-    
-
-    
-    
-    
-    /**
-     * @return
-     */
     public List<File> getJettyXmlFiles()
     {
         if ( this.jettyXml == null )
@@ -800,12 +721,6 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         return jettyXmlFiles;
     }
 
-    
-    
-    /**
-     * @param goal
-     * @return
-     */
     public boolean isExcluded (String goal)
     {
         if (excludedGoals == null || goal == null)

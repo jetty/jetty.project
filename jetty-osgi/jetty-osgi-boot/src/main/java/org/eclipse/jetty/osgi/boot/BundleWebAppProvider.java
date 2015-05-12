@@ -32,13 +32,10 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 
-
-
 /**
  * BundleWebAppProvider
- *
+ * <p>
  * A Jetty Provider that knows how to deploy a WebApp contained inside a Bundle.
- * 
  */
 public class BundleWebAppProvider extends AbstractWebAppProvider implements BundleProvider
 {     
@@ -53,16 +50,10 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param wrapper
-     */
     public BundleWebAppProvider (ServerInstanceWrapper wrapper)
     {
         super(wrapper);
     }
-    
-    
-    
     
     /* ------------------------------------------------------------ */
     /** 
@@ -108,7 +99,7 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     /* ------------------------------------------------------------ */
     /**
      * A bundle has been added that could be a webapp 
-     * @param bundle
+     * @param bundle the bundle
      */
     public boolean bundleAdded (Bundle bundle) throws Exception
     {
@@ -190,8 +181,8 @@ public class BundleWebAppProvider extends AbstractWebAppProvider implements Bund
     /* ------------------------------------------------------------ */
     /** 
      * Bundle has been removed. If it was a webapp we deployed, undeploy it.
-     * @param bundle
      * 
+     * @param bundle the bundle
      * @return true if this was a webapp we had deployed, false otherwise
      */
     public boolean bundleRemoved (Bundle bundle) throws Exception

@@ -21,6 +21,7 @@ package org.eclipse.jetty.maven.plugin;
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.lang.reflect.Method;
 import java.net.MalformedURLException;
 import java.util.ArrayList;
 import java.util.EventListener;
@@ -205,7 +206,7 @@ public class JettyWebAppContext extends WebAppContext
     /**
      * Ordered list of wars to overlay on top of the current project. The list
      * may contain an overlay that represents the current project.
-     * @param overlays
+     * @param overlays the list of overlays
      */
     public void setOverlays (List<Overlay> overlays)
     {
@@ -360,6 +361,9 @@ public class JettyWebAppContext extends WebAppContext
             if (fileName.endsWith(".jar"))
                 _webInfJarMap.put(fileName, file);
         }
+        
+        //check for CDI
+        initCDI();
         
         // CHECK setShutdown(false);
         super.doStart();
@@ -522,5 +526,28 @@ public class JettyWebAppContext extends WebAppContext
         }
         
         return s;
+    }
+    
+    public void initCDI()
+    {
+        Class cdiInitializer = null;
+        try
+        {
+            cdiInitializer = Thread.currentThread().getContextClassLoader().loadClass("org.eclipse.jetty.cdi.servlet.JettyWeldInitializer");
+            Method initWebAppMethod = cdiInitializer.getMethod("initWebApp", new Class[]{WebAppContext.class});
+            initWebAppMethod.invoke(null, new Object[]{this});
+        }
+        catch (ClassNotFoundException e)
+        {
+            LOG.debug("o.e.j.cdi.servlet.JettyWeldInitializer not found, no cdi integration available");
+        }
+        catch (NoSuchMethodException e)
+        {
+            LOG.warn("o.e.j.cdi.servlet.JettyWeldInitializer.initWebApp() not found, no cdi integration available");
+        }
+        catch (Exception e)
+        {
+           LOG.warn("Problem initializing cdi", e);
+        }
     }
 }

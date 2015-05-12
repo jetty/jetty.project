@@ -245,6 +245,7 @@ public class HashedSession extends MemSession
      *
      * The session is idled by persisting it, then clearing the session values attribute map and finally setting
      * it to an idled state.
+     * @throws Exception if unable to save session
      */
     public synchronized void idle()
     throws Exception

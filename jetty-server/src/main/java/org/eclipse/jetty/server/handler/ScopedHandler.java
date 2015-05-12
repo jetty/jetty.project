@@ -40,7 +40,7 @@ import org.eclipse.jetty.server.Request;
  * {@link #doHandle(String, Request, HttpServletRequest, HttpServletResponse)} method
  * is called on all contained handlers.</p>
  *
- * <p>For example if Scoped handlers A, B & C were chained together, then
+ * <p>For example if Scoped handlers A, B &amp; C were chained together, then
  * the calling order would be:</p>
  * <pre>
  * A.handle(...)
@@ -52,7 +52,7 @@ import org.eclipse.jetty.server.Request;
  *              C.doHandle(...)
  * </pre>
  *
- * <p>If non scoped handler X was in the chained A, B, X & C, then
+ * <p>If non scoped handler X was in the chained A, B, X &amp; C, then
  * the calling order would be:</p>
  * <pre>
  * A.handle(...)

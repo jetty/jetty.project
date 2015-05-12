@@ -62,8 +62,8 @@ public class CommandLineBuilder
      * Perform an optional quoting of the argument, being intelligent with spaces and quotes as needed. If a subString is set in quotes it won't the subString
      * won't be escaped.
      * 
-     * @param arg
-     * @return
+     * @param arg the argument to quote
+     * @return the quoted and escaped argument
      */
     public static String quote(String arg)
     {
@@ -126,7 +126,6 @@ public class CommandLineBuilder
     /**
      * Similar to {@link #addArg(String)} but concats both name + value with an "=" sign, quoting were needed, and excluding the "=" portion if the value is
      * undefined or empty.
-     * <p>
      * 
      * <pre>
      *   addEqualsArg("-Dname", "value") = "-Dname=value"

@@ -221,7 +221,7 @@ public class Scanner extends AbstractLifeCycle
     /**
      * Apply a filter to files found in the scan directory.
      * Only files matching the filter will be reported as added/changed/removed.
-     * @param filter
+     * @param filter the filename filter to use
      */
     public void setFilenameFilter (FilenameFilter filter)
     {
@@ -257,7 +257,7 @@ public class Scanner extends AbstractLifeCycle
     
     /* ------------------------------------------------------------ */
     /** Set if found directories should be reported.
-     * @param dirs
+     * @param dirs true to report directory changes as well
      */
     public void setReportDirs(boolean dirs)
     {
@@ -273,7 +273,7 @@ public class Scanner extends AbstractLifeCycle
     /* ------------------------------------------------------------ */
     /**
      * Add an added/removed/changed listener
-     * @param listener
+     * @param listener the listener to add
      */
     public synchronized void addListener (Listener listener)
     {
@@ -370,6 +370,7 @@ public class Scanner extends AbstractLifeCycle
     }
 
     /**
+     * @param path tests if the path exists
      * @return true if the path exists in one of the scandirs
      */
     public boolean exists(String path)

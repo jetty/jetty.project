@@ -18,7 +18,9 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.junit.Assert.*;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
 
 import java.io.File;
 
@@ -63,6 +65,7 @@ public class ClassPathResourceTest
 
     /**
      * Test a class path resource for directories.
+     * @throws Exception failed test
      */
     @Test
     public void testClassPathResourceDirectory() throws Exception
@@ -82,6 +85,7 @@ public class ClassPathResourceTest
 
     /**
      * Test a class path resource for a file.
+     * @throws Exception failed test
      */
     @Test
     public void testClassPathResourceFile() throws Exception

@@ -27,21 +27,23 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.ListIterator;
 
-/* ------------------------------------------------------------ */
-/** Lazy List creation.
+/** 
+ * Lazy List creation.
+ * <p>
  * A List helper class that attempts to avoid unnecessary List
  * creation.   If a method needs to create a List to return, but it is
  * expected that this will either be empty or frequently contain a
  * single item, then using LazyList will avoid additional object
  * creations by using {@link Collections#EMPTY_LIST} or
  * {@link Collections#singletonList(Object)} where possible.
+ * </p>
  * <p>
  * LazyList works by passing an opaque representation of the list in
  * and out of all the LazyList methods.  This opaque object is either
  * null for an empty list, an Object for a list with a single entry
  * or an {@link ArrayList} for a list of items.
- *
- * <p><h4>Usage</h4>
+ * </p>
+ * <strong>Usage</strong>
  * <pre>
  *   Object lazylist =null;
  *   while(loopCondition)
@@ -162,7 +164,9 @@ public class LazyList
 
     /* ------------------------------------------------------------ */
     /** Ensure the capacity of the underlying list.
-     * 
+     * @param list the list to grow 
+     * @param initialSize the size to grow to
+     * @return the new List with new size
      */
     public static Object ensureSize(Object list, int initialSize)
     {
@@ -230,6 +234,7 @@ public class LazyList
      * @param list A LazyList returned from LazyList.add(Object)
      * @return The List of added items, which may be an EMPTY_LIST
      * or a SingletonList.
+     * @param <E> the list entry type
      */
     public static<E> List<E> getList(Object list)
     {
@@ -245,6 +250,7 @@ public class LazyList
      * empty list.
      * @return The List of added items, which may be null, an EMPTY_LIST
      * or a SingletonList.
+     * @param <E> the list entry type
      */
     @SuppressWarnings("unchecked")
     public static<E> List<E> getList(Object list, boolean nullForEmpty)
@@ -365,6 +371,7 @@ public class LazyList
      * @param list  A LazyList returned from LazyList.add(Object) or null
      * @param i int index
      * @return the item from the list.
+     * @param <E> the list entry type
      */
     @SuppressWarnings("unchecked")
     public static <E> E get(Object list, int i)

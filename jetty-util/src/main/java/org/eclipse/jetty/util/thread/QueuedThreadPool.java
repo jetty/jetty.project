@@ -54,6 +54,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     private final ConcurrentLinkedQueue<Thread> _threads = new ConcurrentLinkedQueue<>();
     private final Object _joinLock = new Object();
     private final BlockingQueue<Runnable> _jobs;
+    private final ThreadGroup _threadGroup;
     private String _name = "qtp" + hashCode();
     private int _idleTimeout;
     private int _maxThreads;
@@ -84,6 +85,11 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
     public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue)
     {
+        this(maxThreads, minThreads, idleTimeout, queue, null);
+    }
+
+    public QueuedThreadPool(@Name("maxThreads") int maxThreads, @Name("minThreads") int minThreads, @Name("idleTimeout") int idleTimeout, @Name("queue") BlockingQueue<Runnable> queue, @Name("threadGroup") ThreadGroup threadGroup)
+    {
         setMinThreads(minThreads);
         setMaxThreads(maxThreads);
         setIdleTimeout(idleTimeout);
@@ -95,6 +101,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
             queue=new BlockingArrayQueue<>(capacity, capacity);
         }
         _jobs=queue;
+        _threadGroup=threadGroup;
     }
 
     @Override
@@ -186,7 +193,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * Delegated to the named or anonymous Pool.
+     * Thread Pool should use Daemon Threading. 
+     *
+     * @param daemon true to enable delegation
+     * @see Thread#setDaemon(boolean)
      */
     public void setDaemon(boolean daemon)
     {
@@ -335,7 +345,10 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
     }
 
     /**
-     * Delegated to the named or anonymous Pool.
+     * Is thread pool using daemon threading
+     * 
+     * @return true if delegating to named or anonymous pool
+     * @see Thread#setDaemon(boolean)
      */
     @ManagedAttribute("thead pool using a daemon thread")
     public boolean isDaemon()
@@ -461,7 +474,7 @@ public class QueuedThreadPool extends AbstractLifeCycle implements SizedThreadPo
 
     protected Thread newThread(Runnable runnable)
     {
-        return new Thread(runnable);
+        return new Thread(_threadGroup, runnable);
     }
 
     @Override

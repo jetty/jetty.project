@@ -19,11 +19,9 @@
 package org.eclipse.jetty.server.handler;
 
 import java.io.IOException;
-import java.lang.reflect.Array;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
@@ -236,6 +234,7 @@ public class ContextHandlerCollection extends HandlerCollection
     /* ------------------------------------------------------------ */
     /** Add a context handler.
      * @param contextPath  The context path to add
+     * @param resourceBase the base (root) Resource
      * @return the ContextHandler just added
      */
     public ContextHandler addContext(String contextPath,String resourceBase)

@@ -28,7 +28,6 @@ import java.nio.channels.SocketChannel;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.util.TypeUtil;
-import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -97,7 +96,10 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
         _connectTimeout = milliseconds;
     }
 
-    @ManagedAttribute("The priority delta to apply to selector threads")
+    /**
+     * @return the selector priority delta
+     * @deprecated not implemented
+     */
     @Deprecated
     public int getSelectorPriorityDelta()
     {
@@ -105,15 +107,8 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
-     * Sets the selector thread priority delta to the given amount.
-     * <p>This allows the selector threads to run at a different priority.
-     * Typically this would be used to lower the priority to give preference
-     * to handling previously accepted connections rather than accepting
-     * new connections.</p>
-     *
-     * @param selectorPriorityDelta the amount to change the thread priority
-     *                              delta to (may be negative)
-     * @see Thread#getPriority()
+     * @param selectorPriorityDelta the selector priority delta
+     * @deprecated not implemented
      */
     @Deprecated
     public void setSelectorPriorityDelta(int selectorPriorityDelta)
@@ -196,6 +191,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     }
 
     /**
+     * @param channel the channel to accept
      * @see #accept(SocketChannel, Object)
      */
     public void accept(SocketChannel channel)
@@ -240,7 +236,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * be overridden by subclasses if a server channel is provided.
      *
      * @param channel the
-     * @throws IOException
+     * @throws IOException if unable to accept channel
      */
     protected void accepted(SocketChannel channel) throws IOException
     {
@@ -375,7 +371,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
      * @param endpoint   the endpoint
      * @param attachment the attachment
      * @return a new connection
-     * @throws IOException
+     * @throws IOException if unable to create new connection
      * @see #newEndPoint(SocketChannel, ManagedSelector, SelectionKey)
      */
     public abstract Connection newConnection(SocketChannel channel, EndPoint endpoint, Object attachment) throws IOException;

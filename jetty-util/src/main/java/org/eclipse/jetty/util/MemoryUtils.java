@@ -22,8 +22,7 @@ import java.security.AccessController;
 import java.security.PrivilegedAction;
 
 /**
- * {@link MemoryUtils} provides an abstraction over memory properties and operations.
- * <p />
+ * MemoryUtils provides an abstraction over memory properties and operations.
  */
 public class MemoryUtils
 {
@@ -67,5 +66,4 @@ public class MemoryUtils
     {
         return getCacheLineBytes() >> 3;
     }
-
 }

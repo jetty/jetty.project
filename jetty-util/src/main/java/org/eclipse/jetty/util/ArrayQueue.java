@@ -25,11 +25,12 @@ import java.util.Queue;
 /* ------------------------------------------------------------ */
 /**
  * Queue backed by circular array.
- * <p/>
+ * <p>
  * This partial Queue implementation (also with {@link #remove()} for stack operation)
  * is backed by a growable circular array.
+ * </p>
  *
- * @param <E>
+ * @param <E> the type of object the queue holds
  */
 public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
 {
@@ -252,6 +253,12 @@ public class ArrayQueue<E> extends AbstractList<E> implements Queue<E>
         {
             return _size;
         }
+    }
+
+    /* ------------------------------------------------------------ */
+    public int sizeUnsafe()
+    {
+        return _size;
     }
 
     /* ------------------------------------------------------------ */

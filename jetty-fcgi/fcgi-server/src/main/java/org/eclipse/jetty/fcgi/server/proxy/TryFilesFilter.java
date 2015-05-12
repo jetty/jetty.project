@@ -37,11 +37,11 @@ import javax.servlet.http.HttpServletResponse;
 
 /**
  * Inspired by nginx's try_files functionality.
- * <p />
+ * <p>
  * This filter accepts the <code>files</code> init-param as a list of space-separated
  * file URIs. The special token <code>$path</code> represents the current request URL's
  * path (the portion after the context path).
- * <p />
+ * <p>
  * Typical example of how this filter can be configured is the following:
  * <pre>
  * &lt;filter&gt;
@@ -59,7 +59,7 @@ import javax.servlet.http.HttpServletResponse;
  * failing that it will forward the request to <code>index.php?p=/path/to/resource.ext</code>.
  * The last file URI specified in the list is therefore the "fallback" to which the request
  * is forwarded to in case no previous files can be found.
- * <p />
+ * <p>
  * The files are resolved using {@link ServletContext#getResource(String)} to make sure
  * that only files visible to the application are served.
  *

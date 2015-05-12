@@ -228,8 +228,9 @@ public class ServletTester extends ContainerLifeCycle
 
     /** Create a port based connector.
      * This methods adds a port connector to the server
+     * @param localhost true if connector should use localhost, false for default host behavior.
      * @return A URL to access the server via the connector.
-     * @throws Exception
+     * @throws Exception on test failure
      */
     public String createConnector(boolean localhost) throws Exception
     {

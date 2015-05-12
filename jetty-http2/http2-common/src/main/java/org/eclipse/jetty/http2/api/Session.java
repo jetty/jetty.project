@@ -36,7 +36,7 @@ import org.eclipse.jetty.util.Promise;
  * <pre>
  * Session session = ...;
  * HeadersFrame frame = ...;
- * Promise<Stream> promise = ...
+ * Promise&lt;Stream&gt; promise = ...
  * session.newStream(frame, promise, new Stream.Listener.Adapter()
  * {
  *     public void onHeaders(Stream stream, HeadersFrame frame)
@@ -167,7 +167,7 @@ public interface Session
          *
          * @param session the session
          * @param frame   the RST_STREAM frame received
-         * @see {@link Stream.Listener#onReset(Stream, ResetFrame)}
+         * @see Stream.Listener#onReset(Stream, ResetFrame)
          */
         public void onReset(Session session, ResetFrame frame);
 

@@ -21,11 +21,12 @@ package org.eclipse.jetty.websocket.common.message;
 import java.io.IOException;
 import java.io.InputStreamReader;
 import java.nio.ByteBuffer;
+import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
 /**
  * Support class for reading a (single) WebSocket TEXT message via a Reader.
- * <p/>
+ * <p>
  * In compliance to the WebSocket spec, this reader always uses the UTF8 {@link Charset}.
  */
 public class MessageReader extends InputStreamReader implements MessageAppender

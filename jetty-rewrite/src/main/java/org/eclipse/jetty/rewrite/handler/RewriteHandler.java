@@ -54,7 +54,6 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
  * <li> {@link RewritePatternRule} - rewrites the requested URI. </li>
  * <li> {@link RewriteRegexRule} - rewrites the requested URI using regular expression for pattern matching. </li>
  * <li> {@link MsieSslRule} - disables the keep alive on SSL for IE5 and IE6. </li>
- * <li> {@link LegacyRule} - the old version of rewrite. </li>
  * <li> {@link ForwardedSchemeHeaderRule} - set the scheme according to the headers present. </li>
  * <li> {@link VirtualHostRuleContainer} - checks whether the request matches one of a set of virtual host names.</li>
  * </ul>

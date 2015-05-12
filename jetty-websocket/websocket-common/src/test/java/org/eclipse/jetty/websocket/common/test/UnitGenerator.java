@@ -83,6 +83,8 @@ public class UnitGenerator extends Generator
 
     /**
      * Generate a single giant buffer of all provided frames Not appropriate for production code, but useful for testing.
+     * @param frames the list of frames to generate from
+     * @return the bytebuffer representing all of the generated frames
      */
     public static ByteBuffer generate(List<WebSocketFrame> frames)
     {

@@ -36,6 +36,7 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      * The <code>Sec-WebSocket-Extensions</code> name for this extension.
      * <p>
      * Also known as the <a href="https://tools.ietf.org/html/rfc6455#section-9.1"><code>extension-token</code> per Section 9.1. Negotiating Extensions</a>.
+     * @return the name of the extension
      */
     public String getName();
 
@@ -81,9 +82,4 @@ public interface Extension extends IncomingFrames, OutgoingFrames
      *            the next outgoing extension
      */
     public void setNextOutgoingFrames(OutgoingFrames nextOutgoing);
-    
-    // TODO: Extension should indicate if it requires boundary of fragments to be preserved
-    
-    // TODO: Extension should indicate if it uses the Extension data field of frame for its own reasons.
-    
 }

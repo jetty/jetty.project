@@ -180,7 +180,7 @@ public class FileResource extends Resource
     /* -------------------------------------------------------- */
     @Override
     public Resource addPath(String path)
-        throws IOException,MalformedURLException
+        throws IOException, MalformedURLException
     {
         path = org.eclipse.jetty.util.URIUtil.canonicalPath(path);
 
@@ -205,9 +205,14 @@ public class FileResource extends Resource
                 uri=new URI(_uri+path);
             }
         }
-        catch(final URISyntaxException e)
+        catch (final URISyntaxException e)
         {
-            throw new MalformedURLException(){{initCause(e);}};
+            throw new MalformedURLException(e.getMessage())
+            {
+                {
+                    initCause(e);
+                }
+            };
         }
 
         return new FileResource(uri);
@@ -346,7 +351,7 @@ public class FileResource extends Resource
     
     /* ------------------------------------------------------------ */
     /** 
-     * @param o
+     * @param o the object to compare against this instance
      * @return <code>true</code> of the object <code>o</code> is a {@link FileResource} pointing to the same file as this resource. 
      */
     @Override

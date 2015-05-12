@@ -42,11 +42,11 @@ import org.eclipse.jetty.util.Callback;
 /**
  * A {@link ContentProvider} that allows to add content after {@link Request#send(Response.CompleteListener)}
  * has been called, therefore providing the request content at a later time.
- * <p />
+ * <p>
  * {@link DeferredContentProvider} can only be used in conjunction with
  * {@link Request#send(Response.CompleteListener)} (and not with its blocking counterpart {@link Request#send()})
  * because it provides content asynchronously.
- * <p />
+ * <p>
  * The deferred content is provided once and then fully consumed.
  * Invocations to the {@link #iterator()} method after the first will return an "empty" iterator
  * because the stream has been consumed on the first invocation.
@@ -55,13 +55,13 @@ import org.eclipse.jetty.util.Callback;
  * of of {@link #iterator()} returning the iterator provided by this
   * class on the first invocation, and an iterator on the bytes copied to the other location
   * for subsequent invocations.
- * <p />
+ * <p>
  * Typical usage of {@link DeferredContentProvider} is in asynchronous proxies, where HTTP headers arrive
  * separately from HTTP content chunks.
- * <p />
+ * <p>
  * The deferred content must be provided through {@link #offer(ByteBuffer)}, which can be invoked multiple
  * times, and when all content has been provided it must be signaled with a call to {@link #close()}.
- * <p />
+ * <p>
  * Example usage:
  * <pre>
  * HttpClient httpClient = ...;
@@ -73,7 +73,7 @@ import org.eclipse.jetty.util.Callback;
  *             .content(content)
  *             .send(new Response.CompleteListener()
  *             {
- *                 &#64Override
+ *                 &#64;Override
  *                 public void onComplete(Result result)
  *                 {
  *                     // Your logic here

@@ -25,7 +25,7 @@ import org.eclipse.jetty.util.TypeUtil;
 import org.objectweb.asm.Type;
 
 /**
- * Util
+ * Annotation Processing Utilities
  */
 public class Util
 { 
@@ -40,7 +40,7 @@ public class Util
     /**
      * Check if the presented method belongs to a class that is one
      * of the classes with which a servlet container should be concerned.
-     * @param c
+     * @param c the class
      * @return true if class is a type of one of the following: 
      *          ({@link javax.servlet.Servlet}, 
      *           {@link javax.servlet.Filter}, 

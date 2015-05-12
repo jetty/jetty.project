@@ -23,7 +23,6 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -33,10 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Base container to group rules. Can be extended so that the contained rules
  * will only be applied under certain conditions
- * 
- * 
  */
-
 public class RuleContainer extends Rule
 {
     private static final Logger LOG = Log.getLogger(RuleContainer.class);
@@ -155,6 +151,8 @@ public class RuleContainer extends Rule
      * @param target target field to pass on to the contained rules
      * @param request request object to pass on to the contained rules
      * @param response response object to pass on to the contained rules
+     * @return the target
+     * @throws IOException if unable to apply the rule
      */
     protected String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {

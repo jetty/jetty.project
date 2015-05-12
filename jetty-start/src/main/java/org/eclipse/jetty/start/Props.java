@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.*;
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 import java.io.IOException;
 import java.io.OutputStream;
@@ -129,6 +129,7 @@ public final class Props implements Iterable<Prop>
      * If arg is not a property, ignore it.
      * @param arg the argument to parse for a potential property
      * @param source the source for this argument (to track origin of property from)
+     * @return true if the property was added, false if the property wasn't added
      */
     public boolean addPossibleProperty(String arg, String source)
     {

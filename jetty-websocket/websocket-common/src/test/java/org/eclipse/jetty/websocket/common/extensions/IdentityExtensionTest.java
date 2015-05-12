@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -35,8 +37,6 @@ import org.eclipse.jetty.websocket.common.test.IncomingFramesCapture;
 import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class IdentityExtensionTest
 {
@@ -71,6 +71,7 @@ public class IdentityExtensionTest
 
     /**
      * Verify that outgoing frames are unmodified
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingFrames() throws IOException

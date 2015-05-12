@@ -27,7 +27,7 @@ import org.eclipse.jetty.util.log.Slf4jLog;
  * Implementation of NCSARequestLog where output is sent as a SLF4J INFO Log message on the named logger "org.eclipse.jetty.server.RequestLog"
  */
 @ManagedObject("NCSA standard format request log to slf4j bridge")
-public class Slf4jRequestLog extends AbstractNCSARequestLog implements RequestLog
+public class Slf4jRequestLog extends AbstractNCSARequestLog
 {
     private Slf4jLog logger;
     private String loggerName;

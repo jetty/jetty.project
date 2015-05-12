@@ -64,11 +64,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     @Override
     public boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher)
     {
+        // TODO remove this draft protection
+        if ("h2-14".equals(protocol))
+            return true;
+        
         // Implement 9.2.2
-        if (HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher))
-            return false;
-
-        return true;
+        return !(HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher));
     }
 
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
@@ -80,6 +81,11 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         {
             this.connector = connector;
             this.endPoint = endPoint;
+        }
+
+        private HTTP2ServerConnection getConnection()
+        {
+            return (HTTP2ServerConnection)endPoint.getConnection();
         }
 
         @Override
@@ -97,7 +103,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
         {
-            ((HTTP2ServerConnection)endPoint.getConnection()).onNewStream(connector, (IStream)stream, frame);
+            getConnection().onNewStream(connector, (IStream)stream, frame);
             return frame.isEndStream() ? null : this;
         }
 
@@ -119,11 +125,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         @Override
         public void onData(Stream stream, DataFrame frame, Callback callback)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Processing {} on {}", frame, stream);
-
-            HttpChannelOverHTTP2 channel = (HttpChannelOverHTTP2)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
-            channel.requestContent(frame, callback);
+            getConnection().onData((IStream)stream, frame, callback);
         }
 
         @Override
@@ -143,6 +145,6 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
             final Session session = stream.getSession();
             session.close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.Adapter.INSTANCE);
         }
-
     }
+
 }

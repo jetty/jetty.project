@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.IOException;
 import java.util.List;
 import java.util.concurrent.CopyOnWriteArrayList;
 
@@ -55,6 +56,7 @@ public class HttpConfiguration
     private boolean _sendXPoweredBy = false;
     private boolean _sendDateHeader = true;
     private boolean _delayDispatchUntilContent = true;
+    private boolean _persistentConnectionsEnabled = true;
 
     /* ------------------------------------------------------------ */
     /** 
@@ -182,6 +184,19 @@ public class HttpConfiguration
     }
 
     /* ------------------------------------------------------------ */
+    @ManagedAttribute("True if HTTP/1 persistent connection are enabled")
+    public boolean isPersistentConnectionsEnabled()
+    {
+        return _persistentConnectionsEnabled;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setPersistentConnectionsEnabled(boolean persistentConnectionsEnabled)
+    {
+        _persistentConnectionsEnabled = persistentConnectionsEnabled;
+    }
+
+    /* ------------------------------------------------------------ */
     public void setSendServerVersion (boolean sendServerVersion)
     {
         _sendServerVersion = sendServerVersion;
@@ -194,6 +209,19 @@ public class HttpConfiguration
         return _sendServerVersion;
     }
 
+    /* ------------------------------------------------------------ */
+    public void writePoweredBy(Appendable out,String preamble,String postamble) throws IOException
+    {
+        if (getSendServerVersion())
+        {
+            if (preamble!=null)
+                out.append(preamble);
+            out.append(Jetty.POWERED_BY);
+            if (postamble!=null)
+                out.append(postamble);
+        }
+    }
+    
     /* ------------------------------------------------------------ */
     public void setSendXPoweredBy (boolean sendXPoweredBy)
     {
@@ -222,7 +250,7 @@ public class HttpConfiguration
 
     /* ------------------------------------------------------------ */
     /**
-     * @param delay if true, delay the application dispatch until content is available
+     * @param delay if true, delay the application dispatch until content is available (default false)
      */
     public void setDelayDispatchUntilContent(boolean delay)
     {

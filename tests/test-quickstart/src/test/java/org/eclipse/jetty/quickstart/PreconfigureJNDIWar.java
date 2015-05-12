@@ -19,7 +19,6 @@
 package org.eclipse.jetty.quickstart;
 
 import java.io.File;
-import java.io.FileInputStream;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.server.Server;

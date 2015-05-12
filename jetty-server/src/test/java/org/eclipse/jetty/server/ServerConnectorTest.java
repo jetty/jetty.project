@@ -18,8 +18,12 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -41,6 +45,7 @@ import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.junit.Test;
 
@@ -125,7 +130,12 @@ public class ServerConnectorTest
             String response = getResponse(uri);
             assertThat("Response",response,containsString("connector.getReuseAddress() = true"));
             assertThat("Response",response,containsString("connector._reuseAddress() = true"));
-            assertThat("Response",response,containsString("socket.getReuseAddress() = true"));
+            
+            // Java on Windows is incapable of propagating reuse-address this to the opened socket.
+            if (!OS.IS_WINDOWS)
+            {
+                assertThat("Response",response,containsString("socket.getReuseAddress() = true"));
+            }
         }
         finally
         {
@@ -156,7 +166,12 @@ public class ServerConnectorTest
             String response = getResponse(uri);
             assertThat("Response",response,containsString("connector.getReuseAddress() = true"));
             assertThat("Response",response,containsString("connector._reuseAddress() = true"));
-            assertThat("Response",response,containsString("socket.getReuseAddress() = true"));
+            
+            // Java on Windows is incapable of propagating reuse-address this to the opened socket.
+            if (!OS.IS_WINDOWS)
+            {
+                assertThat("Response",response,containsString("socket.getReuseAddress() = true"));
+            }
         }
         finally
         {
@@ -187,7 +202,12 @@ public class ServerConnectorTest
             String response = getResponse(uri);
             assertThat("Response",response,containsString("connector.getReuseAddress() = false"));
             assertThat("Response",response,containsString("connector._reuseAddress() = false"));
-            assertThat("Response",response,containsString("socket.getReuseAddress() = false"));
+            
+            // Java on Windows is incapable of propagating reuse-address this to the opened socket.
+            if (!OS.IS_WINDOWS)
+            {
+                assertThat("Response",response,containsString("socket.getReuseAddress() = false"));
+            }
         }
         finally
         {

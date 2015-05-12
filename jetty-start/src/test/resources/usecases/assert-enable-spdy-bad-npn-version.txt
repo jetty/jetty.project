@@ -3,12 +3,12 @@
 # The LIBs we expect (order is irrelevant)
 
 # The Properties we expect (order is irrelevant)
-PROP|jetty.port=9090
-PROP|jetty.keystore=etc/keystore
-PROP|jetty.keystore.password=friendly
-PROP|jetty.keymanager.password=icecream
-PROP|jetty.truststore=etc/keystore
-PROP|jetty.truststore.password=sundae
+PROP|jetty.http.port=9090
+PROP|jetty.sslConfig.keyStorePath=etc/keystore
+PROP|jetty.sslConfig.keyStorePassword=friendly
+PROP|jetty.sslConfig.keyManagerPassword=icecream
+PROP|jetty.sslConfig.trustStorePath=etc/keystore
+PROP|jetty.sslConfig.trustStorePassword=sundae
 PROP|java.version=1.7.0_01
 
 # The Downloads

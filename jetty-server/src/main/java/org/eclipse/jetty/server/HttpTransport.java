@@ -39,11 +39,11 @@ public interface HttpTransport
     
     /**
      * Aborts this transport.
-     * <p />
+     * <p>
      * This method should terminate the transport in a way that
      * can indicate an abnormal response to the client, for example
      * by abruptly close the connection.
-     * <p />
+     * <p>
      * This method is called when an error response needs to be sent,
      * but the response is already committed, or when a write failure
      * is detected.

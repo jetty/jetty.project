@@ -37,10 +37,6 @@ import org.eclipse.jetty.util.thread.SpinLock;
 /**
  * Implementation of AsyncContext interface that holds the state of request-response cycle.
  */
-
-/* ------------------------------------------------------------ */
-/**
- */
 public class HttpChannelState
 {
     private static final Logger LOG = Log.getLogger(HttpChannelState.class);
@@ -804,7 +800,7 @@ public class HttpChannelState
      * This is similar to calling {@link #onReadUnready()} followed by
      * {@link #onReadPossible()}, except that as content is already
      * available, read interest is never set.
-     * @return
+     * @return true if woken
      */
     public boolean onReadReady()
     {

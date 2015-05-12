@@ -22,33 +22,40 @@ Jetty may be distributed under either license.
 Eclipse
 
 The following artifacts are EPL.
-
-org.eclipse.jetty.orbit:org.eclipse.jdt.core
-
+ * org.eclipse.jetty.orbit:org.eclipse.jdt.core
 
 The following artifacts are EPL and ASL2.
-
-org.eclipse.jetty.orbit:javax.security.auth.message
+ * org.eclipse.jetty.orbit:javax.security.auth.message
 
 
 The following artifacts are EPL and CDDL 1.0.
-
-org.eclipse.jetty.orbit:javax.mail.glassfish
-
+ * org.eclipse.jetty.orbit:javax.mail.glassfish
 
 
 ------
 Oracle
 
 The following artifacts are CDDL + GPLv2 with classpath exception.
-
 https://glassfish.dev.java.net/nonav/public/CDDL+GPL.html
 
-javax.servlet:javax.servlet-api
-javax.annotation:javax.annotation-api
-javax.transaction:javax.transaction-api
-javax.websocket:javax.websocket-api
+ * javax.servlet:javax.servlet-api
+ * javax.annotation:javax.annotation-api
+ * javax.transaction:javax.transaction-api
+ * javax.websocket:javax.websocket-api
 
+------
+Oracle OpenJDK
+
+If ALPN is used to negotiate HTTP/2 connections, then the following
+artifacts may be included in the distribution or downloaded when ALPN 
+module is selected. 
+
+ * java.sun.security.ssl
+
+These artifacts replace/modify OpenJDK classes.  The modififications
+are hosted at github and both modified and original are under GPL v2 with 
+classpath exceptions.
+http://openjdk.java.net/legal/gplv2+ce.html
 
 
 ------

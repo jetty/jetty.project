@@ -30,7 +30,6 @@ import java.util.TreeSet;
 import java.util.concurrent.ConcurrentHashMap;
 
 import org.eclipse.jetty.annotations.ClassNameResolver;
-import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelper;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.resource.Resource;
@@ -52,9 +51,10 @@ public class AnnotationParser extends org.eclipse.jetty.annotations.AnnotationPa
     
     /**
      * Keep track of a jetty URI Resource and its associated OSGi bundle.
-     * @param uri
-     * @param bundle
-     * @throws Exception 
+     * 
+     * @param bundle the bundle to index
+     * @return the resource for the bundle
+     * @throws Exception if unable to create the resource reference
      */
     protected Resource indexBundle(Bundle bundle) throws Exception
     {

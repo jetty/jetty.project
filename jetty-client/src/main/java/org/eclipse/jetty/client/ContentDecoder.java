@@ -37,10 +37,10 @@ public interface ContentDecoder
 
     /**
      * Factory for {@link ContentDecoder}s; subclasses must implement {@link #newContentDecoder()}.
-     * <p />
+     * <p>
      * {@link Factory} have an {@link #getEncoding() encoding}, which is the string used in
      * {@code Accept-Encoding} request header and in {@code Content-Encoding} response headers.
-     * <p />
+     * <p>
      * {@link Factory} instances are configured in {@link HttpClient} via
      * {@link HttpClient#getContentDecoderFactories()}.
      */

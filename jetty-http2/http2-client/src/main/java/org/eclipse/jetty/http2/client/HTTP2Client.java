@@ -22,7 +22,9 @@ import java.io.IOException;
 import java.net.InetSocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
+import java.util.Arrays;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.Queue;
 import java.util.concurrent.ConcurrentLinkedQueue;
@@ -49,6 +51,66 @@ import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
 import org.eclipse.jetty.util.thread.Scheduler;
 
+/**
+ * <p>{@link HTTP2Client} provides an asynchronous, non-blocking implementation
+ * to send HTTP/2 frames to a server.</p>
+ * <p>Typical usage:</p>
+ * <pre>
+ * // Create and start HTTP2Client.
+ * HTTP2Client client = new HTTP2Client();
+ * SslContextFactory sslContextFactory = new SslContextFactory();
+ * client.addBean(sslContextFactory);
+ * client.start();
+ *
+ * // Connect to host.
+ * String host = "webtide.com";
+ * int port = 443;
+ *
+ * FuturePromise&lt;Session&gt; sessionPromise = new FuturePromise&lt;&gt;();
+ * client.connect(sslContextFactory, new InetSocketAddress(host, port), new ServerSessionListener.Adapter(), sessionPromise);
+ *
+ * // Obtain the client Session object.
+ * Session session = sessionPromise.get(5, TimeUnit.SECONDS);
+ *
+ * // Prepare the HTTP request headers.
+ * HttpFields requestFields = new HttpFields();
+ * requestFields.put("User-Agent", client.getClass().getName() + "/" + Jetty.VERSION);
+ * // Prepare the HTTP request object.
+ * MetaData.Request request = new MetaData.Request("PUT", new HttpURI("https://" + host + ":" + port + "/"), HttpVersion.HTTP_2, requestFields);
+ * // Create the HTTP/2 HEADERS frame representing the HTTP request.
+ * HeadersFrame headersFrame = new HeadersFrame(0, request, null, false);
+ *
+ * // Prepare the listener to receive the HTTP response frames.
+ * Stream.Listener responseListener = new new Stream.Listener.Adapter()
+ * {
+ *      &#64;Override
+ *      public void onHeaders(Stream stream, HeadersFrame frame)
+ *      {
+ *          System.err.println(frame);
+ *      }
+ *
+ *      &#64;Override
+ *      public void onData(Stream stream, DataFrame frame, Callback callback)
+ *      {
+ *          System.err.println(frame);
+ *          callback.succeeded();
+ *      }
+ * };
+ *
+ * // Send the HEADERS frame to create a stream.
+ * FuturePromise&lt;Stream&gt; streamPromise = new FuturePromise&lt;&gt;();
+ * session.newStream(headersFrame, streamPromise, responseListener);
+ * Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+ *
+ * // Use the Stream object to send request content, if any, using a DATA frame.
+ * ByteBuffer content = ...;
+ * DataFrame requestContent = new DataFrame(stream.getId(), content, true);
+ * stream.data(requestContent, Callback.Adapter.INSTANCE);
+ *
+ * // When done, stop the client.
+ * client.stop();
+ * </pre>
+ */
 public class HTTP2Client extends ContainerLifeCycle
 {
     private Executor executor;
@@ -57,9 +119,10 @@ public class HTTP2Client extends ContainerLifeCycle
     private ClientConnectionFactory connectionFactory;
     private Queue<ISession> sessions;
     private SelectorManager selector;
-    public int selectors = 1;
-    public long idleTimeout = 30000;
-    public long connectTimeout = 10000;
+    private int selectors = 1;
+    private long idleTimeout = 30000;
+    private long connectTimeout = 10000;
+    private List<String> protocols = Arrays.asList("h2", "h2-17", "h2-16", "h2-15", "h2-14");
 
     @Override
     protected void doStart() throws Exception
@@ -181,6 +244,16 @@ public class HTTP2Client extends ContainerLifeCycle
             selector.setConnectTimeout(connectTimeout);
     }
 
+    public List<String> getProtocols()
+    {
+        return protocols;
+    }
+
+    public void setProtocols(List<String> protocols)
+    {
+        this.protocols = protocols;
+    }
+
     public void connect(InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
         connect(null, address, listener, promise);
@@ -196,7 +269,7 @@ public class HTTP2Client extends ContainerLifeCycle
         try
         {
             SocketChannel channel = SocketChannel.open();
-            channel.socket().setTcpNoDelay(true);
+            configure(channel);
             channel.configureBlocking(false);
 
             context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
@@ -216,6 +289,11 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             promise.failed(x);
         }
+    }
+
+    protected void configure(SocketChannel channel) throws IOException
+    {
+        channel.socket().setTcpNoDelay(true);
     }
 
     private void closeConnections()
@@ -262,7 +340,7 @@ public class HTTP2Client extends ContainerLifeCycle
             SslContextFactory sslContextFactory = (SslContextFactory)context.get(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY);
             if (sslContextFactory != null)
             {
-                ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), factory, "h2-17");
+                ALPNClientConnectionFactory alpn = new ALPNClientConnectionFactory(getExecutor(), factory, getProtocols());
                 factory = new SslClientConnectionFactory(sslContextFactory, getByteBufferPool(), getExecutor(), alpn);
             }
 

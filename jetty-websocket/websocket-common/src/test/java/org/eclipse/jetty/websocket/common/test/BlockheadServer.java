@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.test;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.io.BufferedReader;
 import java.io.IOException;
@@ -66,6 +67,7 @@ import org.eclipse.jetty.websocket.common.WebSocketFrame;
 import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
 import org.eclipse.jetty.websocket.common.extensions.WebSocketExtensionFactory;
 import org.eclipse.jetty.websocket.common.frames.CloseFrame;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
 import org.junit.Assert;
 
 /**
@@ -109,11 +111,13 @@ public class BlockheadServer
             this.parser = new Parser(policy,bufferPool);
             this.parseCount = new AtomicInteger(0);
             this.generator = new Generator(policy,bufferPool,false);
-            this.extensionRegistry = new WebSocketExtensionFactory(policy,bufferPool);
+            this.extensionRegistry = new WebSocketExtensionFactory(new SimpleContainerScope(policy,bufferPool));
         }
 
         /**
          * Add an extra header for the upgrade response (from the server). No extra work is done to ensure the key and value are sane for http.
+         * @param rawkey the raw key
+         * @param rawvalue the raw value
          */
         public void addResponseHeader(String rawkey, String rawvalue)
         {

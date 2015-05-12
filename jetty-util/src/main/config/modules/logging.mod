@@ -23,9 +23,14 @@ resources/
 # Configure jetty logging for java.util.logging
 # -Dorg.eclipse.jetty.util.log.class=org.eclipse.jetty.util.log.JavaUtilLog
 
-# STDERR / STDOUT Logging
-# Number of days to retain logs
-# jetty.log.retain=90
-# Directory for logging output
-# Either a path relative to ${jetty.base} or an absolute path
-# jetty.logs=logs
+## Logging directory (relative to $jetty.base)
+# jetty.logging.dir=logs
+
+## Whether to append to existing file
+# jetty.logging.append=false
+
+## How many days to retain old log files
+# jetty.logging.retainDays=90
+
+## Timezone of the log timestamps
+# jetty.logging.timezone=GMT

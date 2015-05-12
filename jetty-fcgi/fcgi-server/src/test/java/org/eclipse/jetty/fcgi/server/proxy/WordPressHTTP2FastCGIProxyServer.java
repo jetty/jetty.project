@@ -19,6 +19,7 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.util.EnumSet;
+
 import javax.servlet.DispatcherType;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;

@@ -21,6 +21,7 @@ package org.eclipse.jetty.client.api;
 import java.io.IOException;
 import java.net.HttpCookie;
 import java.net.URI;
+import java.net.URLEncoder;
 import java.nio.ByteBuffer;
 import java.nio.file.Path;
 import java.util.EventListener;
@@ -30,6 +31,8 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
+import org.eclipse.jetty.client.HttpClient;
+import org.eclipse.jetty.client.util.InputStreamResponseListener;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
@@ -202,6 +205,7 @@ public interface Request
 
     /**
      * @param content the content provider of this request
+     * @param contentType the content type
      * @return this request object
      */
     Request content(ContentProvider content, String contentType);
@@ -282,6 +286,7 @@ public interface Request
     /**
      * @param listenerClass the class of the listener, or null for all listeners classes
      * @return the listeners for request events of the given class
+     * @param <T> the type of listener class
      */
     <T extends RequestListener> List<T> getRequestListeners(Class<T> listenerClass);
 
@@ -383,17 +388,20 @@ public interface Request
 
     /**
      * Sends this request and returns the response.
-     * <p />
+     * <p>
      * This method should be used when a simple blocking semantic is needed, and when it is known
      * that the response content can be buffered without exceeding memory constraints.
-     * <p />
+     * <p>
      * For example, this method is not appropriate to download big files from a server; consider using
      * {@link #send(Response.CompleteListener)} instead, passing your own {@link Response.Listener} or a utility
      * listener such as {@link InputStreamResponseListener}.
-     * <p />
+     * <p>
      * The method returns when the {@link Response.CompleteListener complete event} is fired.
      *
      * @return a {@link ContentResponse} for this request
+     * @throws InterruptedException if send thread is interrupted
+     * @throws TimeoutException if send times out
+     * @throws ExecutionException if execution fails
      * @see Response.CompleteListener#onComplete(Result)
      */
     ContentResponse send() throws InterruptedException, TimeoutException, ExecutionException;
@@ -495,6 +503,7 @@ public interface Request
          * Callback method invoked when a chunk of request content has been sent successfully.
          * Changes to bytes in the given buffer have no effect, as the content has already been sent.
          * @param request the request that has been committed
+         * @param content the content
          */
         public void onContent(Request request, ByteBuffer content);
     }

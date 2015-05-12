@@ -25,9 +25,7 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * FragmentConfiguration
- * 
- * 
- * 
+ * <p>
  * Process web-fragments in jars
  */
 public class FragmentConfiguration extends AbstractConfiguration
@@ -55,8 +53,10 @@ public class FragmentConfiguration extends AbstractConfiguration
     /* ------------------------------------------------------------------------------- */
     /**
      * Look for any web-fragment.xml fragments in META-INF of jars in WEB-INF/lib
+     * @param context the web app context to look in
+     * @param metaData the metadata to populate with fragments
      * 
-     * @throws Exception
+     * @throws Exception if unable to find web fragments
      */
     public void findWebFragments (final WebAppContext context, final MetaData metaData) throws Exception
     {

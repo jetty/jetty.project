@@ -52,13 +52,21 @@ public class SimpleFlowControlStrategy extends AbstractFlowControlStrategy
         Frame[] streamFrame = Frame.EMPTY_ARRAY;
         if (stream != null)
         {
-            streamFrame = new Frame[1];
-            streamFrame[0] = new WindowUpdateFrame(stream.getId(), length);
-            stream.updateRecvWindow(length);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Data consumed, increased stream recv window by {} for {}", length, stream);
+            if (stream.isClosed())
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Data consumed, ignoring update stream recv window by {} for closed {}", length, stream);
+            }
+            else
+            {
+                streamFrame = new Frame[1];
+                streamFrame[0] = new WindowUpdateFrame(stream.getId(), length);
+                stream.updateRecvWindow(length);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Data consumed, increased stream recv window by {} for {}", length, stream);
+            }
         }
 
-        session.control(stream, Callback.Adapter.INSTANCE, sessionFrame, streamFrame);
+        session.frames(stream, Callback.Adapter.INSTANCE, sessionFrame, streamFrame);
     }
 }

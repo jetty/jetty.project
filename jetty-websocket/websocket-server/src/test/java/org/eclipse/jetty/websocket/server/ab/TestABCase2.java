@@ -42,6 +42,7 @@ public class TestABCase2 extends AbstractABCase
 {
     /**
      * Ping without payload
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_1() throws Exception
@@ -61,6 +62,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * 10 pings
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_10() throws Exception
@@ -95,6 +97,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * 10 pings, sent slowly
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_11() throws Exception
@@ -130,6 +133,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Ping with small text payload
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_2() throws Exception
@@ -155,6 +159,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Ping with small binary (non-utf8) payload
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_3() throws Exception
@@ -180,6 +185,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Ping with 125 byte binary payload
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_4() throws Exception
@@ -206,6 +212,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Ping with 126 byte binary payload
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_5() throws Exception
@@ -236,6 +243,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Ping with 125 byte binary payload (slow send)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_6() throws Exception
@@ -263,6 +271,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Unsolicited pong frame without payload
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_7() throws Exception
@@ -285,6 +294,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Unsolicited pong frame with basic payload
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_8() throws Exception
@@ -307,6 +317,7 @@ public class TestABCase2 extends AbstractABCase
 
     /**
      * Unsolicited pong frame, then ping with basic payload
+     * @throws Exception on test failure
      */
     @Test
     public void testCase2_9() throws Exception

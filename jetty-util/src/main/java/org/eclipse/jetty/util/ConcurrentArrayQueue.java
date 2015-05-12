@@ -25,6 +25,8 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.NoSuchElementException;
 import java.util.Objects;
+import java.util.Queue;
+import java.util.concurrent.ConcurrentLinkedQueue;
 import java.util.concurrent.atomic.AtomicIntegerArray;
 import java.util.concurrent.atomic.AtomicReference;
 import java.util.concurrent.atomic.AtomicReferenceArray;
@@ -32,14 +34,16 @@ import java.util.concurrent.atomic.AtomicReferenceArray;
 /**
  * A concurrent, unbounded implementation of {@link Queue} that uses singly-linked array blocks
  * to store elements.
- * <p/>
+ * <p>
  * This class is a drop-in replacement for {@link ConcurrentLinkedQueue}, with similar performance
  * but producing less garbage because arrays are used to store elements rather than nodes.
- * <p/>
+ * </p>
+ * <p>
  * The algorithm used is a variation of the algorithm from Gidenstam, Sundell and Tsigas
  * (http://www.adm.hb.se/~AGD/Presentations/CacheAwareQueue_OPODIS.pdf).
+ * </p>
  *
- * @param <T>
+ * @param <T> the Array entry type
  */
 public class ConcurrentArrayQueue<T> extends AbstractQueue<T>
 {

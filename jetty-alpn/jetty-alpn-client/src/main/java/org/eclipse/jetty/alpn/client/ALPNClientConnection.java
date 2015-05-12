@@ -18,10 +18,10 @@
 
 package org.eclipse.jetty.alpn.client;
 
-import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
+
 import javax.net.ssl.SSLEngine;
 
 import org.eclipse.jetty.alpn.ALPN;
@@ -35,12 +35,12 @@ public class ALPNClientConnection extends NegotiatingClientConnection implements
 {
     private static final Logger LOG = Log.getLogger(ALPNClientConnection.class);
 
-    private final String protocol;
+    private final List<String> protocols;
 
-    public ALPNClientConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, SSLEngine sslEngine, Map<String, Object> context, String protocol)
+    public ALPNClientConnection(EndPoint endPoint, Executor executor, ClientConnectionFactory connectionFactory, SSLEngine sslEngine, Map<String, Object> context, List<String> protocols)
     {
         super(endPoint, executor, sslEngine, connectionFactory, context);
-        this.protocol = protocol;
+        this.protocols = protocols;
         ALPN.put(sslEngine, this);
     }
 
@@ -54,20 +54,20 @@ public class ALPNClientConnection extends NegotiatingClientConnection implements
     @Override
     public List<String> protocols()
     {
-        return Arrays.asList(protocol);
+        return protocols;
     }
 
     @Override
     public void selected(String protocol)
     {
-        if (this.protocol.equals(protocol))
+        if (protocols.contains(protocol))
         {
             ALPN.remove(getSSLEngine());
             completed();
         }
         else
         {
-            LOG.info("Could not negotiate protocol: server {} - client {}", protocol, this.protocol);
+            LOG.info("Could not negotiate protocol: server [{}] - client {}", protocol, protocols);
             close();
         }
     }

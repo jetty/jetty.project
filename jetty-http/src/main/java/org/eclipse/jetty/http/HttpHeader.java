@@ -110,6 +110,7 @@ public enum HttpHeader
     IDENTITY("identity"),
     
     X_POWERED_BY("X-Powered-By"),
+    HTTP2_SETTINGS("HTTP2-Settings"),
 
     /* ------------------------------------------------------------ */
     /** HTTP2 Fields.
@@ -124,7 +125,7 @@ public enum HttpHeader
 
 
     /* ------------------------------------------------------------ */
-    public final static Trie<HttpHeader> CACHE= new ArrayTrie<>(520);
+    public final static Trie<HttpHeader> CACHE= new ArrayTrie<>(530);
     static
     {
         for (HttpHeader header : HttpHeader.values())

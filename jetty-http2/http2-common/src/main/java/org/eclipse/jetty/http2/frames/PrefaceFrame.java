@@ -18,14 +18,28 @@
 
 package org.eclipse.jetty.http2.frames;
 
+import java.nio.charset.StandardCharsets;
+
 public class PrefaceFrame extends Frame
 {
-    public static final byte[] PREFACE_BYTES = new byte[]
-            {
-                    0x50, 0x52, 0x49, 0x20, 0x2a, 0x20, 0x48, 0x54,
-                    0x54, 0x50, 0x2f, 0x32, 0x2e, 0x30, 0x0d, 0x0a,
-                    0x0d, 0x0a, 0x53, 0x4d, 0x0d, 0x0a, 0x0d, 0x0a
-            };
+    /**
+     * The bytes of the HTTP/2 preface that form a legal HTTP/1.1
+     * request, used in the direct upgrade.
+     */
+    public static final byte[] PREFACE_PREAMBLE_BYTES = (
+            "PRI * HTTP/2.0\r\n" +
+            "\r\n"
+    ).getBytes(StandardCharsets.US_ASCII);
+
+    /**
+     * The HTTP/2 preface bytes.
+     */
+    public static final byte[] PREFACE_BYTES = (
+            "PRI * HTTP/2.0\r\n" +
+            "\r\n" +
+            "SM\r\n" +
+            "\r\n"
+    ).getBytes(StandardCharsets.US_ASCII);
 
     public PrefaceFrame()
     {

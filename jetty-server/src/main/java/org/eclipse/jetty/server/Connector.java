@@ -24,6 +24,7 @@ import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
+import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.Graceful;
@@ -59,6 +60,7 @@ public interface Connector extends LifeCycle, Graceful
     public ByteBufferPool getByteBufferPool();
 
     /**
+     * @param nextProtocol the next protocol
      * @return the {@link ConnectionFactory} associated with the protocol name
      */
     public ConnectionFactory getConnectionFactory(String nextProtocol);

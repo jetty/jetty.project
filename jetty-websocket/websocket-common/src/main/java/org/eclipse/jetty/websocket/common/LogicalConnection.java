@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 import java.util.concurrent.Executor;
 
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.websocket.api.StatusCode;
 import org.eclipse.jetty.websocket.api.SuspendToken;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.IncomingFrames;
@@ -60,11 +61,13 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
 
     /**
      * Get the ByteBufferPool in use by the connection
+     * @return the buffer pool
      */
     ByteBufferPool getBufferPool();
     
     /**
      * Get the Executor used by this connection.
+     * @return the executor
      */
     Executor getExecutor();
 
@@ -164,6 +167,7 @@ public interface LogicalConnection extends OutgoingFrames, SuspendToken
 
     /**
      * Suspend a the incoming read events on the connection.
+     * @return the suspend token
      */
     SuspendToken suspend();
 }

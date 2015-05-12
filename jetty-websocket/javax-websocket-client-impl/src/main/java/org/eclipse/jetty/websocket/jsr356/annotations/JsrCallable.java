@@ -57,6 +57,7 @@ public abstract class JsrCallable extends CallableMethod
 
     /**
      * Copy Constructor
+     * @param copy the JsrCallable to copy from 
      */
     public JsrCallable(JsrCallable copy)
     {

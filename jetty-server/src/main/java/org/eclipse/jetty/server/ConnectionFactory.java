@@ -21,16 +21,21 @@ package org.eclipse.jetty.server;
 
 import java.util.List;
 
+import org.eclipse.jetty.http.BadMessageException;
+import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 
 /**
- * <p>A Factory to create {@link Connection} instances for {@link Connector}s.</p>
- * <p>A Connection factory is responsible for instantiating and configuring a {@link Connection} instance
- * to handle an {@link EndPoint} accepted by a {@link Connector}.</p>
+ * A Factory to create {@link Connection} instances for {@link Connector}s.
+ * <p>
+ * A Connection factory is responsible for instantiating and configuring a {@link Connection} instance
+ * to handle an {@link EndPoint} accepted by a {@link Connector}.
  * <p>
  * A ConnectionFactory has a protocol name that represents the protocol of the Connections
- * created.  Example of protocol names include:<dl>
+ * created.  Example of protocol names include:
+ * <dl>
  * <dt>http</dt><dd>Creates a HTTP connection that can handle multiple versions of HTTP from 0.9 to 1.1</dd>
  * <dt>h2</dt><dd>Creates a HTTP/2 connection that handles the HTTP/2 protocol</dd>
  * <dt>SSL-XYZ</dt><dd>Create an SSL connection chained to a connection obtained from a connection factory 
@@ -62,4 +67,23 @@ public interface ConnectionFactory
      */
     public Connection newConnection(Connector connector, EndPoint endPoint);
     
+    
+    public interface Upgrading extends ConnectionFactory
+    {
+        /* ------------------------------------------------------------ */
+        /** Create a connection for an upgrade request.
+         * <p>This is a variation of {@link #newConnection(Connector, EndPoint)} that can create (and/or customise)
+         * a connection for an upgrade request.  Implementations may call {@link #newConnection(Connector, EndPoint)} or 
+         * may construct the connection instance themselves.</p>
+         *  
+         * @param connector  The connector to upgrade for.
+         * @param endPoint The endpoint of the connection.
+         * @param upgradeRequest The meta data of the upgrade request.
+         * @param responseFields  The fields to be sent with the 101 response
+         * @return Null to indicate that request processing should continue normally without upgrading. A new connection instance to
+         * indicate that the upgrade should proceed.
+         * @throws BadMessageException Thrown to indicate the upgrade attempt was illegal and that a bad message response should be sent.
+         */
+        public Connection upgradeConnection(Connector connector, EndPoint endPoint, MetaData.Request upgradeRequest,HttpFields responseFields) throws BadMessageException;
+    }
 }

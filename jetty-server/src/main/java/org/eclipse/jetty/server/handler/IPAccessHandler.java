@@ -57,12 +57,11 @@ import org.eclipse.jetty.util.log.Logger;
  * are always applied, so that even if an entry matches the white list, a black list
  * entry will override it.
  * <p>
- * <p>
  * You can change white list policy setting whiteListByPath to true. In this mode a request will be white listed
  * IF it has a matching URL in the white list, otherwise the black list applies, e.g. in default mode when
  * whiteListByPath = false and wl = "127.0.0.1|/foo", /bar request from 127.0.0.1 will be blacklisted,
  * if whiteListByPath=true then not.
- * </p>
+ * <p>
  * Internet addresses may be specified as absolute address or as a combination of
  * four octet wildcard specifications (a.b.c.d) that are defined as follows.
  * </p>
@@ -70,9 +69,9 @@ import org.eclipse.jetty.util.log.Logger;
  * nnn - an absolute value (0-255)
  * mmm-nnn - an inclusive range of absolute values,
  *           with following shorthand notations:
- *           nnn- => nnn-255
- *           -nnn => 0-nnn
- *           -    => 0-255
+ *           nnn- =&gt; nnn-255
+ *           -nnn =&gt; 0-nnn
+ *           -    =&gt; 0-255
  * a,b,... - a list of wildcard specifications
  * </pre>
  * <p>

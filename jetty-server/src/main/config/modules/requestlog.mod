@@ -12,19 +12,26 @@ etc/jetty-requestlog.xml
 logs/
 
 [ini-template]
-## Request Log Configuration
-# Filename for Request Log output (relative to jetty.base)
-# requestlog.filename=/logs/yyyy_mm_dd.request.log
-# Date format for rollovered files (uses SimpleDateFormat syntax)
-# requestlog.filenameDateFormat=yyyy_MM_dd
-# How many days to retain the logs
-# requestlog.retain=90
-# If an existing log with the same name is found, just append to it
-# requestlog.append=true
-# Use the extended log output
-# requestlog.extended=true
-# Log http cookie information as well
-# requestlog.cookies=true
-# Set the log output timezone
-# requestlog.timezone=GMT
+## Logging directory (relative to $jetty.base)
+# jetty.requestlog.dir=logs
 
+## File path
+# jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
+
+# Date format for rollovered files (uses SimpleDateFormat syntax)
+# jetty.requestlog.filenameDateFormat=yyyy_MM_dd
+
+# How many days to retain old log files
+# jetty.requestlog.retainDays=90
+
+## Whether to append to existing file
+# jetty.requestlog.append=true
+
+# Whether to use the extended log output
+# jetty.requestlog.extended=true
+
+# Whether to log http cookie information
+# jetty.requestlog.cookies=true
+
+## Timezone of the log entries
+# jetty.requestlog.timezone=GMT

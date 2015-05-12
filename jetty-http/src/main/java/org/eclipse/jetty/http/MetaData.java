@@ -153,6 +153,12 @@ public class MetaData implements Iterable<HttpField>
             this(method, new HttpURI(scheme, hostPort.getHost(), hostPort.getPort(), uri), version, fields, contentLength);
         }
 
+        public Request(Request request)
+        {
+            this(request.getMethod(),new HttpURI(request.getURI()), request.getVersion(), new HttpFields(request.getFields()), request.getContentLength());
+        }
+
+        // TODO MetaData should be immuttable!!! 
         public void recycle()
         {
             super.recycle();

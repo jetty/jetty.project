@@ -18,26 +18,30 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.not;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.startsWith;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.IOException;
 import java.io.UnsupportedEncodingException;
-import java.util.EnumSet;
 import java.util.concurrent.TimeUnit;
 
-import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpTester;
 import org.eclipse.jetty.servlet.DefaultServlet;
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.StringUtil;
@@ -122,7 +126,7 @@ public class GzipDefaultTest
         GzipTester tester = new GzipTester(testingdir,compressionType);
 
         // Configure Gzip Handler
-        tester.getGzipHandler().setIncludedMethods("POST","WIBBLE");
+        tester.getGzipHandler().setIncludedMethods("POST","WIBBLE", "HEAD");
 
         // Prepare Server File
         int filesize = tester.getOutputBufferSize() * 2;
@@ -136,9 +140,17 @@ public class GzipDefaultTest
             tester.start();
             HttpTester.Response response;
 
+            //These methods have content bodies of the compressed response
             tester.assertIsResponseGzipCompressed("POST","file.txt");
             tester.assertIsResponseGzipCompressed("WIBBLE","file.txt");
-
+            
+            //A HEAD request should have similar headers, but no body
+            response = tester.executeRequest("HEAD","/context/file.txt",5,TimeUnit.SECONDS);
+            assertThat("Response status",response.getStatus(),is(HttpStatus.OK_200));
+            assertThat("ETag", response.get("ETag"), containsString(GzipHandler.ETAG_GZIP));
+            assertThat("Content encoding", response.get("Content-Encoding"), containsString("gzip"));
+            assertNull("Content length", response.get("Content-Length"));
+   
             response = tester.executeRequest("GET","/context/file.txt",5,TimeUnit.SECONDS);
 
             assertThat("Response status",response.getStatus(),is(HttpStatus.OK_200));

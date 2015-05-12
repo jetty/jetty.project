@@ -25,14 +25,8 @@ import javax.naming.NameClassPair;
 import javax.naming.NamingEnumeration;
 import javax.naming.NamingException;
 
-/** NameEnumeration
- * <p>Implementation of NamingEnumeration interface.
- *
- * <p><h4>Notes</h4>
- * <p>Used for returning results of Context.list();
- *
- * <p><h4>Usage</h4>
- *
+/** 
+ * NameEnumeration
  */
 public class NameEnumeration implements NamingEnumeration<NameClassPair>
 {

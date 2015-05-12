@@ -19,6 +19,7 @@
 package org.eclipse.jetty.alpn.client;
 
 import java.io.IOException;
+import java.util.List;
 import java.util.Map;
 import java.util.concurrent.Executor;
 
@@ -33,19 +34,21 @@ import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 public class ALPNClientConnectionFactory extends NegotiatingClientConnectionFactory
 {
     private final Executor executor;
-    private final String protocol;
+    private final List<String> protocols;
 
-    public ALPNClientConnectionFactory(Executor executor, ClientConnectionFactory connectionFactory, String protocol)
+    public ALPNClientConnectionFactory(Executor executor, ClientConnectionFactory connectionFactory, List<String> protocols)
     {
         super(connectionFactory);
         this.executor = executor;
-        this.protocol = protocol;
+        this.protocols = protocols;
+        if (protocols.isEmpty())
+            throw new IllegalArgumentException("ALPN protocol list cannot be empty");
     }
 
     @Override
     public Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
     {
         return new ALPNClientConnection(endPoint, executor, getClientConnectionFactory(),
-                (SSLEngine)context.get(SslClientConnectionFactory.SSL_ENGINE_CONTEXT_KEY), context, protocol);
+                (SSLEngine)context.get(SslClientConnectionFactory.SSL_ENGINE_CONTEXT_KEY), context, protocols);
     }
 }

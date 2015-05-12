@@ -50,10 +50,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-
-/* ------------------------------------------------------------ */
-/**
- */
 public class JavaMonitorAction extends MonitorAction
 {
     private static final Logger LOG = Log.getLogger(JavaMonitorAction.class);
@@ -68,12 +64,6 @@ public class JavaMonitorAction extends MonitorAction
     private String _session;
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param notifier
-     * @param pollInterval
-     * @throws Exception 
-     * @throws MalformedObjectNameException 
-     */
     public JavaMonitorAction(EventNotifier notifier, String url, String uuid, String appid, long pollInterval)
         throws Exception
     {

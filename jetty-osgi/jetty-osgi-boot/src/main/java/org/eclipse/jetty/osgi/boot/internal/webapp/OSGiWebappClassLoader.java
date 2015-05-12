@@ -85,7 +85,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * @param parent The parent classloader.
      * @param context The WebAppContext
      * @param contributor The bundle that defines this web-application.
-     * @throws IOException
+     * @throws IOException if unable to cerate the OSGiWebappClassLoader
      */
     public OSGiWebappClassLoader(ClassLoader parent, WebAppContext context, Bundle contributor)
     throws IOException
@@ -272,6 +272,7 @@ public class OSGiWebappClassLoader extends WebAppClassLoader implements BundleRe
      * WebappContext So we place a fake one there to start with. We replace it
      * with the actual webapp context with this method. We also apply the
      * extraclasspath there at the same time.
+     * @param webappContext the web app context
      */
     public void setWebappContext(WebAppContext webappContext)
     {

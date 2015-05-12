@@ -39,17 +39,11 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * WebFilterAnnotation
- *
- *
  */
 public class WebFilterAnnotation extends DiscoveredAnnotation
 {
     private static final Logger LOG = Log.getLogger(WebFilterAnnotation.class);
 
-    /**
-     * @param context
-     * @param className
-     */
     public WebFilterAnnotation(WebAppContext context, String className)
     {
         super(context, className);

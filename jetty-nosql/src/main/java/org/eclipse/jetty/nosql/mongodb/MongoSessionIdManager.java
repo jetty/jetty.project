@@ -49,13 +49,13 @@ import com.mongodb.MongoException;
 
 /**
  * Based partially on the JDBCSessionIdManager.
- *
+ * <p>
  * Theory is that we really only need the session id manager for the local 
  * instance so we have something to scavenge on, namely the list of known ids
- * 
+ * <p>
  * This class has a timer that runs a periodic scavenger thread to query
  *  for all id's known to this node whose precalculated expiry time has passed.
- *  
+ * <p>
  * These found sessions are then run through the invalidateAll(id) method that 
  * is a bit hinky but is supposed to notify all handlers this id is now DOA and 
  * ought to be cleaned up.  this ought to result in a save operation on the session
@@ -346,7 +346,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     /** 
      * The period in seconds between scavenge checks.
      * 
-     * @param scavengePeriod
+     * @param scavengePeriod the scavenge period in seconds
      */
     public void setScavengePeriod(long scavengePeriod)
     {
@@ -377,6 +377,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     /**
      * sets how old a session is to be persisted past the point it is
      * no longer valid
+     * @param purgeValidAge the purge valid age
      */
     public void setPurgeInvalidAge(long purgeValidAge)
     {
@@ -395,6 +396,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
      * considered no longer viable and should be removed
      * 
      * NOTE: set this value to 0 to disable purging of valid sessions
+     * @param purgeValidAge the purge valid age
      */
     public void setPurgeValidAge(long purgeValidAge)
     {
@@ -578,7 +580,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     /**
      * Expire this session for all contexts that are sharing the session 
      * id.
-     * @param sessionId
+     * @param sessionId the session id
      */
     public void expireAll (String sessionId)
     {

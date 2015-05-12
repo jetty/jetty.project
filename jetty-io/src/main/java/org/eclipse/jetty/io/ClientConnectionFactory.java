@@ -50,9 +50,9 @@ public interface ClientConnectionFactory
         /**
          * Replaces the given {@code oldConnection} with the given {@code newConnection} on the
          * {@link EndPoint} associated with {@code oldConnection}, performing connection lifecycle management.
-         * <p />
+         * <p>
          * The {@code oldConnection} will be closed by invoking {@link org.eclipse.jetty.io.Connection#onClose()}
-         * and the {@code newConnection} will be opened by invoking {@link org.eclipse.jetty.io.Connection#onOpen(ByteBuffer)}.
+         * and the {@code newConnection} will be opened by invoking {@link org.eclipse.jetty.io.Connection#onOpen()}.
          * @param oldConnection the old connection to replace
          * @param newConnection the new connection replacement
          */

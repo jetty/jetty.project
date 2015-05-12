@@ -29,15 +29,13 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
 /**
  * HttpGenerator. Builds HTTP Messages.
- *
+ * <p>
  * If the system property "org.eclipse.jetty.http.HttpGenerator.STRICT" is set to true,
  * then the generator will strictly pass on the exact strings received from methods and header
  * fields.  Otherwise a fast case insensitive string lookup is used that may alter the
  * case and white space of some methods/headers
- * </p>
  */
 public class HttpGenerator
 {

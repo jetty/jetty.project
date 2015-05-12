@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.deploy;
 
+import java.io.IOException;
+
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.component.LifeCycle;
 
@@ -29,7 +31,7 @@ public interface AppProvider extends LifeCycle
     /**
      * Set the Deployment Manager
      * 
-     * @param deploymentManager
+     * @param deploymentManager the deployment manager
      * @throws IllegalStateException
      *             if the provider {@link #isRunning()}.
      */
@@ -39,8 +41,8 @@ public interface AppProvider extends LifeCycle
     /** Create a ContextHandler for an App
      * @param app The App
      * @return A ContextHandler
-     * @throws IOException
-     * @throws Exception 
+     * @throws IOException if unable to create context
+     * @throws Exception if unable to create context
      */
     ContextHandler createContextHandler(App app) throws Exception;
 }

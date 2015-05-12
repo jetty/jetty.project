@@ -21,6 +21,7 @@ package org.eclipse.jetty.util;
 public class Jetty
 {
     public static final String VERSION;
+    public static final String POWERED_BY;
 
     static
     {
@@ -31,9 +32,12 @@ public class Jetty
             VERSION = pkg.getImplementationVersion();
         else
             VERSION = System.getProperty("jetty.version", "9.3.z-SNAPSHOT");
+        
+        POWERED_BY="<a href=\"http://eclipse.org/jetty\">Powered by Jetty:// "+VERSION+"</a>";
     }
 
     private Jetty()
     {
     }
+    
 }

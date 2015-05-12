@@ -25,12 +25,14 @@ import java.util.List;
 import javax.websocket.Extension;
 import javax.websocket.Extension.Parameter;
 import javax.websocket.server.ServerEndpointConfig;
+import javax.websocket.server.ServerEndpointConfig.Configurator;
 
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.JsrExtension;
 import org.eclipse.jetty.websocket.jsr356.endpoints.EndpointInstance;
 import org.eclipse.jetty.websocket.jsr356.server.pathmap.WebSocketPathSpec;
@@ -44,11 +46,13 @@ public class JsrCreator implements WebSocketCreator
     public static final String PROP_REMOTE_ADDRESS = "javax.websocket.endpoint.remoteAddress";
     public static final String PROP_LOCAL_ADDRESS = "javax.websocket.endpoint.localAddress";
     private static final Logger LOG = Log.getLogger(JsrCreator.class);
+    private final WebSocketContainerScope containerScope;
     private final ServerEndpointMetadata metadata;
     private final ExtensionFactory extensionFactory;
 
-    public JsrCreator(ServerEndpointMetadata metadata, ExtensionFactory extensionFactory)
+    public JsrCreator(WebSocketContainerScope containerScope, ServerEndpointMetadata metadata, ExtensionFactory extensionFactory)
     {
+        this.containerScope = containerScope;
         this.metadata = metadata;
         this.extensionFactory = extensionFactory;
     }
@@ -64,7 +68,7 @@ public class JsrCreator implements WebSocketCreator
         
         // Establish a copy of the config, so that the UserProperties are unique
         // per upgrade request.
-        config = new BasicServerEndpointConfig(config);
+        config = new BasicServerEndpointConfig(containerScope, config);
         
         // Bug 444617 - Expose localAddress and remoteAddress for jsr modify handshake to use
         // This is being implemented as an optional set of userProperties so that
@@ -134,7 +138,10 @@ public class JsrCreator implements WebSocketCreator
         try
         {
             Class<?> endpointClass = config.getEndpointClass();
-            Object endpoint = config.getConfigurator().getEndpointInstance(endpointClass);
+            Configurator configr = config.getConfigurator();
+            Object endpoint = configr.getEndpointInstance(endpointClass);
+            // Do not decorate here (let the Connection and Session start first)
+            // This will allow CDI to see Session for injection into Endpoint classes.
             PathSpec pathSpec = hsreq.getRequestPathSpec();
             if (pathSpec instanceof WebSocketPathSpec)
             {
@@ -142,7 +149,7 @@ public class JsrCreator implements WebSocketCreator
                 WebSocketPathSpec wspathSpec = (WebSocketPathSpec)pathSpec;
                 String requestPath = req.getRequestPath();
                 // Wrap the config with the path spec information
-                config = new PathParamServerEndpointConfig(config,wspathSpec,requestPath);
+                config = new PathParamServerEndpointConfig(containerScope,config,wspathSpec,requestPath);
             }
             return new EndpointInstance(endpoint,config,metadata);
         }

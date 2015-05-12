@@ -18,12 +18,32 @@
 
 package org.eclipse.jetty.runner;
 
+import java.io.IOException;
+import java.io.PrintStream;
+import java.net.URL;
+import java.net.URLClassLoader;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.List;
+
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.security.authentication.BasicAuthenticator;
-import org.eclipse.jetty.server.*;
-import org.eclipse.jetty.server.handler.*;
+import org.eclipse.jetty.server.AbstractConnector;
+import org.eclipse.jetty.server.Connector;
+import org.eclipse.jetty.server.ConnectorStatistics;
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.NCSARequestLog;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.ShutdownMonitor;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandlerCollection;
+import org.eclipse.jetty.server.handler.DefaultHandler;
+import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
@@ -36,21 +56,10 @@ import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
-import java.io.IOException;
-import java.io.PrintStream;
-import java.net.URL;
-import java.net.URLClassLoader;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.List;
-
-
-
 /**
  * Runner
- *
+ * <p>
  * Combine jetty classes into a single executable jar and run webapps based on the args to it.
- *
  */
 public class Runner
 {
@@ -84,8 +93,6 @@ public class Runner
 
     /**
      * Classpath
-     *
-     *
      */
     public class Classpath
     {
@@ -137,22 +144,15 @@ public class Runner
         }
     }
 
-
-
-
-    /**
-     *
-     */
     public Runner()
     {
-
     }
 
 
     /**
      * Generate helpful usage message and exit
      *
-     * @param error
+     * @param error the error header
      */
     public void usage(String error)
     {
@@ -192,8 +192,8 @@ public class Runner
     /**
      * Configure a jetty instance and deploy the webapps presented as args
      *
-     * @param args
-     * @throws Exception
+     * @param args the command line arguments
+     * @throws Exception if unable to configure
      */
     public void configure(String[] args) throws Exception
     {
@@ -482,10 +482,6 @@ public class Runner
     }
 
 
-    /**
-     * @param handler
-     * @param handlers
-     */
     protected void prependHandler (Handler handler, HandlerCollection handlers)
     {
         if (handler == null || handlers == null)
@@ -501,9 +497,6 @@ public class Runner
 
 
 
-    /**
-     * @throws Exception
-     */
     public void run() throws Exception
     {
         _server.start();
@@ -534,9 +527,6 @@ public class Runner
 
 
 
-    /**
-     * @param args
-     */
     public static void main(String[] args)
     {
         Runner runner = new Runner();

@@ -91,7 +91,7 @@ public class ContainerInitializer
     /**
      * A class has been found that has an annotation of interest
      * to this initializer.
-     * @param className
+     * @param className the class name to add
      */
     public void addAnnotatedTypeName (String className)
     {

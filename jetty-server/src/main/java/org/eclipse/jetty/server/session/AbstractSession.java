@@ -23,6 +23,7 @@ import java.util.Enumeration;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Set;
+
 import javax.servlet.ServletContext;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSessionActivationListener;
@@ -97,6 +98,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     /* ------------------------------------------------------------- */
     /**
      * asserts that the session is valid
+     * @throws IllegalStateException if the sesion is invalid
      */
     protected void checkValid() throws IllegalStateException
     {
@@ -106,8 +108,8 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     
     /* ------------------------------------------------------------- */
     /** Check to see if session has expired as at the time given.
-     * @param time
-     * @return
+     * @param time the time in milliseconds
+     * @return true if expired
      */
     protected boolean checkExpiry(long time)
     {
@@ -153,6 +155,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     public long getCookieSetTime()
     {
         return _cookieSet;
+    }
+    
+    /* ------------------------------------------------------------- */
+    public void setCookieSetTime(long time)
+    {
+        _cookieSet = time;
     }
 
     /* ------------------------------------------------------------- */
@@ -463,11 +471,12 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     
     /* ------------------------------------------------------------ */
     /**
-     * @param name
-     * @param value
+     * @param name the name of the attribute
+     * @param value the value of the attribute
+     * @return true if attribute changed
      * @deprecated use changeAttribute(String,Object) instead
-     * @return
      */
+    @Deprecated
     protected boolean updateAttribute (String name, Object value)
     {
         Object old=null;
@@ -497,9 +506,9 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
      * in the session. The appropriate session attribute listeners are
      * also called.
      * 
-     * @param name
-     * @param value
-     * @return
+     * @param name the name of the attribute
+     * @param value the value of the attribute
+     * @return the old value for the attribute
      */
     protected Object changeAttribute (String name, Object value)
     {
@@ -559,7 +568,11 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
-    /** If value implements HttpSessionBindingListener, call valueBound() */
+    /** 
+     * Bind value if value implements {@link HttpSessionBindingListener} (calls {@link HttpSessionBindingListener#valueBound(HttpSessionBindingEvent)}) 
+     * @param name the name with which the object is bound or unbound  
+     * @param value the bound value
+     */
     public void bindValue(java.lang.String name, Object value)
     {
         if (value!=null&&value instanceof HttpSessionBindingListener)
@@ -600,7 +613,11 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
     }
 
     /* ------------------------------------------------------------- */
-    /** If value implements HttpSessionBindingListener, call valueUnbound() */
+    /**
+     * Unbind value if value implements {@link HttpSessionBindingListener} (calls {@link HttpSessionBindingListener#valueUnbound(HttpSessionBindingEvent)}) 
+     * @param name the name with which the object is bound or unbound  
+     * @param value the bound value
+     */
     public void unbindValue(java.lang.String name, Object value)
     {
         if (value!=null&&value instanceof HttpSessionBindingListener)

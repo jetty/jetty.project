@@ -26,7 +26,6 @@ import java.util.concurrent.Executor;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
-import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
@@ -34,7 +33,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 
-public class HTTP2Connection extends AbstractConnection implements Connection.UpgradeTo
+public class HTTP2Connection extends AbstractConnection
 {
     protected static final Logger LOG = Log.getLogger(HTTP2Connection.class);
 
@@ -56,18 +55,22 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
         this.executionStrategy = ExecutionStrategy.Factory.instanceFor(producer, executor);
     }
 
-    protected ISession getSession()
+    public ISession getSession()
     {
         return session;
     }
 
-    public void onUpgradeTo(ByteBuffer prefilled)
+
+    protected Parser getParser()
     {
-        if (LOG.isDebugEnabled())
-            LOG.debug("HTTP2 onUpgradeTo {} {}", this, BufferUtil.toDetailString(prefilled));
-        producer.buffer = prefilled;
+        return parser;
     }
-    
+
+    protected void setInputBuffer(ByteBuffer buffer)
+    {
+        producer.buffer = buffer;
+    }
+
     @Override
     public void onOpen()
     {
@@ -122,9 +125,11 @@ public class HTTP2Connection extends AbstractConnection implements Connection.Up
         tasks.offer(task);
         if (dispatch)
             executionStrategy.dispatch();
+        else
+            executionStrategy.execute();
     }
 
-    private class HTTP2Producer implements ExecutionStrategy.Producer
+    protected class HTTP2Producer implements ExecutionStrategy.Producer
     {
         private ByteBuffer buffer;
 

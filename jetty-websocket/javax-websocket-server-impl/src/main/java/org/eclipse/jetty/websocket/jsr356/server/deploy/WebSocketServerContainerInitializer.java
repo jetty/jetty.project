@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.server.deploy;
 
 import java.util.HashSet;
 import java.util.Set;
+
 import javax.servlet.ServletContainerInitializer;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
@@ -32,6 +33,7 @@ import javax.websocket.server.ServerEndpointConfig;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -49,6 +51,10 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * Jetty Native approach.
      * <p>
      * Note: this will add the Upgrade filter to the existing list, with no regard for order.  It will just be tacked onto the end of the list.
+     * 
+     * @param context the servlet context handler
+     * @return the created websocket server container
+     * @throws ServletException if unable to create the websocket server container
      */
     public static ServerContainer configureContext(ServletContextHandler context) throws ServletException
     {
@@ -69,6 +75,11 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
      * Servlet 3.1 approach.
      * <p>
      * This will use Servlet 3.1 techniques on the {@link ServletContext} to add a filter at the start of the filter chain.
+     * 
+     * @param context the servlet context
+     * @param jettyContext the jetty servlet context handler
+     * @return the created websocket server container
+     * @throws ServletException if unable to create the websocket server container
      */
     public static ServerContainer configureContext(ServletContext context, ServletContextHandler jettyContext) throws ServletException
     {
@@ -163,7 +174,16 @@ public class WebSocketServerContainerInitializer implements ServletContainerInit
 
             // Store a reference to the ServerContainer per javax.websocket spec 1.0 final section 6.4 Programmatic Server Deployment
             context.setAttribute(javax.websocket.server.ServerContainer.class.getName(),jettyContainer);
-
+            
+            // Establish the DecoratedObjectFactory thread local 
+            // for various ServiceLoader initiated components to use.
+            DecoratedObjectFactory instantiator = (DecoratedObjectFactory)context.getAttribute(DecoratedObjectFactory.ATTR);
+            if (instantiator == null)
+            {
+                LOG.info("Using WebSocket local DecoratedObjectFactory - none found in ServletContext");
+                instantiator = new DecoratedObjectFactory();
+            }
+            
             if (LOG.isDebugEnabled())
             {
                 LOG.debug("Found {} classes",c.size());

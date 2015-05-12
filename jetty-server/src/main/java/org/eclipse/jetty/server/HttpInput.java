@@ -28,7 +28,6 @@ import javax.servlet.ServletInputStream;
 
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
-import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.Callback;
@@ -37,12 +36,11 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * {@link HttpInput} provides an implementation of {@link ServletInputStream} for {@link HttpChannel}.
- * <p/>
+ * <p>
  * Content may arrive in patterns such as [content(), content(), messageComplete()] so that this class
  * maintains two states: the content state that tells whether there is content to consume and the EOF
  * state that tells whether an EOF has arrived.
  * Only once the content has been consumed the content state is moved to the EOF state.
- * 
  */
 public class HttpInput extends ServletInputStream implements Runnable
 {
@@ -115,7 +113,6 @@ public class HttpInput extends ServletInputStream implements Runnable
 
     private void wake()
     {
-        // TODO review if this is correct
         _channelState.getHttpChannel().getConnector().getExecutor().execute(_channelState.getHttpChannel()); 
     }
     
@@ -159,7 +156,7 @@ public class HttpInput extends ServletInputStream implements Runnable
      * produce more Content and add it via {@link #addContent(Content)}.
      * For protocols that are constantly producing (eg HTTP2) this can
      * be left as a noop;
-     * @throws IOException
+     * @throws IOException if unable to produce content
      */
     protected void produceContent() throws IOException
     {
@@ -349,29 +346,26 @@ public class HttpInput extends ServletInputStream implements Runnable
             throw (IOException)new InterruptedIOException().initCause(e);
         }
     }
-
+    
     /**
      * Adds some content to this input stream.
      *
-     * @param content the content to add
+     * @param item the content to add
+     * @return true if content channel woken for read
      */
     public boolean addContent(Content item)
     {
         boolean woken=false;
         synchronized (_inputQ)
         {
-            boolean wasEmpty = _inputQ.isEmpty();
-            _inputQ.add(item);
+            _inputQ.addUnsafe(item);
             if (LOG.isDebugEnabled())
                 LOG.debug("{} addContent {}", this, item);
             
-            if (wasEmpty) // TODO do we need this guard?
-            {
-                if (_listener==null)
-                    _inputQ.notify();
-                else
-                    woken=_channelState.onReadPossible(); 
-            }
+            if (_listener==null)
+                _inputQ.notify();
+            else
+                woken=_channelState.onReadPossible(); 
         }
         
         return woken;
@@ -381,7 +375,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
-            return !_inputQ.isEmpty();
+            return _inputQ.sizeUnsafe()>0;
         }
     }
     
@@ -404,9 +398,10 @@ public class HttpInput extends ServletInputStream implements Runnable
     /**
      * This method should be called to signal that an EOF has been
      * detected before all the expected content arrived.
-     * <p/>
+     * <p>
      * Typically this will result in an EOFException being thrown
      * from a subsequent read rather than a -1 return.
+     * @return true if content channel woken for read
      */
     public boolean earlyEOF()
     {
@@ -416,6 +411,7 @@ public class HttpInput extends ServletInputStream implements Runnable
     /**
      * This method should be called to signal that all the expected
      * content arrived.
+     * @return true if content channel woken for read
      */
     public boolean eof()
     {
@@ -506,8 +502,11 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             synchronized (_inputQ)
             {
+                if (_listener != null)
+                    throw new IllegalStateException("ReadListener already set");
                 if (_state != STREAM)
-                    throw new IllegalStateException("state=" + _state);
+                    throw new IllegalStateException("State "+STREAM+" != " + _state);
+
                 _state = ASYNC;
                 _listener = readListener;
                 boolean content=nextContent()!=null;
@@ -580,7 +579,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             if (error!=null)
             {
-                _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE); // TODO ???
+                _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
                 listener.onError(error);
             }
             else if (aeof)
@@ -596,7 +595,7 @@ public class HttpInput extends ServletInputStream implements Runnable
             {
                 if (aeof || error==null)
                 {
-                    _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE); // TODO ???
+                    _channelState.getHttpChannel().getResponse().getHttpFields().add(HttpConnection.CONNECTION_CLOSE);
                     listener.onError(e);
                 }
             }

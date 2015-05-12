@@ -20,9 +20,6 @@ package org.eclipse.jetty.security.jaspi.modules;
 
 import java.util.Arrays;
 
-/**
- * @version $Rev: 4466 $ $Date: 2009-02-10 23:42:54 +0100 (Tue, 10 Feb 2009) $
- */
 public class UserInfo
 {
     private final String userName;

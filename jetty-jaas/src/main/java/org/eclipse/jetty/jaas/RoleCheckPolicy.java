@@ -21,7 +21,6 @@ package org.eclipse.jetty.jaas;
 import java.security.Principal;
 import java.security.acl.Group;
 
-
 public interface RoleCheckPolicy 
 {
     /* ------------------------------------------------ */

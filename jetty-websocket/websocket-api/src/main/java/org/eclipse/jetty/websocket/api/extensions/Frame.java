@@ -103,8 +103,9 @@ public interface Frame
      * Same as {@link #isFin()}
      * 
      * @return true if final frame.
+     * @deprecated use {@link #isFin()} instead
      */
-    // FIXME: remove
+    @Deprecated
     public boolean isLast();
 
     public boolean isMasked();

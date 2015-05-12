@@ -34,6 +34,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 
+import javax.servlet.Servlet;
 import javax.servlet.ServletContext;
 import javax.servlet.ServletRegistration.Dynamic;
 import javax.servlet.ServletSecurityElement;
@@ -66,8 +67,9 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceCollection;
 
-/* ------------------------------------------------------------ */
-/** Web Application Context Handler.
+/** 
+ * Web Application Context Handler.
+ * <p>
  * The WebAppContext handler is an extension of ContextHandler that
  * coordinates the construction and configuration of nested handlers:
  * {@link org.eclipse.jetty.security.ConstraintSecurityHandler}, {@link org.eclipse.jetty.server.session.SessionHandler}
@@ -77,7 +79,6 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * {@link org.eclipse.jetty.webapp.JettyWebXmlConfiguration}.
  *
  * @org.apache.xbean.XBean description="Creates a servlet web application at a given context from a resource base"
- *
  */
 @ManagedObject("Web Application ContextHandler")
 public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context
@@ -242,11 +243,14 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /**
      * This constructor is used in the geronimo integration.
-     *
+     * 
+     * @param parent the parent handler 
+     * @param contextPath the context path
      * @param sessionHandler SessionHandler for this web app
      * @param securityHandler SecurityHandler for this web app
      * @param servletHandler ServletHandler for this web app
      * @param errorHandler ErrorHandler for this web app
+     * @param options the options ({@link ServletContextHandler#SESSIONS} and/or {@link ServletContextHandler#SECURITY}) 
      */
     public WebAppContext(HandlerContainer parent, String contextPath, SessionHandler sessionHandler, SecurityHandler securityHandler, ServletHandler servletHandler, ErrorHandler errorHandler,int options) 
     {
@@ -280,12 +284,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
 
     /* ------------------------------------------------------------ */
-    /** Set Resource Alias.
+    /** 
+     * Set Resource Alias.
      * Resource aliases map resource uri's within a context.
      * They may optionally be used by a handler when looking for
      * a resource.
-     * @param alias
-     * @param uri
+     * @param alias the alias for a resource
+     * @param uri the uri for the resource
      */
     public void setResourceAlias(String alias, String uri)
     {
@@ -415,11 +420,13 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
 
     /* ------------------------------------------------------------ */
-    /** Pre configure the web application.
+    /** 
+     * Pre configure the web application.
      * <p>
      * The method is normally called from {@link #start()}. It performs
      * the discovery of the configurations to be applied to this context,
-     * specifically:<ul>
+     * specifically:
+     * <ul>
      * <li>Instantiate the {@link Configuration} instances with a call to {@link #loadConfigurations()}.
      * <li>Setup the default System classes by calling {@link #loadSystemClasses()}
      * <li>Setup the default Server classes by calling <code>loadServerClasses()</code>
@@ -427,7 +434,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * <li>Calls the {@link Configuration#preConfigure(WebAppContext)} method of all
      * Configuration instances.
      * </ul>
-     * @throws Exception
+     * @throws Exception if unable to pre configure
      */
     public void preConfigure() throws Exception
     {
@@ -1064,7 +1071,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     /* ------------------------------------------------------------ */
     /** Add EventListener
      * Convenience method that calls {@link #setEventListeners(EventListener[])}
-     * @param listener
+     * @param listener the listener to add
      */
     @Override
     public void addEventListener(EventListener listener)
@@ -1152,9 +1159,10 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      *
      * In certain circumstances you want may want to deny access of one webapp from another
      * when you may not fully trust the webapp.  Setting this white list will enable a
-     * check when a servlet called getContext(String), validating that the uriInPath
+     * check when a servlet called {@link org.eclipse.jetty.servlet.ServletContextHandler.Context#getContext(String)}, validating that the uriInPath
      * for the given webapp has been declaratively allows access to the context.
-     * @param contextWhiteList
+     * 
+     * @param contextWhiteList the whitelist of contexts for {@link org.eclipse.jetty.servlet.ServletContextHandler.Context#getContext(String)} 
      */
     public void setContextWhiteList(String[] contextWhiteList)
     {
@@ -1234,7 +1242,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
      * webapp will be kept when the webapp stops. Otherwise,
      * it will be deleted.
      * 
-     * @param delete
+     * @param persist true to persist the temp directory on shutdown / exit of the webapp
      */
     public void setPersistTempDirectory(boolean persist)
     {
@@ -1242,7 +1250,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     }
     
     /**
-     * @return
+     * @return true if tmp directory will persist between startups of the webapp
      */
     public boolean isPersistTempDirectory()
     {

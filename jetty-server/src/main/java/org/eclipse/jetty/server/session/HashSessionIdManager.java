@@ -32,6 +32,8 @@ import java.util.Set;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpSession;
 
+import org.eclipse.jetty.server.SessionIdManager;
+
 /* ------------------------------------------------------------ */
 /**
  * HashSessionIdManager. An in-memory implementation of the session ID manager.
@@ -62,6 +64,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
 
     /* ------------------------------------------------------------ */
     /**
+     * @param id the id of the session
      * @return Collection of Sessions for the passed session ID
      */
     public Collection<HttpSession> getSession(String id)

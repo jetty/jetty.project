@@ -40,7 +40,6 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.http.DateParser;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
@@ -48,6 +47,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.http.PathMap.MappedEntry;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.io.WriterOutputStream;
 import org.eclipse.jetty.server.HttpOutput;
@@ -69,16 +69,15 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 
-
-/* ------------------------------------------------------------ */
-/** The default servlet.
- * 
+/** 
+ * The default servlet.
+ * <p>
  * This servlet, normally mapped to /, provides the handling for static
  * content, OPTION and TRACE methods for the context.
  * The following initParameters are supported, these can be set either
  * on the servlet itself or as ServletContext initParameters with a prefix
  * of org.eclipse.jetty.servlet.Default. :
- * <PRE>
+ * <pre>
  *  acceptRanges      If true, range requests and responses are
  *                    supported
  *
@@ -137,10 +136,7 @@ import org.eclipse.jetty.util.resource.ResourceFactory;
  *                    Other file extensions that signify that a file is gzip compressed. Eg ".svgz"
  *
  *
- * </PRE>
- *
- *
- *
+ * </pre>
  *
  */
 public class DefaultServlet extends HttpServlet implements ResourceFactory
@@ -315,7 +311,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     }
 
     /**
-     * Compute the field _contextHandler.<br/>
+     * Compute the field _contextHandler.<br>
      * In the case where the DefaultServlet is deployed on the HttpService it is likely that
      * this method needs to be overwritten to unwrap the ServletContext facade until we reach
      * the original jetty's ContextHandler.
@@ -616,10 +612,6 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
 
     }
 
-    /**
-     * @param resource
-     * @return
-     */
     protected boolean isGzippedContent(String path)
     {
         if (path == null) return false;

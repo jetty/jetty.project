@@ -39,11 +39,13 @@ public @interface Name
 {
     /**
      * the name of the parameter
+     * @return the value
      */
     String value();
     
     /**
      * the description of the parameter
+     * @return the description
      */
     String description() default "";
 }

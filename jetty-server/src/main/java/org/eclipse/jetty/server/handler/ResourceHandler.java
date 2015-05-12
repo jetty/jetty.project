@@ -446,7 +446,9 @@ public class ResourceHandler extends HandlerWrapper
         // handle directories
         if (resource.isDirectory())
         {
-            if (!request.getPathInfo().endsWith(URIUtil.SLASH))
+            String pathInfo = request.getPathInfo();
+            boolean endsWithSlash=(pathInfo==null?request.getServletPath():pathInfo).endsWith(URIUtil.SLASH);
+            if (!endsWithSlash)
             {
                 response.sendRedirect(response.encodeRedirectURL(URIUtil.addPaths(request.getRequestURI(),URIUtil.SLASH)));
                 return;
@@ -598,9 +600,9 @@ public class ResourceHandler extends HandlerWrapper
     /** Set the response headers.
      * This method is called to set the response headers such as content type and content length.
      * May be extended to add additional headers.
-     * @param response
-     * @param resource
-     * @param mimeType
+     * @param response the http response
+     * @param resource the resource
+     * @param mimeType the mime type
      */
     protected void doResponseHeaders(HttpServletResponse response, Resource resource, String mimeType)
     {

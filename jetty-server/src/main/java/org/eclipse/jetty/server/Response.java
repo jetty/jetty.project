@@ -53,6 +53,7 @@ import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.server.handler.ErrorHandler;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
+import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
@@ -121,7 +122,7 @@ public class Response implements HttpServletResponse
         _out = out;
     }
 
-    protected HttpChannel getHttpChannel()
+    public HttpChannel getHttpChannel()
     {
         return _channel;
     }
@@ -217,7 +218,7 @@ public class Response implements HttpServletResponse
      * @param domain the domain
      * @param path the path
      * @param maxAge the maximum age
-     * @param comment the comment (only present on versions > 0)
+     * @param comment the comment (only present on versions &gt; 0)
      * @param isSecure true if secure cookie
      * @param isHttpOnly true if for http only
      * @param version version of cookie logic to use (0 == default behavior)
@@ -603,7 +604,9 @@ public class Response implements HttpServletResponse
                     writer.write(". Reason:\n<pre>    ");
                     writer.write(message);
                     writer.write("</pre>");
-                    writer.write("</p>\n<hr /><i><small>Powered by Jetty://</small></i>");
+                    writer.write("</p>\n<hr />");
+
+                    getHttpChannel().getHttpConfiguration().writePoweredBy(writer,null,"<hr/>");
                     writer.write("\n</body>\n</html>\n");
 
                     writer.flush();
@@ -634,6 +637,7 @@ public class Response implements HttpServletResponse
      * request has a Expect header starting with 102, then a 102 response is
      * sent. This indicates that the request still be processed and real response
      * can still be sent.   This method is called by sendError if it is passed 102.
+     * @throws IOException if unable to send the 102 response
      * @see javax.servlet.http.HttpServletResponse#sendError(int)
      */
     public void sendProcessing() throws IOException
@@ -646,9 +650,9 @@ public class Response implements HttpServletResponse
     
     /**
      * Sends a response with one of the 300 series redirection codes.
-     * @param code
-     * @param location
-     * @throws IOException
+     * @param code the redirect status code
+     * @param location the location to send in <code>Location</code> headers
+     * @throws IOException if unable to send the redirect
      */
     public void sendRedirect(int code, String location) throws IOException
     {
@@ -828,7 +832,7 @@ public class Response implements HttpServletResponse
                 _contentLength = value;
         }
     }
-
+    
     @Override
     public void setStatus(int sc)
     {
@@ -910,16 +914,18 @@ public class Response implements HttpServletResponse
                 }
             }
             
-            if (_writer != null && _writer.isFor(encoding))
+            Locale locale = getLocale();
+            
+            if (_writer != null && _writer.isFor(locale,encoding))
                 _writer.reopen();
             else
             {
                 if (StringUtil.__ISO_8859_1.equalsIgnoreCase(encoding))
-                    _writer = new ResponseWriter(new Iso88591HttpWriter(_out),encoding);
+                    _writer = new ResponseWriter(new Iso88591HttpWriter(_out),locale,encoding);
                 else if (StringUtil.__UTF8.equalsIgnoreCase(encoding))
-                    _writer = new ResponseWriter(new Utf8HttpWriter(_out),encoding);
+                    _writer = new ResponseWriter(new Utf8HttpWriter(_out),locale,encoding);
                 else
-                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding),encoding);
+                    _writer = new ResponseWriter(new EncodingHttpWriter(_out, encoding),locale,encoding);
             }
             
             // Set the output type at the end, because setCharacterEncoding() checks for it
@@ -1234,6 +1240,22 @@ public class Response implements HttpServletResponse
     {
         return new MetaData.Response(_channel.getRequest().getHttpVersion(), getStatus(), getReason(), _fields, getLongContentLength());
     }
+    
+    /** Get the MetaData.Response committed for this response.
+     * This may differ from the meta data in this response for 
+     * exceptional responses (eg 4xx and 5xx responses generated
+     * by the container) and the committedMetaData should be used 
+     * for logging purposes.
+     * @return The committed MetaData or a {@link #newResponseMetaData()}
+     * if not yet committed.
+     */
+    public MetaData.Response getCommittedMetaData()
+    {
+        MetaData.Response meta = _channel.getCommittedMetaData();
+        if (meta==null)
+            return newResponseMetaData();
+        return meta;
+    }
 
     @Override
     public boolean isCommitted()
@@ -1297,30 +1319,6 @@ public class Response implements HttpServletResponse
         return String.format("%s %d %s%n%s", _channel.getRequest().getHttpVersion(), _status, _reason == null ? "" : _reason, _fields);
     }
     
-
-    private static class ResponseWriter extends PrintWriter
-    {
-        private final String _encoding;
-        private final HttpWriter _httpWriter;
-        
-        public ResponseWriter(HttpWriter httpWriter,String encoding)
-        {
-            super(httpWriter);
-            _httpWriter=httpWriter;
-            _encoding=encoding;
-        }
-
-        public boolean isFor(String encoding)
-        {
-            return _encoding.equalsIgnoreCase(encoding);
-        }
-        
-        protected void reopen()
-        {
-            super.clearError();
-            out=_httpWriter;
-        }
-    }
 
     public void putHeaders(HttpContent content,long contentLength, boolean etag)
     {

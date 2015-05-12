@@ -6,14 +6,14 @@
 server
 
 [lib]
-lib/setuid/jetty-setuid-java-1.0.1.jar
+lib/setuid/jetty-setuid-java-1.0.3.jar
 
 [xml]
 etc/jetty-setuid.xml
 
 [ini-template]
 ## SetUID Configuration
-# jetty.startServerAsPrivileged=false
-# jetty.username=jetty
-# jetty.groupname=jetty
-# jetty.umask=002
+# jetty.setuid.startServerAsPrivileged=false
+# jetty.setuid.userName=jetty
+# jetty.setuid.groupName=jetty
+# jetty.setuid.umask=002

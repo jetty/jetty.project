@@ -76,7 +76,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
     public void headers(HeadersFrame frame, Callback callback)
     {
         notIdle();
-        session.control(this, callback, frame, Frame.EMPTY_ARRAY);
+        session.frames(this, callback, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
@@ -100,7 +100,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
             return;
         notIdle();
         localReset = true;
-        session.control(this, callback, frame, Frame.EMPTY_ARRAY);
+        session.frames(this, callback, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override

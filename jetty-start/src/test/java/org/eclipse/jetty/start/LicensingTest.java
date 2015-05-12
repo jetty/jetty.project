@@ -18,8 +18,8 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
 
 import java.io.File;
 import java.io.FileWriter;
@@ -58,6 +58,7 @@ public class LicensingTest
         int len = cmds.size();
         String args[] = cmds.toArray(new String[len]);
 
+        System.err.printf("%n## Exec: %s%n", Utils.join(cmds,", "));
         Main main = new Main();
         StartArgs startArgs = main.processCommandLine(args);
         main.start(startArgs);
@@ -113,6 +114,31 @@ public class LicensingTest
         
         String contents = assertFileExists(basePath, "start.ini");
         assertThat("Contents",contents,containsString("--module=http2"+System.lineSeparator()));
+    }
+    
+    @Test
+    public void testAdd_Http_Http2_Then_Deploy() throws Exception
+    {
+        File basePath = testdir.getEmptyDir();
+
+        List<String> cmds = getBaseCommandLine(basePath);
+
+        cmds.add("-Dorg.eclipse.jetty.start.ack.license.protonego-impl=true");
+        cmds.add("--add-to-start=http,http2");
+
+        execMain(cmds);
+        
+        String contents = assertFileExists(basePath, "start.ini");
+        assertThat("Contents",contents,containsString("--module=http"+System.lineSeparator()));
+        assertThat("Contents",contents,containsString("--module=http2"+System.lineSeparator()));
+        
+        // now request deploy (no license check should occur)
+        List<String> cmds2 = getBaseCommandLine(basePath);
+        cmds2.add("--add-to-start=deploy");
+        execMain(cmds2);
+
+        contents = assertFileExists(basePath, "start.ini");
+        assertThat("Contents",contents,containsString("--module=deploy"+System.lineSeparator()));
     }
     
     @Test

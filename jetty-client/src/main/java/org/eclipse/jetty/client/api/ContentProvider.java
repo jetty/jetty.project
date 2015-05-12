@@ -18,17 +18,22 @@
 
 package org.eclipse.jetty.client.api;
 
+import java.io.Closeable;
 import java.nio.ByteBuffer;
+import java.util.Iterator;
+
+import org.eclipse.jetty.client.util.ByteBufferContentProvider;
+import org.eclipse.jetty.client.util.PathContentProvider;
 
 /**
  * {@link ContentProvider} provides a source of request content.
- * <p/>
+ * <p>
  * Implementations should return an {@link Iterator} over the request content.
  * If the request content comes from a source that needs to be closed (for
- * example, an {@link InputStream}), then the iterator implementation class
+ * example, an {@link java.io.InputStream}), then the iterator implementation class
  * must implement {@link Closeable} and will be closed when the request is
  * completed (either successfully or failed).
- * <p/>
+ * <p>
  * Applications should rely on utility classes such as {@link ByteBufferContentProvider}
  * or {@link PathContentProvider}.
  */

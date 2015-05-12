@@ -21,16 +21,10 @@ package com.acme.osgi;
 import java.util.Dictionary;
 import java.util.Hashtable;
 
-import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.webapp.WebAppContext;
-import org.osgi.framework.Bundle;
 import org.osgi.framework.BundleActivator;
 import org.osgi.framework.BundleContext;
-import org.osgi.framework.BundleException;
-import org.osgi.framework.FrameworkUtil;
-import org.osgi.framework.ServiceRegistration;
-import org.osgi.util.tracker.BundleTracker;
 
 /**
  * Bootstrap a webapp
@@ -57,7 +51,7 @@ public class Activator implements BundleActivator
         Dictionary serverProps = new Hashtable();
         //define the unique name of the server instance
         serverProps.put("managedServerName", serverName);
-        serverProps.put("jetty.port", "9999");
+        serverProps.put("jetty.http.port", "9999");
         //let Jetty apply some configuration files to the Server instance
         serverProps.put("jetty.etc.config.urls", "file:/opt/jetty/etc/jetty.xml,file:/opt/jetty/etc/jetty-selector.xml,file:/opt/jetty/etc/jetty-deployer.xml");
         //register as an OSGi Service for Jetty to find 

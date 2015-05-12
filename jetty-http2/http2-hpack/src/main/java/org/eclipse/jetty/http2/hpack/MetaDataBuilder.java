@@ -29,9 +29,6 @@ import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
 
-/* -------------------------------------------------------- */
-/* -------------------------------------------------------- */
-/* -------------------------------------------------------- */
 public class MetaDataBuilder
 { 
     private final int _maxSize;
@@ -173,8 +170,8 @@ public class MetaDataBuilder
 
     /* ------------------------------------------------------------ */
     /** Check that the max size will not be exceeded.
-     * @param length
-     * @param huffmanName
+     * @param length the length
+     * @param huffman the huffman name
      */
     public void checkSize(int length, boolean huffman)
     {

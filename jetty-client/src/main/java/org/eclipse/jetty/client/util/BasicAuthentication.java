@@ -21,7 +21,9 @@ package org.eclipse.jetty.client.util;
 import java.net.URI;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Authentication;
+import org.eclipse.jetty.client.api.AuthenticationStore;
 import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
@@ -30,7 +32,7 @@ import org.eclipse.jetty.util.B64Code;
 
 /**
  * Implementation of the HTTP "Basic" authentication defined in RFC 2617.
- * <p />
+ * <p>
  * Applications should create objects of this class and add them to the
  * {@link AuthenticationStore} retrieved from the {@link HttpClient}
  * via {@link HttpClient#getAuthenticationStore()}.

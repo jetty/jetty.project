@@ -1,5 +1,5 @@
 <?xml version="1.0" encoding="UTF-8"?>
-<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure.dtd">
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
 
 <Configure class="org.eclipse.jetty.server.handler.ContextHandler">
 
@@ -8,7 +8,7 @@
     <Arg><Property name="bundle.root"/></Arg>
   </Call>
 
-  <Ref id="res">
+  <Ref refid="res">
     <Call id="base" name="addPath">
       <Arg>/static/</Arg>
     </Call>
@@ -18,7 +18,7 @@
 
   <!-- Set up the base resource for static files relative to inside bundle -->
   <Set name="baseResource">
-     <Ref id="base"/>
+     <Ref refid="base"/>
   </Set>
 
   <Set name="handler">

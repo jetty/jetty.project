@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -45,6 +45,7 @@ import org.eclipse.jetty.websocket.common.test.BlockheadClient;
 import org.eclipse.jetty.websocket.common.test.UnitGenerator;
 import org.eclipse.jetty.websocket.common.util.Hex;
 import org.eclipse.jetty.websocket.server.helper.RFCServlet;
+import org.eclipse.jetty.websocket.servlet.WebSocketServlet;
 import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
@@ -81,6 +82,7 @@ public class WebSocketServletRFCTest
 
     /**
      * Test that aggregation of binary frames into a single message occurs
+     * @throws Exception on test failure
      */
     @Test
     public void testBinaryAggregate() throws Exception
@@ -166,6 +168,7 @@ public class WebSocketServletRFCTest
 
     /**
      * Test the requirement of issuing socket and receiving echo response
+     * @throws Exception on test failure
      */
     @Test
     public void testEcho() throws Exception
@@ -195,6 +198,7 @@ public class WebSocketServletRFCTest
     /**
      * Test the requirement of responding with server terminated close code 1011 when there is an unhandled (internal server error) being produced by the
      * WebSocket POJO.
+     * @throws Exception on test failure
      */
     @Test
     public void testInternalError() throws Exception
@@ -233,6 +237,7 @@ public class WebSocketServletRFCTest
      * Test http://tools.ietf.org/html/rfc6455#section-4.1 where server side upgrade handling is supposed to be case insensitive.
      * <p>
      * This test will simulate a client requesting upgrade with all lowercase headers.
+     * @throws Exception on test failure
      */
     @Test
     public void testLowercaseUpgrade() throws Exception
@@ -312,6 +317,7 @@ public class WebSocketServletRFCTest
      * Test http://tools.ietf.org/html/rfc6455#section-4.1 where server side upgrade handling is supposed to be case insensitive.
      * <p>
      * This test will simulate a client requesting upgrade with all uppercase headers.
+     * @throws Exception on test failure
      */
     @Test
     public void testUppercaseUpgrade() throws Exception

@@ -45,6 +45,7 @@ public class TestABCase5 extends AbstractABCase
 {
     /**
      * Send ping fragmented in 2 packets
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_1() throws Exception
@@ -68,6 +69,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send continuation+fin, then text+fin (framewise)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_10() throws Exception
@@ -91,6 +93,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send continuation+fin, then text+fin (slowly)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_11() throws Exception
@@ -115,6 +118,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send continuation+!fin, then text+fin
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_12() throws Exception
@@ -138,6 +142,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send continuation+!fin, then text+fin (framewise)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_13() throws Exception
@@ -161,6 +166,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send continuation+!fin, then text+fin (slowly)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_14() throws Exception
@@ -185,6 +191,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send text fragmented properly in 2 frames, then continuation!fin, then text unfragmented.
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_15() throws Exception
@@ -211,6 +218,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * (continuation!fin, text!fin, continuation+fin) * 2
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_16() throws Exception
@@ -238,6 +246,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * (continuation+fin, text!fin, continuation+fin) * 2
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_17() throws Exception
@@ -265,6 +274,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * text message fragmented in 2 frames, both frames as opcode=TEXT
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_18() throws Exception
@@ -288,6 +298,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * send text message fragmented in 5 frames, with 2 pings and wait between.
+     * @throws Exception on test failure
      */
     @Test
     @Slow
@@ -335,6 +346,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send pong fragmented in 2 packets
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_2() throws Exception
@@ -358,6 +370,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * send text message fragmented in 5 frames, with 2 pings and wait between. (framewise)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_20() throws Exception
@@ -399,6 +412,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * send text message fragmented in 5 frames, with 2 pings and wait between. (framewise)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_20_slow() throws Exception
@@ -441,6 +455,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send text fragmented in 2 packets
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_3() throws Exception
@@ -465,6 +480,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send text fragmented in 2 packets (framewise)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_4() throws Exception
@@ -489,6 +505,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send text fragmented in 2 packets (slowly)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_5() throws Exception
@@ -514,6 +531,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send text fragmented in 2 packets, with ping between them
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_6() throws Exception
@@ -540,6 +558,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send text fragmented in 2 packets, with ping between them (framewise)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_7() throws Exception
@@ -566,6 +585,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send text fragmented in 2 packets, with ping between them (slowly)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_8() throws Exception
@@ -593,6 +613,7 @@ public class TestABCase5 extends AbstractABCase
 
     /**
      * Send continuation+fin, then text+fin
+     * @throws Exception on test failure
      */
     @Test
     public void testCase5_9() throws Exception

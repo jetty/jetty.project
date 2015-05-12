@@ -22,6 +22,9 @@ import static org.hamcrest.Matchers.is;
 
 import javax.websocket.Encoder;
 
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.common.scopes.SimpleContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
 import org.eclipse.jetty.websocket.jsr356.encoders.IntegerEncoder;
 import org.eclipse.jetty.websocket.jsr356.encoders.LongEncoder;
 import org.eclipse.jetty.websocket.jsr356.encoders.PrimitiveEncoderMetadataSet;
@@ -53,9 +56,11 @@ public class EncoderFactoryTest
     @Before
     public void initEncoderFactory()
     {
-        EncoderFactory primitivesFactory = new EncoderFactory(PrimitiveEncoderMetadataSet.INSTANCE);
+        WebSocketContainerScope containerScope = new SimpleContainerScope(WebSocketPolicy.newClientPolicy());
+        
+        EncoderFactory primitivesFactory = new EncoderFactory(containerScope,PrimitiveEncoderMetadataSet.INSTANCE);
         metadatas = new EncoderMetadataSet();
-        factory = new EncoderFactory(metadatas,primitivesFactory);
+        factory = new EncoderFactory(containerScope,metadatas,primitivesFactory);
     }
 
     @Test

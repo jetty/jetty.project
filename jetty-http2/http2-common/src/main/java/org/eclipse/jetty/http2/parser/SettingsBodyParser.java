@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http2.ErrorCode;
 import org.eclipse.jetty.http2.Flags;
@@ -43,7 +44,7 @@ public class SettingsBodyParser extends BodyParser
         super(headerParser, listener);
     }
 
-    private void reset()
+    protected void reset()
     {
         state = State.PREPARE;
         cursor = 0;
@@ -157,12 +158,51 @@ public class SettingsBodyParser extends BodyParser
         return false;
     }
 
-    private boolean onSettings(Map<Integer, Integer> settings)
+    protected boolean onSettings(Map<Integer, Integer> settings)
     {
         SettingsFrame frame = new SettingsFrame(settings, hasFlag(Flags.ACK));
         reset();
         notifySettings(frame);
         return true;
+    }
+
+    public static SettingsFrame parseBody(final ByteBuffer buffer)
+    {
+        final int bodyLength = buffer.remaining();
+        final AtomicReference<SettingsFrame> frameRef = new AtomicReference<>();
+        SettingsBodyParser parser = new SettingsBodyParser(null, null)
+        {
+            @Override
+            protected int getStreamId()
+            {
+                return 0;
+            }
+
+            @Override
+            protected int getBodyLength()
+            {
+                return bodyLength;
+            }
+
+            @Override
+            protected boolean onSettings(Map<Integer, Integer> settings)
+            {
+                frameRef.set(new SettingsFrame(settings, false));
+                return true;
+            }
+
+            @Override
+            protected boolean connectionFailure(ByteBuffer buffer, int error, String reason)
+            {
+                frameRef.set(null);
+                return false;
+            }
+        };
+        if (bodyLength == 0)
+            parser.emptyBody(buffer);
+        else
+            parser.parse(buffer);
+        return frameRef.get();
     }
 
     private enum State

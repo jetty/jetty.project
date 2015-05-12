@@ -78,6 +78,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
 
     /**
      * just the close code, no reason
+     * @throws Exception on test failure
      */
     @Test
     public void testStatusCode() throws Exception
@@ -105,6 +106,7 @@ public class TestABCase7_GoodStatusCodes extends AbstractABCase
 
     /**
      * the good close code, with reason
+     * @throws Exception on test failure
      */
     @Test
     public void testStatusCodeWithReason() throws Exception

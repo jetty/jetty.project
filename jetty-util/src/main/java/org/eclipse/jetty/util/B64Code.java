@@ -22,6 +22,7 @@ import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.nio.charset.UnsupportedCharsetException;
 
 
 /** Fast B64 Encoder/Decoder as described in RFC 1421.
@@ -35,12 +36,12 @@ public class B64Code
 {
     private static final char __pad='=';
     private static final char[] __rfc1421alphabet=
-            {
-                'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
-                'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
-                'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
-                'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
-            };
+        {
+        'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
+        'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
+        'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
+        'w','x','y','z','0','1','2','3','4','5','6','7','8','9','+','/'
+        };
 
     private static final byte[] __rfc1421nibbles;
     static
@@ -51,6 +52,25 @@ public class B64Code
         for (byte b=0;b<64;b++)
             __rfc1421nibbles[(byte)__rfc1421alphabet[b]]=b;
         __rfc1421nibbles[(byte)__pad]=0;
+    }
+    
+    private static final char[] __rfc4648urlAlphabet=
+        {
+        'A','B','C','D','E','F','G','H','I','J','K','L','M','N','O','P',
+        'Q','R','S','T','U','V','W','X','Y','Z','a','b','c','d','e','f',
+        'g','h','i','j','k','l','m','n','o','p','q','r','s','t','u','v',
+        'w','x','y','z','0','1','2','3','4','5','6','7','8','9','-','_'
+        };
+
+    private static final byte[] __rfc4648urlNibbles;
+    static
+    {
+        __rfc4648urlNibbles=new byte[256];
+        for (int i=0;i<256;i++)
+            __rfc4648urlNibbles[i]=-1;
+        for (byte b=0;b<64;b++)
+            __rfc4648urlNibbles[(byte)__rfc4648urlAlphabet[b]]=b;
+        __rfc4648urlNibbles[(byte)__pad]=0;
     }
 
     private B64Code()
@@ -408,6 +428,75 @@ public class B64Code
                 throw new IllegalArgumentException("Not B64 encoded");
 
             nibbles[s++]=__rfc1421nibbles[c];
+
+            switch(s)
+            {
+                case 1:
+                    break;
+                case 2:
+                    bout.write(nibbles[0]<<2|nibbles[1]>>>4);
+                    break;
+                case 3:
+                    bout.write(nibbles[1]<<4|nibbles[2]>>>2);
+                    break;
+                case 4:
+                    bout.write(nibbles[2]<<6|nibbles[3]);
+                    s=0;
+                    break;
+            }
+
+        }
+
+        return;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public static byte[] decodeRFC4648URL(String encoded)
+    {
+        if (encoded==null)
+            return null;
+
+        ByteArrayOutputStream bout = new ByteArrayOutputStream(4*encoded.length()/3);        
+        decodeRFC4648URL(encoded, bout);
+        return bout.toByteArray();
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Base 64 decode as described in RFC 4648 URL.
+     * <p>Unlike {@link #decode(char[])}, extra whitespace is ignored.
+     * @param encoded String to decode.
+     * @param bout stream for decoded bytes
+     * @throws IllegalArgumentException if the input is not a valid
+     *         B64 encoding.
+     */
+    static public void decodeRFC4648URL (String encoded, ByteArrayOutputStream bout)
+    {
+        if (encoded==null)
+            return;
+        
+        if (bout == null)
+            throw new IllegalArgumentException("No outputstream for decoded bytes");
+        
+        int ci=0;
+        byte nibbles[] = new byte[4];
+        int s=0;
+  
+        while (ci<encoded.length())
+        {
+            char c=encoded.charAt(ci++);
+
+            if (c==__pad)
+                break;
+
+            if (Character.isWhitespace(c))
+                continue;
+
+            byte nibble=__rfc4648urlNibbles[c];
+            if (nibble<0)
+                throw new IllegalArgumentException("Not B64 encoded");
+
+            nibbles[s++]=__rfc4648urlNibbles[c];
 
             switch(s)
             {

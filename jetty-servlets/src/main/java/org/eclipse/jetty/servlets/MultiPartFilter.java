@@ -56,7 +56,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/* ------------------------------------------------------------ */
 /**
  * Multipart Form Data Filter.
  * <p>
@@ -95,6 +94,7 @@ import org.eclipse.jetty.util.log.Logger;
  * </dl>
  * @deprecated See servlet 3.0 apis like javax.servlet.http.HttpServletRequest.getParts()
  */
+@Deprecated
 public class MultiPartFilter implements Filter
 {
     private static final Logger LOG = Log.getLogger(MultiPartFilter.class);
@@ -243,9 +243,6 @@ public class MultiPartFilter implements Filter
         MultiMap<Object> _params;
 
         /* ------------------------------------------------------------------------------- */
-        /** Constructor.
-         * @param request
-         */
         public Wrapper(HttpServletRequest request, MultiMap map)
         {
             super(request);

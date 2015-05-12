@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.websocket.client;
 
+import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
@@ -66,7 +67,7 @@ public class TomcatServerQuirksTest
      * <li><a href="https://issues.apache.org/bugzilla/show_bug.cgi?id=54067">Apache Tomcat Bug #54067</a></li>
      * </ul>
      * 
-     * @throws IOException
+     * @throws Exception on test failure
      */
     @Test
     public void testTomcat7_0_32_WithTransferEncoding() throws Exception

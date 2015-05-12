@@ -30,6 +30,11 @@ public class BadBinarySignatureSocket
 {
     /**
      * Declaring a non-void return type
+     * @param session  the session
+     * @param buf the buffer
+     * @param offset the offset
+     * @param len the length
+     * @return the response boolean
      */
     @OnWebSocketMessage
     public boolean onBinary(Session session, byte buf[], int offset, int len)

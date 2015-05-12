@@ -18,19 +18,13 @@
 
 package org.eclipse.jetty.plus.jndi;
 
-
 import javax.naming.NamingException;
-
-
 
 /**
  * Resource
- *
- *
  */
 public class Resource extends NamingEntry
 {
-    
     public  Resource (Object scope, String jndiName, Object objToBind)
     throws NamingException
     {
@@ -38,15 +32,10 @@ public class Resource extends NamingEntry
         save(objToBind);
     }
     
-    /**
-     * @param jndiName
-     * @param objToBind
-     */
     public Resource (String jndiName, Object objToBind)
     throws NamingException
     {
         super(jndiName);
         save(objToBind);
     }
-
 }

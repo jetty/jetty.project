@@ -27,8 +27,6 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
-import java.util.Iterator;
-import java.util.List;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import javax.servlet.ServletException;
@@ -404,7 +402,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
         });
 
         client.getProtocolHandlers().clear();
-        client.getProtocolHandlers().add(new ContinueProtocolHandler(client)
+        client.getProtocolHandlers().put(new ContinueProtocolHandler()
         {
             @Override
             public Response.Listener getResponseListener()
@@ -608,14 +606,7 @@ public class HttpClientContinueTest extends AbstractHttpClientServerTest
 
         final DeferredContentProvider content = new DeferredContentProvider(ByteBuffer.wrap(chunk1));
 
-        List<ProtocolHandler> protocolHandlers = client.getProtocolHandlers();
-        for (Iterator<ProtocolHandler> iterator = protocolHandlers.iterator(); iterator.hasNext();)
-        {
-            ProtocolHandler protocolHandler = iterator.next();
-            if (protocolHandler instanceof ContinueProtocolHandler)
-                iterator.remove();
-        }
-        protocolHandlers.add(new ContinueProtocolHandler(client)
+        client.getProtocolHandlers().put(new ContinueProtocolHandler()
         {
             @Override
             public Response.Listener getResponseListener()

@@ -25,7 +25,6 @@ import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.annotations.ClassNameResolver;
 import org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration;
 import org.eclipse.jetty.osgi.boot.OSGiWebappConstants;
-import org.eclipse.jetty.osgi.boot.utils.internal.PackageAdminServiceTracker;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -150,7 +149,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
      * @param parser The parser
      * @param webbundle The current webbundle
      * @param fragmentBundle The OSGi fragment bundle to scan
-     * @throws Exception
+     * @throws Exception if unable to parse fragment bundle
      */
     protected void parseFragmentBundle(WebAppContext context, AnnotationParser parser,
             Bundle webbundle, Bundle fragmentBundle) throws Exception
@@ -163,8 +162,7 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
      * @param context The webapp context
      * @param parser The parser
      * @param webbundle The current webbundle
-     * @param fragmentBundle The OSGi required bundle to scan
-     * @throws Exception
+     * @throws Exception if unable to parse the web bundle
      */
     protected void parseWebBundle(WebAppContext context, AnnotationParser parser, Bundle webbundle)
     throws Exception
@@ -177,8 +175,8 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
      * @param context The webapp context
      * @param parser The parser
      * @param webbundle The current webbundle
-     * @param fragmentBundle The OSGi required bundle to scan
-     * @throws Exception
+     * @param requiredBundle The OSGi required bundle to scan
+     * @throws Exception if unable to parse the required bundle
      */
     protected void parseRequiredBundle(WebAppContext context, AnnotationParser parser,
             Bundle webbundle, Bundle requiredBundle) throws Exception
@@ -209,8 +207,8 @@ public class AnnotationConfiguration extends org.eclipse.jetty.annotations.Annot
     
     /**
      * Returns the same classname resolver than for the webInfjar scanner
-     * @param context
-     * @return
+     * @param context the web app context
+     * @return the class name resolver
      */
     protected ClassNameResolver createClassNameResolver(final WebAppContext context)
     {

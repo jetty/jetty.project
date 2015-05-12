@@ -25,8 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 
 
-/* ------------------------------------------------------------ */
 /**
+ * Utility methods for Array manipulation
  */
 public class ArrayUtil
     implements Cloneable, Serializable
@@ -60,6 +60,7 @@ public class ArrayUtil
      * @param item The item to add
      * @param type The type of the array (in case of null array)
      * @return new array with contents of array plus item
+     * @param <T> the array entry type
      */
     public static<T> T[] addToArray(T[] array, T item, Class<?> type)
     {
@@ -86,6 +87,7 @@ public class ArrayUtil
      * @param item The item to add
      * @param type The type of the array (in case of null array)
      * @return new array with contents of array plus item
+     * @param <T> the array entry type
      */
     public static<T> T[] prependToArray(T item, T[] array, Class<?> type)
     {
@@ -113,6 +115,7 @@ public class ArrayUtil
     /**
      * @param array Any array of object
      * @return A new <i>modifiable</i> list initialised with the elements from <code>array</code>.
+     * @param <E> the array entry type
      */
     public static<E> List<E> asMutableList(E[] array)
     {	

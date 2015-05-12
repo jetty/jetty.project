@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.StartMatchers.*;
-import static org.junit.Assert.*;
+import static org.eclipse.jetty.start.StartMatchers.fileExists;
+import static org.eclipse.jetty.start.StartMatchers.notPathExists;
+import static org.junit.Assert.assertThat;
 
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -90,6 +91,7 @@ public class DistTest
     
     /**
      * Test for https://bugs.eclipse.org/452329
+     * @throws Exception on test failure
      */
     @Test
     public void testReAddServerModule() throws Exception
@@ -119,6 +121,7 @@ public class DistTest
     
     /**
      * Test for https://bugs.eclipse.org/452329
+     * @throws Exception on test failure
      */
     @Test
     public void testReAddServerViaHttpModule() throws Exception
@@ -148,6 +151,7 @@ public class DistTest
     
     /**
      * Test for https://bugs.eclipse.org/452329
+     * @throws Exception on test failure
      */
     @Test
     public void testReAddHttpThenDeployViaStartD() throws Exception

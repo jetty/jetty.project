@@ -71,8 +71,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
     @Override
     public void startJetty() throws MojoExecutionException
     {
-        //Only do enough setup to be able to produce a quickstart-web.xml file to
-        //pass onto the forked process to run   
+        //Only do enough setup to be able to produce a quickstart-web.xml file 
         
         //if the user didn't nominate a file to generate into, pick the name and
         //make sure that it is deleted on exit

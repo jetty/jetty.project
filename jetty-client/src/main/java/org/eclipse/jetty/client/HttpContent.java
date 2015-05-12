@@ -33,7 +33,7 @@ import org.eclipse.jetty.util.log.Logger;
  * {@link HttpContent} is a stateful, linear representation of the request content provided
  * by a {@link ContentProvider} that can be traversed one-way to obtain content buffers to
  * send to a HTTP server.
- * <p />
+ * <p>
  * {@link HttpContent} offers the notion of a one-way cursor to traverse the content.
  * The cursor starts in a virtual "before" position and can be advanced using {@link #advance()}
  * until it reaches a virtual "after" position where the content is fully consumed.
@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  *      |   |  |   |  |   |  |   |  |   |
  *      +---+  +---+  +---+  +---+  +---+
  *   ^           ^                    ^    ^
- *   |           | --> advance()      |    |
+ *   |           | --&gt; advance()      |    |
  *   |           |                  last   |
  *   |           |                         |
  * before        |                        after
@@ -57,7 +57,7 @@ import org.eclipse.jetty.util.log.Logger;
  * </ul>
  * {@link HttpContent} may not have content, if the related {@link ContentProvider} is {@code null}, and this
  * is reflected by {@link #hasContent()}.
- * <p />
+ * <p>
  * {@link HttpContent} may have {@link AsyncContentProvider deferred content}, in which case {@link #advance()}
  * moves the cursor to a position that provides {@code null} {@link #getByteBuffer() buffer} and
  * {@link #getContent() content}. When the deferred content is available, a further call to {@link #advance()}
@@ -113,11 +113,11 @@ public class HttpContent implements Callback, Closeable
 
     /**
      * Advances the cursor to the next block of content.
-     * <p />
+     * <p>
      * The next block of content may be valid (which yields a non-null buffer
      * returned by {@link #getByteBuffer()}), but may also be deferred
      * (which yields a null buffer returned by {@link #getByteBuffer()}).
-     * <p />
+     * <p>
      * If the block of content pointed by the new cursor position is valid, this method returns true.
      *
      * @return true if there is content at the new cursor's position, false otherwise.

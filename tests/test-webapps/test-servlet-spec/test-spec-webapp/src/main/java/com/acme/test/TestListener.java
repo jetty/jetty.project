@@ -19,7 +19,6 @@
 package com.acme.test;
 import java.util.EventListener;
 
-import javax.annotation.PostConstruct;
 import javax.annotation.Resource;
 import javax.servlet.ServletContextAttributeEvent;
 import javax.servlet.ServletContextAttributeListener;
@@ -112,8 +111,6 @@ public class TestListener implements HttpSessionListener,  HttpSessionAttributeL
 
     public void contextInitialized(ServletContextEvent sce)
     {
-        System.err.println("Calling TestListener.contextInitialized");
-        
         sce.getServletContext().setAttribute("com.acme.AnnotationTest.sclInjectTest", Boolean.valueOf(maxAmount != null));
         
         //Can't add a ServletContextListener from a ServletContextListener even if it is declared in web.xml

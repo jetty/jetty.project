@@ -19,7 +19,6 @@
 package org.eclipse.jetty.osgi.boot;
 
 import java.io.File;
-import java.net.URL;
 import java.util.Dictionary;
 import java.util.HashMap;
 

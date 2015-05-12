@@ -1,47 +1,74 @@
 #
 # SSL Keystore module
 #
+[name]
+ssl
 
 [depend]
-server
+ssl-impl/ssl-java${java.version.minor}
 
 [xml]
 etc/jetty-ssl.xml
+etc/jetty-ssl-context.xml
 
 [files]
-http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/main/config/etc/keystore|etc/keystore
+http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/test/config/etc/keystore?id=${jetty.tag.version}|etc/keystore
 
 [ini-template]
-### SSL Keystore Configuration
-# define the port to use for secure redirection
-jetty.secure.port=8443
+### TLS(SSL) Connector Configuration
 
-# SSL port to listen on
-ssl.port=8443
-# SSL idle timeout in milliseconds
-ssl.timeout=30000
-# HTTPS Socket.soLingerTime in seconds. (-1 to disable)
-# ssl.soLingerTime=-1
+## Connector host/address to bind to
+# jetty.ssl.host=0.0.0.0
 
-## Setup a demonstration keystore and truststore
-jetty.keystore=etc/keystore
-jetty.truststore=etc/keystore
+## Connector port to listen on
+jetty.ssl.port=8443
 
-## Set the demonstration passwords.
+## Connector idle timeout in milliseconds
+# jetty.ssl.idleTimeout=30000
+
+## Connector socket linger time in seconds (-1 to disable)
+# jetty.ssl.soLingerTime=-1
+
+## Number of acceptors (-1 picks default based on number of cores)
+# jetty.ssl.acceptors=-1
+
+## Number of selectors (-1 picks default based on number of cores)
+# jetty.ssl.selectors=-1
+
+## ServerSocketChannel backlog (0 picks platform default)
+# jetty.ssl.acceptorQueueSize=0
+
+## Thread priority delta to give to acceptor threads
+# jetty.ssl.acceptorPriorityDelta=0
+
+## Whether request host names are checked to match any SNI names
+# jetty.ssl.sniHostCheck=true
+
+### SslContextFactory Configuration
 ## Note that OBF passwords are not secure, just protected from casual observation
 ## See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
-jetty.keystore.password=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
-jetty.keymanager.password=OBF:1u2u1wml1z7s1z7a1wnl1u2g
-jetty.truststore.password=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 
-### Set the client auth behavior
-## Set to true if client certificate authentication is required
-# jetty.ssl.needClientAuth=true
-## Set to true if client certificate authentication is desired
-# jetty.ssl.wantClientAuth=true
+## Keystore file path (relative to $jetty.base)
+# jetty.sslContext.keyStorePath=etc/keystore
 
-## Parameters to control the number and priority of acceptors and selectors
-# ssl.selectors=1
-# ssl.acceptors=1
-# ssl.selectorPriorityDelta=0
-# ssl.acceptorPriorityDelta=0
+## Truststore file path (relative to $jetty.base)
+# jetty.sslContext.trustStorePath=etc/keystore
+
+## Keystore password
+# jetty.sslContext.keyStorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+
+## KeyManager password
+# jetty.sslContext.keyManagerPassword=OBF:1u2u1wml1z7s1z7a1wnl1u2g
+
+## Truststore password
+# jetty.sslContext.trustStorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+
+## whether client certificate authentication is required
+# jetty.sslContext.needClientAuth=false
+
+## Whether client certificate authentication is desired
+# jetty.sslContext.wantClientAuth=false
+
+## Whether cipher order is significant (since java 8 only)
+# jetty.sslContext.useCipherSuitesOrder=true
+

@@ -24,14 +24,17 @@
  */
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.startsWith;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.OutputStream;
 import java.io.PrintWriter;
+import java.io.StringReader;
+import java.util.HashSet;
+import java.util.Set;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -51,12 +54,8 @@ import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
-import org.junit.Ignore;
 import org.junit.Test;
 
-/**
- *
- */
 public class HttpConnectionTest
 {
     private Server server;
@@ -278,16 +277,43 @@ public class HttpConnectionTest
             "Connection: close\015\012"+
             "\015\012");
 
-        assertThat(responsePOST,startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
-        assertThat(responsePOST.length(),greaterThan(responseHEAD.length()));
-
-        responsePOST=connector.getResponses("POST /R1 HTTP/1.1\015\012"+
-                "Host: localhost\015\012"+
-                "Connection: close\015\012"+
-                "\015\012");
-
-        assertThat(responsePOST,startsWith(responseHEAD.substring(0,responseHEAD.length()-2)));
-        assertThat(responsePOST.length(),greaterThan(responseHEAD.length()));
+        String postLine;
+        boolean postDate=false;
+        Set<String> postHeaders = new HashSet<>();
+        try(BufferedReader in = new BufferedReader(new StringReader(responsePOST)))
+        {
+            postLine = in.readLine();
+            String line=in.readLine();
+            while (line!=null && line.length()>0)
+            {    
+                if (line.startsWith("Date:"))
+                    postDate=true;
+                else
+                    postHeaders.add(line);
+                line=in.readLine();
+            }
+        }
+        String headLine;
+        boolean headDate=false;
+        Set<String> headHeaders = new HashSet<>();
+        try(BufferedReader in = new BufferedReader(new StringReader(responseHEAD)))
+        {
+            headLine = in.readLine();
+            String line=in.readLine();
+            while (line!=null && line.length()>0)
+            {    
+                if (line.startsWith("Date:"))
+                    headDate=true;
+                else
+                    headHeaders.add(line);
+                line=in.readLine();
+            }
+        }
+        
+        assertThat(postLine,equalTo(headLine));
+        assertThat(postDate,equalTo(headDate));
+        assertTrue(postHeaders.equals(headHeaders));
+        
     }
 
     @Test
@@ -657,6 +683,7 @@ public class HttpConnectionTest
 
     /**
      * Creates a request header over 1k in size, by creating a single header entry with an huge value.
+     * @throws Exception if test failure
      */
     @Test
     public void testOversizedBuffer() throws Exception
@@ -685,6 +712,7 @@ public class HttpConnectionTest
 
     /**
      * Creates a request header with over 1000 entries.
+     * @throws Exception if test failure
      */
     @Test
     public void testExcessiveHeader() throws Exception

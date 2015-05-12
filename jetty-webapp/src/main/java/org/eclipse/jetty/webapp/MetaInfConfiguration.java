@@ -19,14 +19,21 @@
 package org.eclipse.jetty.webapp;
 
 
+import java.io.File;
+import java.io.IOException;
+import java.net.JarURLConnection;
 import java.net.URI;
 import java.net.URL;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.jar.JarEntry;
+import java.util.jar.JarFile;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -35,12 +42,13 @@ import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * MetaInfConfiguration
+ * <p>
  *
  * Scan META-INF of jars to find:
  * <ul>
- * <li>tlds
- * <li>web-fragment.xml
- * <li>resources
+ * <li>tlds</li>
+ * <li>web-fragment.xml</li>
+ * <li>resources</li>
  * </ul>
  * 
  * The jars which are scanned are:
@@ -91,10 +99,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
      * cache the info discovered indexed by the jar in which it was discovered: this speeds
      * up subsequent context deployments.
      * 
-     * @param context
-     * @param jars
-     * @param useCaches
-     * @throws Exception
+     * @param context the context for the scan
+     * @param jars the jars resources to scan
+     * @param useCaches if true, cache the info discovered
+     * @throws Exception if unable to scan the jars
      */
     public void scanJars (final WebAppContext context, Collection<Resource> jars, boolean useCaches)
     throws Exception
@@ -140,10 +148,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /**
      * Scan for META-INF/resources dir in the given jar.
      * 
-     * @param context
-     * @param target
-     * @param cache
-     * @throws Exception
+     * @param context the context for the scan
+     * @param target the target resource to scan for
+     * @param cache the resource cache
+     * @throws Exception if unable to scan for resources
      */
     public void scanForResources (WebAppContext context, Resource target, ConcurrentHashMap<Resource,Resource> cache)
     throws Exception
@@ -205,10 +213,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /**
      * Scan for META-INF/web-fragment.xml file in the given jar.
      * 
-     * @param context
-     * @param jar
-     * @param cache
-     * @throws Exception
+     * @param context the context for the scan
+     * @param jar the jar resource to scan for fragements in
+     * @param cache the resource cache
+     * @throws Exception if unable to scan for fragments
      */
     public void scanForFragment (WebAppContext context, Resource jar, ConcurrentHashMap<Resource,Resource> cache)
     throws Exception
@@ -270,10 +278,10 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /**
      * Discover META-INF/*.tld files in the given jar
      * 
-     * @param context
-     * @param jar
-     * @param cache
-     * @throws Exception
+     * @param context the context for the scan
+     * @param jar the jar resources to scan tlds for
+     * @param cache the resource cache
+     * @throws Exception if unable to scan for tlds
      */
     public void scanForTlds (WebAppContext context, Resource jar, ConcurrentHashMap<Resource, Collection<URL>> cache)
     throws Exception
@@ -297,30 +305,17 @@ public class MetaInfConfiguration extends AbstractConfiguration
         else
         {
             //not using caches or not in the cache so find all tlds
-            Resource metaInfDir = null;
+            tlds = new HashSet<URL>();  
             if (jar.isDirectory())
             {
-                //TODO ??????
-                metaInfDir = jar.addPath("/META-INF/");
+                tlds.addAll(getTlds(jar.getFile()));
             }
             else
             {
                 URI uri = jar.getURI();
-                metaInfDir = Resource.newResource("jar:"+uri+"!/META-INF/");
+                tlds.addAll(getTlds(uri));
             }
 
-            //find any *.tld files inside META-INF or subdirs
-            tlds = new HashSet<URL>();      
-            Collection<Resource> resources = metaInfDir.getAllResources();
-            for (Resource t:resources)
-            {
-                String name = t.toString();
-                if (name.endsWith(".tld"))
-                {
-                    if (LOG.isDebugEnabled()) LOG.debug(t+" tld discovered");
-                    tlds.add(t.getURL());
-                }
-            }
             if (cache != null)
             {  
                 if (LOG.isDebugEnabled()) LOG.debug(jar+" tld cache updated");
@@ -333,13 +328,13 @@ public class MetaInfConfiguration extends AbstractConfiguration
                 return;
         }
 
-        Collection<URL> tld_resources=(Collection<URL>)context.getAttribute(METAINF_TLDS);
-        if (tld_resources == null)
+        Collection<URL> metaInfTlds = (Collection<URL>)context.getAttribute(METAINF_TLDS);
+        if (metaInfTlds == null)
         {
-            tld_resources = new HashSet<URL>();
-            context.setAttribute(METAINF_TLDS, tld_resources);
+            metaInfTlds = new HashSet<URL>();
+            context.setAttribute(METAINF_TLDS, metaInfTlds);
         }
-        tld_resources.addAll(tlds);  
+        metaInfTlds.addAll(tlds);  
         if (LOG.isDebugEnabled()) LOG.debug("tlds added to context");
     }
     
@@ -350,5 +345,67 @@ public class MetaInfConfiguration extends AbstractConfiguration
         context.setAttribute(METAINF_FRAGMENTS, null); 
         context.setAttribute(METAINF_RESOURCES, null);
         context.setAttribute(METAINF_TLDS, null);
+    }
+    
+    /**
+     * Find all .tld files in all subdirs of the given dir.
+     * 
+     * @param file
+     * @return
+     * @throws IOException
+     */
+    public Collection<URL>  getTlds (File file) throws IOException
+    {
+        if (file == null || !file.isDirectory())
+            return Collections.emptySet();
+        
+        HashSet<URL> tlds = new HashSet<URL>();
+        
+        File[] files = file.listFiles();
+        if (files != null)
+        {
+            for (File f:files)
+            {
+                if (f.isDirectory())
+                    tlds.addAll(getTlds(f));
+                else
+                {
+                    String name = f.getCanonicalPath();
+                    if (name.contains("META-INF") && name.endsWith(".tld"))
+                        tlds.add(f.toURI().toURL());
+                }
+            }
+        }
+        return tlds;  
+    }
+    
+    /**
+     * Find all .tld files in the given jar.
+     * 
+     * @param uri
+     * @return
+     * @throws IOException
+     */
+    public Collection<URL> getTlds (URI uri) throws IOException
+    {
+        HashSet<URL> tlds = new HashSet<URL>();
+        
+        URL url = new URL("jar:"+uri+"!/");
+        JarURLConnection jarConn = (JarURLConnection) url.openConnection();
+        jarConn.setUseCaches(Resource.getDefaultUseCaches());
+        JarFile jarFile = jarConn.getJarFile();
+        Enumeration<JarEntry> entries = jarFile.entries();
+        while (entries.hasMoreElements())
+        {
+            JarEntry e = entries.nextElement();
+            String name = e.getName();
+            if (name.startsWith("META-INF") && name.endsWith(".tld"))
+            {
+                tlds.add(new URL("jar:"+uri+"!/"+name));
+            }
+        }
+        if (!Resource.getDefaultUseCaches())
+            jarFile.close();
+        return tlds;
     }
 }

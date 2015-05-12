@@ -18,6 +18,12 @@
 
 package org.eclipse.jetty.http;
 
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertNull;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
@@ -30,12 +36,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertNull;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
 /**
  *
  */
@@ -46,6 +46,7 @@ public class HttpParserTest
      * Parse until {@link State#END} state.
      * If the parser is already in the END state, then it is {@link HttpParser#reset()} and re-parsed.
      * @param parser The parser to test
+     * @param buffer the buffer to parse
      * @throws IllegalStateException If the buffers have already been partially parsed.
      */
     public static void parseAll(HttpParser parser, ByteBuffer buffer)
@@ -669,7 +670,8 @@ public class HttpParserTest
                         + "0123456789\015\012"
                         + "1a\015\012"
                         + "ABCDEFGHIJKLMNOPQRSTUVWXYZ\015\012"
-                        + "0\015\012");
+                        + "0\015\012"
+                        + "\015\012");
         HttpParser.RequestHandler handler  = new Handler();
         HttpParser parser= new HttpParser(handler);
         parseAll(parser,buffer);
@@ -681,6 +683,9 @@ public class HttpParserTest
         assertEquals("Header1", _hdr[0]);
         assertEquals("value1", _val[0]);
         assertEquals("0123456789ABCDEFGHIJKLMNOPQRSTUVWXYZ", _content);
+
+        assertTrue(_headerCompleted);
+        assertTrue(_messageCompleted);
     }
 
     @Test

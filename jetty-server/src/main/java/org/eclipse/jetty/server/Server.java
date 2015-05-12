@@ -37,7 +37,6 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.DateGenerator;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpGenerator;
@@ -45,6 +44,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
@@ -110,8 +110,11 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /** Convenience constructor
+    /** 
+     * Convenience constructor
+     * <p>
      * Creates server and a {@link ServerConnector} at the passed address.
+     * @param addr the inet socket address to create the connector from 
      */
     public Server(@Name("address")InetSocketAddress addr)
     {
@@ -497,8 +500,10 @@ public class Server extends HandlerWrapper implements Attributes
         if (LOG.isDebugEnabled())
             LOG.debug("{} on {}{}",request.getDispatcherType(),connection,"\n"+request.getMethod()+" "+request.getHttpURI()+"\n"+request.getHttpFields());
 
-        if ("*".equals(target))
+        if (HttpMethod.OPTIONS.is(request.getMethod()) || "*".equals(target))
         {
+            if (!HttpMethod.OPTIONS.is(request.getMethod()))
+                response.sendError(HttpStatus.BAD_REQUEST_400);
             handleOptions(request,response);
             if (!request.isHandled())
                 handle(target, request, request, response);
@@ -515,12 +520,6 @@ public class Server extends HandlerWrapper implements Attributes
      */
     protected void handleOptions(Request request,Response response) throws IOException
     {
-        if (!HttpMethod.OPTIONS.is(request.getMethod()))
-            response.sendError(HttpStatus.BAD_REQUEST_400);
-        request.setHandled(true);
-        response.setStatus(200);
-        response.setContentLength(0);
-        response.closeOutput();
     }
 
     /* ------------------------------------------------------------ */

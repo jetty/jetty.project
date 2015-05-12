@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.server.handler;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertThat;
 
 import java.io.IOException;
 import java.io.InputStream;
@@ -76,8 +77,9 @@ public class RequestLogHandlerTest
         public List<String> captured = new ArrayList<>();
 
         @Override
-        public void log(Request request, int status, long written)
+        public void log(Request request, Response response)
         {
+            int status = response.getCommittedMetaData().getStatus();
             captured.add(String.format("%s %s %s %03d",request.getMethod(),request.getRequestURI(),request.getProtocol(),status));
         }
     }
@@ -375,6 +377,7 @@ public class RequestLogHandlerTest
 
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection. all other configuration on server at defaults.
+     * @throws Exception if test failure
      */
     @Test(timeout = 4000)
     public void testLogHandlerCollection() throws Exception
@@ -438,6 +441,7 @@ public class RequestLogHandlerTest
 
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the default ErrorHandler as server bean in place.
+     * @throws Exception if test failure
      */
     @Test(timeout = 4000)
     public void testLogHandlerCollection_ErrorHandler_ServerBean() throws Exception
@@ -504,6 +508,7 @@ public class RequestLogHandlerTest
 
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the ErrorHandler in place.
+     * @throws Exception if test failure
      */
     @Test(timeout=4000)
     public void testLogHandlerCollection_AltErrorHandler() throws Exception
@@ -577,6 +582,7 @@ public class RequestLogHandlerTest
     
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the ErrorHandler in place.
+     * @throws Exception if test failure
      */
     @Test(timeout=4000)
     public void testLogHandlerCollection_OKErrorHandler() throws Exception
@@ -650,6 +656,7 @@ public class RequestLogHandlerTest
     
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the ErrorHandler in place.
+     * @throws Exception if test failure
      */
     @Test(timeout=4000)
     public void testLogHandlerCollection_DispatchErrorHandler() throws Exception

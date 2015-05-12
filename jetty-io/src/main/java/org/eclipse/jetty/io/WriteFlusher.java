@@ -38,9 +38,8 @@ import org.eclipse.jetty.util.log.Logger;
  * A Utility class to help implement {@link EndPoint#write(Callback, ByteBuffer...)} by calling
  * {@link EndPoint#flush(ByteBuffer...)} until all content is written.
  * The abstract method {@link #onIncompleteFlush()} is called when not all content has been written after a call to
- * flush and should organise for the {@link #completeWrite()} method to be called when a subsequent call to flush
+ * flush and should organize for the {@link #completeWrite()} method to be called when a subsequent call to flush
  * should  be able to make more progress.
- * <p>
  */
 abstract public class WriteFlusher
 {
@@ -288,6 +287,7 @@ abstract public class WriteFlusher
      *
      * @param callback the callback to call on either failed or complete
      * @param buffers the buffers to flush to the endpoint
+     * @throws WritePendingException if unable to write due to prior pending write
      */
     public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
     {
@@ -397,7 +397,7 @@ abstract public class WriteFlusher
     /** Flush the buffers iteratively until no progress is made
      * @param buffers The buffers to flush
      * @return The unflushed buffers, or null if all flushed
-     * @throws IOException
+     * @throws IOException if unable to flush
      */
     protected ByteBuffer[] flush(ByteBuffer[] buffers) throws IOException
     {

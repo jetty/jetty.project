@@ -39,51 +39,51 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * JSON Parser and Generator.
- * <p />
+ * <p>
  * This class provides some static methods to convert POJOs to and from JSON
  * notation. The mapping from JSON to java is:
  *
  * <pre>
- *   object ==> Map
- *   array  ==> Object[]
- *   number ==> Double or Long
- *   string ==> String
- *   null   ==> null
- *   bool   ==> Boolean
+ *   object --&gt; Map
+ *   array  --&gt; Object[]
+ *   number --&gt; Double or Long
+ *   string --&gt; String
+ *   null   --&gt; null
+ *   bool   --&gt; Boolean
  * </pre>
 
  * The java to JSON mapping is:
  *
  * <pre>
- *   String --> string
- *   Number --> number
- *   Map    --> object
- *   List   --> array
- *   Array  --> array
- *   null   --> null
- *   Boolean--> boolean
- *   Object --> string (dubious!)
+ *   String --&gt; string
+ *   Number --&gt; number
+ *   Map    --&gt; object
+ *   List   --&gt; array
+ *   Array  --&gt; array
+ *   null   --&gt; null
+ *   Boolean--&gt; boolean
+ *   Object --&gt; string (dubious!)
  * </pre>
  *
  * The interface {@link JSON.Convertible} may be implemented by classes that
  * wish to externalize and initialize specific fields to and from JSON objects.
  * Only directed acyclic graphs of objects are supported.
- * <p />
+ * <p>
  * The interface {@link JSON.Generator} may be implemented by classes that know
  * how to render themselves as JSON and the {@link #toString(Object)} method
  * will use {@link JSON.Generator#addJSON(Appendable)} to generate the JSON.
  * The class {@link JSON.Literal} may be used to hold pre-generated JSON object.
- * <p />
+ * <p>
  * The interface {@link JSON.Convertor} may be implemented to provide static
  * converters for objects that may be registered with
  * {@link #registerConvertor(Class, Convertor)}.
  * These converters are looked up by class, interface and super class by
  * {@link #getConvertor(Class)}.
- * <p />
+ * <p>
  * If a JSON object has a "class" field, then a java class for that name is
  * loaded and the method {@link #convertTo(Class,Map)} is used to find a
  * {@link JSON.Convertor} for that class.
- * <p />
+ * <p>
  * If a JSON object has a "x-class" field then a direct lookup for a
  * {@link JSON.Convertor} for that class name is done (without loading the class).
  */
@@ -188,6 +188,7 @@ public class JSON
      * @param in
      *            Reader containing JSON object or array.
      * @return A Map, Object array or primitive array parsed from the JSON.
+     * @throws IOException if unable to parse
      */
     public static Object parse(Reader in) throws IOException
     {
@@ -200,6 +201,7 @@ public class JSON
      * @param stripOuterComment
      *            If true, an outer comment around the JSON is ignored.
      * @return A Map, Object array or primitive array parsed from the JSON.
+     * @throws IOException if unable to parse
      */
     public static Object parse(Reader in, boolean stripOuterComment) throws IOException
     {
@@ -207,10 +209,11 @@ public class JSON
     }
 
     /**
-     * @deprecated use {@link #parse(Reader)}
      * @param in
      *            Reader containing JSON object or array.
      * @return A Map, Object array or primitive array parsed from the JSON.
+     * @throws IOException if unable to parse
+     * @deprecated use {@link #parse(Reader)}
      */
     @Deprecated
     public static Object parse(InputStream in) throws IOException
@@ -219,12 +222,13 @@ public class JSON
     }
 
     /**
-     * @deprecated use {@link #parse(Reader, boolean)}
      * @param in
      *            Stream containing JSON object or array.
      * @param stripOuterComment
      *            If true, an outer comment around the JSON is ignored.
      * @return A Map, Object array or primitive array parsed from the JSON.
+     * @throws IOException if unable to parse
+     * @deprecated use {@link #parse(Reader, boolean)}
      */
     @Deprecated
     public static Object parse(InputStream in, boolean stripOuterComment) throws IOException

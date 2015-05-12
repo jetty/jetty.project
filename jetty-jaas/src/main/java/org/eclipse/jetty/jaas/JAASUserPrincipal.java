@@ -23,15 +23,11 @@ import java.security.Principal;
 import javax.security.auth.Subject;
 import javax.security.auth.login.LoginContext;
 
-
-
-/* ---------------------------------------------------- */
-/** JAASUserPrincipal
- * <p>Implements the JAAS version of the
+/** 
+ * JAASUserPrincipal
+ * <p>
+ * Implements the JAAS version of the
  *  org.eclipse.jetty.http.UserPrincipal interface.
- *
- * @version $Id: JAASUserPrincipal.java 4780 2009-03-17 15:36:08Z jesse $
- *
  */
 public class JAASUserPrincipal implements Principal
 {
@@ -40,7 +36,6 @@ public class JAASUserPrincipal implements Principal
     private final LoginContext _loginContext;
 
     /* ------------------------------------------------ */
-
     public JAASUserPrincipal(String name, Subject subject, LoginContext loginContext)
     {
         this._name = name;

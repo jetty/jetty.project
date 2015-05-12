@@ -29,6 +29,8 @@ public class InvalidOpenSessionIntSocket extends TrackingSocket
 {
     /**
      * Invalid Open Method Declaration (parameter of type int)
+     * @param session the session for the open
+     * @param count the open count
      */
     @OnOpen
     public void onOpen(Session session, int count)

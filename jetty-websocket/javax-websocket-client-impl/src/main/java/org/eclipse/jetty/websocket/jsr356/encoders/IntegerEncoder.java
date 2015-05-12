@@ -22,7 +22,7 @@ import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 
 /**
- * Default encoder for {@link Integer} to {@link Text} Message encoder
+ * Default encoder for {@link Integer} to {@link javax.websocket.Encoder.Text} Message encoder
  */
 public class IntegerEncoder extends AbstractEncoder implements Encoder.Text<Integer>
 {

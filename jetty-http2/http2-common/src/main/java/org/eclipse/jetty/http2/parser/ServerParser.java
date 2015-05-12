@@ -41,20 +41,25 @@ public class ServerParser extends Parser
         this.prefaceParser = new PrefaceParser(listener);
     }
 
-    /* ------------------------------------------------------------ */
-    /** Unsafe upgrade is an unofficial upgrade from HTTP/1.0 to HTTP/2.0
-     * initiated when a the {@link HttpConnection} sees a PRI * HTTP/2.0 prefix
-     * that indicates a HTTP/2.0 client is attempting a h2c direct connection.
-     * This is not a standard HTTP/1.1 Upgrade path.
+    /**
+     * <p>A direct upgrade is an unofficial upgrade from HTTP/1.1 to HTTP/2.0.</p>
+     * <p>A direct upgrade is initiated when {@code org.eclipse.jetty.server.HttpConnection}
+     * sees a request with these bytes:</p>
+     * <pre>
+     * PRI * HTTP/2.0\r\n
+     * \r\n
+     * </pre>
+     * <p>This request is part of the HTTP/2.0 preface, indicating that a
+     * HTTP/2.0 client is attempting a h2c direct connection.</p>
+     * <p>This is not a standard HTTP/1.1 Upgrade path.</p>
      */
     public void directUpgrade()
     {
-        if (state!=State.PREFACE)
+        if (state != State.PREFACE)
             throw new IllegalStateException();
         prefaceParser.directUpgrade();
     }
-    
-    
+
     @Override
     public void parse(ByteBuffer buffer)
     {

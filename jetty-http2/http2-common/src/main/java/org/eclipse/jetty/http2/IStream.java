@@ -43,13 +43,13 @@ public interface IStream extends Stream, Closeable
     public ISession getSession();
 
     /**
-     * @return the {@link Listener} associated with this stream
+     * @return the {@link org.eclipse.jetty.http2.api.Stream.Listener} associated with this stream
      * @see #setListener(Listener)
      */
     public Listener getListener();
 
     /**
-     * @param listener the {@link Listener} associated with this stream
+     * @param listener the {@link org.eclipse.jetty.http2.api.Stream.Listener} associated with this stream
      * @see #getListener()
      */
     public void setListener(Listener listener);

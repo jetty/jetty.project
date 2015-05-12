@@ -20,13 +20,12 @@ package org.eclipse.jetty.monitor.triggers;
 
 import javax.management.MalformedObjectNameException;
 
-
-/* ------------------------------------------------------------ */
 /**
  * GreaterThanAttrEventTrigger
- * 
+ * <p> 
  * Event trigger that polls a value of an MXBean attribute and
  * checks if it is greater than specified min value. 
+ * @param <TYPE> event trigger type
  */
 public class GreaterThanAttrEventTrigger<TYPE extends Comparable<TYPE>> extends AttrEventTrigger<TYPE>
 {
@@ -42,8 +41,8 @@ public class GreaterThanAttrEventTrigger<TYPE extends Comparable<TYPE>> extends 
      * @param attributeName name of an MBean attribute to be polled
      * @param min minimum value of the attribute
      * 
-     * @throws MalformedObjectNameException
-     * @throws IllegalArgumentException
+     * @throws MalformedObjectNameException on bad object name
+     * @throws IllegalArgumentException on bad parameters
      */
     public GreaterThanAttrEventTrigger(String objectName, String attributeName, TYPE min)
         throws MalformedObjectNameException, IllegalArgumentException
@@ -72,7 +71,7 @@ public class GreaterThanAttrEventTrigger<TYPE extends Comparable<TYPE>> extends 
     /* ------------------------------------------------------------ */
     /**
      * Returns the string representation of this event trigger
-     * in the format "min<name". 
+     * in the format "min&lt;name". 
      * 
      * @return string representation of the event trigger
      * 

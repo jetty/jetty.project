@@ -158,7 +158,7 @@ public class SessionHandler extends ScopedHandler
                 session = baseRequest.getSession(false);
                 if (session != null)
                 {
-                    if (session != old_session)
+                    if ((session != old_session) && (request.getDispatcherType() == DispatcherType.ASYNC || request.getDispatcherType() == DispatcherType.REQUEST))
                     {
                         access = session;
                         HttpCookie cookie = _sessionManager.access(session,request.isSecure());
@@ -192,11 +192,14 @@ public class SessionHandler extends ScopedHandler
         }
         finally
         {
+            //if we accessed an existing session entering this context, then complete it
             if (access != null)
                 _sessionManager.complete(access);
 
+            
+            //if there is a session that was created during handling this context, then complete it
             HttpSession session = baseRequest.getSession(false);
-            if (session != null && old_session == null && session != access)
+            if ((session != null && old_session == null && session != access) && (request.getDispatcherType() == DispatcherType.ASYNC || request.getDispatcherType() == DispatcherType.REQUEST))
                 _sessionManager.complete(session);
 
             if (old_session_manager != null && old_session_manager != _sessionManager)
@@ -228,8 +231,8 @@ public class SessionHandler extends ScopedHandler
     /**
      * Look for a requested session ID in cookies and URI parameters
      *
-     * @param baseRequest
-     * @param request
+     * @param baseRequest the request to check
+     * @param request the request to check
      */
     protected void checkRequestedSessionId(Request baseRequest, HttpServletRequest request)
     {
@@ -321,9 +324,6 @@ public class SessionHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param listener
-     */
     public void addEventListener(EventListener listener)
     {
         if (_sessionManager != null)
@@ -331,9 +331,6 @@ public class SessionHandler extends ScopedHandler
     }
     
     /* ------------------------------------------------------------ */
-    /**
-     * @param listener
-     */
     public void removeEventListener(EventListener listener)
     {
         if (_sessionManager != null)

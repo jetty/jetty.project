@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.nullValue;
 
 import java.io.PrintWriter;
 import java.io.StringWriter;
@@ -416,6 +417,7 @@ public class ConfiguratorTest
     
     /**
      * Test of Sec-WebSocket-Protocol, as seen in RFC-6455, 1 protocol
+     * @throws Exception on test failure
      */
     @Test
     public void testProtocol_Single() throws Exception
@@ -439,6 +441,7 @@ public class ConfiguratorTest
     
     /**
      * Test of Sec-WebSocket-Protocol, as seen in RFC-6455, 3 protocols
+     * @throws Exception on test failure
      */
     @Test
     public void testProtocol_Triple() throws Exception
@@ -462,6 +465,7 @@ public class ConfiguratorTest
     
     /**
      * Test of Sec-WebSocket-Protocol, using all lowercase header
+     * @throws Exception on test failure
      */
     @Test
     public void testProtocol_LowercaseHeader() throws Exception
@@ -485,6 +489,7 @@ public class ConfiguratorTest
     
     /**
      * Test of Sec-WebSocket-Protocol, using non-spec case header
+     * @throws Exception on test failure
      */
     @Test
     public void testProtocol_AltHeaderCase() throws Exception

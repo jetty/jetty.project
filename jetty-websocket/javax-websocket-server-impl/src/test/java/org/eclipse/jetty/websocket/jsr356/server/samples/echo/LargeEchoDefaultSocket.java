@@ -20,6 +20,7 @@ package org.eclipse.jetty.websocket.jsr356.server.samples.echo;
 
 import javax.websocket.OnMessage;
 import javax.websocket.Session;
+import javax.websocket.WebSocketContainer;
 import javax.websocket.server.ServerEndpoint;
 
 /**

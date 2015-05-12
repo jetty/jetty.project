@@ -20,13 +20,13 @@ package org.eclipse.jetty.continuation;
 
 import java.util.EventListener;
 
+import javax.servlet.ServletRequestListener;
 
-/* ------------------------------------------------------------ */
-/** A Continuation Listener
+/** 
+ * A Continuation Listener
  * <p>
  * A ContinuationListener may be registered with a call to
  * {@link Continuation#addContinuationListener(ContinuationListener)}.
- *
  */
 public interface ContinuationListener extends EventListener
 {
@@ -36,7 +36,7 @@ public interface ContinuationListener extends EventListener
      * any calls to {@link ServletRequestListener#requestDestroyed(javax.servlet.ServletRequestEvent)}
      * The response may still be written to during the call.
      *
-     * @param continuation
+     * @param continuation the continuation
      */
     public void onComplete(Continuation continuation);
 
@@ -46,7 +46,7 @@ public interface ContinuationListener extends EventListener
      * The response may be written to and the methods
      * {@link Continuation#resume()} or {@link Continuation#complete()}
      * may be called by a onTimeout implementation,
-     * @param continuation
+     * @param continuation the continuation
      */
     public void onTimeout(Continuation continuation);
 

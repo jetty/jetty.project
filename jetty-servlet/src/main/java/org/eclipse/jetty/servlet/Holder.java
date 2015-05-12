@@ -42,7 +42,7 @@ import org.eclipse.jetty.util.log.Logger;
  * 
  * Specialization of AbstractHolder for servlet-related classes that 
  * have init-params etc
- * 
+ * @param <T> the type of holder
  */
 @ManagedObject("Holder - a container for servlets and the like")
 public class Holder<T> extends BaseHolder<T>

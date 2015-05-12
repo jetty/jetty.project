@@ -25,7 +25,7 @@ import javax.websocket.server.ServerContainer;
 import javax.websocket.server.ServerEndpointConfig;
 
 /**
- * Example of adding a server WebSocket (extending {@link Endpoint}) programmatically via config
+ * Example of adding a server WebSocket (extending {@link javax.websocket.Endpoint}) programmatically via config
  */
 public class BasicEchoEndpointConfigContextListener implements ServletContextListener
 {

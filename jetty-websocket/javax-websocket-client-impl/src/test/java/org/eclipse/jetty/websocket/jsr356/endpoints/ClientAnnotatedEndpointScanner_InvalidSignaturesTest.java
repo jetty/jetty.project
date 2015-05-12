@@ -18,10 +18,13 @@
 
 package org.eclipse.jetty.websocket.jsr356.endpoints;
 
+import static org.hamcrest.Matchers.containsString;
+
 import java.lang.annotation.Annotation;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
+
 import javax.websocket.ClientEndpoint;
 import javax.websocket.ClientEndpointConfig;
 import javax.websocket.DeploymentException;
@@ -47,8 +50,6 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
 import org.junit.runners.Parameterized.Parameters;
-
-import static org.hamcrest.Matchers.containsString;
 
 /**
  * Test {@link AnnotatedEndpointScanner} against various simple, 1 method, {@link ClientEndpoint} annotated classes with invalid signatures.

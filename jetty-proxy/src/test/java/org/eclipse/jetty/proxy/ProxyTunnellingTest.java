@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.proxy;
 
+import static org.junit.Assert.assertEquals;
+
 import java.io.IOException;
 import java.net.ConnectException;
 import java.net.Socket;
@@ -26,6 +28,7 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.ExecutionException;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.ServletException;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.http.HttpServletRequest;
@@ -60,8 +63,6 @@ import org.junit.Assume;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.junit.Assert.assertEquals;
 
 public class ProxyTunnellingTest
 {

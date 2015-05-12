@@ -22,11 +22,11 @@ import java.net.URI;
 import java.util.List;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
@@ -36,15 +36,14 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.proxy.AsyncProxyServlet;
-import org.eclipse.jetty.proxy.ProxyServlet;
 
 /**
- * Specific implementation of {@link ProxyServlet.Transparent} for FastCGI.
- * <p />
+ * Specific implementation of {@link org.eclipse.jetty.proxy.AsyncProxyServlet.Transparent} for FastCGI.
+ * <p>
  * This servlet accepts a HTTP request and transforms it into a FastCGI request
  * that is sent to the FastCGI server specified in the <code>proxyTo</code>
  * init-param.
- * <p />
+ * <p>
  * This servlet accepts two additional init-params:
  * <ul>
  *     <li><code>scriptRoot</code>, mandatory, that must be set to the directory where
@@ -104,7 +103,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
     }
 
     @Override
-    protected void customizeProxyRequest(Request proxyRequest, HttpServletRequest request)
+    protected void sendProxyRequest(HttpServletRequest request, HttpServletResponse proxyResponse, Request proxyRequest)
     {
         proxyRequest.attribute(REMOTE_ADDR_ATTRIBUTE, request.getRemoteAddr());
         proxyRequest.attribute(REMOTE_PORT_ATTRIBUTE, String.valueOf(request.getRemotePort()));
@@ -157,7 +156,7 @@ public class FastCGIProxyServlet extends AsyncProxyServlet.Transparent
             proxyRequest.header(HttpHeader.COOKIE, builder.toString());
         }
 
-        super.customizeProxyRequest(proxyRequest, request);
+        super.sendProxyRequest(request, proxyResponse, proxyRequest);
     }
 
     protected void customizeFastCGIHeaders(Request proxyRequest, HttpFields fastCGIHeaders)

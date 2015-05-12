@@ -92,11 +92,11 @@ public abstract class LoginAuthenticator implements Authenticator
     /** Change the session id.
      * The session is changed to a new instance with a new ID if and only if:<ul>
      * <li>A session exists.
-     * <li>The {@link AuthConfiguration#isSessionRenewedOnAuthentication()} returns true.
+     * <li>The {@link org.eclipse.jetty.security.Authenticator.AuthConfiguration#isSessionRenewedOnAuthentication()} returns true.
      * <li>The session ID has been given to unauthenticated responses
      * </ul>
-     * @param request
-     * @param response
+     * @param request the request
+     * @param response the response
      * @return The new session.
      */
     protected HttpSession renewSession(HttpServletRequest request, HttpServletResponse response)

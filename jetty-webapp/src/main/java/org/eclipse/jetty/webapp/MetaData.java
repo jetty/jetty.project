@@ -32,9 +32,6 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.EmptyResource;
 import org.eclipse.jetty.util.resource.Resource;
 
-
-
-
 /**
  * MetaData
  *
@@ -63,10 +60,6 @@ public class MetaData
     protected final List<Resource> _orderedWebInfResources = new ArrayList<Resource>();
     protected Ordering _ordering;//can be set to RelativeOrdering by web-default.xml, web.xml, web-override.xml
     protected boolean allowDuplicateFragmentNames = false;
-
-
-
-
 
     public static class OriginInfo
     {
@@ -263,7 +256,7 @@ public class MetaData
      *
      * @param jarResource the jar the fragment is contained in
      * @param xmlResource the resource representing the xml file
-     * @throws Exception
+     * @throws Exception if unable to add fragment
      */
     public void addFragment (Resource jarResource, Resource xmlResource)
     throws Exception
@@ -304,7 +297,7 @@ public class MetaData
     /**
      * Annotations not associated with a WEB-INF/lib fragment jar.
      * These are from WEB-INF/classes or the ??container path??
-     * @param annotations
+     * @param annotations the list of discovered annotations to add
      */
     public void addDiscoveredAnnotations(List<DiscoveredAnnotation> annotations)
     {
@@ -324,7 +317,7 @@ public class MetaData
      * This method is synchronized as it is anticipated that it may be called by many threads
      * during the annotation scanning phase.
      * 
-     * @param annotation
+     * @param annotation the discovered annotation
      */
     public synchronized void addDiscoveredAnnotation (DiscoveredAnnotation annotation)
     {
@@ -368,7 +361,9 @@ public class MetaData
 
     /**
      * Resolve all servlet/filter/listener metadata from all sources: descriptors and annotations.
-     *
+     * 
+     * @param context the context to resolve servlets / filters / listeners metadata from 
+     * @throws Exception if unable to resolve metadata
      */
     public void resolve (WebAppContext context)
     throws Exception

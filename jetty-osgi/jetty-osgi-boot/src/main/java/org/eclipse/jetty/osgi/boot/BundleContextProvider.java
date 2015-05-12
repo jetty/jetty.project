@@ -33,28 +33,20 @@ import org.osgi.framework.Bundle;
 import org.osgi.framework.FrameworkUtil;
 import org.osgi.framework.ServiceRegistration;
 
-
-
 /**
  * BundleContextProvider
- *
+ * <p>
  * Handles deploying OSGi bundles that define a context xml file for configuring them.
- * 
- *
  */
 public class BundleContextProvider extends AbstractContextProvider implements BundleProvider
 {    
     private static final Logger LOG = Log.getLogger(AbstractContextProvider.class);
-    
 
     private Map<String, App> _appMap = new HashMap<String, App>();
     
     private Map<Bundle, List<App>> _bundleMap = new HashMap<Bundle, List<App>>();
     
     private ServiceRegistration _serviceRegForBundles;
-    
-
-    
   
     /* ------------------------------------------------------------ */
     public BundleContextProvider(ServerInstanceWrapper wrapper)
@@ -96,11 +88,6 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
 
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param bundle
-     * @param contextFiles
-     * @return
-     */
     public boolean bundleAdded (Bundle bundle) throws Exception
     {
         if (bundle == null)
@@ -149,8 +136,8 @@ public class BundleContextProvider extends AbstractContextProvider implements Bu
     /* ------------------------------------------------------------ */
     /** 
      * Bundle has been removed. If it was a context we deployed, undeploy it.
-     * @param bundle
      * 
+     * @param bundle the bundle
      * @return true if this was a context we had deployed, false otherwise
      */
     public boolean bundleRemoved (Bundle bundle) throws Exception

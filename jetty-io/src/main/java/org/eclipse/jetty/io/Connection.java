@@ -21,11 +21,13 @@ package org.eclipse.jetty.io;
 import java.io.Closeable;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.util.component.Container;
+
 /**
  * <p>A {@link Connection} is associated to an {@link EndPoint} so that I/O events
  * happening on the {@link EndPoint} can be processed by the {@link Connection}.</p>
- * <p>A typical implementation of {@link Connection} overrides {@link #onOpen(ByteBuffer)} to
- * {@link EndPoint#fillInterested(Callback) set read interest} on the {@link EndPoint},
+ * <p>A typical implementation of {@link Connection} overrides {@link #onOpen()} to
+ * {@link EndPoint#fillInterested(org.eclipse.jetty.util.Callback) set read interest} on the {@link EndPoint},
  * and when the {@link EndPoint} signals read readyness, this {@link Connection} can
  * read bytes from the network and interpret them.</p>
  */
@@ -78,7 +80,7 @@ public interface Connection extends Closeable
         /**
          * <p>Callback method invoked when this {@link Connection} is upgraded.</p>
          * <p>This must be called before {@link #onOpen()}.</p>
-         * @param prefilledBuffer An optional buffer that can contain prefilled data. Typically this
+         * @param prefilled An optional buffer that can contain prefilled data. Typically this
          * results from an upgrade of one protocol to the other where the old connection has buffered
          * data destined for the new connection.  The new connection must take ownership of the buffer
          * and is responsible for returning it to the buffer pool
@@ -86,6 +88,16 @@ public interface Connection extends Closeable
         void onUpgradeTo(ByteBuffer prefilled);
     }
     
+    
+    /* ------------------------------------------------------------ */
+    /** 
+     * <p>A Listener for connection events.</p>
+     * <p>Listeners can be added to a {@link Connection} to get open and close events.
+     * The AbstractConnectionFactory implements a pattern where objects implement
+     * this interface that have been added via {@link Container#addBean(Object)} to
+     * the Connector or ConnectionFactory are added as listeners to all new connections
+     * </p>
+     */
     public interface Listener
     {
         public void onOpened(Connection connection);

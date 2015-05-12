@@ -38,7 +38,7 @@ public class HashTestServer extends AbstractTestServer
     }
 
 
-    public SessionIdManager newSessionIdManager(String config)
+    public SessionIdManager newSessionIdManager(Object config)
     {
         return new HashSessionIdManager();
     }

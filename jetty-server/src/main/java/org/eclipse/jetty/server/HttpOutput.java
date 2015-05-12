@@ -25,6 +25,7 @@ import java.nio.ByteBuffer;
 import java.nio.channels.ReadableByteChannel;
 import java.nio.channels.WritePendingException;
 import java.util.concurrent.atomic.AtomicReference;
+
 import javax.servlet.RequestDispatcher;
 import javax.servlet.ServletOutputStream;
 import javax.servlet.ServletRequest;
@@ -960,7 +961,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                         if (!_state.compareAndSet(OutputState.UNREADY, OutputState.READY))
                             continue;
                         if (_channel.getState().onWritePossible())
-                            _channel.run();
+                            _channel.execute(_channel);
                         break;
 
                     case CLOSED:
@@ -978,7 +979,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         {
             _onError=e==null?new IOException():e;
             if (_channel.getState().onWritePossible())
-                _channel.run();
+                _channel.execute(_channel);
         }
     }
 

@@ -31,24 +31,12 @@ public class XmlParserTest
     {
         XmlParser parser = new XmlParser();
 
-        URL configURL = XmlConfiguration.class.getClassLoader().getResource("org/eclipse/jetty/xml/configure_6_0.dtd");
+        URL configURL = XmlConfiguration.class.getClassLoader().getResource("org/eclipse/jetty/xml/configure_9_3.dtd");
         parser.redirectEntity("configure.dtd", configURL);
-        parser.redirectEntity("configure_1_3.dtd", configURL);
         parser.redirectEntity("http://jetty.eclipse.org/configure.dtd", configURL);
         parser.redirectEntity("-//Mort Bay Consulting//DTD Configure//EN", configURL);
-        parser.redirectEntity("http://jetty.eclipse.org/configure_1_3.dtd", configURL);
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure 1.3//EN", configURL);
-        parser.redirectEntity("configure_1_2.dtd", configURL);
-        parser.redirectEntity("http://jetty.eclipse.org/configure_1_2.dtd", configURL);
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure 1.2//EN", configURL);
-        parser.redirectEntity("configure_1_1.dtd", configURL);
-        parser.redirectEntity("http://jetty.eclipse.org/configure_1_1.dtd", configURL);
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure 1.1//EN", configURL);
-        parser.redirectEntity("configure_1_0.dtd", configURL);
-        parser.redirectEntity("http://jetty.eclipse.org/configure_1_0.dtd", configURL);
-        parser.redirectEntity("-//Mort Bay Consulting//DTD Configure 1.0//EN", configURL);
 
-        URL url = XmlParserTest.class.getClassLoader().getResource("org/eclipse/jetty/xml/configure.xml");
+        URL url = XmlParserTest.class.getClassLoader().getResource("org/eclipse/jetty/xml/configureWithAttr.xml");
         XmlParser.Node testDoc = parser.parse(url.toString());
         String testDocStr = testDoc.toString().trim();
 

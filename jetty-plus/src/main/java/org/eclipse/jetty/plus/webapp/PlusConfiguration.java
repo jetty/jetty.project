@@ -48,13 +48,13 @@ public class PlusConfiguration extends AbstractConfiguration
     public void preConfigure (WebAppContext context)
     throws Exception
     {
-        context.addDecorator(new PlusDecorator(context));
+        context.getObjectFactory().addDecorator(new PlusDecorator(context));
     }
 
     @Override
     public void cloneConfigure(WebAppContext template, WebAppContext context) throws Exception
     {
-        context.addDecorator(new PlusDecorator(context));
+        context.getObjectFactory().addDecorator(new PlusDecorator(context));
     }
 
     @Override

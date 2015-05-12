@@ -34,6 +34,7 @@ import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.Resource;
+import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
@@ -126,7 +127,6 @@ public class SslContextFactoryTest
     @Test
     public void testResourceTsResourceKsWrongPW() throws Exception
     {
-        SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,null): java.security.UnrecoverableKeyException: Cannot recover key...");
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
 
@@ -144,13 +144,13 @@ public class SslContextFactoryTest
         }
         catch(java.security.UnrecoverableKeyException e)
         {
+            Assert.assertThat(e.toString(),Matchers.containsString("UnrecoverableKeyException"));
         }
     }
 
     @Test
     public void testResourceTsWrongPWResourceKs() throws Exception
     {
-        SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,null): java.io.IOException: Keystore was tampered with ...");
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
 
@@ -168,6 +168,7 @@ public class SslContextFactoryTest
         }
         catch(IOException e)
         {
+            Assert.assertThat(e.toString(),Matchers.containsString("java.io.IOException: Keystore was tampered with, or password was incorrect"));
         }
     }
 
@@ -176,7 +177,6 @@ public class SslContextFactoryTest
     {
         try
         {
-            SslContextFactory.LOG.info("EXPECT SslContextFactory@????????(null,/foo): java.lang.IllegalStateException: SSL doesn't have a valid keystore...");
             ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             cf.setTrustStorePath("/foo");
             cf.start();
@@ -184,11 +184,7 @@ public class SslContextFactoryTest
         }
         catch (IllegalStateException e)
         {
-
-        }
-        catch (Exception e)
-        {
-            Assert.fail("Unexpected exception");
+            Assert.assertThat(e.toString(),Matchers.containsString("IllegalStateException: no valid keystore"));
         }
     }
 

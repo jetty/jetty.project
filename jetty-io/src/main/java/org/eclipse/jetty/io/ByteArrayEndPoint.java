@@ -73,7 +73,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     /* ------------------------------------------------------------ */
     /**
-     *
+     * @param input the input bytes 
+     * @param outputSize the output size
      */
     public ByteArrayEndPoint(byte[] input, int outputSize)
     {
@@ -82,7 +83,8 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     /* ------------------------------------------------------------ */
     /**
-     *
+     * @param input the input string (converted to bytes using default encoding charset) 
+     * @param outputSize the output size
      */
     public ByteArrayEndPoint(String input, int outputSize)
     {
@@ -235,6 +237,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     /* ------------------------------------------------------------ */
     /**
+     * @param charset the charset to encode the output as
      * @return Returns the out.
      */
     public String getOutputString(Charset charset)
@@ -265,6 +268,7 @@ public class ByteArrayEndPoint extends AbstractEndPoint
 
     /* ------------------------------------------------------------ */
     /**
+     * @param charset the charset to encode the output as
      * @return Returns the out.
      */
     public String takeOutputString(Charset charset)

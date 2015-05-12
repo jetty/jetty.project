@@ -19,12 +19,16 @@
 package org.eclipse.jetty.websocket.jsr356;
 
 import java.util.Map;
+import java.util.Objects;
 import java.util.concurrent.ConcurrentHashMap;
+
 import javax.websocket.Encoder;
 import javax.websocket.EndpointConfig;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketContainerScope;
+import org.eclipse.jetty.websocket.common.scopes.WebSocketSessionScope;
 import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadata;
 import org.eclipse.jetty.websocket.jsr356.metadata.EncoderMetadataSet;
 
@@ -64,18 +68,26 @@ public class EncoderFactory implements Configurable
     private static final Logger LOG = Log.getLogger(EncoderFactory.class);
 
     private final EncoderMetadataSet metadatas;
+    private final WebSocketContainerScope containerScope;
     private EncoderFactory parentFactory;
     private Map<Class<?>, Wrapper> activeWrappers;
 
-    public EncoderFactory(EncoderMetadataSet metadatas)
+    public EncoderFactory(WebSocketContainerScope containerScope, EncoderMetadataSet metadatas)
     {
-        this.metadatas = metadatas;
-        this.activeWrappers = new ConcurrentHashMap<>();
+        this(containerScope,metadatas,null);
     }
 
-    public EncoderFactory(EncoderMetadataSet metadatas, EncoderFactory parentFactory)
+    public EncoderFactory(WebSocketSessionScope sessionScope, EncoderMetadataSet metadatas, EncoderFactory parentFactory)
     {
-        this(metadatas);
+        this(sessionScope.getContainerScope(),metadatas,parentFactory);
+    }
+
+    protected EncoderFactory(WebSocketContainerScope containerScope, EncoderMetadataSet metadatas, EncoderFactory parentFactory)
+    {
+        Objects.requireNonNull(containerScope,"Container Scope cannot be null");
+        this.containerScope = containerScope;
+        this.metadatas = metadatas;
+        this.activeWrappers = new ConcurrentHashMap<>();
         this.parentFactory = parentFactory;
     }
 
@@ -166,7 +178,7 @@ public class EncoderFactory implements Configurable
         Class<? extends Encoder> encoderClass = metadata.getCoderClass();
         try
         {
-            Encoder encoder = encoderClass.newInstance();
+            Encoder encoder = containerScope.getObjectFactory().createInstance(encoderClass);
             return new Wrapper(encoder,metadata);
         }
         catch (InstantiationException | IllegalAccessException e)

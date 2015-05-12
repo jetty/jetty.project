@@ -21,9 +21,11 @@ package org.eclipse.jetty.client.util;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
 
+import org.eclipse.jetty.client.api.ContentProvider;
+
 /**
  * A {@link ContentProvider} for strings.
- * <p />
+ * <p>
  * It is possible to specify, at the constructor, an encoding used to convert
  * the string into bytes, by default UTF-8.
  */

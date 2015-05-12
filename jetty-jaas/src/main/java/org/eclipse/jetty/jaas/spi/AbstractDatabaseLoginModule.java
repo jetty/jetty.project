@@ -54,12 +54,9 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
     private String dbUserRoleTableUserField;
     private String dbUserRoleTableRoleField;
 
-
-
-
     /**
      * @return a java.sql.Connection from the database
-     * @throws Exception
+     * @throws Exception if unable to get the connection
      */
     public abstract Connection getConnection () throws Exception;
 
@@ -68,7 +65,7 @@ public abstract class AbstractDatabaseLoginModule extends AbstractLoginModule
     /* ------------------------------------------------ */
     /** Load info from database
      * @param userName user info to load
-     * @exception SQLException
+     * @exception Exception if unable to get the user info
      */
     public UserInfo getUserInfo (String userName)
         throws Exception

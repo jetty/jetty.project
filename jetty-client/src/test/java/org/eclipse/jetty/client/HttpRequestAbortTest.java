@@ -527,7 +527,7 @@ public class HttpRequestAbortTest extends AbstractHttpClientServerTest
         final AtomicBoolean aborted = new AtomicBoolean();
         final CountDownLatch latch = new CountDownLatch(1);
         client.getProtocolHandlers().clear();
-        client.getProtocolHandlers().add(new RedirectProtocolHandler(client)
+        client.getProtocolHandlers().put(new RedirectProtocolHandler(client)
         {
             @Override
             public void onComplete(Result result)

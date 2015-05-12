@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.is;
 
 import java.net.URI;
 import java.util.concurrent.TimeUnit;
@@ -36,7 +36,7 @@ import org.junit.Test;
 import org.junit.runner.RunWith;
 
 /**
- * Testing various aspects of the server side support for WebSocket {@link Session}
+ * Testing various aspects of the server side support for WebSocket {@link org.eclipse.jetty.websocket.api.Session}
  */
 @RunWith(AdvancedRunner.class)
 public class WebSocketServerSessionTest

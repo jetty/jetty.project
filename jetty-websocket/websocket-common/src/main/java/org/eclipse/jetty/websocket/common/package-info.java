@@ -21,7 +21,7 @@
  * <p>
  * A core set of internal implementation classes for the Jetty WebSocket API.
  * <p>
- * Note: do not reference or use classes present in this package space in your code. <br />
+ * Note: do not reference or use classes present in this package space in your code. <br>
  * Restrict your usage to the Jetty WebSocket API classes, the Jetty WebSocket Client API,
  * or the Jetty WebSocket Servlet API.
  */

@@ -34,7 +34,7 @@ import org.eclipse.jetty.start.StartLog;
 public class TestFileInitializer implements FileInitializer
 {
     @Override
-    public boolean init(URI uri, Path file) throws IOException
+    public boolean init(URI uri, Path file, String fileRef) throws IOException
     {
         FS.ensureDirectoryExists(file.getParent());
 

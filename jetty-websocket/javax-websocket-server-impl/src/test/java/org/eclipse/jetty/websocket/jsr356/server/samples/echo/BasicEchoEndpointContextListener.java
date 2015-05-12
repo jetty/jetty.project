@@ -27,7 +27,7 @@ import javax.websocket.server.ServerEndpointConfig;
 import org.eclipse.jetty.websocket.jsr356.server.samples.pong.PongMessageEndpoint;
 
 /**
- * Example of adding a server WebSocket (extending {@link Endpoint}) programmatically directly.
+ * Example of adding a server WebSocket (extending {@link javax.websocket.Endpoint}) programmatically directly.
  * <p>
  * NOTE: this shouldn't work as the endpoint has no path associated with it.
  */

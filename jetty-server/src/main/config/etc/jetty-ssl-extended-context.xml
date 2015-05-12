@@ -1,0 +1,13 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <!-- ============================================================= -->
+  <!-- Create an extended SSL Context Factory for use in java 8      -->
+  <!-- and later.                                                    -->
+  <!-- Configuration is completed in jetty-ssl-context.xml           -->
+  <!-- ============================================================= -->
+  <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.ExtendedSslContextFactory">
+    <Set name="useCipherSuitesOrder"><Property name="jetty.sslContext.useCipherSuitesOrder" default="true"/></Set>
+  </New>
+</Configure>

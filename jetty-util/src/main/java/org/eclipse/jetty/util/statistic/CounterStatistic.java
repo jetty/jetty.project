@@ -54,6 +54,7 @@ public class CounterStatistic
     /* ------------------------------------------------------------ */
     /**
      * @param delta the amount to add to the count
+     * @return the new value
      */
     public long add(final long delta)
     {
@@ -68,6 +69,8 @@ public class CounterStatistic
 
     /* ------------------------------------------------------------ */
     /**
+     * increment the value by one
+     * @return the new value, post increment
      */
     public long increment()
     {
@@ -76,6 +79,8 @@ public class CounterStatistic
 
     /* ------------------------------------------------------------ */
     /**
+     * decrement by 1
+     * @return the new value, post-decrement
      */
     public long decrement()
     {

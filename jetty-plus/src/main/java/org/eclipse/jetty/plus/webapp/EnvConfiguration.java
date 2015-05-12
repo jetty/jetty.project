@@ -40,14 +40,13 @@ import org.eclipse.jetty.plus.jndi.NamingEntryUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.webapp.AbstractConfiguration;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
 
 /**
  * EnvConfiguration
- *
- *
  */
 public class EnvConfiguration extends AbstractConfiguration
 {
@@ -61,10 +60,6 @@ public class EnvConfiguration extends AbstractConfiguration
         this.jettyEnvXmlUrl = url;
     }
 
-    /**
-     * @see Configuration#configure(WebAppContext)
-     * @throws Exception
-     */
     @Override
     public void preConfigure (WebAppContext context) throws Exception
     {
@@ -72,9 +67,6 @@ public class EnvConfiguration extends AbstractConfiguration
         createEnvContext(context);
     }
 
-    /**
-     * @throws Exception
-     */
     @Override
     public void configure (WebAppContext context) throws Exception
     {
@@ -138,8 +130,7 @@ public class EnvConfiguration extends AbstractConfiguration
 
     /**
      * Remove jndi setup from start
-     * @see Configuration#deconfigure(WebAppContext)
-     * @throws Exception
+     * @throws Exception if unable to deconfigure
      */
     @Override
     public void deconfigure (WebAppContext context) throws Exception
@@ -179,8 +170,7 @@ public class EnvConfiguration extends AbstractConfiguration
 
     /**
      * Remove all jndi setup
-     * @see Configuration#deconfigure(WebAppContext)
-     * @throws Exception
+     * @throws Exception if unable to destroy
      */
     @Override
     public void destroy (WebAppContext context) throws Exception
@@ -207,7 +197,8 @@ public class EnvConfiguration extends AbstractConfiguration
      * web.xml file can potentially override them.
      *
      * We first bind EnvEntries declared in Server scope, then WebAppContext scope.
-     * @throws NamingException
+     * @param context the context to use for the object scope
+     * @throws NamingException if unable to bind env entries
      */
     public void bindEnvEntries (WebAppContext context)
     throws NamingException

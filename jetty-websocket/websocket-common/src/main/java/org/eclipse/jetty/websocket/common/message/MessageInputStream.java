@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.log.Logger;
 
 /**
  * Support class for reading a (single) WebSocket BINARY message via a InputStream.
- * <p/>
+ * <p>
  * An InputStream that can access a queue of ByteBuffer payloads, along with expected InputStream blocking behavior.
  */
 public class MessageInputStream extends InputStream implements MessageAppender

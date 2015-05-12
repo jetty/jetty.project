@@ -1,0 +1,19 @@
+<?xml version="1.0"?>
+<!DOCTYPE Configure PUBLIC "-//Jetty//Configure//EN" "http://www.eclipse.org/jetty/configure_9_3.dtd">
+
+<!-- =============================================================== -->
+<!-- Mixin the Weld / CDI classes to the class loader                -->
+<!-- =============================================================== -->
+
+<Configure id="Server" class="org.eclipse.jetty.server.Server">
+  <Ref refid="DeploymentManager">
+    <Call name="addLifeCycleBinding">
+      <Arg>
+        <New
+          class="org.eclipse.jetty.cdi.servlet.WeldDeploymentBinding">
+        </New>
+      </Arg>
+    </Call>
+  </Ref>
+</Configure>
+

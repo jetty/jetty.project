@@ -88,7 +88,6 @@ import org.eclipse.jetty.util.UrlEncoded;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
 /**
  * Jetty Request.
  * <p>
@@ -117,8 +116,6 @@ import org.eclipse.jetty.util.log.Logger;
  * {@link ContextHandler#getMaxFormContentSize()} or if there is no context then the "org.eclipse.jetty.server.Request.maxFormContentSize" {@link Server}
  * attribute. The number of parameters keys is limited by {@link ContextHandler#getMaxFormKeys()} or if there is no context then the
  * "org.eclipse.jetty.server.Request.maxFormKeys" {@link Server} attribute.
- *
- *
  */
 public class Request implements HttpServletRequest
 {
@@ -255,7 +252,7 @@ public class Request implements HttpServletRequest
      * plus any {@link #getQueryString()} </li>
      * <li>If {@link HttpServletResponse#addCookie(Cookie)} has been called
      * on the associated response, then a corresponding Cookie header will be added
-     * to the PushBuilder, unless the {@link Cookie#getMaxAge()} is <=0, in which
+     * to the PushBuilder, unless the {@link Cookie#getMaxAge()} is &lt;=0, in which
      * case the Cookie will be removed from the builder.</li>
      * <li>If this request has has the conditional headers If-Modified-Since or
      * If-None-Match then the {@link PushBuilderImpl#isConditional()} header is set
@@ -524,7 +521,8 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     /**
      * Get Request Attribute.
-     * <p>Also supports jetty specific attributes to gain access to Jetty APIs:
+     * <p>
+     * Also supports jetty specific attributes to gain access to Jetty APIs:
      * <dl>
      * <dt>org.eclipse.jetty.server.Server</dt><dd>The Jetty Server instance</dd>
      * <dt>org.eclipse.jetty.server.HttpChannel</dt><dd>The HttpChannel for this request</dd>
@@ -532,7 +530,6 @@ public class Request implements HttpServletRequest
      * </dl>
      * While these attributes may look like security problems, they are exposing nothing that is not already
      * available via reflection from a Request instance.
-     * </p>
      * @see javax.servlet.ServletRequest#getAttribute(java.lang.String)
      */
     @Override
@@ -1583,7 +1580,7 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @param old_uri
+     * @param uri the URI to set
      */
     public void setHttpURI(HttpURI uri)
     {
@@ -1745,7 +1742,7 @@ public class Request implements HttpServletRequest
 
     /* ------------------------------------------------------------ */
     /**
-     * @param request
+     * @param request the Request metadata
      */
     public void setMetaData(org.eclipse.jetty.http.MetaData.Request request)
     {
@@ -2030,7 +2027,7 @@ public class Request implements HttpServletRequest
     /* ------------------------------------------------------------ */
     /**
      * Sets the "context path" for this request
-     *
+     * @param contextPath the context path for this request
      * @see HttpServletRequest#getContextPath()
      */
     public void setContextPath(String contextPath)
@@ -2095,7 +2092,7 @@ public class Request implements HttpServletRequest
      *
      * The request attribute "org.eclipse.jetty.server.server.Request.queryEncoding" may be set as an alternate method of calling setQueryEncoding.
      *
-     * @param queryEncoding
+     * @param queryEncoding the URI query character encoding 
      */
     public void setQueryEncoding(String queryEncoding)
     {
@@ -2163,6 +2160,8 @@ public class Request implements HttpServletRequest
     /**
      * @param host
      *            The host to set.
+     * @param port
+     *            the port to set
      */
     public void setAuthority(String host,int port)
     {

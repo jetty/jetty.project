@@ -44,10 +44,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.security.Constraint;
 import org.eclipse.jetty.util.security.Password;
 
-/**
- * @deprecated use *ServerAuthentication
- * @version $Rev: 4792 $ $Date: 2009-03-18 22:55:52 +0100 (Wed, 18 Mar 2009) $
- */
+@Deprecated
 public class FormAuthModule extends BaseAuthModule
 {
     private static final Logger LOG = Log.getLogger(FormAuthModule.class);

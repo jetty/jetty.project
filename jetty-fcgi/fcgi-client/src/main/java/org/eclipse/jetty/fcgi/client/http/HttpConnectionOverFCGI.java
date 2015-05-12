@@ -297,8 +297,10 @@ public class HttpConnectionOverFCGI extends AbstractConnection implements Connec
             int id = acquireRequest();
             HttpChannelOverFCGI channel = new HttpChannelOverFCGI(HttpConnectionOverFCGI.this, flusher, id, request.getIdleTimeout());
             channels.put(id, channel);
-            channel.associate(exchange);
-            channel.send();
+            if (channel.associate(exchange))
+                channel.send();
+            else
+                channel.release();
         }
 
         @Override

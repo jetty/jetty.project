@@ -29,6 +29,19 @@ import org.eclipse.jetty.util.ArrayUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 
+
+/* ------------------------------------------------------------ */
+/**
+ * Abstract ConnectionFactory
+ * <p>Provides the common handling for {@link ConnectionFactory} implementations including:<ul>
+ * <li>Protocol identification
+ * <li>Configuration of new Connections:<ul>
+ *     <li>Setting inputbuffer size
+ *     <li>Calling {@link Connection#addListener(Connection.Listener)} for all 
+ *     Connection.Listener instances found as beans on the {@link Connector} and this {@link ConnectionFactory}
+ * </ul>
+ * </ul>
+ */
 public abstract class AbstractConnectionFactory extends ContainerLifeCycle implements ConnectionFactory
 {
     private final String _protocol;
@@ -73,12 +86,17 @@ public abstract class AbstractConnectionFactory extends ContainerLifeCycle imple
     {
         connection.setInputBufferSize(getInputBufferSize());
 
+        // Add Connection.Listeners from Connector
         if (connector instanceof ContainerLifeCycle)
         {
             ContainerLifeCycle aggregate = (ContainerLifeCycle)connector;
             for (Connection.Listener listener : aggregate.getBeans(Connection.Listener.class))
                 connection.addListener(listener);
         }
+        // Add Connection.Listeners from this factory
+        for (Connection.Listener listener : getBeans(Connection.Listener.class))
+            connection.addListener(listener);
+        
         return connection;
     }
 

@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.greaterThanOrEqualTo;
 
 import java.io.File;
 import java.io.FileNotFoundException;
@@ -47,11 +48,12 @@ public class ConfigurationAssert
      *            the StartArgs that has been processed via {@link Main#processCommandLine(String[])}
      * @param filename
      *            the filename of the assertion values
-     * @throws IOException
+     * @throws FileNotFoundException if unable to find the configuration
+     * @throws IOException if unable to process the configuration
      */
     public static void assertConfiguration(BaseHome baseHome, StartArgs args, String filename) throws FileNotFoundException, IOException
     {
-        Path testResourcesDir = MavenTestingUtils.getTestResourcesDir().toPath().toAbsolutePath();
+        Path testResourcesDir = MavenTestingUtils.getTestResourcesDir().toPath().toRealPath();
         File file = MavenTestingUtils.getTestResourceFile(filename);
         TextFile textFile = new TextFile(file.toPath());
 

@@ -40,17 +40,11 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * WebListenerAnnotation
- *
- *
  */
 public class WebListenerAnnotation extends DiscoveredAnnotation
 {
     private static final Logger LOG = Log.getLogger(WebListenerAnnotation.class);
 
-    /**
-     * @param context
-     * @param className
-     */
     public WebListenerAnnotation(WebAppContext context, String className)
     {
         super(context, className);

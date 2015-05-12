@@ -18,8 +18,13 @@
 
 package org.eclipse.jetty.server.handler.gzip;
 
-import static org.hamcrest.Matchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.isEmptyOrNullString;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.hamcrest.Matchers.nullValue;
+import static org.junit.Assert.assertThat;
 
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
@@ -340,7 +345,8 @@ public class GzipTester
      *            the filename used to on the GET request,.
      * @param testResourceSha1Sum
      *            the sha1sum file that contains the SHA1SUM checksum that will be used to verify that the response contents are what is intended.
-     * @param expectedContentType
+     * @param expectedContentType the expected content type
+     * @throws Exception on test failure
      */
     public void assertIsResponseNotGziped(String requestedFilename, String testResourceSha1Sum, String expectedContentType) throws Exception
     {
@@ -358,9 +364,10 @@ public class GzipTester
      *            the filename used to on the GET request,.
      * @param testResourceSha1Sum
      *            the sha1sum file that contains the SHA1SUM checksum that will be used to verify that the response contents are what is intended.
-     * @param expectedContentType
+     * @param expectedContentType the expected content type
      * @param expectedContentEncoding
      *            can be non-null in some circumstances, eg when dealing with pre-gzipped .svgz files
+     * @throws Exception on test failure
      */
     public void assertIsResponseNotGzipFiltered(String requestedFilename, String testResourceSha1Sum, String expectedContentType, String expectedContentEncoding)
             throws Exception
@@ -526,6 +533,8 @@ public class GzipTester
      *            the filename to create
      * @param filesize
      *            the file size to create (Note: this isn't suitable for creating large multi-megabyte files)
+     * @return the prepared file
+     * @throws IOException if unable to create file
      */
     public File prepareServerFile(String filename, int filesize) throws IOException
     {
@@ -559,6 +568,7 @@ public class GzipTester
      *
      * @param filename
      *            the filename to look for in src/test/resources
+     * @throws IOException if unable to copy file
      */
     public void copyTestServerFile(String filename) throws IOException
     {
@@ -573,6 +583,7 @@ public class GzipTester
      *
      * @param servletClass
      *            the servlet that will provide content.
+     * @throws IOException if unable to set content servlet
      */
     public void setContentServlet(Class<? extends Servlet> servletClass) throws IOException
     {
@@ -607,6 +618,7 @@ public class GzipTester
      *            the path spec for this filter
      * @param dispatches
      *            the set of {@link DispatcherType} to associate with this filter
+     * @throws IOException if unable to add filter
      */
     public void addFilter(FilterHolder holder, String pathSpec, EnumSet<DispatcherType> dispatches) throws IOException
     {

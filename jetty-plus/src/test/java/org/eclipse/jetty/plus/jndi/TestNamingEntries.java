@@ -44,9 +44,6 @@ import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
 
-/**
- *
- */
 public class TestNamingEntries
 {
     public class ScopeA
@@ -145,7 +142,7 @@ public class TestNamingEntries
      * after each test we should scrape out any lingering bindings to prevent cross test pollution
      * as observed when running java 7
      *
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @After
     public void after() throws Exception

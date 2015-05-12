@@ -24,7 +24,9 @@ import java.util.List;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.InvalidWebSocketException;
+import org.eclipse.jetty.websocket.api.WebSocketListener;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
+import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 
 /**
  * Create EventDriver implementations.
@@ -99,7 +101,7 @@ public class EventDriverFactory
      * Wrap the given WebSocket object instance in a suitable EventDriver
      * 
      * @param websocket
-     *            the websocket instance to wrap. Must either implement {@link WebSocketListener} or be annotated with {@link WebSocket &#064WebSocket}
+     *            the websocket instance to wrap. Must either implement {@link WebSocketListener} or be annotated with {@link WebSocket &#064;WebSocket}
      * @return appropriate EventDriver for this websocket instance.
      */
     public EventDriver wrap(Object websocket)

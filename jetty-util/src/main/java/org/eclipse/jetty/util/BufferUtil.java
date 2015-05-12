@@ -23,6 +23,7 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.io.RandomAccessFile;
+import java.nio.Buffer;
 import java.nio.BufferOverflowException;
 import java.nio.ByteBuffer;
 import java.nio.channels.FileChannel;
@@ -42,10 +43,12 @@ import org.eclipse.jetty.util.resource.Resource;
  * The various ByteBuffer methods assume a mode and some of them will switch or enforce a mode:
  * Allocate and clear set fill mode; flip and compact switch modes; read and write assume fill 
  * and flush modes.    This duality can result in confusing code such as:
+ * </p>
  * <pre>
  *     buffer.clear();
  *     channel.write(buffer);
  * </pre>
+ * <p>
  * Which looks as if it should write no data, but in fact writes the buffer worth of garbage.
  * </p>
  * <p>
@@ -57,13 +60,14 @@ import org.eclipse.jetty.util.resource.Resource;
  * <p>
  * Thus this class provides alternate implementations of {@link #allocate(int)}, 
  * {@link #allocateDirect(int)} and {@link #clear(ByteBuffer)} that leave the buffer
- * in flush mode.   Thus the following tests will pass:<pre>
+ * in flush mode.   Thus the following tests will pass:
+ * </p>
+ * <pre>
  *     ByteBuffer buffer = BufferUtil.allocate(1024);
  *     assert(buffer.remaining()==0);
  *     BufferUtil.clear(buffer);
  *     assert(buffer.remaining()==0);
  * </pre>
- * </p>
  * <p>If the BufferUtil methods {@link #fill(ByteBuffer, byte[], int, int)}, 
  * {@link #append(ByteBuffer, byte[], int, int)} or {@link #put(ByteBuffer, ByteBuffer)} are used,
  * then the caller does not need to explicitly switch the buffer to fill mode.    
@@ -71,6 +75,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * then they can use explicit calls of #flipToFill(ByteBuffer) and #flipToFlush(ByteBuffer, int)
  * to change modes.  Note because this convention attempts to avoid the copies of compact, the position
  * is not set to zero on each fill cycle and so its value must be remembered:
+ * </p>
  * <pre>
  *      int pos = BufferUtil.flipToFill(buffer);
  *      try
@@ -82,8 +87,9 @@ import org.eclipse.jetty.util.resource.Resource;
  *          flipToFlush(buffer, pos);
  *      }
  * </pre>
- * The flipToFill method will effectively clear the buffer if it is emtpy and will compact the buffer if there is no space.
- * 
+ * <p>
+ * The flipToFill method will effectively clear the buffer if it is empty and will compact the buffer if there is no space.
+ * </p>
  */
 public class BufferUtil
 {
@@ -354,7 +360,7 @@ public class BufferUtil
      * @param b bytes to append
      * @param off offset into byte
      * @param len length to append
-     * @throws BufferOverflowException
+     * @throws BufferOverflowException if unable to append buffer due to space limits
      */
     public static void append(ByteBuffer to, byte[] b, int off, int len) throws BufferOverflowException
     {
@@ -391,6 +397,7 @@ public class BufferUtil
     /** Appends a buffer to a buffer
      * @param to Buffer is flush mode
      * @param b buffer to append
+     * @return The position of the valid data before the flipped position.
      */
     public static int append(ByteBuffer to, ByteBuffer b)
     {
@@ -412,6 +419,7 @@ public class BufferUtil
      * @param b bytes to fill
      * @param off offset into byte
      * @param len length to fill
+     * @return The position of the valid data before the flipped position.
      */
     public static int fill(ByteBuffer to, byte[] b, int off, int len)
     {
@@ -522,6 +530,7 @@ public class BufferUtil
     /* ------------------------------------------------------------ */
     /** Convert a partial buffer to a String.
      * 
+     * @param buffer the buffer to convert 
      * @param position The position in the buffer to start the string from
      * @param length The length of the buffer
      * @param charset The {@link Charset} to use to convert the bytes
@@ -559,11 +568,16 @@ public class BufferUtil
 
     /* ------------------------------------------------------------ */
     /**
-     * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an IllegalArgumentException is thrown
+     * Convert buffer to an integer. Parses up to the first non-numeric character. If no number is found an
+     * IllegalArgumentException is thrown
      *
      * @param buffer
      *            A buffer containing an integer in flush mode. The position is not changed.
-     * @return an int
+     * @param position
+     *            the position in the buffer to start reading from
+     * @param length
+     *            the length of the buffer to use for conversion
+     * @return an int of the buffer bytes
      */
     public static int toInt(ByteBuffer buffer, int position, int length)
     {
@@ -828,30 +842,14 @@ public class BufferUtil
 
     public static ByteBuffer toBuffer(String s)
     {
-        return ByteBuffer.wrap(s.getBytes(StandardCharsets.ISO_8859_1));
-    }
-
-    public static ByteBuffer toDirectBuffer(String s)
-    {
-        byte[] bytes = s.getBytes(StandardCharsets.ISO_8859_1);
-        ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
-        buf.put(bytes);
-        buf.flip();
-        return buf;
+        return toBuffer(s, StandardCharsets.ISO_8859_1);
     }
 
     public static ByteBuffer toBuffer(String s, Charset charset)
     {
-        return ByteBuffer.wrap(s.getBytes(charset));
-    }
-
-    public static ByteBuffer toDirectBuffer(String s, Charset charset)
-    {
-        byte[] bytes = s.getBytes(charset);
-        ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
-        buf.put(bytes);
-        buf.flip();
-        return buf;
+        if (s == null)
+            return EMPTY_BUFFER;
+        return toBuffer(s.getBytes(charset));
     }
 
     /**
@@ -861,9 +859,11 @@ public class BufferUtil
      *            the byte array to back buffer with.
      * @return ByteBuffer with provided byte array, in flush mode
      */
-    public static ByteBuffer toBuffer(byte array[])
+    public static ByteBuffer toBuffer(byte[] array)
     {
-        return ByteBuffer.wrap(array);
+        if (array == null)
+            return EMPTY_BUFFER;
+        return toBuffer(array, 0, array.length);
     }
 
     /**
@@ -879,7 +879,25 @@ public class BufferUtil
      */
     public static ByteBuffer toBuffer(byte array[], int offset, int length)
     {
+        if (array == null)
+            return EMPTY_BUFFER;
         return ByteBuffer.wrap(array, offset, length);
+    }
+
+    public static ByteBuffer toDirectBuffer(String s)
+    {
+        return toDirectBuffer(s, StandardCharsets.ISO_8859_1);
+    }
+
+    public static ByteBuffer toDirectBuffer(String s, Charset charset)
+    {
+        if (s == null)
+            return EMPTY_BUFFER;
+        byte[] bytes = s.getBytes(charset);
+        ByteBuffer buf = ByteBuffer.allocateDirect(bytes.length);
+        buf.put(bytes);
+        buf.flip();
+        return buf;
     }
 
     public static ByteBuffer toMappedBuffer(File file) throws IOException
@@ -947,8 +965,6 @@ public class BufferUtil
     
     /* ------------------------------------------------------------ */
     /** Convert Buffer to string ID independent of content
-     * @param buffer
-     * @return A string showing the buffer ID
      */
     private static void idString(ByteBuffer buffer, StringBuilder out) 
     {
@@ -969,7 +985,7 @@ public class BufferUtil
     
     /* ------------------------------------------------------------ */
     /** Convert Buffer to string ID independent of content
-     * @param buffer
+     * @param buffer the buffet to generate a string ID from
      * @return A string showing the buffer ID
      */
     public static String toIDString(ByteBuffer buffer)
@@ -982,7 +998,7 @@ public class BufferUtil
     
     /* ------------------------------------------------------------ */
     /** Convert Buffer to a detail debug string of pointers and content
-     * @param buffer
+     * @param buffer the buffer to generate a detail string from
      * @return A string showing the pointers and content of the buffer
      */
     public static String toDetailString(ByteBuffer buffer)
@@ -1064,7 +1080,7 @@ public class BufferUtil
 
     /* ------------------------------------------------------------ */
     /** Convert buffer to a Hex Summary String.
-     * @param buffer
+     * @param buffer the buffer to generate a hex byte summary from
      * @return A string showing the escaped content of the buffer around the
      * position and limit (marked with &lt;&lt;&lt; and &gt;&gt;&gt;)
      */

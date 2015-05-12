@@ -67,6 +67,7 @@ import javax.servlet.http.HttpServletResponse;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.http.MimeTypes;
 import org.eclipse.jetty.server.ClassLoaderDump;
+import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HandlerContainer;
@@ -190,18 +191,12 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private volatile Availability _availability;
 
     /* ------------------------------------------------------------ */
-    /**
-     *
-     */
     public ContextHandler()
     {
         this((Context)null);
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     *
-     */
     protected ContextHandler(Context context)
     {
         super();
@@ -214,9 +209,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     *
-     */
     public ContextHandler(String contextPath)
     {
         this();
@@ -224,9 +216,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     *
-     */
     public ContextHandler(HandlerContainer parent, String contextPath)
     {
         this();
@@ -567,6 +556,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     /**
      * Add a context event listeners.
+     * @param listener the event listener to add
      *
      * @see ServletContextListener
      * @see ServletContextAttributeListener
@@ -596,6 +586,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     /**
      * Remove a context event listeners.
+     * @param listener the event listener to remove
      *
      * @see ServletContextListener
      * @see ServletContextAttributeListener
@@ -623,7 +614,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Apply any necessary restrictions on a programmatic added listener.
      *
-     * @param listener
+     * @param listener the programmatic listener to add
      */
     protected void addProgrammaticListener (EventListener listener)
     {
@@ -679,6 +670,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     /**
      * Set Available status.
+     * @param available true to set as enabled
      */
     public void setAvailable(boolean available)
     {
@@ -758,6 +750,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Extensible startContext. this method is called from {@link ContextHandler#doStart()} instead of a call to super.doStart(). This allows derived classes to
      * insert additional handling (Eg configuration) before the call to super.doStart by this method will start contained handlers.
+     * @throws Exception if unable to start the context
      *
      * @see org.eclipse.jetty.server.handler.ContextHandler.Context
      */
@@ -1189,8 +1182,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /**
      * Check the target. Called by {@link #handle(String, Request, HttpServletRequest, HttpServletResponse)} when a target within a context is determined. If
      * the target is protected, 404 is returned.
+     * @param target the target to test
+     * @return true if target is a protected target
      */
-    /* ------------------------------------------------------------ */
     public boolean isProtectedTarget(String target)
     {
         if (target == null || _protectedTargets == null)
@@ -1449,8 +1443,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     */
     public void setWelcomeFiles(String[] files)
     {
         _welcomeFiles = files;
@@ -1501,7 +1493,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     /**
      * Set the maximum size of a form post, to protect against DOS attacks from large forms.
-     * @param maxSize
+     * @param maxSize the maximum size of the form content (in bytes)
      */
     public void setMaxFormContentSize(int maxSize)
     {
@@ -1517,7 +1509,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     /**
      * Set the maximum number of form Keys to protect against DOS attack from crafted hash keys.
-     * @param max
+     * @param max the maximum number of form keys
      */
     public void setMaxFormKeys(int max)
     {
@@ -1663,8 +1655,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     /* ------------------------------------------------------------ */
     /**
-     * @param path
-     * @param resource
+     * @param path the path to check the alias for
+     * @param resource the resource
      * @return True if the alias is OK
      */
     public boolean checkAlias(String path, Resource resource)
@@ -1694,6 +1686,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     /**
      * Convert URL to Resource wrapper for {@link Resource#newResource(URL)} enables extensions to provide alternate resource implementations.
+     * @param url the url to convert to a Resource
+     * @return the Resource for that url
+     * @throws IOException if unable to create a Resource from the URL
      */
     public Resource newResource(URL url) throws IOException
     {
@@ -1703,6 +1698,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     /* ------------------------------------------------------------ */
     /**
      * Convert URL to Resource wrapper for {@link Resource#newResource(URL)} enables extensions to provide alternate resource implementations.
+     * @param uri the URI to convert to a Resource
+     * @return the Resource for that URI
+     * @throws IOException if unable to create a Resource from the URL
      */
     public Resource newResource(URI uri) throws IOException
     {
@@ -2219,8 +2217,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
             try
             {
-                @SuppressWarnings("unchecked")
-                Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(ContextHandler.class,className):_classLoader.loadClass(className);
+                @SuppressWarnings({ "unchecked", "rawtypes" })
+                Class<? extends EventListener> clazz = _classLoader==null?Loader.loadClass(ContextHandler.class,className):(Class)_classLoader.loadClass(className);
                 addListener(clazz);
             }
             catch (ClassNotFoundException e)

@@ -36,7 +36,7 @@ import org.eclipse.jetty.websocket.common.frames.TextFrame;
 
 /**
  * Support for writing a single WebSocket TEXT message via a {@link Writer}
- * <p/>
+ * <p>
  * Note: Per WebSocket spec, all WebSocket TEXT messages must be encoded in UTF-8
  */
 public class MessageWriter extends Writer

@@ -33,11 +33,11 @@ import org.eclipse.jetty.util.Callback;
 /**
  * A {@link ContentProvider} that provides content asynchronously through an {@link OutputStream}
  * similar to {@link DeferredContentProvider}.
- * <p />
+ * <p>
  * {@link OutputStreamContentProvider} can only be used in conjunction with
  * {@link Request#send(Response.CompleteListener)} (and not with its blocking counterpart {@link Request#send()})
  * because it provides content asynchronously.
- * <p />
+ * <p>
  * The deferred content is provided once by writing to the {@link #getOutputStream() output stream}
  * and then fully consumed.
  * Invocations to the {@link #iterator()} method after the first will return an "empty" iterator
@@ -45,10 +45,10 @@ import org.eclipse.jetty.util.Callback;
  * However, it is possible for subclasses to support multiple invocations of {@link #iterator()}
  * by overriding {@link #write(ByteBuffer)} and {@link #close()}, copying the bytes and making them
  * available for subsequent invocations.
- * <p />
+ * <p>
  * Content must be provided by writing to the {@link #getOutputStream() output stream}, that must be
  * {@link OutputStream#close() closed} when all content has been provided.
- * <p />
+ * <p>
  * Example usage:
  * <pre>
  * HttpClient httpClient = ...;
@@ -61,7 +61,7 @@ import org.eclipse.jetty.util.Callback;
  *             .content(content)
  *             .send(new Response.CompleteListener()
  *             {
- *                 &#64Override
+ *                 &#64;Override
  *                 public void onComplete(Result result)
  *                 {
  *                     // Your logic here

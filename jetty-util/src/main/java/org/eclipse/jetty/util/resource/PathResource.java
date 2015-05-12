@@ -32,7 +32,6 @@ import java.nio.file.DirectoryStream;
 import java.nio.file.Files;
 import java.nio.file.InvalidPathException;
 import java.nio.file.LinkOption;
-import java.nio.file.NoSuchFileException;
 import java.nio.file.Path;
 import java.nio.file.StandardOpenOption;
 import java.nio.file.attribute.FileTime;
@@ -52,7 +51,7 @@ public class PathResource extends Resource
     private static final Logger LOG = Log.getLogger(PathResource.class);
     private final static LinkOption NO_FOLLOW_LINKS[] = new LinkOption[] { LinkOption.NOFOLLOW_LINKS };
     private final static LinkOption FOLLOW_LINKS[] = new LinkOption[] {};
-
+    
     private final Path path;
     private final Path alias;
     private final URI uri;
@@ -72,28 +71,97 @@ public class PathResource extends Resource
             if (Files.exists(path))
             {
                 Path real = abs.toRealPath(FOLLOW_LINKS);
-                if (!abs.equals(real))
+                
+                /*
+                 * If the real path is not the same as the absolute path
+                 * then we know that the real path is the alias for the
+                 * provided path.
+                 *
+                 * For OS's that are case insensitive, this should
+                 * return the real (on-disk / case correct) version
+                 * of the path.
+                 *
+                 * We have to be careful on Windows and OSX.
+                 * 
+                 * Assume we have the following scenario
+                 *   Path a = new File("foo").toPath();
+                 *   Files.createFile(a);
+                 *   Path b = new File("FOO").toPath();
+                 * 
+                 * There now exists a file called "foo" on disk.
+                 * Using Windows or OSX, with a Path reference of
+                 * "FOO", "Foo", "fOO", etc.. means the following
+                 * 
+                 *                        |  OSX    |  Windows   |  Linux
+                 * -----------------------+---------+------------+---------
+                 * Files.exists(a)        |  True   |  True      |  True
+                 * Files.exists(b)        |  True   |  True      |  False
+                 * Files.isSameFile(a,b)  |  True   |  True      |  False
+                 * a.equals(b)            |  False  |  True      |  False
+                 * 
+                 * See the javadoc for Path.equals() for details about this FileSystem
+                 * behavior difference
+                 * 
+                 * We also cannot rely on a.compareTo(b) as this is roughly equivalent
+                 * in implementation to a.equals(b)
+                 */
+                
+                int absCount = abs.getNameCount();
+                int realCount = abs.getNameCount();
+                if (absCount != realCount)
+                {
+                    // different number of segments
                     return real;
+                }
+                
+                // compare each segment of path, backwards
+                for (int i = realCount-1; i >= 0; i--)
+                {
+                    if (!abs.getName(i).toString().equals(real.getName(i).toString()))
+                    {
+                        return real;
+                    }
+                }
             }
         }
-        catch (NoSuchFileException e)
+        catch (IOException e)
         {
             // Ignore
         }
         catch (Exception e)
         {
-            // TODO: reevaluate severity level
             LOG.warn("bad alias ({}) for {}", e.getClass().getName(), e.getMessage());
-            return abs;
         }
         return null;
     }
 
+    /**
+     * Construct a new PathResource from a File object.
+     * <p>
+     * An invocation of this convenience constructor of the form.
+     * </p>
+     * <pre>
+     * new PathResource(file);
+     * </pre>
+     * <p>
+     * behaves in exactly the same way as the expression
+     * </p>
+     * <pre>
+     * new PathResource(file.toPath());
+     * </pre>
+
+     * @param file the file to use
+     */
     public PathResource(File file)
     {
         this(file.toPath());
     }
 
+    /**
+     * Construct a new PathResource from a Path object.
+     * 
+     * @param path the path to use
+     */
     public PathResource(Path path)
     {
         this.path = path.toAbsolutePath();
@@ -101,6 +169,14 @@ public class PathResource extends Resource
         this.alias = checkAliasPath(path);
     }
 
+    /**
+     * Construct a new PathResource from a URI object.
+     * <p>
+     * Must be an absolute URI using the <code>file</code> scheme.
+     * 
+     * @param uri the URI to build this PathResource from.
+     * @throws IOException if unable to construct the PathResource from the URI.
+     */
     public PathResource(URI uri) throws IOException
     {
         if (!uri.isAbsolute())
@@ -137,6 +213,25 @@ public class PathResource extends Resource
         this.alias = checkAliasPath(path);
     }
 
+    /**
+     * Create a new PathResource from a provided URL object.
+     * <p>
+     * An invocation of this convenience constructor of the form.
+     * </p>
+     * <pre>
+     * new PathResource(url);
+     * </pre>
+     * <p>
+     * behaves in exactly the same way as the expression
+     * </p>
+     * <pre>
+     * new PathResource(url.toURI());
+     * </pre>
+     * 
+     * @param url the url to attempt to create PathResource from
+     * @throws IOException if URL doesn't point to a location that can be transformed to a PathResource
+     * @throws URISyntaxException if the provided URL was malformed
+     */
     public PathResource(URL url) throws IOException, URISyntaxException
     {
         this(url.toURI());
@@ -155,12 +250,9 @@ public class PathResource extends Resource
 
         // subpaths are always under PathResource
         // compensate for input subpaths like "/subdir"
-        // where default java.nio.file behavior would be
+        // where default resolve behavior would be
         // to treat that like an absolute path
-        StringBuilder relpath = new StringBuilder();
-        relpath.append(".").append(File.separator);
-        relpath.append(cpath);
-        return new PathResource(this.path.resolve(relpath.toString()).normalize());
+        return new PathResource(this.path.getFileSystem().getPath(path.toString(), subpath));
     }
 
     @Override
@@ -225,7 +317,10 @@ public class PathResource extends Resource
         return path.toFile();
     }
 
-    public Path getPath() throws IOException
+    /**
+     * @return the {@link Path} of the resource
+     */
+    public Path getPath()
     {
         return path;
     }
@@ -324,6 +419,11 @@ public class PathResource extends Resource
         return this.alias!=null;
     }
     
+    /**
+     * The Alias as a Path.
+     * 
+     * @return the alias as a path.
+     */
     public Path getAliasPath()
     {
         return this.alias;

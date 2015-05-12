@@ -18,9 +18,7 @@
 
 package org.eclipse.jetty.http2.server;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.junit.Assert.assertThat;
-
+import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
@@ -45,30 +43,35 @@ import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.NetworkConnector;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Utf8StringBuilder;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
+import static org.hamcrest.Matchers.containsString;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
+
 public class HTTP2CServerTest extends AbstractServerTest
 {
-    HTTP2CServer _server;
-    int _port;
-    
+    private HTTP2CServer _server;
+    private int _port;
+
     @Before
     public void before() throws Exception
     {
-        _server=new HTTP2CServer(0);
+        _server = new HTTP2CServer(0);
         _server.start();
-        _port=((NetworkConnector)_server.getConnectors()[0]).getLocalPort();
+        _port = ((NetworkConnector)_server.getConnectors()[0]).getLocalPort();
     }
-    
+
     @After
     public void after() throws Exception
     {
         _server.stop();
     }
-    
+
     @Test
     public void testHTTP_1_0_Simple() throws Exception
     {
@@ -76,14 +79,14 @@ public class HTTP2CServerTest extends AbstractServerTest
         {
             client.getOutputStream().write("GET / HTTP/1.0\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             client.getOutputStream().flush();
-            
+
             String response = IO.toString(client.getInputStream());
-           
-            assertThat(response,containsString("HTTP/1.1 200 OK"));
-            assertThat(response,containsString("Hello from Jetty using HTTP/1.0"));
+
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("Hello from Jetty using HTTP/1.0"));
         }
     }
-    
+
     @Test
     public void testHTTP_1_1_Simple() throws Exception
     {
@@ -92,27 +95,131 @@ public class HTTP2CServerTest extends AbstractServerTest
             client.getOutputStream().write("GET /one HTTP/1.1\r\nHost: localhost\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             client.getOutputStream().write("GET /two HTTP/1.1\r\nHost: localhost\r\nConnection: close\r\n\r\n".getBytes(StandardCharsets.ISO_8859_1));
             client.getOutputStream().flush();
-            
+
             String response = IO.toString(client.getInputStream());
-           
-            assertThat(response,containsString("HTTP/1.1 200 OK"));
-            assertThat(response,containsString("Hello from Jetty using HTTP/1.1"));
-            assertThat(response,containsString("uri=/one"));
-            assertThat(response,containsString("uri=/two"));
+
+            assertThat(response, containsString("HTTP/1.1 200 OK"));
+            assertThat(response, containsString("Hello from Jetty using HTTP/1.1"));
+            assertThat(response, containsString("uri=/one"));
+            assertThat(response, containsString("uri=/two"));
         }
     }
 
     @Test
-    public void testHTTP_2_0_Simple() throws Exception
+    public void testHTTP_1_1_Upgrade() throws Exception
+    {
+        try (Socket client = new Socket("localhost", _port))
+        {
+            OutputStream output = client.getOutputStream();
+            output.write(("" +
+                    "GET /one HTTP/1.1\r\n" +
+                    "Host: localhost\r\n" +
+                    "Connection: Upgrade, HTTP2-Settings\r\n" +
+                    "Upgrade: h2c\r\n" +
+                    "HTTP2-Settings: \r\n" +
+                    "\r\n").getBytes(StandardCharsets.ISO_8859_1));
+            output.flush();
+
+            InputStream input = client.getInputStream();
+            Utf8StringBuilder upgrade = new Utf8StringBuilder();
+            int crlfs = 0;
+            while (true)
+            {
+                int read = input.read();
+                if (read == '\r' || read == '\n')
+                    ++crlfs;
+                else
+                    crlfs = 0;
+                upgrade.append((byte)read);
+                if (crlfs == 4)
+                    break;
+            }
+
+            assertTrue(upgrade.toString().startsWith("HTTP/1.1 101 "));
+
+            byteBufferPool = new MappedByteBufferPool();
+            generator = new Generator(byteBufferPool);
+
+            final AtomicReference<HeadersFrame> headersRef = new AtomicReference<>();
+            final AtomicReference<DataFrame> dataRef = new AtomicReference<>();
+            final AtomicReference<CountDownLatch> latchRef = new AtomicReference<>(new CountDownLatch(2));
+            Parser parser = new Parser(byteBufferPool, new Parser.Listener.Adapter()
+            {
+                @Override
+                public void onHeaders(HeadersFrame frame)
+                {
+                    headersRef.set(frame);
+                    latchRef.get().countDown();
+                }
+
+                @Override
+                public void onData(DataFrame frame)
+                {
+                    dataRef.set(frame);
+                    latchRef.get().countDown();
+                }
+            }, 4096, 8192);
+
+            parseResponse(client, parser);
+
+            Assert.assertTrue(latchRef.get().await(5, TimeUnit.SECONDS));
+
+            HeadersFrame response = headersRef.get();
+            Assert.assertNotNull(response);
+            MetaData.Response responseMetaData = (MetaData.Response)response.getMetaData();
+            Assert.assertEquals(200, responseMetaData.getStatus());
+
+            DataFrame responseData = dataRef.get();
+            Assert.assertNotNull(responseData);
+
+            String content = BufferUtil.toString(responseData.getData());
+
+            // The upgrade request is seen as HTTP/1.1.
+            assertThat(content, containsString("Hello from Jetty using HTTP/1.1"));
+            assertThat(content, containsString("uri=/one"));
+
+            // Send a HTTP/2 request.
+            headersRef.set(null);
+            dataRef.set(null);
+            latchRef.set(new CountDownLatch(2));
+            ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
+            generator.control(lease, new PrefaceFrame());
+            MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:" + _port), "/two", HttpVersion.HTTP_2, new HttpFields());
+            generator.control(lease, new HeadersFrame(3, metaData, null, true));
+            for (ByteBuffer buffer : lease.getByteBuffers())
+                output.write(BufferUtil.toArray(buffer));
+            output.flush();
+
+            parseResponse(client, parser);
+
+            Assert.assertTrue(latchRef.get().await(5, TimeUnit.SECONDS));
+
+            response = headersRef.get();
+            Assert.assertNotNull(response);
+            responseMetaData = (MetaData.Response)response.getMetaData();
+            Assert.assertEquals(200, responseMetaData.getStatus());
+
+            responseData = dataRef.get();
+            Assert.assertNotNull(responseData);
+
+            content = BufferUtil.toString(responseData.getData());
+
+            assertThat(content, containsString("Hello from Jetty using HTTP/2.0"));
+            assertThat(content, containsString("uri=/two"));
+        }
+    }
+
+    @Test
+    public void testHTTP_2_0_Direct() throws Exception
     {
         final CountDownLatch latch = new CountDownLatch(3);
-        
-        byteBufferPool= new MappedByteBufferPool();
+
+        byteBufferPool = new MappedByteBufferPool();
         generator = new Generator(byteBufferPool);
-        
+
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
-        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:"+_port), "/test", HttpVersion.HTTP_2, new HttpFields());
+        MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:" + _port), "/test", HttpVersion.HTTP_2, new HttpFields());
 
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
@@ -160,11 +267,11 @@ public class HTTP2CServerTest extends AbstractServerTest
 
             DataFrame responseData = dataRef.get();
             Assert.assertNotNull(responseData);
-            
+
             String s = BufferUtil.toString(responseData.getData());
-            
-            assertThat(s,containsString("Hello from Jetty using HTTP/2.0"));
-            assertThat(s,containsString("uri=/test"));
+
+            assertThat(s, containsString("Hello from Jetty using HTTP/2.0"));
+            assertThat(s, containsString("uri=/test"));
         }
     }
 }

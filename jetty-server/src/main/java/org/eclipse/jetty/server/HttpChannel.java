@@ -30,6 +30,7 @@ import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
 import javax.servlet.http.HttpServletRequest;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpGenerator;
 import org.eclipse.jetty.http.HttpHeader;
@@ -76,11 +77,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     private final Response _response;
     private MetaData.Response _committedMetaData;
     private RequestLog _requestLog;
-    
+
     /** Bytes written after interception (eg after compression) */
     private long _written;
 
-    
     public HttpChannel(Connector connector, HttpConfiguration configuration, EndPoint endPoint, HttpTransport transport)
     {
         _connector = connector;
@@ -105,13 +105,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         return new HttpOutput(this);
     }
-    
-    
+
     public HttpChannelState getState()
     {
         return _state;
     }
 
+    public long getBytesWritten()
+    {
+        return _written;
+    }
+    
     /**
      * @return the number of requests handled by this connection
      */
@@ -140,7 +144,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _requestLog = requestLog;
     }
 
-    public MetaData.Response getCommittedInfo()
+    public MetaData.Response getCommittedMetaData()
     {
         return _committedMetaData;
     }
@@ -149,6 +153,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * Get the idle timeout.
      * <p>This is implemented as a call to {@link EndPoint#getIdleTimeout()}, but may be
      * overridden by channels that have timeouts different from their connections.
+     * @return the idle timeout (in milliseconds)
      */
     public long getIdleTimeout()
     {
@@ -157,14 +162,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
     /**
      * Set the idle timeout.
-     * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long), but may be
+     * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long)}, but may be
      * overridden by channels that have timeouts different from their connections.
+     * @param timeoutMs the idle timeout in milliseconds
      */
     public void setIdleTimeout(long timeoutMs)
     {
         _endPoint.setIdleTimeout(timeoutMs);
     }
-    
+
     public ByteBufferPool getByteBufferPool()
     {
         return _connector.getByteBufferPool();
@@ -215,7 +221,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
      * is ready for the request body and thus a 100 Continue response is sent.
-     *
+     * 
+     * @param available estimate of the number of bytes that are available 
      * @throws IOException if the InputStream cannot be created
      */
     public void continue100(int available) throws IOException
@@ -234,9 +241,9 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     }
 
     public void asyncReadFillInterested()
-    {        
+    {
     }
-    
+
     @Override
     public void run()
     {
@@ -347,7 +354,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     }
                 }
-                catch (EofException|QuietServletException e)
+                catch (EofException|QuietServletException|BadMessageException e)
                 {
                     error=true;
                     LOG.debug(e);
@@ -459,7 +466,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             else
             {
                 _response.setHeader(HttpHeader.CONNECTION.asString(),HttpHeaderValue.CLOSE.asString());
-                _response.sendError(500, x.getMessage());
+
+                if (x instanceof BadMessageException)
+                {
+                    BadMessageException bme = (BadMessageException)x;
+                    _response.sendError(bme.getCode(), bme.getReason());
+                }
+                else
+                    _response.sendError(500, x.getClass().toString());
             }
         }
         catch (IOException e)
@@ -521,7 +535,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     public void onCompleted()
     {
         if (_requestLog!=null )
-            _requestLog.log(_request,_committedMetaData==null?-1:_committedMetaData.getStatus(), _written);   
+            _requestLog.log(_request, _response);
+        
         _transport.onCompleted();
     }
     
@@ -661,7 +676,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     /**
      * If a write or similar operation to this channel fails,
      * then this method should be called.
-     * <p />
+     * <p>
      * The standard implementation calls {@link HttpTransport#abort(Throwable)}.
      *
      * @param failure the failure that caused the abort.
@@ -689,17 +704,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         @Override
         public void failed(final Throwable x)
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Commit failed", x);
+
             if (x instanceof EofException || x instanceof ClosedChannelException)
             {
-                LOG.debug(x);
                 _callback.failed(x);
                 _response.getHttpOutput().closed();
             }
             else
             {
-                _committed.set(false);
-                LOG.warn("Commit failed",x);
-                sendResponse(HttpGenerator.RESPONSE_500_INFO,null,true,new Callback()
+                _transport.send(HttpGenerator.RESPONSE_500_INFO, false, null, true, new Callback()
                 {
                     @Override
                     public void succeeded()
@@ -711,7 +726,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     @Override
                     public void failed(Throwable th)
                     {
-                        LOG.ignore(th);
                         _callback.failed(x);
                         _response.getHttpOutput().closed();
                     }

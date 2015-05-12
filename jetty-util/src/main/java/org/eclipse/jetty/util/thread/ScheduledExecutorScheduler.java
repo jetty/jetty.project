@@ -32,7 +32,7 @@ import org.eclipse.jetty.util.component.Dumpable;
 
 /**
  * Implementation of {@link Scheduler} based on JDK's {@link ScheduledThreadPoolExecutor}.
- * <p />
+ * <p>
  * While use of {@link ScheduledThreadPoolExecutor} creates futures that will not be used,
  * it has the advantage of allowing to set a property to remove cancelled tasks from its
  * queue even if the task did not fire, which provides a huge benefit in the performance
@@ -43,6 +43,7 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     private final String name;
     private final boolean daemon;
     private final ClassLoader classloader;
+    private final ThreadGroup threadGroup;
     private volatile ScheduledThreadPoolExecutor scheduler;
     private volatile Thread thread;
 
@@ -58,9 +59,15 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
     
     public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader threadFactoryClassLoader)
     {
+        this(name, daemon, threadFactoryClassLoader, null);
+    }
+
+    public ScheduledExecutorScheduler(String name, boolean daemon, ClassLoader threadFactoryClassLoader, ThreadGroup threadGroup)
+    {
         this.name = name == null ? "Scheduler-" + hashCode() : name;
         this.daemon = daemon;
-        this.classloader = threadFactoryClassLoader;
+        this.classloader = threadFactoryClassLoader == null ? Thread.currentThread().getContextClassLoader() : threadFactoryClassLoader;
+        this.threadGroup = threadGroup;
     }
 
     @Override
@@ -71,7 +78,7 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
             @Override
             public Thread newThread(Runnable r)
             {
-                Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(r, name);
+                Thread thread = ScheduledExecutorScheduler.this.thread = new Thread(threadGroup, r, name);
                 thread.setDaemon(daemon);
                 thread.setContextClassLoader(classloader);
                 return thread;
@@ -123,11 +130,11 @@ public class ScheduledExecutorScheduler extends AbstractLifeCycle implements Sch
         }
     }
 
-    private class ScheduledFutureTask implements Task
+    private static class ScheduledFutureTask implements Task
     {
         private final ScheduledFuture<?> scheduledFuture;
 
-        public ScheduledFutureTask(ScheduledFuture<?> scheduledFuture)
+        ScheduledFutureTask(ScheduledFuture<?> scheduledFuture)
         {
             this.scheduledFuture = scheduledFuture;
         }

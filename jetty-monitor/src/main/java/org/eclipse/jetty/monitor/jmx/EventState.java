@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
  * 
  * Holds the state of one or more {@link org.eclipse.jetty.monitor.jmx.EventTrigger event trigger}
  * instances to be used when sending notifications as well as executing the actions
+ * @param <TYPE> the event trigger type
  */
 public class EventState<TYPE>
 {
@@ -39,6 +40,7 @@ public class EventState<TYPE>
      * State
      * 
      * Holds the state of a single {@link org.eclipse.jetty.monitor.jmx.EventTrigger event trigger}
+     * @param <TYPE> the event trigger type
      */
     public static class TriggerState<TYPE>
     {

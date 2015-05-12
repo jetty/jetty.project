@@ -20,7 +20,6 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
-import java.nio.charset.StandardCharsets;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -40,7 +39,7 @@ import java.util.Set;
  * Trie is required external locks need to be applied.
  * </p>
  * 
- * @param <V>
+ * @param <V> the entry type
  */
 public class TreeTrie<V> extends AbstractTrie<V>
 {
@@ -224,9 +223,43 @@ public class TreeTrie<V> extends AbstractTrie<V>
     @Override
     public V getBest(String s, int offset, int len)
     {
-        // TODO inefficient
-        byte[] b=s.substring(offset,offset+len).getBytes(StandardCharsets.ISO_8859_1);
-        return getBest(b,0,b.length);
+        TreeTrie<V> t = this;
+        for(int i=0; i < len; i++)
+        {
+            byte c=(byte)(0xff&s.charAt(offset+i));
+            int index=c>=0&&c<0x7f?__lookup[c]:-1;
+            if (index>=0)
+            {
+                if (t._nextIndex[index] == null) 
+                    break;
+                t = t._nextIndex[index];
+            }
+            else
+            {
+                TreeTrie<V> n=null;
+                for (int j=t._nextOther.size();j-->0;)
+                {
+                    n=t._nextOther.get(j);
+                    if (n._c==c)
+                        break;
+                    n=null;
+                }
+                if (n==null)
+                    break;
+                t=n;
+            }
+            
+            // Is the next Trie is a match
+            if (t._key!=null)
+            {
+                // Recurse so we can remember this possibility
+                V best=t.getBest(s,offset+i+1,len-i-1);
+                if (best!=null)
+                    return best;
+                break;
+            }
+        }
+        return t._value;
     }
     
     @Override

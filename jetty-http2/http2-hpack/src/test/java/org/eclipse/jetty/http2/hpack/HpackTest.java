@@ -18,8 +18,9 @@
 
 package org.eclipse.jetty.http2.hpack;
 
-import static org.hamcrest.CoreMatchers.*;
-import static org.junit.Assert.*;
+import static org.hamcrest.CoreMatchers.is;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertThat;
 
 import java.nio.ByteBuffer;
 

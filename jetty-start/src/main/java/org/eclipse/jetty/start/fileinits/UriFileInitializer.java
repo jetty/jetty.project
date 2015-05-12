@@ -41,9 +41,9 @@ public class UriFileInitializer implements FileInitializer
     {
         this.baseHome = baseHome;
     }
-
+    
     @Override
-    public boolean init(URI uri, Path file) throws IOException
+    public boolean init(URI uri, Path file, String fileRef) throws IOException
     {
         if (!isSupportedScheme(uri))
         {
@@ -51,7 +51,7 @@ public class UriFileInitializer implements FileInitializer
             return false;
         }
 
-        if(isFilePresent(file))
+        if(isFilePresent(file, baseHome.getPath(fileRef)))
         {
             // All done
             return true;
@@ -98,23 +98,35 @@ public class UriFileInitializer implements FileInitializer
         }
     }
 
-    protected boolean isFilePresent(Path file) throws IOException
+    /**
+     * Test if any of the Paths exist (as files)
+     * 
+     * @param paths
+     *            the list of paths to check
+     * @return true if the path exist (as a file), false if it doesn't exist
+     * @throws IOException
+     *             if the path points to a non-file, or is not readable.
+     */
+    protected boolean isFilePresent(Path... paths) throws IOException
     {
-        if (Files.exists(file))
+        for (Path file : paths)
         {
-            if (Files.isDirectory(file))
+            if (Files.exists(file))
             {
-                throw new IOException("Directory in the way: " + file.toAbsolutePath());
-            }
+                if (Files.isDirectory(file))
+                {
+                    throw new IOException("Directory in the way: " + file.toAbsolutePath());
+                }
 
-            if (!Files.isReadable(file))
-            {
-                throw new IOException("File not readable: " + file.toAbsolutePath());
+                if (!Files.isReadable(file))
+                {
+                    throw new IOException("File not readable: " + file.toAbsolutePath());
+                }
+
+                return true;
             }
-            
-            return true;
         }
-        
+
         return false;
     }
 

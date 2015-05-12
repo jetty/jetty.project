@@ -30,6 +30,9 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.nio.file.StandardCopyOption;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Collections;
@@ -37,7 +40,6 @@ import java.util.List;
 import java.util.Locale;
 
 import javax.servlet.MultipartConfigElement;
-import javax.servlet.ServletException;
 import javax.servlet.http.Part;
 
 import org.eclipse.jetty.util.log.Log;
@@ -272,10 +274,11 @@ public class MultiPartInputStreamParser
             {
                 //the part data is already written to a temporary file, just rename it
                 _temporary = false;
-                
-                File f = new File(_tmpDir, fileName);
-                if (_file.renameTo(f))
-                    _file = f;
+
+                Path src = _file.toPath();
+                Path target = src.resolveSibling(fileName);
+                Files.move(src, target, StandardCopyOption.REPLACE_EXISTING);
+                _file = target.toFile();
             }
         }
 
@@ -293,7 +296,7 @@ public class MultiPartInputStreamParser
         /**
          * Only remove tmp files.
          * 
-         * @throws IOException
+         * @throws IOException if unable to delete the file
          */
         public void cleanUp() throws IOException
         {
@@ -303,7 +306,8 @@ public class MultiPartInputStreamParser
 
 
         /**
-         * Get the file, if any, the data has been written to.
+         * Get the file
+         * @return the file, if any, the data has been written to.
          */
         public File getFile ()
         {
@@ -345,6 +349,7 @@ public class MultiPartInputStreamParser
 
     /**
      * Get the already parsed parts.
+     * @return the parts that were parsed
      */
     public Collection<Part> getParsedParts()
     {
@@ -364,7 +369,7 @@ public class MultiPartInputStreamParser
     /**
      * Delete any tmp storage for parts, and clear out the parts list.
      * 
-     * @throws MultiException
+     * @throws MultiException if unable to delete the parts
      */
     public void deleteParts ()
     throws MultiException
@@ -391,11 +396,11 @@ public class MultiPartInputStreamParser
     /**
      * Parse, if necessary, the multipart data and return the list of Parts.
      * 
-     * @throws IOException
-     * @throws ServletException
+     * @return the parts 
+     * @throws IOException if unable to get the parts
      */
     public Collection<Part> getParts()
-    throws IOException, ServletException
+    throws IOException
     {
         parse();
         Collection<List<Part>> values = _parts.values();
@@ -412,12 +417,12 @@ public class MultiPartInputStreamParser
     /**
      * Get the named Part.
      * 
-     * @param name
-     * @throws IOException
-     * @throws ServletException
+     * @param name the part name
+     * @return the parts
+     * @throws IOException if unable to get the part
      */
     public Part getPart(String name)
-    throws IOException, ServletException
+    throws IOException
     {
         parse();
         return (Part)_parts.getValue(name, 0);
@@ -427,11 +432,10 @@ public class MultiPartInputStreamParser
     /**
      * Parse, if necessary, the multipart stream.
      * 
-     * @throws IOException
-     * @throws ServletException
+     * @throws IOException if unable to parse
      */
     protected void parse ()
-    throws IOException, ServletException
+    throws IOException
     {
         //have we already parsed the input?
         if (_parts != null)

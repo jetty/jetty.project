@@ -217,6 +217,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void onSettings(SettingsFrame frame)
     {
+        // SPEC: SETTINGS frame MUST be replied.
+        onSettings(frame, true);
+    }
+
+    public void onSettings(SettingsFrame frame, boolean reply)
+    {
         if (frame.isReply())
             return;
 
@@ -287,9 +293,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         notifySettings(this, frame);
 
-        // SPEC: SETTINGS frame MUST be replied.
-        SettingsFrame reply = new SettingsFrame(Collections.<Integer, Integer>emptyMap(), true);
-        settings(reply, Callback.Adapter.INSTANCE);
+        if (reply)
+        {
+            SettingsFrame replyFrame = new SettingsFrame(Collections.<Integer, Integer>emptyMap(), true);
+            settings(replyFrame, Callback.Adapter.INSTANCE);
+        }
     }
 
     @Override
@@ -315,7 +323,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
      * * NOT_CLOSED: we move to REMOTELY_CLOSED and queue a disconnect, so
      *   that the content of the queue is written, and then the connection
      *   closed. We notify the application after being terminated.
-     *   See {@link HTTP2Session.ControlEntry#succeeded()}
+     *   See <code>HTTP2Session.ControlEntry#succeeded()</code>
      *
      * * In all other cases, we do nothing since other methods are already
      *   performing their actions.
@@ -445,6 +453,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             flusher.iterate();
     }
 
+
     @Override
     public void settings(SettingsFrame frame, Callback callback)
     {
@@ -528,11 +537,11 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
     private void control(IStream stream, Callback callback, Frame frame)
     {
-        control(stream, callback, frame, Frame.EMPTY_ARRAY);
+        frames(stream, callback, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
-    public void control(IStream stream, Callback callback, Frame frame, Frame... frames)
+    public void frames(IStream stream, Callback callback, Frame frame, Frame... frames)
     {
         // We want to generate as late as possible to allow re-prioritization;
         // generation will happen while processing the entries.
@@ -589,7 +598,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (streams.putIfAbsent(streamId, stream) == null)
         {
             stream.setIdleTimeout(getStreamIdleTimeout());
-            flowControl.onNewStream(stream, true);
+            flowControl.onStreamCreated(stream, true);
             if (LOG.isDebugEnabled())
                 LOG.debug("Created local {}", stream);
             return stream;
@@ -624,7 +633,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             updateLastStreamId(streamId);
             stream.setIdleTimeout(getStreamIdleTimeout());
-            flowControl.onNewStream(stream, false);
+            flowControl.onStreamCreated(stream, false);
             if (LOG.isDebugEnabled())
                 LOG.debug("Created remote {}", stream);
             return stream;
@@ -634,6 +643,20 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             close(ErrorCode.PROTOCOL_ERROR.code, "duplicate_stream", Callback.Adapter.INSTANCE);
             return null;
         }
+    }
+    
+    public IStream createUpgradeStream()
+    {
+        // SPEC: upgrade stream is id=1 and can't exceed maximum
+        remoteStreamCount.incrementAndGet();
+        IStream stream = newStream(1);
+        streams.put(1,stream);
+        updateLastStreamId(1);
+        stream.setIdleTimeout(getStreamIdleTimeout());
+        flowControl.onStreamCreated(stream, false);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Created upgrade {}", stream);
+        return stream;
     }
 
     protected IStream newStream(int streamId)
@@ -654,7 +677,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             else
                 remoteStreamCount.decrementAndGet();
 
-            flowControl.onStreamTerminated(stream, local);
+            flowControl.onStreamDestroyed(stream, local);
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Removed {}", stream);
@@ -820,6 +843,12 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
     }
 
+    @Override
+    public void onFrame(Frame frame)
+    {
+        onConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "upgrade");
+    }
+
     public void disconnect()
     {
         if (LOG.isDebugEnabled())
@@ -967,6 +996,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 generator.control(lease, frame);
                 if (LOG.isDebugEnabled())
                     LOG.debug("Generated {}", frame);
+                prepare();
                 return null;
             }
             catch (Throwable x)
@@ -974,6 +1004,38 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                 if (LOG.isDebugEnabled())
                     LOG.debug("Failure generating frame " + frame, x);
                 return x;
+            }
+        }
+
+        /**
+         * <p>Performs actions just before writing the frame to the network.</p>
+         * <p>Some frame, when sent over the network, causes the receiver
+         * to react and send back frames that may be processed by the original
+         * sender *before* {@link #succeeded()} is called.
+         * <p>If the action to perform updates some state, this update may
+         * not be seen by the received frames and cause errors.</p>
+         * <p>For example, suppose the action updates the stream window to a
+         * larger value; the sender sends the frame; the receiver is now entitled
+         * to send back larger data; when the data is received by the original
+         * sender, the action may have not been performed yet, causing the larger
+         * data to be rejected, when it should have been accepted.</p>
+         */
+        private void prepare()
+        {
+            switch (frame.getType())
+            {
+                case SETTINGS:
+                {
+                    SettingsFrame settingsFrame = (SettingsFrame)frame;
+                    Integer initialWindow = settingsFrame.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
+                    if (initialWindow != null)
+                        flowControl.updateInitialStreamWindow(HTTP2Session.this, initialWindow, true);
+                    break;
+                }
+                default:
+                {
+                    break;
+                }
             }
         }
 
@@ -996,14 +1058,6 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
                         stream.close();
                         removeStream(stream, true);
                     }
-                    break;
-                }
-                case SETTINGS:
-                {
-                    SettingsFrame settingsFrame = (SettingsFrame)frame;
-                    Integer initialWindow = settingsFrame.getSettings().get(SettingsFrame.INITIAL_WINDOW_SIZE);
-                    if (initialWindow != null)
-                        flowControl.updateInitialStreamWindow(HTTP2Session.this, initialWindow, true);
                     break;
                 }
                 case PUSH_PROMISE:

@@ -245,10 +245,6 @@ public class Password extends Credential
         return new Password(passwd);
     }
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @param arg
-     */
     public static void main(String[] arg)
     {
         if (arg.length != 1 && arg.length != 2)

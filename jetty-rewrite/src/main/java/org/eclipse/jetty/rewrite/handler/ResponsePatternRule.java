@@ -53,7 +53,7 @@ public class ResponsePatternRule extends PatternRule
      * Sets the reason for the response status code. Reasons will only reflect
      * if the code value is greater or equal to 400.
      * 
-     * @param reason
+     * @param reason the reason
      */
     public void setReason(String reason)
     {

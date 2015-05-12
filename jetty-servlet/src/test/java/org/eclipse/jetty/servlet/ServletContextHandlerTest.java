@@ -27,6 +27,7 @@ import static org.junit.Assert.assertTrue;
 
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -52,6 +53,8 @@ import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.server.session.SessionHandler;
+import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.Decorator;
 import org.hamcrest.Matchers;
 import org.junit.After;
 import org.junit.Assert;
@@ -361,6 +364,61 @@ public class ServletContextHandlerTest
         Assert.assertThat(response, Matchers.containsString("404 Fell Through"));
         
     }
+    
+    /**
+     * Test behavior of legacy ServletContextHandler.Decorator, with
+     * new DecoratedObjectFactory class
+     * @throws Exception on test failure
+     */
+    @SuppressWarnings("deprecation")
+    @Test
+    public void testLegacyDecorator() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.addDecorator(new DummyLegacyDecorator());
+        _server.setHandler(context);
+        
+        context.addServlet(DecoratedObjectFactoryServlet.class, "/objfactory/*");
+        _server.start();
+
+        String response= _connector.getResponses("GET /objfactory/ HTTP/1.0\r\n\r\n");
+        assertThat("Response status code", response, containsString("200 OK"));
+        
+        String expected = String.format("Attribute[%s] = %s", DecoratedObjectFactory.ATTR, DecoratedObjectFactory.class.getName());
+        assertThat("Has context attribute", response, containsString(expected));
+        
+        assertThat("Decorators size", response, containsString("Decorators.size = [1]"));
+        
+        expected = String.format("decorator[] = %s", DummyLegacyDecorator.class.getName());
+        assertThat("Specific Legacy Decorator", response, containsString(expected));
+    }
+    
+    /**
+     * Test behavior of new {@link org.eclipse.jetty.util.Decorator}, with
+     * new DecoratedObjectFactory class
+     * @throws Exception on test failure
+     */
+    @Test
+    public void testUtilDecorator() throws Exception
+    {
+        ServletContextHandler context = new ServletContextHandler();
+        context.getObjectFactory().addDecorator(new DummyUtilDecorator());
+        _server.setHandler(context);
+        
+        context.addServlet(DecoratedObjectFactoryServlet.class, "/objfactory/*");
+        _server.start();
+
+        String response= _connector.getResponses("GET /objfactory/ HTTP/1.0\r\n\r\n");
+        assertThat("Response status code", response, containsString("200 OK"));
+        
+        String expected = String.format("Attribute[%s] = %s", DecoratedObjectFactory.ATTR, DecoratedObjectFactory.class.getName());
+        assertThat("Has context attribute", response, containsString(expected));
+        
+        assertThat("Decorators size", response, containsString("Decorators.size = [1]"));
+        
+        expected = String.format("decorator[] = %s", DummyUtilDecorator.class.getName());
+        assertThat("Specific Legacy Decorator", response, containsString(expected));
+    }
 
     private int assertResponseContains(String expected, String response)
     {
@@ -389,6 +447,66 @@ public class ServletContextHandlerTest
             resp.setStatus(HttpServletResponse.SC_OK);
             PrintWriter writer = resp.getWriter();
             writer.write("Hello World");
+        }
+    }
+    
+    public static class DummyUtilDecorator implements org.eclipse.jetty.util.Decorator
+    {
+        @Override
+        public <T> T decorate(T o)
+        {
+            return o;
+        }
+
+        @Override
+        public void destroy(Object o)
+        {
+        }
+    }
+    
+    public static class DummyLegacyDecorator implements org.eclipse.jetty.servlet.ServletContextHandler.Decorator
+    {
+        @Override
+        public <T> T decorate(T o)
+        {
+            return o;
+        }
+
+        @Override
+        public void destroy(Object o)
+        {
+        }
+    }
+
+    public static class DecoratedObjectFactoryServlet extends HttpServlet
+    {
+        private static final long serialVersionUID = 1L;
+
+        @Override
+        protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+        {
+            resp.setContentType("text/plain");
+            resp.setStatus(HttpServletResponse.SC_OK);
+            PrintWriter out = resp.getWriter();
+            
+            Object obj = req.getServletContext().getAttribute(DecoratedObjectFactory.ATTR);
+            out.printf("Attribute[%s] = %s%n",DecoratedObjectFactory.ATTR,obj.getClass().getName());
+            
+            if (obj instanceof DecoratedObjectFactory)
+            {
+                out.printf("Object is a DecoratedObjectFactory%n");
+                DecoratedObjectFactory objFactory = (DecoratedObjectFactory)obj;
+                List<Decorator> decorators = objFactory.getDecorators();
+                out.printf("Decorators.size = [%d]%n",decorators.size());
+                for (Decorator decorator : decorators)
+                {
+                    out.printf(" decorator[] = %s%n",decorator.getClass().getName());
+                }
+            }
+            else
+            {
+                out.printf("Object is NOT a DecoratedObjectFactory%n");
+            }
         }
     }
 

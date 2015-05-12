@@ -35,12 +35,10 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
-import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
 import org.junit.After;
 import org.junit.Before;
-import org.junit.runner.RunWith;
 
 public class HttpServerTestFixture
 {    // Useful constants
@@ -152,6 +150,21 @@ public class HttpServerTestFixture
         }
     }
 
+    protected static class OptionsHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            if (request.getMethod().equals("OPTIONS"))
+                response.setStatus(200);
+            else
+                response.setStatus(500);
+
+            response.setHeader("Allow", "GET");
+        }
+    }
+    
     protected static class HelloWorldHandler extends AbstractHandler
     {
         @Override

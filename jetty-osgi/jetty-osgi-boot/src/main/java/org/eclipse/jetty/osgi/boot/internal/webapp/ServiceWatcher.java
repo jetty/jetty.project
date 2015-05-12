@@ -54,16 +54,11 @@ public class ServiceWatcher implements ServiceTrackerCustomizer
     
     public static final String FILTER = "(objectclass=" + ServiceProvider.class.getName() + ")";
 
-    
     //track all instances of deployers of webapps as bundles       
     ServiceTracker _serviceTracker;
     
-    
      
     /* ------------------------------------------------------------ */
-    /**
-     * @param registry
-     */
     public ServiceWatcher() throws Exception
     {
         //track all instances of deployers of webapps
@@ -75,10 +70,6 @@ public class ServiceWatcher implements ServiceTrackerCustomizer
 
    
     /* ------------------------------------------------------------ */
-    /**
-     * @param managedServerName
-     * @return
-     */
     public Map<ServiceReference, ServiceProvider> getDeployers(String managedServerName)
     {
         if (managedServerName == null)
@@ -154,9 +145,10 @@ public class ServiceWatcher implements ServiceTrackerCustomizer
     
     /* ------------------------------------------------------------ */
     /** Deploy ContextHandler that is a Service.
-     * 
-     * @param reference
-     * @return
+     * @param context the bundle context 
+     * @param contextHandler  the context handler
+     * @param reference the service reference
+     * @return the object added
      */
     public Object addService (BundleContext context, ContextHandler contextHandler, ServiceReference reference)
     {
@@ -200,8 +192,9 @@ public class ServiceWatcher implements ServiceTrackerCustomizer
     /* ------------------------------------------------------------ */
     /**
      * Undeploy a ContextHandler that is a Service.
-     * 
-     * @param reference
+     * @param context the bundle context 
+     * @param contextHandler the context handler
+     * @param reference the service reference
      */
     public void removeService (BundleContext context, ContextHandler contextHandler, ServiceReference reference)
     {

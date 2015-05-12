@@ -48,8 +48,10 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
         // One connection maps to N channels, so for each exchange we create a new channel.
         HttpChannel channel = new HttpChannelOverHTTP2(getHttpDestination(), this, session);
         channels.add(channel);
-        channel.associate(exchange);
-        channel.send();
+        if (channel.associate(exchange))
+            channel.send();
+        else
+            channel.release();
     }
 
     protected void release(HttpChannel channel)

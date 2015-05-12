@@ -24,12 +24,13 @@ import java.lang.annotation.Retention;
 import java.lang.annotation.RetentionPolicy;
 import java.lang.annotation.Target;
 
+import org.eclipse.jetty.websocket.api.Session;
+
 /**
  * Annotation for receiving websocket errors (exceptions) that have occurred internally in the websocket implementation.
  * <p>
  * Acceptable method patterns.<br>
  * Note: <code>methodName</code> can be any name you want to use.
- * <p>
  * <ol>
  * <li><code>public void methodName({@link Throwable} error)</code></li>
  * <li><code>public void methodName({@link Session} session, {@link Throwable} error)</code></li>

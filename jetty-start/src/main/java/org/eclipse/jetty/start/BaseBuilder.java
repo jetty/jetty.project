@@ -30,8 +30,8 @@ import org.eclipse.jetty.start.builders.StartIniBuilder;
 import org.eclipse.jetty.start.fileinits.MavenLocalRepoFileInitializer;
 import org.eclipse.jetty.start.fileinits.TestFileInitializer;
 import org.eclipse.jetty.start.fileinits.UriFileInitializer;
-import org.eclipse.jetty.start.graph.HowSetPredicate;
-import org.eclipse.jetty.start.graph.HowUniquePredicate;
+import org.eclipse.jetty.start.graph.CriteriaSetPredicate;
+import org.eclipse.jetty.start.graph.UniqueCriteriaPredicate;
 import org.eclipse.jetty.start.graph.Predicate;
 import org.eclipse.jetty.start.graph.Selection;
 
@@ -50,7 +50,7 @@ public class BaseBuilder
          *            the module to add
          * @return true if module was added, false if module was not added
          *         (because that module already exists)
-         * @throws IOException
+         * @throws IOException if unable to add the module
          */
         public boolean addModule(Module module) throws IOException;
     }
@@ -107,7 +107,7 @@ public class BaseBuilder
                 Licensing licensing = new Licensing();
                 for (Module module : startArgs.getAllModules().getSelected())
                 {
-                    if (!module.hasFiles(baseHome))
+                    if (!module.hasFiles(baseHome,startArgs.getProperties()))
                     {
                         licensing.addModule(module);
                     }
@@ -130,17 +130,17 @@ public class BaseBuilder
      * Build out the Base directory (if needed)
      * 
      * @return true if base directory was changed, false if left unchanged.
-     * @throws IOException
+     * @throws IOException if unable to build
      */
     public boolean build() throws IOException
     {
         Modules modules = startArgs.getAllModules();
         boolean dirty = false;
 
-        String dirSource = "<add-to-startd>";
-        String iniSource = "<add-to-start-ini>";
-        Selection startDirSelection = new Selection(dirSource);
-        Selection startIniSelection = new Selection(iniSource);
+        String dirCriteria = "<add-to-startd>";
+        String iniCriteria = "<add-to-start-ini>";
+        Selection startDirSelection = new Selection(dirCriteria);
+        Selection startIniSelection = new Selection(iniCriteria);
         
         List<String> startDNames = new ArrayList<>();
         startDNames.addAll(startArgs.getAddToStartdIni());
@@ -152,30 +152,25 @@ public class BaseBuilder
         count += modules.selectNodes(startIniNames,startIniSelection);
 
         // look for ambiguous declaration found in both places
-        Predicate ambiguousPredicate = new HowSetPredicate(dirSource,iniSource);
+        Predicate ambiguousPredicate = new CriteriaSetPredicate(dirCriteria,iniCriteria);
         List<Module> ambiguous = modules.getMatching(ambiguousPredicate);
 
         if (ambiguous.size() > 0)
         {
-            StringBuilder err = new StringBuilder();
-            err.append("Unable to add ");
-            err.append(ambiguous.size());
-            err.append(" module");
-            if (ambiguous.size() > 1)
-            {
-                err.append('s');
-            }
-            err.append(" (found declared via both --add-to-start and --add-to-startd): [");
+            StringBuilder warn = new StringBuilder();
+            warn.append("Ambiguous module locations detected, defaulting to --add-to-start for the following module selections:");
+            warn.append(" [");
+            
             for (int i = 0; i < ambiguous.size(); i++)
             {
                 if (i > 0)
                 {
-                    err.append(", ");
+                    warn.append(", ");
                 }
-                err.append(ambiguous.get(i).getName());
+                warn.append(ambiguous.get(i).getName());
             }
-            err.append(']');
-            throw new RuntimeException(err.toString());
+            warn.append(']');
+            StartLog.warn(warn.toString());
         }
 
         StartLog.debug("Adding %s new module(s)",count);
@@ -184,9 +179,9 @@ public class BaseBuilder
         ackLicenses();
 
         // Collect specific modules to enable
-        // Should match 'how', with no other selections.explicit
-        Predicate startDMatcher = new HowUniquePredicate(dirSource);
-        Predicate startIniMatcher = new HowUniquePredicate(iniSource);
+        // Should match 'criteria', with no other selections.explicit
+        Predicate startDMatcher = new UniqueCriteriaPredicate(dirCriteria);
+        Predicate startIniMatcher = new UniqueCriteriaPredicate(iniCriteria);
 
         List<Module> startDModules = modules.getMatching(startDMatcher);
         List<Module> startIniModules = modules.getMatching(startIniMatcher);
@@ -198,10 +193,23 @@ public class BaseBuilder
             StartDirBuilder builder = new StartDirBuilder(this);
             for (Module mod : startDModules)
             {
-                dirty |= builder.addModule(mod);
-                for (String file : mod.getFiles())
+                if (ambiguous.contains(mod))
                 {
-                    files.add(new FileArg(mod,file));
+                    // skip ambiguous module
+                    continue;
+                }
+                
+                if (mod.isSkipFilesValidation())
+                {
+                    StartLog.debug("Skipping [files] validation on %s",mod.getName());
+                } 
+                else 
+                {
+                    dirty |= builder.addModule(mod);
+                    for (String file : mod.getFiles())
+                    {
+                        files.add(new FileArg(mod,startArgs.getProperties().expand(file)));
+                    }
                 }
             }
         }
@@ -211,14 +219,21 @@ public class BaseBuilder
             StartIniBuilder builder = new StartIniBuilder(this);
             for (Module mod : startIniModules)
             {
-                dirty |= builder.addModule(mod);
-                for (String file : mod.getFiles())
+                if (mod.isSkipFilesValidation())
                 {
-                    files.add(new FileArg(mod,file));
+                    StartLog.debug("Skipping [files] validation on %s",mod.getName());
+                } 
+                else 
+                {
+                    dirty |= builder.addModule(mod);
+                    for (String file : mod.getFiles())
+                    {
+                        files.add(new FileArg(mod,startArgs.getProperties().expand(file)));
+                    }
                 }
             }
         }
-
+        
         // Process files
         files.addAll(startArgs.getFiles());
         dirty |= processFileResources(files);
@@ -251,12 +266,21 @@ public class BaseBuilder
     {
         if (startArgs.isDownload() && (arg.uri != null))
         {
+            // now on copy/download paths (be safe above all else)
+            if (!file.startsWith(baseHome.getBasePath()))
+            {
+                throw new IOException("For security reasons, Jetty start is unable to process maven file resource not in ${jetty.base} - " + file);
+            }
+            
+            // make the directories in ${jetty.base} that we need
+            FS.ensureDirectoryExists(file.getParent());
+            
             URI uri = URI.create(arg.uri);
 
             // Process via initializers
             for (FileInitializer finit : fileInitializers)
             {
-                if (finit.init(uri,file))
+                if (finit.init(uri,file,arg.location))
                 {
                     // Completed successfully
                     return true;

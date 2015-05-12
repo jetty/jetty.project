@@ -32,6 +32,7 @@ import java.util.concurrent.atomic.AtomicLong;
 
 import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.ByteBufferPool;
+import org.eclipse.jetty.io.Connection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
@@ -56,9 +57,9 @@ import org.eclipse.jetty.websocket.common.WebSocketSession;
 import org.eclipse.jetty.websocket.common.io.IOState.ConnectionStateListener;
 
 /**
- * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link Connection} framework of {@code jetty-io}.
+ * Provides the implementation of {@link LogicalConnection} within the framework of the new {@link org.eclipse.jetty.io.Connection} framework of {@code jetty-io}.
  */
-public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, ConnectionStateListener, Dumpable
+public abstract class AbstractWebSocketConnection extends AbstractConnection implements LogicalConnection, Connection.UpgradeTo, ConnectionStateListener, Dumpable 
 {
     private class Flusher extends FrameFlusher
     {
@@ -428,18 +429,17 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
                 {
                     if (LOG.isDebugEnabled())
                     {
-                        LOG.debug("OPEN: has prefill - onFillable called");
+                        LOG.debug("Parsing Upgrade prefill buffer ({} remaining)",prefillBuffer.remaining());
                     }
-                    onFillable();
+                    parser.parse(prefillBuffer);
                 }
-                else
+                if (LOG.isDebugEnabled())
                 {
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("OPEN: normal fillInterested");
-                    }
-                    fillInterested();
+                    LOG.debug("OPEN: normal fillInterested");
                 }
+                // TODO: investigate what happens if a failure occurs during prefill, and an attempt to write close fails,
+                // should a fill interested occur? or just a quick disconnect?
+                fillInterested();
                 break;
             case CLOSED:
                 if (ioState.wasAbnormalClose())
@@ -518,6 +518,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
      * Extra bytes from the initial HTTP upgrade that need to
      * be processed by the websocket parser before starting
      * to read bytes from the connection
+     * @param prefilled the bytes of prefilled content encountered during upgrade
      */
     protected void setInitialBuffer(ByteBuffer prefilled)
     {
@@ -623,31 +624,6 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         EndPoint endPoint = getEndPoint();
         try
         {
-            // Process any prefill first
-            while (BufferUtil.hasContent(prefillBuffer))
-            {
-                if (BufferUtil.hasContent(prefillBuffer))
-                {
-                    int pos = BufferUtil.flipToFill(buffer);
-                    int size = BufferUtil.put(prefillBuffer,buffer);
-                    BufferUtil.flipToFlush(buffer,pos);
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("Filled {} bytes of Upgrade prefill buffer for parse ({} remaining)",size,prefillBuffer.remaining());
-                    }
-
-                    if (!prefillBuffer.hasRemaining())
-                    {
-                        prefillBuffer = null;
-                    }
-                }
-
-                if (buffer.hasRemaining())
-                {
-                    parser.parse(buffer);
-                }
-            }
-            
             // Process the content from the Endpoint next
             while(true)  // TODO: should this honor the LogicalConnection.suspend() ?
             {
@@ -759,6 +735,17 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     public String toString()
     {
         return String.format("%s{f=%s,g=%s,p=%s}",super.toString(),flusher,generator,parser);
+    }
+
+    /**
+     * Extra bytes from the initial HTTP upgrade that need to
+     * be processed by the websocket parser before starting
+     * to read bytes from the connection
+     */
+    @Override
+    public void onUpgradeTo(ByteBuffer prefilled)
+    {
+        setInitialBuffer(prefilled);
     }
 
 }

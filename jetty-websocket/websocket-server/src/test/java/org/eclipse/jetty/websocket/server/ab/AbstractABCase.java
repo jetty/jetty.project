@@ -24,6 +24,7 @@ import java.util.Arrays;
 
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.StacklessLogging;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.common.Generator;
@@ -175,6 +176,8 @@ public abstract class AbstractABCase implements Fuzzed
     public TestName testname = new TestName();
 
     /**
+     * @param clazz the class to enable
+     * @param enabled true to enable the stack traces (or not)
      * @deprecated use {@link StacklessLogging} in a try-with-resources block instead
      */
     @Deprecated

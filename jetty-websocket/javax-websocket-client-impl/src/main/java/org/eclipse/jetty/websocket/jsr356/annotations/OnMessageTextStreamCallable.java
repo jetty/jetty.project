@@ -24,6 +24,7 @@ import java.lang.reflect.Method;
 
 import javax.websocket.DecodeException;
 import javax.websocket.Decoder;
+import javax.websocket.OnMessage;
 
 import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
@@ -31,7 +32,7 @@ import org.eclipse.jetty.websocket.jsr356.annotations.Param.Role;
 /**
  * Callable for {@link OnMessage} annotated methods for {@link Reader} based text message objects
  * 
- * @see TextStream
+ * @see javax.websocket.Decoder.TextStream
  */
 public class OnMessageTextStreamCallable extends OnMessageCallable
 {
@@ -44,6 +45,7 @@ public class OnMessageTextStreamCallable extends OnMessageCallable
 
     /**
      * Copy Constructor
+     * @param copy the callable to copy from
      */
     public OnMessageTextStreamCallable(OnMessageCallable copy)
     {

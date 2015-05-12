@@ -21,6 +21,7 @@ package org.eclipse.jetty.websocket.jsr356;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.concurrent.Future;
+
 import javax.websocket.EncodeException;
 import javax.websocket.Encoder;
 import javax.websocket.RemoteEndpoint;

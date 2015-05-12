@@ -42,12 +42,9 @@ import org.osgi.util.tracker.ServiceTracker;
 /**
  * BundleWatcher
  * 
- * 
  * Tracks the installation and removal of Bundles in the OSGi environment. Any bundles
  * that are added are passed to the set of Jetty DeploymentManager providers to see if
  * the bundle should be deployed as a webapp or ContextHandler into Jetty.
- * 
- * @author hmalphettes
  */
 public class BundleWatcher implements BundleTrackerCustomizer
 {
@@ -66,9 +63,6 @@ public class BundleWatcher implements BundleTrackerCustomizer
  
     
     /* ------------------------------------------------------------ */
-    /**
-     * @throws Exception
-     */
     public BundleWatcher() throws Exception
     {
         _bundle = FrameworkUtil.getBundle(this.getClass());
@@ -133,10 +127,6 @@ public class BundleWatcher implements BundleTrackerCustomizer
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @param managedServerName
-     * @return
-     */
     public Map<ServiceReference, BundleProvider> getDeployers(String managedServerName)
     {
         if (managedServerName == null)

@@ -33,12 +33,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
 /**
  * Creates asynchronously {@link SocketAddress} instances, returning them through a {@link Promise},
  * in order to avoid blocking on DNS lookup.
- * <p />
+ * <p>
  * {@link InetSocketAddress#InetSocketAddress(String, int)} attempts to perform a DNS resolution of
  * the host name, and this may block for several seconds.
  * This class creates the {@link InetSocketAddress} in a separate thread and provides the result
  * through a {@link Promise}, with the possibility to specify a timeout for the operation.
- * <p />
+ * <p>
  * Example usage:
  * <pre>
  * SocketAddressResolver resolver = new SocketAddressResolver(executor, scheduler);

@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.net.Socket;
 import java.net.SocketTimeoutException;
 import java.nio.ByteBuffer;
+
 import javax.servlet.http.HttpServlet;
 
 import org.eclipse.jetty.http.HostPortHttpField;
@@ -99,9 +100,14 @@ public class AbstractServerTest
 
     protected boolean parseResponse(Socket client, Parser parser) throws IOException
     {
+        return parseResponse(client, parser, 1000);
+    }
+
+    protected boolean parseResponse(Socket client, Parser parser, long timeout) throws IOException
+    {
         byte[] buffer = new byte[2048];
         InputStream input = client.getInputStream();
-        client.setSoTimeout(1000);
+        client.setSoTimeout((int)timeout);
         while (true)
         {
             try

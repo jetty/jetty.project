@@ -68,17 +68,17 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
     }
 
     @Override
-    public void onNewStream(IStream stream, boolean local)
+    public void onStreamCreated(IStream stream, boolean local)
     {
-        super.onNewStream(stream, local);
+        super.onStreamCreated(stream, local);
         streamLevels.put(stream, new AtomicInteger());
     }
 
     @Override
-    public void onStreamTerminated(IStream stream, boolean local)
+    public void onStreamDestroyed(IStream stream, boolean local)
     {
         streamLevels.remove(stream);
-        super.onStreamTerminated(stream, local);
+        super.onStreamDestroyed(stream, local);
     }
 
     @Override
@@ -95,7 +95,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
             level = sessionLevel.getAndSet(0);
             session.updateRecvWindow(level);
             if (LOG.isDebugEnabled())
-                LOG.debug("Data consumed, updated session recv window by {} for {}", level, session);
+                LOG.debug("Data consumed, updated session recv window by {}/{} for {}", level, maxLevel, session);
             windowFrame = new WindowUpdateFrame(0, level);
         }
         else
@@ -122,7 +122,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
                     level = streamLevel.getAndSet(0);
                     stream.updateRecvWindow(level);
                     if (LOG.isDebugEnabled())
-                        LOG.debug("Data consumed, updated stream recv window by {} for {}", level, stream);
+                        LOG.debug("Data consumed, updated stream recv window by {}/{} for {}", level, maxLevel, stream);
                     WindowUpdateFrame frame = new WindowUpdateFrame(stream.getId(), level);
                     if (windowFrame == null)
                         windowFrame = frame;
@@ -138,7 +138,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
         }
 
         if (windowFrame != null)
-            session.control(stream, Callback.Adapter.INSTANCE, windowFrame, windowFrames);
+            session.frames(stream, Callback.Adapter.INSTANCE, windowFrame, windowFrames);
     }
 
     @Override

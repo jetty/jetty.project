@@ -27,17 +27,12 @@ import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * DeclaresRolesAnnotationHandler
- *
- *
  */
 public class DeclareRolesAnnotationHandler extends AbstractIntrospectableAnnotationHandler
 {
 
     protected WebAppContext _context;
 
-    /**
-     * @param context
-     */
     public DeclareRolesAnnotationHandler(WebAppContext context)
     {
         super(false);

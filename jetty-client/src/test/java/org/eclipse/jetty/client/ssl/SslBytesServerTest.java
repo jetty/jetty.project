@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.client.ssl;
 
+import static org.hamcrest.Matchers.nullValue;
+
 import java.io.BufferedReader;
 import java.io.EOFException;
 import java.io.File;
@@ -77,8 +79,6 @@ import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.nullValue;
 
 public class SslBytesServerTest extends SslBytesTest
 {

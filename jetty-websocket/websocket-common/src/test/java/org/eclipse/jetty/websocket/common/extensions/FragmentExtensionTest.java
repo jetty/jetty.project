@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
+import static org.hamcrest.Matchers.is;
+
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
@@ -43,8 +45,6 @@ import org.eclipse.jetty.websocket.common.test.OutgoingFramesCapture;
 import org.junit.Assert;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
 
 public class FragmentExtensionTest
 {
@@ -140,6 +140,7 @@ public class FragmentExtensionTest
 
     /**
      * Verify that outgoing text frames are fragmented by the maxLength configuration.
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingFramesByMaxLength() throws IOException
@@ -212,6 +213,7 @@ public class FragmentExtensionTest
 
     /**
      * Verify that outgoing text frames are fragmented by default configuration
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingFramesDefaultConfig() throws IOException
@@ -276,6 +278,7 @@ public class FragmentExtensionTest
 
     /**
      * Outgoing PING (Control Frame) should pass through extension unmodified
+     * @throws IOException on test failure
      */
     @Test
     public void testOutgoingPing() throws IOException

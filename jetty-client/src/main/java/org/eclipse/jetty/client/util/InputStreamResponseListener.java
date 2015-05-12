@@ -32,6 +32,7 @@ import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
 
+import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.client.api.Response.Listener;
 import org.eclipse.jetty.client.api.Result;
@@ -42,7 +43,7 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * Implementation of {@link Listener} that produces an {@link InputStream}
  * that allows applications to read the response content.
- * <p />
+ * <p>
  * Typical usage is:
  * <pre>
  * InputStreamResponseListener listener = new InputStreamResponseListener();
@@ -59,12 +60,12 @@ import org.eclipse.jetty.util.log.Logger;
  *     }
  * }
  * </pre>
- * <p />
+ * <p>
  * The {@link HttpClient} implementation (the producer) will feed the input stream
  * asynchronously while the application (the consumer) is reading from it.
  * Chunks of content are maintained in a queue, and it is possible to specify a
  * maximum buffer size for the bytes held in the queue, by default 16384 bytes.
- * <p />
+ * <p>
  * If the consumer is faster than the producer, then the consumer will block
  * with the typical {@link InputStream#read()} semantic.
  * If the consumer is slower than the producer, then the producer will block
@@ -208,7 +209,7 @@ public class InputStreamResponseListener extends Listener.Adapter
 
     /**
      * Waits for the given timeout for the response to be available, then returns it.
-     * <p />
+     * <p>
      * The wait ends as soon as all the HTTP headers have been received, without waiting for the content.
      * To wait for the whole content, see {@link #await(long, TimeUnit)}.
      *
@@ -232,7 +233,7 @@ public class InputStreamResponseListener extends Listener.Adapter
     /**
      * Waits for the given timeout for the whole request/response cycle to be finished,
      * then returns the corresponding result.
-     * <p />
+     * <p>
      *
      * @param timeout the time to wait
      * @param unit the timeout unit
@@ -251,7 +252,7 @@ public class InputStreamResponseListener extends Listener.Adapter
 
     /**
      * Returns an {@link InputStream} providing the response content bytes.
-     * <p />
+     * <p>
      * The method may be invoked only once; subsequent invocations will return a closed {@link InputStream}.
      *
      * @return an input stream providing the response content

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.lessThan;
 
 import java.lang.management.ManagementFactory;
 import java.lang.management.MemoryMXBean;
@@ -114,8 +114,8 @@ public class MemoryUsageTest
         long heapUsed = heapAfter.getUsed() - heapBefore.getUsed();
         long nonHeapUsed = nonHeapAfter.getUsed() - nonHeapBefore.getUsed();
 
-//        System.out.println("heapUsed = " + heapUsed);
-//        System.out.println("nonHeapUsed = " + nonHeapUsed);
+        System.out.println("heapUsed = " + heapUsed);
+        System.out.println("nonHeapUsed = " + nonHeapUsed);
 //        new CountDownLatch(1).await();
 
         // Assume no more than 25 KiB per session pair (client and server).

@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.websocket.jsr356;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.notNullValue;
 
 import java.net.URI;
 import java.util.List;
@@ -40,7 +40,7 @@ import org.junit.BeforeClass;
 import org.junit.Test;
 
 /**
- * Tests of {@link Configurator}
+ * Tests of {@link javax.websocket.ClientEndpointConfig.Configurator}
  */
 public class ConfiguratorTest
 {

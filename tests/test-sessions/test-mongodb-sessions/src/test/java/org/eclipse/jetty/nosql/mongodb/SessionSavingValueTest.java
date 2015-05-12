@@ -26,7 +26,6 @@ import java.io.PrintWriter;
 import java.io.Serializable;
 import java.lang.management.ManagementFactory;
 import java.net.MalformedURLException;
-import java.util.concurrent.Future;
 
 import javax.management.remote.JMXServiceURL;
 import javax.servlet.ServletException;

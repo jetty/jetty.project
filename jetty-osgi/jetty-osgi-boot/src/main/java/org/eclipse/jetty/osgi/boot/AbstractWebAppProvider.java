@@ -20,12 +20,9 @@ package org.eclipse.jetty.osgi.boot;
 
 import java.io.File;
 import java.net.URL;
-import java.util.ArrayList;
-import java.util.Arrays;
 import java.util.Dictionary;
 import java.util.Enumeration;
 import java.util.HashMap;
-import java.util.List;
 
 import org.eclipse.jetty.deploy.App;
 import org.eclipse.jetty.deploy.AppProvider;
@@ -34,13 +31,13 @@ import org.eclipse.jetty.osgi.boot.internal.serverfactory.ServerInstanceWrapper;
 import org.eclipse.jetty.osgi.boot.internal.webapp.OSGiWebappClassLoader;
 import org.eclipse.jetty.osgi.boot.utils.BundleFileLocatorHelperFactory;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.ArrayUtil;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.Loader;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.JarResource;
 import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.webapp.Configuration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlConfiguration;
 import org.osgi.framework.Bundle;
@@ -48,54 +45,22 @@ import org.osgi.framework.BundleContext;
 import org.osgi.framework.ServiceReference;
 import org.osgi.service.packageadmin.PackageAdmin;
 
-
-
-
 /**
  * AbstractWebAppProvider
- *
+ * <p>
  * Base class for Jetty DeploymentManager Providers that are capable of deploying a webapp,
  * either from a bundle or an OSGi service.
- * 
  */
 public abstract class AbstractWebAppProvider extends AbstractLifeCycle implements AppProvider
 {
     private static final Logger LOG = Log.getLogger(AbstractWebAppProvider.class);
     
-    public static String __defaultConfigurations[] = {
-                                                            "org.eclipse.jetty.osgi.boot.OSGiWebInfConfiguration",
-                                                            "org.eclipse.jetty.webapp.WebXmlConfiguration",
-                                                            "org.eclipse.jetty.webapp.MetaInfConfiguration",
-                                                            "org.eclipse.jetty.webapp.FragmentConfiguration",
-                                                            "org.eclipse.jetty.webapp.JettyWebXmlConfiguration"                          
-                                                     };
-    
-    public static void setDefaultConfigurations (String[] defaultConfigs)
-    {
-        __defaultConfigurations = defaultConfigs;
-    }
-    
-    public static String[] getDefaultConfigurations ()
-    {
-        List<String> configs = ArrayUtil.asMutableList(__defaultConfigurations);
-        if (annotationsAvailable())
-        {
-            //add before JettyWebXmlConfiguration
-            int i = configs.indexOf("org.eclipse.jetty.webapp.JettyWebXmlConfiguration");
-            configs.add(i, "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration");
-        }
-        
-        if (jndiAvailable())
-        {
-            //add in EnvConfiguration and PlusConfiguration just after FragmentConfiguration
-            int i = configs.indexOf("org.eclipse.jetty.webapp.FragmentConfiguration");
-            configs.add(++i, "org.eclipse.jetty.plus.webapp.EnvConfiguration");
-            configs.add(++i, "org.eclipse.jetty.plus.webapp.PlusConfiguration");
-        }
-
-        return configs.toArray(new String[configs.size()]);
-    }
-
+    /* ------------------------------------------------------------ */
+    /**
+     * Check if we should be enabling annotation processing
+     * 
+     * @return true if the jetty-annotations.jar is present, false otherwise
+     */
     private static boolean annotationsAvailable()
     {
         boolean result = false;
@@ -114,7 +79,12 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
         return result;
     }
     
-    
+    /* ------------------------------------------------------------ */
+    /**
+     * Check if jndi is support is present.
+     * 
+     * @return true if the jetty-jndi.jar is present, false otherwise
+     */
     private static boolean jndiAvailable()
     {
         try
@@ -146,11 +116,13 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     
     private ServerInstanceWrapper _serverWrapper;
     
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * OSGiApp
      *
-     *
+     * Represents a deployable webapp.
      */
     public class OSGiApp extends AbstractOSGiApp
     {
@@ -316,10 +288,8 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
             // Set up what has been configured on the provider
             _webApp.setParentLoaderPriority(isParentLoaderPriority());
             _webApp.setExtractWAR(isExtract());
-            if (getConfigurationClasses() != null)
-                _webApp.setConfigurationClasses(getConfigurationClasses());
-            else
-                _webApp.setConfigurationClasses(getDefaultConfigurations());
+            _webApp.setConfigurationClasses(getConfigurationClasses());
+
 
             if (getDefaultsDescriptor() != null)
                 _webApp.setDefaultsDescriptor(getDefaultsDescriptor());
@@ -605,13 +575,27 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * 
-     */
     public String[] getConfigurationClasses()
     {
-        return _configurationClasses;
+        if (_configurationClasses != null)
+            return _configurationClasses;
+
+        Configuration.ClassList defaults = Configuration.ClassList.serverDefault(_serverWrapper.getServer());
+
+        //add before JettyWebXmlConfiguration
+        if (annotationsAvailable())
+            defaults.addBefore("org.eclipse.jetty.webapp.JettyWebXmlConfiguration", 
+                               "org.eclipse.jetty.osgi.annotations.AnnotationConfiguration");
+
+        //add in EnvConfiguration and PlusConfiguration just after FragmentConfiguration
+        if (jndiAvailable())
+            defaults.addAfter("org.eclipse.jetty.webapp.FragmentConfiguration",
+                              "org.eclipse.jetty.plus.webapp.EnvConfiguration",
+                              "org.eclipse.jetty.plus.webapp.PlusConfiguration");
+       String[] asArray = new String[defaults.size()];
+       return defaults.toArray(asArray);
     }
+    
 
     /* ------------------------------------------------------------ */
     public void setServerInstanceWrapper(ServerInstanceWrapper wrapper)
@@ -625,9 +609,6 @@ public abstract class AbstractWebAppProvider extends AbstractLifeCycle implement
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     public DeploymentManager getDeploymentManager()
     {
         return _deploymentManager;

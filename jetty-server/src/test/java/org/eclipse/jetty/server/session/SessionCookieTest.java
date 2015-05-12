@@ -31,24 +31,14 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.http.HttpCookie;
 import org.junit.Test;
+
 /**
  * SessionCookieTest
- *
- *
  */
 public class SessionCookieTest
 {
-
     public class MockSession extends AbstractSession
     {
-
-
-        /**
-         * @param abstractSessionManager
-         * @param created
-         * @param accessed
-         * @param clusterId
-         */
         protected MockSession(AbstractSessionManager abstractSessionManager, long created, long accessed, String clusterId)
         {
             super(abstractSessionManager, created, accessed, clusterId);
@@ -72,9 +62,6 @@ public class SessionCookieTest
             return null;
         }
 
-        /** 
-         * @see javax.servlet.http.HttpSession#getValueNames()
-         */
         @Override
         public String[] getValueNames()
         {

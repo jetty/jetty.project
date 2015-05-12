@@ -140,7 +140,7 @@ public class DeferredAuthentication implements Authentication.Deferred
 
     /* ------------------------------------------------------------ */
     /**
-     * @param response
+     * @param response the response
      * @return true if this response is from a deferred call to {@link #authenticate(ServletRequest)}
      */
     public static boolean isDeferred(HttpServletResponse response)

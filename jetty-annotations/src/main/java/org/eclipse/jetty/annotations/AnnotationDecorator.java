@@ -18,21 +18,16 @@
 
 package org.eclipse.jetty.annotations;
 
-import org.eclipse.jetty.servlet.ServletContextHandler.Decorator;
+import org.eclipse.jetty.util.Decorator;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 /**
  * AnnotationDecorator
- *
- *
  */
 public class AnnotationDecorator implements Decorator
 {
     protected AnnotationIntrospector _introspector = new AnnotationIntrospector();
 
-    /**
-     * @param context
-     */
     public AnnotationDecorator(WebAppContext context)
     {
        registerHandlers(context);
@@ -53,13 +48,13 @@ public class AnnotationDecorator implements Decorator
     /**
      * Look for annotations that can be discovered with introspection:
      * <ul>
-     * <li> Resource
-     * <li> Resources
-     * <li> PostConstruct
-     * <li> PreDestroy
-     * <li> ServletSecurity?
+     * <li> Resource </li>
+     * <li> Resources </li>
+     * <li> PostConstruct </li>
+     * <li> PreDestroy </li>
+     * <li> ServletSecurity? </li>
      * </ul>
-     * @param o
+     * @param o the object ot introspect
      */
     protected void introspect (Object o)
     {

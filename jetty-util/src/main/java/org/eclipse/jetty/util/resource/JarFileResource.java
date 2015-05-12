@@ -179,40 +179,39 @@ class JarFileResource extends JarResource
                 }
                 catch(Exception e)
                 {
-                       LOG.ignore(e);
+                    LOG.ignore(e);
                 }
             }
 
             // Do we need to look more closely?
             if (jar_file!=null && _entry==null && !_directory)
             {
-                // OK - we have a JarFile, lets look at the entries for our path
-                Enumeration<JarEntry> e=jar_file.entries();
-                while(e.hasMoreElements())
+                // OK - we have a JarFile, lets look for the entry
+                JarEntry entry = jar_file.getJarEntry(_path);
+                if (entry == null) 
                 {
-                    JarEntry entry = e.nextElement();
-                    String name=entry.getName().replace('\\','/');
-                    
-                    // Do we have a match
-                    if (name.equals(_path))
+                    // the entry does not exist
+                    _exists = false;
+                } 
+                else if (entry.isDirectory()) 
+                {
+                    _directory = true;
+                    _entry = entry;
+                } 
+                else 
+                {
+                    // Let's confirm is a file
+                    JarEntry directory = jar_file.getJarEntry(_path + '/');
+                    if (directory != null) 
                     {
-                        _entry=entry;
-                        // Is the match a directory
-                        _directory=_path.endsWith("/");
-                        break;
-                    }
-                    else if (_path.endsWith("/"))
+                        _directory = true;
+                        _entry = directory;
+                    } 
+                    else 
                     {
-                        if (name.startsWith(_path))
-                        {
-                            _directory=true;
-                            break;
-                        }
-                    }
-                    else if (name.startsWith(_path) && name.length()>_path.length() && name.charAt(_path.length())=='/')
-                    {
-                        _directory=true;
-                        break;
+                        // OK is a file
+                      _directory = false;
+                      _entry = entry;
                     }
                 }
             }
@@ -228,7 +227,7 @@ class JarFileResource extends JarResource
                     LOG.ignore(ioe);
                 }
             }
-        }    
+        }
         
         _exists= ( _directory || _entry!=null);
         return _exists;
@@ -382,7 +381,7 @@ class JarFileResource extends JarResource
     /**
      * Take a Resource that possibly might use URLConnection caching
      * and turn it into one that doesn't.
-     * @param resource
+     * @param resource the JarFileResource to obtain without URLConnection caching. 
      * @return the non-caching resource
      */
     public static Resource getNonCachingResource (Resource resource)
@@ -400,9 +399,9 @@ class JarFileResource extends JarResource
     /**
      * Check if this jar:file: resource is contained in the
      * named resource. Eg <code>jar:file:///a/b/c/foo.jar!/x.html</code> isContainedIn <code>file:///a/b/c/foo.jar</code>
-     * @param resource
+     * @param resource the resource to test for
      * @return true if resource is contained in the named resource
-     * @throws MalformedURLException
+     * @throws MalformedURLException if unable to process is contained due to invalid URL format
      */
     @Override
     public boolean isContainedIn (Resource resource) 
@@ -418,11 +417,3 @@ class JarFileResource extends JarResource
         return url.sameFile(resource.getURL());     
     }
 }
-
-
-
-
-
-
-
-

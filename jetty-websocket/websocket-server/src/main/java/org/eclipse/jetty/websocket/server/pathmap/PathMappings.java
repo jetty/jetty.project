@@ -37,7 +37,7 @@ import org.eclipse.jetty.websocket.server.pathmap.PathMappings.MappedResource;
  * <p>
  * Sorted into search order upon entry into the Set
  * 
- * @param <E>
+ * @param <E> the type of mapping endpoint
  */
 @ManagedObject("Path Mappings")
 public class PathMappings<E> implements Iterable<MappedResource<E>>, Dumpable

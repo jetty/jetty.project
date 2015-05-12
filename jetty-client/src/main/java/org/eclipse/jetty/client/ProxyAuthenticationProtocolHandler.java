@@ -25,8 +25,16 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpStatus;
 
+/**
+ * <p>A protocol handler that handles the 401 response code
+ * in association with the {@code Proxy-Authenticate} header.</p>
+ *
+ * @see WWWAuthenticationProtocolHandler
+ */
 public class ProxyAuthenticationProtocolHandler extends AuthenticationProtocolHandler
 {
+    public static final String NAME = "proxy-authenticate";
+
     public ProxyAuthenticationProtocolHandler(HttpClient client)
     {
         this(client, DEFAULT_MAX_CONTENT_LENGTH);
@@ -35,6 +43,12 @@ public class ProxyAuthenticationProtocolHandler extends AuthenticationProtocolHa
     public ProxyAuthenticationProtocolHandler(HttpClient client, int maxContentLength)
     {
         super(client, maxContentLength);
+    }
+
+    @Override
+    public String getName()
+    {
+        return NAME;
     }
 
     @Override

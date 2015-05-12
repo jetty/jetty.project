@@ -22,18 +22,12 @@ import java.util.List;
 
 import javax.security.auth.callback.Callback;
 
-
 /**
- *
  * RequestParameterCallback
- *
+ * <p>
  * Allows a JAAS callback handler to access any parameter from the j_security_check FORM.
  * This means that a LoginModule can access form fields other than the j_username and j_password
  * fields, and use it, for example, to authenticate a user.
- *
- *
- * @version $Revision: 4780 $ $Date: 2009-03-17 16:36:08 +0100 (Tue, 17 Mar 2009) $
- *
  */
 public class RequestParameterCallback implements Callback
 {

@@ -48,10 +48,10 @@ import org.eclipse.jetty.security.authentication.FormAuthenticator;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
+import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
-import org.eclipse.jetty.servlet.ServletContextHandler.JspConfig;
 import org.eclipse.jetty.util.QuotedStringTokenizer;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -62,11 +62,9 @@ import org.eclipse.jetty.webapp.MetaInfConfiguration;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.eclipse.jetty.xml.XmlAppendable;
 
-
-
 /**
  * QuickStartDescriptorGenerator
- *
+ * <p>
  * Generate an effective web.xml from a WebAppContext, including all components 
  * from web.xml, web-fragment.xmls annotations etc.
  */
@@ -94,9 +92,9 @@ public class QuickStartDescriptorGenerator
     
     /**
      * Perform the generation of the xml file
-     * @throws IOException 
-     * @throws FileNotFoundException 
-     * @throws Exception
+     * @param stream the stream to generate the quickstart-web.xml to
+     * @throws IOException if unable to generate the quickstart-web.xml
+     * @throws FileNotFoundException if unable to find the file 
      */
     public void generateQuickStartWebXml (OutputStream stream) throws FileNotFoundException, IOException 
     {   
@@ -668,9 +666,9 @@ public class QuickStartDescriptorGenerator
     /**
      * Find the origin (web.xml, fragment, annotation etc) of a web artifact from MetaData.
      * 
-     * @param md
-     * @param name
-     * @return
+     * @param md the metadata
+     * @param name the name
+     * @return the origin map
      */
     public Map<String, String> origin(MetaData md, String name)
     {

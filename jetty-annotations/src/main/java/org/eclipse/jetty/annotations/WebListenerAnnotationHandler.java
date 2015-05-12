@@ -34,10 +34,6 @@ public class WebListenerAnnotationHandler extends AbstractDiscoverableAnnotation
        super(context);
     }
     
-  
-    /** 
-     * @see org.eclipse.jetty.annotations.AnnotationParser.Handler#handle(ClassInfo, String)
-     */
     public void handle(ClassInfo info, String annotationName)
     {
         if (annotationName == null || !"javax.servlet.annotation.WebListener".equals(annotationName))

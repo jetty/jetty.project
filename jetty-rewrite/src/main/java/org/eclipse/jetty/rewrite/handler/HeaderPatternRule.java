@@ -116,6 +116,7 @@ public class HeaderPatternRule extends PatternRule
     /* ------------------------------------------------------------ */
     /**
      * Returns the add flag value.
+     * @return true if add flag set
      */
     public boolean isAdd()
     {

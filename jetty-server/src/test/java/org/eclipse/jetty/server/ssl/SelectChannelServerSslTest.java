@@ -128,7 +128,7 @@ public class SelectChannelServerSslTest extends HttpServerTestBase
         startServer(connector);
 
         KeyStore keystore = KeyStore.getInstance(KeyStore.getDefaultType());
-        try (InputStream stream = new FileInputStream(sslContextFactory.getKeyStorePath()))
+        try (InputStream stream = sslContextFactory.getKeyStoreResource().getInputStream())
         {
             keystore.load(stream, "storepwd".toCharArray());
         }

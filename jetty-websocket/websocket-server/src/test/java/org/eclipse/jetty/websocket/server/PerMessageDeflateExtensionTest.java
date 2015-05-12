@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.TimeUnit;
 
@@ -53,6 +54,7 @@ public class PerMessageDeflateExtensionTest
 
     /**
      * Default configuration for permessage-deflate
+     * @throws Exception on test failure
      */
     @Test
     public void testPerMessageDeflateDefault() throws Exception

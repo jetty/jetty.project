@@ -221,9 +221,11 @@ public class URLResource extends Resource
      * the url protocol. Eg JarURLConnection does not reuse inputstreams.
      * 
      * @param resetConnection if true the connection field is set to null
+     * @return the inputstream for this resource
+     * @throws IOException if unable to open the input stream
      */
     protected synchronized InputStream getInputStream(boolean resetConnection)
-        throws java.io.IOException
+        throws IOException
     {
         if (!checkConnection())
             throw new IOException( "Invalid resource");
@@ -301,7 +303,7 @@ public class URLResource extends Resource
 
         path = URIUtil.canonicalPath(path);
 
-        return newResource(URIUtil.addPaths(_url.toExternalForm(),path));
+        return newResource(URIUtil.addPaths(_url.toExternalForm(),path), _useCaches);
     }
 
     /* ------------------------------------------------------------ */

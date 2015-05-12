@@ -63,7 +63,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * Denial of Service filter
- * <p/>
  * <p>
  * This filter is useful for limiting
  * exposure to abuse from request flooding, whether malicious, or as a result of
@@ -81,13 +80,12 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * The {@link #extractUserId(ServletRequest request)} function should be
  * implemented, in order to uniquely identify authenticated users.
  * <p>
- * The following init parameters control the behavior of the filter:<dl>
- * <p/>
+ * The following init parameters control the behavior of the filter:
+ * <dl>
  * <dt>maxRequestsPerSec</dt>
  * <dd>the maximum number of requests from a connection per
  * second. Requests in excess of this are first delayed,
  * then throttled.</dd>
- * <p/>
  * <dt>delayMs</dt>
  * <dd>is the delay given to all requests over the rate limit,
  * before they are considered at all. -1 means just reject request,
@@ -120,7 +118,6 @@ import org.eclipse.jetty.util.thread.Scheduler;
  * <dd>The status code to send if there are too many requests.  By default is 429 (too many requests), but 503 (Unavailable) is 
  * another option</dd>
  * </dl>
- * </p>
  * <p>
  * This filter should be configured for {@link DispatcherType#REQUEST} and {@link DispatcherType#ASYNC} and with 
  * <code>&lt;async-supported&gt;true&lt;/async-supported&gt;</code>.
@@ -538,12 +535,12 @@ public class DoSFilter implements Filter
      * track of this connection's request rate. If this is not the first request
      * from this connection, return the existing object with the stored stats.
      * If it is the first request, then create a new request tracker.
-     * <p/>
+     * <p>
      * Assumes that each connection has an identifying characteristic, and goes
      * through them in order, taking the first that matches: user id (logged
      * in), session id, client IP address. Unidentifiable connections are lumped
      * into one.
-     * <p/>
+     * <p>
      * When a session expires, its rate tracker is automatically deleted.
      *
      * @param request the current request
@@ -577,7 +574,7 @@ public class DoSFilter implements Filter
 
         if (tracker == null)
         {
-            boolean allowed = checkWhitelist(_whitelist, request.getRemoteAddr());
+            boolean allowed = checkWhitelist(request.getRemoteAddr());
             int maxRequestsPerSec = getMaxRequestsPerSec();
             tracker = allowed ? new FixedRateTracker(loadId, type, maxRequestsPerSec)
                     : new RateTracker(loadId, type, maxRequestsPerSec);
@@ -600,6 +597,25 @@ public class DoSFilter implements Filter
         return tracker;
     }
 
+    protected boolean checkWhitelist(String candidate)
+    {
+        for (String address : _whitelist)
+        {
+            if (address.contains("/"))
+            {
+                if (subnetMatch(address, candidate))
+                    return true;
+            }
+            else
+            {
+                if (address.equals(candidate))
+                    return true;
+            }
+        }
+        return false;
+    }
+
+    @Deprecated
     protected boolean checkWhitelist(List<String> whitelist, String candidate)
     {
         for (String address : whitelist)
@@ -703,6 +719,10 @@ public class DoSFilter implements Filter
             prefix -= 8;
             ++index;
         }
+        
+        if (index == result.length)
+            return result;
+               
         // Sets the _prefix_ most significant bits to 1
         result[index] = (byte)~((1 << (8 - prefix)) - 1);
         return result;
@@ -768,6 +788,7 @@ public class DoSFilter implements Filter
     /**
      * Get delay (in milliseconds) that is applied to all requests
      * over the rate limit, before they are considered at all.
+     * @return the delay in milliseconds
      */
     @ManagedAttribute("delay applied to all requests over the rate limit (in ms)")
     public long getDelayMs()
@@ -1017,12 +1038,12 @@ public class DoSFilter implements Filter
     /**
      * Set a list of IP addresses that will not be rate limited.
      *
-     * @param value comma-separated whitelist
+     * @param commaSeparatedList comma-separated whitelist
      */
-    public void setWhitelist(String value)
+    public void setWhitelist(String commaSeparatedList)
     {
         List<String> result = new ArrayList<>();
-        for (String address : value.split(","))
+        for (String address : commaSeparatedList.split(","))
             addWhitelistAddress(result, address);
         clearWhitelist();
         _whitelist.addAll(result);
@@ -1093,6 +1114,7 @@ public class DoSFilter implements Filter
         }
 
         /**
+         * @param now the time now (in milliseconds)
          * @return the current calculated request rate over the last second
          */
         public boolean isRateExceeded(long now)

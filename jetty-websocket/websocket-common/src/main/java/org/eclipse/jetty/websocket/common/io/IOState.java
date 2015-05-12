@@ -190,6 +190,7 @@ public class IOState
      * A websocket connection has been disconnected for abnormal close reasons.
      * <p>
      * This is the low level disconnect of the socket. It could be the result of a normal close operation, from an IO error, or even from a timeout.
+     * @param close the close information
      */
     public void onAbnormalClose(CloseInfo close)
     {
@@ -221,6 +222,7 @@ public class IOState
 
     /**
      * A close handshake has been issued from the local endpoint
+     * @param close the close information
      */
     public void onCloseLocal(CloseInfo close)
     {
@@ -302,6 +304,7 @@ public class IOState
 
     /**
      * A close handshake has been received from the remote endpoint
+     * @param close the close information
      */
     public void onCloseRemote(CloseInfo close)
     {
@@ -427,6 +430,7 @@ public class IOState
      * The local endpoint has reached a read failure.
      * <p>
      * This could be a normal result after a proper close handshake, or even a premature close due to a connection disconnect.
+     * @param t the read failure
      */
     public void onReadFailure(Throwable t)
     {
@@ -478,6 +482,7 @@ public class IOState
      * The local endpoint has reached a write failure.
      * <p>
      * A low level I/O failure, or even a jetty side EndPoint close (from idle timeout) are a few scenarios
+     * @param t the throwable that caused the write failure
      */
     public void onWriteFailure(Throwable t)
     {

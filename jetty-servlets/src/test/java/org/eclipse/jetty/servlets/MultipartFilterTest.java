@@ -780,10 +780,6 @@ public class MultipartFilterTest
         assertEquals(HttpServletResponse.SC_INTERNAL_SERVER_ERROR, response.getStatus());
     }
 
-    /*
-     * see the testParameterMap test
-     *
-     */
     public static class TestServletParameterMap extends DumpServlet
     {
         @Override
@@ -798,7 +794,7 @@ public class MultipartFilterTest
     /**
      * Validate that the getParameterMap() call is correctly unencoding the parameters in the
      * map that it returns.
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void testParameterMap() throws Exception

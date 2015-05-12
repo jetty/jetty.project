@@ -18,7 +18,8 @@
 
 package org.eclipse.jetty.websocket.server;
 
-import static org.hamcrest.Matchers.*;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.is;
 
 import java.util.concurrent.TimeUnit;
 
@@ -67,6 +68,7 @@ public class IdleTimeoutTest
 
     /**
      * Test IdleTimeout on server.
+     * @throws Exception on test failure
      */
     @Test
     public void testIdleTimeout() throws Exception

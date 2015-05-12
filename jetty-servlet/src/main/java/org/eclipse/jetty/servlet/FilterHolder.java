@@ -37,10 +37,6 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* --------------------------------------------------------------------- */
-/**
- *
- */
 public class FilterHolder extends Holder<Filter>
 {
     private static final Logger LOG = Log.getLogger(FilterHolder.class);
@@ -61,6 +57,7 @@ public class FilterHolder extends Holder<Filter>
 
     /* ---------------------------------------------------------------- */
     /** Constructor
+     * @param source the holder source
      */
     public FilterHolder(Holder.Source source)
     {
@@ -69,6 +66,7 @@ public class FilterHolder extends Holder<Filter>
 
     /* ---------------------------------------------------------------- */
     /** Constructor
+     * @param filter the filter class
      */
     public FilterHolder(Class<? extends Filter> filter)
     {
@@ -78,6 +76,7 @@ public class FilterHolder extends Holder<Filter>
 
     /* ---------------------------------------------------------------- */
     /** Constructor for existing filter.
+     * @param filter the filter
      */
     public FilterHolder(Filter filter)
     {

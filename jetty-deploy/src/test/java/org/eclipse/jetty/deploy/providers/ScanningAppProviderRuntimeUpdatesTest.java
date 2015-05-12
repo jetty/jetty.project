@@ -116,6 +116,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
     /**
      * Simple webapp deployment after startup of server.
+     * @throws IOException on test failure
      */
     @Test
     public void testAfterStartupContext() throws IOException
@@ -131,6 +132,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
     /**
      * Simple webapp deployment after startup of server, and then removal of the webapp.
+     * @throws IOException on test failure
      */
     @Test
     public void testAfterStartupThenRemoveContext() throws IOException
@@ -154,6 +156,7 @@ public class ScanningAppProviderRuntimeUpdatesTest
 
     /**
      * Simple webapp deployment after startup of server, and then removal of the webapp.
+     * @throws Exception on test failure
      */
     @Test
     public void testAfterStartupThenUpdateContext() throws Exception

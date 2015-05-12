@@ -24,9 +24,14 @@ import java.io.Reader;
 import java.lang.annotation.Annotation;
 import java.nio.ByteBuffer;
 import java.util.Map;
+
 import javax.websocket.CloseReason;
 import javax.websocket.DecodeException;
 import javax.websocket.EndpointConfig;
+import javax.websocket.OnClose;
+import javax.websocket.OnError;
+import javax.websocket.OnMessage;
+import javax.websocket.OnOpen;
 import javax.websocket.RemoteEndpoint;
 
 import org.eclipse.jetty.util.log.Log;
@@ -35,6 +40,8 @@ import org.eclipse.jetty.websocket.jsr356.JsrSession;
 
 /**
  * The live event methods found for a specific Annotated Endpoint
+ * @param <T> the annotation type
+ * @param <C> the endpoint config type
  */
 public class JsrEvents<T extends Annotation, C extends EndpointConfig>
 {
@@ -148,6 +155,7 @@ public class JsrEvents<T extends Annotation, C extends EndpointConfig>
     {
         if (onError == null)
         {
+            LOG.warn("Unable to report throwable to websocket (no @OnError handler declared): " + websocket.getClass().getName(), cause);
             return;
         }
         onError.call(websocket,cause);

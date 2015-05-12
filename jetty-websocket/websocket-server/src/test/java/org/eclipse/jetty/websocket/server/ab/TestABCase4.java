@@ -43,6 +43,7 @@ public class TestABCase4 extends AbstractABCase
 {
     /**
      * Send opcode 3 (reserved)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase4_1_1() throws Exception
@@ -64,6 +65,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send opcode 4 (reserved), with payload
+     * @throws Exception on test failure
      */
     @Test
     public void testCase4_1_2() throws Exception
@@ -88,6 +90,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 5 (reserved), then ping
+     * @throws Exception on test failure
      */
     @Test
     public void testCase4_1_3() throws Exception
@@ -112,6 +115,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 6 (reserved) w/payload, then ping
+     * @throws Exception on test failure
      */
     @Test
     public void testCase4_1_4() throws Exception
@@ -138,6 +142,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 7 (reserved) w/payload, then ping
+     * @throws Exception on test failure
      */
     @Test
     public void testCase4_1_5() throws Exception
@@ -164,6 +169,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send opcode 11 (reserved)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase4_2_1() throws Exception
@@ -185,6 +191,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send opcode 12 (reserved)
+     * @throws Exception on test failure
      */
     @Test
     public void testCase4_2_2() throws Exception
@@ -208,6 +215,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 13 (reserved), then ping
+     * @throws Exception on test failure
      */
     @Test
     public void testCase4_2_3() throws Exception
@@ -232,6 +240,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 14 (reserved), then ping
+     * @throws Exception on test failure
      */
     @Test
     public void testCase4_2_4() throws Exception
@@ -258,6 +267,7 @@ public class TestABCase4 extends AbstractABCase
 
     /**
      * Send small text, then frame with opcode 15 (reserved), then ping
+     * @throws Exception on test failure
      */
     @Test
     public void testCase4_2_5() throws Exception

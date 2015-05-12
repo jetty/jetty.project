@@ -57,7 +57,6 @@ import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.security.IdentityService;
 import org.eclipse.jetty.security.SecurityHandler;
-import org.eclipse.jetty.server.HttpChannel;
 import org.eclipse.jetty.server.QuietServletException;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.ServletRequestHttpWrapper;
@@ -77,8 +76,9 @@ import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* --------------------------------------------------------------------- */
-/** Servlet HttpHandler.
+/** 
+ * Servlet HttpHandler.
+ * <p>
  * This handler maps requests to servlets that implement the
  * javax.servlet.http.HttpServlet API.
  * <P>
@@ -88,10 +88,6 @@ import org.eclipse.jetty.util.log.Logger;
  * <p>
  * Unless run as part of a {@link ServletContextHandler} or derivative, the {@link #initialize()}
  * method must be called manually after start().
- */
-
-/* ------------------------------------------------------------ */
-/**
  */
 @ManagedObject("Servlet Handler")
 public class ServletHandler extends ScopedHandler
@@ -410,8 +406,8 @@ public class ServletHandler extends ScopedHandler
     /**
      * Get the ServletMapping matching the path
      * 
-     * @param pathSpec
-     * @return
+     * @param pathSpec the path spec
+     * @return the servlet mapping for the path spec (or null if not found)
      */
     public ServletMapping getServletMapping(String pathSpec)
     {
@@ -593,6 +589,11 @@ public class ServletHandler extends ScopedHandler
         }
         catch(RuntimeIOException e)
         {
+            if (e.getCause() instanceof IOException)
+            {
+                LOG.debug(e);
+                throw (IOException)e.getCause();
+            }
             throw e;
         }
         catch(Exception e)
@@ -835,6 +836,7 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /** Initialize filters and load-on-startup servlets.
+     * @throws Exception if unable to initialize
      */
     public void initialize()
         throws Exception
@@ -909,7 +911,7 @@ public class ServletHandler extends ScopedHandler
     
     /* ------------------------------------------------------------ */
     /** Add a holder for a listener
-     * @param filter
+     * @param listener the listener for the holder
      */
     public void addListener (ListenerHolder listener)
     {
@@ -943,7 +945,9 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /**
-     * see also newServletHolder(Class)
+     * Add a new servlet holder
+     * @param source the holder source
+     * @return the servlet holder
      */
     public ServletHolder newServletHolder(Holder.Source source)
     {
@@ -952,6 +956,8 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /** Convenience method to add a servlet.
+     * @param className the class name
+     * @param pathSpec the path spec
      * @return The servlet holder.
      */
     public ServletHolder addServletWithMapping (String className,String pathSpec)
@@ -963,7 +969,9 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a servlet.
+    /** Convenience method to add a servlet.
+     * @param servlet the servlet class
+     * @param pathSpec the path spec
      * @return The servlet holder.
      */
     public ServletHolder addServletWithMapping (Class<? extends Servlet> servlet,String pathSpec)
@@ -976,7 +984,7 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** conveniance method to add a servlet.
+    /** Convenience method to add a servlet.
      * @param servlet servlet holder to add
      * @param pathSpec servlet mappings for the servletHolder
      */
@@ -1006,8 +1014,9 @@ public class ServletHandler extends ScopedHandler
 
 
     /* ------------------------------------------------------------ */
-    /**Convenience method to add a pre-constructed ServletHolder.
-     * @param holder
+    /**
+     * Convenience method to add a pre-constructed ServletHolder.
+     * @param holder the servlet holder
      */
     public void addServlet(ServletHolder holder)
     {
@@ -1015,8 +1024,9 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** Convenience method to add a pre-constructed ServletMapping.
-     * @param mapping
+    /** 
+     * Convenience method to add a pre-constructed ServletMapping.
+     * @param mapping the servlet mapping
      */
     public void addServletMapping (ServletMapping mapping)
     {
@@ -1182,13 +1192,15 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** Convenience method to add a filter with a mapping
-     * @param className
-     * @param pathSpec
-     * @param dispatches
+    /** 
+     * Convenience method to add a filter with a mapping
+     * @param className the filter class name
+     * @param pathSpec the path spec
+     * @param dispatches the dispatcher types for this filter
      * @return the filter holder created
      * @deprecated use {@link #addFilterWithMapping(Class, String, EnumSet)} instead
      */
+    @Deprecated
     public FilterHolder addFilter (String className,String pathSpec,EnumSet<DispatcherType> dispatches)
     {
         return addFilterWithMapping(className, pathSpec, dispatches);
@@ -1196,9 +1208,9 @@ public class ServletHandler extends ScopedHandler
 
     /* ------------------------------------------------------------ */
     /**
-     * convenience method to add a filter and mapping
-     * @param filter
-     * @param filterMapping
+     * Convenience method to add a filter and mapping
+     * @param filter the filter holder
+     * @param filterMapping the filter mapping
      */
     public void addFilter (FilterHolder filter, FilterMapping filterMapping)
     {
@@ -1209,8 +1221,9 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** Convenience method to add a preconstructed FilterHolder
-     * @param filter
+    /** 
+     * Convenience method to add a preconstructed FilterHolder
+     * @param filter the filter holder
      */
     public void addFilter (FilterHolder filter)
     {
@@ -1219,8 +1232,9 @@ public class ServletHandler extends ScopedHandler
     }
 
     /* ------------------------------------------------------------ */
-    /** Convenience method to add a preconstructed FilterMapping
-     * @param mapping
+    /** 
+     * Convenience method to add a preconstructed FilterMapping
+     * @param mapping the filter mapping
      */
     public void addFilterMapping (FilterMapping mapping)
     {
@@ -1263,8 +1277,9 @@ public class ServletHandler extends ScopedHandler
     
 
     /* ------------------------------------------------------------ */
-    /** Convenience method to add a preconstructed FilterMapping
-     * @param mapping
+    /** 
+     * Convenience method to add a preconstructed FilterMapping
+     * @param mapping the filter mapping
      */
     public void prependFilterMapping (FilterMapping mapping)
     {
@@ -1322,7 +1337,7 @@ public class ServletHandler extends ScopedHandler
      * @param mapping the FilterMapping to add
      * @param pos the position in the existing arry at which to add it
      * @param before if true, insert before  pos, if false insert after it
-     * @return
+     * @return the new FilterMappings post-insert
      */
     protected FilterMapping[] insertFilterMapping (FilterMapping mapping, int pos, boolean before)
     {

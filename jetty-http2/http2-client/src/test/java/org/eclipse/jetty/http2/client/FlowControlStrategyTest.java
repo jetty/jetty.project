@@ -20,6 +20,7 @@ package org.eclipse.jetty.http2.client;
 
 import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -33,6 +34,7 @@ import java.util.concurrent.atomic.AtomicReference;
 
 import org.eclipse.jetty.http.HostPortHttpField;
 import org.eclipse.jetty.http.HttpFields;
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.http.MetaData;
@@ -41,13 +43,13 @@ import org.eclipse.jetty.http2.FlowControlStrategy;
 import org.eclipse.jetty.http2.HTTP2Session;
 import org.eclipse.jetty.http2.HTTP2Stream;
 import org.eclipse.jetty.http2.ISession;
-import org.eclipse.jetty.http2.SimpleFlowControlStrategy;
 import org.eclipse.jetty.http2.api.Session;
 import org.eclipse.jetty.http2.api.Stream;
 import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
+import org.eclipse.jetty.http2.frames.ResetFrame;
 import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.server.RawHTTP2ServerConnectionFactory;
 import org.eclipse.jetty.io.ByteBufferPool;
@@ -100,8 +102,7 @@ public abstract class FlowControlStrategyTest
             @Override
             protected FlowControlStrategy newFlowControlStrategy()
             {
-//                return FlowControlStrategyTest.this.newFlowControlStrategy();
-                return new SimpleFlowControlStrategy();
+                return FlowControlStrategyTest.this.newFlowControlStrategy();
             }
         });
         client.start();
@@ -515,7 +516,7 @@ public abstract class FlowControlStrategyTest
                 MetaData.Request request = (MetaData.Request)requestFrame.getMetaData();
                 if ("POST".equalsIgnoreCase(request.getMethod()))
                 {
-                    // Send data to consume the session window.
+                    // Send data to consume most of the session window.
                     ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE - windowSize);
                     DataFrame dataFrame = new DataFrame(stream.getId(), data, true);
                     stream.data(dataFrame, Callback.Adapter.INSTANCE);
@@ -536,7 +537,8 @@ public abstract class FlowControlStrategyTest
 
         Session session = newClient(new Session.Listener.Adapter());
 
-        // First request is just to consume the session window.
+        // First request is just to consume most of the session window.
+        final List<Callback> callbacks1 = new ArrayList<>();
         final CountDownLatch prepareLatch = new CountDownLatch(1);
         MetaData.Request request1 = newRequest("POST", new HttpFields());
         session.newStream(new HeadersFrame(0, request1, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
@@ -545,16 +547,14 @@ public abstract class FlowControlStrategyTest
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
                 // Do not consume the data to reduce the session window.
+                callbacks1.add(callback);
                 if (frame.isEndStream())
                     prepareLatch.countDown();
             }
         });
         Assert.assertTrue(prepareLatch.await(5, TimeUnit.SECONDS));
 
-        final AtomicReference<Callback> callbackRef2 = new AtomicReference<>();
-        final AtomicReference<Callback> callbackRef3 = new AtomicReference<>();
-
-        // Second request will consume half the session window.
+        // Second request will consume half of the remaining the session window.
         MetaData.Request request2 = newRequest("GET", new HttpFields());
         session.newStream(new HeadersFrame(0, request2, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
         {
@@ -562,11 +562,10 @@ public abstract class FlowControlStrategyTest
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
                 // Do not consume it to stall flow control.
-                callbackRef2.set(callback);
             }
         });
 
-        // Third request will consume the session window, which is now stalled.
+        // Third request will consume the whole session window, which is now stalled.
         // A fourth request will not be able to receive data.
         MetaData.Request request3 = newRequest("GET", new HttpFields());
         session.newStream(new HeadersFrame(0, request3, null, true), new Promise.Adapter<Stream>(), new Stream.Listener.Adapter()
@@ -575,7 +574,6 @@ public abstract class FlowControlStrategyTest
             public void onData(Stream stream, DataFrame frame, Callback callback)
             {
                 // Do not consume it to stall flow control.
-                callbackRef3.set(callback);
             }
         });
 
@@ -596,11 +594,10 @@ public abstract class FlowControlStrategyTest
         // Verify that the data does not arrive because the server session is stalled.
         Assert.assertFalse(latch.await(1, TimeUnit.SECONDS));
 
-        // Consume the data of the third response.
-        // This will open up the session window, allowing the third stream to send data.
-        Callback callback2 = callbackRef3.getAndSet(null);
-        if (callback2 != null)
-            callback2.succeeded();
+        // Consume the data of the first response.
+        // This will open up the session window, allowing the fourth stream to send data.
+        for (Callback callback : callbacks1)
+            callback.succeeded();
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -651,7 +648,7 @@ public abstract class FlowControlStrategyTest
     }
 
     @Test
-    public void testServerTwoDataFramesWithStalledSession() throws Exception
+    public void testServerTwoDataFramesWithStalledStream() throws Exception
     {
         // Frames in queue = DATA1, DATA2.
         // Server writes part of DATA1, then stalls.
@@ -913,5 +910,66 @@ public abstract class FlowControlStrategyTest
 
         // Expect the connection to be closed.
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testFlowControlWhenServerResetsStream() throws Exception
+    {
+        // On server, don't consume the data and immediately reset.
+        start(new ServerSessionListener.Adapter()
+        {
+            @Override
+            public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
+            {
+                MetaData.Request request = (MetaData.Request)frame.getMetaData();
+
+                if (HttpMethod.GET.is(request.getMethod()))
+                    return new Stream.Listener.Adapter();
+
+                return new Stream.Listener.Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        // Fail the callback to enlarge the session window.
+                        // More data frames will be discarded because the
+                        // stream is reset, and automatically consumed to
+                        // keep the session window large for other streams.
+                        callback.failed(new Throwable());
+                        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+                    }
+                };
+            }
+        });
+
+        Session session = newClient(new Session.Listener.Adapter());
+        MetaData.Request metaData = newRequest("POST", new HttpFields());
+        HeadersFrame frame = new HeadersFrame(0, metaData, null, false);
+        FuturePromise<Stream> streamPromise = new FuturePromise<>();
+        final CountDownLatch resetLatch = new CountDownLatch(1);
+        session.newStream(frame, streamPromise, new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onReset(Stream stream, ResetFrame frame)
+            {
+                resetLatch.countDown();
+            }
+        });
+        Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
+
+        // Perform a big upload that will stall the flow control windows.
+        ByteBuffer data = ByteBuffer.allocate(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE);
+        final CountDownLatch dataLatch = new CountDownLatch(1);
+        stream.data(new DataFrame(stream.getId(), data, true), new Callback.Adapter()
+        {
+            @Override
+            public void failed(Throwable x)
+            {
+                dataLatch.countDown();
+            }
+        });
+
+        Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(dataLatch.await(5, TimeUnit.SECONDS));
     }
 }

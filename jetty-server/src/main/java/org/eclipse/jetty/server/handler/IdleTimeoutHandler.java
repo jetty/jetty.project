@@ -26,22 +26,20 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.HttpChannel;
-import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.Request;
 
 /**
  * Handler to adjust the idle timeout of requests while dispatched.
  * Can be applied in jetty.xml with
  * <pre>
- *   &lt;Get id='handler' name='Handler'/>
- *   &lt;Set name='Handler'>
- *     &lt;New id='idleTimeoutHandler' class='org.eclipse.jetty.server.handler.IdleTimeoutHandler'>
- *       &lt;Set name='Handler'>&lt;Ref id='handler'/>&lt;/Set>
- *       &lt;Set name='IdleTimeoutMs'>5000&lt;/Set>
- *     &lt;/New>
- *   &lt;/Set>
+ *   &lt;Get id='handler' name='Handler'/&gt;
+ *   &lt;Set name='Handler'&gt;
+ *     &lt;New id='idleTimeoutHandler' class='org.eclipse.jetty.server.handler.IdleTimeoutHandler'&gt;
+ *       &lt;Set name='Handler'&gt;&lt;Ref id='handler'/&gt;&lt;/Set&gt;
+ *       &lt;Set name='IdleTimeoutMs'&gt;5000&lt;/Set&gt;
+ *     &lt;/New&gt;
+ *   &lt;/Set&gt;
  * </pre>
  */
 public class IdleTimeoutHandler extends HandlerWrapper

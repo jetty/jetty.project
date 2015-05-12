@@ -31,10 +31,9 @@ import org.eclipse.jetty.webapp.WebInfConfiguration;
 
 /**
  * QuickStartConfiguration
- * 
+ * <p> 
  * Re-inflate a deployable webapp from a saved effective-web.xml
  * which combines all pre-parsed web xml descriptors and annotations.
- * 
  */
 public class QuickStartConfiguration extends WebInfConfiguration
 {
@@ -83,9 +82,9 @@ public class QuickStartConfiguration extends WebInfConfiguration
     /**
      * Get the quickstart-web.xml file as a Resource.
      * 
-     * @param context
-     * @return
-     * @throws Exception
+     * @param context the web app context
+     * @return the Resource for the quickstart-web.xml
+     * @throws Exception if unable to find the quickstart xml
      */
     public Resource getQuickStartWebXml (WebAppContext context) throws Exception
     {
@@ -138,7 +137,7 @@ public class QuickStartConfiguration extends WebInfConfiguration
         context.getMetaData().addDescriptorProcessor(new QuickStartDescriptorProcessor());
         
         //add a decorator that will find introspectable annotations
-        context.addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
+        context.getObjectFactory().addDecorator(new AnnotationDecorator(context)); //this must be the last Decorator because they are run in reverse order!
         
         //add a context bean that will run ServletContainerInitializers as the context starts
         ServletContainerInitializersStarter starter = (ServletContainerInitializersStarter)context.getAttribute(AnnotationConfiguration.CONTAINER_INITIALIZER_STARTER);

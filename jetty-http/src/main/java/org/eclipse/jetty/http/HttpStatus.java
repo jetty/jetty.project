@@ -25,6 +25,7 @@ package org.eclipse.jetty.http;
  * </p>
  *
  * <table border="1" cellpadding="5">
+ * <caption>HTTP Status Codes Table</caption>
  * <tr>
  * <th>Enum</th>
  * <th>Code</th>
@@ -155,8 +156,8 @@ package org.eclipse.jetty.http;
  * </tr>
  * <tr>
  * <td>&nbsp;</td>
- * <td><strike>207</strike></td>
- * <td><strike>Partial Update OK</strike></td>
+ * <td style="text-decoration: line-through;">207</td>
+ * <td style="text-decoration: line-through;">Partial Update OK</td>
  * <td>&nbsp;</td>
  * <td>
  * <a href=
@@ -448,8 +449,8 @@ package org.eclipse.jetty.http;
  * </tr>
  * <tr>
  * <td>&nbsp;</td>
- * <td><strike>418</strike></td>
- * <td><strike>Reauthentication Required</strike></td>
+ * <td style="text-decoration: line-through;">418</td>
+ * <td style="text-decoration: line-through;">Reauthentication Required</td>
  * <td>&nbsp;</td>
  * <td>
  * <a href=
@@ -459,8 +460,8 @@ package org.eclipse.jetty.http;
  * </tr>
  * <tr>
  * <td>&nbsp;</td>
- * <td><strike>418</strike></td>
- * <td><strike>Unprocessable Entity</strike></td>
+ * <td style="text-decoration: line-through;">418</td>
+ * <td style="text-decoration: line-through;">Unprocessable Entity</td>
  * <td>&nbsp;</td>
  * <td>&nbsp;</td>
  * <td>
@@ -470,8 +471,8 @@ package org.eclipse.jetty.http;
  * </tr>
  * <tr>
  * <td>&nbsp;</td>
- * <td><strike>419</strike></td>
- * <td><strike>Proxy Reauthentication Required</stike></td>
+ * <td style="text-decoration: line-through;">419</td>
+ * <td style="text-decoration: line-through;">Proxy Reauthentication Required</td>
  * <td>&nbsp;</td>
  * <td>
  * <a href=
@@ -481,8 +482,8 @@ package org.eclipse.jetty.http;
  * </tr>
  * <tr>
  * <td>&nbsp;</td>
- * <td><strike>419</strike></td>
- * <td><strike>Insufficient Space on Resource</stike></td>
+ * <td style="text-decoration: line-through;">419</td>
+ * <td style="text-decoration: line-through;">Insufficient Space on Resource</td>
  * <td>&nbsp;</td>
  * <td>&nbsp;</td>
  * <td>
@@ -492,8 +493,8 @@ package org.eclipse.jetty.http;
  * </tr>
  * <tr>
  * <td>&nbsp;</td>
- * <td><strike>420</strike></td>
- * <td><strike>Method Failure</strike></td>
+ * <td style="text-decoration: line-through;">420</td>
+ * <td style="text-decoration: line-through;">Method Failure</td>
  * <td>&nbsp;</td>
  * <td>&nbsp;</td>
  * <td>

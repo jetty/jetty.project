@@ -29,6 +29,7 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.Jetty;
 
 import com.sun.net.httpserver.Authenticator;
 import com.sun.net.httpserver.Authenticator.Result;
@@ -98,7 +99,7 @@ public class HttpSpiContextHandler extends ContextHandler
             ex.printStackTrace(writer);
             writer.println("</pre>");
 
-            writer.println("<p><i><small><a href=\"http://eclipse.org/jetty\">Powered by jetty://</a></small></i></p>");
+            baseRequest.getHttpChannel().getHttpConfiguration().writePoweredBy(writer,"<p>","</p>");
 
             writer.close();
         }

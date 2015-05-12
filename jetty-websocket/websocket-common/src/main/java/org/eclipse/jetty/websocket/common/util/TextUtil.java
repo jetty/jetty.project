@@ -43,7 +43,6 @@ public final class TextUtil
 
     /**
      * Smash a long string to fit within the max string length, by taking the middle section of the string and replacing them with an ellipsis "..."
-     * <p>
      * 
      * <pre>
      * Examples:

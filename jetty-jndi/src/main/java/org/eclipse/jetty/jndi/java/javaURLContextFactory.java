@@ -29,14 +29,10 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 
-/** javaURLContextFactory
- * <p>This is the URL context factory for the java: URL.
- *
- * <p><h4>Notes</h4>
+/** 
+ * javaURLContextFactory
  * <p>
- *
- * <p><h4>Usage</h4>
- * <pre>
+ * This is the URL context factory for the <code>java:</code> URL.
  */
 public class javaURLContextFactory implements ObjectFactory
 {

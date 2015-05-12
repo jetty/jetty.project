@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.*;
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 import java.io.File;
 import java.io.FileOutputStream;
@@ -50,6 +50,7 @@ public class StartArgs
     static
     {
         String ver = System.getProperty("jetty.version",null);
+        String tag = System.getProperty("jetty.tag.version","master");
 
         if (ver == null)
         {
@@ -57,32 +58,55 @@ public class StartArgs
             if ((pkg != null) && "Eclipse.org - Jetty".equals(pkg.getImplementationVendor()) && (pkg.getImplementationVersion() != null))
             {
                 ver = pkg.getImplementationVersion();
+                if (tag == null)
+                {
+                    tag = "jetty-" + ver;
+                }
             }
         }
 
         if (ver == null)
         {
             ver = "TEST";
+            if (tag == null)
+            {
+                tag = "master";
+            }
+        }
+        
+        if (tag == null || tag.contains("-SNAPSHOT"))
+        {
+            tag = "master";
         }
 
         VERSION = ver;
         System.setProperty("jetty.version",VERSION);
+        System.setProperty("jetty.tag.version",tag);
     }
 
     private static final String SERVER_MAIN = "org.eclipse.jetty.xml.XmlConfiguration";
 
     /** List of enabled modules */
     private Set<String> modules = new HashSet<>();
+    
+    /** List of modules to skip [files] section validation */
+    private Set<String> skipFileValidationModules = new HashSet<>();
+    
     /** Map of enabled modules to the source of where that activation occurred */
     private Map<String, List<String>> sources = new HashMap<>();
+    
     /** Map of properties to where that property was declared */
     private Map<String, String> propertySource = new HashMap<>();
+    
     /** List of all active [files] sections from enabled modules */
     private List<FileArg> files = new ArrayList<>();
+    
     /** List of all active [lib] sections from enabled modules */
     private Classpath classpath;
+    
     /** List of all active [xml] sections from enabled modules */
     private List<Path> xmls = new ArrayList<>();
+    
     /** JVM arguments, found via commmand line and in all active [exec] sections from enabled modules */
     private List<String> jvmArgs = new ArrayList<>();
 
@@ -137,7 +161,13 @@ public class StartArgs
 
     private void addFile(Module module, String uriLocation)
     {
-        FileArg arg = new FileArg(module, uriLocation);
+        if(module.isSkipFilesValidation())
+        {
+            StartLog.debug("Not validating %s [files] for %s",module,uriLocation);
+            return;
+        }
+        
+        FileArg arg = new FileArg(module, properties.expand(uriLocation));
         if (!files.contains(arg))
         {
             files.add(arg);
@@ -216,6 +246,7 @@ public class StartArgs
         System.out.println("Jetty Environment:");
         System.out.println("-----------------");
         dumpProperty("jetty.version");
+        dumpProperty("jetty.tag.version");
         dumpProperty("jetty.home");
         dumpProperty("jetty.base");
         
@@ -377,8 +408,8 @@ public class StartArgs
     /**
      * Expand any command line added <code>--lib</code> lib references.
      * 
-     * @param baseHome
-     * @throws IOException
+     * @param baseHome the base home in use
+     * @throws IOException if unable to expand the libraries
      */
     public void expandLibs(BaseHome baseHome) throws IOException
     {
@@ -402,9 +433,9 @@ public class StartArgs
     /**
      * Build up the Classpath and XML file references based on enabled Module list.
      * 
-     * @param baseHome
-     * @param activeModules
-     * @throws IOException
+     * @param baseHome the base home in use
+     * @param activeModules the active (selected) modules
+     * @throws IOException if unable to expand the modules
      */
     public void expandModules(BaseHome baseHome, List<Module> activeModules) throws IOException
     {
@@ -601,6 +632,11 @@ public class StartArgs
     public Props getProperties()
     {
         return properties;
+    }
+    
+    public Set<String> getSkipFileValidationModules()
+    {
+        return skipFileValidationModules;
     }
 
     public List<String> getSources(String module)
@@ -884,6 +920,17 @@ public class StartArgs
         {
             List<String> moduleNames = Props.getValues(arg);
             enableModules(source,moduleNames);
+            return;
+        }
+        
+        // Skip [files] validation on a module
+        if (arg.startsWith("--skip-file-validation="))
+        {
+            List<String> moduleNames = Props.getValues(arg);
+            for (String moduleName : moduleNames)
+            {
+                skipFileValidationModules.add(moduleName);
+            }
             return;
         }
 

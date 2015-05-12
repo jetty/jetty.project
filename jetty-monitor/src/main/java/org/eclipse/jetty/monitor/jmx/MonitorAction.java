@@ -45,7 +45,7 @@ public abstract class MonitorAction
      * Creates a new monitor action 
      * 
      * @param trigger event trigger to be associated with this action
-     * @throws InvalidParameterException
+     * @throws InvalidParameterException if trigger is invalid
      */
     public MonitorAction(EventTrigger trigger)
         throws InvalidParameterException
@@ -60,7 +60,7 @@ public abstract class MonitorAction
      * 
      * @param trigger event trigger to be associated with this action
      * @param notifier event notifier to be associated with this action
-     * @throws InvalidParameterException
+     * @throws InvalidParameterException if trigger is invalid
      */
     public MonitorAction(EventTrigger trigger, EventNotifier notifier)
         throws InvalidParameterException
@@ -75,7 +75,7 @@ public abstract class MonitorAction
      * @param trigger event trigger to be associated with this action
      * @param notifier event notifier to be associated with this action
      * @param pollInterval interval for polling of the JMX server
-     * @throws InvalidParameterException
+     * @throws InvalidParameterException if trigger is invalid
      */
     public MonitorAction(EventTrigger trigger, EventNotifier notifier, long pollInterval)
         throws InvalidParameterException
@@ -91,7 +91,7 @@ public abstract class MonitorAction
      * @param notifier event notifier to be associated with this action
      * @param pollInterval interval for polling of the JMX server
      * @param pollDelay delay before starting to poll the JMX server
-     * @throws InvalidParameterException
+     * @throws InvalidParameterException if trigger is invalid
      */
     public MonitorAction(EventTrigger trigger, EventNotifier notifier, long pollInterval, long pollDelay)
         throws InvalidParameterException

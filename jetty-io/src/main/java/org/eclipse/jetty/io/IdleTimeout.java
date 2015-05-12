@@ -28,7 +28,7 @@ import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * An Abstract implementation of an Idle Timeout.
- * <p/>
+ * <p>
  * This implementation is optimised that timeout operations are not cancelled on
  * every operation. Rather timeout are allowed to expire and a check is then made
  * to see when the last operation took place.  If the idle timeout has not expired,

@@ -25,6 +25,7 @@ import javax.net.ssl.SSLEngine;
 import javax.net.ssl.SSLSession;
 import javax.servlet.ServletRequest;
 
+import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
@@ -48,6 +49,19 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      */
     public static final String CACHED_INFO_ATTR = CachedInfo.class.getName();
 
+    private boolean _sniHostCheck;
+    
+    
+    public SecureRequestCustomizer()
+    {
+        this(true);
+    }
+    
+    public SecureRequestCustomizer(boolean sniHostCheck)
+    {
+        _sniHostCheck=sniHostCheck;
+    }
+    
     @Override
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
@@ -88,6 +102,16 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         request.setScheme(HttpScheme.HTTPS.asString());
         SSLSession sslSession = sslEngine.getSession();
 
+        if (_sniHostCheck)
+        {
+            String sniName = (String)sslSession.getValue("org.eclipse.jetty.util.ssl.sniname");
+            if (sniName!=null && !sniName.equalsIgnoreCase(request.getServerName()))
+            {
+                LOG.warn("Host does not match SNI Name: {}!={}",sniName,request.getServerName());
+                throw new BadMessageException(400,"Host does not match SNI");
+            }
+        }
+        
         try
         {
             String cipherSuite=sslSession.getCipherSuite();

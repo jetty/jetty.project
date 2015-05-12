@@ -30,6 +30,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.LifeCycle;
 
 /* ------------------------------------------------------------ */
 /** A <code>HandlerWrapper</code> acts as a {@link Handler} but delegates the {@link Handler#handle handle} method and
@@ -89,12 +90,16 @@ public class HandlerWrapper extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    /** Replace the current handler with another HandlerWrapper
-     * linked to the current handler.  This is equivalent to:<pre>
+    /** 
+     * Replace the current handler with another HandlerWrapper
+     * linked to the current handler.  
+     * <p>
+     * This is equivalent to:
+     * <pre>
      *   wrapper.setHandler(getHandler());
      *   setHandler(wrapper);
      * </pre>
-     * @param wrapper
+     * @param wrapper the wrapper to insert
      */
     public void insertHandler(HandlerWrapper wrapper)
     {

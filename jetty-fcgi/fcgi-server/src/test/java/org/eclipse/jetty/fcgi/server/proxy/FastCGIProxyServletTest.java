@@ -19,13 +19,11 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import java.io.IOException;
-import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Random;
 import java.util.concurrent.TimeUnit;
-
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -85,9 +83,9 @@ public class FastCGIProxyServletTest
         FastCGIProxyServlet fcgiServlet = new FastCGIProxyServlet()
         {
             @Override
-            protected URI rewriteURI(HttpServletRequest request)
+            protected String rewriteTarget(HttpServletRequest request)
             {
-                return URI.create("http://localhost:" + fcgiConnector.getLocalPort() + servletPath + request.getServletPath());
+                return "http://localhost:" + fcgiConnector.getLocalPort() + servletPath + request.getServletPath();
             }
         };
         ServletHolder fcgiServletHolder = new ServletHolder(fcgiServlet);

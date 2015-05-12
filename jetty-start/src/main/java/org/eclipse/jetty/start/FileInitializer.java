@@ -33,11 +33,14 @@ public interface FileInitializer
      * @param uri
      *            the remote URI of the resource acting as its source
      * @param file
-     *            the local file resource to initialize
+     *            the local file resource to initialize. (often in ${jetty.base} directory) 
+     * @param fileRef
+     *            the simple string reference to the output file, suitable for searching
+     *            for the file in other locations (like ${jetty.home} or ${jetty.dir})
      * @return true if local file is initialized (resulted in a change on disk), false if this
      *         {@link FileInitializer} did nothing.
      * @throws IOException
      *             if there was an attempt to initialize, but an error occurred.
      */
-    public boolean init(URI uri, Path file) throws IOException;
+    public boolean init(URI uri, Path file, String fileRef) throws IOException;
 }

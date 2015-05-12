@@ -36,8 +36,8 @@ import org.eclipse.jetty.http.HttpContent;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.MimeTypes;
-import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.MimeTypes.Type;
+import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http.ResourceHttpContent;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.log.Log;
@@ -46,10 +46,6 @@ import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.util.resource.ResourceFactory;
 
 
-/* ------------------------------------------------------------ */
-/** 
- * 
- */
 public class ResourceCache
 {
     private static final Logger LOG = Log.getLogger(ResourceCache.class);
@@ -69,7 +65,11 @@ public class ResourceCache
     
     /* ------------------------------------------------------------ */
     /** Constructor.
+     * @param parent the parent resource cache
+     * @param factory the resource factory
      * @param mimeTypes Mimetype to use for meta data
+     * @param useFileMappedBuffer true to file memory mapped buffers
+     * @param etags true to support etags 
      */
     public ResourceCache(ResourceCache parent, ResourceFactory factory, MimeTypes mimeTypes,boolean useFileMappedBuffer,boolean etags)
     {
@@ -201,7 +201,7 @@ public class ResourceCache
     
     /* ------------------------------------------------------------ */
     /**
-     * @param resource
+     * @param resource the resource to test
      * @return True if the resource is cacheable. The default implementation tests the cache sizes.
      */
     protected boolean isCacheable(Resource resource)

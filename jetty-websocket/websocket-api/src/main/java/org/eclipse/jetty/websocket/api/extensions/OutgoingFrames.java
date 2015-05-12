@@ -28,10 +28,10 @@ public interface OutgoingFrames
 {
     /**
      * A frame, and optional callback, intended for the network layer.
-     * <p/>
+     * <p>
      * Note: the frame can undergo many transformations in the various
      * layers and extensions present in the implementation.
-     * <p/>
+     * <p>
      * If you are implementing a mutation, you are obliged to handle
      * the incoming WriteCallback appropriately.
      *
