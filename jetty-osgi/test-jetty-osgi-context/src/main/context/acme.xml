@@ -8,7 +8,7 @@
     <Arg><Property name="bundle.root"/></Arg>
   </Call>
 
-  <Ref>
+  <Ref refid="res">
     <Call id="base" name="addPath">
       <Arg>/static/</Arg>
     </Call>
