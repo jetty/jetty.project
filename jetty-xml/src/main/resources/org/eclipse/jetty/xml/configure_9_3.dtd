@@ -15,7 +15,6 @@ Values themselves may be configured objects that are created with the
 
 Values are matched to arguments on a best effort approach, but types
 my be specified if a match is not achieved.
-
 -->
 
 <!ENTITY % CONFIG "Set|Get|Put|Call|New|Ref|Array|Map|Property">
@@ -98,6 +97,48 @@ specified type.
 
 
 <!--
+Id Element.
+This element is the equivalent of the id attribute.
+-->
+<!ELEMENT Id (%VALUE;)* >
+
+
+<!--
+Name element.
+This element is the equivalent of the name attribute.
+-->
+<!ELEMENT Name (%VALUE;)* >
+
+
+<!--
+Deprecated element.
+This element is the equivalent of the deprecated attribute.
+-->
+<!ELEMENT Deprecated (%VALUE;)* >
+
+
+<!--
+Default element.
+This element is the equivalent of the default attribute.
+-->
+<!ELEMENT Default (%VALUE;)* >
+
+
+<!--
+Class element.
+This element is the equivalent of the class attribute.
+-->
+<!ELEMENT Class (%VALUE;)* >
+
+
+<!--
+Type element.
+This element is the equivalent of the type attribute.
+-->
+<!ELEMENT Type (%VALUE;)* >
+
+
+<!--
 Call Element.
 This element maps to an arbitrary call to a method on the current object,
 The name attribute and Arg elements are used to select the method.
@@ -124,8 +165,8 @@ A Call with a class attribute is treated as a static call.
 
 <!--
 Arg Element.
-This element defines a positional or optional named argument for the 
-Call and New elements. The optional type attribute can force the type 
+This element defines a positional or optional named argument for the
+Call and New elements. The optional type attribute can force the type
 of the value.
 
 An Arg element can contain value text and/or value elements such as Call,
@@ -141,7 +182,7 @@ specified type.
 <!--
 New Element.
 This element allows the creation of a new object as part of a
-value for elements such as Set, Put, Arg, etc. The class attribute 
+value for elements such as Set, Put, Arg, etc. The class attribute
 determines the type of the new object and the contained Arg elements
 are used to select the constructor for the new object.
 
@@ -162,9 +203,10 @@ This is equivalent to:
 <!ELEMENT New (Id?,Name?,Class?,Arg*,(%CONFIG;)*) >
 <!ATTLIST New %IDATTR; %IMPLIEDCLASSATTR; %ARGATTR; >
 
+
 <!--
 Ref Element.
-This element allows a previously created object to be referenced by id.  The 
+This element allows a previously created object to be referenced by id.  The
 attribute refid is used to specify the id of another object (the attribute id can
 also be used, but it's use is deprecated).
 A Ref element can contain a sequence of elements such as Set, Put, Call, etc.
@@ -250,6 +292,7 @@ This is equivalent to:
 -->
 <!ELEMENT SystemProperty (Id?,Name?,Deprecated*,Default?) >
 <!ATTLIST SystemProperty %IMPLIEDNAMEATTR; %DEFAULTATTR; %DEPRECATEDATTR; %IDATTR; >
+
 
 <!--
 Environment variable Element.
