@@ -44,6 +44,7 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArraySet;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -115,12 +116,13 @@ public class SslContextFactory extends AbstractLifeCycle
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
 
     /** Included protocols. */
-    private Set<String> _includeProtocols = null;
+    private final Set<String> _includeProtocols = new LinkedHashSet<>();
 
     /** Excluded cipher suites. */
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
+    
     /** Included cipher suites. */
-    private Set<String> _includeCipherSuites = null;
+    private final Set<String> _includeCipherSuites = new LinkedHashSet<>();
 
     /** Keystore path. */
     private String _keyStorePath;
@@ -367,7 +369,8 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setIncludeProtocols(String... protocols)
     {
         checkNotStarted();
-        _includeProtocols = new LinkedHashSet<>(Arrays.asList(protocols));
+        _includeProtocols.clear();
+        _includeProtocols.addAll(Arrays.asList(protocols));
     }
 
     /**
@@ -419,7 +422,8 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setIncludeCipherSuites(String... cipherSuites)
     {
         checkNotStarted();
-        _includeCipherSuites = new LinkedHashSet<>(Arrays.asList(cipherSuites));
+        _includeCipherSuites.clear();
+        _includeCipherSuites.addAll(Arrays.asList(cipherSuites));
     }
 
     /**
@@ -1037,7 +1041,7 @@ public class SslContextFactory extends AbstractLifeCycle
         Set<String> selected_protocols = new LinkedHashSet<>();
 
         // Set the starting protocols - either from the included or enabled list
-        if (_includeProtocols!=null)
+        if (!_includeProtocols.isEmpty())
         {
             // Use only the supported included protocols
             for (String protocol : _includeProtocols)
@@ -1067,17 +1071,17 @@ public class SslContextFactory extends AbstractLifeCycle
         Set<String> selected_ciphers = new CopyOnWriteArraySet<>();
 
         // Set the starting ciphers - either from the included or enabled list
-        if (_includeCipherSuites!=null)
-            processIncludeCipherSuites(supportedCipherSuites, selected_ciphers);
-        else
+        if (_includeCipherSuites.isEmpty())
             selected_ciphers.addAll(Arrays.asList(enabledCipherSuites));
+        else
+            processIncludeCipherSuites(supportedCipherSuites, selected_ciphers);
 
         removeExcludedCipherSuites(selected_ciphers);
 
         return selected_ciphers.toArray(new String[selected_ciphers.size()]);
     }
 
-    private void processIncludeCipherSuites(String[] supportedCipherSuites, Set<String> selected_ciphers)
+    protected void processIncludeCipherSuites(String[] supportedCipherSuites, Set<String> selected_ciphers)
     {
         for (String cipherSuite : _includeCipherSuites)
         {
@@ -1091,7 +1095,7 @@ public class SslContextFactory extends AbstractLifeCycle
         }
     }
 
-    private void removeExcludedCipherSuites(Set<String> selected_ciphers)
+    protected void removeExcludedCipherSuites(Set<String> selected_ciphers)
     {
         for (String excludeCipherSuite : _excludeCipherSuites)
         {

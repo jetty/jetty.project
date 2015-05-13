@@ -21,6 +21,7 @@ package org.eclipse.jetty.util.ssl;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
@@ -240,6 +241,15 @@ public class SslContextFactoryTest
         assertSelectedMatchesIncluded(includeProtocol, selectedProtocol);
     }
 
+    @Test
+    public void testProtocolAndCipherSettingsAreNPESafe()
+    {
+    	assertNotNull(cf.getExcludeProtocols());
+    	assertNotNull(cf.getIncludeProtocols());
+    	assertNotNull(cf.getExcludeCipherSuites());
+    	assertNotNull(cf.getIncludeCipherSuites());
+    }
+    
     private void assertSelectedMatchesIncluded(String[] includeStrings, String[] selectedStrings)
     {
         assertThat(includeStrings.length + " strings are selected", selectedStrings.length, is(includeStrings.length));
