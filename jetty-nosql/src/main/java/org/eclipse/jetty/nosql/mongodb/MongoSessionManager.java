@@ -668,6 +668,7 @@ public class MongoSessionManager extends NoSqlSessionManager
         return getContextKey()+ "." + attr;
     }
     
+    /*------------------------------------------------------------ */
     @ManagedOperation(value="purge invalid sessions in the session store based on normal criteria", impact="ACTION")
     public void purge()
     {   
@@ -675,18 +676,21 @@ public class MongoSessionManager extends NoSqlSessionManager
     }
     
     
+    /*------------------------------------------------------------ */
     @ManagedOperation(value="full purge of invalid sessions in the session store", impact="ACTION")
     public void purgeFully()
     {   
         ((MongoSessionIdManager)_sessionIdManager).purgeFully();
     }
     
+    /*------------------------------------------------------------ */
     @ManagedOperation(value="scavenge sessions known to this manager", impact="ACTION")
     public void scavenge()
     {
         ((MongoSessionIdManager)_sessionIdManager).scavenge();
     }
     
+    /*------------------------------------------------------------ */
     @ManagedOperation(value="scanvenge all sessions", impact="ACTION")
     public void scavengeFully()
     {
@@ -726,6 +730,7 @@ public class MongoSessionManager extends NoSqlSessionManager
         return contextId;
     }
 
+    /*------------------------------------------------------------ */
     /**
      * Dig through a given dbObject for the nested value
      */
@@ -749,6 +754,7 @@ public class MongoSessionManager extends NoSqlSessionManager
     }
 
     
+    /*------------------------------------------------------------ */
      /**
      * ClassLoadingObjectInputStream
      *

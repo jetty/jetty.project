@@ -113,10 +113,11 @@ public class SslContextFactory extends AbstractLifeCycle
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
 
     /** Included protocols. */
-    private Set<String> _includeProtocols = null;
+    private final Set<String> _includeProtocols = new LinkedHashSet<>();
 
     /** Excluded cipher suites. */
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
+    
     /** Included cipher suites. */
     private final List<String> _includeCipherSuites = new CopyOnWriteArrayList<String>();
 
@@ -376,7 +377,8 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setIncludeProtocols(String... protocols)
     {
         checkNotStarted();
-        _includeProtocols = new LinkedHashSet<>(Arrays.asList(protocols));
+        _includeProtocols.clear();
+        _includeProtocols.addAll(Arrays.asList(protocols));
     }
 
     /**
@@ -1019,7 +1021,7 @@ public class SslContextFactory extends AbstractLifeCycle
         Set<String> selected_protocols = new LinkedHashSet<>();
 
         // Set the starting protocols - either from the included or enabled list
-        if (_includeProtocols!=null)
+        if (!_includeProtocols.isEmpty())
         {
             // Use only the supported included protocols
             for (String protocol : _includeProtocols)
@@ -1049,10 +1051,10 @@ public class SslContextFactory extends AbstractLifeCycle
         List<String> selected_ciphers = new CopyOnWriteArrayList<>(); // TODO is this the most efficient?
 
         // Set the starting ciphers - either from the included or enabled list
-        if (_includeCipherSuites.size()>0)
-            processIncludeCipherSuites(supportedCipherSuites, selected_ciphers);
-        else
+        if (_includeCipherSuites.isEmpty())
             selected_ciphers.addAll(Arrays.asList(enabledCipherSuites));
+        else
+            processIncludeCipherSuites(supportedCipherSuites, selected_ciphers);
 
         removeExcludedCipherSuites(selected_ciphers);
 
@@ -1060,7 +1062,7 @@ public class SslContextFactory extends AbstractLifeCycle
         return selected_ciphers.toArray(new String[selected_ciphers.size()]);
     }
 
-    private void processIncludeCipherSuites(String[] supportedCipherSuites, List<String> selected_ciphers)
+    protected void processIncludeCipherSuites(String[] supportedCipherSuites, List<String> selected_ciphers)
     {
         for (String cipherSuite : _includeCipherSuites)
         {
@@ -1075,7 +1077,7 @@ public class SslContextFactory extends AbstractLifeCycle
         }
     }
 
-    private void removeExcludedCipherSuites(List<String> selected_ciphers)
+    protected void removeExcludedCipherSuites(List<String> selected_ciphers)
     {
         for (String excludeCipherSuite : _excludeCipherSuites)
         {
