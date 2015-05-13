@@ -18,6 +18,30 @@
 
 package org.eclipse.jetty.util.ssl;
 
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.CertificateUtils;
+import org.eclipse.jetty.util.security.CertificateValidator;
+import org.eclipse.jetty.util.security.Password;
+
+import javax.net.ssl.CertPathTrustManagerParameters;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLParameters;
+import javax.net.ssl.SSLPeerUnverifiedException;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSession;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509ExtendedKeyManager;
+import javax.net.ssl.X509TrustManager;
 import java.io.ByteArrayInputStream;
 import java.io.IOException;
 import java.net.InetAddress;
@@ -42,31 +66,6 @@ import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-
-import javax.net.ssl.CertPathTrustManagerParameters;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLParameters;
-import javax.net.ssl.SSLPeerUnverifiedException;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSession;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509ExtendedKeyManager;
-import javax.net.ssl.X509TrustManager;
-
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.security.CertificateUtils;
-import org.eclipse.jetty.util.security.CertificateValidator;
-import org.eclipse.jetty.util.security.Password;
 
 
 /**
@@ -113,7 +112,7 @@ public class SslContextFactory extends AbstractLifeCycle
     private final Set<String> _excludeProtocols = new LinkedHashSet<>();
 
     /** Included protocols. */
-    private Set<String> _includeProtocols = null;
+    private final Set<String> _includeProtocols = new LinkedHashSet<String>();
 
     /** Excluded cipher suites. */
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
@@ -376,7 +375,8 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setIncludeProtocols(String... protocols)
     {
         checkNotStarted();
-        _includeProtocols = new LinkedHashSet<>(Arrays.asList(protocols));
+        _includeProtocols.clear();
+        _includeProtocols.addAll(Arrays.asList(protocols));
     }
 
     /**
@@ -1019,7 +1019,7 @@ public class SslContextFactory extends AbstractLifeCycle
         Set<String> selected_protocols = new LinkedHashSet<>();
 
         // Set the starting protocols - either from the included or enabled list
-        if (_includeProtocols!=null)
+        if (!_includeProtocols.isEmpty())
         {
             // Use only the supported included protocols
             for (String protocol : _includeProtocols)
@@ -1049,7 +1049,7 @@ public class SslContextFactory extends AbstractLifeCycle
         List<String> selected_ciphers = new CopyOnWriteArrayList<>(); // TODO is this the most efficient?
 
         // Set the starting ciphers - either from the included or enabled list
-        if (_includeCipherSuites.size()>0)
+        if (!_includeCipherSuites.isEmpty())
             processIncludeCipherSuites(supportedCipherSuites, selected_ciphers);
         else
             selected_ciphers.addAll(Arrays.asList(enabledCipherSuites));

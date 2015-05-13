@@ -18,18 +18,6 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyStore;
-
-import javax.net.ssl.SSLEngine;
-
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -38,6 +26,18 @@ import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
+
+import javax.net.ssl.SSLEngine;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyStore;
+
+import static org.hamcrest.Matchers.equalTo;
+import static org.hamcrest.Matchers.greaterThan;
+import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertNotNull;
+import static org.junit.Assert.assertTrue;
 
 
 public class SslContextFactoryTest
@@ -234,6 +234,15 @@ public class SslContextFactoryTest
         String[] selectedProtocol = cf.selectProtocols(null, supportedProtocol);
 
         assertSelectedMatchesIncluded(includeProtocol, selectedProtocol);
+    }
+
+    @Test
+    public void testProtocolAndCipherSettingsAreNPESafe()
+    {
+        assertNotNull(cf.getExcludeProtocols());
+        assertNotNull(cf.getIncludeProtocols());
+        assertNotNull(cf.getExcludeCipherSuites());
+        assertNotNull(cf.getIncludeCipherSuites());
     }
 
     private void assertSelectedMatchesIncluded(String[] includeStrings, String[] selectedStrings)
