@@ -64,12 +64,12 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
     @Override
     public boolean isAcceptable(String protocol, String tlsProtocol, String tlsCipher)
     {
-        // TODO remove this draft protection
-        if ("h2-14".equals(protocol))
-            return true;
-        
+        // TODO remove this draft 14 protection
         // Implement 9.2.2
-        return !(HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher));
+        boolean acceptable = "h2-14".equals(protocol) || !(HTTP2Cipher.isBlackListProtocol(tlsProtocol) && HTTP2Cipher.isBlackListCipher(tlsCipher));
+        if (LOG.isDebugEnabled())
+            LOG.debug("proto={} tls={} cipher={} 9.2.2-acceptable={}",protocol,tlsProtocol,tlsCipher,acceptable);
+        return acceptable;
     }
 
     private class HTTPServerSessionListener extends ServerSessionListener.Adapter implements Stream.Listener
