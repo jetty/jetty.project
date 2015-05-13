@@ -245,7 +245,7 @@
         <artifactId>maven-bundle-plugin</artifactId>
         <executions>
           <execution>
-	    <phase>process-classes</phase>
+            <phase>process-classes</phase>
             <goals>
               <goal>manifest</goal>
             </goals>
@@ -324,7 +324,7 @@
             </supportedProjectTypes>
             <instructions>
               <Bundle-SymbolicName>${bundle-symbolic-name}</Bundle-SymbolicName>
-	      <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
+              <Bundle-Description>Jetty module for ${project.name}</Bundle-Description>
               <Bundle-RequiredExecutionEnvironment>JavaSE-1.7</Bundle-RequiredExecutionEnvironment>
               <Bundle-DocURL>${jetty.url}</Bundle-DocURL>
               <Bundle-Vendor>Eclipse Jetty Project</Bundle-Vendor>
