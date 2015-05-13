@@ -5,7 +5,7 @@
 ssl
 
 [depend]
-ssl-impl/ssl-java${java.version.minor}
+server
 
 [xml]
 etc/jetty-ssl.xml

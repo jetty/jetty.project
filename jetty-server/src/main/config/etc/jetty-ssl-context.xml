@@ -3,8 +3,6 @@
 
 <!-- ============================================================= -->
 <!-- SSL ContextFactory configuration                              -->
-<!-- For java 8 and beyond the keystore is created in              -->
-<!--   jetty-ssl-extended-context.xml                              -->
 <!-- ============================================================= -->
 <Configure id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
   <Set name="KeyStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath" deprecated="jetty.keystore" default="etc/keystore"/></Set>
@@ -26,4 +24,5 @@
     <Item>SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA</Item>
    </Array>
   </Set>
+  <Set name="useCipherSuitesOrder"><Property name="jetty.sslContext.useCipherSuitesOrder" default="true"/></Set>
 </Configure>

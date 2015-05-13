@@ -50,7 +50,6 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.ssl.ExtendedSslContextFactory;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -84,7 +83,7 @@ public class SslConnectionFactoryTest
         https_config.addCustomizer(new SecureRequestCustomizer());
 
         
-        SslContextFactory sslContextFactory = new ExtendedSslContextFactory();
+        SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(keystoreFile.getAbsolutePath());
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
@@ -109,11 +108,8 @@ public class SslConnectionFactoryTest
         });
         
         _server.start();
-        _port=https.getLocalPort();
-        
+        _port=https.getLocalPort();   
     }
-
-    
     
     @After
     public void after() throws Exception

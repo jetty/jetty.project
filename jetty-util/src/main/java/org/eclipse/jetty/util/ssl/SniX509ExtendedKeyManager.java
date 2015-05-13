@@ -85,9 +85,9 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         {
             for (SNIMatcher m : matchers)
             {
-                if (m instanceof ExtendedSslContextFactory.AliasSNIMatcher)
+                if (m instanceof SslContextFactory.AliasSNIMatcher)
                 {
-                    ExtendedSslContextFactory.AliasSNIMatcher matcher = (ExtendedSslContextFactory.AliasSNIMatcher)m;
+                    SslContextFactory.AliasSNIMatcher matcher = (SslContextFactory.AliasSNIMatcher)m;
                     alias=matcher.getAlias();
                     host=matcher.getServerName();
                     break;
