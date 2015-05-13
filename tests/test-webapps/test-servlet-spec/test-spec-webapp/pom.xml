@@ -71,36 +71,26 @@
           <supportedProjectTypes>
             <supportedProjectType>war</supportedProjectType>
           </supportedProjectTypes>
+          <instructions>
+            <Bundle-SymbolicName>org.eclipse.jetty.tests.test-spec-webapp</Bundle-SymbolicName>
+            <Bundle-Description>Test Webapp for Servlet 3.1 Features</Bundle-Description>
+            <Import-Package>
+              javax.servlet.jsp.*;version="[2.2.0, 3.0)",
+              javax.transaction.*;version="[1.1, 2.0)", 
+              javax.servlet.*;version="3.0",
+              javax.sql,
+              org.eclipse.jetty.webapp;version="9.2",org.eclipse.jetty.plus.jndi;version="9.2",
+              org.eclipse.jetty.security;version="9.2",
+              com.acme;version="9.2",
+              *
+            </Import-Package>
+            <Export-Package>com.acme.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
+            <Web-ContextPath>/</Web-ContextPath>
+            <Bundle-ClassPath>.,WEB-INF/classes,WEB-INF/lib</Bundle-ClassPath>
+            <Jetty-ContextFilePath>/META-INF/plugin-context.xml</Jetty-ContextFilePath>
+            <_nouses>true</_nouses>
+          </instructions>
         </configuration>
-        <executions>
-          <execution>
-            <phase>process-classes</phase>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
-            <configuration>
-              <instructions>
-                <Bundle-SymbolicName>org.eclipse.jetty.tests.test-spec-webapp</Bundle-SymbolicName>
-                <Bundle-Description>Test Webapp for Servlet 3.1 Features</Bundle-Description>
-                <Import-Package>
-                  javax.servlet.jsp.*;version="[2.2.0, 3.0)",
-                  javax.transaction.*;version="[1.1, 2.0)", 
-                  javax.servlet.*;version="3.0",
-                  javax.sql,
-                  org.eclipse.jetty.webapp;version="9.2",org.eclipse.jetty.plus.jndi;version="9.2",
-                  org.eclipse.jetty.security;version="9.2",
-                  com.acme;version="9.2",
-                  *
-                </Import-Package>
-                <Export-Package>com.acme.test;version="${parsedVersion.majorVersion}.${parsedVersion.minorVersion}.${parsedVersion.incrementalVersion}"</Export-Package>
-                <Web-ContextPath>/</Web-ContextPath>
-                <Bundle-ClassPath>.,WEB-INF/classes,WEB-INF/lib</Bundle-ClassPath>
-                <Jetty-ContextFilePath>./META-INF/plugin-context.xml</Jetty-ContextFilePath>
-                <_nouses>true</_nouses>
-              </instructions>
-            </configuration>
-           </execution>
-        </executions>
       </plugin>
 
 

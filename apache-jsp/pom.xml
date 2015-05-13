@@ -18,12 +18,6 @@
         <groupId>org.apache.felix</groupId>
         <artifactId>maven-bundle-plugin</artifactId>
         <extensions>true</extensions>
-        <executions>
-          <execution>
-            <id>generate-manifest</id>
-            <goals>
-              <goal>manifest</goal>
-            </goals>
             <configuration>
               <instructions>
                 <Bundle-Description>Jetty-specific ServletContainerInitializer for Jasper</Bundle-Description>
@@ -35,8 +29,6 @@
                 <_nouses>true</_nouses>
               </instructions>
             </configuration>
-          </execution>
-        </executions>
       </plugin>
       <plugin>
         <groupId>org.apache.maven.plugins</groupId>
