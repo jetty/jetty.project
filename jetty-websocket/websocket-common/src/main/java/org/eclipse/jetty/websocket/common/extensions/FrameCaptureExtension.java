@@ -18,53 +18,82 @@
 
 package org.eclipse.jetty.websocket.common.extensions;
 
+import static java.nio.file.StandardOpenOption.*;
+
 import java.io.File;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.SeekableByteChannel;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.nio.file.StandardOpenOption;
-import java.util.concurrent.atomic.AtomicLong;
+import java.util.Calendar;
+import java.util.concurrent.atomic.AtomicInteger;
 
+import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
+import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
 import org.eclipse.jetty.websocket.common.Generator;
+import org.eclipse.jetty.websocket.common.WebSocketFrame;
 
-public class FrameDebugExtension extends AbstractExtension
+public class FrameCaptureExtension extends AbstractExtension
 {
-    private static final Logger LOG = Log.getLogger(FrameDebugExtension.class);
+    private static final Logger LOG = Log.getLogger(FrameCaptureExtension.class);
 
     private static final int BUFSIZE = 32768;
     private Generator generator;
     private Path outputDir;
     private String prefix = "frame";
-    private AtomicLong incomingId = new AtomicLong(0);
-    private AtomicLong outgoingId = new AtomicLong(0);
+    private Path incomingFramesPath;
+    private Path outgoingFramesPath;
+    
+    private AtomicInteger incomingCount = new AtomicInteger(0);
+    private AtomicInteger outgoingCount = new AtomicInteger(0);
+
+    private SeekableByteChannel incomingChannel;
+    private SeekableByteChannel outgoingChannel;
 
     @Override
     public String getName()
     {
-        return "@frame-debug";
+        return "@frame-capture";
     }
 
     @Override
     public void incomingFrame(Frame frame)
     {
         saveFrame(frame,false);
-        nextIncomingFrame(frame);
+        try
+        {
+            nextIncomingFrame(frame);
+        }
+        catch (Throwable t)
+        {
+            IO.close(incomingChannel);
+            incomingChannel = null;
+            throw t;
+        }
     }
 
     @Override
     public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
     {
         saveFrame(frame,true);
-        nextOutgoingFrame(frame,callback,batchMode);
+        try
+        {
+            nextOutgoingFrame(frame,callback,batchMode);
+        }
+        catch (Throwable t)
+        {
+            IO.close(outgoingChannel);
+            outgoingChannel = null;
+            throw t;
+        }
     }
 
     private void saveFrame(Frame frame, boolean outgoing)
@@ -74,33 +103,33 @@ public class FrameDebugExtension extends AbstractExtension
             return;
         }
 
-        StringBuilder filename = new StringBuilder();
-        filename.append(prefix);
-        if (outgoing)
+        @SuppressWarnings("resource")
+        SeekableByteChannel channel = (outgoing) ? outgoingChannel : incomingChannel;
+        
+        if (channel == null)
         {
-            filename.append(String.format("-outgoing-%05d",outgoingId.getAndIncrement()));
+            return;
         }
-        else
-        {
-            filename.append(String.format("-incoming-%05d",incomingId.getAndIncrement()));
-        }
-        filename.append(".dat");
 
-        Path outputFile = outputDir.resolve(filename.toString());
         ByteBuffer buf = getBufferPool().acquire(BUFSIZE,false);
-        try (SeekableByteChannel channel = Files.newByteChannel(outputFile,StandardOpenOption.CREATE,StandardOpenOption.WRITE))
+
+        try
         {
-            generator.generateHeaderBytes(frame,buf);
+            WebSocketFrame f = WebSocketFrame.copy(frame);
+            f.setMasked(false);
+            generator.generateHeaderBytes(f,buf);
             channel.write(buf);
             if (frame.hasPayload())
             {
                 channel.write(frame.getPayload().slice());
             }
-            LOG.debug("Saved raw frame: {}",outputFile.toString());
+            if (LOG.isDebugEnabled())
+                LOG.debug("Saved {} frame #{}",(outgoing) ? "outgoing" : "incoming",
+                        (outgoing) ? outgoingCount.incrementAndGet() : incomingCount.incrementAndGet());
         }
         catch (IOException e)
         {
-            LOG.warn("Unable to save frame: " + filename.toString(),e);
+            LOG.warn("Unable to save frame: " + frame,e);
         }
         finally
         {
@@ -135,8 +164,24 @@ public class FrameDebugExtension extends AbstractExtension
 
         if (this.outputDir != null)
         {
-            // create a non-validating, read-only generator
-            this.generator = new Generator(getPolicy(),getBufferPool(),false,true);
+            try
+            {
+                Path dir = this.outputDir.toRealPath();
+
+                // create a non-validating, read-only generator
+                String tstamp = String.format("%1$tY%1$tm%1$td-%1$tH%1$tM%1$tS",Calendar.getInstance());
+                incomingFramesPath = dir.resolve(String.format("%s-%s-incoming.dat",this.prefix,tstamp));
+                outgoingFramesPath = dir.resolve(String.format("%s-%s-outgoing.dat",this.prefix,tstamp));
+
+                incomingChannel = Files.newByteChannel(incomingFramesPath,CREATE,WRITE);
+                outgoingChannel = Files.newByteChannel(outgoingFramesPath,CREATE,WRITE);
+
+                this.generator = new Generator(WebSocketPolicy.newServerPolicy(),getBufferPool(),false,true);
+            }
+            catch (IOException e)
+            {
+                LOG.warn("Unable to create capture file(s)",e);
+            }
         }
     }
 }
