@@ -67,7 +67,7 @@ Module Management:
                    Temporarily enable a module from the command line.
                    Note: this can also be used in the ${jetty.base}/start.ini
                    or ${jetty.base}/start.d/*.ini files.
-
+                   
   --add-to-start=<modulename>(,<modulename>)*
                    Enable a module by appending lines to the
                    ${jetty.base}/start.ini file.
@@ -94,9 +94,22 @@ Module Management:
                    See http://graphviz.org/ for details on how to post-process
                    this file into the output best suited for your needs.
                    
-  --create-files   Create any missing files that are required by initialised 
+  --create-files   Create any missing files that are required by initialized 
                    modules.  This may download a file from the network if the 
                    module provides a URL.
+
+  --skip-file-validation=<modulename>(,<modulename)*
+                   Disable the [files] section validation of content
+                   in the ${jetty.base} directory for a specific
+                   module.  Useful for modules that have downloadable
+                   content that is being overridden with alternatives
+                   in the ${jetty.base} directory.
+                   CAUTION: 
+                     This advanced option is for administrators that
+                     fully understand the configuration of their
+                     ${jetty.base} and are willing to forego some of the
+                     safety checks built into the jetty-start mechanism.
+
 
 Startup / Shutdown Command Line:
 --------------------------------
@@ -113,7 +126,7 @@ Properties:
 
     STOP.KEY=[alphanumeric]
       The passphrase defined to stop the server.
-      Requried along with STOP.PORT if you want to use the --stop option above.
+      Required along with STOP.PORT if you want to use the --stop option above.
 
     STOP.WAIT=[number]
       The time (in seconds) to wait for confirmation that the running
