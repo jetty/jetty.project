@@ -269,8 +269,7 @@ public class SslContextFactory extends AbstractLifeCycle
         if (context == null)
         {
             // Is this an empty factory?
-            if (keyStore==null && _keyStoreResource == null &&
-                trustStore==null && _trustStoreResource == null )
+            if (keyStore==null && _keyStoreResource == null && trustStore==null && _trustStoreResource == null )
             {
                 TrustManager[] trust_managers=null;
 
@@ -317,9 +316,79 @@ public class SslContextFactory extends AbstractLifeCycle
                     validator.validate(keyStore, cert);
                 }
 
+                // Look for X.509 certificates to create alias map
+                _certAliases.clear();
+                if (keyStore!=null)
+                {
+                    loop: for (String alias : Collections.list(keyStore.aliases()))
+                    {
+                        Certificate certificate = keyStore.getCertificate(alias);
+                        if ("X.509".equals(certificate.getType()))
+                        {
+                            X509Certificate x509 = (X509Certificate)certificate;
+                            
+                            // Exclude certificates with special uses
+                            if (x509.getKeyUsage()!=null)
+                            {
+                                boolean[] b=x509.getKeyUsage();
+                                if (b[5]/* keyCertSign */)
+                                    continue loop;
+                            }
+                            
+                            // Look for alternative name extensions
+                            boolean named=false;
+                            Collection<List<?>> altNames = x509.getSubjectAlternativeNames();
+                            if (altNames!=null)
+                            {
+                                for (List<?> list : altNames)
+                                {
+                                    if (((Number)list.get(0)).intValue() == 2 )
+                                    {
+                                        String cn = list.get(1).toString();
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("Certificate san alias={} cn={} in {}",alias,cn,this);
+                                        if (cn!=null)
+                                        {
+                                            named=true;
+                                            _certAliases.put(cn,alias);
+                                        }
+                                    }
+                                }
+                            }
+                            
+                            // If no names found, look up the cn from the subject
+                            if (!named)
+                            {
+                                LdapName name=new LdapName(x509.getSubjectX500Principal().getName(X500Principal.RFC2253));
+                                for (Rdn rdn : name.getRdns())
+                                {
+                                    if (rdn.getType().equalsIgnoreCase("cn"))
+                                    {
+                                        String cn = rdn.getValue().toString();
+                                        if (LOG.isDebugEnabled())
+                                            LOG.debug("Certificate cn alias={} cn={} in {}",alias,cn,this);
+                                        if (cn!=null && cn.contains(".") && !cn.contains(" "))
+                                            _certAliases.put(cn,alias);
+                                    }
+                                }
+                            }
+                        }                    
+                    }
+                }
+                
+                // find wild aliases
+                _certWilds.clear();
+                for (String name : _certAliases.keySet())
+                    if (name.startsWith("*."))
+                        _certWilds.put(name.substring(1),_certAliases.get(name));
+                
+                LOG.info("x509={} for {}",_certAliases,this);
+                
+                // Instantiate key and trust managers
                 KeyManager[] keyManagers = getKeyManagers(keyStore);
                 TrustManager[] trustManagers = getTrustManagers(trustStore,crls);
 
+                // Initialize context
                 SecureRandom secureRandom = (_secureRandomAlgorithm == null)?null:SecureRandom.getInstance(_secureRandomAlgorithm);
                 context = _sslProvider == null ? SSLContext.getInstance(_sslProtocol) : SSLContext.getInstance(_sslProtocol, _sslProvider);
                 context.init(keyManagers,trustManagers,secureRandom);
@@ -334,73 +403,6 @@ public class SslContextFactory extends AbstractLifeCycle
             LOG.debug("Enabled Ciphers   {} of {}",Arrays.asList(engine.getEnabledCipherSuites()),Arrays.asList(engine.getSupportedCipherSuites()));
         }
         
-        // Look for X.509 certificates to create alias map
-        _certAliases.clear();
-        if (_factory._keyStore!=null)
-        {
-            loop: for (String alias : Collections.list(_factory._keyStore.aliases()))
-            {
-                Certificate certificate = _factory._keyStore.getCertificate(alias);
-                if ("X.509".equals(certificate.getType()))
-                {
-                    X509Certificate x509 = (X509Certificate)certificate;
-                    
-                    // Exclude certificates with special uses
-                    if (x509.getKeyUsage()!=null)
-                    {
-                        boolean[] b=x509.getKeyUsage();
-                        if (b[5]/* keyCertSign */)
-                            continue loop;
-                    }
-                    
-                    // Look for alternative name extensions
-                    boolean named=false;
-                    Collection<List<?>> altNames = x509.getSubjectAlternativeNames();
-                    if (altNames!=null)
-                    {
-                        for (List<?> list : altNames)
-                        {
-                            if (((Number)list.get(0)).intValue() == 2 )
-                            {
-                                String cn = list.get(1).toString();
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Certificate san alias={} cn={} in {}",alias,cn,_factory);
-                                if (cn!=null)
-                                {
-                                    named=true;
-                                    _certAliases.put(cn,alias);
-                                }
-                            }
-                        }
-                    }
-                    
-                    // If no names found, look up the cn from the subject
-                    if (!named)
-                    {
-                        LdapName name=new LdapName(x509.getSubjectX500Principal().getName(X500Principal.RFC2253));
-                        for (Rdn rdn : name.getRdns())
-                        {
-                            if (rdn.getType().equalsIgnoreCase("cn"))
-                            {
-                                String cn = rdn.getValue().toString();
-                                if (LOG.isDebugEnabled())
-                                    LOG.debug("Certificate cn alias={} cn={} in {}",alias,cn,_factory);
-                                if (cn!=null && cn.contains(".") && !cn.contains(" "))
-                                    _certAliases.put(cn,alias);
-                            }
-                        }
-                    }
-                }                    
-            }
-        }
-        
-        // find wild aliases
-        _certWilds.clear();
-        for (String name : _certAliases.keySet())
-            if (name.startsWith("*."))
-                _certWilds.put(name.substring(1),_certAliases.get(name));
-        
-        LOG.info("x509={} for {}",_certAliases,this);
     }
 
     @Override
