@@ -1,0 +1,8 @@
+Manifest-Version: 1.0
+mode: development
+Implementation-Title: Jetty Uber All
+Implementation-Vendor: Eclipse Jetty Project
+Implementation-Vendor-Id: org.eclipse.jetty
+Implementation-Version: @project.version@
+X-License: https://www.eclipse.org/jetty/licenses.php
+
