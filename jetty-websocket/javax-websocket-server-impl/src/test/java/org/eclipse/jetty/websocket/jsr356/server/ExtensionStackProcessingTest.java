@@ -39,12 +39,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionFactory;
-import org.eclipse.jetty.websocket.api.extensions.OutgoingFrames;
-import org.eclipse.jetty.websocket.client.io.WebSocketClientConnection;
-import org.eclipse.jetty.websocket.common.extensions.ExtensionStack;
-import org.eclipse.jetty.websocket.common.extensions.compress.DeflateFrameExtension;
 import org.eclipse.jetty.websocket.jsr356.JsrExtension;
-import org.eclipse.jetty.websocket.jsr356.JsrSession;
 import org.eclipse.jetty.websocket.jsr356.server.deploy.WebSocketServerContainerInitializer;
 import org.eclipse.jetty.websocket.jsr356.server.samples.echo.BasicEchoEndpoint;
 import org.eclipse.jetty.websocket.server.WebSocketUpgradeFilter;
@@ -88,55 +83,7 @@ public class ExtensionStackProcessingTest
     {
         server.stop();
     }
-
-    @Test
-    public void testDeflateFrameExtension() throws Exception
-    {
-        Assume.assumeTrue("Server has deflate-frame extension registered",serverExtensionFactory.isAvailable("deflate-frame"));
-        
-        ClientEndpointConfig config = ClientEndpointConfig.Builder.create()
-                .extensions(Arrays.<Extension>asList(new JsrExtension("deflate-frame")))
-                .build();
-
-        final String content = "deflate_me";
-        final CountDownLatch messageLatch = new CountDownLatch(1);
-        URI uri = URI.create("ws://localhost:" + connector.getLocalPort());
-        Session session = client.connectToServer(new EndpointAdapter()
-        {
-            @Override
-            public void onMessage(String message)
-            {
-                Assert.assertEquals(content, message);
-                messageLatch.countDown();
-            }
-        }, config, uri);
-
-        // Make sure everything is wired properly.
-        OutgoingFrames firstOut = ((JsrSession)session).getOutgoingHandler();
-        Assert.assertTrue(firstOut instanceof ExtensionStack);
-        ExtensionStack extensionStack = (ExtensionStack)firstOut;
-        Assert.assertTrue(extensionStack.isRunning());
-        OutgoingFrames secondOut = extensionStack.getNextOutgoing();
-        Assert.assertTrue(secondOut instanceof DeflateFrameExtension);
-        DeflateFrameExtension deflateExtension = (DeflateFrameExtension)secondOut;
-        Assert.assertTrue(deflateExtension.isRunning());
-        OutgoingFrames thirdOut = deflateExtension.getNextOutgoing();
-        Assert.assertTrue(thirdOut instanceof WebSocketClientConnection);
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        session.getAsyncRemote().sendText(content, new SendHandler()
-        {
-            @Override
-            public void onResult(SendResult result)
-            {
-                latch.countDown();
-            }
-        });
-
-        Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
-        Assert.assertTrue(messageLatch.await(5, TimeUnit.SECONDS));
-    }
-
+    
     @Test
     public void testPerMessageDeflateExtension() throws Exception
     {
