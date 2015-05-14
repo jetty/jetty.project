@@ -27,7 +27,7 @@ import org.eclipse.jetty.server.handler.ResourceHandler;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
-import org.eclipse.jetty.websocket.common.extensions.FrameDebugExtension;
+import org.eclipse.jetty.websocket.common.extensions.FrameCaptureExtension;
 import org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
@@ -93,7 +93,7 @@ public class BrowserDebugTool implements WebSocketCreator
         // manually negotiate extensions
         List<ExtensionConfig> negotiated = new ArrayList<>();
         // adding frame debug
-        negotiated.add(new ExtensionConfig("@frame-debug; output-dir=target"));
+        negotiated.add(new ExtensionConfig("@frame-capture; output-dir=target"));
         for (ExtensionConfig config : req.getExtensions())
         {
             if (config.getName().equals("permessage-deflate"))
@@ -133,13 +133,11 @@ public class BrowserDebugTool implements WebSocketCreator
             {
                 LOG.debug("Configuring WebSocketServerFactory ...");
 
-                // factory.getExtensionFactory().unregister("deflate-frame");
-                // factory.getExtensionFactory().unregister("permessage-deflate");
+                // Register permessage-deflate
                 factory.getExtensionFactory().register("permessage-deflate",PerMessageDeflateExtension.class);
-                // factory.getExtensionFactory().unregister("x-webkit-deflate-frame");
 
                 // Registering Frame Debug
-                factory.getExtensionFactory().register("@frame-debug",FrameDebugExtension.class);
+                factory.getExtensionFactory().register("@frame-capture",FrameCaptureExtension.class);
 
                 // Setup the desired Socket to use for all incoming upgrade requests
                 factory.setCreator(BrowserDebugTool.this);
