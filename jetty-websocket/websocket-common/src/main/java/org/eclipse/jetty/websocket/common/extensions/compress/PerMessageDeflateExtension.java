@@ -19,9 +19,11 @@
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
 import java.nio.ByteBuffer;
+import java.util.zip.DataFormatException;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.websocket.api.BadPayloadException;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WriteCallback;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -59,23 +61,33 @@ public class PerMessageDeflateExtension extends CompressExtension
         // This extension requires the RSV1 bit set only in the first frame.
         // Subsequent continuation frames don't have RSV1 set, but are compressed.
         if (frame.getType().isData())
+        {
             incomingCompressed = frame.isRsv1();
+        }
 
-        if (OpCode.isControlFrame(frame.getOpCode()) || !frame.hasPayload() || !incomingCompressed)
+        if (OpCode.isControlFrame(frame.getOpCode()) || !incomingCompressed)
         {
             nextIncomingFrame(frame);
             return;
         }
-
-        boolean appendTail = frame.isFin();
-        ByteBuffer payload = frame.getPayload();
-        int remaining = payload.remaining();
-        byte[] input = new byte[remaining + (appendTail ? TAIL_BYTES.length : 0)];
-        payload.get(input, 0, remaining);
-        if (appendTail)
-            System.arraycopy(TAIL_BYTES, 0, input, remaining, TAIL_BYTES.length);
-
-        forwardIncoming(frame, decompress(input));
+        
+        ByteAccumulator accumulator = newByteAccumulator();
+        
+        try 
+        {
+            ByteBuffer payload = frame.getPayload();
+            decompress(accumulator, payload);
+            if (frame.isFin())
+            {
+                decompress(accumulator, TAIL_BYTES_BUF.slice());
+            }
+            
+            forwardIncoming(frame, accumulator);
+        }
+        catch (DataFormatException e)
+        {
+            throw new BadPayloadException(e);
+        }
 
         if (frame.isFin())
             incomingCompressed = false;
@@ -87,6 +99,7 @@ public class PerMessageDeflateExtension extends CompressExtension
         if (frame.isFin() && !incomingContextTakeover)
         {
             LOG.debug("Incoming Context Reset");
+            decompressCount.set(0);
             getInflater().reset();
         }
         super.nextIncomingFrame(frame);
@@ -167,6 +180,8 @@ public class PerMessageDeflateExtension extends CompressExtension
                 }
             }
         }
+        
+        LOG.debug("config: outgoingContextTakover={}, incomingContextTakeover={} : {}", outgoingContextTakeover, incomingContextTakeover, this);
 
         super.setConfig(configNegotiated);
     }
@@ -174,7 +189,7 @@ public class PerMessageDeflateExtension extends CompressExtension
     @Override
     public String toString()
     {
-        return String.format("%s[requested=%s,negotiated=%s]",
+        return String.format("%s[requested=\"%s\", negotiated=\"%s\"]",
                 getClass().getSimpleName(),
                 configRequested.getParameterizedName(),
                 configNegotiated.getParameterizedName());
