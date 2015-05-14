@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.util;
 import java.io.ByteArrayOutputStream;
+import java.io.Closeable;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileOutputStream;
@@ -347,8 +348,25 @@ public class IO
         }
         return file.delete();
     }
+    
+    /**
+     * Closes an arbitrary closable, and logs exceptions at ignore level
+     *
+     * @param closeable the closeable to close
+     */
+    public static void close(Closeable closeable)
+    {
+        try
+        {
+            if (closeable != null)
+                closeable.close();
+        }
+        catch (IOException ignore)
+        {
+            LOG.ignore(ignore);
+        }
+    }
 
-    /* ------------------------------------------------------------ */
     /**
      * closes an input stream, and logs exceptions
      *
@@ -356,15 +374,17 @@ public class IO
      */
     public static void close(InputStream is)
     {
-        try
-        {
-            if (is != null)
-                is.close();
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
-        }
+        close((Closeable)is);
+    }
+    
+    /**
+     * closes an output stream, and logs exceptions
+     *
+     * @param os the output stream to close
+     */
+    public static void close(OutputStream os)
+    {
+        close((Closeable)os);
     }
 
     /**
@@ -374,14 +394,7 @@ public class IO
      */
     public static void close(Reader reader)
     {
-        try
-        {
-            if (reader != null)
-                reader.close();
-        } catch (IOException e)
-        {
-            LOG.ignore(e);
-        }
+        close((Closeable)reader);
     }
 
     /**
@@ -391,14 +404,7 @@ public class IO
      */
     public static void close(Writer writer)
     {
-        try
-        {
-            if (writer != null)
-                writer.close();
-        } catch (IOException e)
-        {
-            LOG.ignore(e);
-        }
+        close((Closeable)writer);
     }
     
     /* ------------------------------------------------------------ */
@@ -410,25 +416,6 @@ public class IO
         return bout.toByteArray();
     }
     
-    /* ------------------------------------------------------------ */
-    /**
-     * closes an output stream, and logs exceptions
-     *
-     * @param os the output stream to close
-     */
-    public static void close(OutputStream os)
-    {
-        try
-        {
-            if (os != null)
-                os.close();
-        }
-        catch (IOException e)
-        {
-            LOG.ignore(e);
-        }
-    }
-
     /* ------------------------------------------------------------ */
     /** 
      * @return An outputstream to nowhere
