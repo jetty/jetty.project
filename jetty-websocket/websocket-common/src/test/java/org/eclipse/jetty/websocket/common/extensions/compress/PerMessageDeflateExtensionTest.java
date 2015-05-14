@@ -19,6 +19,7 @@
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.*;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
@@ -27,6 +28,7 @@ import java.util.ArrayList;
 import java.util.List;
 
 import org.eclipse.jetty.util.BufferUtil;
+import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
@@ -55,72 +57,52 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
 {
     @Rule
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
-
-    /**
-     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p>
-     * Section 8.2.3.4: Using a DEFLATE Block with BFINAL Set to 1
-     */
-    @Test
-    public void testDraft15_DeflateBlockWithBFinal1()
+    
+    private void assertEndsWithTail(String hexStr, boolean expectedResult)
     {
-        Tester tester = clientExtensions.newTester("permessage-deflate");
-
-        tester.assertNegotiated("permessage-deflate");
-
-        tester.parseIncomingHex(// 1 message
-                "0xc1 0x08", // header
-                "0xf3 0x48 0xcd 0xc9 0xc9 0x07 0x00 0x00" // example payload 
-        );
-
-        tester.assertHasFrames("Hello");
+        ByteBuffer buf = ByteBuffer.wrap(TypeUtil.fromHexString(hexStr));
+        assertThat("endsWithTail([" + hexStr + "])",CompressExtension.endsWithTail(buf),is(expectedResult));
+    }
+    
+    @Test
+    public void testEndsWithTailBytes()
+    {
+        assertEndsWithTail("11223344",false);
+        assertEndsWithTail("00",false);
+        assertEndsWithTail("0000",false);
+        assertEndsWithTail("FFFF0000",false);
+        assertEndsWithTail("880000FFFF",true);
+        assertEndsWithTail("0000FFFF",true);
     }
 
     /**
-     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
-     * <p>
-     * Section 8.2.3.3: Using a DEFLATE Block with No Compression
-     */
-    @Test
-    public void testDraft15_DeflateBlockWithNoCompression()
-    {
-        Tester tester = clientExtensions.newTester("permessage-deflate");
-
-        tester.assertNegotiated("permessage-deflate");
-
-        tester.parseIncomingHex(// 1 message / no compression
-                "0xc1 0x0b 0x00 0x05 0x00 0xfa 0xff 0x48 0x65 0x6c 0x6c 0x6f 0x00" // example frame
-        );
-
-        tester.assertHasFrames("Hello");
-    }
-
-    /**
-     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-21.
      * <p>
      * Section 8.2.3.1: A message compressed using 1 compressed DEFLATE block
      */
     @Test
-    public void testDraft15_Hello_UnCompressedBlock()
+    public void testDraft21_Hello_UnCompressedBlock()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
         tester.assertNegotiated("permessage-deflate");
 
-        tester.parseIncomingHex(//basic, 1 block, compressed with 0 compression level (aka, uncompressed).
-                "0xc1 0x07 0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00" // example frame
+        tester.parseIncomingHex(
+                // basic, 1 block, compressed with 0 compression level (aka, uncompressed).
+                "0xc1 0x07",  // (HEADER added for this test)
+                "0xf2 0x48 0xcd 0xc9 0xc9 0x07 0x00" // example frame from RFC
         );
 
         tester.assertHasFrames("Hello");
     }
 
     /**
-     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-21.
      * <p>
      * Section 8.2.3.1: A message compressed using 1 compressed DEFLATE block (with fragmentation)
      */
     @Test
-    public void testDraft15_Hello_UnCompressedBlock_Fragmented()
+    public void testDraft21_Hello_UnCompressedBlock_Fragmented()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -138,12 +120,12 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     /**
-     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-21.
      * <p>
      * Section 8.2.3.2: Sharing LZ77 Sliding Window
      */
     @Test
-    public void testDraft15_SharingL77SlidingWindow_ContextTakeover()
+    public void testDraft21_SharingL77SlidingWindow_ContextTakeover()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -161,12 +143,12 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     /**
-     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-21.
      * <p>
      * Section 8.2.3.2: Sharing LZ77 Sliding Window
      */
     @Test
-    public void testDraft15_SharingL77SlidingWindow_NoContextTakeover()
+    public void testDraft21_SharingL77SlidingWindow_NoContextTakeover()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
@@ -185,12 +167,51 @@ public class PerMessageDeflateExtensionTest extends AbstractExtensionTest
     }
 
     /**
-     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-15.
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-21.
+     * <p>
+     * Section 8.2.3.3: Using a DEFLATE Block with No Compression
+     */
+    @Test
+    public void testDraft21_DeflateBlockWithNoCompression()
+    {
+        Tester tester = clientExtensions.newTester("permessage-deflate");
+
+        tester.assertNegotiated("permessage-deflate");
+
+        tester.parseIncomingHex(// 1 message / no compression
+                "0xc1 0x0b 0x00 0x05 0x00 0xfa 0xff 0x48 0x65 0x6c 0x6c 0x6f 0x00" // example frame
+        );
+
+        tester.assertHasFrames("Hello");
+    }
+
+    /**
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-21.
+     * <p>
+     * Section 8.2.3.4: Using a DEFLATE Block with BFINAL Set to 1
+     */
+    @Test
+    public void testDraft21_DeflateBlockWithBFinal1()
+    {
+        Tester tester = clientExtensions.newTester("permessage-deflate");
+
+        tester.assertNegotiated("permessage-deflate");
+
+        tester.parseIncomingHex(// 1 message
+                "0xc1 0x08", // header
+                "0xf3 0x48 0xcd 0xc9 0xc9 0x07 0x00 0x00" // example payload 
+        );
+
+        tester.assertHasFrames("Hello");
+    }
+
+    /**
+     * Decode payload example as seen in draft-ietf-hybi-permessage-compression-21.
      * <p>
      * Section 8.2.3.5: Two DEFLATE Blocks in 1 Message
      */
     @Test
-    public void testDraft15_TwoDeflateBlocksOneMessage()
+    public void testDraft21_TwoDeflateBlocksOneMessage()
     {
         Tester tester = clientExtensions.newTester("permessage-deflate");
 
