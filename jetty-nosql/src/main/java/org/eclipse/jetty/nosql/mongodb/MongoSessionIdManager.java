@@ -109,10 +109,13 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     
     /**
      * the collection of session ids known to this manager
-     * 
-     * TODO consider if this ought to be concurrent or not
      */
-    protected final Set<String> _sessionsIds = new HashSet<String>();
+    protected final Set<String> _sessionsIds = new ConcurrentHashSet<>();
+
+    /**
+     * The maximum number of items to return from a purge query.
+     */
+    private int _purgeLimit = 0;
     
     
     /**
@@ -182,6 +185,12 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
                 BasicDBObjectBuilder.start().add("id",1).add("version",1).get(),
                 BasicDBObjectBuilder.start().add("unique",true).add("sparse",false).get());
 
+        // index our accessed and valid fields so that purges are faster, note that the "valid" field is first
+        // so that we can take advantage of index prefixes
+        // http://docs.mongodb.org/manual/core/index-compound/#compound-index-prefix
+        _sessions.ensureIndex(
+                BasicDBObjectBuilder.start().add(MongoSessionManager.__VALID, 1).add(MongoSessionManager.__ACCESSED, 1).get(),
+                BasicDBObjectBuilder.start().add("sparse", false).add("background", true).get());
     }
  
     /* ------------------------------------------------------------ */
@@ -194,28 +203,25 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     {
         long now = System.currentTimeMillis();
         __log.debug("SessionIdManager:scavenge:at {}", now);        
-        synchronized (_sessionsIds)
-        {         
-            /*
-             * run a query returning results that:
-             *  - are in the known list of sessionIds
-             *  - the expiry time has passed
-             *  
-             *  we limit the query to return just the __ID so we are not sucking back full sessions
-             */
-            BasicDBObject query = new BasicDBObject();     
-            query.put(MongoSessionManager.__ID,new BasicDBObject("$in", _sessionsIds ));
-            query.put(MongoSessionManager.__EXPIRY, new BasicDBObject("$gt", 0));
-            query.put(MongoSessionManager.__EXPIRY, new BasicDBObject("$lt", now));
+        /*
+         * run a query returning results that:
+         *  - are in the known list of sessionIds
+         *  - the expiry time has passed
+         *  
+         *  we limit the query to return just the __ID so we are not sucking back full sessions
+         */
+        BasicDBObject query = new BasicDBObject();     
+        query.put(MongoSessionManager.__ID,new BasicDBObject("$in", _sessionsIds ));
+        query.put(MongoSessionManager.__EXPIRY, new BasicDBObject("$gt", 0));
+        query.put(MongoSessionManager.__EXPIRY, new BasicDBObject("$lt", now));
         
             
-            DBCursor checkSessions = _sessions.find(query, new BasicDBObject(MongoSessionManager.__ID, 1));
+        DBCursor checkSessions = _sessions.find(query, new BasicDBObject(MongoSessionManager.__ID, 1));
                         
-            for ( DBObject session : checkSessions )
-            {             
-                __log.debug("SessionIdManager:scavenge: expiring session {}", (String)session.get(MongoSessionManager.__ID));
-                expireAll((String)session.get(MongoSessionManager.__ID));
-            }
+        for ( DBObject session : checkSessions )
+        {             
+            __log.debug("SessionIdManager:scavenge: expiring session {}", (String)session.get(MongoSessionManager.__ID));
+            expireAll((String)session.get(MongoSessionManager.__ID));
         }      
     }
     
@@ -262,10 +268,15 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         __log.debug("PURGING");
         BasicDBObject invalidQuery = new BasicDBObject();
 
-        invalidQuery.put(MongoSessionManager.__ACCESSED, new BasicDBObject("$lt",System.currentTimeMillis() - _purgeInvalidAge));
         invalidQuery.put(MongoSessionManager.__VALID, false);
+        invalidQuery.put(MongoSessionManager.__ACCESSED, new BasicDBObject("$lt",System.currentTimeMillis() - _purgeInvalidAge));
         
         DBCursor oldSessions = _sessions.find(invalidQuery, new BasicDBObject(MongoSessionManager.__ID, 1));
+
+        if (_purgeLimit > 0)
+        {
+            oldSessions.limit(_purgeLimit);
+        }
 
         for (DBObject session : oldSessions)
         {
@@ -280,10 +291,15 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         {
             BasicDBObject validQuery = new BasicDBObject();
 
-            validQuery.put(MongoSessionManager.__ACCESSED,new BasicDBObject("$lt",System.currentTimeMillis() - _purgeValidAge));
             validQuery.put(MongoSessionManager.__VALID, true);
+            validQuery.put(MongoSessionManager.__ACCESSED,new BasicDBObject("$lt",System.currentTimeMillis() - _purgeValidAge));
 
             oldSessions = _sessions.find(validQuery,new BasicDBObject(MongoSessionManager.__ID,1));
+
+            if (_purgeLimit > 0)
+            {
+                oldSessions.limit(_purgeLimit);
+            }
 
             for (DBObject session : oldSessions)
             {
@@ -404,6 +420,21 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     } 
 
     /* ------------------------------------------------------------ */
+    /**
+     * The maximum number of items to return from a purge query. If <= 0 there is no limit. Defaults to 0
+     */
+    public void setPurgeLimit(int purgeLimit)
+    {
+        _purgeLimit = purgeLimit;
+    }
+
+    /* ------------------------------------------------------------ */
+    public int getPurgeLimit()
+    {
+        return _purgeLimit;
+    }
+
+    /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
@@ -522,10 +553,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         
         __log.debug("MongoSessionIdManager:addSession {}", session.getId());
         
-        synchronized (_sessionsIds)
-        {
-            _sessionsIds.add(session.getId());
-        }
+        _sessionsIds.add(session.getId());
         
     }
 
@@ -538,10 +566,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             return;
         }
         
-        synchronized (_sessionsIds)
-        {
-            _sessionsIds.remove(session.getId());
-        }
+        _sessionsIds.remove(session.getId());
     }
 
     /* ------------------------------------------------------------ */
@@ -553,28 +578,26 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     @Override
     public void invalidateAll(String sessionId)
     {
-        synchronized (_sessionsIds)
+        _sessionsIds.remove(sessionId);
+            
+        //tell all contexts that may have a session object with this id to
+        //get rid of them
+        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
+        for (int i=0; contexts!=null && i<contexts.length; i++)
         {
-            _sessionsIds.remove(sessionId);
-                
-            //tell all contexts that may have a session object with this id to
-            //get rid of them
-            Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-            for (int i=0; contexts!=null && i<contexts.length; i++)
+            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+            if (sessionHandler != null) 
             {
-                SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-                if (sessionHandler != null) 
-                {
-                    SessionManager manager = sessionHandler.getSessionManager();
+                SessionManager manager = sessionHandler.getSessionManager();
 
-                    if (manager != null && manager instanceof MongoSessionManager)
-                    {
-                        ((MongoSessionManager)manager).invalidateSession(sessionId);
-                    }
+                if (manager != null && manager instanceof MongoSessionManager)
+                {
+                    ((MongoSessionManager)manager).invalidateSession(sessionId);
                 }
             }
-        }      
-    } 
+        }
+    }      
+ 
 
     /* ------------------------------------------------------------ */
     /**
@@ -584,25 +607,22 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
      */
     public void expireAll (String sessionId)
     {
-        synchronized (_sessionsIds)
+        _sessionsIds.remove(sessionId);
+            
+            
+        //tell all contexts that may have a session object with this id to
+        //get rid of them
+        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
+        for (int i=0; contexts!=null && i<contexts.length; i++)
         {
-            _sessionsIds.remove(sessionId);
-            
-            
-            //tell all contexts that may have a session object with this id to
-            //get rid of them
-            Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-            for (int i=0; contexts!=null && i<contexts.length; i++)
+            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+            if (sessionHandler != null) 
             {
-                SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-                if (sessionHandler != null) 
-                {
-                    SessionManager manager = sessionHandler.getSessionManager();
+                SessionManager manager = sessionHandler.getSessionManager();
 
-                    if (manager != null && manager instanceof MongoSessionManager)
-                    {
-                        ((MongoSessionManager)manager).expire(sessionId);
-                    }
+                if (manager != null && manager instanceof MongoSessionManager)
+                {
+                    ((MongoSessionManager)manager).expire(sessionId);
                 }
             }
         }      
@@ -615,24 +635,21 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         //generate a new id
         String newClusterId = newSessionId(request.hashCode());
 
-        synchronized (_sessionsIds)
+        _sessionsIds.remove(oldClusterId);//remove the old one from the list
+        _sessionsIds.add(newClusterId); //add in the new session id to the list
+
+        //tell all contexts to update the id 
+        Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
+        for (int i=0; contexts!=null && i<contexts.length; i++)
         {
-            _sessionsIds.remove(oldClusterId);//remove the old one from the list
-            _sessionsIds.add(newClusterId); //add in the new session id to the list
-
-            //tell all contexts to update the id 
-            Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
-            for (int i=0; contexts!=null && i<contexts.length; i++)
+            SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
+            if (sessionHandler != null) 
             {
-                SessionHandler sessionHandler = ((ContextHandler)contexts[i]).getChildHandlerByClass(SessionHandler.class);
-                if (sessionHandler != null) 
-                {
-                    SessionManager manager = sessionHandler.getSessionManager();
+                SessionManager manager = sessionHandler.getSessionManager();
 
-                    if (manager != null && manager instanceof MongoSessionManager)
-                    {
-                        ((MongoSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getNodeId(newClusterId, request));
-                    }
+                if (manager != null && manager instanceof MongoSessionManager)
+                {
+                    ((MongoSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getNodeId(newClusterId, request));
                 }
             }
         }

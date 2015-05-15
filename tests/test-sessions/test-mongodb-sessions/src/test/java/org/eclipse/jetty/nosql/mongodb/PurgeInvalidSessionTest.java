@@ -73,7 +73,7 @@ public class PurgeInvalidSessionTest
         MongoTestServer server = createServer(0, 1, 0);
         ServletContextHandler context = server.addContext(contextPath);
         context.addServlet(TestServlet.class, servletMapping);
-        
+
         MongoSessionManager sessionManager = (MongoSessionManager)context.getSessionHandler().getSessionManager();
         MongoSessionIdManager idManager = (MongoSessionIdManager)server.getServer().getSessionIdManager();
         idManager.setPurge(true);
@@ -124,8 +124,83 @@ public class PurgeInvalidSessionTest
         }
 
     }
-    
-    
+
+
+    @Test
+    public void testPurgeInvalidSessionsWithLimit() throws Exception
+    {
+        String contextPath = "";
+        String servletMapping = "/server";
+        long purgeInvalidAge = 1000; //1 sec
+        int purgeLimit = 5; // only purge 5 sessions for each purge run
+
+        //ensure scavenging is turned off so the purger gets a chance to find the session
+        MongoTestServer server = createServer(0, 1, 0);
+        ServletContextHandler context = server.addContext(contextPath);
+        context.addServlet(TestServlet.class, servletMapping);
+
+        // disable purging so we can call it manually below
+        MongoSessionManager sessionManager = (MongoSessionManager)context.getSessionHandler().getSessionManager();
+        MongoSessionIdManager idManager = (MongoSessionIdManager)server.getServer().getSessionIdManager();
+        idManager.setPurge(false);
+        idManager.setPurgeLimit(purgeLimit);
+        idManager.setPurgeInvalidAge(purgeInvalidAge);
+        // don't purge valid sessions
+        idManager.setPurgeValidAge(0);
+
+
+        server.start();
+        int port=server.getPort();
+        try
+        {
+            // cleanup any previous sessions that are invalid so that we are starting fresh
+            idManager.purgeFully();
+            int sessionCountAtTestStart = sessionManager.getSessionStoreCount();
+
+            HttpClient client = new HttpClient();
+            client.start();
+            try
+            {
+                // create double the purge limit of sessions, and make them all invalid
+                for (int i = 0; i < purgeLimit * 2; i++)
+                {
+                    ContentResponse response = client.GET("http://localhost:" + port + contextPath + servletMapping + "?action=create");
+                    assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+                    String sessionCookie = response.getHeaders().get("Set-Cookie");
+                    assertTrue(sessionCookie != null);
+                    // Mangle the cookie, replacing Path with $Path, etc.
+                    sessionCookie = sessionCookie.replaceFirst("(\\W)(P|p)ath=", "$1\\$Path=");
+
+
+                    Request request = client.newRequest("http://localhost:" + port + contextPath + servletMapping + "?action=invalidate");
+                    request.header("Cookie", sessionCookie);
+                    response = request.send();
+                    assertEquals(HttpServletResponse.SC_OK, response.getStatus());
+                }
+
+                // sleep for our invalid age period so that the purge below does something
+                Thread.sleep(purgeInvalidAge * 2);
+
+                // validate that we have the right number of sessions before we purge
+                assertEquals("Expected to find right number of sessions before purge", sessionCountAtTestStart + (purgeLimit * 2), sessionManager.getSessionStoreCount());
+
+                // run our purge we should still have items in the DB
+                idManager.purge();
+                assertEquals("Expected to find sessions remaining in db after purge run with limit set",
+                        sessionCountAtTestStart + purgeLimit, sessionManager.getSessionStoreCount());
+            }
+            finally
+            {
+                client.stop();
+            }
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
+
     public static class TestServlet extends HttpServlet
     {
         DBCollection _sessions;
@@ -163,6 +238,8 @@ public class PurgeInvalidSessionTest
                 dbSession = _sessions.findOne(new BasicDBObject("id", id));       
                 assertNotNull(dbSession);
                 assertTrue(dbSession.containsField(MongoSessionManager.__INVALIDATED));
+                assertTrue(dbSession.containsField(MongoSessionManager.__VALID));
+                assertTrue(dbSession.get(MongoSessionManager.__VALID).equals(false));
             }
             else if ("test".equals(action))
             {
