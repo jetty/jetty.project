@@ -18,4 +18,3 @@ for the tests to all pass successfully.
 Bypass tests by building with -Dmaven.test.skip=true but note
 that this will not produce some test jars that are leveraged
 in other places in the build.
-
