@@ -18,10 +18,18 @@
 
 package org.eclipse.jetty.nosql.mongodb;
 
+import java.net.UnknownHostException;
+
+import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
 import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.session.AbstractTestServer;
 import org.eclipse.jetty.server.session.SessionHandler;
+
+import com.mongodb.BasicDBObject;
+import com.mongodb.DBCursor;
+import com.mongodb.DBObject;
+import com.mongodb.MongoException;
 
 
 /**
@@ -31,6 +39,28 @@ public class MongoTestServer extends AbstractTestServer
 {
     static int __workers=0;
     private boolean _saveAllAttributes = false; // false save dirty, true save all
+    
+    
+    public static class TestMongoSessionIdManager extends MongoSessionIdManager 
+    {
+
+        public TestMongoSessionIdManager(Server server) throws UnknownHostException, MongoException
+        {
+            super(server);
+        }
+        
+        
+        public void deleteAll ()
+        {
+            
+            DBCursor checkSessions = _sessions.find();
+
+            for (DBObject session : checkSessions)
+            {
+                _sessions.remove(session);
+            }
+        }
+    }
     
     public MongoTestServer(int port)
     {
@@ -55,7 +85,7 @@ public class MongoTestServer extends AbstractTestServer
         try
         {
             System.err.println("MongoTestServer:SessionIdManager scavenge: delay:"+ _scavengePeriod + " period:"+_scavengePeriod);
-            MongoSessionIdManager idManager = new MongoSessionIdManager(_server);
+            MongoSessionIdManager idManager = new TestMongoSessionIdManager(_server);
             idManager.setWorkerName("w"+(__workers++));
             idManager.setScavengePeriod(_scavengePeriod);                  
 
