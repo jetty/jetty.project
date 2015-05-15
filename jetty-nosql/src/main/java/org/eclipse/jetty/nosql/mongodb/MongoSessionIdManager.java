@@ -21,6 +21,7 @@ package org.eclipse.jetty.nosql.mongodb;
 
 import java.net.UnknownHostException;
 import java.util.HashSet;
+import java.util.Iterator;
 import java.util.Random;
 import java.util.Set;
 import java.util.concurrent.TimeUnit;
@@ -117,6 +118,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
      * The maximum number of items to return from a purge query.
      */
     private int _purgeLimit = 0;
+
+    private int _scavengeBlockSize;
     
     
     /**
@@ -210,12 +213,46 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
          *  - the expiry time has passed
          *  
          *  we limit the query to return just the __ID so we are not sucking back full sessions
+         *  
+         *  break scavenge query into blocks for faster mongo queries
          */
-        BasicDBObject query = new BasicDBObject();     
-        query.put(MongoSessionManager.__ID,new BasicDBObject("$in", _sessionsIds ));
-        query.put(MongoSessionManager.__EXPIRY, new BasicDBObject("$gt", 0));
-        query.put(MongoSessionManager.__EXPIRY, new BasicDBObject("$lt", now));
+        Set<String> block = new HashSet<String>();
+            
+        Iterator<String> itor = _sessionsIds.iterator();
+        while (itor.hasNext())
+        {
+            block.add(itor.next());
+            if ((_scavengeBlockSize > 0) && (block.size() == _scavengeBlockSize))
+            {
+                //got a block
+                scavengeBlock (now, block);
+                //reset for next run
+                block.clear();
+            }
+        }
         
+        //non evenly divisble block size, or doing it all at once
+        if (!block.isEmpty())
+            scavengeBlock(now, block);
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * Check a block of session ids for expiry and thus scavenge.
+     * 
+     * @param atTime
+     * @param ids
+     */
+    protected void scavengeBlock (long atTime, Set<String> ids)
+    {
+        if (ids == null)
+            return;
+        
+        BasicDBObject query = new BasicDBObject();     
+        query.put(MongoSessionManager.__ID,new BasicDBObject("$in", ids ));
+        query.put(MongoSessionManager.__EXPIRY, new BasicDBObject("$gt", 0));
+        query.put(MongoSessionManager.__EXPIRY, new BasicDBObject("$lt", atTime));   
             
         DBCursor checkSessions = _sessions.find(query, new BasicDBObject(MongoSessionManager.__ID, 1));
                         
@@ -223,7 +260,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
         {             
             __log.debug("SessionIdManager:scavenge: expiring session {}", (String)session.get(MongoSessionManager.__ID));
             expireAll((String)session.get(MongoSessionManager.__ID));
-        }      
+        }            
     }
     
     /* ------------------------------------------------------------ */
@@ -373,7 +410,26 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
             _scavengePeriod = TimeUnit.SECONDS.toMillis(scavengePeriod);
     }
 
+    /* ------------------------------------------------------------ */
+    /** When scavenging, the max number of session ids in the query.
+     * 
+     * @param size
+     */
+    public void setScavengeBlockSize (int size)
+    {
+        _scavengeBlockSize = size;
+    }
 
+    /* ------------------------------------------------------------ */
+    /**
+     * @return
+     */
+    public int getScavengeBlockSize ()
+    {
+        return _scavengeBlockSize;
+    }
+    
+    
     /* ------------------------------------------------------------ */
     /**
      * The maximum number of items to return from a purge query. If <= 0 there is no limit. Defaults to 0
