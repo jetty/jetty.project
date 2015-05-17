@@ -31,6 +31,7 @@ import org.junit.Before;
 import org.junit.Test;
 
 import static junit.framework.Assert.assertTrue;
+import static junit.framework.Assert.assertNotNull;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
@@ -231,4 +232,13 @@ public class SslContextFactoryTest
         assertThat("order from includeStrings is preserved", selectedStrings[1], equalTo(includeStrings[1]));
         assertThat("order from includeStrings is preserved", selectedStrings[2], equalTo(includeStrings[2]));
     }
+
+    @Test
+    public void testProtocolAndCipherSettingsAreNPESafe() {
+        assertNotNull(cf.getExcludeProtocols());
+        assertNotNull(cf.getIncludeProtocols());
+        assertNotNull(cf.getExcludeCipherSuites());
+        assertNotNull(cf.getIncludeCipherSuites());
+    }
+
 }
