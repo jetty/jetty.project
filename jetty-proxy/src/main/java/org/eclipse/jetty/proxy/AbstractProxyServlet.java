@@ -18,27 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.util.Collections;
-import java.util.Enumeration;
-import java.util.HashSet;
-import java.util.Iterator;
-import java.util.Locale;
-import java.util.Set;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeoutException;
-
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -49,6 +28,21 @@ import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
+
+import javax.servlet.AsyncContext;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.*;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
 
 public abstract class AbstractProxyServlet extends HttpServlet
 {
@@ -237,10 +231,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
         HttpClient client = newHttpClient();
 
-        // Redirects must be proxied as is, not followed
+        // Redirects must be proxied as is, not followed.
         client.setFollowRedirects(false);
 
-        // Must not store cookies, otherwise cookies of different clients will mix
+        // Must not store cookies, otherwise cookies of different clients will mix.
         client.setCookieStore(new HttpCookieStore.Empty());
 
         Executor executor;
@@ -291,8 +285,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
         {
             client.start();
 
-            // Content must not be decoded, otherwise the client gets confused
+            // Content must not be decoded, otherwise the client gets confused.
             client.getContentDecoderFactories().clear();
+
+            // No protocol handlers, pass everything to the client.
+            client.getProtocolHandlers().clear();
 
             return client;
         }

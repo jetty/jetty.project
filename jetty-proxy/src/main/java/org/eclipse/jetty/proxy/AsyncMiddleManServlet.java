@@ -18,27 +18,6 @@
 
 package org.eclipse.jetty.proxy;
 
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPOutputStream;
-
-import javax.servlet.AsyncContext;
-import javax.servlet.ReadListener;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.ServletInputStream;
-import javax.servlet.ServletOutputStream;
-import javax.servlet.WriteListener;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-
 import org.eclipse.jetty.client.ContentDecoder;
 import org.eclipse.jetty.client.GZIPContentDecoder;
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -54,6 +33,20 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Destroyable;
+
+import javax.servlet.*;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPOutputStream;
 
 @SuppressWarnings("serial")
 public class AsyncMiddleManServlet extends AbstractProxyServlet
@@ -275,13 +268,13 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             while (input.isReady() && !input.isFinished())
             {
                 int read = readClientRequestContent(input, buffer);
-                
+
                 if (_log.isDebugEnabled())
                     _log.debug("{} asynchronous read {} bytes on {}", getRequestId(clientRequest), read, input);
 
                 if (read<0)
                     return Action.SUCCEEDED;
-                
+
                 if (contentLength > 0 && read > 0)
                     length += read;
 
@@ -423,7 +416,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
                 length += contentBytes;
 
-                boolean finished = contentLength > 0 && length == contentLength;
+                boolean finished = contentLength >= 0 && length == contentLength;
                 transform(transformer, content, finished, buffers);
 
                 int newContentBytes = 0;
@@ -455,7 +448,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 }
                 else
                 {
-                    if (contentLength > 0)
+                    if (contentLength >= 0)
                         proxyResponse.setContentLength(-1);
 
                     // Setting the WriteListener triggers an invocation to
