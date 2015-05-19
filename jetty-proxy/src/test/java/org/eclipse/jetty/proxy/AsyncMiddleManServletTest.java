@@ -38,6 +38,7 @@ import java.util.Map;
 import java.util.Random;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.zip.GZIPInputStream;
 import java.util.zip.GZIPOutputStream;
 
@@ -1239,6 +1240,45 @@ public class AsyncMiddleManServletTest
         Assert.assertEquals(2, obj.size());
         Assert.assertEquals(value0, obj.get(key0));
         Assert.assertEquals(value1, obj.get(key1));
+    }
+
+    @Test
+    public void testServer401() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                response.setStatus(HttpStatus.UNAUTHORIZED_401);
+                response.setHeader(HttpHeader.WWW_AUTHENTICATE.asString(), "Basic realm=\"test\"");
+            }
+        });
+        final AtomicBoolean transformed = new AtomicBoolean();
+        startProxy(new AsyncMiddleManServlet()
+        {
+            @Override
+            protected ContentTransformer newServerResponseContentTransformer(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Response serverResponse)
+            {
+                return new AfterContentTransformer()
+                {
+                    @Override
+                    public boolean transform(Source source, Sink sink) throws IOException
+                    {
+                        transformed.set(true);
+                        return false;
+                    }
+                };
+            }
+        });
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .send();
+
+        Assert.assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
+        Assert.assertFalse(transformed.get());
     }
 
     private Path prepareTargetTestsDir() throws IOException

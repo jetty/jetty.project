@@ -28,6 +28,7 @@ import java.util.List;
 import java.util.Queue;
 import java.util.concurrent.TimeUnit;
 import java.util.zip.GZIPOutputStream;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ReadListener;
 import javax.servlet.ServletConfig;
@@ -420,7 +421,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
                 length += contentBytes;
 
-                boolean finished = contentLength > 0 && length == contentLength;
+                boolean finished = contentLength >= 0 && length == contentLength;
                 transform(transformer, content, finished, buffers);
 
                 int newContentBytes = 0;
@@ -452,7 +453,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 }
                 else
                 {
-                    if (contentLength > 0)
+                    if (contentLength >= 0)
                         proxyResponse.setContentLength(-1);
 
                     // Setting the WriteListener triggers an invocation to

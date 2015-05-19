@@ -548,7 +548,7 @@ public class HttpClient extends ContainerLifeCycle
         return new HttpConversation();
     }
 
-    protected List<ProtocolHandler> getProtocolHandlers()
+    public List<ProtocolHandler> getProtocolHandlers()
     {
         return handlers;
     }

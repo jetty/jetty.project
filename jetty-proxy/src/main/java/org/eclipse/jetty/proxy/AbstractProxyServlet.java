@@ -30,6 +30,7 @@ import java.util.Locale;
 import java.util.Set;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeoutException;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -235,10 +236,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
 
         HttpClient client = newHttpClient();
 
-        // Redirects must be proxied as is, not followed
+        // Redirects must be proxied as is, not followed.
         client.setFollowRedirects(false);
 
-        // Must not store cookies, otherwise cookies of different clients will mix
+        // Must not store cookies, otherwise cookies of different clients will mix.
         client.setCookieStore(new HttpCookieStore.Empty());
 
         Executor executor;
@@ -289,8 +290,11 @@ public abstract class AbstractProxyServlet extends HttpServlet
         {
             client.start();
 
-            // Content must not be decoded, otherwise the client gets confused
+            // Content must not be decoded, otherwise the client gets confused.
             client.getContentDecoderFactories().clear();
+
+            // No protocol handlers, pass everything to the client.
+            client.getProtocolHandlers().clear();
 
             return client;
         }
