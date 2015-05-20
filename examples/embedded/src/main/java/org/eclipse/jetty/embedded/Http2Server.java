@@ -94,7 +94,7 @@ public class Http2Server
         // SSL Context Factory for HTTPS and HTTP/2
         String jetty_distro = System.getProperty("jetty.distro","../../jetty-distribution/target/distribution");
         SslContextFactory sslContextFactory = new SslContextFactory();
-        sslContextFactory.setKeyStorePath(jetty_distro + "/etc/keystore");
+        sslContextFactory.setKeyStorePath(jetty_distro + "/demo-base/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
 
@@ -121,7 +121,7 @@ public class Http2Server
         ALPN.debug=false;
         
         server.start();
-        server.dumpStdErr();
+        //server.dumpStdErr();
         server.join();
     }
     
