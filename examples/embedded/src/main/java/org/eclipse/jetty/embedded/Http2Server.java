@@ -40,6 +40,7 @@ import javax.servlet.http.HttpSession;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2CServerConnectionFactory;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
@@ -97,6 +98,7 @@ public class Http2Server
         sslContextFactory.setKeyStorePath(jetty_distro + "/demo-base/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
+        sslContextFactory.setCipherComparator(new HTTP2Cipher.CipherComparator());
 
         // HTTPS Configuration
         HttpConfiguration https_config = new HttpConfiguration(http_config);

@@ -18,6 +18,8 @@
 
 package org.eclipse.jetty.http2;
 
+import java.util.Comparator;
+
 import org.eclipse.jetty.util.ArrayTrie;
 import org.eclipse.jetty.util.Trie;
 
@@ -330,5 +332,24 @@ public class HTTP2Cipher
     {
         Boolean b = __blackCiphers.get(tlsCipher);
         return b!=null && b.booleanValue();
+    }
+    
+    
+    /**
+     * Comparator to order non blacklisted ciphers before blacklisted ones.
+     */
+    public static class CipherComparator implements Comparator<String>
+    {
+        @Override
+        public int compare(String c1, String c2)
+        {
+            boolean b1=isBlackListCipher(c1);
+            boolean b2=isBlackListCipher(c2);
+            if (b1==b2)
+                return 0;
+            if (b1)
+                return 1;
+            return -1;
+        }   
     }
 }

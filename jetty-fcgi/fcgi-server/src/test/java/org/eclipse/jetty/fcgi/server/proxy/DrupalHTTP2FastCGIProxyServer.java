@@ -19,6 +19,7 @@
 package org.eclipse.jetty.fcgi.server.proxy;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -42,6 +43,7 @@ public class DrupalHTTP2FastCGIProxyServer
         sslContextFactory.setKeyStorePassword("storepwd");
         sslContextFactory.setTrustStorePath("src/test/resources/truststore.jks");
         sslContextFactory.setTrustStorePassword("storepwd");
+        sslContextFactory.setCipherComparator(new HTTP2Cipher.CipherComparator());
 
         Server server = new Server();
 

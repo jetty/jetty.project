@@ -214,30 +214,6 @@ public class SslContextFactoryTest
     }
 
     @Test
-    public void testSetIncludeCipherSuitesPreservesOrder()
-    {
-        String[] supportedCipherSuites = new String[]{"cipher4", "cipher2", "cipher1", "cipher3"};
-        String[] includeCipherSuites = {"cipher1", "cipher3", "cipher4"};
-
-        cf.setIncludeCipherSuites(includeCipherSuites);
-        String[] selectedCipherSuites = cf.selectCipherSuites(null, supportedCipherSuites);
-
-        assertSelectedMatchesIncluded(includeCipherSuites, selectedCipherSuites);
-    }
-
-    @Test
-    public void testSetIncludeProtocolsPreservesOrder()
-    {
-        String[] supportedProtocol = new String[]{"cipher4", "cipher2", "cipher1", "cipher3"};
-        String[] includeProtocol = {"cipher1", "cipher3", "cipher4"};
-
-        cf.setIncludeProtocols(includeProtocol);
-        String[] selectedProtocol = cf.selectProtocols(null, supportedProtocol);
-
-        assertSelectedMatchesIncluded(includeProtocol, selectedProtocol);
-    }
-
-    @Test
     public void testProtocolAndCipherSettingsAreNPESafe()
     {
     	assertNotNull(cf.getExcludeProtocols());

@@ -22,6 +22,7 @@ import java.net.InetSocketAddress;
 
 import org.eclipse.jetty.alpn.ALPN;
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.server.HttpConfiguration;
 import org.eclipse.jetty.server.HttpConnectionFactory;
@@ -58,6 +59,7 @@ public class AbstractALPNTest
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(httpConfiguration);
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(h1.getProtocol());
+        
         connector = new ServerConnector(server, newSslContextFactory(), alpn, h1, h2);
         connector.setPort(0);
         connector.setIdleTimeout(30000);

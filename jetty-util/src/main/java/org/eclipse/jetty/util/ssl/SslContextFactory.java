@@ -33,15 +33,16 @@ import java.security.cert.CollectionCertStoreParameters;
 import java.security.cert.PKIXBuilderParameters;
 import java.security.cert.X509CertSelector;
 import java.security.cert.X509Certificate;
+import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
+import java.util.Comparator;
 import java.util.HashMap;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
 
@@ -139,12 +140,21 @@ public class SslContextFactory extends AbstractLifeCycle
     /** Included protocols. */
     private final Set<String> _includeProtocols = new LinkedHashSet<>();
 
+    /** Selected protocols. */
+    private String[] _selectedProtocols;
+    
     /** Excluded cipher suites. */
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
     
     /** Included cipher suites. */
-    private final List<String> _includeCipherSuites = new CopyOnWriteArrayList<String>();
+    private final List<String> _includeCipherSuites = new ArrayList<String>();
     private boolean _useCipherSuitesOrder=true;
+    
+    /** Cipher comparator for ordering ciphers */
+    Comparator<String> _cipherComparator;
+    
+    /** Selected cipher suites. Combination of includes, excludes, available and ordering */
+    private String[] _selectedCipherSuites;
     
     /** Keystore path. */
     private Resource _keyStoreResource;
@@ -230,8 +240,6 @@ public class SslContextFactory extends AbstractLifeCycle
     protected Factory _factory;
     
     
-    
-    
     /**
      * Construct an instance of SslContextFactory
      * Default constructor for use in XmlConfiguration files
@@ -259,7 +267,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-}
+    }
 
     /**
      * Construct an instance of SslContextFactory
@@ -268,6 +276,28 @@ public class SslContextFactory extends AbstractLifeCycle
     public SslContextFactory(String keyStorePath)
     {
         setKeyStorePath(keyStorePath);
+    }
+
+    public String[] getSelectedProtocols()
+    {
+        return Arrays.copyOf(_selectedProtocols,_selectedProtocols.length);
+    }
+
+    public String[] getSelectedCipherSuites()
+    {
+        return Arrays.copyOf(_selectedCipherSuites,_selectedCipherSuites.length);
+    }
+
+    public Comparator<String> getCipherComparator()
+    {
+        return _cipherComparator;
+    }
+
+    public void setCipherComparator(Comparator<String> cipherComparator)
+    {
+        if (cipherComparator!=null)
+            setUseCipherSuitesOrder(true);
+        _cipherComparator = cipherComparator;
     }
 
     /**
@@ -410,12 +440,18 @@ public class SslContextFactory extends AbstractLifeCycle
             }
         }
         
+        // select the protocols and ciphers
+        SSLEngine sslEngine=context.createSSLEngine();
+        selectCipherSuites(
+                sslEngine.getEnabledCipherSuites(),
+                sslEngine.getSupportedCipherSuites());
+        selectProtocols(sslEngine.getEnabledProtocols(),sslEngine.getSupportedProtocols());
+        
         _factory = new Factory(keyStore,trustStore,context);
-        SSLEngine engine = newSSLEngine();
         if (LOG.isDebugEnabled())
         {
-            LOG.debug("Enabled Protocols {} of {}",Arrays.asList(engine.getEnabledProtocols()),Arrays.asList(engine.getSupportedProtocols()));
-            LOG.debug("Enabled Ciphers   {} of {}",Arrays.asList(engine.getEnabledCipherSuites()),Arrays.asList(engine.getSupportedCipherSuites()));
+            LOG.debug("Selected Protocols {} of {}",Arrays.asList(_selectedProtocols),Arrays.asList(sslEngine.getSupportedProtocols()));
+            LOG.debug("Selected Ciphers   {} of {}",Arrays.asList(_selectedCipherSuites),Arrays.asList(sslEngine.getSupportedCipherSuites()));
         }
         
     }
@@ -1140,9 +1176,8 @@ public class SslContextFactory extends AbstractLifeCycle
      * as well as enabled and supported protocols.
      * @param enabledProtocols Array of enabled protocols
      * @param supportedProtocols Array of supported protocols
-     * @return Array of protocols to enable
      */
-    public String[] selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
+    public void selectProtocols(String[] enabledProtocols, String[] supportedProtocols)
     {
         Set<String> selected_protocols = new LinkedHashSet<>();
 
@@ -1161,7 +1196,7 @@ public class SslContextFactory extends AbstractLifeCycle
         // Remove any excluded protocols
         selected_protocols.removeAll(_excludeProtocols);
 
-        return selected_protocols.toArray(new String[selected_protocols.size()]);
+        _selectedProtocols = selected_protocols.toArray(new String[selected_protocols.size()]);
     }
 
     /**
@@ -1170,11 +1205,10 @@ public class SslContextFactory extends AbstractLifeCycle
      * as well as enabled and supported cipher suite lists.
      * @param enabledCipherSuites Array of enabled cipher suites
      * @param supportedCipherSuites Array of supported cipher suites
-     * @return Array of cipher suites to enable
      */
-    public String[] selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
+    protected void selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
     {
-        List<String> selected_ciphers = new CopyOnWriteArrayList<>(); // TODO is this the most efficient?
+        List<String> selected_ciphers = new ArrayList<>(); 
 
         // Set the starting ciphers - either from the included or enabled list
         if (_includeCipherSuites.isEmpty())
@@ -1183,16 +1217,21 @@ public class SslContextFactory extends AbstractLifeCycle
             processIncludeCipherSuites(supportedCipherSuites, selected_ciphers);
 
         removeExcludedCipherSuites(selected_ciphers);
-
-        // TODO could we cache these results?
-        return selected_ciphers.toArray(new String[selected_ciphers.size()]);
+        
+        if (_cipherComparator!=null)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Sorting selected ciphers with {}",_cipherComparator);
+            Collections.sort(selected_ciphers,_cipherComparator);
+        }
+        
+        _selectedCipherSuites=selected_ciphers.toArray(new String[selected_ciphers.size()]);
     }
 
     protected void processIncludeCipherSuites(String[] supportedCipherSuites, List<String> selected_ciphers)
     {
         for (String cipherSuite : _includeCipherSuites)
         {
-            // TODO precompile these patterns to make accepting faster
             Pattern p = Pattern.compile(cipherSuite);
             for (String supportedCipherSuite : supportedCipherSuites)
             {
@@ -1416,10 +1455,8 @@ public class SslContextFactory extends AbstractLifeCycle
         if (getNeedClientAuth())
             socket.setNeedClientAuth(getNeedClientAuth());
 
-        socket.setEnabledCipherSuites(selectCipherSuites(
-                                            socket.getEnabledCipherSuites(),
-                                            socket.getSupportedCipherSuites()));
-        socket.setEnabledProtocols(selectProtocols(socket.getEnabledProtocols(),socket.getSupportedProtocols()));
+        socket.setEnabledCipherSuites(_selectedCipherSuites);
+        socket.setEnabledProtocols(_selectedProtocols);
 
         return socket;
     }
@@ -1437,10 +1474,8 @@ public class SslContextFactory extends AbstractLifeCycle
         if (getNeedClientAuth())
             socket.setNeedClientAuth(getNeedClientAuth());
 
-        socket.setEnabledCipherSuites(selectCipherSuites(
-                                            socket.getEnabledCipherSuites(),
-                                            socket.getSupportedCipherSuites()));
-        socket.setEnabledProtocols(selectProtocols(socket.getEnabledProtocols(),socket.getSupportedProtocols()));
+        socket.setEnabledCipherSuites(_selectedCipherSuites);
+        socket.setEnabledProtocols(_selectedProtocols);
 
         return socket;
     }
@@ -1522,18 +1557,17 @@ public class SslContextFactory extends AbstractLifeCycle
                 LOG.debug("Enable SNI matching {}",sslEngine);
             sslParams.setSNIMatchers(Collections.singletonList((SNIMatcher)new AliasSNIMatcher()));  
         }
-        sslEngine.setSSLParameters(sslParams);  
 
         if (getWantClientAuth())
             sslEngine.setWantClientAuth(getWantClientAuth());
         if (getNeedClientAuth())
             sslEngine.setNeedClientAuth(getNeedClientAuth());
 
-        sslEngine.setEnabledCipherSuites(selectCipherSuites(
-                sslEngine.getEnabledCipherSuites(),
-                sslEngine.getSupportedCipherSuites()));
+        sslParams.setCipherSuites(_selectedCipherSuites);
+        sslEngine.setEnabledCipherSuites(_selectedCipherSuites);
+        sslEngine.setEnabledProtocols(_selectedProtocols);
 
-        sslEngine.setEnabledProtocols(selectProtocols(sslEngine.getEnabledProtocols(),sslEngine.getSupportedProtocols()));
+        sslEngine.setSSLParameters(sslParams);  
     }
 
     public static X509Certificate[] getCertChain(SSLSession sslSession)

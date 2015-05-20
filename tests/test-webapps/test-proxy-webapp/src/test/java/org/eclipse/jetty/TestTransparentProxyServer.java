@@ -21,6 +21,7 @@ package org.eclipse.jetty;
 import java.lang.management.ManagementFactory;
 
 import org.eclipse.jetty.alpn.server.ALPNServerConnectionFactory;
+import org.eclipse.jetty.http2.HTTP2Cipher;
 import org.eclipse.jetty.http2.server.HTTP2ServerConnectionFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.ForwardedRequestCustomizer;
@@ -96,6 +97,7 @@ public class TestTransparentProxyServer
                 "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
+        sslContextFactory.setCipherComparator(new HTTP2Cipher.CipherComparator());
         
 
         // HTTPS Configuration
