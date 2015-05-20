@@ -380,7 +380,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
 
         // install interceptor and handle
         out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,baseRequest.getHttpChannel(),out.getInterceptor()));
-        _handler.handle(target,baseRequest, request, response);
+        if (_handler!=null)
+            _handler.handle(target,baseRequest, request, response);
         
     }
 

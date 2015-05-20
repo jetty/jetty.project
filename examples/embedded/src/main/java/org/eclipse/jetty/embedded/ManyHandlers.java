@@ -36,6 +36,7 @@ import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 import org.eclipse.jetty.util.ajax.JSON;
 
 /**
@@ -127,7 +128,7 @@ public class ManyHandlers
 
         // link them all together
         wrapper.setHandler(hello);
-        list.setHandlers(new Handler[] { param, wrapper, dft });
+        list.setHandlers(new Handler[] { param, new GzipHandler(), dft });
         handlers.setHandlers(new Handler[] { list, requestLog });
 
         // Handler tree looks like the following

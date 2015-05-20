@@ -135,17 +135,6 @@ public class HandlerCollection extends AbstractHandlerContainer
     }
 
     /* ------------------------------------------------------------ */
-    @Override
-    public void setServer(Server server)
-    {
-        super.setServer(server);
-        Handler[] handlers=getHandlers();
-        if (handlers!=null)
-            for (Handler h : handlers)
-                h.setServer(server);
-    }
-
-    /* ------------------------------------------------------------ */
     /* Add a handler.
      * This implementation adds the passed handler to the end of the existing collection of handlers.
      * @see org.eclipse.jetty.server.server.HandlerContainer#addHandler(org.eclipse.jetty.server.server.Handler)

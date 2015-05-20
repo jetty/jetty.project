@@ -124,20 +124,6 @@ public class HotSwapHandler extends AbstractHandlerContainer
 
     /* ------------------------------------------------------------ */
     @Override
-    public void setServer(Server server)
-    {
-        if (isRunning())
-            throw new IllegalStateException(RUNNING);
-
-        super.setServer(server);
-
-        Handler h = getHandler();
-        if (h != null)
-            h.setServer(server);
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
     protected void expandChildren(List<Handler> list, Class<?> byClass)
     {
         expandHandler(_handler,list,byClass);
