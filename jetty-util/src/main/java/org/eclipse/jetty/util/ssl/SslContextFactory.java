@@ -39,6 +39,7 @@ import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Map;
@@ -1249,11 +1250,13 @@ public class SslContextFactory extends AbstractLifeCycle
         for (String excludeCipherSuite : _excludeCipherSuites)
         {
             Pattern excludeCipherPattern = Pattern.compile(excludeCipherSuite);
-            for (String selectedCipherSuite : selected_ciphers)
+            for (Iterator<String> i=selected_ciphers.iterator();i.hasNext();)
             {
+                String selectedCipherSuite = i.next();
                 Matcher m = excludeCipherPattern.matcher(selectedCipherSuite);
                 if (m.matches())
-                    selected_ciphers.remove(selectedCipherSuite);
+                    i.remove();
+                
             }
         }
     }
