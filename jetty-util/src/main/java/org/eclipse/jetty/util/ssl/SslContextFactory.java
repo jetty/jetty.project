@@ -111,15 +111,15 @@ public class SslContextFactory extends AbstractLifeCycle
     /*
      * @see {@link X509Certificate#getKeyUsage()}
      */
-    private static final int KEY_USAGE__KEY_CERT_SIGN=5; 
+    private static final int KEY_USAGE__KEY_CERT_SIGN=5;
 
     /*
-     * 
+     *
      * @see {@link X509Certificate#getSubjectAlternativeNames()}
      */
-    private static final int SUBJECT_ALTERNATIVE_NAMES__DNS_NAME=2; 
+    private static final int SUBJECT_ALTERNATIVE_NAMES__DNS_NAME=2;
 
-    
+
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?
                 KeyManagerFactory.getDefaultAlgorithm() : Security.getProperty("ssl.KeyManagerFactory.algorithm"));
@@ -145,7 +145,7 @@ public class SslContextFactory extends AbstractLifeCycle
     
     /** Excluded cipher suites. */
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
-    
+
     /** Included cipher suites. */
     private final List<String> _includeCipherSuites = new ArrayList<String>();
     private boolean _useCipherSuitesOrder=true;
@@ -155,7 +155,7 @@ public class SslContextFactory extends AbstractLifeCycle
     
     /** Selected cipher suites. Combination of includes, excludes, available and ordering */
     private String[] _selectedCipherSuites;
-    
+
     /** Keystore path. */
     private Resource _keyStoreResource;
     /** Keystore provider name */
@@ -238,8 +238,10 @@ public class SslContextFactory extends AbstractLifeCycle
     private boolean _renegotiationAllowed = true;
 
     protected Factory _factory;
-    
-    
+
+
+
+
     /**
      * Construct an instance of SslContextFactory
      * Default constructor for use in XmlConfiguration files
@@ -267,7 +269,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 "SSL_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_RSA_EXPORT_WITH_DES40_CBC_SHA",
                 "SSL_DHE_DSS_EXPORT_WITH_DES40_CBC_SHA");
-    }
+}
 
     /**
      * Construct an instance of SslContextFactory
@@ -310,7 +312,7 @@ public class SslContextFactory extends AbstractLifeCycle
         SSLContext context = _setContext;
         KeyStore keyStore = _setKeyStore;
         KeyStore trustStore = _setTrustStore;
-        
+
         if (context == null)
         {
             // Is this an empty factory?
@@ -365,21 +367,21 @@ public class SslContextFactory extends AbstractLifeCycle
                 _certAliases.clear();
                 if (keyStore!=null)
                 {
-                    loop: for (String alias : Collections.list(keyStore.aliases()))
+                    for (String alias : Collections.list(keyStore.aliases()))
                     {
                         Certificate certificate = keyStore.getCertificate(alias);
                         if ("X.509".equals(certificate.getType()))
                         {
                             X509Certificate x509 = (X509Certificate)certificate;
-                            
+
                             // Exclude certificates with special uses
                             if (x509.getKeyUsage()!=null)
                             {
                                 boolean[] b=x509.getKeyUsage();
                                 if (b[KEY_USAGE__KEY_CERT_SIGN])
-                                    continue loop;
+                                    continue;
                             }
-                            
+
                             // Look for alternative name extensions
                             boolean named=false;
                             Collection<List<?>> altNames = x509.getSubjectAlternativeNames();
@@ -400,7 +402,7 @@ public class SslContextFactory extends AbstractLifeCycle
                                     }
                                 }
                             }
-                            
+
                             // If no names found, look up the cn from the subject
                             if (!named)
                             {
@@ -417,18 +419,18 @@ public class SslContextFactory extends AbstractLifeCycle
                                     }
                                 }
                             }
-                        }                    
+                        }
                     }
                 }
-                
+
                 // find wild aliases
                 _certWilds.clear();
                 for (String name : _certAliases.keySet())
                     if (name.startsWith("*."))
                         _certWilds.put(name.substring(1),_certAliases.get(name));
-                
+
                 LOG.info("x509={} wild={} alias={} for {}",_certAliases,_certWilds,_certAlias,this);
-                
+
                 // Instantiate key and trust managers
                 KeyManager[] keyManagers = getKeyManagers(keyStore);
                 TrustManager[] trustManagers = getTrustManagers(trustStore,crls);
@@ -446,14 +448,14 @@ public class SslContextFactory extends AbstractLifeCycle
                 sslEngine.getEnabledCipherSuites(),
                 sslEngine.getSupportedCipherSuites());
         selectProtocols(sslEngine.getEnabledProtocols(),sslEngine.getSupportedProtocols());
-        
+
         _factory = new Factory(keyStore,trustStore,context);
         if (LOG.isDebugEnabled())
         {
             LOG.debug("Selected Protocols {} of {}",Arrays.asList(_selectedProtocols),Arrays.asList(sslEngine.getSupportedProtocols()));
             LOG.debug("Selected Ciphers   {} of {}",Arrays.asList(_selectedCipherSuites),Arrays.asList(sslEngine.getSupportedCipherSuites()));
         }
-        
+
     }
 
     @Override
@@ -578,7 +580,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         _useCipherSuitesOrder = useCipherSuitesOrder;
     }
-    
+
     /**
      * @return The file or URL of the SSL Key store.
      */
@@ -662,7 +664,7 @@ public class SslContextFactory extends AbstractLifeCycle
         checkNotStarted();
         _certAlias = certAlias;
     }
-    
+
     /**
      * @param trustStorePath
      *            The file name or URL of the trust store location
@@ -794,7 +796,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /**
      * @param password
-     *            The password for the key store.  If null is passed then 
+     *            The password for the key store.  If null is passed then
      *            the {@link Password#getPassword(String, String, String)} is used to
      *            obtain a password either from the "org.eclipse.jetty.ssl.password"
      *            System property or by prompting for manual entry.
@@ -802,7 +804,7 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setKeyStorePassword(String password)
     {
         checkNotStarted();
-        
+
         _keyStorePassword = password==null
             ?Password.getPassword(PASSWORD_PROPERTY,null,null)
             :new Password(password);
@@ -811,7 +813,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * @param password
      *            The password (if any) for the specific key within the key store.
-     *            If null is passed then 
+     *            If null is passed then
      *            the {@link Password#getPassword(String, String, String)} is used to
      *            obtain a password either from the "org.eclipse.jetty.ssl.keypassword"
      *            System property or by prompting for manual entry.
@@ -826,7 +828,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /**
      * @param password
-     *            The password for the trust store. If null is passed then 
+     *            The password for the trust store. If null is passed then
      *            the {@link Password#getPassword(String, String, String)} is used to
      *            obtain a password either from the "org.eclipse.jetty.ssl.password"
      *            System property or by prompting for manual entry.
@@ -1040,8 +1042,8 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /**
      * Override this method to provide alternate way to load a keystore.
-     * 
-     * @param resource the resource to load the keystore from 
+     *
+     * @param resource the resource to load the keystore from
      * @return the key store instance
      * @throws Exception if the keystore cannot be loaded
      */
@@ -1052,8 +1054,8 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /**
      * Override this method to provide alternate way to load a truststore.
-     * 
-     * @param resource the resource to load the truststore from 
+     *
+     * @param resource the resource to load the truststore from
      * @return the key store instance
      * @throws Exception if the truststore cannot be loaded
      */
@@ -1097,7 +1099,7 @@ public class SslContextFactory extends AbstractLifeCycle
                             managers[idx] = new AliasedX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx],_certAlias);
                     }
                 }
-                
+
                 if (_certAliases.isEmpty() || !_certWilds.isEmpty())
                 {
                     for (int idx = 0; idx < managers.length; idx++)
@@ -1110,7 +1112,7 @@ public class SslContextFactory extends AbstractLifeCycle
         }
 
         LOG.debug("managers={} for {}",managers,this);
-        
+
         return managers;
     }
 
@@ -1264,7 +1266,7 @@ public class SslContextFactory extends AbstractLifeCycle
         if (isStarted())
             throw new IllegalStateException("Cannot modify configuration when "+getState());
     }
-    
+
     /**
      * Check if the lifecycle has been started and throw runtime exception
      */
@@ -1273,7 +1275,7 @@ public class SslContextFactory extends AbstractLifeCycle
         if (!isStarted())
             throw new IllegalStateException("!STARTED: "+this);
     }
-    
+
     /**
      * Check if the lifecycle has been started and throw runtime exception
      */
@@ -1347,7 +1349,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         return isStarted()?_factory._keyStore:_setKeyStore;
     }
-    
+
     /** Set the trust store.
      * @param trustStore the trust store to set
      */
@@ -1375,7 +1377,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         return _keyStoreResource;
     }
-    
+
     /** Set the trust store resource.
      * @param resource the trust store resource to set
      */
@@ -1389,7 +1391,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         return _keyStoreResource;
     }
-    
+
     /**
     * @return true if SSL Session caching is enabled
     */
@@ -1442,7 +1444,7 @@ public class SslContextFactory extends AbstractLifeCycle
     public SSLServerSocket newSslServerSocket(String host,int port,int backlog) throws IOException
     {
         checkIsStarted();
-        
+
         SSLServerSocketFactory factory = _factory._context.getServerSocketFactory();
 
         SSLServerSocket socket =
@@ -1547,7 +1549,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Customize {}",sslEngine);
-            
+
         SSLParameters sslParams = sslEngine.getSSLParameters();
         sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
         sslParams.setUseCipherSuitesOrder(_useCipherSuitesOrder);
@@ -1555,7 +1557,7 @@ public class SslContextFactory extends AbstractLifeCycle
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Enable SNI matching {}",sslEngine);
-            sslParams.setSNIMatchers(Collections.singletonList((SNIMatcher)new AliasSNIMatcher()));  
+            sslParams.setSNIMatchers(Collections.singletonList((SNIMatcher)new AliasSNIMatcher()));
         }
 
         if (getWantClientAuth())
@@ -1664,15 +1666,15 @@ public class SslContextFactory extends AbstractLifeCycle
                 _keyStoreResource,
                 _trustStoreResource);
     }
-    
-    
+
+
 
     protected class Factory
-    { 
+    {
         final KeyStore _keyStore;
         final KeyStore _trustStore;
         final SSLContext _context;
-        
+
         public Factory(KeyStore keyStore, KeyStore trustStore, SSLContext context)
         {
             super();
@@ -1680,7 +1682,7 @@ public class SslContextFactory extends AbstractLifeCycle
             _trustStore = trustStore;
             _context = context;
         }
-        
+
         @Override
         public String toString()
         {
@@ -1692,7 +1694,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         private String _alias;
         private SNIHostName _name;
-        
+
         protected AliasSNIMatcher()
         {
             super(StandardConstants.SNI_HOST_NAME);
@@ -1702,14 +1704,14 @@ public class SslContextFactory extends AbstractLifeCycle
         public boolean matches(SNIServerName serverName)
         {
             LOG.debug("matches={} for {}",serverName,this);
-            
+
             if (serverName instanceof SNIHostName)
             {
                 _name=(SNIHostName)serverName;
 
                 // If we don't have a SNI name, or didn't see any certificate aliases,
                 // just say true as it will either somehow work or fail elsewhere
-                if (_name==null || _certAliases.size()==0)
+                if (_certAliases.size()==0)
                     return true;
 
                 // Try an exact match
@@ -1720,14 +1722,14 @@ public class SslContextFactory extends AbstractLifeCycle
                         LOG.debug("matched {}->{}",_name.getAsciiName(),_alias);
                     return true;
                 }
-                
+
                 // Try wild card matches
                 String domain = _name.getAsciiName();
                 int dot=domain.indexOf('.');
                 if (dot>=0)
                 {
                     domain=domain.substring(dot);
-                    _alias = _certWilds.get(domain);                
+                    _alias = _certWilds.get(domain);
                     if (_alias!=null)
                     {
                         if (LOG.isDebugEnabled())
@@ -1738,7 +1740,7 @@ public class SslContextFactory extends AbstractLifeCycle
             }
             if (LOG.isDebugEnabled())
                 LOG.debug("No match for {}",_name.getAsciiName());
-            
+
             // Return true and allow the KeyManager to accept or reject when choosing a certificate.
             return true;
         }
@@ -1747,7 +1749,7 @@ public class SslContextFactory extends AbstractLifeCycle
         {
             return _alias;
         }
-        
+
         public String getServerName()
         {
             return _name==null?null:_name.getAsciiName();
