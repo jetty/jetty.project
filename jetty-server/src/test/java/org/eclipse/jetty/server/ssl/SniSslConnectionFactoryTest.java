@@ -57,7 +57,7 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-public class SslConnectionFactoryTest
+public class SniSslConnectionFactoryTest
 {        
     Server _server;
     ServerConnector _connector;
@@ -66,7 +66,7 @@ public class SslConnectionFactoryTest
     @Before
     public void before() throws Exception
     {
-        String keystorePath = "src/test/resources/keystore";
+        String keystorePath = "src/test/resources/snikeystore";
         File keystoreFile = new File(keystorePath);
         if (!keystoreFile.exists())
         {
@@ -130,8 +130,31 @@ public class SslConnectionFactoryTest
     {
         String response;
         
-        response= getResponse("localhost","localhost","jetty.eclipse.org");
-        Assert.assertThat(response,Matchers.containsString("host=localhost"));
+        response= getResponse("jetty.eclipse.org","jetty.eclipse.org");
+        Assert.assertThat(response,Matchers.containsString("host=jetty.eclipse.org"));
+        
+        response= getResponse("www.example.com","www.example.com");
+        Assert.assertThat(response,Matchers.containsString("host=www.example.com"));
+        
+        response= getResponse("foo.domain.com","*.domain.com");
+        Assert.assertThat(response,Matchers.containsString("host=foo.domain.com"));
+        
+        response= getResponse("m.san.com","san example");
+        Assert.assertThat(response,Matchers.containsString("host=m.san.com"));
+        
+        response= getResponse("www.san.com","san example");
+        Assert.assertThat(response,Matchers.containsString("host=www.san.com"));
+      
+    }
+    
+    @Test
+    public void testBadSNIConnect() throws Exception
+    {
+        String response;
+        
+        response= getResponse("www.example.com","some.other.com","www.example.com");
+        Assert.assertThat(response,Matchers.containsString("HTTP/1.1 400 "));
+        Assert.assertThat(response,Matchers.containsString("Host does not match SNI"));
     }
 
 

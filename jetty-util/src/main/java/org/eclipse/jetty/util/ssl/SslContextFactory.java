@@ -84,6 +84,9 @@ import org.eclipse.jetty.util.security.Password;
  * creates SSL context based on these parameters to be
  * used by the SSL connectors.
  */
+
+/**
+ */
 public class SslContextFactory extends AbstractLifeCycle
 {
     public final static TrustManager[] TRUST_ALL_CERTS = new X509TrustManager[]{new X509TrustManager()
@@ -104,6 +107,18 @@ public class SslContextFactory extends AbstractLifeCycle
 
     static final Logger LOG = Log.getLogger(SslContextFactory.class);
 
+    /*
+     * @see {@link X509Certificate#getKeyUsage()}
+     */
+    private static final int KEY_USAGE__KEY_CERT_SIGN=5; 
+
+    /*
+     * 
+     * @see {@link X509Certificate#getSubjectAlternativeNames()}
+     */
+    private static final int SUBJECT_ALTERNATIVE_NAMES__DNS_NAME=2; 
+
+    
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?
                 KeyManagerFactory.getDefaultAlgorithm() : Security.getProperty("ssl.KeyManagerFactory.algorithm"));
@@ -331,7 +346,7 @@ public class SslContextFactory extends AbstractLifeCycle
                             if (x509.getKeyUsage()!=null)
                             {
                                 boolean[] b=x509.getKeyUsage();
-                                if (b[5]/* keyCertSign */)
+                                if (b[KEY_USAGE__KEY_CERT_SIGN])
                                     continue loop;
                             }
                             
@@ -342,11 +357,11 @@ public class SslContextFactory extends AbstractLifeCycle
                             {
                                 for (List<?> list : altNames)
                                 {
-                                    if (((Number)list.get(0)).intValue() == 2 )
+                                    if (((Number)list.get(0)).intValue() == SUBJECT_ALTERNATIVE_NAMES__DNS_NAME)
                                     {
                                         String cn = list.get(1).toString();
                                         if (LOG.isDebugEnabled())
-                                            LOG.debug("Certificate san alias={} cn={} in {}",alias,cn,this);
+                                            LOG.debug("Certificate SAN alias={} cn={} in {}",alias,cn,this);
                                         if (cn!=null)
                                         {
                                             named=true;
@@ -382,7 +397,7 @@ public class SslContextFactory extends AbstractLifeCycle
                     if (name.startsWith("*."))
                         _certWilds.put(name.substring(1),_certAliases.get(name));
                 
-                LOG.info("x509={} for {}",_certAliases,this);
+                LOG.info("x509={} wild={} alias={} for {}",_certAliases,_certWilds,_certAlias,this);
                 
                 // Instantiate key and trust managers
                 KeyManager[] keyManagers = getKeyManagers(keyStore);
@@ -598,6 +613,11 @@ public class SslContextFactory extends AbstractLifeCycle
     }
 
     /**
+     * Set the default certificate Alias.
+     * <p>This can be used if there are multiple non-SNI certificates
+     * to specify the certificate that should be used, or with SNI
+     * certificates to set a certificate to try if no others match
+     * </p>
      * @param certAlias
      *            Alias of SSL certificate for the connector
      */
@@ -1042,7 +1062,7 @@ public class SslContextFactory extends AbstractLifeCycle
                     }
                 }
                 
-                if (!_certAliases.isEmpty() || !_certWilds.isEmpty())
+                if (_certAliases.isEmpty() || !_certWilds.isEmpty())
                 {
                     for (int idx = 0; idx < managers.length; idx++)
                     {
@@ -1490,11 +1510,18 @@ public class SslContextFactory extends AbstractLifeCycle
 
     public void customize(SSLEngine sslEngine)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("Customize {}",sslEngine);
+            
         SSLParameters sslParams = sslEngine.getSSLParameters();
         sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
         sslParams.setUseCipherSuitesOrder(_useCipherSuitesOrder);
         if (!_certAliases.isEmpty() || !_certWilds.isEmpty())
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Enable SNI matching {}",sslEngine);
             sslParams.setSNIMatchers(Collections.singletonList((SNIMatcher)new AliasSNIMatcher()));  
+        }
         sslEngine.setSSLParameters(sslParams);  
 
         if (getWantClientAuth())
@@ -1662,16 +1689,24 @@ public class SslContextFactory extends AbstractLifeCycle
                 
                 // Try wild card matches
                 String domain = _name.getAsciiName();
-                domain=domain.substring(domain.indexOf('.'));
-                _alias = _certWilds.get(domain);
-                if (_alias!=null)
+                int dot=domain.indexOf('.');
+                if (dot>=0)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("wild match {}->{}",_name.getAsciiName(),_alias);
-                    return true;
+                    domain=domain.substring(dot);
+                    _alias = _certWilds.get(domain);                
+                    if (_alias!=null)
+                    {
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("wild match {}->{}",_name.getAsciiName(),_alias);
+                        return true;
+                    }
                 }
             }
-            return false;
+            if (LOG.isDebugEnabled())
+                LOG.debug("No match for {}",_name.getAsciiName());
+            
+            // Return true and allow the KeyManager to accept or reject when choosing a certificate.
+            return true;
         }
 
         public String getAlias()
