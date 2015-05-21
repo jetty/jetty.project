@@ -27,6 +27,7 @@ import java.nio.channels.SelectionKey;
 import java.nio.channels.Selector;
 import java.nio.channels.ServerSocketChannel;
 import java.nio.channels.SocketChannel;
+import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.Iterator;
@@ -37,7 +38,6 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicBoolean;
 
-import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
@@ -59,7 +59,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 
     private final SpinLock _lock = new SpinLock();
     private boolean _selecting = false;
-    private final Queue<Runnable> _actions = new ConcurrentArrayQueue<>();
+    private final Queue<Runnable> _actions = new ArrayDeque<>();
     private final SelectorManager _selectorManager;
     private final int _id;
     private final ExecutionStrategy _strategy;
@@ -115,18 +115,19 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
         if (LOG.isDebugEnabled())
             LOG.debug("Queued change {} on {}", change, this);
 
+        Selector selector = null;
         try (SpinLock.Lock lock = _lock.lock())
         {
             _actions.offer(change);
             if (_selecting)
             {
-                Selector selector = _selector;
-                if (selector != null)
-                    selector.wakeup();
+                selector = _selector;
                 // To avoid the extra select wakeup.
                 _selecting = false;
             }
         }
+        if (selector != null)
+            selector.wakeup();
     }
 
     @Override
