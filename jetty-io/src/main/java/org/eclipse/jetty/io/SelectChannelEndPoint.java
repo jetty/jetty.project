@@ -45,9 +45,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
     private final ManagedSelector _selector;
     private final SelectionKey _key;
     /**
-     * The desired value for {@link SelectionKey#interestOps()}
+     * The current value for {@link SelectionKey#interestOps()}.
      */
-    private int _interestOps;
+    private int _currentInterestOps;
+    /**
+     * The desired value for {@link SelectionKey#interestOps()}.
+     */
+    private int _desiredInterestOps;
 
     private final Runnable _runUpdateKey = new Runnable() { public void run() { updateKey(); } };
     private final Runnable _runFillable = new Runnable() { public void run() { getFillInterest().fillable(); } };
@@ -90,9 +94,9 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
 
             // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
             readyOps = _key.readyOps();
-            oldInterestOps = _interestOps;
+            oldInterestOps = _desiredInterestOps;
             newInterestOps = oldInterestOps & ~readyOps;
-            _interestOps = newInterestOps;
+            _desiredInterestOps = newInterestOps;
         }
 
         if (LOG.isDebugEnabled())
@@ -118,10 +122,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             try (SpinLock.Lock lock = _lock.lock())
             {
                 _updatePending = false;
-                oldInterestOps = _key.interestOps();
-                newInterestOps = _interestOps;
+                oldInterestOps = _currentInterestOps;
+                newInterestOps = _desiredInterestOps;
                 if (oldInterestOps != newInterestOps)
+                {
+                    _currentInterestOps = newInterestOps;
                     _key.interestOps(newInterestOps);
+                }
             }
 
             if (LOG.isDebugEnabled())
@@ -152,10 +159,10 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         try (SpinLock.Lock lock = _lock.lock())
         {
             pending = _updatePending;
-            oldInterestOps = _interestOps;
+            oldInterestOps = _desiredInterestOps;
             newInterestOps = oldInterestOps | operation;
             if (newInterestOps != oldInterestOps)
-                _interestOps = newInterestOps;
+                _desiredInterestOps = newInterestOps;
         }
 
         if (LOG.isDebugEnabled())
@@ -201,15 +208,16 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             boolean valid = _key != null && _key.isValid();
             int keyInterests = valid ? _key.interestOps() : -1;
             int keyReadiness = valid ? _key.readyOps() : -1;
-            return String.format("%s{io=%d,kio=%d,kro=%d}",
+            return String.format("%s{io=%d/%d,kio=%d,kro=%d}",
                     super.toString(),
-                    _interestOps,
+                    _currentInterestOps,
+                    _desiredInterestOps,
                     keyInterests,
                     keyReadiness);
         }
         catch (Throwable x)
         {
-            return String.format("%s{io=%s,kio=-2,kro=-2}", super.toString(), _interestOps);
+            return String.format("%s{io=%s,kio=-2,kro=-2}", super.toString(), _desiredInterestOps);
         }
     }
 }
