@@ -388,9 +388,11 @@ public class GzipHttpOutput extends HttpOutput
             BufferUtil.compact(_buffer);
             int off=_buffer.arrayOffset()+_buffer.limit();
             int len=_buffer.capacity()-_buffer.limit() - (_last?8:0);
-            int produced=_deflater.deflate(_buffer.array(),off,len,Deflater.NO_FLUSH);
-            
-            _buffer.limit(_buffer.limit()+produced);
+            if (len>0)
+            {
+                int produced=_deflater.deflate(_buffer.array(),off,len,Deflater.NO_FLUSH);
+                _buffer.limit(_buffer.limit()+produced);
+            }
             boolean finished=_deflater.finished();
             
             if (finished)
