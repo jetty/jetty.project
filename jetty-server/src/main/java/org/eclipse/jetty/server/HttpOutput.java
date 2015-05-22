@@ -104,6 +104,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
         HttpConfiguration config = channel.getHttpConfiguration();
         _bufferSize = config.getOutputBufferSize();
         _commitSize = config.getOutputAggregationSize();
+        if (_commitSize>_bufferSize)
+        {
+            LOG.warn("OutputAggregationSize {} exceeds bufferSize {}",_commitSize,_bufferSize);
+            _commitSize=_bufferSize;
+        }
     }
     
     public HttpChannel getHttpChannel()
@@ -403,7 +408,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             write(_aggregate, complete && len==0);
 
             // should we fill aggregate again from the buffer?
-            if (len>0 && !complete && len<=_commitSize)
+            if (len>0 && !complete && len<=_commitSize && len<=BufferUtil.space(_aggregate))
             {
                 BufferUtil.append(_aggregate, b, off, len);
                 return;
