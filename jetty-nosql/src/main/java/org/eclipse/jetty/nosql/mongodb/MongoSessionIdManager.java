@@ -241,8 +241,8 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     /**
      * Check a block of session ids for expiry and thus scavenge.
      * 
-     * @param atTime
-     * @param ids
+     * @param atTime purge at time
+     * @param ids set of session ids
      */
     protected void scavengeBlock (long atTime, Set<String> ids)
     {
@@ -413,7 +413,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     /* ------------------------------------------------------------ */
     /** When scavenging, the max number of session ids in the query.
      * 
-     * @param size
+     * @param size the scavenge block size
      */
     public void setScavengeBlockSize (int size)
     {
@@ -421,9 +421,6 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     }
 
     /* ------------------------------------------------------------ */
-    /**
-     * @return
-     */
     public int getScavengeBlockSize ()
     {
         return _scavengeBlockSize;
@@ -432,7 +429,9 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
     
     /* ------------------------------------------------------------ */
     /**
-     * The maximum number of items to return from a purge query. If <= 0 there is no limit. Defaults to 0
+     * The maximum number of items to return from a purge query. If &lt;= 0 there is no limit. Defaults to 0
+     * 
+     * @param purgeLimit the purge limit 
      */
     public void setPurgeLimit(int purgeLimit)
     {

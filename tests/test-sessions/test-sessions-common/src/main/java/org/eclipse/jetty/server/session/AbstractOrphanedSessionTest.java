@@ -46,6 +46,7 @@ public abstract class AbstractOrphanedSessionTest
     /**
      * If nodeA creates a session, and just afterwards crashes, it is the only node that knows about the session.
      * We want to test that the session data is gone after scavenging.
+     * @throws Exception on test failure
      */
     @Test
     public void testOrphanedSession() throws Exception
