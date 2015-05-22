@@ -350,18 +350,18 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /**
      * Find all .tld files in all subdirs of the given dir.
      * 
-     * @param file
-     * @return
-     * @throws IOException
+     * @param dir the directory to scan
+     * @return the list of tlds found
+     * @throws IOException if unable to scan the directory
      */
-    public Collection<URL>  getTlds (File file) throws IOException
+    public Collection<URL>  getTlds (File dir) throws IOException
     {
-        if (file == null || !file.isDirectory())
+        if (dir == null || !dir.isDirectory())
             return Collections.emptySet();
         
         HashSet<URL> tlds = new HashSet<URL>();
         
-        File[] files = file.listFiles();
+        File[] files = dir.listFiles();
         if (files != null)
         {
             for (File f:files)
@@ -382,9 +382,9 @@ public class MetaInfConfiguration extends AbstractConfiguration
     /**
      * Find all .tld files in the given jar.
      * 
-     * @param uri
-     * @return
-     * @throws IOException
+     * @param uri the uri to jar file
+     * @return the collection of tlds as url references  
+     * @throws IOException if unable to scan the jar file
      */
     public Collection<URL> getTlds (URI uri) throws IOException
     {
