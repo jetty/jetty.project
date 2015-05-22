@@ -560,7 +560,7 @@ public class Scanner extends AbstractLifeCycle
                     if (LOG.isDebugEnabled())
                         LOG.debug("scan accepted {}",f);
                     String name = f.getCanonicalPath();
-                    scanInfoMap.put(name, new TimeNSize(f.lastModified(),f.length()));
+                    scanInfoMap.put(name, new TimeNSize(f.lastModified(),f.isDirectory()?0:f.length()));
                 }
                 else
                 {
