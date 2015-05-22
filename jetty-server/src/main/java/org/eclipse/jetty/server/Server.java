@@ -63,6 +63,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
+import org.eclipse.jetty.util.thread.SpinLock;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
@@ -87,7 +88,9 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _dumpBeforeStop=false;
     private RequestLog _requestLog;
     
+    private final SpinLock _dateLock = new SpinLock();
     private volatile DateField _dateField;
+    
     
     /* ------------------------------------------------------------ */
     public Server()
@@ -309,7 +312,7 @@ public class Server extends HandlerWrapper implements Attributes
         
         if (df==null || df._seconds!=seconds)
         {
-            synchronized (this) // Trade some contention for less garbage
+            try(SpinLock.Lock lock = _dateLock.lock())
             {
                 df = _dateField;
                 if (df==null || df._seconds!=seconds)

@@ -313,9 +313,11 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     private V getBest(int t,String s,int offset,int len)
     {
         int node=t;
-        loop: for(int i=0; i<len; i++)
+        int end=offset+len;
+        loop: while(offset<end)
         {
-            char c=s.charAt(offset+i);
+            char c=s.charAt(offset++);
+            len--;
             if(isCaseInsensitive() && c<128)
                 c=StringUtil.lowercases[c];
 
@@ -335,9 +337,9 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     if (_key[t]!=null)
                     {
                         node=t;
-                        V best=getBest(t,s,offset+i+1,len-i-1);
-                        if (best!=null)
-                            return best;
+                        V better=getBest(t,s,offset,len);
+                        if (better!=null)
+                            return better;
                     }
                     break;
                 }
@@ -364,9 +366,11 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
     private V getBest(int t,byte[] b, int offset, int len)
     {
         int node=t;
-        loop: for(int i=0; i<len; i++)
+        int end=offset+len;
+        loop: while(offset<end)
         {
-            byte c=(byte)(b[offset+i]&0x7f);
+            byte c=(byte)(b[offset++]&0x7f);
+            len--;
             if(isCaseInsensitive())
                 c=(byte)StringUtil.lowercases[c];
 
@@ -386,9 +390,9 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
                     if (_key[t]!=null)
                     {
                         node=t;
-                        V best=getBest(t,b,offset+i+1,len-i-1);
-                        if (best!=null)
-                            return best;
+                        V better=getBest(t,b,offset,len);
+                        if (better!=null)
+                            return better;
                     }
                     break;
                 }

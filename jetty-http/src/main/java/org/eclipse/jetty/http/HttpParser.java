@@ -738,7 +738,7 @@ public class HttpParser
                             throw new BadMessageException(HttpStatus.BAD_REQUEST_400,"Unknown Version");
                         
                         // Should we try to cache header fields?
-                        if (_connectionFields==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion())
+                        if (_connectionFields==null && _version.getVersion()>=HttpVersion.HTTP_1_1.getVersion() && _handler.getHeaderCacheSize()>0)
                         {
                             int header_cache = _handler.getHeaderCacheSize();
                             _connectionFields=new ArrayTernaryTrie<>(header_cache);                            
