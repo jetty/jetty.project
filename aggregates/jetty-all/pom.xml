@@ -2,7 +2,7 @@
   <parent>
     <groupId>org.eclipse.jetty</groupId>
     <artifactId>jetty-project</artifactId>
-    <version>9.3.0-SNAPSHOT</version>
+    <version>9.3.0.RC1</version>
     <relativePath>../../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -64,7 +64,7 @@
               <shadedClassifierName>uber</shadedClassifierName>
               <outputFile>${uber-jar}</outputFile>
               <transformers>
-                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer"/>
+                <transformer implementation="org.apache.maven.plugins.shade.resource.ServicesResourceTransformer" />
                 <transformer implementation="org.eclipse.jetty.toolchain.shade.IncludeDirectoryTransformer">
                   <directory>${gen-resources-dir}</directory>
                 </transformer>
