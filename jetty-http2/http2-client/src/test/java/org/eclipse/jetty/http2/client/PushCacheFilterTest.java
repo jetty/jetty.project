@@ -536,4 +536,101 @@ public class PushCacheFilterTest extends AbstractTest
         Assert.assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
         Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
+
+    @Test
+    public void testPushWithQueryParameters() throws Exception
+    {
+        String name = "foo";
+        String value = "bar";
+        final String primaryResource = "/primary.html";
+        final String secondaryResource = "/secondary.html?" + name + "=" + value;
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                String requestURI = request.getRequestURI();
+                if (requestURI.endsWith(primaryResource))
+                {
+                    response.setStatus(HttpStatus.OK_200);
+                }
+                else if (requestURI.endsWith(secondaryResource))
+                {
+                    String param = request.getParameter(name);
+                    if (param == null)
+                        response.setStatus(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                    else
+                        response.setStatus(HttpStatus.OK_200);
+                }
+            }
+        });
+
+        final Session session = newClient(new Session.Listener.Adapter());
+
+        // Request for the primary and secondary resource to build the cache.
+        final String primaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        HttpFields primaryFields = new HttpFields();
+        MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
+        final CountDownLatch warmupLatch = new CountDownLatch(1);
+        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                if (frame.isEndStream())
+                {
+                    // Request for the secondary resource.
+                    HttpFields secondaryFields = new HttpFields();
+                    secondaryFields.put(HttpHeader.REFERER, primaryURI);
+                    MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
+                    session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+                    {
+                        @Override
+                        public void onHeaders(Stream stream, HeadersFrame frame)
+                        {
+                            if (frame.isEndStream())
+                                warmupLatch.countDown();
+                        }
+                    });
+                }
+            }
+        });
+        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+
+        Thread.sleep(1000);
+
+        // Request again the primary resource, we should get the secondary resource pushed.
+        primaryRequest = newRequest("GET", primaryResource, primaryFields);
+        final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
+        final CountDownLatch pushLatch = new CountDownLatch(1);
+        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+            {
+                return new Adapter()
+                {
+                    @Override
+                    public void onHeaders(Stream stream, HeadersFrame frame)
+                    {
+                        if (frame.isEndStream())
+                        {
+                            MetaData.Response response = (MetaData.Response)frame.getMetaData();
+                            if (response.getStatus() == HttpStatus.OK_200)
+                                pushLatch.countDown();
+                        }
+                    }
+                };
+            }
+
+            @Override
+            public void onHeaders(Stream stream, HeadersFrame frame)
+            {
+                if (frame.isEndStream())
+                    primaryResponseLatch.countDown();
+            }
+        });
+        Assert.assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+    }
 }
