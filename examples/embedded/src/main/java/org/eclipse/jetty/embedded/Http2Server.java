@@ -71,7 +71,7 @@ public class Http2Server
         MBeanContainer mbContainer = new MBeanContainer(
                 ManagementFactory.getPlatformMBeanServer());
         server.addBean(mbContainer);
-        
+
         ServletContextHandler context = new ServletContextHandler(server, "/",ServletContextHandler.SESSIONS);
         context.setResourceBase("src/main/resources/docroot");
         context.addFilter(PushSessionCacheFilter.class,"/*",EnumSet.of(DispatcherType.REQUEST));
@@ -88,73 +88,73 @@ public class Http2Server
         http_config.setSendServerVersion(true);
 
         // HTTP Connector
-        ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config), new HTTP2CServerConnectionFactory(http_config));     
+        ServerConnector http = new ServerConnector(server,new HttpConnectionFactory(http_config), new HTTP2CServerConnectionFactory(http_config));
         http.setPort(8080);
         server.addConnector(http);
- 
+
         // SSL Context Factory for HTTPS and HTTP/2
         String jetty_distro = System.getProperty("jetty.distro","../../jetty-distribution/target/distribution");
         SslContextFactory sslContextFactory = new SslContextFactory();
         sslContextFactory.setKeyStorePath(jetty_distro + "/demo-base/etc/keystore");
         sslContextFactory.setKeyStorePassword("OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4");
         sslContextFactory.setKeyManagerPassword("OBF:1u2u1wml1z7s1z7a1wnl1u2g");
-        sslContextFactory.setCipherComparator(new HTTP2Cipher.CipherComparator());
+        sslContextFactory.setCipherComparator(HTTP2Cipher.COMPARATOR);
 
         // HTTPS Configuration
         HttpConfiguration https_config = new HttpConfiguration(http_config);
         https_config.addCustomizer(new SecureRequestCustomizer());
-        
+
         // HTTP/2 Connection Factory
         HTTP2ServerConnectionFactory h2 = new HTTP2ServerConnectionFactory(https_config);
-        
+
         NegotiatingServerConnectionFactory.checkProtocolNegotiationAvailable();
         ALPNServerConnectionFactory alpn = new ALPNServerConnectionFactory();
         alpn.setDefaultProtocol(http.getDefaultProtocol());
-        
+
         // SSL Connection Factory
         SslConnectionFactory ssl = new SslConnectionFactory(sslContextFactory,alpn.getProtocol());
-        
+
         // HTTP/2 Connector
-        ServerConnector http2Connector = 
+        ServerConnector http2Connector =
             new ServerConnector(server,ssl,alpn,h2,new HttpConnectionFactory(https_config));
         http2Connector.setPort(8443);
         server.addConnector(http2Connector);
-        
+
         ALPN.debug=false;
-        
+
         server.start();
         //server.dumpStdErr();
         server.join();
     }
-    
+
     public static class PushedTilesFilter implements Filter
     {
         @Override
         public void init(FilterConfig filterConfig) throws ServletException
-        {            
+        {
         }
-        
+
         @Override
         public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
         {
             Request baseRequest = Request.getBaseRequest(request);
-            
+
             if (baseRequest.isPush() && baseRequest.getRequestURI().contains("tiles") )
             {
                 String uri = baseRequest.getRequestURI().replace("tiles","pushed").substring(baseRequest.getContextPath().length());
                 request.getRequestDispatcher(uri).forward(request,response);
                 return;
             }
-            
+
             chain.doFilter(request,response);
         }
-        
+
         @Override
         public void destroy()
         {
         }
     };
-    
+
     static Servlet servlet = new HttpServlet()
     {
         private static final long serialVersionUID = 1L;
@@ -165,7 +165,7 @@ public class Http2Server
             String code=request.getParameter("code");
             if (code!=null)
                 response.setStatus(Integer.parseInt(code));
-            
+
             HttpSession session = request.getSession(true);
             if (session.isNew())
                 response.addCookie(new Cookie("bigcookie",

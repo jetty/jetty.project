@@ -14,13 +14,13 @@
       </New>
     </Arg>
   </Call>
-  
+
   <Ref refid="sslContextFactory">
     <Set name="CipherComparator">
-      <New class="org.eclipse.jetty.http2.HTTP2Cipher$CipherComparator"/>
-    </Set>  
+      <Get class="org.eclipse.jetty.http2.HTTP2Cipher" name="COMPARATOR"/>
+    </Set>
     <Set name="useCipherSuitesOrder">true</Set>
   </Ref>
-  
+
 </Configure>
 
