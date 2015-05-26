@@ -85,15 +85,13 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
          * This method may run concurrently with {@link #changeInterests(int)}.
          */
 
-        int readyOps;
+        int readyOps = _key.readyOps();
         int oldInterestOps;
         int newInterestOps;
         try (SpinLock.Lock lock = _lock.lock())
         {
             _updatePending = true;
-
             // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
-            readyOps = _key.readyOps();
             oldInterestOps = _desiredInterestOps;
             newInterestOps = oldInterestOps & ~readyOps;
             _desiredInterestOps = newInterestOps;
