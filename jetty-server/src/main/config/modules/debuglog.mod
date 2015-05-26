@@ -9,7 +9,7 @@ server
 logs/
 
 [xml]
-etc/jetty-debug.xml
+etc/jetty-debuglog.xml
 
 [ini-template]
 ## Logging directory (relative to $jetty.base)
