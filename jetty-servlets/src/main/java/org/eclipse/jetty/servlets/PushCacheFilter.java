@@ -30,6 +30,7 @@ import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ConcurrentMap;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicLong;
+
 import javax.servlet.Filter;
 import javax.servlet.FilterChain;
 import javax.servlet.FilterConfig;
@@ -167,37 +168,45 @@ public class PushCacheFilter implements Filter
                     if (referrerPath.startsWith(request.getContextPath()))
                     {
                         String referrerPathNoContext = referrerPath.substring(request.getContextPath().length());
-                        PrimaryResource primaryResource = _cache.get(referrerPathNoContext);
-                        if (primaryResource != null)
+                        if (!referrerPathNoContext.equals(path))
                         {
-                            long primaryTimestamp = primaryResource._timestamp.get();
-                            if (primaryTimestamp != 0)
+                            PrimaryResource primaryResource = _cache.get(referrerPathNoContext);
+                            if (primaryResource != null)
                             {
-                                RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher(path);
-                                if (now - primaryTimestamp < TimeUnit.MILLISECONDS.toNanos(_associatePeriod))
+                                long primaryTimestamp = primaryResource._timestamp.get();
+                                if (primaryTimestamp != 0)
                                 {
-                                    ConcurrentMap<String, RequestDispatcher> associated = primaryResource._associated;
-                                    // Not strictly concurrent-safe, just best effort to limit associations.
-                                    if (associated.size() <= _maxAssociations)
+                                    RequestDispatcher dispatcher = request.getServletContext().getRequestDispatcher(path);
+                                    if (now - primaryTimestamp < TimeUnit.MILLISECONDS.toNanos(_associatePeriod))
                                     {
-                                        if (associated.putIfAbsent(path, dispatcher) == null)
+                                        ConcurrentMap<String, RequestDispatcher> associated = primaryResource._associated;
+                                        // Not strictly concurrent-safe, just best effort to limit associations.
+                                        if (associated.size() <= _maxAssociations)
+                                        {
+                                            if (associated.putIfAbsent(path, dispatcher) == null)
+                                            {
+                                                if (LOG.isDebugEnabled())
+                                                    LOG.debug("Associated {} to {}", path, referrerPathNoContext);
+                                            }
+                                        }
+                                        else
                                         {
                                             if (LOG.isDebugEnabled())
-                                                LOG.debug("Associated {} to {}", path, referrerPathNoContext);
+                                                LOG.debug("Not associated {} to {}, exceeded max associations of {}", path, referrerPathNoContext, _maxAssociations);
                                         }
                                     }
                                     else
                                     {
                                         if (LOG.isDebugEnabled())
-                                            LOG.debug("Not associated {} to {}, exceeded max associations of {}", path, referrerPathNoContext, _maxAssociations);
+                                            LOG.debug("Not associated {} to {}, outside associate period of {}ms", path, referrerPathNoContext, _associatePeriod);
                                     }
                                 }
-                                else
-                                {
-                                    if (LOG.isDebugEnabled())
-                                        LOG.debug("Not associated {} to {}, outside associate period of {}ms", path, referrerPathNoContext, _associatePeriod);
-                                }
                             }
+                        }
+                        else
+                        {
+                            if (LOG.isDebugEnabled())
+                                LOG.debug("Not associated {} to {}, referring to self", path, referrerPathNoContext);
                         }
                     }
                 }
