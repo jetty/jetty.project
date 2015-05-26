@@ -4,11 +4,11 @@
 
 # The Properties we expect (order is irrelevant)
 PROP|jetty.http.port=9090
-PROP|jetty.sslConfig.keyStorePath=etc/keystore
-PROP|jetty.sslConfig.keyStorePassword=friendly
-PROP|jetty.sslConfig.keyManagerPassword=icecream
-PROP|jetty.sslConfig.trustStorePath=etc/keystore
-PROP|jetty.sslConfig.trustStorePassword=sundae
+PROP|jetty.sslContext.keyStorePath=etc/keystore
+PROP|jetty.sslContext.keyStorePassword=friendly
+PROP|jetty.sslContext.keyManagerPassword=icecream
+PROP|jetty.sslContext.trustStorePath=etc/keystore
+PROP|jetty.sslContext.trustStorePassword=sundae
 PROP|java.version=1.7.0_01
 
 # The Downloads

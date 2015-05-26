@@ -25,11 +25,11 @@ LIB|${jetty.home}/lib/http2/http2-server-TEST.jar
 # (this is the property we actually set in jetty.base)
 PROP|jetty.http.port=9090
 PROP|java.version=1.7.0_60
-PROP|jetty.sslConfig.keyStorePath=etc/keystore
-PROP|jetty.sslConfig.keyStorePassword=friendly
-PROP|jetty.sslConfig.keyManagerPassword=icecream
-PROP|jetty.sslConfig.trustStorePath=etc/keystore
-PROP|jetty.sslConfig.trustStorePassword=sundae
+PROP|jetty.sslContext.keyStorePath=etc/keystore
+PROP|jetty.sslContext.keyStorePassword=friendly
+PROP|jetty.sslContext.keyManagerPassword=icecream
+PROP|jetty.sslContext.trustStorePath=etc/keystore
+PROP|jetty.sslContext.trustStorePassword=sundae
 # (these are the ones set by default from jetty.home modules)
 PROP|jetty.alpn.debug=false
 # PROP|jetty.httpConfig.securePort=8443

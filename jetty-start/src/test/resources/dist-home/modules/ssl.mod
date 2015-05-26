@@ -41,25 +41,25 @@ http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/
 ### SslContextFactory Configuration
 
 ## Keystore file path (relative to $jetty.base)
-# jetty.sslConfig.keystorePath=etc/keystore
+# jetty.sslContext.keystorePath=etc/keystore
 
 ## Truststore file path (relative to $jetty.base)
-# jetty.sslConfig.truststorePath
+# jetty.sslContext.truststorePath
 
 ## Note that OBF passwords are not secure, just protected from casual observation
 ## See http://www.eclipse.org/jetty/documentation/current/configuring-security-secure-passwords.html
 
 ## Keystore password
-# jetty.sslConfig.keystorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+# jetty.sslContext.keystorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 
 ## KeyManager password
-# jetty.sslConfig.keyManagerPassword=OBF:1u2u1wml1z7s1z7a1wnl1u2g
+# jetty.sslContext.keyManagerPassword=OBF:1u2u1wml1z7s1z7a1wnl1u2g
 
 ## Truststore password
-# jetty.sslConfig.truststorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+# jetty.sslContext.truststorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 
 ## whether client certificate authentication is required
-# jetty.sslConfig.needClientAuth=false
+# jetty.sslContext.needClientAuth=false
 
 ## Whether client certificate authentication is desired
-# jetty.sslConfig.wantClientAuth=false
+# jetty.sslContext.wantClientAuth=false

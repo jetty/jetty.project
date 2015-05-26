@@ -4,7 +4,7 @@
 <!-- ============================================================= -->
 <!-- Base SSL configuration                                        -->
 <!-- This configuration needs to be used together with 1 or more   -->
-<!-- of jetty-https.xml and/or jetty-http2.xml                     --> 
+<!-- of jetty-https.xml and/or jetty-http2.xml                     -->
 <!-- ============================================================= -->
 <Configure id="Server" class="org.eclipse.jetty.server.Server">
 
@@ -26,19 +26,19 @@
         </New>
     </Arg>
   </Call>
-  
+
   <!-- ============================================================= -->
   <!-- Create a TLS (SSL) Context Factory  for later reuse           -->
   <!-- ============================================================= -->
   <New id="sslContextFactory" class="org.eclipse.jetty.util.ssl.SslContextFactory">
-    <Set name="KeyStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslConfig.keyStorePath" default="etc/keystore"/></Set>
-    <Set name="KeyStorePassword"><Property name="jetty.sslConfig.keyStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
-    <Set name="KeyManagerPassword"><Property name="jetty.sslConfig.keyManagerPassword" default="OBF:1u2u1wml1z7s1z7a1wnl1u2g"/></Set>
-    <Set name="TrustStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslConfig.trustStorePath" default="etc/keystore"/></Set>
-    <Set name="TrustStorePassword"><Property name="jetty.sslConfig.trustStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
+    <Set name="KeyStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.keyStorePath" default="etc/keystore"/></Set>
+    <Set name="KeyStorePassword"><Property name="jetty.sslContext.keyStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
+    <Set name="KeyManagerPassword"><Property name="jetty.sslContext.keyManagerPassword" default="OBF:1u2u1wml1z7s1z7a1wnl1u2g"/></Set>
+    <Set name="TrustStorePath"><Property name="jetty.base" default="." />/<Property name="jetty.sslContext.trustStorePath" default="etc/keystore"/></Set>
+    <Set name="TrustStorePassword"><Property name="jetty.sslContext.trustStorePassword" default="OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4"/></Set>
     <Set name="EndpointIdentificationAlgorithm"></Set>
-    <Set name="NeedClientAuth"><Property name="jetty.sslConfig.needClientAuth" default="false"/></Set>
-    <Set name="WantClientAuth"><Property name="jetty.sslConfig.wantClientAuth" default="false"/></Set>
+    <Set name="NeedClientAuth"><Property name="jetty.sslContext.needClientAuth" default="false"/></Set>
+    <Set name="WantClientAuth"><Property name="jetty.sslContext.wantClientAuth" default="false"/></Set>
     <Set name="ExcludeCipherSuites">
      <Array type="String">
       <Item>SSL_RSA_WITH_DES_CBC_SHA</Item>
@@ -51,7 +51,7 @@
      </Array>
     </Set>
   </New>
-  
+
   <!-- =========================================================== -->
   <!-- Create a TLS specific HttpConfiguration based on the        -->
   <!-- common HttpConfiguration defined in jetty.xml               -->
