@@ -18,10 +18,6 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyStore;
-
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -30,51 +26,56 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import static junit.framework.Assert.assertTrue;
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyStore;
+
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
+import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
+import static org.junit.Assert.assertTrue;
 
 
-public class SslContextFactoryTest
+public class SslContextFactoryTest 
 {
 
     private SslContextFactory cf;
 
     @Before
-    public void setUp() throws Exception
+    public void setUp() throws Exception 
     {
         cf = new SslContextFactory();
     }
 
     @Test
-    public void testNoTsFileKs() throws Exception
+    public void testNoTsFileKs() throws Exception 
     {
-        String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
+        String keystorePath = System.getProperty("basedir", ".") + "/src/test/resources/keystore";
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        
+
         cf.start();
-        
-        assertTrue(cf.getSslContext()!=null);
+
+        assertTrue(cf.getSslContext() != null);
     }
-    
+
     @Test
-    public void testNoTsStreamKs() throws Exception
+    public void testNoTsStreamKs() throws Exception 
     {
         InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore");
 
         cf.setKeyStoreInputStream(keystoreInputStream);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
-        
+
         cf.start();
-        
-        assertTrue(cf.getSslContext()!=null);
+
+        assertTrue(cf.getSslContext() != null);
     }
-    
+
     @Test
-    public void testNoTsSetKs() throws Exception
+    public void testNoTsSetKs() throws Exception 
     {
         InputStream keystoreInputStream = this.getClass().getResourceAsStream("keystore");
 
@@ -83,28 +84,28 @@ public class SslContextFactoryTest
 
         cf.setKeyStore(ks);
         cf.setKeyManagerPassword("keypwd");
-        
+
         cf.start();
-        
-        assertTrue(cf.getSslContext()!=null);
-    }
-    
-    @Test
-    public void testNoTsNoKs() throws Exception
-    {
-        cf.start();
-        assertTrue(cf.getSslContext()!=null);
-    }
-    
-    @Test
-    public void testTrustAll() throws Exception
-    {
-        cf.start();
-        assertTrue(cf.getSslContext()!=null);
+
+        assertTrue(cf.getSslContext() != null);
     }
 
     @Test
-    public void testNoTsResourceKs() throws Exception
+    public void testNoTsNoKs() throws Exception 
+    {
+        cf.start();
+        assertTrue(cf.getSslContext() != null);
+    }
+
+    @Test
+    public void testTrustAll() throws Exception 
+    {
+        cf.start();
+        assertTrue(cf.getSslContext() != null);
+    }
+
+    @Test
+    public void testNoTsResourceKs() throws Exception 
     {
         Resource keystoreResource = Resource.newSystemResource("keystore");
 
@@ -114,11 +115,11 @@ public class SslContextFactoryTest
 
         cf.start();
 
-        assertTrue(cf.getSslContext()!=null);
+        assertTrue(cf.getSslContext() != null);
     }
 
     @Test
-    public void testResourceTsResourceKs() throws Exception
+    public void testResourceTsResourceKs() throws Exception 
     {
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
@@ -131,11 +132,11 @@ public class SslContextFactoryTest
 
         cf.start();
 
-        assertTrue(cf.getSslContext()!=null);
+        assertTrue(cf.getSslContext() != null);
     }
 
     @Test
-    public void testResourceTsResourceKsWrongPW() throws Exception
+    public void testResourceTsResourceKsWrongPW() throws Exception 
     {
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
@@ -146,19 +147,16 @@ public class SslContextFactoryTest
         cf.setKeyManagerPassword("wrong_keypwd");
         cf.setTrustStorePassword("storepwd");
 
-        try
-        {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
+        try {
+            ((StdErrLog) Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             cf.start();
             Assert.fail();
-        }
-        catch(java.security.UnrecoverableKeyException e)
-        {
+        } catch (java.security.UnrecoverableKeyException e) {
         }
     }
 
     @Test
-    public void testResourceTsWrongPWResourceKs() throws Exception
+    public void testResourceTsWrongPWResourceKs() throws Exception 
     {
         Resource keystoreResource = Resource.newSystemResource("keystore");
         Resource truststoreResource = Resource.newSystemResource("keystore");
@@ -169,39 +167,31 @@ public class SslContextFactoryTest
         cf.setKeyManagerPassword("keypwd");
         cf.setTrustStorePassword("wrong_storepwd");
 
-        try
-        {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
+        try {
+            ((StdErrLog) Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             cf.start();
             Assert.fail();
-        }
-        catch(IOException e)
-        {
+        } catch (IOException e) {
         }
     }
-    
+
     @Test
-    public void testNoKeyConfig() throws Exception
+    public void testNoKeyConfig() throws Exception 
     {
-        try
-        {
-            ((StdErrLog)Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
+        try {
+            ((StdErrLog) Log.getLogger(AbstractLifeCycle.class)).setHideStacks(true);
             cf.setTrustStore("/foo");
             cf.start();
             Assert.fail();
-        }
-        catch (IllegalStateException e)
-        {
-            
-        }
-        catch (Exception e)
-        {
+        } catch (IllegalStateException e) {
+
+        } catch (Exception e) {
             Assert.fail("Unexpected exception");
         }
     }
 
     @Test
-    public void testSetIncludeCipherSuitesPreservesOrder()
+    public void testSetIncludeCipherSuitesPreservesOrder() 
     {
         String[] supportedCipherSuites = new String[]{"cipher4", "cipher2", "cipher1", "cipher3"};
         String[] includeCipherSuites = {"cipher1", "cipher3", "cipher4"};
@@ -213,7 +203,7 @@ public class SslContextFactoryTest
     }
 
     @Test
-    public void testSetIncludeProtocolsPreservesOrder()
+    public void testSetIncludeProtocolsPreservesOrder() 
     {
         String[] supportedProtocol = new String[]{"cipher4", "cipher2", "cipher1", "cipher3"};
         String[] includeProtocol = {"cipher1", "cipher3", "cipher4"};
@@ -224,11 +214,20 @@ public class SslContextFactoryTest
         assertSelectedMatchesIncluded(includeProtocol, selectedProtocol);
     }
 
-    private void assertSelectedMatchesIncluded(String[] includeStrings, String[] selectedStrings)
+    private void assertSelectedMatchesIncluded(String[] includeStrings, String[] selectedStrings) 
     {
         assertThat(includeStrings.length + " strings are selected", selectedStrings.length, is(includeStrings.length));
         assertThat("order from includeStrings is preserved", selectedStrings[0], equalTo(includeStrings[0]));
         assertThat("order from includeStrings is preserved", selectedStrings[1], equalTo(includeStrings[1]));
         assertThat("order from includeStrings is preserved", selectedStrings[2], equalTo(includeStrings[2]));
+    }
+
+    @Test
+    public void testProtocolAndCipherSettingsAreNPESafe() 
+    {
+        assertNotNull(cf.getExcludeProtocols());
+        assertNotNull(cf.getIncludeProtocols());
+        assertNotNull(cf.getExcludeCipherSuites());
+        assertNotNull(cf.getIncludeCipherSuites());
     }
 }
