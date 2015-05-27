@@ -37,7 +37,8 @@ import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
 
 
-public class SslContextFactoryTest {
+public class SslContextFactoryTest 
+{
 
     private SslContextFactory cf;
 
