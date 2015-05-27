@@ -18,28 +18,6 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.component.AbstractLifeCycle;
-import org.eclipse.jetty.util.log.Log;
-import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.resource.Resource;
-import org.eclipse.jetty.util.security.CertificateUtils;
-import org.eclipse.jetty.util.security.CertificateValidator;
-import org.eclipse.jetty.util.security.Password;
-
-import javax.net.ssl.CertPathTrustManagerParameters;
-import javax.net.ssl.KeyManager;
-import javax.net.ssl.KeyManagerFactory;
-import javax.net.ssl.SSLContext;
-import javax.net.ssl.SSLEngine;
-import javax.net.ssl.SSLServerSocket;
-import javax.net.ssl.SSLServerSocketFactory;
-import javax.net.ssl.SSLSocket;
-import javax.net.ssl.SSLSocketFactory;
-import javax.net.ssl.TrustManager;
-import javax.net.ssl.TrustManagerFactory;
-import javax.net.ssl.X509KeyManager;
-import javax.net.ssl.X509TrustManager;
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -62,6 +40,28 @@ import java.util.Collections;
 import java.util.LinkedHashSet;
 import java.util.List;
 import java.util.Set;
+import javax.net.ssl.CertPathTrustManagerParameters;
+import javax.net.ssl.KeyManager;
+import javax.net.ssl.KeyManagerFactory;
+import javax.net.ssl.SSLContext;
+import javax.net.ssl.SSLEngine;
+import javax.net.ssl.SSLServerSocket;
+import javax.net.ssl.SSLServerSocketFactory;
+import javax.net.ssl.SSLSocket;
+import javax.net.ssl.SSLSocketFactory;
+import javax.net.ssl.TrustManager;
+import javax.net.ssl.TrustManagerFactory;
+import javax.net.ssl.X509KeyManager;
+import javax.net.ssl.X509TrustManager;
+
+import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.resource.Resource;
+import org.eclipse.jetty.util.security.CertificateUtils;
+import org.eclipse.jetty.util.security.CertificateValidator;
+import org.eclipse.jetty.util.security.Password;
 
 
 /* ------------------------------------------------------------ */
@@ -109,14 +109,14 @@ public class SslContextFactory extends AbstractLifeCycle
     public static final String PASSWORD_PROPERTY = "org.eclipse.jetty.ssl.password";
 
     /** Excluded protocols. */
-    private final Set<String> _excludeProtocols = new LinkedHashSet<>();
+    private final Set<String> _excludeProtocols = new LinkedHashSet<String>();
     /** Included protocols. */
-    private Set<String> _includeProtocols = new LinkedHashSet<>();
+    private Set<String> _includeProtocols = null;
 
     /** Excluded cipher suites. */
-    private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
+    private final Set<String> _excludeCipherSuites = new LinkedHashSet<String>();
     /** Included cipher suites. */
-    private Set<String> _includeCipherSuites = new LinkedHashSet<>();
+    private Set<String> _includeCipherSuites = null;
 
     /** Keystore path. */
     private String _keyStorePath;
@@ -357,8 +357,8 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setIncludeProtocols(String... protocols)
     {
         checkNotStarted();
-        _includeProtocols.clear();
-        _includeProtocols.addAll(Arrays.asList(protocols));
+
+        _includeProtocols = new LinkedHashSet<String>(Arrays.asList(protocols));
     }
 
     /* ------------------------------------------------------------ */
@@ -413,8 +413,8 @@ public class SslContextFactory extends AbstractLifeCycle
     public void setIncludeCipherSuites(String... cipherSuites)
     {
         checkNotStarted();
-        _includeCipherSuites.clear();
-        _includeCipherSuites.addAll(Arrays.asList(cipherSuites));
+
+        _includeCipherSuites = new LinkedHashSet<String>(Arrays.asList(cipherSuites));
     }
 
     /* ------------------------------------------------------------ */
@@ -1214,7 +1214,7 @@ public class SslContextFactory extends AbstractLifeCycle
         Set<String> selected_protocols = new LinkedHashSet<String>();
 
         // Set the starting protocols - either from the included or enabled list
-        if (!_includeProtocols.isEmpty())
+        if (_includeProtocols!=null)
         {
             // Use only the supported included protocols
             for (String protocol : _includeProtocols)
@@ -1246,7 +1246,7 @@ public class SslContextFactory extends AbstractLifeCycle
         Set<String> selected_ciphers = new LinkedHashSet<String>();
 
         // Set the starting ciphers - either from the included or enabled list
-        if (!_includeCipherSuites.isEmpty())
+        if (_includeCipherSuites!=null)
         {
             // Use only the supported included ciphers
             for (String cipherSuite : _includeCipherSuites)

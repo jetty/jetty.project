@@ -18,6 +18,10 @@
 
 package org.eclipse.jetty.util.ssl;
 
+import java.io.IOException;
+import java.io.InputStream;
+import java.security.KeyStore;
+
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
@@ -26,11 +30,6 @@ import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-import java.io.IOException;
-import java.io.InputStream;
-import java.security.KeyStore;
-
-import static junit.framework.Assert.assertNotNull;
 import static junit.framework.Assert.assertTrue;
 import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.is;
@@ -232,13 +231,4 @@ public class SslContextFactoryTest
         assertThat("order from includeStrings is preserved", selectedStrings[1], equalTo(includeStrings[1]));
         assertThat("order from includeStrings is preserved", selectedStrings[2], equalTo(includeStrings[2]));
     }
-
-    @Test
-    public void testProtocolAndCipherSettingsAreNPESafe() {
-        assertNotNull(cf.getExcludeProtocols());
-        assertNotNull(cf.getIncludeProtocols());
-        assertNotNull(cf.getExcludeCipherSuites());
-        assertNotNull(cf.getIncludeCipherSuites());
-    }
-
 }
