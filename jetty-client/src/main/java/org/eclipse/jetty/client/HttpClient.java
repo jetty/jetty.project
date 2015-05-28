@@ -517,7 +517,8 @@ public class HttpClient extends ContainerLifeCycle
         if (!HttpScheme.HTTP.is(scheme) && !HttpScheme.HTTPS.is(scheme))
             throw new IllegalArgumentException("Invalid protocol " + scheme);
 
-        HttpDestination destination = destinationFor(scheme, request.getHost(), request.getPort());
+        String host = request.getHost().toLowerCase(Locale.ENGLISH);
+        HttpDestination destination = destinationFor(scheme, host, request.getPort());
         destination.send(request, listeners);
     }
 
