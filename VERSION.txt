@@ -1,4 +1,30 @@
-jetty-9.2.11-SNAPSHOT
+jetty-9.2.11.v20150528 - 28 May 2015
+ + 461499 ConnectionPool may leak connections.
+ + 463579 Add support for 308 status code.
+ + 464292 Implement stream-based transformer for AsyncMiddleManServlet.
+ + 464438 ClassFileTransformer support in
+   org.eclipse.jetty.webapp.WebAppClassLoader broken
+ + 464740 DosFilter whiteList check improvement
+ + 464869 PathResource.addPath allows absolute resolution.
+ + 464989 AbstractSessionManager.removeEventListener() should remove
+   HttpSessionIdListener
+ + 465053 Prevent gzip buffer overflow on complete
+ + 465181 HttpParser parse full end chunk.
+ + 465202 Forked Mojo does not extract war overlays/dependencies
+ + 465359 Resource.newResource(String res, boolean useCache) does not use
+   useCache argument
+ + 465360 URLResource.addPath should use _useCaches setting to create new
+   Resource
+ + 465700 NullPointerException in ResourceHandler with welcome files
+ + 465734 DosFilter whitelist bit pattern fix
+ + 465747 Jetty is failing to process all HTTP OPTIONS requests.
+ + 466329 Fixed local only TestFilter
+ + 467276 NPE protection in SslContextFactory
+ + 467603 Response 401 from server hangs client.
+ + 467936 w Check HttpOutput aggregateSize is < bufferSize
+ + 468008 Scanner ignores directory length
+ + 468421 HttpClient#send fails with IllegalArgumentException on non-lowercase
+   schemes.
 
 jetty-9.2.11.M0 - 25 March 2015
  + 454934 WebSocketClient / connectToServer can block indefinitely during
