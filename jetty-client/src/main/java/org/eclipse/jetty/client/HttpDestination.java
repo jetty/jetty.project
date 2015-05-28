@@ -161,9 +161,9 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
 
     protected void send(HttpRequest request, List<Response.ResponseListener> listeners)
     {
-        if (!getScheme().equals(request.getScheme()))
+        if (!getScheme().equalsIgnoreCase(request.getScheme()))
             throw new IllegalArgumentException("Invalid request scheme " + request.getScheme() + " for destination " + this);
-        if (!getHost().equals(request.getHost()))
+        if (!getHost().equalsIgnoreCase(request.getHost()))
             throw new IllegalArgumentException("Invalid request host " + request.getHost() + " for destination " + this);
         int port = request.getPort();
         if (port >= 0 && getPort() != port)
