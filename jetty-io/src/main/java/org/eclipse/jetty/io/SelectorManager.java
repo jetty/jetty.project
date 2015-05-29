@@ -61,7 +61,7 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
     public static final String SUBMIT_KEY_UPDATES = "org.eclipse.jetty.io.SelectorManager.submitKeyUpdates";
     public static final int DEFAULT_CONNECT_TIMEOUT = 15000;
     protected static final Logger LOG = Log.getLogger(SelectorManager.class);
-    private final static boolean __submitKeyUpdates = Boolean.valueOf(System.getProperty(SUBMIT_KEY_UPDATES, "false"));
+    private final static boolean __submitKeyUpdates = Boolean.valueOf(System.getProperty(SUBMIT_KEY_UPDATES, "true"));
     
     private final Executor executor;
     private final Scheduler scheduler;
@@ -451,7 +451,11 @@ public abstract class SelectorManager extends AbstractLifeCycle implements Dumpa
             }
             else
             {
-                runChange(update);
+                // Run only 1 change at once
+                synchronized (this)
+                {
+                    runChange(update);
+                }
                 if (_state.compareAndSet(State.SELECT, State.WAKEUP))
                    wakeup();
             }
