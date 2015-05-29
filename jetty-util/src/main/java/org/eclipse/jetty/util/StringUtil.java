@@ -745,6 +745,74 @@ public class StringUtil
 
         return s.substring(1,s.length()-1).split(" *, *");
     }
+    
+    public static String sanitizeXmlString(String html)
+    {
+        if (html==null)
+            return null;
+        
+        int i=0;
+        
+        // Are there any characters that need sanitizing?
+        loop: for (;i<html.length();i++)
+        {
+            char c=html.charAt(i);
+
+            switch(c)
+            {
+                case '&' :
+                case '<' :
+                case '>' :
+                case '\'':
+                case '"':
+                    break loop;
+
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        break loop;
+            }
+        }
+
+        // No characters need sanitizing, so return original string
+        if (i==html.length())
+            return html;
+        
+        // Create builder with OK content so far 
+        StringBuilder out = new StringBuilder(html.length()*4/3);
+        out.append(html,0,i);
+        
+        // sanitize remaining content
+        for (;i<html.length();i++)
+        {
+            char c=html.charAt(i);
+
+            switch(c)
+            {
+                case '&' :
+                    out.append("&amp;");
+                    break;
+                case '<' :
+                    out.append("&lt;");
+                    break;
+                case '>' :
+                    out.append("&gt;");
+                    break;
+                case '\'':
+                    out.append("&apos;");
+                    break;
+                case '"':
+                    out.append("&quot;");
+                    break;
+
+                default:
+                    if (Character.isISOControl(c) && !Character.isWhitespace(c))
+                        out.append('?');
+                    else
+                        out.append(c);
+            }
+        }
+        return out.toString();
+    }
 
     
     /* ------------------------------------------------------------ */

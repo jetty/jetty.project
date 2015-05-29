@@ -25,6 +25,8 @@ import java.io.OutputStreamWriter;
 import java.util.Map;
 import java.util.Stack;
 
+import org.eclipse.jetty.util.StringUtil;
+
 public class XmlAppendable
 {
     private final String SPACES="                                                                 ";
@@ -82,32 +84,7 @@ public class XmlAppendable
     public XmlAppendable content(String s) throws IOException
     {
         if (s!=null)
-        {
-            for (int i=0;i<s.length();i++)
-            {
-                char c = s.charAt(i);
-                switch(c)
-                {
-                    case '<':
-                        _out.append("&lt;");
-                        break;
-                    case '>':
-                        _out.append("&gt;");
-                        break;
-                    case '&':
-                        _out.append("&amp;");
-                        break;
-                    case '\'':
-                        _out.append("&apos;");
-                        break;
-                    case '"':
-                        _out.append("&quot;");
-                        break;
-                    default:
-                        _out.append(c);
-                }
-            }
-        }
+            _out.append(StringUtil.sanitizeXmlString(s));
         
         return this;
     }

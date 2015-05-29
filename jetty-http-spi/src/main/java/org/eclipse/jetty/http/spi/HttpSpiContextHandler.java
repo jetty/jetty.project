@@ -29,7 +29,9 @@ import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.ContextHandler;
-import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.StringUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 import com.sun.net.httpserver.Authenticator;
 import com.sun.net.httpserver.Authenticator.Result;
@@ -43,6 +45,7 @@ import com.sun.net.httpserver.HttpPrincipal;
  */
 public class HttpSpiContextHandler extends ContextHandler
 {
+    public static final Logger LOG = Log.getLogger(HttpSpiContextHandler.class);
 
     private HttpContext _httpContext;
 
@@ -88,17 +91,21 @@ public class HttpSpiContextHandler extends ContextHandler
         }
         catch (Exception ex)
         {
+            LOG.debug(ex);
             PrintWriter writer = new PrintWriter(jettyHttpExchange.getResponseBody());
 
             resp.setStatus(500);
             writer.println("<h2>HTTP ERROR: 500</h2>");
             writer.println("<pre>INTERNAL_SERVER_ERROR</pre>");
-            writer.println("<p>RequestURI=" + req.getRequestURI() + "</p>");
+            writer.println("<p>RequestURI=" + StringUtil.sanitizeXmlString(req.getRequestURI()) + "</p>");
 
-            writer.println("<pre>");
-            ex.printStackTrace(writer);
-            writer.println("</pre>");
-
+            if (LOG.isDebugEnabled())
+            {
+                writer.println("<pre>");
+                ex.printStackTrace(writer);
+                writer.println("</pre>");
+            }
+            
             baseRequest.getHttpChannel().getHttpConfiguration().writePoweredBy(writer,"<p>","</p>");
 
             writer.close();

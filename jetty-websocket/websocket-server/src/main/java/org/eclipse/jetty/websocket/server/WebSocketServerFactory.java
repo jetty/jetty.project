@@ -45,6 +45,7 @@ import org.eclipse.jetty.server.HttpConnection;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.util.DecoratedObjectFactory;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -517,16 +518,16 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
     {
         registeredSocketClasses.add(websocketPojo);
     }
-    
+
     @Override
     public void setCreator(WebSocketCreator creator)
     {
         this.creator = creator;
     }
-    
+
     /**
      * Upgrade the request/response to a WebSocket Connection.
-     * <p>
+     * <p/>
      * This method will not normally return, but will instead throw a UpgradeConnectionException, to exit HTTP handling and initiate WebSocket handling of the
      * connection.
      *
@@ -568,7 +569,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             }
             else
             {
-                warn.append('"').append(ua.replaceAll("<", "&lt;")).append("\" ");
+                warn.append('"').append(StringUtil.sanitizeXmlString(ua)).append("\" ");
             }
             warn.append("requested WebSocket version [").append(version);
             warn.append("], Jetty supports version");
@@ -662,7 +663,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
 
         if (LOG.isDebugEnabled())
             LOG.debug("Handshake Response: {}", handshaker);
-        
+
         // Process (version specific) handshake response
         handshaker.doHandshakeResponse(request, response);
 
