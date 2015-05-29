@@ -602,19 +602,9 @@ public class Response implements HttpServletResponse
                 setContentType(MimeTypes.Type.TEXT_HTML_8859_1.toString());
                 try (ByteArrayISO8859Writer writer= new ByteArrayISO8859Writer(2048);)
                 {
-                    if (message != null)
-                    {
-                        message= StringUtil.replace(message, "&", "&amp;");
-                        message= StringUtil.replace(message, "<", "&lt;");
-                        message= StringUtil.replace(message, ">", "&gt;");
-                    }
+                    message=StringUtil.sanitizeXmlString(message);
                     String uri= request.getRequestURI();
-                    if (uri!=null)
-                    {
-                        uri= StringUtil.replace(uri, "&", "&amp;");
-                        uri= StringUtil.replace(uri, "<", "&lt;");
-                        uri= StringUtil.replace(uri, ">", "&gt;");
-                    }
+                    uri=StringUtil.sanitizeXmlString(uri);
 
                     writer.write("<html>\n<head>\n<meta http-equiv=\"Content-Type\" content=\"text/html;charset=ISO-8859-1\"/>\n");
                     writer.write("<title>Error ");

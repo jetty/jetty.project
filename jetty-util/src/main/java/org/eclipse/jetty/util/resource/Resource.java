@@ -613,7 +613,7 @@ public abstract class Resource implements ResourceFactory, Closeable
     
     private static String deTag(String raw) 
     {
-        return StringUtil.replace( StringUtil.replace(raw,"<","&lt;"), ">", "&gt;");
+        return StringUtil.sanitizeXmlString(raw);
     }
     
     /* ------------------------------------------------------------ */

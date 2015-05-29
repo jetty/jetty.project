@@ -201,7 +201,8 @@ public class StringUtilTest
     }
 
     @Test
-    public void testIsBlank() {
+    public void testIsBlank() 
+    {
         Assert.assertTrue(StringUtil.isBlank(null));
         Assert.assertTrue(StringUtil.isBlank(""));
         Assert.assertTrue(StringUtil.isBlank("\r\n"));
@@ -216,7 +217,8 @@ public class StringUtilTest
     }
 
     @Test
-    public void testIsNotBlank() {
+    public void testIsNotBlank() 
+    {
         Assert.assertFalse(StringUtil.isNotBlank(null));
         Assert.assertFalse(StringUtil.isNotBlank(""));
         Assert.assertFalse(StringUtil.isNotBlank("\r\n"));
@@ -228,5 +230,15 @@ public class StringUtilTest
         Assert.assertTrue(StringUtil.isNotBlank("a  "));
         Assert.assertTrue(StringUtil.isNotBlank("."));
         Assert.assertTrue(StringUtil.isNotBlank(";\n"));
+    }
+    
+    @Test
+    public void testSanitizeHTML()
+    {
+        assertEquals(null,StringUtil.sanitizeXmlString(null));
+        assertEquals("",StringUtil.sanitizeXmlString(""));
+        assertEquals("&lt;&amp;&gt;",StringUtil.sanitizeXmlString("<&>"));
+        assertEquals("Hello &lt;Cruel&gt; World",StringUtil.sanitizeXmlString("Hello <Cruel> World"));
+        assertEquals("Hello ? World",StringUtil.sanitizeXmlString("Hello \u0000 World"));
     }
 }

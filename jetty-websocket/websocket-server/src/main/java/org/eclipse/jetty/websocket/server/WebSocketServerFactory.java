@@ -39,6 +39,7 @@ import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.MappedByteBufferPool;
 import org.eclipse.jetty.server.HttpConnection;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -477,7 +478,7 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             }
             else
             {
-                warn.append('"').append(ua.replaceAll("<", "&lt;")).append("\" ");
+                warn.append('"').append(StringUtil.sanitizeXmlString(ua)).append("\" ");
             }
             warn.append("requested WebSocket version [").append(version);
             warn.append("], Jetty supports version");
