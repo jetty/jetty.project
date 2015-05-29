@@ -1,6 +1,4 @@
-jetty-9.2.12-SNAPSHOT
-
-jetty-9.2.11.v20150528 - 28 May 2015
+jetty-9.2.11.v20150529 - 29 May 2015
  + 461499 ConnectionPool may leak connections.
  + 463579 Add support for 308 status code.
  + 464292 Implement stream-based transformer for AsyncMiddleManServlet.
@@ -27,6 +25,8 @@ jetty-9.2.11.v20150528 - 28 May 2015
  + 468008 Scanner ignores directory length
  + 468421 HttpClient#send fails with IllegalArgumentException on non-lowercase
    schemes.
+ + 468714 SelectorManager updateKey race without submit
+ + 468747 XSS vulnerability in HttpSpiContextHandler
 
 jetty-9.2.11.M0 - 25 March 2015
  + 454934 WebSocketClient / connectToServer can block indefinitely during
