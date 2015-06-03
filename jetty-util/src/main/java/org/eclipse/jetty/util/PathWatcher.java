@@ -67,6 +67,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 {
     public static class Config
     {
+        public static final int UNLIMITED_DEPTH = -9999;
+        
         private static final String PATTERN_SEP;
 
         static
@@ -258,8 +260,10 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 subconfig.recurseDepth = this.recurseDepth; // TODO shouldn't really do a subconfig for this
             else
             {
-                subconfig.recurseDepth = this.recurseDepth - (dir.getNameCount() - this.dir.getNameCount());
-                
+                if (this.recurseDepth == UNLIMITED_DEPTH)
+                    subconfig.recurseDepth = UNLIMITED_DEPTH;
+                else
+                    subconfig.recurseDepth = this.recurseDepth - (dir.getNameCount() - this.dir.getNameCount());                
             }
             return subconfig;
         }
@@ -267,6 +271,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         public int getRecurseDepth()
         {
             return recurseDepth;
+        }
+        
+        public boolean isRecurseDepthUnlimited ()
+        {
+            return this.recurseDepth == UNLIMITED_DEPTH;
         }
         
         public Path getPath ()
@@ -375,6 +384,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 return false;
             }
 
+            //If not limiting depth, should recurse all
+            if (isRecurseDepthUnlimited())
+                return true;
+            
+            //Depth limited, check it
             int childDepth = dir.relativize(child).getNameCount();
             return (childDepth <= recurseDepth);
         }
@@ -513,11 +527,21 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                     }
                 }
 
-                if ((base.getPath().equals(dir) && base.getRecurseDepth() >= 0) || base.shouldRecurseDirectory(dir))
+                //Register the dir with the watcher if it is:
+                // - the base dir and recursion is unlimited
+                // - the base dir and its depth is 0 (meaning we want to capture events from it, but not necessarily its children)
+                // - the base dir and we are recursing it and the depth is within the limit
+                // - a child dir and its depth is within the limits
+                if ((base.getPath().equals(dir) && (base.isRecurseDepthUnlimited() || base.getRecurseDepth() >= 0)) || base.shouldRecurseDirectory(dir))
                     watcher.register(dir,base);
             }
 
-            if ((base.getPath().equals(dir)&& base.getRecurseDepth() >= 0) || base.shouldRecurseDirectory(dir))
+            //Continue walking the tree of this dir if it is:
+            // - the base dir and recursion is unlimited
+            // - the base dir and we're not recursing in it
+            // - the base dir and we are recursing it and the depth is within the limit
+            // - a child dir and its depth is within the limits
+            if ((base.getPath().equals(dir)&& (base.isRecurseDepthUnlimited() || base.getRecurseDepth() >= 0)) || base.shouldRecurseDirectory(dir))
                 return FileVisitResult.CONTINUE;
             else
                 return FileVisitResult.SKIP_SUBTREE;               

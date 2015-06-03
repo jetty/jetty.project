@@ -329,6 +329,27 @@ public class PathWatcherTest
         assertThat("Config.recurse[1].shouldRecurse[./a]",config.shouldRecurseDirectory(dir.resolve("a")),is(true));
         assertThat("Config.recurse[1].shouldRecurse[./]",config.shouldRecurseDirectory(dir),is(true));
     }
+    
+    
+    @Test
+    public void testConfig_ShouldRecurse_3() throws IOException
+    {
+        Path dir = testdir.getEmptyDir().toPath();
+        
+        //Create some deep dirs
+        Files.createDirectories(dir.resolve("a/b/c/d/e/f/g"));
+        
+        PathWatcher.Config config = new PathWatcher.Config(dir);
+        config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d/g]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d/g")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d/f]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d/f")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d/e]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d/e")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a/b/c]",config.shouldRecurseDirectory(dir.resolve("a/b/c")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a/b]",config.shouldRecurseDirectory(dir.resolve("a/b")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a]",config.shouldRecurseDirectory(dir.resolve("a")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./]",config.shouldRecurseDirectory(dir),is(true));
+    }
 
     /**
      * When starting up the PathWatcher, the events should occur
