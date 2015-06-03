@@ -477,7 +477,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          *  - want to visit each child
          *     - if child is file, gen add event
          *     - if child is dir, gen add event but ONLY register it if inside depth limit and ONLY continue visit of child if inside depth limit
-         * 2. a subtree is added inside a watched dir (watching /tmp/xxx, add aaa/ to xxx/)
+         * 2. a subtree is added inside a watched dir (eg watching /tmp/xxx, add aaa/ to xxx/)
          *  - will start with /tmp/xxx/aaa 
          *    - gen add event but ONLY register it if inside depth limit and ONLY continue visit of children if inside depth limit
          *    
@@ -495,49 +495,32 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             //     - register it wih the poll mechanism
             //     - generate pending add event (iff notifiable and matches patterns)
             //   - else stop visiting this dir
-            
-           // if (base.getPath().equals(dir) || base.shouldRecurseDirectory(dir))
-           // {
-                if (!base.isExcluded(dir))
+
+            if (!base.isExcluded(dir))
+            {
+                if (base.isIncluded(dir))
                 {
-                    if (base.isIncluded(dir))
+                    if (watcher.isNotifiable())
                     {
-                        if (watcher.isNotifiable())
+                        // Directory is specifically included in PathMatcher, then
+                        // it should be notified as such to interested listeners
+                        PathWatchEvent event = new PathWatchEvent(dir,PathWatchEventType.ADDED);
+                        if (LOG.isDebugEnabled())
                         {
-                            // Directory is specifically included in PathMatcher, then
-                            // it should be notified as such to interested listeners
-                            PathWatchEvent event = new PathWatchEvent(dir,PathWatchEventType.ADDED);
-                            if (LOG.isDebugEnabled())
-                            {
-                                LOG.debug("Pending {}",event);
-                            }
-                            watcher.addToPendingList(dir, event);
+                            LOG.debug("Pending {}",event);
                         }
-                    }
-                  
-                    if ((base.getPath().equals(dir) && base.getRecurseDepth() >= 0) || base.shouldRecurseDirectory(dir))
-                    {
-                        
-                        watcher.register(dir,base);
+                        watcher.addToPendingList(dir, event);
                     }
                 }
-                
-                if ((base.getPath().equals(dir)&& base.getRecurseDepth() >= 0) || base.shouldRecurseDirectory(dir))
-                {
-                
+
+                if ((base.getPath().equals(dir) && base.getRecurseDepth() >= 0) || base.shouldRecurseDirectory(dir))
+                    watcher.register(dir,base);
+            }
+
+            if ((base.getPath().equals(dir)&& base.getRecurseDepth() >= 0) || base.shouldRecurseDirectory(dir))
                 return FileVisitResult.CONTINUE;
-                }
-            //}
-           // else
-            //{
-                else
-                {
-                
-                return FileVisitResult.SKIP_SUBTREE;    
-                }
-           // }
-            
-            
+            else
+                return FileVisitResult.SKIP_SUBTREE;               
         }
 
         @Override
