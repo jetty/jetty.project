@@ -60,7 +60,7 @@ public class PathWatcherTest
          */
         public Map<String, List<PathWatchEventType>> events = new HashMap<>();
 
-        public CountDownLatch finishedLatch = new CountDownLatch(1);
+        public CountDownLatch finishedLatch;
         private PathWatchEventType triggerType;
         private Path triggerPath;
 
@@ -68,20 +68,29 @@ public class PathWatcherTest
         {
             this.baseDir = baseDir;
         }
+        
+       
 
         @Override
         public void onPathWatchEvent(PathWatchEvent event)
         {
             synchronized (events)
             {
+                //if triggered by path
                 if (triggerPath != null)
                 {
+                   
                     if (triggerPath.equals(event.getPath()) && (event.getType() == triggerType))
                     {
                         LOG.debug("Encountered finish trigger: {} on {}",event.getType(),event.getPath());
                         finishedLatch.countDown();
                     }
                 }
+                else if (finishedLatch != null)
+                {
+                    finishedLatch.countDown();
+                }
+                
 
                 Path relativePath = this.baseDir.relativize(event.getPath());
                 String key = relativePath.toString().replace(File.separatorChar,'/');
@@ -151,7 +160,13 @@ public class PathWatcherTest
         {
             this.triggerPath = triggerPath;
             this.triggerType = triggerType;
+            this.finishedLatch = new CountDownLatch(1);
             LOG.debug("Setting finish trigger {} for path {}",triggerType,triggerPath);
+        }
+        
+        public void setFinishTrigger (int count)
+        {
+            finishedLatch = new CountDownLatch(count);
         }
 
         /**
@@ -167,9 +182,9 @@ public class PathWatcherTest
          */
         public void awaitFinish(PathWatcher pathWatcher) throws IOException, InterruptedException
         {
-            assertThat("Trigger Path must be set",triggerPath,notNullValue());
-            assertThat("Trigger Type must be set",triggerType,notNullValue());
-            double multiplier = 8.0;
+            //assertThat("Trigger Path must be set",triggerPath,notNullValue());
+            //assertThat("Trigger Type must be set",triggerType,notNullValue());
+            double multiplier = 25.0;
             long awaitMillis = (long)((double)pathWatcher.getUpdateQuietTimeMillis() * multiplier);
             LOG.debug("Waiting for finish ({} ms)",awaitMillis);
             assertThat("Timed Out (" + awaitMillis + "ms) waiting for capture to finish",finishedLatch.await(awaitMillis,TimeUnit.MILLISECONDS),is(true));
@@ -251,11 +266,11 @@ public class PathWatcherTest
      */
     private static void awaitQuietTime(PathWatcher pathWatcher) throws InterruptedException
     {
-        double multiplier = 2.0;
+        double multiplier = 5.0;
         if (OS.IS_WINDOWS)
         {
             // Microsoft Windows filesystem is too slow for a lower multiplier
-            multiplier = 3.0;
+            multiplier = 6.0;
         }
         TimeUnit.MILLISECONDS.sleep((long)((double)pathWatcher.getUpdateQuietTimeMillis() * multiplier));
     }
@@ -390,6 +405,7 @@ public class PathWatcherTest
 
         // Add listener
         PathWatchEventCapture capture = new PathWatchEventCapture(dir);
+        capture.setFinishTrigger(5);
         pathWatcher.addListener(capture);
 
         // Add test dir configuration
@@ -409,7 +425,7 @@ public class PathWatcherTest
 
             // Update web.xml
             Path webFile = dir.resolve("bar/WEB-INF/web.xml");
-            capture.setFinishTrigger(webFile,MODIFIED);
+            //capture.setFinishTrigger(webFile,MODIFIED);
             updateFile(webFile,"Hello Update");
 
             // Delete war

@@ -39,9 +39,11 @@ import java.nio.file.WatchService;
 import java.nio.file.attribute.BasicFileAttributes;
 import java.util.ArrayList;
 import java.util.Collections;
+import java.util.EventListener;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
+import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Locale;
 import java.util.Map;
@@ -252,13 +254,24 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             Config subconfig = new Config(dir);
             subconfig.includes = this.includes;
             subconfig.excludes = this.excludes;
-            subconfig.recurseDepth = this.recurseDepth - 1;
+            if (dir == this.dir)
+                subconfig.recurseDepth = this.recurseDepth; // TODO shouldn't really do a subconfig for this
+            else
+            {
+                subconfig.recurseDepth = this.recurseDepth - (dir.getNameCount() - this.dir.getNameCount());
+                
+            }
             return subconfig;
         }
 
         public int getRecurseDepth()
         {
             return recurseDepth;
+        }
+        
+        public Path getPath ()
+        {
+            return this.dir;
         }
 
         private boolean hasMatch(Path path, List<PathMatcher> matchers)
@@ -356,7 +369,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          */
         public boolean shouldRecurseDirectory(Path child)
         {
-            if (!child.startsWith(child))
+            if (!child.startsWith(dir))
             {
                 // not part of parent? don't recurse
                 return false;
@@ -444,29 +457,138 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return s.toString();
         }
     }
+    
+    public static class DepthLimitedFileVisitor extends SimpleFileVisitor<Path>
+    {
+        private Config base;
+        private PathWatcher watcher;
+        
+        public DepthLimitedFileVisitor (PathWatcher watcher, Config base)
+        {
+            this.base = base;
+            this.watcher = watcher;
+        }
+
+        /*
+         * 2 situations:
+         * 
+         * 1. a subtree exists at the time a dir to watch is added (eg watching /tmp/xxx and it contains aaa/)
+         *  - will start with /tmp/xxx for which we want to register with the poller
+         *  - want to visit each child
+         *     - if child is file, gen add event
+         *     - if child is dir, gen add event but ONLY register it if inside depth limit and ONLY continue visit of child if inside depth limit
+         * 2. a subtree is added inside a watched dir (watching /tmp/xxx, add aaa/ to xxx/)
+         *  - will start with /tmp/xxx/aaa 
+         *    - gen add event but ONLY register it if inside depth limit and ONLY continue visit of children if inside depth limit
+         *    
+         */
+        @Override
+        public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
+        {
+            //In a directory:
+            // 1. the dir is the base directory
+            //   - register it with the poll mechanism
+            //   - generate pending add event (iff notifiable and matches patterns)
+            //   - continue the visit (sibling dirs, sibling files)
+            // 2. the dir is a subdir at some depth in the basedir's tree
+            //   - if the level of the subdir less or equal to base's limit
+            //     - register it wih the poll mechanism
+            //     - generate pending add event (iff notifiable and matches patterns)
+            //   - else stop visiting this dir
+            
+           // if (base.getPath().equals(dir) || base.shouldRecurseDirectory(dir))
+           // {
+                if (!base.isExcluded(dir))
+                {
+                    if (base.isIncluded(dir))
+                    {
+                        if (watcher.isNotifiable())
+                        {
+                            // Directory is specifically included in PathMatcher, then
+                            // it should be notified as such to interested listeners
+                            PathWatchEvent event = new PathWatchEvent(dir,PathWatchEventType.ADDED);
+                            if (LOG.isDebugEnabled())
+                            {
+                                LOG.debug("Pending {}",event);
+                            }
+                            watcher.addToPendingList(dir, event);
+                        }
+                    }
+                  
+                    if ((base.getPath().equals(dir) && base.getRecurseDepth() >= 0) || base.shouldRecurseDirectory(dir))
+                    {
+                        
+                        watcher.register(dir,base);
+                    }
+                }
+                
+                if ((base.getPath().equals(dir)&& base.getRecurseDepth() >= 0) || base.shouldRecurseDirectory(dir))
+                {
+                
+                return FileVisitResult.CONTINUE;
+                }
+            //}
+           // else
+            //{
+                else
+                {
+                
+                return FileVisitResult.SKIP_SUBTREE;    
+                }
+           // }
+            
+            
+        }
+
+        @Override
+        public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
+        {
+            // In a file:
+            //    - register with poll mechanism
+            //    - generate pending add event (iff notifiable and matches patterns)
+            
+            if (base.matches(file) && watcher.isNotifiable())
+            {
+                PathWatchEvent event = new PathWatchEvent(file,PathWatchEventType.ADDED);
+                if (LOG.isDebugEnabled())
+                {
+                    LOG.debug("Pending {}",event);
+                }
+                watcher.addToPendingList(file, event);
+            }
+
+            return FileVisitResult.CONTINUE;
+        }
+        
+    }
 
     /**
      * Listener for path change events
      */
-    public static interface Listener
+    public static interface Listener extends EventListener
     {
         void onPathWatchEvent(PathWatchEvent event);
+    }
+    
+    public static interface EventListListener extends EventListener
+    {
+        void onPathWatchEvents(List<PathWatchEvent> events);
     }
 
     public static class PathWatchEvent
     {
         private final Path path;
         private final PathWatchEventType type;
-        private int count;
-        private long timestamp;
-        private long lastFileSize = -1;
+        private int count = 0;
+     
+
 
         public PathWatchEvent(Path path, PathWatchEventType type)
         {
             this.path = path;
-            this.count = 0;
+            this.count = 1;
             this.type = type;
-            this.timestamp = System.currentTimeMillis();
+
         }
 
         public PathWatchEvent(Path path, WatchEvent<Path> event)
@@ -489,7 +611,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             {
                 this.type = PathWatchEventType.UNKNOWN;
             }
-            this.timestamp = System.currentTimeMillis();
         }
 
         @Override
@@ -526,6 +647,112 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return true;
         }
 
+       
+
+        public Path getPath()
+        {
+            return path;
+        }
+
+
+        public PathWatchEventType getType()
+        {
+            return type;
+        }
+        
+        
+        public void incrementCount(int num)
+        {
+            count += num;
+        }
+        public int getCount()
+        {
+            return count;
+        }
+        
+
+        @Override
+        public int hashCode()
+        {
+            final int prime = 31;
+            int result = 1;
+            result = (prime * result) + ((path == null)?0:path.hashCode());
+            result = (prime * result) + ((type == null)?0:type.hashCode());
+            return result;
+        }
+
+        @Override
+        public String toString()
+        {
+            return String.format("PathWatchEvent[%s|%s]",type,path);
+        }
+    }
+    
+    public static class PathPendingEvents
+    {
+        private Path _path;
+        private List<PathWatchEvent> _events;
+        private long _timestamp;
+        private long _lastFileSize = -1;
+
+        public PathPendingEvents (Path path)
+        {
+            _path = path;
+        }
+        
+        public PathPendingEvents (Path path, PathWatchEvent event)
+        {
+            this (path);
+            addEvent(event);
+        }
+        
+        public void addEvent (PathWatchEvent event)
+        {
+            long now = System.currentTimeMillis();
+            _timestamp = now;
+
+            if (_events == null)
+            {
+                _events = new ArrayList<PathWatchEvent>();
+                _events.add(event);
+            }
+            else
+            {
+                //Check if the same type of event is already present, in which case we
+                //can increment its counter. Otherwise, add it
+                PathWatchEvent existingType = null;
+                for (PathWatchEvent e:_events)
+                {
+                    if (e.getType() == event.getType())
+                    {
+                        existingType = e;
+                        break;
+                    }
+                }
+
+                if (existingType == null)
+                {
+                    _events.add(event);
+                }
+                else
+                {
+                    existingType.incrementCount(event.getCount());
+                }
+            }
+
+        }
+        
+        public List<PathWatchEvent> getEvents()
+        {
+            return _events;
+        }
+
+        public long getTimestamp()
+        {
+            return _timestamp;
+        }
+   
+        
         /**
          * Check to see if the file referenced by this Event is quiet.
          * <p>
@@ -539,79 +766,27 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          *            the unit of time for the expired check
          * @return true if expired, false if not
          */
-        public boolean isQuiet(long expiredDuration, TimeUnit expiredUnit)
+        public boolean isQuiet(long now, long expiredDuration, TimeUnit expiredUnit)
         {
-            long now = System.currentTimeMillis();
-            long pastdue = this.timestamp + expiredUnit.toMillis(expiredDuration);
-            this.timestamp = now;
 
-            try
-            {
-                long fileSize = Files.size(path);
-                boolean fileSizeChanged = (this.lastFileSize != fileSize);
-                this.lastFileSize = fileSize;
+            long pastdue = _timestamp + expiredUnit.toMillis(expiredDuration);
+            _timestamp = now;
 
-                if ((now > pastdue) && !fileSizeChanged)
-                {
-                    // Quiet period timestamp has expired, and file size hasn't changed.
-                    // Consider this a quiet event now.
-                    return true;
-                }
-            }
-            catch (IOException e)
+            long fileSize = _path.toFile().length(); //File.length() returns 0 for non existant files
+            boolean fileSizeChanged = (_lastFileSize != fileSize);
+            _lastFileSize = fileSize;
+
+            if ((now > pastdue) && (!fileSizeChanged /*|| fileSize == 0*/))
             {
-                // Currently we consider this a bad event.
-                // However, should we permanently consider this a bad event?
-                // The file size is the only trigger for this.
-                // If the filesystem prevents access to the file during updates
-                // (Like Windows), then this file size indicator has to be tried
-                // later.
-                LOG.debug("Cannot read file size: " + path,e);
+                // Quiet period timestamp has expired, and file size hasn't changed, or the file
+                // has been deleted.
+                // Consider this a quiet event now.
+                return true;
             }
 
             return false;
         }
 
-        public int getCount()
-        {
-            return count;
-        }
-
-        public Path getPath()
-        {
-            return path;
-        }
-
-        public long getTimestamp()
-        {
-            return timestamp;
-        }
-
-        public PathWatchEventType getType()
-        {
-            return type;
-        }
-
-        @Override
-        public int hashCode()
-        {
-            final int prime = 31;
-            int result = 1;
-            result = (prime * result) + ((path == null)?0:path.hashCode());
-            result = (prime * result) + ((type == null)?0:type.hashCode());
-            return result;
-        }
-
-        public void incrementCount(int num)
-        {
-            this.count += num;
-        }
-
-        @Override
-        public String toString()
-        {
-            return String.format("PathWatchEvent[%s|%s,count=%d]",type,path,count);
-        }
     }
 
     public static enum PathWatchEventType
@@ -653,15 +828,23 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     private final boolean nativeWatchService;
     
     private Map<WatchKey, Config> keys = new HashMap<>();
-    private List<Listener> listeners = new ArrayList<>();
-    private List<PathWatchEvent> pendingAddEvents = new ArrayList<>();
+    private List<EventListener> listeners = new ArrayList<>();
+
     /**
      * Update Quiet Time - set to 1000 ms as default (a lower value in Windows is not supported)
      */
     private long updateQuietTimeDuration = 1000;
     private TimeUnit updateQuietTimeUnit = TimeUnit.MILLISECONDS;
     private Thread thread;
-
+    private boolean _notifyExistingOnStart = true;
+    private Map<Path, PathPendingEvents> pendingEvents = new LinkedHashMap<>();
+    
+    
+    
+    /**
+     * Construct new PathWatcher
+     * @throws IOException
+     */
     public PathWatcher() throws IOException
     {
         this.watcher = FileSystems.getDefault().newWatchService();
@@ -697,10 +880,10 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     }
 
     /**
-     * Add a directory watch configuration to the the PathWatcher.
+     * Add a directory to watch with customized watch parameters.
      *
      * @param baseDir
-     *            the base directory configuration to watch
+     *            the dir to watch with its customized config
      * @throws IOException
      *             if unable to setup the directory watch
      */
@@ -710,67 +893,17 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             LOG.debug("Watching directory {}",baseDir);
         }
-        Files.walkFileTree(baseDir.dir,new SimpleFileVisitor<Path>()
-        {
-            @Override
-            public FileVisitResult preVisitDirectory(Path dir, BasicFileAttributes attrs) throws IOException
-            {
-                FileVisitResult result = FileVisitResult.SKIP_SUBTREE;
-
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("preVisitDirectory: {}",dir);
-                }
-
-                // Is directory not specifically excluded?
-                if (!baseDir.isExcluded(dir))
-                {
-                    if (baseDir.isIncluded(dir))
-                    {
-                        // Directory is specifically included in PathMatcher, then
-                        // it should be notified as such to interested listeners
-                        PathWatchEvent event = new PathWatchEvent(dir,PathWatchEventType.ADDED);
-                        if (LOG.isDebugEnabled())
-                        {
-                            LOG.debug("Pending {}",event);
-                        }
-                        pendingAddEvents.add(event);
-                    }
-
-                    register(dir,baseDir);
-
-                    // Recurse Directory, based on configured depth
-                    if (baseDir.shouldRecurseDirectory(dir) || baseDir.dir.equals(dir))
-                    {
-                        result = FileVisitResult.CONTINUE;
-                    }
-                }
-
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("preVisitDirectory: result {}",result);
-                }
-
-                return result;
-            }
-
-            @Override
-            public FileVisitResult visitFile(Path file, BasicFileAttributes attrs) throws IOException
-            {
-                if (baseDir.matches(file))
-                {
-                    PathWatchEvent event = new PathWatchEvent(file,PathWatchEventType.ADDED);
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("Pending {}",event);
-                    }
-                    pendingAddEvents.add(event);
-                }
-                return FileVisitResult.CONTINUE;
-            }
-        });
+        Files.walkFileTree(baseDir.getPath(), new DepthLimitedFileVisitor(this, baseDir));
     }
+    
+    
 
+    /**
+     * Add a file or directory to watch for changes.
+     * 
+     * @param file
+     * @throws IOException
+     */
     public void addFileWatch(final Path file) throws IOException
     {
         if (LOG.isDebugEnabled())
@@ -790,11 +923,21 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         addDirectoryWatch(config);
     }
 
-    public void addListener(Listener listener)
+    /**
+     * Add a listener for changes the watcher notices.
+     * 
+     * @param listener change listener
+     */
+    public void addListener(EventListener listener)
     {
         listeners.add(listener);
     }
 
+    /**
+     * Append some info on the paths that we are watching.
+     * 
+     * @param s
+     */
     private void appendConfigId(StringBuilder s)
     {
         List<Path> dirs = new ArrayList<>();
@@ -822,6 +965,9 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         s.append("]");
     }
 
+    /** 
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
+     */
     @Override
     protected void doStart() throws Exception
     {
@@ -835,38 +981,99 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         super.doStart();
     }
 
+    /** 
+     * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStop()
+     */
     @Override
     protected void doStop() throws Exception
     {
         watcher.close();
         super.doStop();
     }
+    
+    /**
+     * Check to see if the watcher is in a state where it should generate
+     * watch events to the listeners. Used to determine if watcher should generate
+     * events for existing files and dirs on startup.
+     * 
+     * @return true if the watcher should generate events to the listeners.
+     */
+    protected boolean isNotifiable ()
+    {
+        return (isStarted() || (!isStarted() && isNotifyExistingOnStart()));
+    }
 
-    public Iterator<Listener> getListeners()
+    /**
+     * Get an iterator over the listeners.
+     * 
+     * @return iterator over the listeners.
+     */
+    public Iterator<EventListener> getListeners()
     {
         return listeners.iterator();
     }
 
+    /**
+     * Change the quiet time.
+     * 
+     * @return the quiet time in millis
+     */
     public long getUpdateQuietTimeMillis()
     {
         return TimeUnit.MILLISECONDS.convert(updateQuietTimeDuration,updateQuietTimeUnit);
     }
 
-    protected void notifyOnPathWatchEvent(PathWatchEvent event)
+  
+
+    /**
+     * Generate events to the listeners.
+     * 
+     * @param events
+     */
+    protected void notifyOnPathWatchEvents (List<PathWatchEvent> events)
     {
-        for (Listener listener : listeners)
+        if (events == null || events.isEmpty())
+            return;
+
+        for (EventListener listener : listeners)
         {
-            try
+            if (listener instanceof EventListListener)
             {
-                listener.onPathWatchEvent(event);
+                try
+                {
+                    ((EventListListener)listener).onPathWatchEvents(events);
+                }
+                catch (Throwable t)
+                {
+                    LOG.warn(t);
+                }
             }
-            catch (Throwable t)
+            else
             {
-                LOG.warn(t);
+                Listener l = (Listener)listener;
+                for (PathWatchEvent event:events)
+                {
+                    try
+                    {
+                        l.onPathWatchEvent(event);
+                    }
+                    catch (Throwable t)
+                    {
+                        LOG.warn(t);
+                    }
+                }
             }
         }
+
     }
 
+    /**
+     * Register a dir or a file with the WatchService.
+     * 
+     * @param dir
+     * @param root
+     * @throws IOException
+     */
     protected void register(Path dir, Config root) throws IOException
     {
         LOG.debug("Registering watch on {}",dir);
@@ -881,16 +1088,41 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         }
     }
 
+    
+    /**
+     * Delete a listener
+     * @param listener
+     * @return
+     */
     public boolean removeListener(Listener listener)
     {
         return listeners.remove(listener);
     }
 
+    
+    /** 
+     * Forever loop.
+     * 
+     * Wait for the WatchService to report some filesystem events for the
+     * watched paths.
+     * 
+     * When an event for a path first occurs, it is subjected to a quiet time.
+     * Subsequent events that arrive for the same path during this quiet time are
+     * accumulated and the timer reset. Only when the quiet time has expired are
+     * the accumulated events sent. MODIFY events are handled slightly differently -
+     * multiple MODIFY events arriving within a quiet time are coalesced into a
+     * single MODIFY event. Both the accumulation of events and coalescing of MODIFY
+     * events reduce the number and frequency of event reporting for "noisy" files (ie
+     * those that are undergoing rapid change).
+     * 
+     * @see java.lang.Runnable#run()
+     */
     @Override
     public void run()
     {
-        Map<Path, PathWatchEvent> pendingUpdateEvents = new HashMap<>();
 
+        List<PathWatchEvent> notifiableEvents = new ArrayList<PathWatchEvent>();
+        
         // Start the java.nio watching
         if (LOG.isDebugEnabled())
         {
@@ -900,51 +1132,46 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         while (true)
         {
             WatchKey key = null;
-            try
-            {
-                // Process old events (from addDirectoryWatch())
-                if (!pendingAddEvents.isEmpty())
-                {
-                    for (PathWatchEvent event : pendingAddEvents)
-                    {
-                        notifyOnPathWatchEvent(event);
-                    }
-                    pendingAddEvents.clear();
-                }
 
-                // Process new events
-                if (pendingUpdateEvents.isEmpty())
+            try
+            {     
+                //If no pending events, wait forever for new events
+                if (pendingEvents.isEmpty())
                 {
                     if (NOISY_LOG.isDebugEnabled())
-                    {
                         NOISY_LOG.debug("Waiting for take()");
-                    }
-                    // wait for any event
+
                     key = watcher.take();
                 }
                 else
                 {
+                    //There are existing events that might be ready to go,
+                    //only wait as long as the quiet time for any new events
                     if (NOISY_LOG.isDebugEnabled())
-                    {
                         NOISY_LOG.debug("Waiting for poll({}, {})",updateQuietTimeDuration,updateQuietTimeUnit);
-                    }
+
                     key = watcher.poll(updateQuietTimeDuration,updateQuietTimeUnit);
+                   
+                    //If no new events its safe to process the pendings
                     if (key == null)
                     {
+                        long now = System.currentTimeMillis();
                         // no new event encountered.
-                        for (Path path : new HashSet<Path>(pendingUpdateEvents.keySet()))
+                        for (Path path : new HashSet<Path>(pendingEvents.keySet()))
                         {
-                            PathWatchEvent pending = pendingUpdateEvents.get(path);
-                            if (pending.isQuiet(updateQuietTimeDuration,updateQuietTimeUnit))
+                            PathPendingEvents pending = pendingEvents.get(path);
+                            if (pending.isQuiet(now, updateQuietTimeDuration,updateQuietTimeUnit))
                             {
-                                // it is expired
-                                // notify that update is complete
-                                notifyOnPathWatchEvent(pending);
+                                //No fresh events received during quiet time for this path, 
+                                //so generate the events that were pent up
+                                for (PathWatchEvent p:pending.getEvents())
+                                {
+                                    notifiableEvents.add(p);
+                                }
                                 // remove from pending list
-                                pendingUpdateEvents.remove(path);
+                                pendingEvents.remove(path);
                             }
                         }
-                        continue; // loop again
                     }
                 }
             }
@@ -966,82 +1193,60 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
                 return;
             }
 
-            Config config = keys.get(key);
-            if (config == null)
+            //If there was some new events to process
+            if (key != null)
             {
-                if (LOG.isDebugEnabled())
-                {
-                    LOG.debug("WatchKey not recognized: {}",key);
-                }
-                continue;
-            }
 
-            for (WatchEvent<?> event : key.pollEvents())
-            {
-                @SuppressWarnings("unchecked")
-                WatchEvent.Kind<Path> kind = (Kind<Path>)event.kind();
-                WatchEvent<Path> ev = cast(event);
-                Path name = ev.context();
-                Path child = config.dir.resolve(name);
-
-                if (kind == ENTRY_CREATE)
+                Config config = keys.get(key);
+                if (config == null)
                 {
-                    // handle special case for registering new directories
-                    // recursively
-                    if (Files.isDirectory(child,LinkOption.NOFOLLOW_LINKS))
+                    if (LOG.isDebugEnabled())
                     {
-                        try
+                        LOG.debug("WatchKey not recognized: {}",key);
+                    }
+                    continue;
+                }
+
+                for (WatchEvent<?> event : key.pollEvents())
+                {
+                    @SuppressWarnings("unchecked")
+                    WatchEvent.Kind<Path> kind = (Kind<Path>)event.kind();
+                    WatchEvent<Path> ev = cast(event);
+                    Path name = ev.context();
+                    Path child = config.dir.resolve(name);
+
+                    if (kind == ENTRY_CREATE)
+                    {
+                        // handle special case for registering new directories
+                        // recursively
+                        if (Files.isDirectory(child,LinkOption.NOFOLLOW_LINKS))
                         {
-                            addDirectoryWatch(config.asSubConfig(child));
+                            try
+                            {
+                                addDirectoryWatch(config.asSubConfig(child));
+                            }
+                            catch (IOException e)
+                            {
+                                LOG.warn(e);
+                            }
                         }
-                        catch (IOException e)
+                        else if (config.matches(child))
                         {
-                            LOG.warn(e);
+                            addToPendingList(child, new PathWatchEvent(child,ev));
                         }
                     }
                     else if (config.matches(child))
                     {
-                        notifyOnPathWatchEvent(new PathWatchEvent(child,ev));
-                    }
-                }
-                else if (config.matches(child))
-                {
-                    if (kind == ENTRY_MODIFY)
-                    {
-                        // handle modify events with a quiet time before they
-                        // are notified to the listeners
-
-                        PathWatchEvent pending = pendingUpdateEvents.get(child);
-                        if (pending == null)
-                        {
-                            // new pending update
-                            pendingUpdateEvents.put(child,new PathWatchEvent(child,ev));
-                        }
-                        else
-                        {
-                            // see if pending is expired
-                            if (pending.isQuiet(updateQuietTimeDuration,updateQuietTimeUnit))
-                            {
-                                // it is expired, notify that update is complete
-                                notifyOnPathWatchEvent(pending);
-                                // remove from pending list
-                                pendingUpdateEvents.remove(child);
-                            }
-                            else
-                            {
-                                // update the count (useful for debugging)
-                                pending.incrementCount(ev.count());
-                            }
-                        }
-                    }
-                    else
-                    {
-                        notifyOnPathWatchEvent(new PathWatchEvent(child,ev));
+                        addToPendingList(child, new PathWatchEvent(child,ev));      
                     }
                 }
             }
 
-            if (!key.reset())
+            //Send any notifications generated this pass
+            notifyOnPathWatchEvents(notifiableEvents);
+            notifiableEvents.clear();
+            
+            if (key != null && !key.reset())
             {
                 keys.remove(key);
                 if (keys.isEmpty())
@@ -1051,7 +1256,55 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             }
         }
     }
+    
+    
+    /**
+     * Add an event reported by the WatchService to list of pending events
+     * that will be sent after their quiet time has expired.
+     * 
+     * @param path
+     * @param event
+     */
+    public void addToPendingList (Path path, PathWatchEvent event)
+    {
+        PathPendingEvents pending = pendingEvents.get(path);
+        
+        //Are there already pending events for this path?
+        if (pending == null)
+        {
+            //No existing pending events, create pending list
+            pendingEvents.put(path,new PathPendingEvents(path, event));
+        }
+        else
+        {
+            //There are already some events pending for this path
+            pending.addEvent(event);
+        }
+    }
+    
+    
+    /**
+     * Whether or not to issue notifications for directories and files that
+     * already exist when the watcher starts.
+     * 
+     * @param notify
+     */
+    public void setNotifyExistingOnStart (boolean notify)
+    {
+        _notifyExistingOnStart = notify;
+    }
+    
+    public boolean isNotifyExistingOnStart ()
+    {
+        return _notifyExistingOnStart;
+    }
 
+    /**
+     * Set the quiet time.
+     * 
+     * @param duration
+     * @param unit
+     */
     public void setUpdateQuietTime(long duration, TimeUnit unit)
     {
         long desiredMillis = unit.toMillis(duration);
