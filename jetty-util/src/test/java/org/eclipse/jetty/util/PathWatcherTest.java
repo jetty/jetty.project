@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.swing.event.EventListenerList;
+
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
@@ -46,7 +48,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-@Ignore("Disabled due to behavioral differences in various FileSystems (hard to write a single testcase that works in all scenarios)")
+//@Ignore("Disabled due to behavioral differences in various FileSystems (hard to write a single testcase that works in all scenarios)")
 public class PathWatcherTest
 {
     public static class PathWatchEventCapture implements PathWatcher.Listener
@@ -60,6 +62,7 @@ public class PathWatcherTest
          */
         public Map<String, List<PathWatchEventType>> events = new HashMap<>();
 
+        public int latchCount = 1;
         public CountDownLatch finishedLatch;
         private PathWatchEventType triggerType;
         private Path triggerPath;
@@ -69,7 +72,11 @@ public class PathWatcherTest
             this.baseDir = baseDir;
         }
         
-       
+       public void reset()
+       {
+           finishedLatch = new CountDownLatch(latchCount);
+           events.clear();
+       }
 
         @Override
         public void onPathWatchEvent(PathWatchEvent event)
@@ -160,13 +167,15 @@ public class PathWatcherTest
         {
             this.triggerPath = triggerPath;
             this.triggerType = triggerType;
+            this.latchCount = 1;
             this.finishedLatch = new CountDownLatch(1);
             LOG.debug("Setting finish trigger {} for path {}",triggerType,triggerPath);
         }
         
         public void setFinishTrigger (int count)
         {
-            finishedLatch = new CountDownLatch(count);
+            latchCount = count;
+            finishedLatch = new CountDownLatch(latchCount);
         }
 
         /**
@@ -350,6 +359,64 @@ public class PathWatcherTest
         assertThat("Config.recurse[1].shouldRecurse[./a]",config.shouldRecurseDirectory(dir.resolve("a")),is(true));
         assertThat("Config.recurse[1].shouldRecurse[./]",config.shouldRecurseDirectory(dir),is(true));
     }
+    
+    @Test
+    public void testRestart() throws Exception
+    {
+        Path dir = testdir.getEmptyDir().toPath();
+        Files.createDirectories(dir.resolve("b/c"));
+        Files.createFile(dir.resolve("a.txt"));
+        Files.createFile(dir.resolve("b.txt"));
+        
+        PathWatcher pathWatcher = new PathWatcher();
+        pathWatcher.setNotifyExistingOnStart(true);
+        pathWatcher.setUpdateQuietTime(500,TimeUnit.MILLISECONDS);
+        
+        // Add listener
+        PathWatchEventCapture capture = new PathWatchEventCapture(dir);
+        capture.setFinishTrigger(2);
+        pathWatcher.addListener(capture);
+
+      
+        PathWatcher.Config config = new PathWatcher.Config(dir);
+        config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+        config.addIncludeGlobRelative("*.txt");
+        pathWatcher.watch(config);
+        try
+        {
+            pathWatcher.start();
+
+            // Let quiet time do its thing
+            awaitQuietTime(pathWatcher);
+
+            Map<String, PathWatchEventType[]> expected = new HashMap<>();
+            
+         
+            expected.put("a.txt",new PathWatchEventType[] {ADDED});
+            expected.put("b.txt",new PathWatchEventType[] {ADDED});
+
+         
+            capture.assertEvents(expected);
+            
+            //stop it
+            pathWatcher.stop();
+            
+            capture.reset();
+            
+            Thread.currentThread().sleep(1000);
+            
+            pathWatcher.start();
+            
+            awaitQuietTime(pathWatcher);
+            
+            capture.assertEvents(expected);
+            
+        }
+        finally
+        {
+            pathWatcher.stop();
+        }
+    }
 
     /**
      * When starting up the PathWatcher, the events should occur
@@ -389,7 +456,7 @@ public class PathWatcherTest
         baseDirConfig.addExcludeHidden();
         baseDirConfig.addIncludeGlobRelative("*.war");
         baseDirConfig.addIncludeGlobRelative("*/WEB-INF/web.xml");
-        pathWatcher.addDirectoryWatch(baseDirConfig);
+        pathWatcher.watch(baseDirConfig);
 
         try
         {
@@ -435,7 +502,7 @@ public class PathWatcherTest
         baseDirConfig.addExcludeHidden();
         baseDirConfig.addIncludeGlobRelative("*.war");
         baseDirConfig.addIncludeGlobRelative("*/WEB-INF/web.xml");
-        pathWatcher.addDirectoryWatch(baseDirConfig);
+        pathWatcher.watch(baseDirConfig);
 
         try
         {
@@ -495,7 +562,7 @@ public class PathWatcherTest
         baseDirConfig.addExcludeHidden();
         baseDirConfig.addIncludeGlobRelative("*.war");
         baseDirConfig.addIncludeGlobRelative("*/WEB-INF/web.xml");
-        pathWatcher.addDirectoryWatch(baseDirConfig);
+        pathWatcher.watch(baseDirConfig);
 
         try
         {
@@ -559,7 +626,7 @@ public class PathWatcherTest
         baseDirConfig.addExcludeHidden();
         baseDirConfig.addIncludeGlobRelative("*.war");
         baseDirConfig.addIncludeGlobRelative("*/WEB-INF/web.xml");
-        pathWatcher.addDirectoryWatch(baseDirConfig);
+        pathWatcher.watch(baseDirConfig);
 
         try
         {

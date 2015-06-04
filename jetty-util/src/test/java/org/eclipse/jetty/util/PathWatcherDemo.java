@@ -80,7 +80,7 @@ public class PathWatcherDemo implements PathWatcher.Listener
             
         });
         
-        //watcher.setNotifyExistingOnStart(false);
+        watcher.setNotifyExistingOnStart(false);
 
         List<String> excludes = new ArrayList<>();
         excludes.add("glob:*.bak"); // ignore backup files
@@ -94,14 +94,16 @@ public class PathWatcherDemo implements PathWatcher.Listener
                 config.addExcludeHidden();
                 config.addExcludes(excludes);
                 config.setRecurseDepth(4);
-                watcher.addDirectoryWatch(config);
+                watcher.watch(config);
             }
             else
             {
-                watcher.addFileWatch(path);
+                watcher.watch(path);
             }
         }
         watcher.start();
+        
+        Thread.currentThread().join();
     }
 
     @Override
