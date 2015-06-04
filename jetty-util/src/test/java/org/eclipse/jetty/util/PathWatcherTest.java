@@ -48,7 +48,7 @@ import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 
-//@Ignore("Disabled due to behavioral differences in various FileSystems (hard to write a single testcase that works in all scenarios)")
+@Ignore("Disabled due to behavioral differences in various FileSystems (hard to write a single testcase that works in all scenarios)")
 public class PathWatcherTest
 {
     public static class PathWatchEventCapture implements PathWatcher.Listener
