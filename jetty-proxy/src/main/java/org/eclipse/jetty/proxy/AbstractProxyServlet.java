@@ -18,6 +18,28 @@
 
 package org.eclipse.jetty.proxy;
 
+import java.io.IOException;
+import java.net.InetAddress;
+import java.net.URI;
+import java.net.UnknownHostException;
+import java.util.Collections;
+import java.util.Enumeration;
+import java.util.HashSet;
+import java.util.Iterator;
+import java.util.Locale;
+import java.util.Set;
+import java.util.concurrent.Executor;
+import java.util.concurrent.TimeoutException;
+
+import javax.servlet.AsyncContext;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletContext;
+import javax.servlet.ServletException;
+import javax.servlet.UnavailableException;
+import javax.servlet.http.HttpServlet;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -29,21 +51,32 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 
-import javax.servlet.AsyncContext;
-import javax.servlet.ServletConfig;
-import javax.servlet.ServletException;
-import javax.servlet.UnavailableException;
-import javax.servlet.http.HttpServlet;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.IOException;
-import java.net.InetAddress;
-import java.net.URI;
-import java.net.UnknownHostException;
-import java.util.*;
-import java.util.concurrent.Executor;
-import java.util.concurrent.TimeoutException;
-
+/**
+ * <p>Abstract base class for proxy servlets.</p>
+ * <p>Forwards requests to another server either as a standard web reverse
+ * proxy or as a transparent reverse proxy (as defined by RFC 7230).</p>
+ * <p>To facilitate JMX monitoring, the {@link HttpClient} instance is set
+ * as ServletContext attribute, prefixed with this servlet's name and
+ * exposed by the mechanism provided by
+ * {@link ServletContext#setAttribute(String, Object)}.</p>
+ * <p>The following init parameters may be used to configure the servlet:</p>
+ * <ul>
+ * <li>preserveHost - the host header specified by the client is forwarded to the server</li>
+ * <li>hostHeader - forces the host header to a particular value</li>
+ * <li>viaHost - the name to use in the Via header: Via: http/1.1 &lt;viaHost&gt;</li>
+ * <li>whiteList - comma-separated list of allowed proxy hosts</li>
+ * <li>blackList - comma-separated list of forbidden proxy hosts</li>
+ * </ul>
+ * <p>In addition, see {@link #createHttpClient()} for init parameters
+ * used to configure the {@link HttpClient} instance.</p>
+ * <p>NOTE: By default the Host header sent to the server by this proxy
+ * servlet is the server's host name. However, this breaks redirects.
+ * Set {@code preserveHost} to {@code true} to make redirects working,
+ * although this may break server's virtual host selection.</p>
+ * <p>The default behavior of not preserving the Host header mimics
+ * the default behavior of Apache httpd and Nginx, which both have
+ * a way to be configured to preserve the Host header.</p>
+ */
 public abstract class AbstractProxyServlet extends HttpServlet
 {
     protected static final Set<String> HOP_HEADERS;
@@ -65,6 +98,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
     private final Set<String> _whiteList = new HashSet<>();
     private final Set<String> _blackList = new HashSet<>();
     protected Logger _log;
+    private boolean _preserveHost;
     private String _hostHeader;
     private String _viaHost;
     private HttpClient _client;
@@ -76,6 +110,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
         _log = createLogger();
 
         ServletConfig config = getServletConfig();
+
+        _preserveHost = Boolean.parseBoolean(config.getInitParameter("preserveHost"));
 
         _hostHeader = config.getInitParameter("hostHeader");
 
@@ -175,9 +211,8 @@ public abstract class AbstractProxyServlet extends HttpServlet
     }
 
     /**
-     * Creates a {@link HttpClient} instance, configured with init parameters of this servlet.
-     * <p>
-     * The init parameters used to configure the {@link HttpClient} instance are:
+     * <p>Creates a {@link HttpClient} instance, configured with init parameters of this servlet.</p>
+     * <p>The init parameters used to configure the {@link HttpClient} instance are:</p>
      * <table>
      * <caption>Init Parameters</caption>
      * <thead>
@@ -403,7 +438,7 @@ public abstract class AbstractProxyServlet extends HttpServlet
             String headerName = headerNames.nextElement();
             String lowerHeaderName = headerName.toLowerCase(Locale.ENGLISH);
 
-            if (HttpHeader.HOST.is(headerName))
+            if (HttpHeader.HOST.is(headerName) && !_preserveHost)
                 continue;
 
             // Remove hop-by-hop headers.
