@@ -23,14 +23,13 @@ import java.io.InputStream;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.util.concurrent.TimeUnit;
+
 import javax.servlet.AsyncContext;
 import javax.servlet.ServletConfig;
-import javax.servlet.ServletContext;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
-import org.eclipse.jetty.client.HttpClient;
 import org.eclipse.jetty.client.api.ContentProvider;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
@@ -40,26 +39,11 @@ import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.util.Callback;
 
 /**
- * Asynchronous ProxyServlet.
- * <p/>
- * Forwards requests to another server either as a standard web reverse proxy
- * (as defined by RFC2616) or as a transparent reverse proxy.
- * <p/>
- * To facilitate JMX monitoring, the {@link HttpClient} instance is set as context attribute,
- * prefixed with the servlet's name and exposed by the mechanism provided by
- * {@link ServletContext#setAttribute(String, Object)}.
- * <p/>
- * The following init parameters may be used to configure the servlet:
- * <ul>
- * <li>hostHeader - forces the host header to a particular value</li>
- * <li>viaHost - the name to use in the Via header: Via: http/1.1 &lt;viaHost&gt;</li>
- * <li>whiteList - comma-separated list of allowed proxy hosts</li>
- * <li>blackList - comma-separated list of forbidden proxy hosts</li>
- * </ul>
- * <p/>
- * In addition, see {@link #createHttpClient()} for init parameters used to configure
- * the {@link HttpClient} instance.
+ * <p>Servlet 3.0 asynchronous proxy servlet.</p>
+ * <p>The request processing is asynchronous, but the I/O is blocking.</p>
  *
+ * @see AsyncProxyServlet
+ * @see AsyncMiddleManServlet
  * @see ConnectHandler
  */
 public class ProxyServlet extends AbstractProxyServlet

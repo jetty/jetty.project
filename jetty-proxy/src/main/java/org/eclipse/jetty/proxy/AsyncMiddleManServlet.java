@@ -55,7 +55,15 @@ import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Destroyable;
 
-@SuppressWarnings("serial")
+/**
+ * <p>Servlet 3.1 asynchronous proxy servlet with capability
+ * to intercept and modify request/response content.</p>
+ * <p>Both the request processing and the I/O are asynchronous.</p>
+ *
+ * @see ProxyServlet
+ * @see AsyncProxyServlet
+ * @see ConnectHandler
+ */
 public class AsyncMiddleManServlet extends AbstractProxyServlet
 {
     private static final String CLIENT_TRANSFORMER = AsyncMiddleManServlet.class.getName() + ".clientTransformer";

@@ -19,6 +19,9 @@
 package org.eclipse.jetty.proxy;
 
 import java.io.IOException;
+import java.util.HashMap;
+import java.util.Map;
+
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
@@ -42,13 +45,27 @@ public class ReverseProxyTest
 {
     @Rule
     public final TestTracker tracker = new TestTracker();
-    private HttpClient client;
-    private Server proxy;
-    private ServerConnector proxyConnector;
     private Server server;
     private ServerConnector serverConnector;
+    private Server proxy;
+    private ServerConnector proxyConnector;
+    private HttpClient client;
 
-    private void startProxy() throws Exception
+    private void startServer(HttpServlet servlet) throws Exception
+    {
+        server = new Server();
+
+        serverConnector = new ServerConnector(server);
+        server.addConnector(serverConnector);
+
+        ServletContextHandler appCtx = new ServletContextHandler(server, "/", true, false);
+        ServletHolder appServletHolder = new ServletHolder(servlet);
+        appCtx.addServlet(appServletHolder, "/*");
+
+        server.start();
+    }
+
+    private void startProxy(Map<String, String> params) throws Exception
     {
         proxy = new Server();
 
@@ -65,7 +82,7 @@ public class ReverseProxyTest
             protected String rewriteTarget(HttpServletRequest clientRequest)
             {
                 StringBuilder builder = new StringBuilder();
-                builder.append(clientRequest.getScheme()).append("://localhost:");
+                builder.append(clientRequest.getScheme()).append("://127.0.0.1:");
                 builder.append(serverConnector.getLocalPort());
                 builder.append(clientRequest.getRequestURI());
                 String query = clientRequest.getQueryString();
@@ -74,23 +91,12 @@ public class ReverseProxyTest
                 return builder.toString();
             }
         });
+        if (params != null)
+            proxyServletHolder.setInitParameters(params);
+
         proxyContext.addServlet(proxyServletHolder, "/*");
 
         proxy.start();
-    }
-
-    private void startServer(HttpServlet servlet) throws Exception
-    {
-        server = new Server();
-
-        serverConnector = new ServerConnector(server);
-        server.addConnector(serverConnector);
-
-        ServletContextHandler appCtx = new ServletContextHandler(server, "/", true, false);
-        ServletHolder appServletHolder = new ServletHolder(servlet);
-        appCtx.addServlet(appServletHolder, "/*");
-
-        server.start();
     }
 
     private void startClient() throws Exception
@@ -108,17 +114,37 @@ public class ReverseProxyTest
     }
 
     @Test
-    public void testClientHostHeaderUpdatedWhenSentToServer() throws Exception
+    public void testHostHeaderUpdatedWhenSentToServer() throws Exception
     {
         startServer(new HttpServlet()
         {
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
-                Assert.assertEquals(request.getServerPort(), serverConnector.getLocalPort());
+                Assert.assertEquals("127.0.0.1", request.getServerName());
+                Assert.assertEquals(serverConnector.getLocalPort(), request.getServerPort());
             }
         });
-        startProxy();
+        startProxy(null);
+        startClient();
+
+        ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort()).send();
+        Assert.assertEquals(200, response.getStatus());
+    }
+
+    @Test
+    public void testHostHeaderPreserved() throws Exception
+    {
+        startServer(new HttpServlet()
+        {
+            @Override
+            protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
+            {
+                Assert.assertEquals("localhost", request.getServerName());
+                Assert.assertEquals(proxyConnector.getLocalPort(), request.getServerPort());
+            }
+        });
+        startProxy(new HashMap<String, String>() {{ put("preserveHost", "true"); }});
         startClient();
 
         ContentResponse response = client.newRequest("localhost", proxyConnector.getLocalPort()).send();

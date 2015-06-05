@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.URI;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+
 import javax.servlet.ReadListener;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -38,6 +39,14 @@ import org.eclipse.jetty.client.util.DeferredContentProvider;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 
+/**
+ * <p>Servlet 3.1 asynchronous proxy servlet.</p>
+ * <p>Both the request processing and the I/O are asynchronous.</p>
+ *
+ * @see ProxyServlet
+ * @see AsyncMiddleManServlet
+ * @see ConnectHandler
+ */
 public class AsyncProxyServlet extends ProxyServlet
 {
     private static final String WRITE_LISTENER_ATTRIBUTE = AsyncProxyServlet.class.getName() + ".writeListener";
