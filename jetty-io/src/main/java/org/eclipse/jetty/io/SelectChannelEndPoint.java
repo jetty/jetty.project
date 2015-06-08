@@ -25,8 +25,8 @@ import java.util.concurrent.atomic.AtomicBoolean;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SpinLock;
 
 /**
  * An ChannelEndpoint that can be scheduled by {@link SelectorManager}.
@@ -35,7 +35,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
 {
     public static final Logger LOG = Log.getLogger(SelectChannelEndPoint.class);
 
-    private final SpinLock _lock = new SpinLock();
+    private final Locker _locker = new Locker();
     private boolean _updatePending;
 
     /**
@@ -88,7 +88,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         int readyOps = _key.readyOps();
         int oldInterestOps;
         int newInterestOps;
-        try (SpinLock.Lock lock = _lock.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             _updatePending = true;
             // Remove the readyOps, that here can only be OP_READ or OP_WRITE (or both).
@@ -117,7 +117,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         {
             int oldInterestOps;
             int newInterestOps;
-            try (SpinLock.Lock lock = _lock.lock())
+            try (Locker.Lock lock = _locker.lock())
             {
                 _updatePending = false;
                 oldInterestOps = _currentInterestOps;
@@ -154,7 +154,7 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         int oldInterestOps;
         int newInterestOps;
         boolean pending;
-        try (SpinLock.Lock lock = _lock.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             pending = _updatePending;
             oldInterestOps = _desiredInterestOps;

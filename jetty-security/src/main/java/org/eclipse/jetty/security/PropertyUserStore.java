@@ -329,17 +329,16 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
     {
         super.doStart();
 
+        loadUsers();
         if ( isHotReload() && (_configPath != null) )
         {
             this.pathWatcher = new PathWatcher();
-            this.pathWatcher.addFileWatch(_configPath);
+            this.pathWatcher.watch(_configPath);
             this.pathWatcher.addListener(this);
+            this.pathWatcher.setNotifyExistingOnStart(false);
             this.pathWatcher.start();
         }
-        else
-        {
-            loadUsers();
-        }
+       
     }
     
     @Override
@@ -364,6 +363,7 @@ public class PropertyUserStore extends AbstractLifeCycle implements PathWatcher.
         super.doStop();
         if (this.pathWatcher != null)
             this.pathWatcher.stop();
+        this.pathWatcher = null;
     }
 
     /**

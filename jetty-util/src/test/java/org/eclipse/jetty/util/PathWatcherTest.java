@@ -36,6 +36,8 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
+import javax.swing.event.EventListenerList;
+
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
@@ -60,7 +62,8 @@ public class PathWatcherTest
          */
         public Map<String, List<PathWatchEventType>> events = new HashMap<>();
 
-        public CountDownLatch finishedLatch = new CountDownLatch(1);
+        public int latchCount = 1;
+        public CountDownLatch finishedLatch;
         private PathWatchEventType triggerType;
         private Path triggerPath;
 
@@ -68,20 +71,33 @@ public class PathWatcherTest
         {
             this.baseDir = baseDir;
         }
+        
+       public void reset()
+       {
+           finishedLatch = new CountDownLatch(latchCount);
+           events.clear();
+       }
 
         @Override
         public void onPathWatchEvent(PathWatchEvent event)
         {
             synchronized (events)
             {
+                //if triggered by path
                 if (triggerPath != null)
                 {
+                   
                     if (triggerPath.equals(event.getPath()) && (event.getType() == triggerType))
                     {
                         LOG.debug("Encountered finish trigger: {} on {}",event.getType(),event.getPath());
                         finishedLatch.countDown();
                     }
                 }
+                else if (finishedLatch != null)
+                {
+                    finishedLatch.countDown();
+                }
+                
 
                 Path relativePath = this.baseDir.relativize(event.getPath());
                 String key = relativePath.toString().replace(File.separatorChar,'/');
@@ -151,7 +167,15 @@ public class PathWatcherTest
         {
             this.triggerPath = triggerPath;
             this.triggerType = triggerType;
+            this.latchCount = 1;
+            this.finishedLatch = new CountDownLatch(1);
             LOG.debug("Setting finish trigger {} for path {}",triggerType,triggerPath);
+        }
+        
+        public void setFinishTrigger (int count)
+        {
+            latchCount = count;
+            finishedLatch = new CountDownLatch(latchCount);
         }
 
         /**
@@ -167,9 +191,9 @@ public class PathWatcherTest
          */
         public void awaitFinish(PathWatcher pathWatcher) throws IOException, InterruptedException
         {
-            assertThat("Trigger Path must be set",triggerPath,notNullValue());
-            assertThat("Trigger Type must be set",triggerType,notNullValue());
-            double multiplier = 8.0;
+            //assertThat("Trigger Path must be set",triggerPath,notNullValue());
+            //assertThat("Trigger Type must be set",triggerType,notNullValue());
+            double multiplier = 25.0;
             long awaitMillis = (long)((double)pathWatcher.getUpdateQuietTimeMillis() * multiplier);
             LOG.debug("Waiting for finish ({} ms)",awaitMillis);
             assertThat("Timed Out (" + awaitMillis + "ms) waiting for capture to finish",finishedLatch.await(awaitMillis,TimeUnit.MILLISECONDS),is(true));
@@ -251,11 +275,11 @@ public class PathWatcherTest
      */
     private static void awaitQuietTime(PathWatcher pathWatcher) throws InterruptedException
     {
-        double multiplier = 2.0;
+        double multiplier = 5.0;
         if (OS.IS_WINDOWS)
         {
             // Microsoft Windows filesystem is too slow for a lower multiplier
-            multiplier = 3.0;
+            multiplier = 6.0;
         }
         TimeUnit.MILLISECONDS.sleep((long)((double)pathWatcher.getUpdateQuietTimeMillis() * multiplier));
     }
@@ -314,6 +338,85 @@ public class PathWatcherTest
         assertThat("Config.recurse[1].shouldRecurse[./a]",config.shouldRecurseDirectory(dir.resolve("a")),is(true));
         assertThat("Config.recurse[1].shouldRecurse[./]",config.shouldRecurseDirectory(dir),is(true));
     }
+    
+    
+    @Test
+    public void testConfig_ShouldRecurse_3() throws IOException
+    {
+        Path dir = testdir.getEmptyDir().toPath();
+        
+        //Create some deep dirs
+        Files.createDirectories(dir.resolve("a/b/c/d/e/f/g"));
+        
+        PathWatcher.Config config = new PathWatcher.Config(dir);
+        config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d/g]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d/g")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d/f]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d/f")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d/e]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d/e")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a/b/c/d]",config.shouldRecurseDirectory(dir.resolve("a/b/c/d")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a/b/c]",config.shouldRecurseDirectory(dir.resolve("a/b/c")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a/b]",config.shouldRecurseDirectory(dir.resolve("a/b")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./a]",config.shouldRecurseDirectory(dir.resolve("a")),is(true));
+        assertThat("Config.recurse[1].shouldRecurse[./]",config.shouldRecurseDirectory(dir),is(true));
+    }
+    
+    @Test
+    public void testRestart() throws Exception
+    {
+        Path dir = testdir.getEmptyDir().toPath();
+        Files.createDirectories(dir.resolve("b/c"));
+        Files.createFile(dir.resolve("a.txt"));
+        Files.createFile(dir.resolve("b.txt"));
+        
+        PathWatcher pathWatcher = new PathWatcher();
+        pathWatcher.setNotifyExistingOnStart(true);
+        pathWatcher.setUpdateQuietTime(500,TimeUnit.MILLISECONDS);
+        
+        // Add listener
+        PathWatchEventCapture capture = new PathWatchEventCapture(dir);
+        capture.setFinishTrigger(2);
+        pathWatcher.addListener(capture);
+
+      
+        PathWatcher.Config config = new PathWatcher.Config(dir);
+        config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+        config.addIncludeGlobRelative("*.txt");
+        pathWatcher.watch(config);
+        try
+        {
+            pathWatcher.start();
+
+            // Let quiet time do its thing
+            awaitQuietTime(pathWatcher);
+
+            Map<String, PathWatchEventType[]> expected = new HashMap<>();
+            
+         
+            expected.put("a.txt",new PathWatchEventType[] {ADDED});
+            expected.put("b.txt",new PathWatchEventType[] {ADDED});
+
+         
+            capture.assertEvents(expected);
+            
+            //stop it
+            pathWatcher.stop();
+            
+            capture.reset();
+            
+            Thread.currentThread().sleep(1000);
+            
+            pathWatcher.start();
+            
+            awaitQuietTime(pathWatcher);
+            
+            capture.assertEvents(expected);
+            
+        }
+        finally
+        {
+            pathWatcher.stop();
+        }
+    }
 
     /**
      * When starting up the PathWatcher, the events should occur
@@ -353,7 +456,7 @@ public class PathWatcherTest
         baseDirConfig.addExcludeHidden();
         baseDirConfig.addIncludeGlobRelative("*.war");
         baseDirConfig.addIncludeGlobRelative("*/WEB-INF/web.xml");
-        pathWatcher.addDirectoryWatch(baseDirConfig);
+        pathWatcher.watch(baseDirConfig);
 
         try
         {
@@ -390,6 +493,7 @@ public class PathWatcherTest
 
         // Add listener
         PathWatchEventCapture capture = new PathWatchEventCapture(dir);
+        capture.setFinishTrigger(5);
         pathWatcher.addListener(capture);
 
         // Add test dir configuration
@@ -398,7 +502,7 @@ public class PathWatcherTest
         baseDirConfig.addExcludeHidden();
         baseDirConfig.addIncludeGlobRelative("*.war");
         baseDirConfig.addIncludeGlobRelative("*/WEB-INF/web.xml");
-        pathWatcher.addDirectoryWatch(baseDirConfig);
+        pathWatcher.watch(baseDirConfig);
 
         try
         {
@@ -409,7 +513,7 @@ public class PathWatcherTest
 
             // Update web.xml
             Path webFile = dir.resolve("bar/WEB-INF/web.xml");
-            capture.setFinishTrigger(webFile,MODIFIED);
+            //capture.setFinishTrigger(webFile,MODIFIED);
             updateFile(webFile,"Hello Update");
 
             // Delete war
@@ -458,7 +562,7 @@ public class PathWatcherTest
         baseDirConfig.addExcludeHidden();
         baseDirConfig.addIncludeGlobRelative("*.war");
         baseDirConfig.addIncludeGlobRelative("*/WEB-INF/web.xml");
-        pathWatcher.addDirectoryWatch(baseDirConfig);
+        pathWatcher.watch(baseDirConfig);
 
         try
         {
@@ -522,7 +626,7 @@ public class PathWatcherTest
         baseDirConfig.addExcludeHidden();
         baseDirConfig.addIncludeGlobRelative("*.war");
         baseDirConfig.addIncludeGlobRelative("*/WEB-INF/web.xml");
-        pathWatcher.addDirectoryWatch(baseDirConfig);
+        pathWatcher.watch(baseDirConfig);
 
         try
         {

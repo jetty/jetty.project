@@ -18,6 +18,27 @@
 
 package org.eclipse.jetty.proxy;
 
+import java.io.ByteArrayOutputStream;
+import java.io.IOException;
+import java.io.OutputStream;
+import java.nio.ByteBuffer;
+import java.util.ArrayDeque;
+import java.util.ArrayList;
+import java.util.List;
+import java.util.Queue;
+import java.util.concurrent.TimeUnit;
+import java.util.zip.GZIPOutputStream;
+
+import javax.servlet.AsyncContext;
+import javax.servlet.ReadListener;
+import javax.servlet.ServletConfig;
+import javax.servlet.ServletException;
+import javax.servlet.ServletInputStream;
+import javax.servlet.ServletOutputStream;
+import javax.servlet.WriteListener;
+import javax.servlet.http.HttpServletRequest;
+import javax.servlet.http.HttpServletResponse;
+
 import org.eclipse.jetty.client.ContentDecoder;
 import org.eclipse.jetty.client.GZIPContentDecoder;
 import org.eclipse.jetty.client.api.ContentProvider;
@@ -34,21 +55,15 @@ import org.eclipse.jetty.util.CountingCallback;
 import org.eclipse.jetty.util.IteratingCallback;
 import org.eclipse.jetty.util.component.Destroyable;
 
-import javax.servlet.*;
-import javax.servlet.http.HttpServletRequest;
-import javax.servlet.http.HttpServletResponse;
-import java.io.ByteArrayOutputStream;
-import java.io.IOException;
-import java.io.OutputStream;
-import java.nio.ByteBuffer;
-import java.util.ArrayDeque;
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Queue;
-import java.util.concurrent.TimeUnit;
-import java.util.zip.GZIPOutputStream;
-
-@SuppressWarnings("serial")
+/**
+ * <p>Servlet 3.1 asynchronous proxy servlet with capability
+ * to intercept and modify request/response content.</p>
+ * <p>Both the request processing and the I/O are asynchronous.</p>
+ *
+ * @see ProxyServlet
+ * @see AsyncProxyServlet
+ * @see ConnectHandler
+ */
 public class AsyncMiddleManServlet extends AbstractProxyServlet
 {
     private static final String CLIENT_TRANSFORMER = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
@@ -190,6 +205,8 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
 
     /**
      * <p>Convenience extension of {@link AsyncMiddleManServlet} that offers transparent proxy functionalities.</p>
+     *
+     * @see TransparentDelegate
      */
     public static class Transparent extends ProxyServlet
     {
@@ -272,7 +289,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
                 if (_log.isDebugEnabled())
                     _log.debug("{} asynchronous read {} bytes on {}", getRequestId(clientRequest), read, input);
 
-                if (read<0)
+                if (read < 0)
                     return Action.SUCCEEDED;
 
                 if (contentLength > 0 && read > 0)

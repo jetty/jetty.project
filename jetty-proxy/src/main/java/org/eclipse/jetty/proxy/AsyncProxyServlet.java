@@ -21,6 +21,7 @@ package org.eclipse.jetty.proxy;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.channels.WritePendingException;
+
 import javax.servlet.ReadListener;
 import javax.servlet.ServletConfig;
 import javax.servlet.ServletException;
@@ -38,9 +39,12 @@ import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.IteratingCallback;
 
 /**
- * <p>Proxy servlet based on Servlet 3.1 async I/O.</p>
+ * <p>Servlet 3.1 asynchronous proxy servlet.</p>
+ * <p>Both the request processing and the I/O are asynchronous.</p>
  *
+ * @see ProxyServlet
  * @see AsyncMiddleManServlet
+ * @see ConnectHandler
  */
 public class AsyncProxyServlet extends ProxyServlet
 {
@@ -101,6 +105,8 @@ public class AsyncProxyServlet extends ProxyServlet
 
     /**
      * <p>Convenience extension of {@link AsyncProxyServlet} that offers transparent proxy functionalities.</p>
+     *
+     * @see TransparentDelegate
      */
     public static class Transparent extends AsyncProxyServlet
     {

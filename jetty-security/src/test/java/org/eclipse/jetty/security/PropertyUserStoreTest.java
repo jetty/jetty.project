@@ -149,8 +149,6 @@ public class PropertyUserStoreTest
 
         store.start();
         
-        Thread.sleep(2000);
-        
         userCount.assertThatCount(is(3));
 
         addAdditionalUser(usersFile,"skip: skip, roleA\n");
@@ -180,8 +178,6 @@ public class PropertyUserStoreTest
         store.registerUserListener(userCount);
 
         store.start();
-
-        Thread.sleep(2000);
 
         userCount.assertThatCount(is(4));
 
