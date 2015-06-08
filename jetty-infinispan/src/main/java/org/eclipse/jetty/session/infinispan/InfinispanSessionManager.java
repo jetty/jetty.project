@@ -183,7 +183,18 @@ public class InfinispanSessionManager extends AbstractSessionManager
       
             out.writeLong(expiry); 
             out.writeLong(maxInactive);
-            out.writeObject(attributes);
+
+            try
+            {
+                out.writeObject(attributes);
+            }
+            catch (Exception e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.warn(e);
+
+                throw e;
+            }
         }
         
         private void readObject(java.io.ObjectInputStream in) throws IOException, ClassNotFoundException
@@ -199,9 +210,18 @@ public class InfinispanSessionManager extends AbstractSessionManager
             lastNode = in.readUTF(); //last managing node
             expiry = in.readLong(); 
             maxInactive = in.readLong();
-            attributes = (HashMap<String,Object>)in.readObject();
+            try
+            {
+                attributes = (HashMap<String,Object>)in.readObject();
+            }
+            catch (Exception e)
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.warn(e);
+                throw e;
+            }
         }
-        
+
     }
     
  
