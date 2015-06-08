@@ -44,8 +44,8 @@ import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
+import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Scheduler;
-import org.eclipse.jetty.util.thread.SpinLock;
 
 /**
  * <p>{@link ManagedSelector} wraps a {@link Selector} simplifying non-blocking operations on channels.</p>
@@ -57,7 +57,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
 {
     private static final Logger LOG = Log.getLogger(ManagedSelector.class);
 
-    private final SpinLock _lock = new SpinLock();
+    private final Locker _locker = new Locker();
     private boolean _selecting = false;
     private final Queue<Runnable> _actions = new ArrayDeque<>();
     private final SelectorManager _selectorManager;
@@ -116,7 +116,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             LOG.debug("Queued change {} on {}", change, this);
 
         Selector selector = null;
-        try (SpinLock.Lock lock = _lock.lock())
+        try (Locker.Lock lock = _locker.lock())
         {
             _actions.offer(change);
             if (_selecting)
@@ -187,7 +187,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
             while (true)
             {
                 Runnable action;
-                try (SpinLock.Lock lock = _lock.lock())
+                try (Locker.Lock lock = _locker.lock())
                 {
                     action = _actions.poll();
                     if (action == null)
@@ -233,7 +233,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                     if (LOG.isDebugEnabled())
                         LOG.debug("Selector loop woken up from select, {}/{} selected", selected, selector.keys().size());
 
-                    try (SpinLock.Lock lock = _lock.lock())
+                    try (Locker.Lock lock = _locker.lock())
                     {
                         // finished selecting
                         _selecting = false;

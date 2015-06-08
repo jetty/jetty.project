@@ -61,9 +61,9 @@ import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.component.LifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.eclipse.jetty.util.thread.ShutdownThread;
-import org.eclipse.jetty.util.thread.SpinLock;
 import org.eclipse.jetty.util.thread.ThreadPool;
 import org.eclipse.jetty.util.thread.ThreadPool.SizedThreadPool;
 
@@ -87,11 +87,11 @@ public class Server extends HandlerWrapper implements Attributes
     private boolean _dumpAfterStart=false;
     private boolean _dumpBeforeStop=false;
     private RequestLog _requestLog;
-    
-    private final SpinLock _dateLock = new SpinLock();
+
+    private final Locker _dateLocker = new Locker();
     private volatile DateField _dateField;
-    
-    
+
+
     /* ------------------------------------------------------------ */
     public Server()
     {
@@ -113,11 +113,11 @@ public class Server extends HandlerWrapper implements Attributes
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * Convenience constructor
      * <p>
      * Creates server and a {@link ServerConnector} at the passed address.
-     * @param addr the inet socket address to create the connector from 
+     * @param addr the inet socket address to create the connector from
      */
     public Server(@Name("address")InetSocketAddress addr)
     {
@@ -161,8 +161,8 @@ public class Server extends HandlerWrapper implements Attributes
     {
         return _stopAtShutdown;
     }
-   
-    
+
+
     /* ------------------------------------------------------------ */
     /**
      * Set a graceful stop time.
@@ -309,10 +309,10 @@ public class Server extends HandlerWrapper implements Attributes
         long now=System.currentTimeMillis();
         long seconds = now/1000;
         DateField df = _dateField;
-        
+
         if (df==null || df._seconds!=seconds)
         {
-            try(SpinLock.Lock lock = _dateLock.lock())
+            try(Locker.Lock lock = _dateLocker.lock())
             {
                 df = _dateField;
                 if (df==null || df._seconds!=seconds)
@@ -338,7 +338,7 @@ public class Server extends HandlerWrapper implements Attributes
         //Register the Server with the handler thread for receiving
         //remote stop commands
         ShutdownMonitor.register(this);
-        
+
         //Start a thread waiting to receive "stop" commands.
         ShutdownMonitor.getInstance().start(); // initialize
 
@@ -357,7 +357,7 @@ public class Server extends HandlerWrapper implements Attributes
             {
                 if (connector instanceof AbstractConnector)
                     acceptors+=((AbstractConnector)connector).getAcceptors();
-                    
+
                 if (connector instanceof ServerConnector)
                     selectors+=((ServerConnector)connector).getSelectorManager().getSelectorCount();
             }
@@ -366,7 +366,7 @@ public class Server extends HandlerWrapper implements Attributes
         int needed=1+selectors+acceptors;
         if (max>0 && needed>max)
             throw new IllegalStateException(String.format("Insufficient threads: max=%d < needed(acceptors=%d + selectors=%d + request=1)",max,acceptors,selectors));
-        
+
         try
         {
             super.doStart();
@@ -380,7 +380,7 @@ public class Server extends HandlerWrapper implements Attributes
         for (Connector connector : _connectors)
         {
             try
-            {   
+            {
                 connector.start();
             }
             catch(Throwable e)
@@ -388,7 +388,7 @@ public class Server extends HandlerWrapper implements Attributes
                 mex.add(e);
             }
         }
-        
+
         if (isDumpAfterStart())
             dumpStdErr();
 
@@ -422,7 +422,7 @@ public class Server extends HandlerWrapper implements Attributes
             futures.add(connector.shutdown());
 
         // Then tell the contexts that we are shutting down
-        
+
         Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
         for (Handler graceful : gracefuls)
             futures.add(((Graceful)graceful).shutdown());
@@ -480,11 +480,11 @@ public class Server extends HandlerWrapper implements Attributes
 
         if (getStopAtShutdown())
             ShutdownThread.deregister(this);
-        
+
         //Unregister the Server with the handler thread for receiving
         //remote stop commands as we are stopped already
         ShutdownMonitor.deregister(this);
-        
+
         mex.ifExceptionThrow();
     }
 
@@ -538,7 +538,7 @@ public class Server extends HandlerWrapper implements Attributes
 
         final Request baseRequest=connection.getRequest();
         final String path=event.getPath();
-        
+
         if (path!=null)
         {
             // this is a dispatch with a path
@@ -724,6 +724,6 @@ public class Server extends HandlerWrapper implements Attributes
             _seconds = seconds;
             _dateField = dateField;
         }
-        
+
     }
 }

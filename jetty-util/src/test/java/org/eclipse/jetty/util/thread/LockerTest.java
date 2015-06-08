@@ -18,23 +18,41 @@
 
 package org.eclipse.jetty.util.thread;
 
+import java.util.Arrays;
+import java.util.Collection;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
 
 import static org.junit.Assert.assertFalse;
 import static org.junit.Assert.assertTrue;
 
-public class SpinLockTest
+@RunWith(Parameterized.class)
+public class LockerTest
 {
+    @Parameterized.Parameters
+    public static Collection<Object[]> parameters()
+    {
+        return Arrays.asList(new Object[]{true}, new Object[]{false});
+    }
+
+    private boolean spin;
+
+    public LockerTest(boolean spin)
+    {
+        this.spin = spin;
+    }
+
     @Test
     public void testLocked()
     {
-        SpinLock lock = new SpinLock();
+        Locker lock = new Locker(spin);
         assertFalse(lock.isLocked());
-        
-        try(SpinLock.Lock l = lock.lock())
+
+        try(Locker.Lock l = lock.lock())
         {
             assertTrue(lock.isLocked());
         }
@@ -45,14 +63,14 @@ public class SpinLockTest
 
         assertFalse(lock.isLocked());
     }
-    
+
     @Test
     public void testLockedException()
     {
-        SpinLock lock = new SpinLock();
+        Locker lock = new Locker(spin);
         assertFalse(lock.isLocked());
-        
-        try(SpinLock.Lock l = lock.lock())
+
+        try(Locker.Lock l = lock.lock())
         {
             assertTrue(lock.isLocked());
             throw new Exception();
@@ -72,17 +90,17 @@ public class SpinLockTest
     @Test
     public void testContend() throws Exception
     {
-        final SpinLock lock = new SpinLock();
-        
+        final Locker lock = new Locker(spin);
+
         final CountDownLatch held0 = new CountDownLatch(1);
         final CountDownLatch hold0 = new CountDownLatch(1);
-        
+
         Thread thread0 = new Thread()
         {
             @Override
             public void run()
             {
-                try(SpinLock.Lock l = lock.lock())
+                try(Locker.Lock l = lock.lock())
                 {
                     held0.countDown();
                     hold0.await();
@@ -97,8 +115,8 @@ public class SpinLockTest
         held0.await();
 
         assertTrue(lock.isLocked());
-        
-        
+
+
         final CountDownLatch held1 = new CountDownLatch(1);
         final CountDownLatch hold1 = new CountDownLatch(1);
         Thread thread1 = new Thread()
@@ -106,7 +124,7 @@ public class SpinLockTest
             @Override
             public void run()
             {
-                try(SpinLock.Lock l = lock.lock())
+                try(Locker.Lock l = lock.lock())
                 {
                     held1.countDown();
                     hold1.await();
@@ -120,14 +138,14 @@ public class SpinLockTest
         thread1.start();
         // thread1 will be spinning here
         assertFalse(held1.await(100, TimeUnit.MILLISECONDS));
-        
+
         // Let thread0 complete
         hold0.countDown();
         thread0.join();
-        
+
         // thread1 can progress
         held1.await();
-        
+
         // let thread1 complete
         hold1.countDown();
         thread1.join();
