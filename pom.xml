@@ -219,6 +219,7 @@
             <exclude>jetty-ant/**</exclude>
             <exclude>jetty-infinispan/**</exclude>
             <exclude>tests/test-sessions/test-infinispan-sessions/**</exclude>
+            <exclude>tests/test-sessions/test-sessions-common/src/main/java/org/eclipse/jetty/server/session/AbstractSameNodeLoadTest.java</exclude>
           </excludes>
         </configuration>
         <executions>
@@ -945,6 +946,18 @@
         <property>
           <name>java.version</name>
           <value>1.7.0_55</value>
+        </property>
+      </activation>
+      <properties>
+        <npn.version>1.1.7.v20140316</npn.version>
+      </properties>
+    </profile>
+    <profile>
+      <id>7u71</id>
+      <activation>
+        <property>
+          <name>java.version</name>
+          <value>1.7.0_71</value>
         </property>
       </activation>
       <properties>
