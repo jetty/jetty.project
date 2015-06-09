@@ -600,12 +600,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         private final PathWatchEventType type;
         private int count = 0;
      
-
-
-        /**
-         * @param path
-         * @param type
-         */
         public PathWatchEvent(Path path, PathWatchEventType type)
         {
             this.path = path;
@@ -614,10 +608,6 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
 
         }
 
-        /**
-         * @param path
-         * @param event
-         */
         public PathWatchEvent(Path path, WatchEvent<Path> event)
         {
             this.path = path;
@@ -677,42 +667,26 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             return true;
         }
 
-       
-
-        /**
-         * @return
-         */
         public Path getPath()
         {
             return path;
         }
 
-
-        /**
-         * @return
-         */
         public PathWatchEventType getType()
         {
             return type;
         }
         
-        
-        /**
-         * @param num
-         */
         public void incrementCount(int num)
         {
             count += num;
         }
-        /**
-         * @return
-         */
+
         public int getCount()
         {
             return count;
         }
         
-
         /** 
          * @see java.lang.Object#hashCode()
          */
@@ -816,6 +790,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
          * Will validate the timestamp to see if it is expired, as well as if the file size hasn't changed within the quiet period.
          * <p>
          * Always updates timestamp to 'now' on use of this method.
+         * 
+         * @param now the time now 
          *
          * @param expiredDuration
          *            the expired duration past the timestamp to be considered expired
@@ -829,7 +805,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             long pastdue = _timestamp + expiredUnit.toMillis(expiredDuration);
             _timestamp = now;
 
-            long fileSize = _path.toFile().length(); //File.length() returns 0 for non existant files
+            long fileSize = _path.toFile().length(); // File.length() returns 0 for non existant files
             boolean fileSizeChanged = (_lastFileSize != fileSize);
             _lastFileSize = fileSize;
 
@@ -907,20 +883,17 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     
     /**
      * Construct new PathWatcher
-     * @throws IOException
      */
-    public PathWatcher() throws IOException
+    public PathWatcher()
     {
     }
-
-    
     
     /**
      * Request watch on a the given path (either file or dir)
      * using all Config defaults. In the case of a dir,
      * the default is not to recurse into subdirs for watching.
      * 
-     * @param file
+     * @param file the path to watch
      */
     public void watch (final Path file)
     {
@@ -945,7 +918,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
      * Request watch on a path with custom Config 
      * provided.
      * 
-     * @param config
+     * @param config the configuration to watch
      */
     public void watch (final Config config)
     {
@@ -953,15 +926,12 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         configs.add(config);
     }
     
-
-    
-    
     /**
      * Register path in the config with the file watch service,
      * walking the tree if it happens to be a directory.
      * 
-     * @param baseDir
-     * @throws IOException
+     * @param baseDir the base directory configuration to watch
+     * @throws IOException if unable to walk the filesystem tree
      */
     protected void prepareConfig (final Config baseDir) throws IOException
     {
@@ -1132,12 +1102,10 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         return TimeUnit.MILLISECONDS.convert(updateQuietTimeDuration,updateQuietTimeUnit);
     }
 
-  
-
     /**
      * Generate events to the listeners.
      * 
-     * @param events
+     * @param events the events captured
      */
     protected void notifyOnPathWatchEvents (List<PathWatchEvent> events)
     {
@@ -1177,11 +1145,11 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     }
 
     /**
-     * Register a dir or a file with the WatchService.
+     * Register a path (directory) with the WatchService.
      * 
-     * @param dir
-     * @param root
-     * @throws IOException
+     * @param dir the directory to register
+     * @param root the configuration root
+     * @throws IOException if unable to register the path with the watch service.
      */
     protected void register(Path dir, Config root) throws IOException
     {
@@ -1200,8 +1168,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     
     /**
      * Delete a listener
-     * @param listener
-     * @return
+     * @param listener the listener to remove
+     * @return true if the listener existed and was removed
      */
     public boolean removeListener(Listener listener)
     {
@@ -1370,8 +1338,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
      * Add an event reported by the WatchService to list of pending events
      * that will be sent after their quiet time has expired.
      * 
-     * @param path
-     * @param event
+     * @param path the path to add to the pending list
+     * @param event the pending event
      */
     public void addToPendingList (Path path, PathWatchEvent event)
     {
@@ -1395,7 +1363,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
      * Whether or not to issue notifications for directories and files that
      * already exist when the watcher starts.
      * 
-     * @param notify
+     * @param notify true if existing paths should be notified or not
      */
     public void setNotifyExistingOnStart (boolean notify)
     {
@@ -1410,8 +1378,8 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     /**
      * Set the quiet time.
      * 
-     * @param duration
-     * @param unit
+     * @param duration the quiet time duration
+     * @param unit the quite time unit
      */
     public void setUpdateQuietTime(long duration, TimeUnit unit)
     {
