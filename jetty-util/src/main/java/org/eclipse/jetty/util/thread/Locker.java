@@ -48,7 +48,7 @@ public class Locker
         this(SPIN);
     }
 
-    protected Locker(boolean spin)
+    public Locker(boolean spin)
     {
         this._spin = spin;
     }
