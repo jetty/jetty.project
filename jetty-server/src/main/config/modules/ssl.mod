@@ -57,11 +57,19 @@ jetty.ssl.port=8443
 ## Keystore password
 # jetty.sslContext.keyStorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 
+## Keystore type and provider
+# jetty.sslContext.keyStoreType=JKS
+# jetty.sslContext.keyStoreProvider=
+
 ## KeyManager password
 # jetty.sslContext.keyManagerPassword=OBF:1u2u1wml1z7s1z7a1wnl1u2g
 
 ## Truststore password
 # jetty.sslContext.trustStorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
+
+## Truststore type and provider
+# jetty.sslContext.trustStoreType=JKS
+# jetty.sslContext.trustStoreProvider=
 
 ## whether client certificate authentication is required
 # jetty.sslContext.needClientAuth=false
