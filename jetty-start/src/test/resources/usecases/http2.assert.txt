@@ -30,6 +30,23 @@ PROP|jetty.sslContext.keyStorePassword=friendly
 PROP|jetty.sslContext.keyManagerPassword=icecream
 PROP|jetty.sslContext.trustStorePath=etc/keystore
 PROP|jetty.sslContext.trustStorePassword=sundae
+# (these are the ones set by default from jetty.home modules)
+PROP|jetty.alpn.debug=false
+# PROP|jetty.httpConfig.securePort=8443
+# PROP|jetty.ssl.port=8443
+# PROP|jetty.ssl.idleTimeout=30000
+# PROP|jetty.http.idleTimeout=30000
+# PROP|jetty.httpConfig.delayDispatchUntilContent=false
+# PROP|jetty.server.dumpAfterStart=false
+# PROP|jetty.server.dumpBeforeStop=false
+# PROP|jetty.httpConfig.outputBufferSize=32768
+# PROP|jetty.httpConfig.requestHeaderSize=8192
+# PROP|jetty.httpConfig.responseHeaderSize=8192
+# PROP|jetty.httpConfig.sendDateHeader=false
+# PROP|jetty.httpConfig.sendServerVersion=true
+# PROP|jetty.threadPool.maxThreads=200
+# PROP|jetty.threadPool.minThreads=10
+# PROP|jetty.threadPool.idleTimeout=60000
 
 # The Downloads
 DOWNLOAD|maven://org.mortbay.jetty.alpn/alpn-boot/7.1.0.v20141016|lib/alpn/alpn-boot-7.1.0.v20141016.jar

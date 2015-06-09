@@ -59,6 +59,8 @@ PROP|java.version=1.7.0_60
 # PROP|jetty.sslContext.truststorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
 # PROP|jetty.ssl.port=8443
 # PROP|jetty.ssl.idleTimeout=30000
+# (these are the ones set by default from jetty.home modules)
+PROP|jetty.alpn.debug=false
 PROP|jetty.http.port=8080
 PROP|jetty.httpConfig.delayDispatchUntilContent=false
 PROP|jetty.server.dumpAfterStart=false

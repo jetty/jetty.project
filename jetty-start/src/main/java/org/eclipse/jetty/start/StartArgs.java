@@ -1047,6 +1047,13 @@ public class StartArgs
 
     public void parseModule(Module module)
     {
+        if(module.hasDefaultConfig()) 
+        {
+            for(String line: module.getDefaultConfig())
+            {
+                parse(line,module.getFilesystemRef(),false);
+            }
+        }
     }
 
     public void resolveExtraXmls(BaseHome baseHome) throws IOException
