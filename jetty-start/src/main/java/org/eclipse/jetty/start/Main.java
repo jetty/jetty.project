@@ -237,7 +237,7 @@ public class Main
         args.dumpActiveXmls(baseHome);
     }
 
-    private void listModules(StartArgs args)
+    public void listModules(StartArgs args)
     {
         StartLog.endStartLog();
         System.out.println();
@@ -308,6 +308,17 @@ public class Main
 
             args.setAllModules(modules);
             List<Module> activeModules = modules.getSelected();
+            
+            final Version START_VERSION = new Version(StartArgs.VERSION);
+            
+            for(Module enabled: activeModules)
+            {
+                if(enabled.getVersion().isNewerThan(START_VERSION))
+                {
+                    throw new UsageException(UsageException.ERR_BAD_GRAPH, "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion()
+                            + "] which is newer than this version of jetty [" + START_VERSION + "]");
+                }
+            }
             
             for(String name: args.getSkipFileValidationModules())
             {

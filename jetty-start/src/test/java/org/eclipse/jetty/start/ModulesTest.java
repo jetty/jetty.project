@@ -142,6 +142,9 @@ public class ModulesTest
         expected.add("stats");
         expected.add("webapp");
         expected.add("websocket");
+        expected.add("infinispan");
+        expected.add("jdbc-sessions");
+        expected.add("nosql");
         
         ConfigurationAssert.assertContainsUnordered("All Modules",expected,moduleNames);
     }
@@ -247,6 +250,7 @@ public class ModulesTest
         expected.add("deploy");
         expected.add("plus");
         expected.add("annotations");
+        expected.add("jdbc-sessions");
 
         List<String> resolved = new ArrayList<>();
         for (Module module : modules.getSelected())

@@ -38,6 +38,8 @@ import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
  */
 public class RebuildTestResources
 {
+    public static final String JETTY_VERSION = "9.3";
+    
     public static void main(String[] args)
     {
         File realDistHome = MavenTestingUtils.getProjectDir("../jetty-distribution/target/distribution");
@@ -129,7 +131,7 @@ public class RebuildTestResources
         FS.ensureDirExists(libsDir.toFile());
 
         PathMatcher matcher = getPathMatcher("glob:**.jar");
-        Renamer renamer = new RegexRenamer("-9\\.[0-9.]*(v[0-9-]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?","-TEST");
+        Renamer renamer = new RegexRenamer("-9\\.[0-9.]*(v[0-9-]*)?(-SNAPSHOT)?(RC[0-9])?(M[0-9])?","-" + JETTY_VERSION);
         FileCopier copier = new TouchFileCopier();
         copyDir(srcDir.resolve("lib"),libsDir,matcher,renamer,copier);
     }

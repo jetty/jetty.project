@@ -24,6 +24,7 @@ import java.io.File;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.start.util.RebuildTestResources;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Rule;
 import org.junit.Test;
@@ -48,6 +49,10 @@ public class TestBadUseCases
                 "Missing referenced dependency: alpn-impl/alpn-1.7.0_01", 
                 new String[]{"java.version=1.7.0_01"}});
         
+        ret.add(new Object[]{ "versioned-modules-too-new", 
+                "Module [http3] specifies jetty version [10.0] which is newer than this version of jetty [" + RebuildTestResources.JETTY_VERSION + "]", 
+                null});
+        
         return ret;
     }
     
@@ -66,6 +71,7 @@ public class TestBadUseCases
     @Test
     public void testBadConfig() throws Exception
     {
+        System.setProperty("jetty.version", RebuildTestResources.JETTY_VERSION);
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName);
 

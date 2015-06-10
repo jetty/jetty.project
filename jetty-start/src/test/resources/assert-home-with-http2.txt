@@ -3,6 +3,7 @@ XML|${jetty.base}/etc/home-base-warning.xml
 XML|${jetty.base}/etc/jetty.xml
 XML|${jetty.base}/etc/jetty-http.xml
 XML|${jetty.base}/etc/jetty-ssl.xml
+XML|${jetty.base}/etc/jetty-ssl-context.xml
 XML|${jetty.base}/etc/jetty-alpn.xml
 XML|${jetty.base}/etc/jetty-deploy.xml
 XML|${jetty.base}/etc/jetty-http2.xml
@@ -10,58 +11,51 @@ XML|${jetty.base}/etc/jetty-plus.xml
 XML|${jetty.base}/etc/jetty-annotations.xml
 
 # The LIBs we expect (order is irrelevant)
-LIB|${jetty.base}/lib/apache-jsp/org.eclipse.jetty.apache-jsp-TEST.jar
+LIB|${jetty.base}/lib/apache-jsp/org.eclipse.jetty.apache-jsp-9.3.jar
 LIB|${jetty.base}/lib/apache-jsp/org.eclipse.jetty.orbit.org.eclipse.jdt.core-3.8.2.v20130121.jar
-LIB|${jetty.base}/lib/apache-jsp/org.mortbay.jasper.apache-el-8.0.9.M3.jar
-LIB|${jetty.base}/lib/apache-jsp/org.mortbay.jasper.apache-jsp-8.0.9.M3.jar
+LIB|${jetty.base}/lib/apache-jsp/org.mortbay.jasper.apache-el-8.0.20.M0.jar
+LIB|${jetty.base}/lib/apache-jsp/org.mortbay.jasper.apache-jsp-8.0.20.M0.jar
 LIB|${jetty.base}/lib/apache-jstl/org.apache.taglibs.taglibs-standard-impl-1.2.1.jar
 LIB|${jetty.base}/lib/apache-jstl/org.apache.taglibs.taglibs-standard-spec-1.2.1.jar
-LIB|${jetty.base}/lib/jetty-jndi-TEST.jar
 LIB|${jetty.base}/lib/jndi/javax.mail.glassfish-1.4.1.v201005082020.jar
 LIB|${jetty.base}/lib/jndi/javax.transaction-api-1.2.jar
-LIB|${jetty.base}/lib/jetty-plus-TEST.jar
-LIB|${jetty.base}/lib/jetty-annotations-TEST.jar
 LIB|${jetty.base}/lib/annotations/asm-5.0.1.jar
 LIB|${jetty.base}/lib/annotations/asm-commons-5.0.1.jar
 LIB|${jetty.base}/lib/annotations/javax.annotation-api-1.2.jar
 LIB|${jetty.base}/lib/websocket/javax.websocket-api-1.0.jar
-LIB|${jetty.base}/lib/websocket/javax-websocket-client-impl-TEST.jar
-LIB|${jetty.base}/lib/websocket/javax-websocket-server-impl-TEST.jar
-LIB|${jetty.base}/lib/websocket/websocket-api-TEST.jar
-LIB|${jetty.base}/lib/websocket/websocket-client-TEST.jar
-LIB|${jetty.base}/lib/websocket/websocket-common-TEST.jar
-LIB|${jetty.base}/lib/websocket/websocket-server-TEST.jar
-LIB|${jetty.base}/lib/websocket/websocket-servlet-TEST.jar
-LIB|${jetty.base}/lib/jetty-http-TEST.jar
-LIB|${jetty.base}/lib/jetty-io-TEST.jar
-LIB|${jetty.base}/lib/jetty-deploy-TEST.jar
+LIB|${jetty.base}/lib/websocket/javax-websocket-client-impl-9.3.jar
+LIB|${jetty.base}/lib/websocket/javax-websocket-server-impl-9.3.jar
+LIB|${jetty.base}/lib/websocket/websocket-api-9.3.jar
+LIB|${jetty.base}/lib/websocket/websocket-client-9.3.jar
+LIB|${jetty.base}/lib/websocket/websocket-common-9.3.jar
+LIB|${jetty.base}/lib/websocket/websocket-server-9.3.jar
+LIB|${jetty.base}/lib/websocket/websocket-servlet-9.3.jar
+LIB|${jetty.base}/lib/jetty-alpn-server-9.3.jar
 LIB|${jetty.base}/lib/jetty-schemas-3.1.jar
-LIB|${jetty.base}/lib/jetty-security-TEST.jar
-LIB|${jetty.base}/lib/jetty-server-TEST.jar
-LIB|${jetty.base}/lib/jetty-servlet-TEST.jar
-LIB|${jetty.base}/lib/jetty-util-TEST.jar
-LIB|${jetty.base}/lib/jetty-webapp-TEST.jar
-LIB|${jetty.base}/lib/jetty-xml-TEST.jar
-LIB|${jetty.base}/lib/jetty-alpn-server-TEST.jar
-LIB|${jetty.base}/lib/http2/http2-common-TEST.jar
-LIB|${jetty.base}/lib/http2/http2-hpack-TEST.jar
-LIB|${jetty.base}/lib/http2/http2-server-TEST.jar
+LIB|${jetty.base}/lib/http2/http2-common-9.3.jar
+LIB|${jetty.base}/lib/http2/http2-hpack-9.3.jar
+LIB|${jetty.base}/lib/http2/http2-server-9.3.jar
 LIB|${jetty.base}/lib/servlet-api-3.1.jar
+LIB|${jetty.base}/lib/jetty-annotations-9.3.jar
+LIB|${jetty.base}/lib/jetty-http-9.3.jar
+LIB|${jetty.base}/lib/jetty-io-9.3.jar
+LIB|${jetty.base}/lib/jetty-deploy-9.3.jar
+LIB|${jetty.base}/lib/jetty-plus-9.3.jar
+LIB|${jetty.base}/lib/jetty-schemas-3.1.jar
+LIB|${jetty.base}/lib/jetty-security-9.3.jar
+LIB|${jetty.base}/lib/jetty-server-9.3.jar
+LIB|${jetty.base}/lib/jetty-servlet-9.3.jar
+LIB|${jetty.base}/lib/jetty-util-9.3.jar
+LIB|${jetty.base}/lib/jetty-webapp-9.3.jar
+LIB|${jetty.base}/lib/jetty-xml-9.3.jar
+LIB|${jetty.base}/lib/jetty-jndi-9.3.jar
+
 
 # The Properties we expect (order is irrelevant)
 # (these are the properties we actually set in the configuration)
 PROP|java.version=1.7.0_60
-# PROP|jetty.sslContext.keyManagerPassword=OBF:1u2u1wml1z7s1z7a1wnl1u2g
-# PROP|jetty.sslContext.keystorePath=etc/keystore
-# PROP|jetty.sslContext.keystorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
-# PROP|jetty.httpConfig.securePort=8443
-# PROP|jetty.sslContext.truststorePath=etc/keystore
-# PROP|jetty.sslContext.truststorePassword=OBF:1vny1zlo1x8e1vnw1vn61x8g1zlu1vn4
-# PROP|jetty.ssl.port=8443
-# PROP|jetty.ssl.idleTimeout=30000
-# (these are the ones set by default from jetty.home modules)
-PROP|jetty.alpn.debug=false
 PROP|jetty.http.port=8080
+PROP|jetty.ssl.port=8443
 PROP|jetty.httpConfig.delayDispatchUntilContent=false
 PROP|jetty.server.dumpAfterStart=false
 PROP|jetty.server.dumpBeforeStop=false
@@ -80,7 +74,7 @@ JVM|-Xmx1024m
 
 # Downloads
 DOWNLOAD|maven://org.mortbay.jetty.alpn/alpn-boot/7.1.0.v20141016|lib/alpn/alpn-boot-7.1.0.v20141016.jar
-DOWNLOAD|http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/main/config/etc/keystore|etc/keystore
+DOWNLOAD|http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/src/test/config/etc/keystore?id=master|etc/keystore
 
 # Files
 FILE|lib/
