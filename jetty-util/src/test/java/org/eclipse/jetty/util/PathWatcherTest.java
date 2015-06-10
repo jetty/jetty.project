@@ -36,8 +36,6 @@ import java.util.Map;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
-import javax.swing.event.EventListenerList;
-
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
@@ -470,6 +468,58 @@ public class PathWatcherTest
             expected.put("bar/WEB-INF/web.xml",new PathWatchEventType[] { ADDED });
             expected.put("foo.war",new PathWatchEventType[] { ADDED });
 
+            capture.assertEvents(expected);
+        }
+        finally
+        {
+            pathWatcher.stop();
+        }
+    }
+    
+    @Test
+    public void testGlobPattern () throws Exception
+    {
+        Path dir = testdir.getEmptyDir().toPath();
+
+        // Files we are interested in
+        Files.createFile(dir.resolve("a.txt"));
+        Files.createDirectories(dir.resolve("b/b.txt"));
+        Files.createDirectories(dir.resolve("c/d"));
+        Files.createFile(dir.resolve("c/d/d.txt"));
+        Files.createFile(dir.resolve(".foo.txt"));
+
+        // Files we don't care about
+        Files.createFile(dir.resolve("txt.foo"));
+        Files.createFile(dir.resolve("b/foo.xml"));
+    
+
+        PathWatcher pathWatcher = new PathWatcher();
+        pathWatcher.setUpdateQuietTime(300,TimeUnit.MILLISECONDS);
+
+        // Add listener
+        PathWatchEventCapture capture = new PathWatchEventCapture(dir);
+        capture.setFinishTrigger(3);
+        pathWatcher.addListener(capture);
+
+        // Add test dir configuration
+        PathWatcher.Config baseDirConfig = new PathWatcher.Config(dir);
+        baseDirConfig.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
+        baseDirConfig.addExcludeHidden();
+        baseDirConfig.addIncludeGlobRelative("**.txt");
+        pathWatcher.watch(baseDirConfig);
+
+        try
+        {
+            pathWatcher.start();
+
+            // Let quiet time do its thing
+            awaitQuietTime(pathWatcher);
+
+            Map<String, PathWatchEventType[]> expected = new HashMap<>();
+
+            expected.put("a.txt",new PathWatchEventType[] { ADDED });
+            expected.put("b/b.txt",new PathWatchEventType[] { ADDED });
+            expected.put("c/d/d.txt",new PathWatchEventType[] { ADDED });
             capture.assertEvents(expected);
         }
         finally

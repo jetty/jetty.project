@@ -48,6 +48,7 @@ import java.util.List;
 import java.util.Locale;
 import java.util.Map;
 import java.util.Scanner;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.TimeUnit;
 
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
@@ -867,7 +868,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
     private  boolean nativeWatchService;
     
     private Map<WatchKey, Config> keys = new HashMap<>();
-    private List<EventListener> listeners = new ArrayList<>();
+    private List<EventListener> listeners = new CopyOnWriteArrayList<>(); //a listener may modify the listener list directly or by stopping the PathWatcher
     private List<Config> configs = new ArrayList<>();
 
     /**
@@ -905,13 +906,33 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         {
             abs = file.toAbsolutePath();
         }
-        Config config = new Config(abs.getParent());
-        // the include for the directory itself
-        config.addIncludeGlobRelative("");
-        // the include for the file
-        config.addIncludeGlobRelative(file.getFileName().toString());
         
-       watch(config);
+        //Check we don't already have a config for the parent directory. 
+        //If we do, add in this filename.
+        Config config = null;
+        Path parent = abs.getParent();
+        for (Config c:configs)
+        {
+            if (c.getPath().equals(parent))
+            {
+                config = c;
+                break;
+            }
+        }
+        
+        //Make a new config
+        if (config == null)
+        {
+            config = new Config(abs.getParent());
+            // the include for the directory itself
+            config.addIncludeGlobRelative("");
+            //add the include for the file
+            config.addIncludeGlobRelative(file.getFileName().toString());
+            watch(config);
+        }
+        else
+            //add the include for the file
+            config.addIncludeGlobRelative(file.getFileName().toString());
     }
     
     /**
@@ -1028,6 +1049,20 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
         pendingEvents.clear();
         super.doStop();
     }
+    
+    
+    /**
+     * Remove all current configs and listeners.
+     */
+    public void reset ()
+    {
+        if (!isStopped())
+            throw new IllegalStateException("PathWatcher must be stopped before reset.");
+        
+        configs.clear();
+        listeners.clear();
+    }
+    
     
     /**
      * Create a fresh WatchService and determine if it is a 
@@ -1153,12 +1188,15 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
      */
     protected void register(Path dir, Config root) throws IOException
     {
+       
         LOG.debug("Registering watch on {}",dir);
-        if(watchModifiers != null) {
+        if(watchModifiers != null) 
+        {
             // Java Watcher
             WatchKey key = dir.register(watchService,WATCH_EVENT_KINDS,watchModifiers);
             keys.put(key,root.asSubConfig(dir));
-        } else {
+        } else 
+        {
             // Native Watcher
             WatchKey key = dir.register(watchService,WATCH_EVENT_KINDS);
             keys.put(key,root.asSubConfig(dir));
