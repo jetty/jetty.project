@@ -2,6 +2,9 @@
 # JAMon Jetty module
 #
 
+[version]
+9.3
+
 [depend]
 stats
 deploy

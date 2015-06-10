@@ -2,6 +2,9 @@
 # Jetty NoSql module
 #
 
+[version]
+9.3
+
 [depend]
 webapp
 

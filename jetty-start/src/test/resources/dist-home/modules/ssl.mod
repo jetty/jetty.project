@@ -1,6 +1,9 @@
 #
 # SSL Keystore module
 #
+[version]
+9.3
+
 [name]
 ssl
 

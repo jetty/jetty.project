@@ -2,6 +2,9 @@
 # Jetty JDBC Session module
 #
 
+[version]
+9.3
+
 [depend]
 annotations
 webapp

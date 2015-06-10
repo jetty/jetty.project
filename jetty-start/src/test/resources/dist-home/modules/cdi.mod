@@ -2,6 +2,9 @@
 # CDI / Weld Jetty module
 #
 
+[version]
+9.3
+
 [depend]
 deploy
 annotations

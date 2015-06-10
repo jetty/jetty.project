@@ -2,6 +2,9 @@
 # Jetty Overlay module
 #
 
+[version]
+9.3
+
 [depend]
 deploy
 

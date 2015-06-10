@@ -1,3 +1,6 @@
+[version]
+9.3
+
 [name]
 protonego-boot
 

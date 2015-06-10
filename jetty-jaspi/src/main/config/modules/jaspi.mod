@@ -2,6 +2,9 @@
 # Jetty JASPI Module
 #
 
+[version]
+9.3
+
 [depend]
 security
 

@@ -2,6 +2,9 @@
 # Jetty HTTPS Connector
 #
 
+[version]
+9.3
+
 [depend]
 ssl
 

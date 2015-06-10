@@ -14,3 +14,5 @@ LIB|${jetty.home}/lib/servlet-api-3.1.jar
 # The Properties we expect (order is irrelevant)
 # (this is the property we actually set in jetty.base)
 PROP|jetty.http.port=9090
+PROP|from-module=old
+PROP|the-future=is-new

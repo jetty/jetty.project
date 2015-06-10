@@ -2,6 +2,9 @@
 # Jetty Proxy module
 #
 
+[version]
+9.3
+
 [depend]
 servlet
 client

@@ -55,7 +55,6 @@ LIB|${jetty.base}/lib/jetty-jndi-9.3.jar
 # (these are the properties we actually set in the configuration)
 PROP|java.version=1.7.0_60
 PROP|jetty.http.port=8080
-PROP|jetty.ssl.port=8443
 PROP|jetty.httpConfig.delayDispatchUntilContent=false
 PROP|jetty.server.dumpAfterStart=false
 PROP|jetty.server.dumpBeforeStop=false

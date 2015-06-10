@@ -2,6 +2,9 @@
 # Jetty std err/out logging
 #
 
+[version]
+9.3
+
 [xml]
 etc/jetty-logging.xml
 

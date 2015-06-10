@@ -2,6 +2,9 @@
 # Jetty Infinispan module
 #
 
+[version]
+9.3
+
 [depend]
 annotations
 webapp

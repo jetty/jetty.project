@@ -5,6 +5,9 @@
 # The resulting connector will accept both HTTP/1 and HTTP/2 connections.
 #
 
+[version]
+9.3
+
 [depend]
 http
 

@@ -16,6 +16,9 @@
 # All versions of alpn-boot can be found at
 # http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
 
+[version]
+9.3
+
 [name]
 alpn
 
