@@ -943,18 +943,28 @@ public class XmlConfiguration
             String value = properties.get(name);
             
             // Look for a deprecated name value
-            if (value==null && !deprecated.isEmpty())
+
+            String alternate=null;
+            if (!deprecated.isEmpty())
             {
                 for (Object d : deprecated)
-                {
-                    value = properties.get(StringUtil.valueOf(d));
-                    if (value!=null)
+                { 
+                    String v = properties.get(StringUtil.valueOf(d));
+                    if (v!=null)
                     {
-                        LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
-                        break;
+                        if (value==null)
+                            LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
+                        else
+                            LOG.warn("Property '{}' is deprecated, value from '{}' used", d, name);
                     }
+                    if (alternate==null)
+                        alternate=v;;
                 }
             }
+
+            // use alternate from deprecated
+            if (value==null)
+                value=alternate;
             
             // use default value
             if (value==null)
@@ -985,18 +995,27 @@ public class XmlConfiguration
             String value = System.getProperty(name);
             
             // Look for a deprecated name value
-            if (value==null && !deprecated.isEmpty())
+            String alternate=null;
+            if (!deprecated.isEmpty())
             {
                 for (Object d : deprecated)
-                {
-                    value = System.getProperty(StringUtil.valueOf(d));
-                    if (value!=null)
+                { 
+                    String v = System.getProperty(StringUtil.valueOf(d));
+                    if (v!=null)
                     {
-                        LOG.warn("Property '{}' is deprecated, use '{}' instead", d, name);
-                        break;
+                        if (value==null)
+                            LOG.warn("SystemProperty '{}' is deprecated, use '{}' instead", d, name);
+                        else
+                            LOG.warn("SystemProperty '{}' is deprecated, value from '{}' used", d, name);
                     }
+                    if (alternate==null)
+                        alternate=v;;
                 }
             }
+
+            // use alternate from deprecated
+            if (value==null)
+                value=alternate;
             
             // use default value
             if (value==null)
