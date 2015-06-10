@@ -18,11 +18,13 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
+import static org.eclipse.jetty.start.UsageException.*;
 
 import java.io.File;
 import java.io.FileOutputStream;
 import java.io.IOException;
+import java.io.InputStream;
+import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
@@ -32,6 +34,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.ListIterator;
 import java.util.Map;
+import java.util.Properties;
 import java.util.Set;
 import java.util.StringTokenizer;
 
@@ -49,9 +52,11 @@ public class StartArgs
 
     static
     {
+        // Use command line versions
         String ver = System.getProperty("jetty.version",null);
         String tag = System.getProperty("jetty.tag.version","master");
 
+        // Use META-INF/MANIFEST.MF versions
         if (ver == null)
         {
             Package pkg = StartArgs.class.getPackage();
@@ -65,6 +70,26 @@ public class StartArgs
             }
         }
 
+        // Use jetty-version.properties values
+        if (ver == null)
+        {
+            URL url = Thread.currentThread().getContextClassLoader().getResource("jetty-version.properties");
+            if (url != null)
+            {
+                try (InputStream in = url.openStream())
+                {
+                    Properties props = new Properties();
+                    props.load(in);
+                    ver = props.getProperty("jetty.version");
+                }
+                catch (IOException ignore)
+                {
+                    StartLog.debug(ignore);
+                }
+            }
+        }
+        
+        // Default values
         if (ver == null)
         {
             ver = "0.0";
@@ -74,6 +99,7 @@ public class StartArgs
             }
         }
 
+        // Set Tag Defaults
         if (tag == null || tag.contains("-SNAPSHOT"))
         {
             tag = "master";
