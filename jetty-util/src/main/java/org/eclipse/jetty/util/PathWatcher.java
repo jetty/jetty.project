@@ -1244,7 +1244,7 @@ public class PathWatcher extends AbstractLifeCycle implements Runnable
             LOG.debug("Starting java.nio file watching with {}",watchService);
         }
 
-        while (true)
+        while (watchService != null)
         {
             WatchKey key = null;
 
