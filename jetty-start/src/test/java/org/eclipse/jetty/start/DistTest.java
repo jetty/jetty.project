@@ -20,6 +20,7 @@ package org.eclipse.jetty.start;
 
 import static org.eclipse.jetty.start.StartMatchers.fileExists;
 import static org.eclipse.jetty.start.StartMatchers.notPathExists;
+import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.assertThat;
 
 import java.nio.file.Files;
@@ -83,10 +84,29 @@ public class DistTest
         Path basePath = testdir.getEmptyDir().toPath();
 
         List<String> cmds = getBaseCommandLine(basePath);
-
         cmds.add("--add-to-start=jstl");
-
         execMain(cmds);
+        
+        Path startIni = basePath.resolve("start.ini");
+        assertThat("start.ini", startIni, fileExists());
+
+        List<String> startIniLines = new TextFile(startIni).getLines();
+        // Modules that should be present
+        assertThat("start.ini", startIniLines, hasItem("--module=jstl"));
+        assertThat("start.ini", startIniLines, hasItem("--module=server"));
+        
+        // Test for modules that should not be present.
+        // Namely modules that are transitive and without ini-template.
+        assertThat("start.ini", startIniLines, not(hasItem("--module=servlet")));
+        assertThat("start.ini", startIniLines, not(hasItem("--module=apache-jsp")));
+        assertThat("start.ini", startIniLines, not(hasItem("--module=apache-jstl")));
+        assertThat("start.ini", startIniLines, not(hasItem("--module=jndi")));
+        assertThat("start.ini", startIniLines, not(hasItem("--module=security")));
+        assertThat("start.ini", startIniLines, not(hasItem("--module=webapp")));
+        assertThat("start.ini", startIniLines, not(hasItem("--module=plus")));
+        assertThat("start.ini", startIniLines, not(hasItem("--module=annotations")));
+        assertThat("start.ini", startIniLines, not(hasItem("--module=jsp")));
+        
     }
     
     /**

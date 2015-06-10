@@ -216,7 +216,7 @@ public class ModuleGraphWriter
             }
         }
 
-        if (!module.getDefaultConfig().isEmpty())
+        if (!module.getIniTemplate().isEmpty())
         {
             List<String> inis = module.getDefaultConfig();
             writeModuleDetailHeader(out,"INI Template",inis.size());

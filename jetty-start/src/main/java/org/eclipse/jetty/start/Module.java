@@ -291,7 +291,8 @@ public class Module extends Node<Module>
                     {
                         if ("INI-TEMPLATE".equals(sectionType))
                         {
-                            defaultConfig.add(line);
+                            iniTemplate.add(line);
+                            hasIniTemplate = true;
                         }
                     }
                     else
