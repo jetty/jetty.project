@@ -40,8 +40,7 @@ import org.eclipse.jetty.start.graph.OnlyTransitivePredicate;
 /**
  * Management of the <code>${jetty.base}/start.ini</code> based configuration.
  * <p>
- * Implementation of the <code>--add-to-start=[name]</code> command line
- * behavior
+ * Implementation of the <code>--add-to-start=[name]</code> command line behavior
  */
 public class StartIniBuilder implements BaseBuilder.Config
 {
@@ -96,14 +95,17 @@ public class StartIniBuilder implements BaseBuilder.Config
             // skip, already present
             return false;
         }
-        
-        if (module.isVirtual())
+
+        if (module.isDynamic())
         {
-            // skip, no need to reference
-            StartLog.info("%-15s skipping (virtual module)",module.getName());
+            if (module.hasIniTemplate())
+            {
+                // warn
+                StartLog.warn("%-15s not adding [ini-template] from dynamic module",module.getName());
+            }
             return false;
         }
-        
+
         String mode = "";
         boolean isTransitive = module.matches(OnlyTransitivePredicate.INSTANCE);
         if (isTransitive)
@@ -111,10 +113,10 @@ public class StartIniBuilder implements BaseBuilder.Config
             mode = "(transitively) ";
         }
 
-        StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(startIni));
-        
         if (module.hasIniTemplate() || !isTransitive)
         {
+            StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(startIni));
+
             // Append to start.ini
             try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))
             {
@@ -137,7 +139,6 @@ public class StartIniBuilder implements BaseBuilder.Config
 
         for (String line : module.getIniTemplate())
         {
-            // TODO: validate property keys
             out.println(line);
         }
 

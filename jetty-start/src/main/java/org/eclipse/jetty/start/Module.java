@@ -241,7 +241,12 @@ public class Module extends Node<Module>
         setName(this.fileRef);
     }
 
-    public boolean isVirtual()
+    /**
+     * Indicates a module that is dynamic in nature
+     * 
+     * @return a module where the declared metadata name does not match the filename reference (aka a dynamic module)
+     */
+    public boolean isDynamic()
     {
         return !getName().equals(fileRef);
     }
@@ -289,6 +294,8 @@ public class Module extends Node<Module>
                     // blank lines and comments are valid for ini-template section
                     if ((line.length() == 0) || line.startsWith("#"))
                     {
+                        // Remember ini comments and whitespace (empty lines)
+                        // for the [ini-template] section
                         if ("INI-TEMPLATE".equals(sectionType))
                         {
                             iniTemplate.add(line);
@@ -308,7 +315,7 @@ public class Module extends Node<Module>
                             case "FILES":
                                 files.add(line);
                                 break;
-                            case "DEFAULTS": // old name from 9.2.x
+                            case "DEFAULTS": // old name introduced in 9.2.x
                             case "INI": // new name for 9.3+
                                 defaultConfig.add(line);
                                 hasDefaultConfig = true;
@@ -372,7 +379,7 @@ public class Module extends Node<Module>
     {
         StringBuilder str = new StringBuilder();
         str.append("Module[").append(getName());
-        if (isVirtual())
+        if (isDynamic())
         {
             str.append(",file=").append(fileRef);
         }
