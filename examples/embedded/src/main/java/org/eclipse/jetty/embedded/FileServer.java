@@ -23,6 +23,7 @@ import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.handler.DefaultHandler;
 import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.server.handler.ResourceHandler;
+import org.eclipse.jetty.server.handler.gzip.GzipHandler;
 
 /** 
  * Simple Jetty FileServer.
@@ -47,9 +48,11 @@ public class FileServer
         resource_handler.setResourceBase(".");
 
         // Add the ResourceHandler to the server.
+        GzipHandler gzip = new GzipHandler();
+        server.setHandler(gzip);
         HandlerList handlers = new HandlerList();
         handlers.setHandlers(new Handler[] { resource_handler, new DefaultHandler() });
-        server.setHandler(handlers);
+        gzip.setHandler(handlers);
 
         // Start things up! By using the server.join() the server thread will join with the current thread.
         // See "http://docs.oracle.com/javase/1.5.0/docs/api/java/lang/Thread.html#join()" for more details.

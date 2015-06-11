@@ -586,6 +586,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
     public void sendContent(ByteBuffer content) throws IOException
     {
         write(content, true);
+        closed();
     }
 
     /**
