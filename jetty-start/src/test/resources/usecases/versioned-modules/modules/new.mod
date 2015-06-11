@@ -5,6 +5,6 @@
 [version]
 9.3
 
-[defaults]
+[ini]
 the-future=is-new
 

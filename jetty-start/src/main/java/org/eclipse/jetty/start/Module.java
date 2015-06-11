@@ -308,7 +308,8 @@ public class Module extends Node<Module>
                             case "FILES":
                                 files.add(line);
                                 break;
-                            case "DEFAULTS":
+                            case "DEFAULTS": // old name from 9.2.x
+                            case "INI": // new name for 9.3+
                                 defaultConfig.add(line);
                                 hasDefaultConfig = true;
                                 break;
