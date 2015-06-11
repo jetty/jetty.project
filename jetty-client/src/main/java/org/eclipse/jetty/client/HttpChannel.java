@@ -21,13 +21,11 @@ package org.eclipse.jetty.client;
 import org.eclipse.jetty.client.api.Result;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
-import org.eclipse.jetty.util.thread.SpinLock;
 
 public abstract class HttpChannel
 {
     protected static final Logger LOG = Log.getLogger(HttpChannel.class);
 
-    private final SpinLock _lock = new SpinLock();
     private final HttpDestination _destination;
     private HttpExchange _exchange;
 
@@ -53,7 +51,7 @@ public abstract class HttpChannel
     {
         boolean result = false;
         boolean abort = true;
-        try (SpinLock.Lock lock = _lock.lock())
+        synchronized (this)
         {
             if (_exchange == null)
             {
@@ -76,7 +74,7 @@ public abstract class HttpChannel
     public boolean disassociate(HttpExchange exchange)
     {
         boolean result = false;
-        try (SpinLock.Lock lock = _lock.lock())
+        synchronized (this)
         {
             HttpExchange existing = _exchange;
             _exchange = null;
@@ -86,6 +84,7 @@ public abstract class HttpChannel
                 result = true;
             }
         }
+
         if (LOG.isDebugEnabled())
             LOG.debug("{} disassociated {} from {}", exchange, result, this);
         return result;
@@ -93,7 +92,7 @@ public abstract class HttpChannel
 
     public HttpExchange getHttpExchange()
     {
-        try (SpinLock.Lock lock = _lock.lock())
+        synchronized (this)
         {
             return _exchange;
         }
