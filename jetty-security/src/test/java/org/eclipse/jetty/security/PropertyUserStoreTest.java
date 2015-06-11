@@ -20,6 +20,7 @@ package org.eclipse.jetty.security;
 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
+import static org.junit.Assume.*;
 
 import java.io.BufferedWriter;
 import java.io.File;
@@ -32,6 +33,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicInteger;
 
 import org.eclipse.jetty.toolchain.test.FS;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.security.Credential;
 import org.hamcrest.Matcher;
@@ -138,6 +140,7 @@ public class PropertyUserStoreTest
     @Test
     public void testPropertyUserStoreLoadUpdateUser() throws Exception
     {
+        assumeThat("Skipping on OSX", OS.IS_OSX, is(false));
         final UserCount userCount = new UserCount();
         final File usersFile = initUsersText();
 
@@ -164,6 +167,7 @@ public class PropertyUserStoreTest
     @Test
     public void testPropertyUserStoreLoadRemoveUser() throws Exception
     {
+        assumeThat("Skipping on OSX", OS.IS_OSX, is(false));
         final UserCount userCount = new UserCount();
         // initial user file (3) users
         final File usersFile = initUsersText();
