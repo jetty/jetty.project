@@ -2,6 +2,9 @@
 # Base Server Module
 #
 
+[version]
+9.3
+
 [optional]
 jvm
 ext

@@ -2,6 +2,9 @@
 # HTTP2 Support Module
 #
 
+[version]
+9.3
+
 [depend]
 ssl
 alpn

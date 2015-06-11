@@ -59,23 +59,28 @@ public class StartDirBuilder implements BaseBuilder.Config
             StartLog.info("%-15s skipping (virtual module)",module.getName());
             return false;
         }
-        
+
         String mode = "";
-        if (module.matches(OnlyTransitivePredicate.INSTANCE))
+        boolean isTransitive = module.matches(OnlyTransitivePredicate.INSTANCE);
+        if (isTransitive)
         {
             mode = "(transitively) ";
         }
-        
+
         // Create start.d/{name}.ini
         Path ini = startDir.resolve(module.getName() + ".ini");
         StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(ini));
-        
-        try (BufferedWriter writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING))
+
+        if (module.hasIniTemplate() || !isTransitive)
         {
-            writeModuleSection(writer,module);
+            try (BufferedWriter writer = Files.newBufferedWriter(ini,StandardCharsets.UTF_8,StandardOpenOption.CREATE,StandardOpenOption.TRUNCATE_EXISTING))
+            {
+                writeModuleSection(writer,module);
+            }
+            return true;
         }
 
-        return true;
+        return false;
     }
     
     protected void writeModuleSection(BufferedWriter writer, Module module)
@@ -87,7 +92,7 @@ public class StartDirBuilder implements BaseBuilder.Config
 
         out.println("--module=" + module.getName());
 
-        for (String line : module.getDefaultConfig())
+        for (String line : module.getIniTemplate())
         {
             out.println(line);
         }

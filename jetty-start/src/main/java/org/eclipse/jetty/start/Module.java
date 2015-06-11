@@ -40,6 +40,8 @@ import org.eclipse.jetty.start.graph.Node;
  */
 public class Module extends Node<Module>
 {
+    private static final String VERSION_UNSPECIFIED = "9.2";
+
     public static class NameComparator implements Comparator<Module>
     {
         private Collator collator = Collator.getInstance();
@@ -59,11 +61,18 @@ public class Module extends Node<Module>
     
     /** The name of this Module (as a filesystem reference) */
     private String fileRef;
+    
+    /** The version of Jetty the module supports */
+    private Version version;
 
     /** List of xml configurations for this Module */
     private List<String> xmls;
     
     /** List of ini template lines */
+    private List<String> iniTemplate;
+    private boolean hasIniTemplate = false;
+    
+    /** List of default config */
     private List<String> defaultConfig;
     private boolean hasDefaultConfig = false;
     
@@ -139,6 +148,11 @@ public class Module extends Node<Module>
     {
         return defaultConfig;
     }
+    
+    public List<String> getIniTemplate()
+    {
+        return iniTemplate;
+    }
 
     public List<String> getFiles()
     {
@@ -174,10 +188,20 @@ public class Module extends Node<Module>
     {
         return xmls;
     }
+    
+    public Version getVersion()
+    {
+        return version;
+    }
 
     public boolean hasDefaultConfig()
     {
         return hasDefaultConfig;
+    }
+    
+    public boolean hasIniTemplate()
+    {
+        return hasIniTemplate;
     }
 
     @Override
@@ -198,6 +222,7 @@ public class Module extends Node<Module>
     {
         xmls = new ArrayList<>();
         defaultConfig = new ArrayList<>();
+        iniTemplate = new ArrayList<>();
         libs = new ArrayList<>();
         files = new ArrayList<>();
         jvmArgs = new ArrayList<>();
@@ -266,7 +291,8 @@ public class Module extends Node<Module>
                     {
                         if ("INI-TEMPLATE".equals(sectionType))
                         {
-                            defaultConfig.add(line);
+                            iniTemplate.add(line);
+                            hasIniTemplate = true;
                         }
                     }
                     else
@@ -282,10 +308,14 @@ public class Module extends Node<Module>
                             case "FILES":
                                 files.add(line);
                                 break;
-                            case "DEFAULTS":
-                            case "INI-TEMPLATE":
+                            case "DEFAULTS": // old name from 9.2.x
+                            case "INI": // new name for 9.3+
                                 defaultConfig.add(line);
                                 hasDefaultConfig = true;
+                                break;
+                            case "INI-TEMPLATE":
+                                iniTemplate.add(line);
+                                hasIniTemplate = true;
                                 break;
                             case "LIB":
                                 libs.add(line);
@@ -303,6 +333,13 @@ public class Module extends Node<Module>
                             case "EXEC":
                                 jvmArgs.add(line);
                                 break;
+                            case "VERSION":
+                                if (version != null)
+                                {
+                                    throw new IOException("[version] already specified");
+                                }
+                                version = new Version(line);
+                                break;
                             case "XML":
                                 xmls.add(line);
                                 break;
@@ -312,6 +349,11 @@ public class Module extends Node<Module>
                     }
                 }
             }
+        }
+        
+        if (version == null)
+        {
+            version = new Version(VERSION_UNSPECIFIED);
         }
     }
 

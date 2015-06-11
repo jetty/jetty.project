@@ -24,6 +24,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.start.util.RebuildTestResources;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.Before;
@@ -45,6 +46,7 @@ public class MainTest
     {
         System.setProperty("jetty.home","");
         System.setProperty("jetty.base","");
+        System.setProperty("jetty.version",RebuildTestResources.JETTY_VERSION);
     }
 
     @Test
@@ -54,7 +56,7 @@ public class MainTest
         Path testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
         cmdLineArgs.add("user.dir=" + testJettyHome);
         cmdLineArgs.add("jetty.home=" + testJettyHome);
-        cmdLineArgs.add("jetty.http.port=9090");
+        // cmdLineArgs.add("jetty.http.port=9090");
 
         Main main = new Main();
         StartArgs args = main.processCommandLine(cmdLineArgs.toArray(new String[cmdLineArgs.size()]));
@@ -84,13 +86,13 @@ public class MainTest
     }
 
     @Test
-    @Ignore("Just a bit noisy for general testing")
+    @Ignore("Too noisy for general testing")
     public void testListConfig() throws Exception
     {
         List<String> cmdLineArgs = new ArrayList<>();
         File testJettyHome = MavenTestingUtils.getTestResourceDir("dist-home");
+        cmdLineArgs.add("user.dir=" + testJettyHome);
         cmdLineArgs.add("jetty.home=" + testJettyHome);
-        cmdLineArgs.add("jetty.http.port=9090");
         cmdLineArgs.add("--list-config");
         // cmdLineArgs.add("--debug");
 

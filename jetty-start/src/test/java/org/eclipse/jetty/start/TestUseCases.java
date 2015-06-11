@@ -22,6 +22,7 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.start.util.RebuildTestResources;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -47,6 +48,7 @@ public class TestUseCases
         ret.add(new String[] {"jsp", null});
         ret.add(new String[] {"database", null});
         ret.add(new String[] {"deep-ext", null});
+        ret.add(new String[] {"versioned-modules", null});
         
         // Ones with command lines
         ret.add(new Object[] {"http2", new String[]{"java.version=1.7.0_60"}});
@@ -68,6 +70,8 @@ public class TestUseCases
         Path homeDir = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
         Path baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName).toPath().toRealPath();
 
+        System.setProperty("jetty.version",RebuildTestResources.JETTY_VERSION);
+        
         Main main = new Main();
         List<String> cmdLine = new ArrayList<>();
         cmdLine.add("jetty.home=" + homeDir.toString());

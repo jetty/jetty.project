@@ -7,43 +7,43 @@ XML|${jetty.base}/etc/jetty-plus.xml
 XML|${jetty.base}/etc/jetty-annotations.xml
 
 # The LIBs we expect (order is irrelevant)
-LIB|${jetty.base}/lib/apache-jsp/org.eclipse.jetty.apache-jsp-TEST.jar
+LIB|${jetty.base}/lib/apache-jsp/org.eclipse.jetty.apache-jsp-9.3.jar
 LIB|${jetty.base}/lib/apache-jsp/org.eclipse.jetty.orbit.org.eclipse.jdt.core-3.8.2.v20130121.jar
-LIB|${jetty.base}/lib/apache-jsp/org.mortbay.jasper.apache-el-8.0.9.M3.jar
-LIB|${jetty.base}/lib/apache-jsp/org.mortbay.jasper.apache-jsp-8.0.9.M3.jar
+LIB|${jetty.base}/lib/apache-jsp/org.mortbay.jasper.apache-el-8.0.20.M0.jar
+LIB|${jetty.base}/lib/apache-jsp/org.mortbay.jasper.apache-jsp-8.0.20.M0.jar
 LIB|${jetty.base}/lib/apache-jstl/org.apache.taglibs.taglibs-standard-impl-1.2.1.jar
 LIB|${jetty.base}/lib/apache-jstl/org.apache.taglibs.taglibs-standard-spec-1.2.1.jar
 LIB|${jetty.base}/lib/annotations/asm-5.0.1.jar
 LIB|${jetty.base}/lib/annotations/asm-commons-5.0.1.jar
 LIB|${jetty.base}/lib/annotations/javax.annotation-api-1.2.jar
-LIB|${jetty.base}/lib/jetty-jndi-TEST.jar
+LIB|${jetty.base}/lib/jetty-jndi-9.3.jar
 LIB|${jetty.base}/lib/jndi/javax.mail.glassfish-1.4.1.v201005082020.jar
 LIB|${jetty.base}/lib/jndi/javax.transaction-api-1.2.jar
-LIB|${jetty.base}/lib/jetty-annotations-TEST.jar
-LIB|${jetty.base}/lib/jetty-http-TEST.jar
-LIB|${jetty.base}/lib/jetty-io-TEST.jar
-LIB|${jetty.base}/lib/jetty-deploy-TEST.jar
-LIB|${jetty.base}/lib/jetty-plus-TEST.jar
+LIB|${jetty.base}/lib/jetty-annotations-9.3.jar
+LIB|${jetty.base}/lib/jetty-http-9.3.jar
+LIB|${jetty.base}/lib/jetty-io-9.3.jar
+LIB|${jetty.base}/lib/jetty-deploy-9.3.jar
+LIB|${jetty.base}/lib/jetty-plus-9.3.jar
 LIB|${jetty.base}/lib/jetty-schemas-3.1.jar
-LIB|${jetty.base}/lib/jetty-security-TEST.jar
-LIB|${jetty.base}/lib/jetty-server-TEST.jar
-LIB|${jetty.base}/lib/jetty-servlet-TEST.jar
-LIB|${jetty.base}/lib/jetty-util-TEST.jar
-LIB|${jetty.base}/lib/jetty-webapp-TEST.jar
-LIB|${jetty.base}/lib/jetty-xml-TEST.jar
+LIB|${jetty.base}/lib/jetty-security-9.3.jar
+LIB|${jetty.base}/lib/jetty-server-9.3.jar
+LIB|${jetty.base}/lib/jetty-servlet-9.3.jar
+LIB|${jetty.base}/lib/jetty-util-9.3.jar
+LIB|${jetty.base}/lib/jetty-webapp-9.3.jar
+LIB|${jetty.base}/lib/jetty-xml-9.3.jar
 LIB|${jetty.base}/lib/servlet-api-3.1.jar
 LIB|${jetty.base}/lib/websocket/javax.websocket-api-1.0.jar
-LIB|${jetty.base}/lib/websocket/javax-websocket-client-impl-TEST.jar
-LIB|${jetty.base}/lib/websocket/javax-websocket-server-impl-TEST.jar
-LIB|${jetty.base}/lib/websocket/websocket-api-TEST.jar
-LIB|${jetty.base}/lib/websocket/websocket-client-TEST.jar
-LIB|${jetty.base}/lib/websocket/websocket-common-TEST.jar
-LIB|${jetty.base}/lib/websocket/websocket-server-TEST.jar
-LIB|${jetty.base}/lib/websocket/websocket-servlet-TEST.jar
+LIB|${jetty.base}/lib/websocket/javax-websocket-client-impl-9.3.jar
+LIB|${jetty.base}/lib/websocket/javax-websocket-server-impl-9.3.jar
+LIB|${jetty.base}/lib/websocket/websocket-api-9.3.jar
+LIB|${jetty.base}/lib/websocket/websocket-client-9.3.jar
+LIB|${jetty.base}/lib/websocket/websocket-common-9.3.jar
+LIB|${jetty.base}/lib/websocket/websocket-server-9.3.jar
+LIB|${jetty.base}/lib/websocket/websocket-servlet-9.3.jar
 
 # The Properties we expect (order is irrelevant)
 # (these are the properties we actually set in the configuration)
-PROP|jetty.http.port=9090
+PROP|jetty.http.port=8080
 # (these are the ones set by default from jetty.home modules)
 PROP|jetty.httpConfig.delayDispatchUntilContent=false
 PROP|jetty.server.dumpAfterStart=false

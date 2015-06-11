@@ -16,6 +16,9 @@
 # All versions of alpn-boot can be found at
 # http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
 
+[version]
+9.3
+
 [name]
 alpn
 
@@ -44,7 +47,7 @@ lib/alpn/
 # jetty.alpn.defaultProtocol=http/1.1
 
 # ALPN debug logging on System.err
-jetty.alpn.debug=false
+# jetty.alpn.debug=false
 
 [license]
 ALPN is a hosted at github under the GPL v2 with ClassPath Exception.

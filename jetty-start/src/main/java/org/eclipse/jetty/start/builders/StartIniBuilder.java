@@ -105,20 +105,25 @@ public class StartIniBuilder implements BaseBuilder.Config
         }
         
         String mode = "";
-        if (module.matches(OnlyTransitivePredicate.INSTANCE))
+        boolean isTransitive = module.matches(OnlyTransitivePredicate.INSTANCE);
+        if (isTransitive)
         {
             mode = "(transitively) ";
         }
 
         StartLog.info("%-15s initialised %sin %s",module.getName(),mode,baseHome.toShortForm(startIni));
-
-        // Append to start.ini
-        try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))
+        
+        if (module.hasIniTemplate() || !isTransitive)
         {
-            writeModuleSection(writer,module);
+            // Append to start.ini
+            try (BufferedWriter writer = Files.newBufferedWriter(startIni,StandardCharsets.UTF_8,StandardOpenOption.APPEND,StandardOpenOption.CREATE))
+            {
+                writeModuleSection(writer,module);
+            }
+            return true;
         }
 
-        return true;
+        return false;
     }
 
     protected void writeModuleSection(BufferedWriter writer, Module module)
@@ -127,10 +132,10 @@ public class StartIniBuilder implements BaseBuilder.Config
 
         out.println("# --------------------------------------- ");
         out.println("# Module: " + module.getName());
-
         out.println("--module=" + module.getName());
+        out.println();
 
-        for (String line : module.getDefaultConfig())
+        for (String line : module.getIniTemplate())
         {
             // TODO: validate property keys
             out.println(line);

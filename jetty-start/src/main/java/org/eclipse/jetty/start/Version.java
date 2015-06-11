@@ -21,30 +21,26 @@ package org.eclipse.jetty.start;
 /**
  * Utility class for parsing and comparing version strings. JDK 1.1 compatible.
  */
-public class Version
+public class Version implements Comparable<Version>
 {
-    int _version = 0;
-    int _revision = 0;
-    int _subrevision = 0;
-    String _suffix = "";
-
-    public Version()
-    {
-    }
+    private int _version = 0;
+    private int _revision = -1;
+    private int _subrevision = -1;
+    private String _suffix = "";
 
     public Version(String version_string)
     {
         parse(version_string);
     }
-
-    // java.lang.Comparable is Java 1.2! Cannot use it
+    
+    @Override
     /**
      * Compares with other version. Does not take extension into account, as there is no reliable way to order them.
      * 
      * @param other the other version to compare this to 
      * @return -1 if this is older version that other, 0 if its same version, 1 if it's newer version than other
      */
-    public int compare(Version other)
+    public int compareTo(Version other)
     {
         if (other == null)
         {
@@ -76,16 +72,39 @@ public class Version
         }
         return 0;
     }
+    
+    public boolean isNewerThan(Version other)
+    {
+        return compareTo(other) == 1;
+    }
+    
+    public boolean isNewerThanOrEqualTo(Version other)
+    {
+        int comp = compareTo(other);
+        return (comp == 0) || (comp == 1);
+    }
+    
+    public boolean isOlderThan(Version other)
+    {
+        return compareTo(other) == -1;
+    }
+    
+    public boolean isOlderThanOrEqualTo(Version other)
+    {
+        int comp = compareTo(other);
+        return (comp == 0) || (comp == -1);
+    }
 
     /**
-     * Check whether this verion is in range of versions specified
+     * Check whether this version is in range of versions specified
+     * 
      * @param low the low part of the range
      * @param high the high part of the range
      * @return true if this version is within the provided range
      */
     public boolean isInRange(Version low, Version high)
     {
-        return ((compare(low) >= 0) && (compare(high) <= 0));
+        return ((compareTo(low) >= 0) && (compareTo(high) <= 0));
     }
 
     /**
@@ -95,8 +114,8 @@ public class Version
     public void parse(String version_string)
     {
         _version = 0;
-        _revision = 0;
-        _subrevision = 0;
+        _revision = -1;
+        _subrevision = -1;
         _suffix = "";
         int pos = 0;
         int startpos = 0;
@@ -129,7 +148,7 @@ public class Version
             _suffix = version_string.substring(pos);
         }
     }
-
+    
     /**
      * @return string representation of this version
      */
@@ -138,11 +157,17 @@ public class Version
     {
         StringBuffer sb = new StringBuffer(10);
         sb.append(_version);
-        sb.append('.');
-        sb.append(_revision);
-        sb.append('.');
-        sb.append(_subrevision);
-        sb.append(_suffix);
+        if (_revision >= 0)
+        {
+            sb.append('.');
+            sb.append(_revision);
+            if (_subrevision >= 0)
+            {
+                sb.append('.');
+                sb.append(_subrevision);
+                sb.append(_suffix);
+            }
+        }
         return sb.toString();
     }
 }
