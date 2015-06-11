@@ -60,6 +60,8 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
 {
     public class SendUpgradeRequest extends FutureCallback implements Runnable
     {
+        private final Logger LOG = Log.getLogger(UpgradeConnection.SendUpgradeRequest.class);
+        
         @Override
         public void run()
         {
@@ -81,7 +83,10 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
         @Override
         public void succeeded()
         {
-            LOG.debug("Upgrade Request Write Success");
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Upgrade Request Write Success");
+            }
             // Writing the request header is complete.
             super.succeeded();
             state = State.RESPONSE;
@@ -92,7 +97,10 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
         @Override
         public void failed(Throwable cause)
         {
-            LOG.warn("Upgrade Request Write Failure",cause);
+            if (LOG.isDebugEnabled())
+            {
+                LOG.debug("Upgrade Request Write Failure",cause);
+            }
             super.failed(cause);
             state = State.FAILURE;
             // Fail the connect promise when a fundamental exception during connect occurs.
@@ -136,12 +144,17 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
         // We need to gently close first, to allow
         // SSL close alerts to be sent by Jetty
         if (LOG.isDebugEnabled())
+        {
             LOG.debug("Shutting down output {}",endPoint);
+        }
+        
         endPoint.shutdownOutput();
         if (!onlyOutput)
         {
             if (LOG.isDebugEnabled())
+            {
                 LOG.debug("Closing {}",endPoint);
+            }
             endPoint.close();
         }
     }
@@ -211,7 +224,7 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.warn("Closed connection {}",this);
+            LOG.debug("Closed connection {}",this);
         }
         super.onClose();
     }
@@ -221,7 +234,7 @@ public class UpgradeConnection extends AbstractConnection implements Connection.
     {
         if (LOG.isDebugEnabled())
         {
-            LOG.warn("Timeout on connection {}",this);
+            LOG.debug("Timeout on connection {}",this);
         }
 
         failUpgrade(new IOException("Timeout while performing WebSocket Upgrade"));
