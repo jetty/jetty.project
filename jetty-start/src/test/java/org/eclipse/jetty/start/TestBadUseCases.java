@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.start;
 
-import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.*;
 
 import java.io.File;
 import java.util.ArrayList;
@@ -71,7 +71,6 @@ public class TestBadUseCases
     @Test
     public void testBadConfig() throws Exception
     {
-        System.setProperty("jetty.version", RebuildTestResources.JETTY_VERSION);
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName);
 

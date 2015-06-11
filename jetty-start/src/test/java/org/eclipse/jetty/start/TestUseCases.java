@@ -22,7 +22,6 @@ import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.start.util.RebuildTestResources;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -70,8 +69,6 @@ public class TestUseCases
         Path homeDir = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
         Path baseDir = MavenTestingUtils.getTestResourceDir("usecases/" + caseName).toPath().toRealPath();
 
-        System.setProperty("jetty.version",RebuildTestResources.JETTY_VERSION);
-        
         Main main = new Main();
         List<String> cmdLine = new ArrayList<>();
         cmdLine.add("jetty.home=" + homeDir.toString());

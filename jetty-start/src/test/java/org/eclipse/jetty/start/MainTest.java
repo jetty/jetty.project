@@ -18,23 +18,21 @@
 
 package org.eclipse.jetty.start;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.File;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.util.ArrayList;
 import java.util.List;
 
-import org.eclipse.jetty.start.util.RebuildTestResources;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.junit.Before;
 import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
-
-import static org.hamcrest.Matchers.is;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
 
 public class MainTest
 {
@@ -46,7 +44,6 @@ public class MainTest
     {
         System.setProperty("jetty.home","");
         System.setProperty("jetty.base","");
-        System.setProperty("jetty.version",RebuildTestResources.JETTY_VERSION);
     }
 
     @Test
