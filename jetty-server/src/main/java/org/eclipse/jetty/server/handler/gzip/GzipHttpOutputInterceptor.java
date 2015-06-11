@@ -287,6 +287,9 @@ public class GzipHttpOutputInterceptor implements HttpOutput.Interceptor
         @Override
         protected Action process() throws Exception
         {
+            if (_deflater==null)
+                return Action.SUCCEEDED;
+                
             if (_deflater.needsInput())
             {                
                 if (BufferUtil.isEmpty(_content))
