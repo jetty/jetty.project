@@ -1552,7 +1552,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Customize {}",sslEngine);
-
+        
         SSLParameters sslParams = sslEngine.getSSLParameters();
         sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
         sslParams.setUseCipherSuitesOrder(_useCipherSuitesOrder);
@@ -1562,17 +1562,15 @@ public class SslContextFactory extends AbstractLifeCycle
                 LOG.debug("Enable SNI matching {}",sslEngine);
             sslParams.setSNIMatchers(Collections.singletonList((SNIMatcher)new AliasSNIMatcher()));
         }
-
-        if (getWantClientAuth())
-            sslEngine.setWantClientAuth(getWantClientAuth());
-        if (getNeedClientAuth())
-            sslEngine.setNeedClientAuth(getNeedClientAuth());
-
         sslParams.setCipherSuites(_selectedCipherSuites);
-        sslEngine.setEnabledCipherSuites(_selectedCipherSuites);
-        sslEngine.setEnabledProtocols(_selectedProtocols);
+        sslParams.setProtocols(_selectedProtocols);
+        
+        if (getWantClientAuth())
+            sslParams.setWantClientAuth(true);
+        if (getNeedClientAuth())
+            sslParams.setNeedClientAuth(true);
 
-        sslEngine.setSSLParameters(sslParams);  
+        sslEngine.setSSLParameters(sslParams);          
     }
 
     public static X509Certificate[] getCertChain(SSLSession sslSession)
