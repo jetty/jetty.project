@@ -2,9 +2,6 @@
 # JAMon Jetty module
 #
 
-[version]
-9.3
-
 [depend]
 stats
 deploy
@@ -28,6 +25,7 @@ http://jamonapi.sourceforge.net
 http://jamonapi.sourceforge.net/JAMonLicense.html
 
 [ini-template]
+## Jamon Configuration
+# jamon.summaryLabels=demo
 jamon.summaryLabels=default, request.getStatus().contextpath.value.ms
-#jamon.summaryLabels=demo
 

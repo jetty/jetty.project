@@ -1,6 +1,3 @@
-[version]
-9.3
-
 [ini-template]
 ## JVM Configuration
 ## If JVM args are include in an ini file then --exec is needed

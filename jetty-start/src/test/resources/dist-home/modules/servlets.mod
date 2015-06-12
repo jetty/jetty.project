@@ -2,8 +2,6 @@
 # Jetty Servlets Module
 #
 
-[version]
-9.3
 
 [depend]
 servlet

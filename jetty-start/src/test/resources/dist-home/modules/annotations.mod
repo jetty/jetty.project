@@ -2,9 +2,6 @@
 # Jetty Annotation Scanning Module
 #
 
-[version]
-9.3
-
 [depend]
 # Annotations needs plus, and jndi features
 plus

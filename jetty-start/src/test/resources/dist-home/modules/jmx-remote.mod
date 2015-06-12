@@ -2,9 +2,6 @@
 # JMX Remote Module
 #
 
-[version]
-9.3
-
 [depend]
 jmx
 

@@ -16,9 +16,6 @@
 # All versions of alpn-boot can be found at
 # http://central.maven.org/maven2/org/mortbay/jetty/alpn/alpn-boot/
 
-[version]
-9.3
-
 [name]
 alpn
 
@@ -38,15 +35,15 @@ lib/
 lib/alpn/
 
 [ini-template]
-# Overrides the order protocols are chosen by the server.
-# The default order is that specified by the order of the
-# modules declared in start.ini.
+## Overrides the order protocols are chosen by the server.
+## The default order is that specified by the order of the
+## modules declared in start.ini.
 # jetty.alpn.protocols=h2-16,http/1.1
 
-# Specifies what protocol to use when negotiation fails.
+## Specifies what protocol to use when negotiation fails.
 # jetty.alpn.defaultProtocol=http/1.1
 
-# ALPN debug logging on System.err
+## ALPN debug logging on System.err
 # jetty.alpn.debug=false
 
 [license]

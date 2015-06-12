@@ -159,7 +159,7 @@ public class MainTest
         Path homePath = MavenTestingUtils.getTestResourceDir("dist-home").toPath().toRealPath();
         cmdLineArgs.add("jetty.home=" + homePath);
         cmdLineArgs.add("user.dir=" + homePath);
-        cmdLineArgs.add("java.version=1.7.0_60");
+        cmdLineArgs.add("java.version=1.8.0_31");
 
         // Modules
         cmdLineArgs.add("--module=deploy");

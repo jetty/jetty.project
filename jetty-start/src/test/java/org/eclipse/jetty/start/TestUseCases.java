@@ -50,7 +50,7 @@ public class TestUseCases
         ret.add(new String[] {"versioned-modules", null});
         
         // Ones with command lines
-        ret.add(new Object[] {"http2", new String[]{"java.version=1.7.0_60"}});
+        ret.add(new Object[] {"http2", new String[]{"java.version=1.8.0_31"}});
         ret.add(new Object[] {"basic-properties", new String[]{"port=9090"}});
         ret.add(new Object[] {"agent-properties", new String[]{"java.vm.specification.version=1.6"}});
         

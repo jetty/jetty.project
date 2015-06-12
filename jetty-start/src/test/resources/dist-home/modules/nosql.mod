@@ -2,9 +2,6 @@
 # Jetty NoSql module
 #
 
-[version]
-9.3
-
 [depend]
 webapp
 
@@ -27,9 +24,8 @@ http://www.apache.org/licenses/LICENSE-2.0.html
 ## MongoDB SessionIdManager config
 
 ## Unique identifier for this node in the cluster
-jetty.nosqlSession.workerName=node1
-
+# jetty.nosqlSession.workerName=node1
 
 ## Interval in seconds between scavenging expired sessions
-jetty.nosqlSession.scavenge=1800
+# jetty.nosqlSession.scavenge=1800
 
