@@ -41,7 +41,6 @@ import org.junit.Test;
 import static org.hamcrest.Matchers.anyOf;
 import static org.hamcrest.Matchers.contains;
 import static org.hamcrest.Matchers.equalTo;
-import static org.hamcrest.Matchers.is;
 import static org.junit.Assert.assertThat;
 
 public class ModulesTest
@@ -79,8 +78,8 @@ public class ModulesTest
         // Check versions
         assertThat(System.getProperty("java.version.major"),equalTo("1"));
         assertThat(System.getProperty("java.version.minor"),anyOf(equalTo("7"),Matchers.equalTo("8"),Matchers.equalTo("9")));
-        
-        
+
+
         List<String> moduleNames = new ArrayList<>();
         for (Module mod : modules)
         {
@@ -145,7 +144,7 @@ public class ModulesTest
         expected.add("infinispan");
         expected.add("jdbc-sessions");
         expected.add("nosql");
-        
+
         ConfigurationAssert.assertContainsUnordered("All Modules",expected,moduleNames);
     }
 
@@ -201,7 +200,7 @@ public class ModulesTest
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
         File baseDir = testdir.getEmptyDir();
-        String cmdLine[] = new String[] { "jetty.version=TEST", "java.version=1.7.0_60" };
+        String cmdLine[] = new String[] { "jetty.version=TEST", "java.version=1.8.0_31" };
 
         // Configuration
         CommandLineConfigSource cmdLineSource = new CommandLineConfigSource(cmdLine);
