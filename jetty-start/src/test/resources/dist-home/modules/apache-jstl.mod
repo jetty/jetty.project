@@ -2,9 +2,6 @@
 # Apache JSTL 
 #
 
-[version]
-9.3
-
 [name]
 apache-jstl
 

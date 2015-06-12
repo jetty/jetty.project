@@ -1,8 +1,6 @@
 #
 # Spring
 #
-[version]
-9.3
 
 [name]
 spring

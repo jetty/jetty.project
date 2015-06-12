@@ -2,9 +2,6 @@
 # Deploy Feature
 #
 
-[version]
-9.3
-
 [depend]
 webapp
 

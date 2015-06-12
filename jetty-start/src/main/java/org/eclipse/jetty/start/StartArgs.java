@@ -1082,28 +1082,11 @@ public class StartArgs
 
     public void parseModule(Module module)
     {
-        // Starting with Jetty 9.3 indicated modules, the default config
-        // is parsed from the [default] section only
-        if (module.getVersion().isNewerThanOrEqualTo(new Version("9.3")))
+        if (module.hasDefaultConfig())
         {
-            if (module.hasDefaultConfig())
+            for (String line : module.getDefaultConfig())
             {
-                for (String line : module.getDefaultConfig())
-                {
-                    parse(line,module.getFilesystemRef(),false);
-                }
-            }
-        }
-        else
-        {
-            // With Jetty 9.2 indicated modules and older, the default
-            // config is parsed from the [ini-template] section
-            if (module.hasIniTemplate())
-            {
-                for (String line : module.getIniTemplate())
-                {
-                    parse(line,module.getFilesystemRef(),false);
-                }
+                parse(line,module.getFilesystemRef(),false);
             }
         }
     }

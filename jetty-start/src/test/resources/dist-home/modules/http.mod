@@ -2,9 +2,6 @@
 # Jetty HTTP Connector
 #
 
-[version]
-9.3
-
 [depend]
 server
 
@@ -18,7 +15,7 @@ etc/jetty-http.xml
 # jetty.http.host=0.0.0.0
 
 ## Connector port to listen on
-jetty.http.port=8080
+# jetty.http.port=8080
 
 ## Connector idle timeout in milliseconds
 # jetty.http.idleTimeout=30000

@@ -3,9 +3,6 @@
 # Applies GzipHandler to entire server
 #
 
-[version]
-9.3
-
 [depend]
 server
 

@@ -2,9 +2,6 @@
 # Jetty JDBC Session module
 #
 
-[version]
-9.3
-
 [depend]
 annotations
 webapp
@@ -17,14 +14,14 @@ etc/jetty-jdbc-sessions.xml
 ## JDBC Session config
 
 ## Unique identifier for this node in the cluster
-jetty.jdbcSession.workerName=node1
+# jetty.jdbcSession.workerName=node1
 
 ## The interval in seconds between sweeps of the scavenger
-jetty.jdbcSession.scavenge=600
+# jetty.jdbcSession.scavenge=600
 
-##Uncomment either the datasource name or driverClass and connectionURL
-#jetty.jdbcSession.datasource=sessions
-#jetty.jdbcSession.driverClass=changeme
-#jetty.jdbcSession.connectionURL=changeme
+## Uncomment either the datasource name or driverClass and connectionURL
+# jetty.jdbcSession.datasource=sessions
+# jetty.jdbcSession.driverClass=changeme
+# jetty.jdbcSession.connectionURL=changeme
 
 

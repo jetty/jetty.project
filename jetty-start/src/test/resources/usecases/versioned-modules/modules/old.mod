@@ -2,6 +2,6 @@
 # Old Module (backward compat test with 9.2 modules)
 #
 
-[ini-template]
+[defaults]
 from-module=old
 
