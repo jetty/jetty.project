@@ -1,4 +1,4 @@
-jetty-9.3.0.v20150611 - 11 June 2015
+jetty-9.3.0.v20150612 - 12 June 2015
  + 414479 Add WebSocketPingPongListener for those that want PING/PONG payload
    data
  + 420678 Add WebSocketPartialListener to support receiving partial WebSocket
