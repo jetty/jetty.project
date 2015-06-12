@@ -2,9 +2,6 @@
 # Request Log module
 #
 
-[version]
-9.3
-
 [depend]
 server
 
@@ -21,19 +18,19 @@ logs/
 ## File path
 # jetty.requestlog.filePath=${jetty.requestlog.dir}/yyyy_mm_dd.request.log
 
-# Date format for rollovered files (uses SimpleDateFormat syntax)
+## Date format for rollovered files (uses SimpleDateFormat syntax)
 # jetty.requestlog.filenameDateFormat=yyyy_MM_dd
 
-# How many days to retain old log files
+## How many days to retain old log files
 # jetty.requestlog.retainDays=90
 
 ## Whether to append to existing file
 # jetty.requestlog.append=true
 
-# Whether to use the extended log output
+## Whether to use the extended log output
 # jetty.requestlog.extended=true
 
-# Whether to log http cookie information
+## Whether to log http cookie information
 # jetty.requestlog.cookies=true
 
 ## Timezone of the log entries

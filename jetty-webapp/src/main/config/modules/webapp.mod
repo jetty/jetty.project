@@ -2,9 +2,6 @@
 # WebApp Support Module
 #
 
-[version]
-9.3
-
 [depend]
 servlet
 security
