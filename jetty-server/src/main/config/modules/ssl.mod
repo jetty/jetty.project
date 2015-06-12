@@ -22,7 +22,7 @@ http://git.eclipse.org/c/jetty/org.eclipse.jetty.project.git/plain/jetty-server/
 # jetty.ssl.host=0.0.0.0
 
 ## Connector port to listen on
-jetty.ssl.port=8443
+# jetty.ssl.port=8443
 
 ## Connector idle timeout in milliseconds
 # jetty.ssl.idleTimeout=30000
