@@ -213,6 +213,21 @@ jetty-9.2.11.v20150529 - 29 May 2015
  + 468714 SelectorManager updateKey race without submit
  + 468747 XSS vulnerability in HttpSpiContextHandler
 
+jetty-9.3.0.RC1 - 22 May 2015
+ + 464839 Add limit to MongoSessionIdManager purge queries
+ + 465053 Prevent gzip buffer overflow on complete
+ + 466774 Update jetty-all module for Jetty 9.3
+ + 467055 Mongodb session scavenging can result in very slow query
+ + 467165 Add --skip-file-validation to start.jar --help output
+ + 467276 NPE protection in SslContextFactory
+ + 467281 Remove Java 1.7 support from Jetty 9.3
+ + 467289 Not possible to specify jmxrmi port value
+ + 467603 Response 401 from server hangs client.
+ + 467702 SslContextFactory not backward compatible
+ + 467730 HTTP2 requires enabled ciphers to be sorted by blacklist
+ + 467790 Update default etc files inside jetty-osgi-boot bundle
+ + 467936 w Check HttpOutput aggregateSize is < bufferSize
+
 jetty-9.3.0.RC0 - 12 May 2015
  + 414479 Add WebSocketPingPongListener for those that want PING/PONG payload
    data
