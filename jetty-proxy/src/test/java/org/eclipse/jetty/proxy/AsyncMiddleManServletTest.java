@@ -1118,7 +1118,7 @@ public class AsyncMiddleManServletTest
                 .send();
 
         Assert.assertTrue(destroyLatch.await(5 * idleTimeout, TimeUnit.MILLISECONDS));
-        Assert.assertEquals(HttpStatus.GATEWAY_TIMEOUT_504, response.getStatus());
+        Assert.assertEquals(HttpStatus.REQUEST_TIMEOUT_408, response.getStatus());
     }
 
     @Test
@@ -1287,6 +1287,172 @@ public class AsyncMiddleManServletTest
 
         Assert.assertEquals(HttpStatus.UNAUTHORIZED_401, response.getStatus());
         Assert.assertFalse(transformed.get());
+    }
+
+    @Test
+    public void testProxyRequestHeadersSentWhenDiscardingContent() throws Exception
+    {
+        startServer(new EchoHttpServlet());
+        final CountDownLatch proxyRequestLatch = new CountDownLatch(1);
+        startProxy(new AsyncMiddleManServlet()
+        {
+            @Override
+            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            {
+                return new DiscardContentTransformer();
+            }
+
+            @Override
+            protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
+            {
+                proxyRequestLatch.countDown();
+                super.sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
+            }
+        });
+        startClient();
+
+        DeferredContentProvider content = new DeferredContentProvider();
+        Request request = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .content(content);
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+
+        // Send one chunk of content, the proxy request must not be sent.
+        ByteBuffer chunk1 = ByteBuffer.allocate(1024);
+        content.offer(chunk1);
+        Assert.assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+
+        // Send another chunk of content, the proxy request must not be sent.
+        ByteBuffer chunk2 = ByteBuffer.allocate(512);
+        content.offer(chunk2);
+        Assert.assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+
+        // Finish the content, request must be sent.
+        content.close();
+        Assert.assertTrue(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(0, response.getContent().length);
+    }
+
+    @Test
+    public void testProxyRequestHeadersNotSentUntilContent() throws Exception
+    {
+        startServer(new EchoHttpServlet());
+        final CountDownLatch proxyRequestLatch = new CountDownLatch(1);
+        startProxy(new AsyncMiddleManServlet()
+        {
+            @Override
+            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            {
+                return new BufferingContentTransformer();
+            }
+
+            @Override
+            protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
+            {
+                proxyRequestLatch.countDown();
+                super.sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
+            }
+        });
+        startClient();
+
+        DeferredContentProvider content = new DeferredContentProvider();
+        Request request = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .content(content);
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+
+        // Send one chunk of content, the proxy request must not be sent.
+        ByteBuffer chunk1 = ByteBuffer.allocate(1024);
+        content.offer(chunk1);
+        Assert.assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+
+        // Send another chunk of content, the proxy request must not be sent.
+        ByteBuffer chunk2 = ByteBuffer.allocate(512);
+        content.offer(chunk2);
+        Assert.assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+
+        // Finish the content, request must be sent.
+        content.close();
+        Assert.assertTrue(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(chunk1.capacity() + chunk2.capacity(), response.getContent().length);
+    }
+
+    @Test
+    public void testProxyRequestHeadersNotSentUntilFirstContent() throws Exception
+    {
+        startServer(new EchoHttpServlet());
+        final CountDownLatch proxyRequestLatch = new CountDownLatch(1);
+        startProxy(new AsyncMiddleManServlet()
+        {
+            @Override
+            protected ContentTransformer newClientRequestContentTransformer(HttpServletRequest clientRequest, Request proxyRequest)
+            {
+                return new ContentTransformer()
+                {
+                    private ByteBuffer buffer;
+
+                    @Override
+                    public void transform(ByteBuffer input, boolean finished, List<ByteBuffer> output) throws IOException
+                    {
+                        // Buffer only the first chunk.
+                        if (buffer == null)
+                        {
+                            buffer = ByteBuffer.allocate(input.remaining());
+                            buffer.put(input).flip();
+                        }
+                        else if (buffer.hasRemaining())
+                        {
+                            output.add(buffer);
+                            output.add(input);
+                        }
+                        else
+                        {
+                            output.add(input);
+                        }
+                    }
+                };
+            }
+
+            @Override
+            protected void sendProxyRequest(HttpServletRequest clientRequest, HttpServletResponse proxyResponse, Request proxyRequest)
+            {
+                proxyRequestLatch.countDown();
+                super.sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
+            }
+        });
+        startClient();
+
+        DeferredContentProvider content = new DeferredContentProvider();
+        Request request = client.newRequest("localhost", serverConnector.getLocalPort())
+                .timeout(5, TimeUnit.SECONDS)
+                .content(content);
+        FutureResponseListener listener = new FutureResponseListener(request);
+        request.send(listener);
+
+        // Send one chunk of content, the proxy request must not be sent.
+        ByteBuffer chunk1 = ByteBuffer.allocate(1024);
+        content.offer(chunk1);
+        Assert.assertFalse(proxyRequestLatch.await(1, TimeUnit.SECONDS));
+
+        // Send another chunk of content, the proxy request must be sent.
+        ByteBuffer chunk2 = ByteBuffer.allocate(512);
+        content.offer(chunk2);
+        Assert.assertTrue(proxyRequestLatch.await(5, TimeUnit.SECONDS));
+
+        // Finish the content.
+        content.close();
+
+        ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+        Assert.assertEquals(HttpStatus.OK_200, response.getStatus());
+        Assert.assertEquals(chunk1.capacity() + chunk2.capacity(), response.getContent().length);
     }
 
     private Path prepareTargetTestsDir() throws IOException
