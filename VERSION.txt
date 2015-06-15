@@ -1,4 +1,185 @@
-jetty-9.3.0-SNAPSHOT
+jetty-9.3.0.v20150612 - 12 June 2015
+ + 414479 Add WebSocketPingPongListener for those that want PING/PONG payload
+   data
+ + 420678 Add WebSocketPartialListener to support receiving partial WebSocket
+   TEXT/BINARY messages
+ + 420944 Hot Deployment of WAR when Context XML exists doesn't trigger
+   redeploy
+ + 423974 Optimize flow control.
+ + 424368 Add CONTRIBUTING.md
+ + 430951 Support SNI with ExtendedSslContextFactory
+ + 436345 Refactor AbstractSession to minimize burden on subclasses to
+   implement behaviour
+ + 437303 Serving of static filenames with "unwise" characters causes 404 error
+ + 437395 Start / Properties in template sections should be default applied for
+   enabled modules
+ + 438204 getServerName returns IPv6 addresses wrapped in []
+ + 439369 Remove unused class CrossContextPsuedoSession
+ + 439374 Use utf-8 as default charset for html
+ + 439375 preferred rfc7231 format is mime;charset=lowercase-9
+ + 440106 Improve ProtocolHandler APIs.
+ + 440506 Jetty OSGi boot bundle does not support OSGi framework Eclipse
+   Concierge
+ + 442083 Client resets stream, pending server data is failed, connection
+   closed.
+ + 442086 Review HttpOutput blocking writes.
+ + 442477 Allow Symlink aliases by default
+ + 442495 Bad Context ClassLoader in JSR356 WebSocket onOpen
+ + 442950 Embedded Jetty client requests to localhost hangs with high cpu usage
+   (NIO OP_CONNECT Solaris/Sparc).
+ + 443652 Remove dependency on java.lang.management classes
+ + 443661 Rename manifest and service constants for jetty osgi resource
+   fragment code
+ + 443662 Consume buffer in write(ByteBuffer)
+ + 443713 Reduce number of SelectionKey.setInterestOps() calls.
+ + 443893 Make a module for weld
+ + 444124 JSP include with <servlet><jsp-file> can cause infinite recursion
+ + 444214 Socks4Proxy fails when reading less than 8 bytes.
+ + 444222 replace CRLF in header values with whitespace rather than ?
+ + 444416 AsyncProxyServlet recursion.
+ + 444485 Client resets stream, pending server data is failed, write hangs.
+ + 444517 Ensure WebSocketUpgradeFilter is always first in filter chain
+ + 444547 Format exception in ResourceCache.Content.toString()
+ + 444617 Expose local and remote socket address to applications
+ + 444721 PushCacheFilter cleanup/improvements.
+ + 444748 WebSocketClient.stop() does not unregister from ShutdownThread
+ + 444764 HttpClient notifies callbacks for last chunk of content twice.
+ + 444771 JSR356 / EndPointConfig.userProperties are not unique per endpoint
+   upgrade
+ + 445167 Allow configuration of dispatch after select.
+ + 445823 Moved RequestLog calling to HttpChannel
+ + 446559 Avoid spin consuming extra data
+ + 446564 Refactored RequestLog Mechanism
+ + 446944 ServletTester and HttpTester should be in
+   <classifier>tests</classifier>
+ + 447216 putAll Properties in XmlConfiguration
+ + 447515 Remove GzipFilter
+ + 448156 Fixed INACTIVE race in IteratingCallback
+ + 448675 Impossible to set own Threadpool when using jetty-maven-plugin
+ + 449003 WARNING: Cannot enable requested module [protonego-impl]: not a valid
+   module name
+ + 449811 handle unquoted etags when gzipping
+ + 450467 Integer overflow in Session expiry calculation in MongoSessionManager
+ + 451973 Ambiguous module init location when mixing --add-to-start &
+   --add-to-startd in the same exec
+ + 451974 Combine multiple start license acknowledgement into one
+ + 452188 Delay dispatch until content optimisation
+ + 452322 Restore progress messages for --add-to-start(d) use
+ + 452323 Start --list-config makes no hint on transitive enabled modules
+ + 452329 Transitive modules in start.jar --add-to-start(d) are not added if
+   enabled already in tree
+ + 452465 100% CPU spin on page reload.
+ + 452503 Start.jar --add-to-start=jstl results in GraphException: Unable to
+   expand property in name: jsp-impl/${jsp-impl}-jstl
+ + 453487 Recycle HttpChannelOverHTTP2
+ + 453627 Fixed FileSystem test for nanosecond filesystems
+ + 453636 Improved spin detection on test
+ + 453829 Added HeaderRegexRule
+ + 453834 CDI Support for WebSocket
+ + 454152 Remove mux remnants from WebSocketClient
+ + 454934 WebSocketClient / connectToServer can block indefinitely during
+   upgrade failure
+ + 454952 Allow Jetty to run in Java 8 compact 3 profile
+ + 456209 Bad ContextClassLoader in WebSocket onMessage
+ + 456956 Reduce ThreadLocal.remove() weak reference garbage
+ + 457130 HTTPS request with IP host and HTTP proxy throws
+   IllegalArgumentException.
+ + 457309 Add test to ensure GET and HEAD response headers same for gzip
+ + 457508 Add flag to scan exploded jars in jetty-jspc-maven-plugin
+ + 457788 Powered By in o.e.j.util.Jetty conditional on sendServerVersion
+ + 458478 JarFileResource improve performance of exist method
+ + 458527 Implement an async proxy servlet that can perform content
+   transformations.
+ + 458663 Handle null header values
+ + 459081 http2 push failures.
+ + 459542 AsyncMiddleManServlet race condition on first download content.
+ + 459655 Remove SPDY and NPN
+ + 459681 Remove dead code after removal of glassfish jasper support
+ + 459731 Update for drafts hpack-11 and http2-17
+ + 459734 Update to apache jsp 8.0.20
+ + 459845 Support upgrade from http1 to http2.
+ + 460187 infinite recursion in sending error.
+ + 460210 ExecutionStragegy producer for SelectManager calls onOpen from
+   produce method
+ + 460211 Fixed Idle race in ExecuteProduceRun
+ + 460297 Parameterize infinispan.mod
+ + 460670 Support multiple names in <Property> elements.
+ + 460671 Rationalize property names.
+ + 460746 HttpConfiguration#setPersistentConnectionsEnabled(boolean)
+ + 461052 Local streams created after INITIAL_WINDOW_SIZE setting have wrong
+   send window.
+ + 461350 Update HttpParser IllegalCharacter handling to RFC7230
+ + 461415 Maven Jetty Plugin ignores ZIP overlays
+ + 462040 reverted and deprecated getStringField methods
+ + 462098 Support setting ThreadGroup in ScheduledExecutorScheduler
+ + 462162 StackOverflowException when response commit fails.
+ + 462193 Asynchronous HttpOutput.close()
+ + 463036 system properties to set ssl password and keypasword
+ + 463144 modules do not see pre-downloaded ALPN libs
+ + 464419 Removed xinetd support
+ + 464438 ClassFileTransformer support in
+   org.eclipse.jetty.webapp.WebAppClassLoader broken
+ + 464442 Enable parallel class loading
+ + 464528 NPE protection in getIncludedCipher suites
+ + 464537 Updated setuid dependency to 1.0.3.
+ + 464555 ALPN module download attempts to download jar before dir exists
+ + 464556 Restrict start module downloads to ${jetty.base} paths only
+ + 464564 NoSql sessions created inside a forward not persisted correctly
+ + 464606 Support property expansion in "default" attribute of Property.
+ + 464629 JDK8 Socket customization
+ + 464630 Cannot configure Configuration classlist in osgi
+ + 464633 Change Selection.how to Selection.criteria
+ + 464706 HTTP/2 and async I/O: onDataAvailable() not called.
+ + 464708 Support HttpConfiguration.delayDispatchUntilContent in HTTP/2.
+ + 464724 MultiPartInputStreamParser.parse ServletException never thrown
+ + 464727 Update Javadoc for Java 8 DocLint
+ + 464744 PathMap.match() never throws IllegalArgumentException
+ + 464837 Large META-INF/resources/ jars can significantly impact startup speed
+ + 464839 Add limit to MongoSessionIdManager purge queries
+ + 464869 org.eclipse.jetty.util.resource.PathResource do not work
+ + 465118 Fixed GzipHandler handling of multiple closes
+ + 465606 IteratingCallback.close() does not fail pending callback.
+ + 465754 Unchecked PrintWriter errors
+ + 465854 Provide java.nio.file.WatchService alternative for Scanner
+ + 465857 Support HTTP/2 clear-text server-side upgrade.
+ + 465867 Implement --skip-file-validation=<module>
+ + 466005 Use Files.move(src,trgt) instead of File.rename for
+   Part.write(filename)
+ + 466283 Support specifying ALPN protocols in HTTP2Client.
+ + 466618 Partial WebSocket Text delivery does not like incomplete UTF8
+   sequences
+ + 466619 Add WebSocketFrameListener for receiving WebSocket Frame information
+ + 466628 Improve IllegalStateException on ServletInputStream.setReadListener()
+ + 466645 Allow XmlConfiguration Properties to use Elements or Attributes
+ + 466647 Add ${jetty.tag.version} property and expand URL properties
+ + 466648 jetty-ssl download of keystore should be from tags, not master
+ + 466669 Add nosql.mod into jetty distro
+ + 466678 Make a .mod file for jdbc session management
+ + 466774 Update jetty-all module for Jetty 9.3
+ + 467036 WebSocketClient fails to process immediate frames from server
+ + 467043 WebSocketClient close codes on protocol violation reported as policy
+   violation
+ + 467055 Mongodb session scavenging can result in very slow query
+ + 467165 Add --skip-file-validation to start.jar --help output
+ + 467281 Remove Java 1.7 support from Jetty 9.3
+ + 467289 Not possible to specify jmxrmi port value
+ + 467702 SslContextFactory not backward compatible
+ + 467730 HTTP2 requires enabled ciphers to be sorted by blacklist
+ + 467790 Update default etc files inside jetty-osgi-boot bundle
+ + 468313 PushCacheFilter wrongly associates primary resources to themselves.
+ + 468347 Fix modules/debuglog.mod.
+ + 469241 Use null WatchService as loop terminator for PathWatcher.
+ + 469341 Not possible to use old/deprecated start properties
+ + 469414 Proxied redirects expose upstream server name.
+ + 469633 Make SpinLock behavior pluggable.
+ + 469799 Transitive module dependencies without ini templates are still added
+   to ini
+ + 469860 Add module metadata versioning to support backwards compat
+ + 469863 fixed setNeedClientAuth/setWantClientAuth
+ + 469936 Remove usages of SpinLock.
+ + 469982 Produce warning for dynamic modules with ini-templates seen during
+   --add-to-start
+ + 469991 Fix logging levels in websocket client UpgradeConnection
 
 jetty-9.2.11.v20150529 - 29 May 2015
  + 461499 ConnectionPool may leak connections.
@@ -962,7 +1143,7 @@ jetty-9.1.2.v20140210 - 10 February 2014
  + 423421 remove org.slf4j and org.ow2.asm from jetty-all artifact
  + 424171 Old javax.activation jar interferes with email sending
  + 424562 JDBCSessionManager.setNodeIdInSessionId(true) does not work
- + 425275
+ + 425275 
    org.eclipse.jetty.osgi.annotations.AnnotationConfiguration.BundleParserTask.getStatistic()
    returns null when debug is enabled.
  + 425638 Fixed monitor module/xml typos
@@ -1265,7 +1446,7 @@ jetty-9.0.6.v20130930 - 30 September 2013
    in the value
  + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
  + 415194 Deployer gives management of context to context collection
- + 415302
+ + 415302 
  + 415330 Avoid multiple callbacks at EOF
  + 415401 Add initalizeDefaults call to SpringConfigurationProcessor
  + 415548 migrate ProxyHTTPToSPDYTest to use HttpClient to avoid intermittent
@@ -1405,7 +1586,7 @@ jetty-9.1.0.M0 - 16 September 2013
  + 415131 Avoid autoboxing on debug
  + 415192 <jsp-file> maps to JspPropertyGroupServlet instead of JspServlet
  + 415194 Deployer gives management of context to context collection
- + 415302
+ + 415302 
  + 415314 Jetty should not commit response on output if <
    Response.setBufferSize() bytes are written
  + 415330 Avoid multiple callbacks at EOF
