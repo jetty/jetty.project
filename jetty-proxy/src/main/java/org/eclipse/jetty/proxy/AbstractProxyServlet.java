@@ -46,6 +46,7 @@ import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.util.HttpCookieStore;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -544,7 +545,10 @@ public abstract class AbstractProxyServlet extends HttpServlet
         boolean aborted = proxyRequest.abort(failure);
         if (!aborted)
         {
-            proxyResponse.setStatus(500);
+            int status = failure instanceof TimeoutException ?
+                    HttpStatus.REQUEST_TIMEOUT_408 :
+                    HttpStatus.INTERNAL_SERVER_ERROR_500;
+            proxyResponse.setStatus(status);
             clientRequest.getAsyncContext().complete();
         }
     }

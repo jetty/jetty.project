@@ -66,6 +66,7 @@ import org.eclipse.jetty.util.component.Destroyable;
  */
 public class AsyncMiddleManServlet extends AbstractProxyServlet
 {
+    private static final String PROXY_REQUEST_COMMITTED = AsyncMiddleManServlet.class.getName() + ".proxyRequestCommitted";
     private static final String CLIENT_TRANSFORMER = AsyncMiddleManServlet.class.getName() + ".clientTransformer";
     private static final String SERVER_TRANSFORMER = AsyncMiddleManServlet.class.getName() + ".serverTransformer";
 
@@ -316,20 +317,23 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         private void process(ByteBuffer content, Callback callback, boolean finished) throws IOException
         {
             ContentTransformer transformer = (ContentTransformer)clientRequest.getAttribute(CLIENT_TRANSFORMER);
-            boolean committed = transformer != null;
             if (transformer == null)
             {
                 transformer = newClientRequestContentTransformer(clientRequest, proxyRequest);
                 clientRequest.setAttribute(CLIENT_TRANSFORMER, transformer);
             }
 
-            if (!content.hasRemaining() && !finished)
+            boolean committed = clientRequest.getAttribute(PROXY_REQUEST_COMMITTED) != null;
+
+            int contentBytes = content.remaining();
+
+            // Skip transformation for empty non-last buffers.
+            if (contentBytes == 0 && !finished)
             {
                 callback.succeeded();
                 return;
             }
 
-            int contentBytes = content.remaining();
             transform(transformer, content, finished, buffers);
 
             int newContentBytes = 0;
@@ -352,14 +356,15 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
             if (_log.isDebugEnabled())
                 _log.debug("{} upstream content transformation {} -> {} bytes", getRequestId(clientRequest), contentBytes, newContentBytes);
 
-            if (!committed)
+            if (!committed && (size > 0 || finished))
             {
                 proxyRequest.header(HttpHeader.CONTENT_LENGTH, null);
+                clientRequest.setAttribute(PROXY_REQUEST_COMMITTED, true);
                 sendProxyRequest(clientRequest, proxyResponse, proxyRequest);
             }
 
             if (size == 0)
-                succeeded();
+                callback.succeeded();
         }
 
         @Override
