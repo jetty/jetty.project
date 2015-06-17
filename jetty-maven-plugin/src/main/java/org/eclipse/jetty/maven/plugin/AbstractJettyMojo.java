@@ -45,7 +45,7 @@ import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
-import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.PathWatcher;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -261,19 +261,8 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * A scanner to check for changes to the webapp
      */
-    protected Scanner scanner;
+    protected PathWatcher scanner;
     
-    
-    /**
-     *  List of files and directories to scan
-     */
-    protected ArrayList<File> scanList;
-    
-    
-    /**
-     * List of Listeners for the scanner
-     */
-    protected ArrayList<Scanner.BulkListener> scannerListeners;
     
     
     /**
@@ -467,16 +456,20 @@ public abstract class AbstractJettyMojo extends AbstractMojo
             this.server.start();
 
             getLog().info("Started Jetty Server");
-            
+
             if ( dumpOnStart )
             {
                 getLog().info(this.server.dump());
             }
-            
+
             // start the scanner thread (if necessary) on the main webapp
-            configureScanner ();
-            startScanner();
-            
+            if (isScanningEnabled())
+            {
+                scanner = new PathWatcher();
+                configureScanner ();
+                startScanner();
+            }
+
             // start the new line scanner thread if necessary
             startConsoleScanner();
 
@@ -572,33 +565,33 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * files change.
      *
      */
-    private void startScanner() throws Exception
+    public void startScanner() throws Exception
     {
-        // check if scanning is enabled
-        if (scanIntervalSeconds <= 0) return;
-
-        // check if reload is manual. It disables file scanning
-        if ( "manual".equalsIgnoreCase( reload ) )
-        {
-            // issue a warning if both scanIntervalSeconds and reload
-            // are enabled
-            getLog().warn("scanIntervalSeconds is set to " + scanIntervalSeconds + " but will be IGNORED due to manual reloading");
+        if (!isScanningEnabled())
             return;
-        }
 
-        scanner = new Scanner();
-        scanner.setReportExistingFilesOnStartup(false);
-        scanner.setScanInterval(scanIntervalSeconds);
-        scanner.setScanDirs(scanList);
-        scanner.setRecursive(true);
-        Iterator itor = (this.scannerListeners==null?null:this.scannerListeners.iterator());
-        while (itor!=null && itor.hasNext())
-            scanner.addListener((Scanner.Listener)itor.next());
-        getLog().info("Starting scanner at interval of " + scanIntervalSeconds + " seconds.");
+        scanner.setNotifyExistingOnStart(false);
+       
+       
         scanner.start();
     }
     
     
+    public boolean isScanningEnabled ()
+    {
+        if (scanIntervalSeconds <=0 || "manual".equalsIgnoreCase( reload ))
+            return false;
+        return true;
+    }
+    
+    public void stopScanner() throws Exception
+    {
+        if (!isScanningEnabled())
+            return;
+        
+        if (scanner != null)
+            scanner.stop();
+    }
     
     
     /**

@@ -46,8 +46,7 @@ import java.util.List;
 public class ScanTargetPattern
 {
     private File _directory;
-    private List _includes = Collections.EMPTY_LIST;
-    private List _excludes = Collections.EMPTY_LIST;
+    private ScanPattern _pattern;
 
     /**
      * @return the _directory
@@ -65,24 +64,28 @@ public class ScanTargetPattern
         this._directory = directory;
     }
     
-    public void setIncludes (List includes)
+    public void setIncludes (List<String> includes)
     {
-        _includes= includes;
+        if (_pattern == null)
+            _pattern = new ScanPattern();
+        _pattern.setIncludes(includes);
     }
     
-    public void setExcludes(List excludes)
+    public void setExcludes(List<String> excludes)
     {
-        _excludes = excludes;
+        if (_pattern == null)
+            _pattern = new ScanPattern();
+        _pattern.setExcludes(excludes);
     }
     
-    public List getIncludes()
+    public List<String> getIncludes()
     {
-        return _includes;
+        return (_pattern == null? Collections.emptyList() : _pattern.getIncludes());
     }
     
-    public List getExcludes()
+    public List<String> getExcludes()
     {
-        return _excludes;
+        return (_pattern == null? Collections.emptyList() : _pattern.getExcludes());
     }
 
 }

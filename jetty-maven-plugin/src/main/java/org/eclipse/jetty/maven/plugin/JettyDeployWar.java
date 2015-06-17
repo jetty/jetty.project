@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.maven.plugin;
 
-import java.io.File;
-
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
 
@@ -74,8 +72,7 @@ public class JettyDeployWar extends JettyRunWarMojo
     {
         super.finishConfigurationBeforeStart();
         //only stop the server at shutdown if we are blocking
-        server.setStopAtShutdown(!nonblocking);
-       
+        server.setStopAtShutdown(!nonblocking); 
     }
 
 }

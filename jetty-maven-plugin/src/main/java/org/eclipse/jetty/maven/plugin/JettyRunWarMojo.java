@@ -19,12 +19,12 @@
 package org.eclipse.jetty.maven.plugin;
 
 import java.io.File;
-import java.util.ArrayList;
 import java.util.List;
 
 import org.apache.maven.plugin.MojoExecutionException;
 import org.apache.maven.plugin.MojoFailureException;
-import org.eclipse.jetty.util.Scanner;
+import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.PathWatcher.PathWatchEvent;
 
 /**
  * <p>
@@ -100,18 +100,26 @@ public class JettyRunWarMojo extends AbstractJettyMojo
      */
     public void configureScanner() throws MojoExecutionException
     {
-        scanList = new ArrayList();
-        scanList.add(project.getFile());
-        scanList.add(war);
-        
-        scannerListeners = new ArrayList();
-        scannerListeners.add(new Scanner.BulkListener()
+        scanner.watch(project.getFile().toPath());
+        scanner.watch(war.toPath());
+
+        scanner.addListener(new PathWatcher.EventListListener()
         {
-            public void filesChanged(List changes)
+
+            @Override
+            public void onPathWatchEvents(List<PathWatchEvent> events)
             {
                 try
                 {
-                    boolean reconfigure = changes.contains(project.getFile().getCanonicalPath());
+                    boolean reconfigure = false;
+                    for (PathWatchEvent e:events)
+                    {
+                        if (e.getPath().equals(project.getFile().toPath()))
+                        {
+                            reconfigure = true;
+                            break;
+                        }
+                    }
                     restartWebApp(reconfigure);
                 }
                 catch (Exception e)
@@ -132,6 +140,7 @@ public class JettyRunWarMojo extends AbstractJettyMojo
     {
         getLog().info("Restarting webapp ...");
         getLog().debug("Stopping webapp ...");
+        stopScanner();
         webApp.stop();
         getLog().debug("Reconfiguring webapp ...");
 
@@ -142,14 +151,13 @@ public class JettyRunWarMojo extends AbstractJettyMojo
         if (reconfigureScanner)
         {
             getLog().info("Reconfiguring scanner after change to pom.xml ...");
-            scanList.clear();
-            scanList.add(project.getFile());
-            scanList.add(war);
-            scanner.setScanDirs(scanList);
+            scanner.reset();
+            configureScanner();
         }
 
         getLog().debug("Restarting webapp ...");
         webApp.start();
+        startScanner();
         getLog().info("Restart completed.");
     }
 
