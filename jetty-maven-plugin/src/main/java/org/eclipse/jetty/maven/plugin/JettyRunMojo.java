@@ -98,7 +98,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      * An optional pattern for includes/excludes of classes in the classesDirectory
      * @parameter
      */
-    protected ScanPattern classesPattern;
+    protected ScanPattern scanClassesPattern;
     
     
     
@@ -115,7 +115,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      * An optional pattern for includes/excludes of classes in the testClassesDirectory
      * @parameter
      */
-    protected ScanPattern testClassesPattern;
+    protected ScanPattern scanTestClassesPattern;
     
    
     
@@ -481,11 +481,11 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             PathWatcher.Config config = new PathWatcher.Config(webApp.getTestClasses().toPath());
             config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);           
-            if (testClassesPattern != null)
+            if (scanTestClassesPattern != null)
             {
-                for (String p:testClassesPattern.getExcludes())
+                for (String p:scanTestClassesPattern.getExcludes())
                     config.addExcludeGlobRelative(p);
-                for (String p:testClassesPattern.getIncludes())
+                for (String p:scanTestClassesPattern.getIncludes())
                     config.addIncludeGlobRelative(p);
             }
             scanner.watch(config);
@@ -495,12 +495,12 @@ public class JettyRunMojo extends AbstractJettyMojo
         {
             PathWatcher.Config config = new PathWatcher.Config(webApp.getClasses().toPath());
             config.setRecurseDepth(PathWatcher.Config.UNLIMITED_DEPTH);
-            if (classesPattern != null)
+            if (scanClassesPattern != null)
             {
-                for (String p:classesPattern.getExcludes())
+                for (String p:scanClassesPattern.getExcludes())
                     config.addExcludeGlobRelative(p);
 
-                for (String p:classesPattern.getIncludes())
+                for (String p:scanClassesPattern.getIncludes())
                     config.addIncludeGlobRelative(p);
 
             }
