@@ -16,7 +16,7 @@ etc/jetty-http2c.xml
 
 [ini-template]
 ## Max number of concurrent streams per connection
-# jetty.http2.maxConcurrentStreams=1024
+# jetty.http2c.maxConcurrentStreams=1024
 
 ## Initial stream send (server to client) window
-# jetty.http2.initialStreamSendWindow=65535
+# jetty.http2c.initialStreamSendWindow=65535
