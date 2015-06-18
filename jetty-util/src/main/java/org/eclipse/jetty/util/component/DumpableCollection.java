@@ -16,23 +16,23 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server;
+package org.eclipse.jetty.util.component;
 
 import java.io.IOException;
-import java.net.URLClassLoader;
-import java.util.Collections;
+import java.util.Collection;
 
-import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 
-public class ClassLoaderDump implements Dumpable
+public class DumpableCollection implements Dumpable
 {
-    final ClassLoader _loader;
+    private final String _name;
+    private final Collection<?> _collection;
 
-    public ClassLoaderDump(ClassLoader loader)
+    public DumpableCollection(String name,Collection<?> collection)
     {
-        _loader = loader;
+        _name=name;
+        _collection=collection;
     }
 
     @Override
@@ -44,20 +44,8 @@ public class ClassLoaderDump implements Dumpable
     @Override
     public void dump(Appendable out, String indent) throws IOException
     {
-        if (_loader==null)
-            out.append("No ClassLoader\n");
-        else
-        {
-            out.append(String.valueOf(_loader)).append("\n");
-
-            Object parent = _loader.getParent();
-            if (parent != null)
-            {
-                if (_loader instanceof URLClassLoader)
-                    ContainerLifeCycle.dump(out,indent,TypeUtil.asList(((URLClassLoader)_loader).getURLs()),Collections.singleton(parent.toString()));
-                else
-                    ContainerLifeCycle.dump(out,indent,Collections.singleton(parent.toString()));
-            }
-        }
+        out.append(_name).append("\n");
+        if (_collection!=null)
+            ContainerLifeCycle.dump(out,indent,_collection);
     }
 }

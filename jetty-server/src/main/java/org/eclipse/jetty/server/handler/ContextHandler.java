@@ -81,6 +81,7 @@ import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.component.Graceful;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -231,10 +232,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public void dump(Appendable out, String indent) throws IOException
     {
         dumpBeans(out,indent,
-            Collections.singletonList(new ClassLoaderDump(getClassLoader())),
-            _initParams.entrySet(),
-            _attributes.getAttributeEntrySet(),
-            _scontext.getAttributeEntrySet());
+                Collections.singletonList(new ClassLoaderDump(getClassLoader())),
+                Collections.singletonList(new DumpableCollection("Handler attributes "+this,((AttributesMap)getAttributes()).getAttributeEntrySet())),
+                Collections.singletonList(new DumpableCollection("Context attributes "+this,((Context)getServletContext()).getAttributeEntrySet())),
+                Collections.singletonList(new DumpableCollection("Initparams "+this,getInitParams().entrySet()))
+                );
     }
 
     /* ------------------------------------------------------------ */
@@ -1479,7 +1481,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         if (errorHandler != null)
             errorHandler.setServer(getServer());
-        updateBean(_errorHandler,errorHandler);
+        updateBean(_errorHandler,errorHandler,true);
         _errorHandler = errorHandler;
     }
 

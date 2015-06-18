@@ -77,7 +77,7 @@ public class HotSwapHandler extends AbstractHandlerContainer
             throw new IllegalArgumentException("Parameter handler is null.");
         try
         {
-            updateBean(_handler,handler);
+            updateBean(_handler,handler,true);
             _handler=handler;
             Server server = getServer();
             handler.setServer(server);

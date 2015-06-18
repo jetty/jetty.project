@@ -743,7 +743,7 @@ public class StringUtil
         if (s.length()==2)
             return new String[]{};
 
-        return s.substring(1,s.length()-1).split(" *, *");
+        return s.substring(1,s.length()-1).split("\\s*,\\s*");
     }
     
     public static String sanitizeXmlString(String html)

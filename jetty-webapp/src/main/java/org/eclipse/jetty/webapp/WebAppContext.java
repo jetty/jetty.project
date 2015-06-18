@@ -48,6 +48,7 @@ import org.eclipse.jetty.security.ConstraintAware;
 import org.eclipse.jetty.security.ConstraintMapping;
 import org.eclipse.jetty.security.ConstraintSecurityHandler;
 import org.eclipse.jetty.security.SecurityHandler;
+import org.eclipse.jetty.server.ClassLoaderDump;
 import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.HandlerContainer;
 import org.eclipse.jetty.server.Server;
@@ -57,11 +58,13 @@ import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.servlet.ErrorPageErrorHandler;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.util.AttributesMap;
 import org.eclipse.jetty.util.Loader;
 import org.eclipse.jetty.util.MultiException;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
+import org.eclipse.jetty.util.component.DumpableCollection;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -348,13 +351,12 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     {
         super.setClassLoader(classLoader);
 
-//        if ( !(classLoader instanceof WebAppClassLoader) )
-//        {
-//            LOG.info("NOTE: detected a classloader which is not an instance of WebAppClassLoader being set on WebAppContext, some typical class and resource locations may be missing on: " + toString() );
-//        }
-
+        String name = getDisplayName();
+        if (name==null) 
+            name=getContextPath();
+        
         if (classLoader!=null && classLoader instanceof WebAppClassLoader && getDisplayName()!=null)
-            ((WebAppClassLoader)classLoader).setName(getDisplayName());
+            ((WebAppClassLoader)classLoader).setName(name);
     }
 
     /* ------------------------------------------------------------ */
@@ -688,7 +690,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_serverClasses == null)
             loadServerClasses();
 
-        _serverClasses.addPattern(classOrPackage);
+        _serverClasses.add(classOrPackage);
     }
 
     /* ------------------------------------------------------------ */
@@ -738,7 +740,7 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         if (_systemClasses == null)
             loadSystemClasses();
 
-        _systemClasses.addPattern(classOrPackage);
+        _systemClasses.add(classOrPackage);
     }
 
 
@@ -952,7 +954,22 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         }
         return super.toString();
     }
-
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public void dump(Appendable out, String indent) throws IOException
+    {
+        dumpBeans(out,indent,
+            Collections.singletonList(new ClassLoaderDump(getClassLoader())),
+            Collections.singletonList(new DumpableCollection("Systemclasses "+this,_systemClasses)),
+            Collections.singletonList(new DumpableCollection("Serverclasses "+this,_serverClasses)),
+            Collections.singletonList(new DumpableCollection("Configurations "+this,_configurations)),
+            Collections.singletonList(new DumpableCollection("Handler attributes "+this,((AttributesMap)getAttributes()).getAttributeEntrySet())),
+            Collections.singletonList(new DumpableCollection("Context attributes "+this,((Context)getServletContext()).getAttributeEntrySet())),
+            Collections.singletonList(new DumpableCollection("Initparams "+this,getInitParams().entrySet()))
+            );
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @param configurations The configuration class names.  If setConfigurations is not called

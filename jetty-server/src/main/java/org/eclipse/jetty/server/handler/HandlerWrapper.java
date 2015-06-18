@@ -86,7 +86,7 @@ public class HandlerWrapper extends AbstractHandlerContainer
         
         Handler old=_handler;
         _handler=handler;
-        updateBean(old,_handler);
+        updateBean(old,_handler,true);
     }
 
     /* ------------------------------------------------------------ */

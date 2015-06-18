@@ -19,14 +19,15 @@
 
 package org.eclipse.jetty.webapp;
 
+import java.util.AbstractList;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.List;
-import java.util.StringTokenizer;
-
+import java.util.ListIterator;
 
 /* ------------------------------------------------------------ */
 /**
- * ClasspathPattern performs sequential pattern matching of a class name 
+ * Classpath classes list performs sequential pattern matching of a class name 
  * against an internal array of classpath pattern entries.
  * 
  * When an entry starts with '-' (minus), reverse matching is performed.
@@ -36,16 +37,30 @@ import java.util.StringTokenizer;
  * in this string should be separated by ':' (semicolon) or ',' (comma).
  */
 
-public class ClasspathPattern
+public class ClasspathPattern extends AbstractList<String>
 {
     private static class Entry
     {
-        public String classpath = null;
-        public boolean result = false;
-        public boolean partial = false;      
+        public final String _pattern;
+        public final String _name;
+        public final boolean _inclusive;
+        public final boolean _package;     
+        
+        Entry(String pattern)
+        {
+            _pattern=pattern;
+            _inclusive = !pattern.startsWith("-");
+            _package = pattern.endsWith(".");
+            _name = _inclusive ? pattern : pattern.substring(1).trim();
+        }
+        
+        @Override
+        public String toString()
+        {
+            return _pattern;
+        }
     }
     
-    final private List<String> _patterns = new ArrayList<String>();
     final private List<Entry> _entries = new ArrayList<Entry>();
     
     /* ------------------------------------------------------------ */
@@ -56,145 +71,117 @@ public class ClasspathPattern
     /* ------------------------------------------------------------ */
     public ClasspathPattern(String[] patterns)
     {
-        setPatterns(patterns);
+        setAll(patterns);
     }
     
     /* ------------------------------------------------------------ */
     public ClasspathPattern(String pattern)
     {
-        setPattern(pattern);
+        add(pattern);
     }
     
+    /* ------------------------------------------------------------ */
+    @Override
+    public String get(int index)
+    {
+        return _entries.get(index)._pattern;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public String set(int index, String element)
+    {
+        Entry e = _entries.set(index,new Entry(element));
+        return e==null?null:e._pattern;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void add(int index, String element)
+    {
+        _entries.add(index,new Entry(element));
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
+    public void addPattern(String element)
+    {
+        add(element);
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    public String remove(int index)
+    {
+        Entry e = _entries.remove(index);
+        return e==null?null:e._pattern;
+    }
+    
+    /* ------------------------------------------------------------ */
+    public boolean remove(String pattern)
+    {
+        for (int i=_entries.size();i-->0;)
+        {
+            if (pattern.equals(_entries.get(i)._pattern))
+            {
+                _entries.remove(i);
+                return true;
+            }
+        }
+        return false;
+    }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public int size()
+    {
+        return _entries.size();
+    }
 
     /* ------------------------------------------------------------ */
     /**
      * Initialize the matcher by parsing each classpath pattern in an array
      * 
-     * @param patterns array of classpath patterns
+     * @param classes array of classpath patterns
      */
-    private void setPatterns(String[] patterns)
+    private void setAll(String[] classes)
     {
-        _patterns.clear();
         _entries.clear();
-        addPatterns(patterns);
+        addAll(classes);
     }
     
     /* ------------------------------------------------------------ */
     /**
-     * @param patterns array of classpath patterns
+     * @param classes array of classpath patterns
      */
-    private void addPatterns(String[] patterns)
+    private void addAll(String[] classes)
     {
-        if (patterns != null)
-        {
-            Entry entry = null; 
-            for (String pattern : patterns)
-            {
-                entry = createEntry(pattern);
-                if (entry != null) 
-                {
-                    _patterns.add(pattern);
-                    _entries.add(entry);
-                }
-            }
-        }
+        if (classes!=null)
+            addAll(Arrays.asList(classes));
     }
     
     /* ------------------------------------------------------------ */
     /**
-     * @param patterns array of classpath patterns
+     * @param classes array of classpath patterns
      */
-    private void prependPatterns(String[] patterns)
+    public void prepend(String[] classes)
     {
-        if (patterns != null)
+        if (classes != null)
         {
-            Entry entry = null;
             int i=0;
-            for (String pattern : patterns)
+            for (String c : classes)
             {
-                entry = createEntry(pattern);
-                if (entry != null) 
-                {
-                    _patterns.add(i,pattern);
-                    _entries.add(i,entry);
-                    i++;
-                }
+                add(i,c);
+                i++;
             }
         }
     }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Create an entry object containing information about 
-     * a single classpath pattern
-     * 
-     * @param pattern single classpath pattern
-     * @return corresponding Entry object
-     */
-    private Entry createEntry(String pattern)
-    {
-        Entry entry = null;
-        
-        if (pattern != null)
-        {
-            String item = pattern.trim();
-            if (item.length() > 0)
-            {
-                entry = new Entry();
-                entry.result = !item.startsWith("-");
-                entry.partial = item.endsWith(".");
-                entry.classpath = entry.result ? item : item.substring(1).trim();
-            }
-        }
-        return entry;
-    }
-    
-    /* ------------------------------------------------------------ */
-    /**
-     * Initialize the matcher by parsing a classpath pattern string
-     * 
-     * @param pattern classpath pattern string
-     */
-    public void setPattern(String pattern)
-    {
-        _patterns.clear();
-        _entries.clear();
-        addPattern(pattern);
-    }
 
     /* ------------------------------------------------------------ */
-    /**
-     * Parse a classpath pattern string and appending the result
-     * to the existing configuration.
-     * 
-     * @param pattern classpath pattern string
-     */
-    public void addPattern(String pattern)
+    public void prependPattern(String pattern)
     {
-        ArrayList<String> patterns = new ArrayList<String>();
-        StringTokenizer entries = new StringTokenizer(pattern, ":,");
-        while (entries.hasMoreTokens())
-        {
-            patterns.add(entries.nextToken());
-        }
-        
-        addPatterns(patterns.toArray(new String[patterns.size()]));
-    }   
-    
-
-    /* ------------------------------------------------------------ */
-    public void prependPattern(String classOrPackage)
-    {
-        ArrayList<String> patterns = new ArrayList<String>();
-        StringTokenizer entries = new StringTokenizer(classOrPackage, ":,");
-        while (entries.hasMoreTokens())
-        {
-            patterns.add(entries.nextToken());
-        }
-        
-        prependPatterns(patterns.toArray(new String[patterns.size()]));
+        add(0,pattern);
     }
-    
     
     /* ------------------------------------------------------------ */
     /**
@@ -202,14 +189,22 @@ public class ClasspathPattern
      */
     public String[] getPatterns()
     {
-        String[] patterns = null;
-        
-        if (_patterns!=null && _patterns.size() > 0)
+        return toArray(new String[_entries.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return List of classes excluded class exclusions and package patterns
+     */
+    public List<String> getClasses()
+    {
+        List<String> list = new ArrayList<>();
+        for (Entry e:_entries)
         {
-            patterns = _patterns.toArray(new String[_patterns.size()]);
+            if (e._inclusive && !e._package)
+                list.add(e._name);
         }
-        
-        return patterns;
+        return list;
     }
     
     /* ------------------------------------------------------------ */
@@ -241,21 +236,21 @@ public class ClasspathPattern
             {
                 if (entry != null)
                 {               
-                    if (entry.partial)
+                    if (entry._package)
                     {
-                        if (name.regionMatches(startIndex, entry.classpath, 0, entry.classpath.length()))
+                        if (name.regionMatches(startIndex, entry._name, 0, entry._name.length()))
                         {
-                            result = entry.result;
+                            result = entry._inclusive;
                             break;
                         }
                     }
                     else
                     {
                         int regionLength = endIndex-startIndex;
-                        if (regionLength == entry.classpath.length()
-                                && name.regionMatches(startIndex, entry.classpath, 0, regionLength))
+                        if (regionLength == entry._name.length()
+                                && name.regionMatches(startIndex, entry._name, 0, regionLength))
                         {
-                            result = entry.result;
+                            result = entry._inclusive;
                             break;
                         }
                     }
@@ -265,4 +260,42 @@ public class ClasspathPattern
         return result;
     }
 
+    public void addAfter(String afterPattern,String... patterns)
+    {
+        if (patterns!=null && afterPattern!=null)
+        {
+            ListIterator<String> iter = listIterator();
+            while (iter.hasNext())
+            {
+                String cc=iter.next();
+                if (afterPattern.equals(cc))
+                {
+                    for (int i=0;i<patterns.length;i++)
+                        iter.add(patterns[i]);
+                    return;
+                }
+            }
+        }
+        throw new IllegalArgumentException("after '"+afterPattern+"' not found in "+this);
+    }
+
+    public void addBefore(String beforePattern,String... patterns)
+    {
+        if (patterns!=null && beforePattern!=null)
+        {
+            ListIterator<String> iter = listIterator();
+            while (iter.hasNext())
+            {
+                String cc=iter.next();
+                if (beforePattern.equals(cc))
+                {
+                    iter.previous();
+                    for (int i=0;i<patterns.length;i++)
+                        iter.add(patterns[i]);
+                    return;
+                }
+            }
+        }
+        throw new IllegalArgumentException("before '"+beforePattern+"' not found in "+this);
+    }
 }

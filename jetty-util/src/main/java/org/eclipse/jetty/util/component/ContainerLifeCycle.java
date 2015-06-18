@@ -777,6 +777,17 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
                 addBean(newBean);
         }
     }
+    
+    public void updateBean(Object oldBean, final Object newBean, boolean managed)
+    {
+        if (newBean!=oldBean)
+        {
+            if (oldBean!=null)
+                removeBean(oldBean);
+            if (newBean!=null)
+                addBean(newBean,managed);
+        }
+    }
 
     public void updateBeans(Object[] oldBeans, final Object[] newBeans)
     {

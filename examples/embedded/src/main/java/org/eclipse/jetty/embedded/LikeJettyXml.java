@@ -217,6 +217,7 @@ public class LikeJettyXml
         
         // Start the server
         server.start();
+        server.dumpStdErr();
         server.join();
     }
 }
