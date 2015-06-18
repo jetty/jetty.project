@@ -25,10 +25,13 @@ import java.io.FileReader;
 import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
+import java.net.MalformedURLException;
 import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
@@ -306,21 +309,17 @@ public class JspcMojo extends AbstractMojo
         List<URL> webAppUrls = setUpWebAppClassPath();
         
         //set up the classpath of the container (ie jetty and jsp jars)
-        String sysClassPath = setUpSysClassPath();
-        
-        //get the list of system classpath jars that contain tlds
-        List<URL> tldJarUrls = getSystemJarsWithTlds();
-        
-        for (URL u:tldJarUrls)
-        {
-            if (getLog().isDebugEnabled())
-                getLog().debug(" sys jar with tlds: "+u);
-            webAppUrls.add(u);
-        }
+        Set<URL> pluginJars = getPluginJars();
+        Set<URL> providedJars = getProvidedScopeJars(pluginJars);
+ 
 
+        //Make a classloader so provided jars will be on the classpath
+        List<URL> sysUrls = new ArrayList<URL>();      
+        sysUrls.addAll(providedJars);     
+        URLClassLoader sysClassLoader = new URLClassLoader((URL[])sysUrls.toArray(new URL[0]), currentClassLoader);
       
-        //use the classpaths as the classloader
-        URLClassLoader webAppClassLoader = new URLClassLoader((URL[]) webAppUrls.toArray(new URL[0]), currentClassLoader);
+        //make a classloader with the webapp classpath
+        URLClassLoader webAppClassLoader = new URLClassLoader((URL[]) webAppUrls.toArray(new URL[0]), sysClassLoader);
         StringBuffer webAppClassPath = new StringBuffer();
 
         for (int i = 0; i < webAppUrls.size(); i++)
@@ -347,7 +346,6 @@ public class JspcMojo extends AbstractMojo
         jspc.setWebXmlFragment(webXmlFragment);
         jspc.setUriroot(webAppSourceDirectory);     
         jspc.setOutputDir(generatedClasses);
-        jspc.setClassPath(sysClassPath+System.getProperty("path.separator")+webAppClassPath.toString());
         jspc.setClassLoader(fakeWebAppClassLoader);
         jspc.setScanAllDirectories(scanAllDirectories);
         jspc.setCompile(true);
@@ -544,87 +542,63 @@ public class JspcMojo extends AbstractMojo
     }
     
     
-    private String setUpSysClassPath () throws Exception
+    
+    /**
+     * @return
+     * @throws MalformedURLException
+     */
+    private Set<URL> getPluginJars () throws MalformedURLException
     {
-        StringBuffer buff = new StringBuffer();
-        
-        //Put each of the plugin's artifacts onto the system classpath for jspc
+        HashSet<URL> pluginJars = new HashSet<>();
         for (Iterator<Artifact> iter = pluginArtifacts.iterator(); iter.hasNext(); )
         {
             Artifact pluginArtifact = iter.next();
             if ("jar".equalsIgnoreCase(pluginArtifact.getType()))
             {
                 if (getLog().isDebugEnabled()) { getLog().debug("Adding plugin artifact "+pluginArtifact);}
-                buff.append(pluginArtifact.getFile().getAbsolutePath());
-                if (iter.hasNext())
-                    buff.append(File.pathSeparator);
+                pluginJars.add(pluginArtifact.getFile().toURI().toURL());
             }
         }
         
+        return pluginJars;
+    }
+    
+    
+    
+    /**
+     * @param pluginJars
+     * @return
+     * @throws MalformedURLException
+     */
+    private Set<URL>  getProvidedScopeJars (Set<URL> pluginJars) throws MalformedURLException
+    {
+        if (!useProvidedScope)
+            return Collections.emptySet();
         
-        if (useProvidedScope)
-        {
-            for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
-            {                   
-                Artifact artifact = iter.next();
-                if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
+        HashSet<URL> providedJars = new HashSet<>();
+        
+        for ( Iterator<Artifact> iter = projectArtifacts.iterator(); iter.hasNext(); )
+        {                   
+            Artifact artifact = iter.next();
+            if (Artifact.SCOPE_PROVIDED.equals(artifact.getScope()))
+            {
+                //test to see if the provided artifact was amongst the plugin artifacts
+                URL jar = artifact.getFile().toURI().toURL();
+                if (!pluginJars.contains(jar))
                 {
-                    //test to see if the provided artifact was amongst the plugin artifacts
-                    String path = artifact.getFile().getAbsolutePath();
-                    if (! buff.toString().contains(path))
-                    {
-                        if (buff.length() != 0)
-                            buff.append(File.pathSeparator);
-                        buff.append(path);
-                        if (getLog().isDebugEnabled()) { getLog().debug("Adding provided artifact: "+artifact);}
-                    }  
-                    else
-                    {
-                        if (getLog().isDebugEnabled()) { getLog().debug("Skipping provided artifact: "+artifact);}
-                    }
+                    providedJars.add(jar);
+                    if (getLog().isDebugEnabled()) { getLog().debug("Adding provided artifact: "+artifact);}
+                }  
+                else
+                {
+                    if (getLog().isDebugEnabled()) { getLog().debug("Skipping provided artifact: "+artifact);}
                 }
             }
         }
-
-        return buff.toString();
+        return providedJars;
     }
 
     
-    /**
-     * jsp requires that we set up the list of system jars that have
-     * tlds in them.
-     * 
-     * This method is a little fragile, as it relies on knowing that the jstl jars
-     * are the only ones in the system path that contain tlds.
-     * @return
-     * @throws Exception
-     */
-    private List<URL> getSystemJarsWithTlds() throws Exception
-    {
-        getLog().debug("tld pattern=" + tldJarNamePatterns);   
-        final List<URL> list = new ArrayList<URL>();
-        List<URI> artifactUris = new ArrayList<URI>();
-        Pattern pattern = Pattern.compile(tldJarNamePatterns);
-        for (Iterator<Artifact> iter = pluginArtifacts.iterator(); iter.hasNext(); )
-        {
-            Artifact pluginArtifact = iter.next();
-            Resource res = Resource.newResource(pluginArtifact.getFile());
-            getLog().debug("scan jar: "+res.getURI());
-            artifactUris.add(res.getURI());
-        }
-        
-        PatternMatcher matcher = new PatternMatcher()
-        {
-            public void matched(URI uri) throws Exception
-            {
-                //uri of system artifact matches pattern defining list of jars known to contain tlds
-                list.add(uri.toURL());
-            }
-        };
-        matcher.match(pattern, artifactUris.toArray(new URI[artifactUris.size()]), false);
-        
-        return list;
-    }
     
     private File getWebXmlFile ()
     throws IOException
