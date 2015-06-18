@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.ListIterator;
 
+import org.eclipse.jetty.util.StringUtil;
+
 /* ------------------------------------------------------------ */
 /**
  * Classpath classes list performs sequential pattern matching of a class name 
@@ -216,48 +218,27 @@ public class ClasspathPattern extends AbstractList<String>
      */
     public boolean match(String name)
     {       
-        boolean result=false;
+        name = name.replace('/','.');
 
-        if (_entries != null)
+        for (Entry entry : _entries)
         {
-            name = name.replace('/','.');
-
-            int startIndex = 0;
-
-            while(startIndex < name.length() && name.charAt(startIndex) == '.') {
-                startIndex++;
-            }
-
-            int dollar = name.indexOf("$");
-
-            int endIndex =  dollar != -1 ? dollar : name.length();
-
-            for (Entry entry : _entries)
+            if (entry==null)
+                continue;
+            if (entry._package)
             {
-                if (entry != null)
-                {               
-                    if (entry._package)
-                    {
-                        if (name.regionMatches(startIndex, entry._name, 0, entry._name.length()))
-                        {
-                            result = entry._inclusive;
-                            break;
-                        }
-                    }
-                    else
-                    {
-                        int regionLength = endIndex-startIndex;
-                        if (regionLength == entry._name.length()
-                                && name.regionMatches(startIndex, entry._name, 0, regionLength))
-                        {
-                            result = entry._inclusive;
-                            break;
-                        }
-                    }
-                }
+                if (name.startsWith(entry._name))
+                    return entry._inclusive;
+            }
+            else
+            {
+                if (name.equals(entry._name))
+                    return entry._inclusive;
+                
+                if (name.length()>entry._name.length() && '$'==name.charAt(entry._name.length()) && name.startsWith(entry._name))
+                    return entry._inclusive;
             }
         }
-        return result;
+        return false;
     }
 
     public void addAfter(String afterPattern,String... patterns)
