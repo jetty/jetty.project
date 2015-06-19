@@ -406,7 +406,8 @@ public class Request implements HttpServletRequest
             if (contentLength != 0)
             {
                 if (MimeTypes.Type.FORM_ENCODED.is(contentType) && _inputState == __NONE &&
-                        (HttpMethod.POST.is(getMethod()) || HttpMethod.PUT.is(getMethod())))
+                        (HttpMethod.POST.is(getMethod()) || HttpMethod.PUT.is(getMethod()) ||
+                                HttpMethod.DELETE.is(getMethod())))
                 {
                     extractFormParameters(_contentParameters);
                 }
