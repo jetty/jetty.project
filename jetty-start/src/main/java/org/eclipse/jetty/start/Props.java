@@ -44,7 +44,6 @@ public final class Props implements Iterable<Prop>
 {
     private static final Pattern __propertyPattern = Pattern.compile("(?<=[^$]|^)\\$\\{([^:}]*)(:=([^}]*))?\\}");
     
-    
     public static class Prop
     {
         public String key;
@@ -324,7 +323,7 @@ public final class Props implements Iterable<Prop>
 
     public static boolean hasPropertyKey(String name)
     {
-        return Pattern.compile("(?<=[^$]|^)(\\$\\{[^}]*\\})").matcher(name).find();
+        return __propertyPattern.matcher(name).find();
     }
 
     @Override
