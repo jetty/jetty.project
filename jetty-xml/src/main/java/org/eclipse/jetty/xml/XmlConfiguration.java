@@ -46,7 +46,6 @@ import java.util.Queue;
 import java.util.ServiceLoader;
 import java.util.Set;
 import java.util.concurrent.atomic.AtomicReference;
-import java.util.regex.Pattern;
 
 import org.eclipse.jetty.util.ArrayQueue;
 import org.eclipse.jetty.util.LazyList;
@@ -86,7 +85,6 @@ public class XmlConfiguration
             {Boolean.class, Character.class, Byte.class, Short.class, Integer.class, Long.class, Float.class, Double.class, Void.class};
     private static final Class<?>[] __supportedCollections =
             {ArrayList.class, ArrayQueue.class, HashSet.class, Queue.class, List.class, Set.class, Collection.class};
-    private static final Pattern __propertyPattern = Pattern.compile("\\$\\{([^\\}]+)\\}");
     private static final Iterable<ConfigurationProcessorFactory> __factoryLoader = ServiceLoader.load(ConfigurationProcessorFactory.class);
     private static final XmlParser __parser = initParser();
     private static XmlParser initParser()
@@ -1305,16 +1303,10 @@ public class XmlConfiguration
                 return StringUtil.valueOf(get(elementName,false));
             }
             
-            public Object get(String elementName) throws Exception
-            {
-                return get(elementName,false);
-            }
-            
             public String getString(String elementName, boolean manditory) throws Exception
             {
                 return StringUtil.valueOf(get(elementName,manditory));
             }
-            
             
             public Object get(String elementName, boolean manditory) throws Exception
             {
@@ -1493,7 +1485,7 @@ public class XmlConfiguration
                     {
                         if (!args[i].toLowerCase(Locale.ENGLISH).endsWith(".properties") && (args[i].indexOf('=')<0))
                         {
-                            XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(args[i]).getURL());
+                            XmlConfiguration configuration = new XmlConfiguration(Resource.newResource(args[i]).getURI().toURL());
                             if (last != null)
                                 configuration.getIdMap().putAll(last.getIdMap());
                             if (properties.size() > 0)
