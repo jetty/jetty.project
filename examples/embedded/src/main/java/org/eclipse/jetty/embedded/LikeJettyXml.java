@@ -211,13 +211,11 @@ public class LikeJettyXml
         HashLoginService login = new HashLoginService();
         login.setName("Test Realm");
         login.setConfig(jetty_base + "/etc/realm.properties");
-        login.setRefreshInterval(0);
+        login.setHotReload(false);
         server.addBean(login);
-
         
         // Start the server
         server.start();
-        server.dumpStdErr();
         server.join();
     }
 }

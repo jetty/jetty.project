@@ -112,9 +112,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     public final static int SERVLET_MAJOR_VERSION=3;
     public final static int SERVLET_MINOR_VERSION=1;
     public static final Class<?>[] SERVLET_LISTENER_TYPES = new Class[] {ServletContextListener.class,
-                                                                      ServletContextAttributeListener.class,
-                                                                      ServletRequestListener.class,
-                                                                      ServletRequestAttributeListener.class};
+        ServletContextAttributeListener.class,
+        ServletRequestListener.class,
+        ServletRequestAttributeListener.class};
 
     public static final int DEFAULT_LISTENER_TYPE_INDEX = 1;
     public static final int EXTENDED_LISTENER_TYPE_INDEX = 0;
@@ -154,7 +154,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return c.getContextHandler();
         return null;
     }
-
 
     protected Context _scontext;
     private final AttributesMap _attributes;
@@ -715,7 +714,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         Context old_context = null;
 
         _attributes.setAttribute("org.eclipse.jetty.server.Executor",getServer().getThreadPool());
-        
+
         try
         {
             // Set the classloader
@@ -760,22 +759,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         String managedAttributes = _initParams.get(MANAGED_ATTRIBUTES);
         if (managedAttributes != null)
-        {
-            _managedAttributes = new HashMap<String, Object>();
-            String[] attributes = managedAttributes.split(",");
-            for (String attribute : attributes)
-            {
-                _managedAttributes.put(attribute.trim(),null);
-            }
-
-            Enumeration<String> e = _scontext.getAttributeNames();
-            while (e.hasMoreElements())
-            {
-                String name = e.nextElement();
-                Object value = _scontext.getAttribute(name);
-                checkManagedAttribute(name,value);
-            }
-        }
+            addEventListener(new ManagedAttributeListener(this,managedAttributes.split(",")));
 
         super.doStart();
 
@@ -845,13 +829,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             if (_errorHandler != null)
                 _errorHandler.stop();
 
-            Enumeration<String> e = _scontext.getAttributeNames();
-            while (e.hasMoreElements())
-            {
-                String name = e.nextElement();
-                checkManagedAttribute(name,null);
-            }
-
             for (EventListener l : _programmaticListeners)
                 removeEventListener(l);
             _programmaticListeners.clear();
@@ -907,7 +884,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         return true;
     }
-    
+
     public boolean checkContextPath(String uri)
     {
         // Are we not the root context?
@@ -921,7 +898,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         return true;
     }
-    
+
     /* ------------------------------------------------------------ */
     /*
      * @see org.eclipse.jetty.server.Handler#handle(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
@@ -936,7 +913,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         if (!checkContextPath(target))
             return false;
-        
+
         // Are we not the root context?
         // redirect null path infos
         if (!_allowNullPathInfo && _contextPath.length() == target.length() && _contextPath.length()>1)
@@ -993,8 +970,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             // check the target.
             if (DispatcherType.REQUEST.equals(dispatch) ||
-                DispatcherType.ASYNC.equals(dispatch) ||
-                DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
+                    DispatcherType.ASYNC.equals(dispatch) ||
+                    DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
             {
                 if (_compactPath)
                     target = URIUtil.compactPath(target);
@@ -1202,7 +1179,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             {
                 if (target.length()==t.length())
                     return true;
-                
+
                 // Check that the target prefix really is a path segment, thus
                 // it can end with /, a query, a target or a parameter
                 char c=target.charAt(t.length());
@@ -1226,7 +1203,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             _protectedTargets = null;
             return;
         }
-        
+
         _protectedTargets = Arrays.copyOf(targets, targets.length);
     }
 
@@ -1247,7 +1224,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public void removeAttribute(String name)
     {
-        checkManagedAttribute(name,null);
         _attributes.removeAttribute(name);
     }
 
@@ -1261,7 +1237,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     @Override
     public void setAttribute( String name, Object value)
     {
-        checkManagedAttribute(name,value);
         _attributes.setAttribute(name,value);
     }
 
@@ -1274,34 +1249,13 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         _attributes.clearAttributes();
         _attributes.addAll(attributes);
-        Enumeration<String> e = _attributes.getAttributeNames();
-        while (e.hasMoreElements())
-        {
-            String name = e.nextElement();
-            checkManagedAttribute(name,attributes.getAttribute(name));
-        }
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public void clearAttributes()
     {
-        Enumeration<String> e = _attributes.getAttributeNames();
-        while (e.hasMoreElements())
-        {
-            String name = e.nextElement();
-            checkManagedAttribute(name,null);
-        }
         _attributes.clearAttributes();
-    }
-
-    /* ------------------------------------------------------------ */
-    public void checkManagedAttribute(String name, Object value)
-    {
-        if (_managedAttributes != null && _managedAttributes.containsKey(name))
-        {
-            setManagedAttribute(name,value);
-        }
     }
 
     /* ------------------------------------------------------------ */
@@ -1613,7 +1567,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             encoding = _localeEncodingMap.get(locale.getLanguage());
         return encoding;
     }
-    
+
     /* ------------------------------------------------------------ */
     /** 
      * Get all of the locale encodings
@@ -1642,7 +1596,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             path = URIUtil.canonicalPath(path);
             Resource resource = _baseResource.addPath(path);
-            
+
             if (checkAlias(path,resource))
                 return resource;
             return null;
@@ -1684,7 +1638,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         return true;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Convert URL to Resource wrapper for {@link Resource#newResource(URL)} enables extensions to provide alternate resource implementations.
@@ -1696,7 +1650,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         return Resource.newResource(url);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Convert URL to Resource wrapper for {@link Resource#newResource(URL)} enables extensions to provide alternate resource implementations.
@@ -1786,7 +1740,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         return _aliasChecks;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * @param checks list of AliasCheck instances
@@ -1796,7 +1750,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         _aliasChecks.clear();
         _aliasChecks.addAll(checks);
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * clear the list of AliasChecks
@@ -1947,7 +1901,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             try
             {
                 HttpURI uri = new HttpURI(null,null,0,uriInContext);
-                
+
                 String pathInfo=URIUtil.canonicalPath(uri.getDecodedPath());
                 if (pathInfo==null)
                     return null;
@@ -1955,7 +1909,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 String contextPath=getContextPath();
                 if (contextPath!=null && contextPath.length()>0)
                     uri.setPath(URIUtil.addPaths(contextPath,uri.getPath()));
-                
+
                 return new Dispatcher(ContextHandler.this,uri,pathInfo);
             }
             catch (Exception e)
@@ -2127,7 +2081,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public synchronized void setAttribute(String name, Object value)
         {
-            checkManagedAttribute(name,value);
             Object old_value = super.getAttribute(name);
 
             if (value == null)
@@ -2158,8 +2111,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public synchronized void removeAttribute(String name)
         {
-            checkManagedAttribute(name,null);
-
             Object old_value = super.getAttribute(name);
             super.removeAttribute(name);
             if (old_value != null &&!_contextAttributeListeners.isEmpty())
@@ -2290,55 +2241,54 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         public void setExtendedListenerTypes (boolean extended)
         {
-           _extendedListenerTypes = extended;
+            _extendedListenerTypes = extended;
         }
 
-       public boolean isExtendedListenerTypes()
-       {
-           return _extendedListenerTypes;
-       }
+        public boolean isExtendedListenerTypes()
+        {
+            return _extendedListenerTypes;
+        }
 
+        @Override
+        public ClassLoader getClassLoader()
+        {
+            if (!_enabled)
+                throw new UnsupportedOperationException();
 
-       @Override
-       public ClassLoader getClassLoader()
-       {
-           if (!_enabled)
-               throw new UnsupportedOperationException();
-           
-           //no security manager just return the classloader
-           if (System.getSecurityManager() == null)
-               return _classLoader;
-           else
-           {
-               //check to see if the classloader of the caller is the same as the context
-               //classloader, or a parent of it
-               try
-               {
-                   Class<?> reflect = Loader.loadClass(getClass(), "sun.reflect.Reflection");
-                   Method getCallerClass = reflect.getMethod("getCallerClass", Integer.TYPE);
-                   Class<?> caller = (Class<?>)getCallerClass.invoke(null, 2);
+            //no security manager just return the classloader
+            if (System.getSecurityManager() == null)
+                return _classLoader;
+            else
+            {
+                //check to see if the classloader of the caller is the same as the context
+                //classloader, or a parent of it
+                try
+                {
+                    Class<?> reflect = Loader.loadClass(getClass(), "sun.reflect.Reflection");
+                    Method getCallerClass = reflect.getMethod("getCallerClass", Integer.TYPE);
+                    Class<?> caller = (Class<?>)getCallerClass.invoke(null, 2);
 
-                   boolean ok = false;
-                   ClassLoader callerLoader = caller.getClassLoader();
-                   while (!ok && callerLoader != null)
-                   {
-                       if (callerLoader == _classLoader) 
-                           ok = true;
-                       else
-                           callerLoader = callerLoader.getParent();    
-                   }
+                    boolean ok = false;
+                    ClassLoader callerLoader = caller.getClassLoader();
+                    while (!ok && callerLoader != null)
+                    {
+                        if (callerLoader == _classLoader) 
+                            ok = true;
+                        else
+                            callerLoader = callerLoader.getParent();    
+                    }
 
-                   if (ok)
-                       return _classLoader;
-               }
-               catch (Exception e)      
-               {
-                   LOG.warn("Unable to check classloader of caller",e);
-               }
-              
-               AccessController.checkPermission(new RuntimePermission("getClassLoader"));
-               return _classLoader;
-           }
+                    if (ok)
+                        return _classLoader;
+                }
+                catch (Exception e)      
+                {
+                    LOG.warn("Unable to check classloader of caller",e);
+                }
+
+                AccessController.checkPermission(new RuntimePermission("getClassLoader"));
+                return _classLoader;
+            }
         }
 
         @Override
@@ -2371,8 +2321,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             return _enabled;
         }
-
-
 
         public <T> T createInstance (Class<T> clazz) throws Exception
         {
@@ -2529,7 +2477,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             return null;
         }
-
 
         @Override
         public boolean setInitParameter(String name, String value)
@@ -2763,7 +2710,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return true;
         }
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Approve Aliases of a non existent directory.
      * If a directory "/foobar/" does not exist, then the resource is
@@ -2776,15 +2723,15 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             if (resource.exists())
                 return false;
-            
+
             String a=resource.getAlias().toString();
             String r=resource.getURL().toString();
-            
+
             if (a.length()>r.length())
                 return a.startsWith(r) && a.length()==r.length()+1 && a.endsWith("/");
             if (a.length()<r.length())
                 return r.startsWith(a) && r.length()==a.length()+1 && r.endsWith("/");
-            
+
             return a.equals(r); 
         }
     }
