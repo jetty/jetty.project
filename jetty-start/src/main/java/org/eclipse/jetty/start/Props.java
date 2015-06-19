@@ -42,7 +42,7 @@ import org.eclipse.jetty.start.Props.Prop;
  */
 public final class Props implements Iterable<Prop>
 {
-    private static final Pattern __propertyPattern = Pattern.compile("(?<=[^$]|^)\\$\\{([^:}]*)(:=([^}]*))?\\}");
+    private static final Pattern __propertyPattern = Pattern.compile("(?<=[^$]|^)\\$\\{([^}]*)\\}");
     
     public static class Prop
     {
@@ -211,7 +211,6 @@ public final class Props implements Iterable<Prop>
         while (mat.find(offset))
         {
             property = mat.group(1);
-            String dftValue = mat.groupCount()>2?mat.group(3):null;
 
             // Loop detection
             if (seenStack.contains(property))
@@ -234,8 +233,6 @@ public final class Props implements Iterable<Prop>
             expanded.append(str.subSequence(offset,mat.start()));
             // get property value
             value = getString(property);
-            if (value==null)
-                value=dftValue;
             if (value == null)
             {
                 StartLog.trace("Unable to expand: %s",property);
