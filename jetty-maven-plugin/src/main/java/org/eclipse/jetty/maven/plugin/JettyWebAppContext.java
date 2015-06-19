@@ -39,6 +39,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.FilterMapping;
 import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.servlet.ServletMapping;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -252,7 +253,7 @@ public class JettyWebAppContext extends WebAppContext
         List<String> resources = new ArrayList<String>();
         for (String rl:resourceBases)
         {
-            String[] rs = rl.split(" *, *");
+            String[] rs = StringUtil.csvSplit(rl);
             for (String r:rs)
                 resources.add(r);
         }

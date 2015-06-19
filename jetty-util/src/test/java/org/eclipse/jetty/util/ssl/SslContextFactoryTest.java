@@ -31,11 +31,14 @@ import java.security.KeyStore;
 
 import javax.net.ssl.SSLEngine;
 
+import org.eclipse.jetty.toolchain.test.JDK;
+import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.StdErrLog;
 import org.eclipse.jetty.util.resource.Resource;
 import org.junit.Assert;
+import org.junit.Assume;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -208,6 +211,9 @@ public class SslContextFactoryTest
     @Test
     public void testSetIncludeCipherSuitesRegex() throws Exception
     {
+        // Test does not work on JDK 8+ (RC4 is disabled)
+        Assume.assumeFalse(JDK.IS_8);
+        
         cf.setIncludeCipherSuites(".*RC4.*");
         cf.start();
         SSLEngine sslEngine = cf.newSSLEngine();

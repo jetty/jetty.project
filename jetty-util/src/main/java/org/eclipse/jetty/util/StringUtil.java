@@ -21,6 +21,8 @@ package org.eclipse.jetty.util;
 import java.io.UnsupportedEncodingException;
 import java.nio.charset.Charset;
 import java.nio.charset.StandardCharsets;
+import java.util.ArrayList;
+import java.util.List;
 
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -721,6 +723,11 @@ public class StringUtil
         return str.substring(0,maxSize);
     }
 
+    /**
+    * Parse the string representation of a list using {@link #csvSplit(List,String,int,int)}
+    * @param s The string to parse, expected to be enclosed as '[...]'
+    * @return An array of parsed values.
+    */
     public static String[] arrayFromString(String s) 
     {
         if (s==null)
@@ -731,9 +738,183 @@ public class StringUtil
         if (s.length()==2)
             return new String[]{};
 
-        return s.substring(1,s.length()-1).split(" *, *");
+        return csvSplit(s,1,s.length()-2);
     }
     
+    /**
+    * Parse a CSV string using {@link #csvSplit(List,String, int, int)}
+    * @param s The string to parse
+    * @return An array of parsed values.
+    */
+    public static String[] csvSplit(String s)
+    {
+        if (s==null)
+            return null;
+        return csvSplit(s,0,s.length());
+    }
+    
+    /**
+     * Parse a CSV string using {@link #csvSplit(List,String, int, int)}
+     * @param s The string to parse
+     * @param off The offset into the string to start parsing
+     * @param len The len in characters to parse
+     * @return An array of parsed values.
+     */
+    public static String[] csvSplit(String s, int off,int len)
+    {
+        if (s==null)
+            return null;
+        if (off<0 || len<0 || off>s.length())
+            throw new IllegalArgumentException();
+
+        List<String> list = new ArrayList<>();
+        csvSplit(list,s,off,len);
+        return list.toArray(new String[list.size()]);
+    }
+
+    enum CsvSplitState { PRE_DATA, QUOTE, SLOSH, DATA, WHITE, POST_DATA };
+
+    /** Split a quoted comma separated string to a list
+     * <p>Handle <a href="https://www.ietf.org/rfc/rfc4180.txt">rfc4180</a>-like 
+     * CSV strings, with the exceptions:<ul>
+     * <li>quoted values may contain double quotes escaped with back-slash
+     * <li>Non-quoted values are trimmed of leading trailing white space
+     * <li>trailing commas are ignored
+     * <li>double commas result in a empty string value
+     * </ul>  
+     * @param list The Collection to split to (or null to get a new list)
+     * @param s The string to parse
+     * @param off The offset into the string to start parsing
+     * @param len The len in characters to parse
+     * @return list containing the parsed list values
+     */
+    public static List<String> csvSplit(List<String> list,String s, int off,int len)
+    {
+        if (list==null)
+            list=new ArrayList<>();
+        CsvSplitState state = CsvSplitState.PRE_DATA;
+        StringBuilder out = new StringBuilder();
+        int last=-1;
+        while (len>0)
+        {
+            char ch = s.charAt(off++);
+            len--;
+            
+            switch(state)
+            {
+                case PRE_DATA:
+                    if (Character.isWhitespace(ch))
+                        continue;
+
+                    if ('"'==ch)
+                    {
+                        state=CsvSplitState.QUOTE;
+                        continue;
+                    }
+                    
+                    if (','==ch)
+                    {
+                        list.add("");
+                        continue;
+                    }
+
+                    state=CsvSplitState.DATA;
+                    out.append(ch);
+                    continue;
+
+                case DATA:
+                    if (Character.isWhitespace(ch))
+                    {
+                        last=out.length();
+                        out.append(ch);
+                        state=CsvSplitState.WHITE;
+                        continue;
+                    }
+                    
+                    if (','==ch)
+                    {
+                        list.add(out.toString());
+                        out.setLength(0);
+                        state=CsvSplitState.PRE_DATA;
+                        continue;
+                    }
+
+                    out.append(ch);
+                    continue;
+                    
+                case WHITE:
+                    if (Character.isWhitespace(ch))
+                    {
+                        out.append(ch);
+                        continue;
+                    }
+                    
+                    if (','==ch)
+                    {
+                        out.setLength(last);
+                        list.add(out.toString());
+                        out.setLength(0);
+                        state=CsvSplitState.PRE_DATA;
+                        continue;
+                    }
+                    
+                    state=CsvSplitState.DATA;
+                    out.append(ch);
+                    last=-1;
+                    continue;
+
+                case QUOTE:
+                    if ('\\'==ch)
+                    {
+                        state=CsvSplitState.SLOSH;
+                        continue;
+                    }
+                    if ('"'==ch)
+                    {
+                        list.add(out.toString());
+                        out.setLength(0);
+                        state=CsvSplitState.POST_DATA;
+                        continue;
+                    }
+                    out.append(ch);
+                    continue;
+                    
+                case SLOSH:
+                    out.append(ch);
+                    state=CsvSplitState.QUOTE;
+                    continue;
+                    
+                case POST_DATA:
+                    if (','==ch)
+                    {
+                        state=CsvSplitState.PRE_DATA;
+                        continue;
+                    }
+                    continue;
+            }
+        }
+
+        switch(state)
+        {
+            case PRE_DATA:
+            case POST_DATA:
+                break;
+
+            case DATA:
+            case QUOTE:
+            case SLOSH:
+                list.add(out.toString());
+                break;
+                
+            case WHITE:
+                out.setLength(last);
+                list.add(out.toString());
+                break;
+        }
+        
+        return list;
+    }
+
     public static String sanitizeXmlString(String html)
     {
         if (html==null)

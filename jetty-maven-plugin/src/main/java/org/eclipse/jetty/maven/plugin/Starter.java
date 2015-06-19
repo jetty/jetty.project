@@ -35,6 +35,7 @@ import org.eclipse.jetty.server.Connector;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.ShutdownMonitor;
 import org.eclipse.jetty.server.handler.HandlerCollection;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -85,7 +86,7 @@ public class Starter
         {
             if (csv != null && !"".equals(csv))
             {
-                String[] atoms = csv.split(",");
+                String[] atoms = StringUtil.csvSplit(csv);
                 if (atoms.length >= 3)
                 {
                     gid = atoms[0].trim();
@@ -226,7 +227,7 @@ public class Starter
         str = (String)props.getProperty("base.dirs");
         if (str != null && !"".equals(str.trim()))
         {
-            ResourceCollection bases = new ResourceCollection(str.split(","));
+            ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
             webApp.setWar(null);
             webApp.setBaseResource(bases);
         }
@@ -235,7 +236,7 @@ public class Starter
         str = (String)props.get("base.dirs.orig");
         if (str != null && !"".equals(str.trim()))
         {
-            ResourceCollection bases = new ResourceCollection(str.split(","));
+            ResourceCollection bases = new ResourceCollection(StringUtil.csvSplit(str));
             webApp.setAttribute ("org.eclipse.jetty.resources.originalBases", bases);
         }
         
@@ -331,7 +332,7 @@ public class Starter
         if (str != null && !"".equals(str.trim()))
         {
             List<File> jars = new ArrayList<File>();
-            String[] names = str.split(",");
+            String[] names = StringUtil.csvSplit(str);
             for (int j=0; names != null && j < names.length; j++)
                 jars.add(new File(names[j].trim()));
             webApp.setWebInfLib(jars);
@@ -360,7 +361,7 @@ public class Starter
             if ("--jetty-xml".equals(args[i]))
             {
                 jettyXmls = new ArrayList<File>();
-                String[] names = args[++i].split(",");
+                String[] names = StringUtil.csvSplit(args[++i]);
                 for (int j=0; names!= null && j < names.length; j++)
                 {
                     jettyXmls.add(new File(names[j].trim()));
@@ -489,7 +490,7 @@ public class Starter
     {
         if (csv == null || "".equals(csv.trim()))
             return null;
-        String[] atoms = csv.split(",");
+        String[] atoms = StringUtil.csvSplit(csv);
         List<String> list = new ArrayList<String>();
         for (String a:atoms)
         {

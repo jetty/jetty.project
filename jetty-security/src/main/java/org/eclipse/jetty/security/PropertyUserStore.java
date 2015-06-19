@@ -38,6 +38,7 @@ import org.eclipse.jetty.security.MappedLoginService.RolePrincipal;
 import org.eclipse.jetty.server.UserIdentity;
 import org.eclipse.jetty.util.Scanner;
 import org.eclipse.jetty.util.Scanner.BulkListener;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -153,7 +154,7 @@ public class PropertyUserStore extends AbstractLifeCycle
                 String[] roleArray = IdentityService.NO_ROLES;
                 if (roles != null && roles.length() > 0)
                 {
-                    roleArray = roles.split(",");
+                    roleArray = StringUtil.csvSplit(roles);
                 }
                 known.add(username);
                 Credential credential = Credential.getCredential(credentials);
