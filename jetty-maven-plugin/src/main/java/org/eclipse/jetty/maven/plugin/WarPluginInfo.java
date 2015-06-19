@@ -28,6 +28,7 @@ import java.util.List;
 import org.apache.maven.model.Plugin;
 import org.apache.maven.project.MavenProject;
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.eclipse.jetty.util.StringUtil;
 
 
 
@@ -105,7 +106,7 @@ public class WarPluginInfo
             if (node == null)
                 return null;
             String val = node.getValue();
-            _dependentMavenWarIncludes = Arrays.asList(val.split(",")); 
+            _dependentMavenWarIncludes = StringUtil.csvSplit(null,val,0,val.length());
         }
         return _dependentMavenWarIncludes;
     }
@@ -134,7 +135,7 @@ public class WarPluginInfo
             if (node == null)
                 return null;
             String val = node.getValue();
-            _dependentMavenWarExcludes = Arrays.asList(val.split(","));
+            _dependentMavenWarExcludes = StringUtil.csvSplit(null,val,0,val.length());
         }
         return _dependentMavenWarExcludes;
     }

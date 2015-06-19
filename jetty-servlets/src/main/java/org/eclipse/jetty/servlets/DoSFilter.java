@@ -52,6 +52,7 @@ import javax.servlet.http.HttpSessionBindingListener;
 import javax.servlet.http.HttpSessionEvent;
 
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
@@ -1036,7 +1037,7 @@ public class DoSFilter implements Filter
     public void setWhitelist(String commaSeparatedList)
     {
         List<String> result = new ArrayList<>();
-        for (String address : commaSeparatedList.split(","))
+        for (String address : StringUtil.csvSplit(commaSeparatedList))
             addWhitelistAddress(result, address);
         clearWhitelist();
         _whitelist.addAll(result);

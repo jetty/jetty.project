@@ -44,6 +44,7 @@ import javax.servlet.http.HttpServletResponse;
 import javax.servlet.http.HttpServletResponseWrapper;
 
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 
 /**
@@ -331,7 +332,7 @@ public class PutFilter implements Filter
                 if ("Allow".equalsIgnoreCase(name))
                 {
                     Set<String> options = new HashSet<String>();
-                    options.addAll(Arrays.asList(value.split(" *, *")));
+                    options.addAll(Arrays.asList(StringUtil.csvSplit(value)));
                     options.addAll(_operations);
                     value=null;
                     for (String o : options)
