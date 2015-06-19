@@ -638,7 +638,7 @@ public class HttpGenerator
 
                         if (values[0]==null)
                         {
-                            split = field.getValue().split("\\s*,\\s*");
+                            split = StringUtil.csvSplit(field.getValue());
                             if (split.length>0)
                             {
                                 values=new HttpHeaderValue[split.length];

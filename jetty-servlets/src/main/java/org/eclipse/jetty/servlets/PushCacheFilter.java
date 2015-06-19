@@ -46,6 +46,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
@@ -95,11 +96,11 @@ public class PushCacheFilter implements Filter
 
         String hosts = config.getInitParameter("hosts");
         if (hosts != null)
-            Collections.addAll(_hosts, hosts.split(","));
+            Collections.addAll(_hosts, StringUtil.csvSplit(hosts));
 
         String ports = config.getInitParameter("ports");
         if (ports != null)
-            for (String p : ports.split(","))
+            for (String p : StringUtil.csvSplit(ports))
                 _ports.add(Integer.parseInt(p));
 
         // Expose for JMX.

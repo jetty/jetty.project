@@ -40,6 +40,7 @@ import org.eclipse.jetty.client.api.ContentResponse;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.util.Attributes;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
 
 /**
@@ -102,7 +103,7 @@ public class DigestAuthentication implements Authentication
         String clientQOP = null;
         if (serverQOP != null)
         {
-            List<String> serverQOPValues = Arrays.asList(serverQOP.split(","));
+            List<String> serverQOPValues = StringUtil.csvSplit(null,serverQOP,0,serverQOP.length());
             if (serverQOPValues.contains("auth"))
                 clientQOP = "auth";
             else if (serverQOPValues.contains("auth-int"))

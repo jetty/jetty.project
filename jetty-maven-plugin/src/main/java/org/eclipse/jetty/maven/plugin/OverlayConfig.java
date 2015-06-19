@@ -25,6 +25,7 @@ import java.util.Iterator;
 import java.util.List;
 
 import org.codehaus.plexus.util.xml.Xpp3Dom;
+import org.eclipse.jetty.util.StringUtil;
 
 /**
  * OverlayConfig
@@ -46,7 +47,7 @@ public class OverlayConfig
     {
         if (fmt == null)
             return;
-        String[] atoms = fmt.split(",");
+        String[] atoms = StringUtil.csvSplit(fmt);
         for (int i=0;i<atoms.length;i++)
         {
             String s = atoms[i].trim();

@@ -113,7 +113,7 @@ public class Main
                     String argValue = matcher.group(2);
                     if (argValue.startsWith("host,"))
                     {
-                        String[] typeAndSuffix = argValue.split(",");
+                        String[] typeAndSuffix = StringUtil.split(argValue);
                         if (typeAndSuffix.length != 2)
                             throw new IllegalArgumentException("Invalid option " + arg + ", must be of the form --" + RETRIEVER_ARG + "=host,suffix");
 

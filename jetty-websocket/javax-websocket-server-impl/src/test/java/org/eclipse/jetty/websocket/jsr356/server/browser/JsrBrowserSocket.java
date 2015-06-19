@@ -133,7 +133,7 @@ public class JsrBrowserSocket
                 }
                 case "many":
                 {
-                    String parts[] = val.split(",");
+                    String parts[] = StringUtil.csvSplit(val);
                     int size = Integer.parseInt(parts[0]);
                     int count = Integer.parseInt(parts[1]);
 
@@ -142,7 +142,7 @@ public class JsrBrowserSocket
                 }
                 case "manythreads":
                 {
-                    String parts[] = val.split(",");
+                    String parts[] = StringUtil.csvSplit(val);
                     int threadCount = Integer.parseInt(parts[0]);
                     int size = Integer.parseInt(parts[1]);
                     int count = Integer.parseInt(parts[2]);

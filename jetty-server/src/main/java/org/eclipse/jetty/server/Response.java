@@ -1168,10 +1168,9 @@ public class Response implements HttpServletResponse
                 
         if (connection != null)
         {
-            String[] values = connection.split(",");
-            for (int i = 0; values != null && i < values.length; i++)
+            for (String value: StringUtil.csvSplit(null,connection,0,connection.length()))
             {
-                HttpHeaderValue cb = HttpHeaderValue.CACHE.get(values[0].trim());
+                HttpHeaderValue cb = HttpHeaderValue.CACHE.get(value);
 
                 if (cb != null)
                 {

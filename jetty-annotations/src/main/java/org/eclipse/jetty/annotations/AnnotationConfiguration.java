@@ -46,6 +46,7 @@ import org.eclipse.jetty.annotations.AnnotationParser.Handler;
 import org.eclipse.jetty.plus.annotation.ContainerInitializer;
 import org.eclipse.jetty.util.ConcurrentHashSet;
 import org.eclipse.jetty.util.MultiException;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -272,7 +273,7 @@ public class AnnotationConfiguration extends AbstractConfiguration
             {
                 _ordering = ordering;
                 
-                String[] tmp = ordering.split(",");
+                String[] tmp = StringUtil.csvSplit(ordering);
                 
                 for (int i=0; i<tmp.length; i++)
                 {

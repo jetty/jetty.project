@@ -41,6 +41,7 @@ import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletTester;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.StringUtil;
 import org.junit.After;
 import org.junit.Before;
 import org.junit.Test;
@@ -266,8 +267,8 @@ public class PutFilterTest
         assertEquals(HttpServletResponse.SC_OK,response.getStatus());
 
         Set<String> options = new HashSet<String>();
-        options.addAll(Arrays.asList(response.get("Allow").split(" *, *")));
-
+        String allow=response.get("Allow");
+        options.addAll(StringUtil.csvSplit(null,allow,0,allow.length()));
         assertTrue(options.contains("GET"));
         assertTrue(options.contains("POST"));
         assertTrue(options.contains("PUT"));

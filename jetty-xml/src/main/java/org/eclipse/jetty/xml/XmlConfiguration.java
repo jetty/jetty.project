@@ -1348,10 +1348,8 @@ public class XmlConfiguration
                 
                 String attr = _node.getAttribute(attrName);
                 if (attr!=null)
-                {
-                    for (String a : attr.split(","))
-                        values.add(a);
-                }
+                    values.addAll(StringUtil.csvSplit(null,attr,0,attr.length()));
+
 
                 for (int i=0;i<_next;i++)
                 {
@@ -1383,7 +1381,7 @@ public class XmlConfiguration
                 String attr = _node.getAttribute(attrName);
                 if (attr!=null)
                 {
-                    for (String a : attr.split(","))
+                    for (String a : StringUtil.csvSplit(null,attr,0,attr.length()))
                     {
                         // create a fake node
                         XmlParser.Node n = new XmlParser.Node(null,elementName,null);

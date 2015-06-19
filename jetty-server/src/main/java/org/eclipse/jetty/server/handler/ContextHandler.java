@@ -759,7 +759,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     {
         String managedAttributes = _initParams.get(MANAGED_ATTRIBUTES);
         if (managedAttributes != null)
-            addEventListener(new ManagedAttributeListener(this,managedAttributes.split(",")));
+            addEventListener(new ManagedAttributeListener(this,StringUtil.csvSplit(managedAttributes)));
 
         super.doStart();
 
@@ -970,8 +970,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             // check the target.
             if (DispatcherType.REQUEST.equals(dispatch) ||
-                    DispatcherType.ASYNC.equals(dispatch) ||
-                    DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
+                DispatcherType.ASYNC.equals(dispatch) ||
+                DispatcherType.ERROR.equals(dispatch) && baseRequest.getHttpChannelState().isAsync())
             {
                 if (_compactPath)
                     target = URIUtil.compactPath(target);

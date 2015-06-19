@@ -46,6 +46,7 @@ import org.eclipse.jetty.server.handler.ContextHandler;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
 import org.eclipse.jetty.server.handler.HandlerCollection;
 import org.eclipse.jetty.util.PathWatcher;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.resource.Resource;
 import org.eclipse.jetty.xml.XmlConfiguration;
 
@@ -703,7 +704,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
         }
         else
         {
-            String[] files = this.jettyXml.split(",");
+            String[] files = StringUtil.csvSplit(this.jettyXml);
             
             for ( String file : files )
             {
