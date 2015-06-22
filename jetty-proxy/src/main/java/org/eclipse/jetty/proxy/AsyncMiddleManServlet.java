@@ -207,7 +207,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
     /**
      * <p>Convenience extension of {@link AsyncMiddleManServlet} that offers transparent proxy functionalities.</p>
      *
-     * @see TransparentDelegate
+     * @see org.eclipse.jetty.proxy.AbstractProxyServlet.TransparentDelegate
      */
     public static class Transparent extends ProxyServlet
     {

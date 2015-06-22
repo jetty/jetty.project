@@ -106,7 +106,7 @@ public class AsyncProxyServlet extends ProxyServlet
     /**
      * <p>Convenience extension of {@link AsyncProxyServlet} that offers transparent proxy functionalities.</p>
      *
-     * @see TransparentDelegate
+     * @see org.eclipse.jetty.proxy.AbstractProxyServlet.TransparentDelegate
      */
     public static class Transparent extends AsyncProxyServlet
     {
