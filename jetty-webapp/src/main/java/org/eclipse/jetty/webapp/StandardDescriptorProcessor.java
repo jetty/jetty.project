@@ -1186,8 +1186,7 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
             String p = iter.next().toString(false, true);
             p = normalizePattern(p);
             
-            //check if there is already a mapping for this path, and if there is && it is from a defaultdescriptor
-            //remove it in favour of the new one      
+            //check if there is already a mapping for this path
             ListIterator<ServletMapping> listItor = _servletMappings.listIterator();
             boolean found = false;
             while (listItor.hasNext() && !found)
@@ -1197,21 +1196,29 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                 {
                     for (String ps:sm.getPathSpecs())
                     {
-                        if (p.equals(ps) && sm.isDefault())
+                        //The same path has been mapped multiple times, either to a different servlet or the same servlet.
+                        //If its a different servlet, this is only valid to do if the old mapping was from a default descriptor.
+                        if (p.equals(ps) && (sm.isDefault() || servletName.equals(sm.getServletName())))
                         {
-                            if (LOG.isDebugEnabled()) LOG.debug("{} in mapping {} from defaults descriptor is overridden by ",ps,sm,servletName);
+                            if (sm.isDefault())
+                            {
+                                if (LOG.isDebugEnabled()) LOG.debug("{} in mapping {} from defaults descriptor is overridden by ",ps,sm,servletName);
+                            }
+                            else
+                                LOG.warn("Duplicate mapping from {} to {}", p, servletName);
+
                             //remove ps from the path specs on the existing mapping
                             //if the mapping now has no pathspecs, remove it
                             String[] updatedPaths = ArrayUtil.removeFromArray(sm.getPathSpecs(), ps);
                             if (updatedPaths == null || updatedPaths.length == 0)
                             { 
-                                if (LOG.isDebugEnabled()) LOG.debug("Removed mapping {} from defaults descriptor",sm);
+                                if (LOG.isDebugEnabled()) LOG.debug("Removed empty mapping {}",sm);
                                 listItor.remove();
                             }
                             else 
                             {
                                 sm.setPathSpecs(updatedPaths);
-                                if (LOG.isDebugEnabled()) LOG.debug("Removed path {} from mapping {} from defaults descriptor ", p,sm);
+                                if (LOG.isDebugEnabled()) LOG.debug("Removed path {} from mapping {}", p,sm);
                             }
                             found = true;
                             break;
@@ -1219,15 +1226,13 @@ public class StandardDescriptorProcessor extends IterativeDescriptorProcessor
                     }
                 }
             }
-            
+
             paths.add(p);
             context.getMetaData().setOrigin(servletName+".servlet.mapping."+p, descriptor);
         }
         mapping.setPathSpecs((String[]) paths.toArray(new String[paths.size()]));
         if (LOG.isDebugEnabled()) LOG.debug("Added mapping {} ",mapping);
-        
-      
-      
+    
         _servletMappings.add(mapping);
         return mapping;
     }
