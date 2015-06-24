@@ -14,14 +14,29 @@ import java.util.TreeSet;
 
 /**
  * Topological Sort a list or array.
- * <p>The algorithm has the additional characteristic that dependency sets are
- * sorted by the original list order so that order is preserved when possible 
- * @param <T> The type to be sorted.
+ * <p>A Topological sort is used when you have a partial ordering expressed as
+ * dependencies between elements (also often represented as edges in a directed 
+ * acyclic graph).  A Topological sort should not be used when you have a total
+ * ordering expressed as a {@link Comparator} over the items. The algorithm has 
+ * the additional characteristic that dependency sets are sorted by the original 
+ * list order so that order is preserved when possible.</p>
+ * <p>
+ * The sort algorithm works by recursively visiting every item, once and
+ * only once. On each visit, the items dependencies are first visited and then the  
+ * item is added to the sorted list.  Thus the algorithm ensures that dependency 
+ * items are always added before dependent items.</p>
+ * 
+ * @param <T> The type to be sorted. It must be able to be added to a {@link HashSet}
  */
 public class TopologicalSort<T>
 {
     private final Map<T,Set<T>> _dependencies = new HashMap<>();
 
+    /**
+     * Add a dependency to be considered in the sort.
+     * @param dependent The dependent item will be sorted after all its dependencies
+     * @param dependency The dependency item, will be sorted before its dependent item
+     */
     public void addDependency(T dependent, T dependency)
     {
         Set<T> set = _dependencies.get(dependent);
@@ -33,23 +48,36 @@ public class TopologicalSort<T>
         set.add(dependency);
     }
     
-    public void sort(T[] list)
+    /** Sort the passed array according to dependencies previously set with
+     * {@link #addDependency(Object, Object)}.  Where possible, ordering will be
+     * preserved if no dependency
+     * @param array The array to be sorted.
+     */
+    public void sort(T[] array)
     {
         List<T> sorted = new ArrayList<>();
         Set<T> visited = new HashSet<>();
-        Comparator<T> comparator = new InitialOrderComparitor<>(list);
-        for (T t : list)
+        Comparator<T> comparator = new InitialOrderComparitor<>(array);
+        
+        // Visit all items in the array
+        for (T t : array)
             visit(t,visited,sorted,comparator);
         
-        sorted.toArray(list);
+        sorted.toArray(array);
     }
-    
+
+    /** Sort the passed list according to dependencies previously set with
+     * {@link #addDependency(Object, Object)}.  Where possible, ordering will be
+     * preserved if no dependency
+     * @param list The list to be sorted.
+     */
     public void sort(Collection<T> list)
     {
         List<T> sorted = new ArrayList<>();
         Set<T> visited = new HashSet<>();
         Comparator<T> comparator = new InitialOrderComparitor<>(list);
         
+        // Visit all items in the list
         for (T t : list)
             visit(t,visited,sorted,comparator);
         
@@ -57,26 +85,50 @@ public class TopologicalSort<T>
         list.addAll(sorted);
     }
     
-    private void visit(T t, Set<T> visited, List<T> sorted,Comparator<T> comparator)
+    /** Visit an item to be sorted.
+     * @param item The item to be visited
+     * @param visited The Set of items already visited
+     * @param sorted The list to sort items into
+     * @param comparator A comparator used to sort dependencies.
+     */
+    private void visit(T item, Set<T> visited, List<T> sorted,Comparator<T> comparator)
     {
-        if( !visited.contains(t) )
+        // If the item has not been visited
+        if(!visited.contains(item))
         {
-            visited.add( t );
+            // We are visiting it now, so add it to the visited set
+            visited.add(item);
 
-            Set<T> dependencies = _dependencies.get(t);
+            // Lookup the items dependencies
+            Set<T> dependencies = _dependencies.get(item);
             if (dependencies!=null)
             {
+                // Sort the dependencies 
                 SortedSet<T> ordered_deps = new TreeSet<>(comparator);
                 ordered_deps.addAll(dependencies);
+                
+                // recursively visit each dependency
                 for (T d:ordered_deps)
                     visit(d,visited,sorted,comparator);
             }
-            sorted.add(t);
+            
+            // Now that we have visited all our dependencies, they and their 
+            // dependencies will have been added to the sorted list. So we can
+            // now add the current item and it will be after its dependencies
+            sorted.add(item);
         }
-        else if (!sorted.contains(t))
-            throw new IllegalStateException("cyclic");
+        else if (!sorted.contains(item))
+            // If we have already visited an item, but it has not yet been put in the
+            // sorted list, then we must be in a cycle!
+            throw new IllegalStateException("cyclic at "+item);
     }
     
+    
+    /** A comparator that is used to sort dependencies in the order they 
+     * were in the original list.  This ensures that dependencies are visited
+     * in the original order and no needless reordering takes place.
+     * @param <T>
+     */
     private static class InitialOrderComparitor<T> implements Comparator<T>
     {
         private final Map<T,Integer> _indexes = new HashMap<>();
@@ -106,5 +158,11 @@ public class TopologicalSort<T>
             return 1;
         }
         
+    }
+    
+    @Override
+    public String toString()
+    {
+        return "TopologicalSort "+_dependencies;
     }
 }
