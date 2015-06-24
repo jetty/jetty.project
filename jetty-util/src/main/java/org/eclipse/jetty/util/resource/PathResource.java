@@ -381,7 +381,7 @@ public class PathResource extends Resource
     @Override
     public boolean isDirectory()
     {
-        return Files.isDirectory(path,NO_FOLLOW_LINKS);
+        return Files.isDirectory(path,FOLLOW_LINKS);
     }
 
     @Override
@@ -389,7 +389,7 @@ public class PathResource extends Resource
     {
         try
         {
-            FileTime ft = Files.getLastModifiedTime(path,NO_FOLLOW_LINKS);
+            FileTime ft = Files.getLastModifiedTime(path,FOLLOW_LINKS);
             return ft.toMillis();
         }
         catch (IOException e)

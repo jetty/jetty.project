@@ -51,13 +51,25 @@ public class AllowSymLinkAliasChecker implements AliasCheck
         try
         {
             Path path = pathResource.getPath();
+            Path alias = pathResource.getAliasPath();
+            System.err.printf("getPath=%s%n",path);
+            System.err.printf("getAliasPath=%s%n",alias);
             
             // is the file itself a symlink?
-            if (Files.isSymbolicLink(path) && Files.isSameFile(path,pathResource.getAliasPath()))
-            {
+            if (Files.isSymbolicLink(path))
+            {        
+                alias = path.getParent().resolve(alias);
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Allow symlink {} --> {}",resource,pathResource.getAliasPath());
-                return true;
+                {
+                    LOG.debug("path ={}",path);
+                    LOG.debug("alias={}",alias);
+                }
+                if (Files.isSameFile(path,alias))
+                {
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Allow symlink {} --> {}",resource,pathResource.getAliasPath());
+                    return true;
+                }
             }
             
             // No, so let's check each element ourselves

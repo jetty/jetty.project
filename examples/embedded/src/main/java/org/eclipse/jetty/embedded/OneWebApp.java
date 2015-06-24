@@ -24,6 +24,8 @@ import java.lang.management.ManagementFactory;
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.security.HashLoginService;
 import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.handler.AllowAllVerifier;
+import org.eclipse.jetty.server.handler.AllowSymLinkAliasChecker;
 import org.eclipse.jetty.webapp.WebAppContext;
 
 public class OneWebApp
@@ -51,25 +53,13 @@ public class OneWebApp
         WebAppContext webapp = new WebAppContext();
         webapp.setContextPath("/");
         File warFile = new File(
-                "../../jetty-distribution/target/distribution/demo-base/webapps/test.war");
+                "../../jetty-distribution/target/distribution/test/webapps/test/");
         webapp.setWar(warFile.getAbsolutePath());
+        webapp.addAliasCheck(new AllowSymLinkAliasChecker());
 
         // A WebAppContext is a ContextHandler as well so it needs to be set to
         // the server so it is aware of where to send the appropriate requests.
         server.setHandler(webapp);
-
-        // Configure a LoginService
-        // Since this example is for our test webapp, we need to setup a
-        // LoginService so this shows how to create a very simple hashmap based
-        // one. The name of the LoginService needs to correspond to what is
-        // configured in the webapp's web.xml and since it has a lifecycle of
-        // its own we register it as a bean with the Jetty server object so it
-        // can be started and stopped according to the lifecycle of the server
-        // itself.
-        HashLoginService loginService = new HashLoginService();
-        loginService.setName("Test Realm");
-        loginService.setConfig("src/test/resources/realm.properties");
-        server.addBean(loginService);
 
         // Start things up! 
         server.start();
