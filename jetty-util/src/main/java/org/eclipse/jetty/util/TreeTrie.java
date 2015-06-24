@@ -21,6 +21,7 @@ package org.eclipse.jetty.util;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -33,7 +34,7 @@ import java.util.Set;
  * <p>This Trie is stored in a Tree and is unlimited in capacity</p>
  * 
  * <p>This Trie is not Threadsafe and contains no mutual exclusion 
- * or deliberate memory barriers.  It is intended for an ArrayTrie to be
+ * or deliberate memory barriers.  It is intended for an TreeTrie to be
  * built by a single thread and then used concurrently by multiple threads
  * and not mutated during that access.  If concurrent mutations of the
  * Trie is required external locks need to be applied.
@@ -73,6 +74,15 @@ public class TreeTrie<V> extends AbstractTrie<V>
         super(true);
         _nextIndex = new TreeTrie[INDEX];
         this._c=c;
+    }
+    
+    @Override
+    public void clear()
+    {
+        Arrays.fill(_nextIndex,null);
+        _nextOther.clear();
+        _key=null;
+        _value=null;
     }
 
     @Override

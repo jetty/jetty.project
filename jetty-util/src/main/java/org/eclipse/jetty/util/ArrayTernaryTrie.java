@@ -155,6 +155,16 @@ public class ArrayTernaryTrie<V> extends AbstractTrie<V>
         _tree=Arrays.copyOf(trie._tree, capacity*ROW_SIZE);
         _key=Arrays.copyOf(trie._key, capacity);
     }
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void clear()
+    {
+        _rows=0;
+        Arrays.fill(_value,null);
+        Arrays.fill(_tree,(char)0);
+        Arrays.fill(_key,null);
+    }
     
     /* ------------------------------------------------------------ */
     @Override

@@ -20,10 +20,14 @@ package org.eclipse.jetty.server;
 
 import java.io.IOException;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
 
+import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.util.Jetty;
+import org.eclipse.jetty.util.TreeTrie;
+import org.eclipse.jetty.util.Trie;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 
@@ -44,7 +48,8 @@ public class HttpConfiguration
 {
     public static final String SERVER_VERSION = "Jetty(" + Jetty.VERSION + ")";
 
-    private List<Customizer> _customizers=new CopyOnWriteArrayList<>();
+    private final List<Customizer> _customizers=new CopyOnWriteArrayList<>();
+    private final Trie<Boolean> _formEncodedMethods = new TreeTrie<>();
     private int _outputBufferSize=32*1024;
     private int _outputAggregationSize=_outputBufferSize/4;
     private int _requestHeaderSize=8*1024;
@@ -86,6 +91,8 @@ public class HttpConfiguration
     
     public HttpConfiguration()
     {
+        _formEncodedMethods.put(HttpMethod.POST.asString(),Boolean.TRUE);
+        _formEncodedMethods.put(HttpMethod.PUT.asString(),Boolean.TRUE);
     }
     
     /* ------------------------------------------------------------ */
@@ -356,6 +363,7 @@ public class HttpConfiguration
         _secureScheme = secureScheme;
     }
 
+    /* ------------------------------------------------------------ */
     @Override
     public String toString()
     {
@@ -366,5 +374,52 @@ public class HttpConfiguration
                 _requestHeaderSize,_responseHeaderSize,
                 _secureScheme,_securePort,
                 _customizers);
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Set the form encoded methods.
+     * @param methods HTTP Methods of requests that can be decoded as 
+     * x-www-form-urlencoded content to be made available via the 
+     * {@link Request#getParameter(String)} and associated APIs 
+     */
+    public void setFormEncodedMethods(String... methods)
+    {
+        _formEncodedMethods.clear();
+        for (String method:methods)
+            addFormEncodedMethod(method);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @return Set of HTTP Methods of requests that can be decoded as 
+     * x-www-form-urlencoded content to be made available via the 
+     * {@link Request#getParameter(String)} and associated APIs
+     */
+    public Set<String> getFormEncodedMethods()
+    {
+        return _formEncodedMethods.keySet();
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Add a form encoded HTTP Method 
+     * @param method HTTP Method of requests that can be decoded as 
+     * x-www-form-urlencoded content to be made available via the 
+     * {@link Request#getParameter(String)} and associated APIs
+     */
+    public void addFormEncodedMethod(String method)
+    {
+        _formEncodedMethods.put(method,Boolean.TRUE);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param method
+     * @return True of the requests of this method type can be
+     * decoded as x-www-form-urlencoded content to be made available via the 
+     * {@link Request#getParameter(String)} and associated APIs
+     */
+    public boolean isFormEncodedMethod(String method)
+    {
+        return Boolean.TRUE.equals(_formEncodedMethods.get(method));
     }
 }

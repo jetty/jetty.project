@@ -20,6 +20,7 @@ package org.eclipse.jetty.util;
 
 import java.io.IOException;
 import java.nio.ByteBuffer;
+import java.util.Arrays;
 import java.util.HashSet;
 import java.util.Set;
 
@@ -132,7 +133,16 @@ public class ArrayTrie<V> extends AbstractTrie<V>
         _rowIndex=new char[capacity*32];
         _key=new String[capacity];
     }
-    
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public void clear()
+    {
+        _rows=0;
+        Arrays.fill(_value,null);
+        Arrays.fill(_rowIndex,(char)0);
+        Arrays.fill(_key,null);
+    }
     
     /* ------------------------------------------------------------ */
     @Override
