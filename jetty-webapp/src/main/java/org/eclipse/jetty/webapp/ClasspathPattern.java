@@ -31,10 +31,16 @@ import org.eclipse.jetty.util.StringUtil;
 /**
  * Classpath classes list performs sequential pattern matching of a class name 
  * against an internal array of classpath pattern entries.
- * 
- * When an entry starts with '-' (minus), reverse matching is performed.
- * When an entry ends with '.' (period), prefix matching is performed.
- * 
+ * A class pattern is a string of one of the forms:<ul>
+ * <li>'org.package.SomeClass' will match a specific class
+ * <li>'org.package.' will match a specific package hierarchy
+ * <li>'-org.package.Classname' excludes a specific class
+ * <li>'-org.package.' excludes a specific package hierarchy
+ * <li>Nested classes must be specified with the '$' separator if they 
+ * are to be explicitly included or excluded (eg. org.example.MyClass$NestedClass).
+ * <li>Nested classes are matched by their containing class. (eg. -org.example.MyClass
+ * would exclude org.example.MyClass$AnyNestedClass)
+ * </ul>
  * When class is initialized from a classpath pattern string, entries 
  * in this string should be separated by ':' (semicolon) or ',' (comma).
  */
