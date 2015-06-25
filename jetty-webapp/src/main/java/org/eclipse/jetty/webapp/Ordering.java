@@ -22,12 +22,10 @@ import java.util.List;
 
 import org.eclipse.jetty.util.resource.Resource;
 
-
 /**
  * Ordering options for jars in WEB-INF lib.
  */
 public interface Ordering
 {  
-    public List<Resource> order(List<Resource> fragments);
-  
+    public List<Resource> order(List<Resource> fragments); 
 }

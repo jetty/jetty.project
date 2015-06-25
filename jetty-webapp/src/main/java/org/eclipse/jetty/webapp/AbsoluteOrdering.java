@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.resource.Resource;
 /**
  * AbsoluteOrdering
  *
- * An &lt;absolute-order&gt; element in web.xml
  */
 public class AbsoluteOrdering implements Ordering
 {
@@ -42,10 +41,6 @@ public class AbsoluteOrdering implements Ordering
         _metaData = metaData;
     }
     
-    /** 
-     * Order the list of jars in WEB-INF/lib according to the ordering declarations in the descriptors
-     * @see org.eclipse.jetty.webapp.Ordering#order(java.util.List)
-     */
     @Override
     public List<Resource> order(List<Resource> jars)
     {           
