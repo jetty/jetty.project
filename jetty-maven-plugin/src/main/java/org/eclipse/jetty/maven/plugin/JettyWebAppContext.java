@@ -131,7 +131,7 @@ public class JettyWebAppContext extends WebAppContext
    
 
   
-
+    /* ------------------------------------------------------------ */
     public JettyWebAppContext ()
     throws Exception
     {
@@ -139,71 +139,81 @@ public class JettyWebAppContext extends WebAppContext
         // Turn off copyWebInf option as it is not applicable for plugin.
         super.setCopyWebInf(false);
     }
+    
+    /* ------------------------------------------------------------ */
     public void setContainerIncludeJarPattern(String pattern)
     {
         _containerIncludeJarPattern = pattern;
     }
     
+    /* ------------------------------------------------------------ */
     public String getContainerIncludeJarPattern()
     {
         return _containerIncludeJarPattern;
     }
     
-    
+    /* ------------------------------------------------------------ */
     public String getWebInfIncludeJarPattern()
     {
         return _webInfIncludeJarPattern;
     }
+    
+    /* ------------------------------------------------------------ */
     public void setWebInfIncludeJarPattern(String pattern)
     {
         _webInfIncludeJarPattern = pattern;
     }
    
-   
+    /* ------------------------------------------------------------ */
     public List<File> getClassPathFiles()
     {
         return this._classpathFiles;
     }
     
-    
+    /* ------------------------------------------------------------ */
     public void setJettyEnvXml (String jettyEnvXml)
     {
         this._jettyEnvXml = jettyEnvXml;
     }
     
+    /* ------------------------------------------------------------ */
     public String getJettyEnvXml()
     {
         return this._jettyEnvXml;
     }
 
-   
+    /* ------------------------------------------------------------ */
     public void setClasses(File dir)
     {
         _classes = dir;
     }
     
+    /* ------------------------------------------------------------ */
     public File getClasses()
     {
         return _classes;
     }
     
+    /* ------------------------------------------------------------ */
     public void setWebInfLib (List<File> jars)
     {
         _webInfJars.addAll(jars);
     }
     
-    
+    /* ------------------------------------------------------------ */
     public void setTestClasses (File dir)
     {
         _testClasses = dir;
     }
     
-    
+    /* ------------------------------------------------------------ */
     public File getTestClasses ()
     {
         return _testClasses;
     }
     
+    
+    /* ------------------------------------------------------------ */
     /**
      * Ordered list of wars to overlay on top of the current project. The list
      * may contain an overlay that represents the current project.
@@ -214,6 +224,7 @@ public class JettyWebAppContext extends WebAppContext
         _overlays = overlays;
     }
     
+    /* ------------------------------------------------------------ */
     public List<Overlay> getOverlays()
     {
         return _overlays;
@@ -261,17 +272,20 @@ public class JettyWebAppContext extends WebAppContext
         
         setBaseResource(new ResourceCollection(resources.toArray(new String[resources.size()])));
     }
-
+    
+    /* ------------------------------------------------------------ */
     public List<File> getWebInfLib()
     {
         return _webInfJars;
     }
     
+    /* ------------------------------------------------------------ */
     public void setGenerateQuickStart (boolean quickStart)
     {
         _isGenerateQuickStart = quickStart;
     }
     
+    /* ------------------------------------------------------------ */
     public boolean isGenerateQuickStart()
     {
         return _isGenerateQuickStart;
@@ -279,7 +293,7 @@ public class JettyWebAppContext extends WebAppContext
     
    
     
-    
+    /* ------------------------------------------------------------ */
     @Override
     protected void startWebapp() throws Exception
     {
@@ -295,10 +309,24 @@ public class JettyWebAppContext extends WebAppContext
             }
         }
         else
+        {
+            if (LOG.isDebugEnabled()) { LOG.debug("Calling full start on webapp");}
             super.startWebapp();
+        }
     }
     
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void stopWebapp() throws Exception
+    {
+        if (isGenerateQuickStart())
+            return;
 
+        if (LOG.isDebugEnabled()) { LOG.debug("Calling stop of fully started webapp");}
+        super.stopWebapp();
+    }
+    
+    /* ------------------------------------------------------------ */
     @Override
     public void doStart () throws Exception
     {
@@ -315,7 +343,6 @@ public class JettyWebAppContext extends WebAppContext
             }
         }
         
-
         //inject configurations with config from maven plugin    
         for (Configuration c:getConfigurations())
         {
@@ -369,7 +396,9 @@ public class JettyWebAppContext extends WebAppContext
         // CHECK setShutdown(false);
         super.doStart();
     }
-     
+    
+    
+    /* ------------------------------------------------------------ */
     public void doStop () throws Exception
     { 
         if (_classpathFiles != null)
@@ -390,8 +419,9 @@ public class JettyWebAppContext extends WebAppContext
         // CHECK setShutdown(true);
         //just wait a little while to ensure no requests are still being processed
         Thread.currentThread().sleep(500L);
+
         super.doStop();
-        
+
         //remove all listeners, servlets and filters. This is because we will re-apply
         //any context xml file, which means they would potentially be added multiple times.
         setEventListeners(new EventListener[0]);
@@ -400,7 +430,9 @@ public class JettyWebAppContext extends WebAppContext
         getServletHandler().setServlets(new ServletHolder[0]);
         getServletHandler().setServletMappings(new ServletMapping[0]);
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     @Override
     public Resource getResource(String uriInContext) throws MalformedURLException
     {
@@ -474,7 +506,9 @@ public class JettyWebAppContext extends WebAppContext
         }
         return resource;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     @Override
     public Set<String> getResourcePaths(String path)
     {
@@ -511,7 +545,7 @@ public class JettyWebAppContext extends WebAppContext
         return paths;
     }
     
-    
+    /* ------------------------------------------------------------ */
     public String addPattern (String s, String pattern)
     {
         if (s == null)
@@ -529,6 +563,8 @@ public class JettyWebAppContext extends WebAppContext
         return s;
     }
     
+    
+    /* ------------------------------------------------------------ */
     public void initCDI()
     {
         Class cdiInitializer = null;

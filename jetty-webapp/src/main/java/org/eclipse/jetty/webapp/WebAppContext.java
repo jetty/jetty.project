@@ -534,25 +534,6 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
     protected void doStop() throws Exception
     {
         super.doStop();
-
-        try
-        {
-            for (int i=_configurations.size();i-->0;)
-                _configurations.get(i).deconfigure(this);
-
-            if (_metadata != null)
-                _metadata.clear();
-            _metadata=new MetaData();
-
-        }
-        finally
-        {
-            if (_ownClassLoader)
-                setClassLoader(null);
-
-            setAvailable(true);
-            _unavailableException=null;
-        }
     }
 
     /* ------------------------------------------------------------ */
@@ -1354,6 +1335,32 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
 
         startWebapp();
     }
+    
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void stopContext() throws Exception
+    {
+        stopWebapp();
+        try
+        {
+            for (int i=_configurations.size();i-->0;)
+                _configurations.get(i).deconfigure(this);
+
+            if (_metadata != null)
+                _metadata.clear();
+            _metadata=new MetaData();
+
+        }
+        finally
+        {
+            if (_ownClassLoader)
+                setClassLoader(null);
+
+            setAvailable(true);
+            _unavailableException=null;
+        }
+    }
 
     /* ------------------------------------------------------------ */
     protected void startWebapp()
@@ -1362,6 +1369,11 @@ public class WebAppContext extends ServletContextHandler implements WebAppClassL
         super.startContext();
     }
     
+    /* ------------------------------------------------------------ */
+    protected void stopWebapp() throws Exception
+    {
+        super.stopContext();
+    }
     /* ------------------------------------------------------------ */    
     @Override
     public Set<String> setServletSecurity(Dynamic registration, ServletSecurityElement servletSecurityElement)

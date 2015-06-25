@@ -104,6 +104,17 @@ public class QuickStartWebApp extends WebAppContext
             super.startWebapp();
     }
     
+    
+    
+    @Override
+    protected void stopWebapp() throws Exception
+    {
+        if (!_startWebapp)
+            return;
+        
+        super.stopWebapp();
+    }
+
     @Override
     protected void doStart() throws Exception
     {

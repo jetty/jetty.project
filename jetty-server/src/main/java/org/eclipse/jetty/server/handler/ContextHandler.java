@@ -772,6 +772,24 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
     }
 
+    
+    /* ------------------------------------------------------------ */
+    protected void stopContext () throws Exception
+    {
+        //stop all the handler hierarchy
+        super.doStop();
+
+        //Call the context listeners
+        if (!_contextListeners.isEmpty())
+        {
+            ServletContextEvent event = new ServletContextEvent(_scontext);
+            for (int i = _contextListeners.size(); i-->0;)
+                callContextDestroyed(_contextListeners.get(i),event);
+        }
+    }
+    
+    
+    
     /* ------------------------------------------------------------ */
     protected void callContextInitialized (ServletContextListener l, ServletContextEvent e)
     {
@@ -812,15 +830,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 current_thread.setContextClassLoader(_classLoader);
             }
 
-            super.doStop();
-
-            // Context listeners
-            if (!_contextListeners.isEmpty())
-            {
-                ServletContextEvent event = new ServletContextEvent(_scontext);
-                for (int i = _contextListeners.size(); i-->0;)
-                    callContextDestroyed(_contextListeners.get(i),event);
-            }
+            stopContext();
 
             //retain only durable listeners
             setEventListeners(_durableListeners.toArray(new EventListener[_durableListeners.size()]));
@@ -844,7 +854,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
         _scontext.clearAttributes();
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     public boolean checkVirtualHost(final Request baseRequest)
     {
         if (_vhosts != null && _vhosts.length > 0)
@@ -884,7 +896,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         }
         return true;
     }
-
+    
+    
+    /* ------------------------------------------------------------ */
     public boolean checkContextPath(String uri)
     {
         // Are we not the root context?

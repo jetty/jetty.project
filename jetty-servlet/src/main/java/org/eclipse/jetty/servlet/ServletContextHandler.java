@@ -251,6 +251,7 @@ public class ServletContextHandler extends ContextHandler
         
     }
     
+    /* ------------------------------------------------------------ */
     @Override
     protected void doStart() throws Exception
     {
@@ -343,6 +344,13 @@ public class ServletContextHandler extends ContextHandler
         // OK to Initialize servlet handler now that all relevant object trees have been started
         if (_servletHandler != null)
             _servletHandler.initialize();
+    }
+    
+    /* ------------------------------------------------------------ */
+    @Override
+    protected void stopContext() throws Exception
+    {
+        super.stopContext();
     }
 
     /* ------------------------------------------------------------ */
