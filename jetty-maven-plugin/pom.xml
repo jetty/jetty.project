@@ -8,9 +8,10 @@
   <artifactId>jetty-maven-plugin</artifactId>
   <packaging>maven-plugin</packaging>
   <name>Jetty :: Jetty Maven Plugin</name>
+  <description>Jetty maven plugins</description>
   <properties>
     <mavenVersion>3.0.3</mavenVersion>
-    <pluginToolsVersion>3.1</pluginToolsVersion>
+    <pluginToolsVersion>3.4</pluginToolsVersion>
     <bundle-symbolic-name>${project.groupId}.maven.plugin</bundle-symbolic-name>
   </properties>
   <build>
@@ -73,7 +74,6 @@
             <id>exec-plugin-doc</id>
             <phase>generate-sources</phase>
             <goals>
-              <goal>xdoc</goal>
               <goal>helpmojo</goal>
             </goals>
           </execution>
