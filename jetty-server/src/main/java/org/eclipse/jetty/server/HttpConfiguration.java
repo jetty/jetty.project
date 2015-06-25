@@ -413,9 +413,11 @@ public class HttpConfiguration
     
     /* ------------------------------------------------------------ */
     /**
-     * @param method
+     * Test if the method type supports <code>x-www-form-urlencoded</code> content
+     * 
+     * @param method the method type
      * @return True of the requests of this method type can be
-     * decoded as x-www-form-urlencoded content to be made available via the 
+     * decoded as <code>x-www-form-urlencoded</code> content to be made available via the 
      * {@link Request#getParameter(String)} and associated APIs
      */
     public boolean isFormEncodedMethod(String method)
