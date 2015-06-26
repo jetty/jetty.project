@@ -29,9 +29,8 @@ import java.util.SortedSet;
 import java.util.TreeSet;
 
 
-
 /**
- * Topological Sort a list or array.
+ * Topological sort a list or array.
  * <p>A Topological sort is used when you have a partial ordering expressed as
  * dependencies between elements (also often represented as edges in a directed 
  * acyclic graph).  A Topological sort should not be used when you have a total
@@ -75,7 +74,7 @@ public class TopologicalSort<T>
     {
         List<T> sorted = new ArrayList<>();
         Set<T> visited = new HashSet<>();
-        Comparator<T> comparator = new InitialOrderComparitor<>(array);
+        Comparator<T> comparator = new InitialOrderComparator<>(array);
         
         // Visit all items in the array
         for (T t : array)
@@ -93,7 +92,7 @@ public class TopologicalSort<T>
     {
         List<T> sorted = new ArrayList<>();
         Set<T> visited = new HashSet<>();
-        Comparator<T> comparator = new InitialOrderComparitor<>(list);
+        Comparator<T> comparator = new InitialOrderComparator<>(list);
         
         // Visit all items in the list
         for (T t : list)
@@ -147,17 +146,17 @@ public class TopologicalSort<T>
      * in the original order and no needless reordering takes place.
      * @param <T>
      */
-    private static class InitialOrderComparitor<T> implements Comparator<T>
+    private static class InitialOrderComparator<T> implements Comparator<T>
     {
         private final Map<T,Integer> _indexes = new HashMap<>();
-        InitialOrderComparitor(T[] initial)
+        InitialOrderComparator(T[] initial)
         {
             int i=0;
             for (T t : initial)
                 _indexes.put(t,i++);
         }
         
-        InitialOrderComparitor(Collection<T> initial)
+        InitialOrderComparator(Collection<T> initial)
         {
             int i=0;
             for (T t : initial)
