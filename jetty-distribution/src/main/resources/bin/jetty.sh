@@ -350,7 +350,7 @@ then
   CYGWIN*) JETTY_LOGS="`cygpath -w $JETTY_LOGS`";;
   esac
 
-  JAVA_OPTIONS=(${JAVA_OPTIONS[*]} "-Djetty.logs=$JETTY_LOGS")
+  JAVA_OPTIONS=(${JAVA_OPTIONS[*]} "-Djetty.logging.dir=$JETTY_LOGS")
 fi
 
 #####################################################
