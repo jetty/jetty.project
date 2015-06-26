@@ -117,7 +117,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * and restart the context if necessary. Ignored if reload
      * is enabled. Disabled by default.
      * 
-     * @parameter expression="${jetty.scanIntervalSeconds}" default-value="0"
+     * @parameter property="jetty.scanIntervalSeconds" default-value="0"
      * @required
      */
     protected int scanIntervalSeconds;
@@ -128,7 +128,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * if 'manual' then the context can be reloaded by a linefeed in the console
      * if 'automatic' then traditional reloading on changed files is enabled.
      * 
-     * @parameter expression="${jetty.reload}" default-value="automatic"
+     * @parameter property="jetty.reload" default-value="automatic"
      */
     protected String reload;
 
@@ -140,7 +140,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
      * that have been set on the command line, by the JVM, or directly 
      * in the POM via systemProperties. Optional.
      * 
-     * @parameter expression="${jetty.systemPropertiesFile}"
+     * @parameter property="jetty.systemPropertiesFile"
      */
     protected File systemPropertiesFile;
 
@@ -186,7 +186,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * Use the dump() facility of jetty to print out the server configuration to logging
      * 
-     * @parameter expression"${dumponStart}" default-value="false"
+     * @parameter property="dumponStart" default-value="false"
      */
     protected boolean dumpOnStart;
     
@@ -194,7 +194,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**  
      * Skip this mojo execution.
      * 
-     * @parameter expression="${jetty.skip}" default-value="false"
+     * @parameter property="jetty.skip" default-value="false"
      */
     protected boolean skip;
 
@@ -212,7 +212,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * The maven project.
      *
-     * @parameter expression="${project}"
+     * @parameter default-value="${project}"
      * @readonly
      */
     protected MavenProject project;
@@ -221,14 +221,14 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * The artifacts for the project.
      * 
-     * @parameter expression="${project.artifacts}"
+     * @parameter default-value="${project.artifacts}"
      * @readonly
      */
     protected Set projectArtifacts;
     
     
     /** 
-     * @parameter expression="${mojoExecution}" 
+     * @parameter default-value="${mojoExecution}" 
      * @readonly
      */
     protected org.apache.maven.plugin.MojoExecution execution;
@@ -237,7 +237,7 @@ public abstract class AbstractJettyMojo extends AbstractMojo
     /**
      * The artifacts for the plugin itself.
      * 
-     * @parameter expression="${plugin.artifacts}"
+     * @parameter default-value="${plugin.artifacts}"
      * @readonly
      */
     protected List pluginArtifacts;

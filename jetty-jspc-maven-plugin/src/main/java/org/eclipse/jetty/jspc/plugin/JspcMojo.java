@@ -138,7 +138,7 @@ public class JspcMojo extends AbstractMojo
      * The artifacts for the project.
      * 
      * @since jetty-7.6.3
-     * @parameter expression="${project.artifacts}"
+     * @parameter default-value="${project.artifacts}"
      * @readonly
      */
     private Set projectArtifacts;
@@ -147,7 +147,7 @@ public class JspcMojo extends AbstractMojo
     /**
      * The maven project.
      * 
-     * @parameter expression="${project}"
+     * @parameter default-value="${project}"
      * @required
      * @readonly
      */
@@ -158,7 +158,7 @@ public class JspcMojo extends AbstractMojo
     /**
      * The artifacts for the plugin itself.
      * 
-     * @parameter expression="${plugin.artifacts}"
+     * @parameter default-value="${plugin.artifacts}"
      * @readonly
      */
     private List pluginArtifacts;
@@ -243,7 +243,7 @@ public class JspcMojo extends AbstractMojo
     /**
      * The location of the compiled classes for the webapp
      * 
-     * @parameter expression="${project.build.outputDirectory}"
+     * @parameter default-value="${project.build.outputDirectory}"
      */
     private File classesDirectory;
 

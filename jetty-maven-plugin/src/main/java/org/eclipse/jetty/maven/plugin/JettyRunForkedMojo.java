@@ -79,7 +79,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
     /**
      * The target directory
      * 
-     * @parameter expression="${project.build.directory}"
+     * @parameter default-value="${project.build.directory}"
      * @required
      * @readonly
      */
@@ -88,34 +88,34 @@ public class JettyRunForkedMojo extends JettyRunMojo
     /**
      * The file into which to generate the quickstart web xml for the forked process to use
      * 
-     * @parameter expression="${project.build.directory}/fork-web.xml"
+     * @parameter default-value="${project.build.directory}/fork-web.xml"
      */
     protected File forkWebXml;
     
     
     /**
      * Arbitrary jvm args to pass to the forked process
-     * @parameter expression="${jetty.jvmArgs}"
+     * @parameter property="jetty.jvmArgs"
      */
     private String jvmArgs;
     
     
     /**
-     * @parameter expression="${plugin.artifacts}"
+     * @parameter default-value="${plugin.artifacts}"
      * @readonly
      */
     private List pluginArtifacts;
     
     
     /**
-     * @parameter expression="${plugin}"
+     * @parameter default-value="${plugin}"
      * @readonly
      */
     private PluginDescriptor plugin;
     
     
     /**
-     * @parameter expression="true" default-value="true"
+     * @parameter default-value="true"
      */
     private boolean waitForChild;
 

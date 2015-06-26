@@ -42,7 +42,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
     /**
      * The target directory
      * 
-     * @parameter expression="${project.build.directory}"
+     * @parameter default-value="${project.build.directory}"
      * @required
      * @readonly
      */

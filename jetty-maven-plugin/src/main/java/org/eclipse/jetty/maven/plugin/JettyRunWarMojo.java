@@ -50,7 +50,7 @@ public class JettyRunWarMojo extends AbstractJettyMojo
 
     /**
      * The location of the war file.
-     * @parameter expression="${project.build.directory}/${project.build.finalName}.war"
+     * @parameter default-value="${project.build.directory}/${project.build.finalName}.war"
      * @required
      */
     private File war;

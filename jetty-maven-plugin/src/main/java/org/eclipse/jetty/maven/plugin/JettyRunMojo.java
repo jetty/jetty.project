@@ -79,7 +79,7 @@ public class JettyRunMojo extends AbstractJettyMojo
      * The default location of the web.xml file. Will be used
      * if &lt;webApp&gt;&lt;descriptor&gt; is not set.
      * 
-     * @parameter expression="${maven.war.webxml}"
+     * @parameter default-value="${maven.war.webxml}"
      * @readonly
      */
     protected String webXml;
@@ -88,7 +88,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     /**
      * The directory containing generated classes.
      *
-     * @parameter expression="${project.build.outputDirectory}"
+     * @parameter default-value="${project.build.outputDirectory}"
      * @required
      * 
      */
@@ -106,7 +106,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     /**
      * The directory containing generated test classes.
      * 
-     * @parameter expression="${project.build.testOutputDirectory}"
+     * @parameter default-value="${project.build.testOutputDirectory}"
      * @required
      */
     protected File testClassesDirectory;
@@ -122,7 +122,7 @@ public class JettyRunMojo extends AbstractJettyMojo
     /**
      * Root directory for all html/jsp etc files
      *
-     * @parameter expression="${maven.war.src}"
+     * @parameter default-value="${maven.war.src}"
      * 
      */
     protected File webAppSourceDirectory;
