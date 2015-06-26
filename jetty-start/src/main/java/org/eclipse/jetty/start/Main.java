@@ -41,8 +41,6 @@ import java.util.List;
 import java.util.Locale;
 
 import org.eclipse.jetty.start.config.CommandLineConfigSource;
-import org.eclipse.jetty.start.graph.GraphException;
-import org.eclipse.jetty.start.graph.Selection;
 
 /**
  * Main start class.
@@ -284,58 +282,59 @@ public class Main
         StartArgs args = new StartArgs();
         args.parse(baseHome.getConfigSources());
 
+        // ------------------------------------------------------------
+        // 3) Module Registration
+        Modules modules = new Modules(baseHome,args);
+        StartLog.debug("Registering all modules");
+        modules.registerAll();
+
+        // ------------------------------------------------------------
+        // 4) Active Module Resolution
+        for (String enabledModule : args.getEnabledModules())
+        {
+            for (String source : args.getSources(enabledModule))
+            {
+                String shortForm = baseHome.toShortForm(source);
+                modules.select(enabledModule,shortForm);
+            }
+        }
+
+        StartLog.debug("Sorting Modules");
         try
         {
-            // ------------------------------------------------------------
-            // 3) Module Registration
-            Modules modules = new Modules(baseHome,args);
-            StartLog.debug("Registering all modules");
-            modules.registerAll();
-
-            // ------------------------------------------------------------
-            // 4) Active Module Resolution
-            for (String enabledModule : args.getEnabledModules())
-            {
-                for (String source : args.getSources(enabledModule))
-                {
-                    String shortForm = baseHome.toShortForm(source);
-                    modules.selectNode(enabledModule,new Selection(shortForm));
-                }
-            }
-
-            StartLog.debug("Building Module Graph");
-            modules.buildGraph();
-
-            args.setAllModules(modules);
-            List<Module> activeModules = modules.getSelected();
-            
-            final Version START_VERSION = new Version(StartArgs.VERSION);
-            
-            for(Module enabled: activeModules)
-            {
-                if(enabled.getVersion().isNewerThan(START_VERSION))
-                {
-                    throw new UsageException(UsageException.ERR_BAD_GRAPH, "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion()
-                            + "] which is newer than this version of jetty [" + START_VERSION + "]");
-                }
-            }
-            
-            for(String name: args.getSkipFileValidationModules())
-            {
-                Module module = modules.get(name);
-                module.setSkipFilesValidation(true);
-            }
-
-            // ------------------------------------------------------------
-            // 5) Lib & XML Expansion / Resolution
-            args.expandLibs(baseHome);
-            args.expandModules(baseHome,activeModules);
-
+            modules.sort();
         }
-        catch (GraphException e)
+        catch (Exception e)
         {
             throw new UsageException(ERR_BAD_GRAPH,e);
         }
+
+        args.setAllModules(modules);
+        List<Module> activeModules = modules.getSelected();
+
+
+        final Version START_VERSION = new Version(StartArgs.VERSION);
+
+        for(Module enabled: activeModules)
+        {
+            if(enabled.getVersion().isNewerThan(START_VERSION))
+            {
+                throw new UsageException(UsageException.ERR_BAD_GRAPH, "Module [" + enabled.getName() + "] specifies jetty version [" + enabled.getVersion()
+                        + "] which is newer than this version of jetty [" + START_VERSION + "]");
+            }
+        }
+
+        for(String name: args.getSkipFileValidationModules())
+        {
+            Module module = modules.get(name);
+            module.setSkipFilesValidation(true);
+        }
+
+        // ------------------------------------------------------------
+        // 5) Lib & XML Expansion / Resolution
+        args.expandLibs(baseHome);
+        args.expandModules(baseHome,activeModules);
+
 
         // ------------------------------------------------------------
         // 6) Resolve Extra XMLs
@@ -403,13 +402,12 @@ public class Main
             doStop(args);
         }
         
+        // Check base directory
         BaseBuilder baseBuilder = new BaseBuilder(baseHome,args);
         if(baseBuilder.build())
-        {
-            // base directory changed.
             StartLog.info("Base directory was modified");
-            return;
-        }
+        else if (args.isDownload() || !args.getAddToStartdIni().isEmpty() || !args.getAddToStartIni().isEmpty())
+            StartLog.info("Base directory was not modified");
         
         // Informational command line, don't run jetty
         if (!args.isRun())
