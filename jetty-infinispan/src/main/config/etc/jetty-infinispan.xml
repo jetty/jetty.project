@@ -16,7 +16,9 @@
   <!-- ===================================================================== -->
   <!-- 
   <New id="hotrodMgr" class="org.infinispan.client.hotrod.RemoteCacheManager">
-    <Get id="cache" name="cache">sessions</Get>
+    <Call id="cache" name="getCache">
+      <Arg>sessions</Arg>
+    </Call>
   </New>
   -->
 
