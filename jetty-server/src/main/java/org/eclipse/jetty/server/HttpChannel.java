@@ -144,6 +144,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _requestLog = requestLog;
     }
 
+    public void addRequestLog(RequestLog requestLog)
+    {
+        if (_requestLog==null)
+            _requestLog = requestLog;
+        else if (_requestLog instanceof RequestLogCollection)
+            ((RequestLogCollection) _requestLog).add(requestLog);
+        else
+            _requestLog = new RequestLogCollection(_requestLog, requestLog);
+    }
+
     public MetaData.Response getCommittedMetaData()
     {
         return _committedMetaData;
