@@ -52,7 +52,7 @@ public class RequestLogHandler extends HandlerWrapper
             throws IOException, ServletException
     {
         if (baseRequest.getDispatcherType()==DispatcherType.REQUEST)
-            baseRequest.getHttpChannel().setRequestLog(_requestLog);
+            baseRequest.getHttpChannel().addRequestLog(_requestLog);
         if (_handler!=null)
             _handler.handle(target,baseRequest, request, response);
     }
