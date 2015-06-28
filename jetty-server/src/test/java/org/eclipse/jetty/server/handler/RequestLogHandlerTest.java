@@ -439,6 +439,75 @@ public class RequestLogHandlerTest
         }
     }
 
+    @Test(timeout = 4000)
+    public void testMultipleLogHandlers() throws Exception
+    {
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        connector.setPort(0);
+        server.setConnectors(new Connector[]{connector});
+
+        List<CaptureLog> captureLogs = new ArrayList<>();
+        List<Handler> handlerList = new ArrayList<>();
+        handlerList.add(testHandler);
+
+        for (int i = 0; i < 4; ++i) {
+            CaptureLog captureLog = new CaptureLog();
+            captureLogs.add(captureLog);
+            RequestLogHandler requestLog = new RequestLogHandler();
+            requestLog.setRequestLog(captureLog);
+            handlerList.add(requestLog);
+        }
+
+        HandlerCollection handlers = new HandlerCollection();
+        handlers.setHandlers(handlerList.toArray(new Handler[0]));
+        server.setHandler(handlers);
+
+        try
+        {
+            server.start();
+
+            String host = connector.getHost();
+            if (host == null)
+            {
+                host = "localhost";
+            }
+            int port = connector.getLocalPort();
+
+            URI serverUri = new URI("http",null,host,port,requestPath,null,null);
+
+            // Make call to test handler
+            HttpURLConnection connection = (HttpURLConnection)serverUri.toURL().openConnection();
+            try
+            {
+                connection.setAllowUserInteraction(false);
+
+                // log response status code
+                int statusCode = connection.getResponseCode();
+                LOG.debug("Response Status Code: {}",statusCode);
+
+                if (statusCode == 200)
+                {
+                    // collect response message and log it
+                    String content = getResponseContent(connection);
+                    LOG.debug("Response Content: {}",content);
+                }
+            }
+            finally
+            {
+                connection.disconnect();
+            }
+
+            for (CaptureLog captureLog : captureLogs) {
+                assertRequestLog(captureLog);
+            }
+        }
+        finally
+        {
+            server.stop();
+        }
+    }
+
     /**
      * Test a RequestLogHandler at the end of a HandlerCollection and also with the default ErrorHandler as server bean in place.
      * @throws Exception if test failure
@@ -682,7 +751,7 @@ public class RequestLogHandlerTest
         requestLog.setRequestLog(captureLog);
 
         HandlerCollection handlers = new HandlerCollection();
-        handlers.setHandlers(new Handler[] { contexts, requestLog });
+        handlers.setHandlers(new Handler[]{contexts, requestLog});
         server.setHandler(handlers);
 
         try
@@ -706,13 +775,13 @@ public class RequestLogHandlerTest
 
                 // log response status code
                 int statusCode = connection.getResponseCode();
-                LOG.debug("Response Status Code: {}",statusCode);
+                LOG.debug("Response Status Code: {}", statusCode);
 
                 if (statusCode == 200)
                 {
                     // collect response message and log it
                     String content = getResponseContent(connection);
-                    LOG.debug("Response Content: {}",content);
+                    LOG.debug("Response Content: {}", content);
                 }
             }
             finally
