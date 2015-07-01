@@ -578,7 +578,7 @@ public class HttpURI
     /**
      * The parsed Path.
      * 
-     * @return the path as parsed, or null if undefined
+     * @return the path as parsed on valid URI.  null for invalid URI.
      */
     public String getPath()
     {
