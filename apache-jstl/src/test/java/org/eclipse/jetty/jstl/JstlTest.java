@@ -33,7 +33,6 @@ import org.eclipse.jetty.toolchain.test.SimpleRequest;
 import org.eclipse.jetty.webapp.WebAppContext;
 import org.junit.AfterClass;
 import org.junit.BeforeClass;
-import org.junit.Ignore;
 import org.junit.Test;
 
 public class JstlTest
@@ -82,14 +81,13 @@ public class JstlTest
     }
     
     @Test
-    @Ignore("Need sanity review from Jan and/or Greg")
     public void testUrlsBasic() throws IOException
     {
         SimpleRequest req = new SimpleRequest(baseUri);
         String resp = req.getString("/urls.jsp");
         assertThat("Response should be JSP processed", resp, not(containsString("<c:url")));
         assertThat("Response", resp, containsString("[c:url value] = /ref.jsp;jsessionid="));
-        assertThat("Response", resp, containsString("[c:url param] = /ref.jsp;key=value;jsessionid="));
+        assertThat("Response", resp, containsString("[c:url param] = ref.jsp;key=value;jsessionid="));
         
         System.err.println("Response:");
         System.err.println(resp);
