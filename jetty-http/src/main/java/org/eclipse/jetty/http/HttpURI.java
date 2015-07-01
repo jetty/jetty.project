@@ -176,6 +176,14 @@ public class HttpURI
     }
 
     /* ------------------------------------------------------------ */
+    public void parseConnect(String uri)
+    {
+        clear();
+        _uri=uri;
+        _path=uri;
+    }
+
+    /* ------------------------------------------------------------ */
     public void parse(String uri, int offset, int length)
     {
         clear();
