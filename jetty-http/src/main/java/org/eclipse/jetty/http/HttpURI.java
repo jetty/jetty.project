@@ -65,6 +65,9 @@ public class HttpURI
     ASTERISK};
 
     private String _scheme;
+    // used by toString for writing out scheme specific part properly
+    private boolean _hasAuthHostPortInSSP = false;
+    private String _user;
     private String _host;
     private int _port;
     private String _path;
@@ -108,6 +111,7 @@ public class HttpURI
         _scheme = scheme;
         _host = host;
         _port = port;
+        _hasAuthHostPortInSSP = (_host != null);
         _path = path;
         _param = param;
         _query = query;
@@ -135,11 +139,17 @@ public class HttpURI
         _scheme=uri.getScheme();
         _host=uri.getHost();
         _port=uri.getPort();
+        _hasAuthHostPortInSSP=uri.getRawSchemeSpecificPart().startsWith("//");
+        _user = uri.getUserInfo();
         _path=uri.getRawPath();
-        _decodedPath=uri.getPath();
-        int p=_path.lastIndexOf(';');
-        if (p>=0)
-            _param=_path.substring(p+1);
+        
+        _decodedPath = uri.getPath();
+        if (_decodedPath != null)
+        {
+            int p = _decodedPath.lastIndexOf(';');
+            if (p >= 0)
+                _param = _decodedPath.substring(p + 1);
+        }
         _query=uri.getRawQuery();
         _fragment=uri.getFragment();
         
@@ -180,8 +190,8 @@ public class HttpURI
     private void parse(State state, final String uri, final int offset, final int end)
     {
         boolean encoded=false;
-        int m=offset;
-        int p=0;
+        int m=offset; // mark?
+        int p=0;      // position?
         
         for (int i=offset; i<end; i++)
         {
@@ -194,14 +204,28 @@ public class HttpURI
                     switch(c)
                     {
                         case '/':
+                            if (i + 1 < end)
+                            {
+                                c = uri.charAt(i+1);
+                                m = i;
+                                if (c == '/')
+                                {
+                                    _hasAuthHostPortInSSP = true;
+                                    state = State.HOST_OR_PATH;
+                                    break;
+                                }
+                            }
+                            
                             p=m=i;
-                            state=State.PATH;
+                            state = State.PATH;
                             break;
                         case ';':
                             m=i+1;
                             state=State.PARAM;
                             break;
                         case '?':
+                            // assume empty path (if seen at start)
+                            _path = "";
                             m=i+1;
                             state=State.QUERY;
                             break;
@@ -249,7 +273,7 @@ public class HttpURI
                         case ';':
                         {
                             // must have been in a path 
-                            p=m;
+                            m=i+1;
                             state=State.PARAM;
                             break;
                         }
@@ -258,6 +282,7 @@ public class HttpURI
                         {
                             // must have been in a path 
                             _path=uri.substring(m,i);
+                            m=i+1;
                             state=State.QUERY;
                             break;
                         }
@@ -283,8 +308,14 @@ public class HttpURI
                     switch(c)
                     {
                         case '/':
+                            _hasAuthHostPortInSSP = true;
                             m=i+1;
                             state=State.HOST;
+                            break;
+                            
+                        case '@':
+                            _user=uri.substring(m,i);
+                            m=i+1;
                             break;
                             
                         case ';':
@@ -309,20 +340,22 @@ public class HttpURI
                     {
                         case '/':
                         {
-                            _host=uri.substring(m,i);
+                            if (i > m)
+                                _host = uri.substring(m,i);
                             p=m=i;
                             state=State.PATH;
                             break;
                         }
                         case ':':
                         {
-                            _host=uri.substring(m,i);
+                            if (i > m)
+                                _host=uri.substring(m,i);
                             m=i+1;
                             state=State.PORT;
                             break;
                         }
                         case '@':
-                            // ignore user
+                            _user=uri.substring(m,i);
                             m=i+1;
                             break;
                             
@@ -482,7 +515,8 @@ public class HttpURI
                 break;
                 
             case HOST:
-                _host=uri.substring(m,end);
+                if(end>m)
+                    _host=uri.substring(m,end);
                 break;
                 
             case IPV6:
@@ -541,6 +575,11 @@ public class HttpURI
     }
 
     /* ------------------------------------------------------------ */
+    /**
+     * The parsed Path.
+     * 
+     * @return the path as parsed, or null if undefined
+     */
     public String getPath()
     {
         return _path;
@@ -637,8 +676,15 @@ public class HttpURI
             if (_scheme!=null)
                 out.append(_scheme).append(':');
             
-            if (_host!=null)
-                out.append("//").append(_host);
+            if(_hasAuthHostPortInSSP)
+                out.append("//");
+            
+            if (_host != null)
+            {
+                if (_user != null)
+                    out.append(_user).append('@');
+                out.append(_host);
+            }
             
             if (_port>0)
                 out.append(':').append(_port);
@@ -686,6 +732,7 @@ public class HttpURI
     {
         _host=host;
         _port=port;
+        _hasAuthHostPortInSSP = (_host != null);
         _uri=null;
     }
 

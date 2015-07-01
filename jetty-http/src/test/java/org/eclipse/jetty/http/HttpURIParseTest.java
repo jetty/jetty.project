@@ -28,7 +28,6 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 
-import org.junit.Ignore;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -39,8 +38,6 @@ import org.junit.runners.Parameterized.Parameters;
 @RunWith(Parameterized.class)
 public class HttpURIParseTest
 {
-    public static int INPUT=0,SCHEME=1,HOST=2,PORT=3,PATH=4,PARAM=5,QUERY=6,FRAGMENT=7;
-
     @Parameters(name="{0}")
     public static List<String[]> data()
     {
@@ -73,11 +70,10 @@ public class HttpURIParseTest
         
         // Protocol Less (aka scheme-less) URIs
         
-        // FIXME (these have host and port)
-        {"//host/path/info",null,null,null,"//host/path/info",null,null,null},
-        {"//user@host/path/info",null,null,null,"//user@host/path/info",null,null,null},
-        {"//user@host:8080/path/info",null,null,null,"//user@host:8080/path/info",null,null,null},
-        {"//host:8080/path/info",null,null,null,"//host:8080/path/info",null,null,null},
+        {"//host/path/info",null,"host",null,"/path/info",null,null,null},
+        {"//user@host/path/info",null,"host",null,"/path/info",null,null,null},
+        {"//user@host:8080/path/info",null,"host","8080","/path/info",null,null,null},
+        {"//host:8080/path/info",null,"host","8080","/path/info",null,null,null},
         
         // Host Less 
         
@@ -92,14 +88,12 @@ public class HttpURIParseTest
         
         // Everything and the kitchen sink
         
-        // FIXME ("user@" authentication information is lost during parse and toString)
         {"http://user@host:8080/path/info;param?query#fragment","http","host","8080","/path/info;param","param","query","fragment"},
         {"xxxxx://user@host:8080/path/info;param?query#fragment","xxxxx","host","8080","/path/info;param","param","query","fragment"},
         
         // No host, parameter with no content
         
-        // FIXME (no host, should result in null for host, not empty string)
-        {"http:///;?#","http","",null,"/;","","",""},
+        {"http:///;?#","http",null,null,"/;","","",""},
         
         // Path with query that has no value
         
@@ -111,20 +105,18 @@ public class HttpURIParseTest
         
         // Scheme-less, with host and port (overlapping with path)
         
-        // FIXME (this has host and port)
-        {"//host:8080//",null,null,null,"//host:8080//",null,null,null},
+        {"//host:8080//",null,"host","8080","//",null,null,null},
         
         // File reference
         
-        // FIXME (no host, should result in null for host, not empty string)
-        {"file:///path/info","file","",null,"/path/info",null,null,null},
+        {"file:///path/info","file",null,null,"/path/info",null,null,null},
         {"file:/path/info","file",null,null,"/path/info",null,null,null},
         
-        // Without Authority (this is a bad URI according to spec) 
+        // Bad URI (no scheme, no host, no path) 
         
-        {"//",null,null,null,"//",null,null,null},
+        {"//",null,null,null,null,null,null,null},
         
-        // Simple Localhost references
+        // Simple localhost references
         
         {"http://localhost/","http","localhost",null,"/",null,null,null},
         {"http://localhost:8080/", "http", "localhost","8080","/", null, null,null},
@@ -153,7 +145,6 @@ public class HttpURIParseTest
         
         // IPv6 authenticated host with port (default path)
         
-        // FIXME ("user@" authentication information is lost during parse and toString)
         {"http://user@[2001:db8::1]:8080/","http","[2001:db8::1]","8080","/",null,null,null},
         
         // Simple IPv6 host no port (default path)
@@ -162,8 +153,7 @@ public class HttpURIParseTest
         
         // Scheme-less IPv6, host with port (default path)
         
-        // FIXME (this has host and port)
-        {"//[2001:db8::1]:8080/",null,null,null,"//[2001:db8::1]:8080/",null,null,null},
+        {"//[2001:db8::1]:8080/",null,"[2001:db8::1]","8080","/",null,null,null},
         
         // Interpreted as relative path of "*" (no host/port/scheme/query/fragment)
         
@@ -173,12 +163,11 @@ public class HttpURIParseTest
         {"http://host:8080/path/info?q1=v1&q2=v2","http","host","8080","/path/info",null,"q1=v1&q2=v2",null},
         {"/path/info?q1=v1&q2=v2",null,null,null,"/path/info",null,"q1=v1&q2=v2",null},
         {"/info?q1=v1&q2=v2",null,null,null,"/info",null,"q1=v1&q2=v2",null},
-        // FIXME (Bad Path/Query results) {"info?q1=v1&q2=v2",null,null,null,"info",null,"q1=v1&q2=v2",null},
-        // FIXME (StringIndexOutOfBoundsException) {"info;q1=v1?q2=v2",null,null,null,"info;q1=v1",null,"q2=v2",null},
+        {"info?q1=v1&q2=v2",null,null,null,"info",null,"q1=v1&q2=v2",null},
+        {"info;q1=v1?q2=v2",null,null,null,"info;q1=v1","q1=v1","q2=v2",null},
         
         // Path-less, query only (seen from JSP/JSTL and <c:url> use
-        // FIXME (path should be null in parse(URI) version)
-        {"?q1=v1&q2=v2",null,null,null,null,null,"q1=v1&q2=v2",null}
+        {"?q1=v1&q2=v2",null,null,null,"",null,"q1=v1&q2=v2",null}
         };
         
         return Arrays.asList(tests);
@@ -213,18 +202,38 @@ public class HttpURIParseTest
     {
         HttpURI httpUri = new HttpURI(input);
         
-        assertThat("[" + input + "] .scheme",httpUri.getScheme(),is(scheme));
-        assertThat("[" + input + "] .host",httpUri.getHost(),is(host));
-        assertThat("[" + input + "] .port",httpUri.getPort(),is(port == null ? -1 : Integer.parseInt(port)));
-        assertThat("[" + input + "] .path",httpUri.getPath(),is(path));
-        assertThat("[" + input + "] .param",httpUri.getParam(),is(param));
-        assertThat("[" + input + "] .query",httpUri.getQuery(),is(query));
-        assertThat("[" + input + "] .fragment",httpUri.getFragment(),is(fragment));
-        assertThat("[" + input + "] .toString",httpUri.toString(),is(input));
+        try
+        {
+            new URI(input);
+            // URI is valid (per java.net.URI parsing)
+            
+            // Test case sanity check
+            assertThat("[" + input + "] expected path (test case) cannot be null",path,notNullValue());
+
+            // Assert expectations
+            assertThat("[" + input + "] .scheme",httpUri.getScheme(),is(scheme));
+            assertThat("[" + input + "] .host",httpUri.getHost(),is(host));
+            assertThat("[" + input + "] .port",httpUri.getPort(),is(port == null ? -1 : Integer.parseInt(port)));
+            assertThat("[" + input + "] .path",httpUri.getPath(),is(path));
+            assertThat("[" + input + "] .param",httpUri.getParam(),is(param));
+            assertThat("[" + input + "] .query",httpUri.getQuery(),is(query));
+            assertThat("[" + input + "] .fragment",httpUri.getFragment(),is(fragment));
+            assertThat("[" + input + "] .toString",httpUri.toString(),is(input));
+        }
+        catch (URISyntaxException e)
+        {
+            // Assert HttpURI values for invalid URI (such as "//")
+            assertThat("[" + input + "] .scheme",httpUri.getScheme(),is(nullValue()));
+            assertThat("[" + input + "] .host",httpUri.getHost(),is(nullValue()));
+            assertThat("[" + input + "] .port",httpUri.getPort(),is(-1));
+            assertThat("[" + input + "] .path",httpUri.getPath(),is(nullValue()));
+            assertThat("[" + input + "] .param",httpUri.getParam(),is(nullValue()));
+            assertThat("[" + input + "] .query",httpUri.getQuery(),is(nullValue()));
+            assertThat("[" + input + "] .fragment",httpUri.getFragment(),is(nullValue()));
+        }
     }
     
     @Test
-    @Ignore("There are many examples of inconsistent results from .testParseString()")
     public void testParseURI() throws Exception
     {
         URI javaUri = null;
@@ -248,11 +257,11 @@ public class HttpURIParseTest
         assertThat("[" + input + "] .param",httpUri.getParam(),is(param));
         assertThat("[" + input + "] .query",httpUri.getQuery(),is(query));
         assertThat("[" + input + "] .fragment",httpUri.getFragment(),is(fragment));
+        
         assertThat("[" + input + "] .toString",httpUri.toString(),is(input));
     }
     
     @Test
-    @Ignore("There are many examples of inconsistent results from .testParseString()")
     public void testCompareToJavaNetURI() throws Exception
     {
         URI javaUri = null;
