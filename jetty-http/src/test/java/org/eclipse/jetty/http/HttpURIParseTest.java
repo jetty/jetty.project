@@ -28,6 +28,7 @@ import java.net.URISyntaxException;
 import java.util.Arrays;
 import java.util.List;
 
+import org.eclipse.jetty.util.URIUtil;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -42,23 +43,24 @@ public class HttpURIParseTest
     public static List<String[]> data()
     {
         String[][] tests = {
+
+        // Nothing but path 
+        {"path",null,null,"-1","path",null,null,null},
+        {"path/path",null,null,"-1","path/path",null,null,null},
+        {"%65ncoded/path",null,null,"-1","%65ncoded/path",null,null,null},
                 
-        // Basic path reference
-                
+        // Basic path reference     
         {"/path/to/context",null,null,"-1","/path/to/context",null,null,null},
         
         // Basic with encoded query 
-        
         {"http://example.com/path/to/context;param?query=%22value%22#fragment","http","example.com","-1","/path/to/context;param","param","query=%22value%22","fragment"},
         {"http://[::1]/path/to/context;param?query=%22value%22#fragment","http","[::1]","-1","/path/to/context;param","param","query=%22value%22","fragment"},
         
         // Basic with parameters and query
-        
         {"http://example.com:8080/path/to/context;param?query=%22value%22#fragment","http","example.com","8080","/path/to/context;param","param","query=%22value%22","fragment"},
         {"http://[::1]:8080/path/to/context;param?query=%22value%22#fragment","http","[::1]","8080","/path/to/context;param","param","query=%22value%22","fragment"},
         
         // Path References
-        
         {"/path/info",null,null,null,"/path/info",null,null,null},
         {"/path/info#fragment",null,null,null,"/path/info",null,null,"fragment"},
         {"/path/info?query",null,null,null,"/path/info",null,"query",null},
@@ -69,14 +71,12 @@ public class HttpURIParseTest
         {"/path/info;param?query#fragment",null,null,null,"/path/info;param","param","query","fragment"},
         
         // Protocol Less (aka scheme-less) URIs
-        
         {"//host/path/info",null,"host",null,"/path/info",null,null,null},
         {"//user@host/path/info",null,"host",null,"/path/info",null,null,null},
         {"//user@host:8080/path/info",null,"host","8080","/path/info",null,null,null},
         {"//host:8080/path/info",null,"host","8080","/path/info",null,null,null},
         
         // Host Less 
-        
         {"http:/path/info","http",null,null,"/path/info",null,null,null},
         {"http:/path/info#fragment","http",null,null,"/path/info",null,null,"fragment"},
         {"http:/path/info?query","http",null,null,"/path/info",null,"query",null},
@@ -87,76 +87,61 @@ public class HttpURIParseTest
         {"http:/path/info;param?query#fragment","http",null,null,"/path/info;param","param","query","fragment"},
         
         // Everything and the kitchen sink
-        
         {"http://user@host:8080/path/info;param?query#fragment","http","host","8080","/path/info;param","param","query","fragment"},
         {"xxxxx://user@host:8080/path/info;param?query#fragment","xxxxx","host","8080","/path/info;param","param","query","fragment"},
         
         // No host, parameter with no content
-        
         {"http:///;?#","http",null,null,"/;","","",""},
         
         // Path with query that has no value
-        
         {"/path/info?a=?query",null,null,null,"/path/info",null,"a=?query",null},
         
         // Path with query alt syntax
-        
         {"/path/info?a=;query",null,null,null,"/path/info",null,"a=;query",null},
         
         // Scheme-less, with host and port (overlapping with path)
-        
         {"//host:8080//",null,"host","8080","//",null,null,null},
         
         // File reference
-        
         {"file:///path/info","file",null,null,"/path/info",null,null,null},
         {"file:/path/info","file",null,null,"/path/info",null,null,null},
         
         // Bad URI (no scheme, no host, no path) 
-        
         {"//",null,null,null,null,null,null,null},
         
         // Simple localhost references
-        
         {"http://localhost/","http","localhost",null,"/",null,null,null},
         {"http://localhost:8080/", "http", "localhost","8080","/", null, null,null},
         {"http://localhost/?x=y", "http", "localhost",null,"/", null,"x=y",null},
         
         // Simple path with parameter 
-        
         {"/;param",null, null,null,"/;param", "param",null,null},
+        {";param",null, null,null,";param", "param",null,null},
         
         // Simple path with query
-        
         {"/?x=y",null, null,null,"/", null,"x=y",null},
         {"/?abc=test",null, null,null,"/", null,"abc=test",null},
         
         // Simple path with fragment
-        
         {"/#fragment",null, null,null,"/", null,null,"fragment"},
         
         // Simple IPv4 host with port (default path)
-        
         {"http://192.0.0.1:8080/","http","192.0.0.1","8080","/",null,null,null},
         
         // Simple IPv6 host with port (default path)
         
         {"http://[2001:db8::1]:8080/","http","[2001:db8::1]","8080","/",null,null,null},
-        
         // IPv6 authenticated host with port (default path)
         
         {"http://user@[2001:db8::1]:8080/","http","[2001:db8::1]","8080","/",null,null,null},
         
         // Simple IPv6 host no port (default path)
-        
         {"http://[2001:db8::1]/","http","[2001:db8::1]",null,"/",null,null,null},
         
         // Scheme-less IPv6, host with port (default path)
-        
         {"//[2001:db8::1]:8080/",null,"[2001:db8::1]","8080","/",null,null,null},
         
         // Interpreted as relative path of "*" (no host/port/scheme/query/fragment)
-        
         {"*",null,null,null,"*",null, null,null},
 
         // Path detection Tests (seen from JSP/JSTL and <c:url> use
@@ -281,7 +266,7 @@ public class HttpURIParseTest
         assertThat("[" + input + "] .scheme",httpUri.getScheme(),is(javaUri.getScheme()));
         assertThat("[" + input + "] .host",httpUri.getHost(),is(javaUri.getHost()));
         assertThat("[" + input + "] .port",httpUri.getPort(),is(javaUri.getPort()));
-        assertThat("[" + input + "] .path",httpUri.getPath(),is(javaUri.getPath()));
+        assertThat("[" + input + "] .path",httpUri.getPath(),is(javaUri.getRawPath()));
         // Not Relevant for java.net.URI -- assertThat("["+input+"] .param", httpUri.getParam(), is(param));
         assertThat("[" + input + "] .query",httpUri.getQuery(),is(javaUri.getRawQuery()));
         assertThat("[" + input + "] .fragment",httpUri.getFragment(),is(javaUri.getFragment()));
