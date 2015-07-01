@@ -44,6 +44,7 @@ public class PreconfigureQuickStartWar
 
             case 1:
                 dir = Resource.newResource(args[0]);
+                break;
 
             case 2:
                 war = Resource.newResource(args[0]);
