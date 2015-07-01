@@ -100,8 +100,23 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         if (LOG.isDebugEnabled())
             LOG.debug("onSelected {}->{} for {}", oldInterestOps, newInterestOps, this);
 
+        
         boolean readable = (readyOps & SelectionKey.OP_READ) != 0;
         boolean writable = (readyOps & SelectionKey.OP_WRITE) != 0;
+        
+        // Call non blocking directly
+        if (readable && getFillInterest().isCallbackNonBlocking())
+        {
+            getFillInterest().fillable();
+            readable=false;
+        }
+        if (writable && getWriteFlusher().isCallbackNonBlocking())
+        {
+            getWriteFlusher().completeWrite();
+            writable=false;
+        }
+        
+        // return task to complete the job
         return readable ? (writable ? _runFillableCompleteWrite : _runFillable)
                         : (writable ? _runCompleteWrite : null);
     }

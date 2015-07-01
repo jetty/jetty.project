@@ -25,6 +25,7 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.ExecutionStrategy;
 import org.eclipse.jetty.util.thread.Locker;
 import org.eclipse.jetty.util.thread.Locker.Lock;
+import org.eclipse.jetty.util.thread.ThreadPool;
 
 /**
  * <p>A strategy where the thread calls produce will always run the resulting task
@@ -52,11 +53,15 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
     private boolean _execute;
     private boolean _producing;
     private boolean _pending;
+    private final ThreadPool _threadpool;
+    private final ProduceExecuteConsume _lowresources;
 
     public ExecuteProduceConsume(Producer producer, Executor executor)
     {
         this._producer = producer;
         this._executor = executor;
+        _threadpool = (executor instanceof ThreadPool)?((ThreadPool)executor):null;
+        _lowresources = _threadpool==null?null:new ProduceExecuteConsume(producer,executor);
     }
 
     @Override
@@ -64,6 +69,7 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} execute",this);
+        
         boolean produce=false;
         try (Lock locked = _locker.lock())
         {
@@ -123,7 +129,16 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
         }
 
         if (produce)
+        {
+            // If we are low on resources, then switch to PEC strategy which does not
+            // suffer as badly from thread starvation
+            while (_threadpool!=null && _threadpool.isLowOnThreads())
+            {
+                LOG.debug("EWYK low resources {}",this);
+                _lowresources.execute();
+            }
             produceAndRun();
+        }
     }
 
     private void produceAndRun()

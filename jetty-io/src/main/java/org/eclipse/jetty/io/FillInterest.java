@@ -104,6 +104,12 @@ public abstract class FillInterest
     {
         return _interested.get() != null;
     }
+    
+    public boolean isCallbackNonBlocking()
+    {
+        Callback callback = _interested.get();
+        return callback instanceof Callback.NonBlocking;
+    }
 
     /**
      * Call to signal a failure to a registered interest

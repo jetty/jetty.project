@@ -37,6 +37,7 @@ import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.toolchain.test.PropertyFlag;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.thread.QueuedThreadPool;
 import org.junit.After;
 import org.junit.Before;
 
@@ -45,6 +46,7 @@ public class HttpServerTestFixture
     protected static final long PAUSE=10L;
     protected static final int LOOPS= PropertyFlag.isEnabled("test.stress")?250:50;
 
+    protected QueuedThreadPool _threadPool;
     protected Server _server;
     protected URI _serverURI;
     protected ServerConnector _connector;
@@ -62,15 +64,21 @@ public class HttpServerTestFixture
     @Before
     public void before()
     {
-        _server = new Server();
+        _threadPool = new QueuedThreadPool();
+        _server = new Server(_threadPool);
     }
 
     protected void startServer(ServerConnector connector) throws Exception
     {
+        startServer(connector,new HandlerWrapper());
+    }
+    
+    protected void startServer(ServerConnector connector, Handler handler) throws Exception
+    {
         _connector = connector;
         _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
         _server.addConnector(_connector);
-        _server.setHandler(new HandlerWrapper());
+        _server.setHandler(handler);
         _server.start();
         _serverURI = _server.getURI();
     }

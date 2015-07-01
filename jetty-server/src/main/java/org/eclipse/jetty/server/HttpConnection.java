@@ -539,7 +539,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
-    private class BlockingReadCallback implements Callback
+    private class BlockingReadCallback implements Callback.NonBlocking
     {
         @Override
         public void succeeded()

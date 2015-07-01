@@ -125,7 +125,7 @@ public class SharedBlockingCallback
      * A Closeable Callback.
      * Uses the auto close mechanism to check block has been called OK.
      */
-    public class Blocker implements Callback, Closeable
+    public class Blocker implements Callback.NonBlocking, Closeable
     {
         private Throwable _state = IDLE;
         

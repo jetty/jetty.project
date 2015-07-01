@@ -268,8 +268,19 @@ abstract public class WriteFlusher
             if (_callback!=null)
                 _callback.succeeded();
         }
+        
+        boolean isCallbackNonBlocking()
+        {
+            return _callback instanceof Callback.NonBlocking;
+        }
     }
 
+    public boolean isCallbackNonBlocking()
+    {
+        State s = _state.get();
+        return (s instanceof PendingState) && ((PendingState)s).isCallbackNonBlocking();
+    }
+    
     /**
      * Abstract call to be implemented by specific WriteFlushers. It should schedule a call to {@link #completeWrite()}
      * or {@link #onFail(Throwable)} when appropriate.

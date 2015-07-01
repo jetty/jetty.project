@@ -269,8 +269,7 @@ public class ManagedSelector extends AbstractLifeCycle implements Runnable, Dump
                         if (attachment instanceof SelectableEndPoint)
                         {
                             // Try to produce a task
-                            SelectableEndPoint selectable = (SelectableEndPoint)attachment;
-                            Runnable task = selectable.onSelected();
+                            Runnable task = ((SelectableEndPoint)attachment).onSelected();
                             if (task != null)
                                 return task;
                         }

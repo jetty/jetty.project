@@ -56,6 +56,13 @@ public interface Callback
     public void failed(Throwable x);
 
     /**
+     * A marker interface for a callback that is guaranteed not to
+     * block and thus does not need a dispatch
+     */
+    public interface NonBlocking extends Callback
+    {}
+    
+    /**
      * <p>Empty implementation of {@link Callback}</p>
      */
     public static class Adapter implements Callback
