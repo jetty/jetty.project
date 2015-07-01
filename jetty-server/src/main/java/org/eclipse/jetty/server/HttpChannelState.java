@@ -21,6 +21,7 @@ package org.eclipse.jetty.server;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
+import java.util.concurrent.TimeoutException;
 
 import javax.servlet.AsyncListener;
 import javax.servlet.RequestDispatcher;
@@ -427,6 +428,9 @@ public class HttpChannelState
             aListeners=_asyncListeners;
         }
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("Async timeout {}",this);
+        
         if (aListeners!=null)
         {
             for (AsyncListener listener : aListeners)
@@ -454,13 +458,18 @@ public class HttpChannelState
                 if (_state==State.ASYNC_WAIT)
                 {
                     _state=State.ASYNC_WOKEN;
+                    _event.setThrowable(new TimeoutException("async"));
                     dispatch=true;
                 }
             }
         }
 
         if (dispatch)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Dispatch after async timeout {}",this);
             scheduleDispatch();
+        }
     }
 
     public void complete()
