@@ -65,10 +65,19 @@ import org.eclipse.jetty.util.log.Logger;
  * https?://*.domain.[a-z]{3} that matches http or https, multiple subdomains
  * and any 3 letter top-level domain (.com, .net, .org, etc.).</dd>
  * 
+ * <dt>allowedTimingOrigins</dt>
+ * <dd>a comma separated list of origins that are
+ * allowed to time the resource. Default value is the empty string, meaning
+ * no origins.
+ * <p>
+ * The check whether the timing header is set, will be performed only if
+ * the user gets general access to the resource using the <b>allowedOrigins</b>.
+ *
  * <dt>allowedMethods</dt>
  * <dd>a comma separated list of HTTP methods that
  * are allowed to be used when accessing the resources. Default value is
  * <b>GET,POST,HEAD</b></dd>
+ * 
  * 
  * <dt>allowedHeaders</dt>
  * <dd>a comma separated list of HTTP headers that
@@ -127,8 +136,10 @@ public class CrossOriginFilter implements Filter
     public static final String ACCESS_CONTROL_MAX_AGE_HEADER = "Access-Control-Max-Age";
     public static final String ACCESS_CONTROL_ALLOW_CREDENTIALS_HEADER = "Access-Control-Allow-Credentials";
     public static final String ACCESS_CONTROL_EXPOSE_HEADERS_HEADER = "Access-Control-Expose-Headers";
+    public static final String TIMING_ALLOW_ORIGIN_HEADER = "Timing-Allow-Origin";
     // Implementation constants
     public static final String ALLOWED_ORIGINS_PARAM = "allowedOrigins";
+    public static final String ALLOWED_TIMING_ORIGINS_PARAM = "allowedTimingOrigins";
     public static final String ALLOWED_METHODS_PARAM = "allowedMethods";
     public static final String ALLOWED_HEADERS_PARAM = "allowedHeaders";
     public static final String PREFLIGHT_MAX_AGE_PARAM = "preflightMaxAge";
@@ -137,13 +148,17 @@ public class CrossOriginFilter implements Filter
     public static final String OLD_CHAIN_PREFLIGHT_PARAM = "forwardPreflight";
     public static final String CHAIN_PREFLIGHT_PARAM = "chainPreflight";
     private static final String ANY_ORIGIN = "*";
+    private static final String DEFAULT_ALLOWED_ORIGINS = "*";
+    private static final String DEFAULT_ALLOWED_TIMING_ORIGINS = "";
     private static final List<String> SIMPLE_HTTP_METHODS = Arrays.asList("GET", "POST", "HEAD");
     private static final List<String> DEFAULT_ALLOWED_METHODS = Arrays.asList("GET", "POST", "HEAD");
     private static final List<String> DEFAULT_ALLOWED_HEADERS = Arrays.asList("X-Requested-With", "Content-Type", "Accept", "Origin");
 
     private boolean anyOriginAllowed;
+    private boolean anyTimingOriginAllowed;
     private boolean anyHeadersAllowed;
     private List<String> allowedOrigins = new ArrayList<String>();
+    private List<String> allowedTimingOrigins = new ArrayList<String>();
     private List<String> allowedMethods = new ArrayList<String>();
     private List<String> allowedHeaders = new ArrayList<String>();
     private List<String> exposedHeaders = new ArrayList<String>();
@@ -154,26 +169,10 @@ public class CrossOriginFilter implements Filter
     public void init(FilterConfig config) throws ServletException
     {
         String allowedOriginsConfig = config.getInitParameter(ALLOWED_ORIGINS_PARAM);
-        if (allowedOriginsConfig == null)
-            allowedOriginsConfig = "*";
-        String[] allowedOrigins = StringUtil.csvSplit(allowedOriginsConfig);
-        for (String allowedOrigin : allowedOrigins)
-        {
-            allowedOrigin = allowedOrigin.trim();
-            if (allowedOrigin.length() > 0)
-            {
-                if (ANY_ORIGIN.equals(allowedOrigin))
-                {
-                    anyOriginAllowed = true;
-                    this.allowedOrigins.clear();
-                    break;
-                }
-                else
-                {
-                    this.allowedOrigins.add(allowedOrigin);
-                }
-            }
-        }
+        String allowedTimingOriginsConfig = config.getInitParameter(ALLOWED_TIMING_ORIGINS_PARAM);
+        
+        anyOriginAllowed = generateAllowedOrigins(allowedOrigins, allowedOriginsConfig, DEFAULT_ALLOWED_ORIGINS);
+        anyTimingOriginAllowed = generateAllowedOrigins(allowedTimingOrigins, allowedTimingOriginsConfig, DEFAULT_ALLOWED_TIMING_ORIGINS);
 
         String allowedMethodsConfig = config.getInitParameter(ALLOWED_METHODS_PARAM);
         if (allowedMethodsConfig == null)
@@ -224,6 +223,7 @@ public class CrossOriginFilter implements Filter
         {
             LOG.debug("Cross-origin filter configuration: " +
                             ALLOWED_ORIGINS_PARAM + " = " + allowedOriginsConfig + ", " +
+                            ALLOWED_TIMING_ORIGINS_PARAM + " = " + allowedTimingOriginsConfig + ", " +
                             ALLOWED_METHODS_PARAM + " = " + allowedMethodsConfig + ", " +
                             ALLOWED_HEADERS_PARAM + " = " + allowedHeadersConfig + ", " +
                             PREFLIGHT_MAX_AGE_PARAM + " = " + preflightMaxAgeConfig + ", " +
@@ -234,6 +234,30 @@ public class CrossOriginFilter implements Filter
         }
     }
 
+    
+    private boolean generateAllowedOrigins(List<String> allowedOriginStore, String allowedOriginsConfig, String defaultOrigin) {
+        if (allowedOriginsConfig == null)
+            allowedOriginsConfig = defaultOrigin;
+        String[] allowedOrigins = StringUtil.csvSplit(allowedOriginsConfig);
+        for (String allowedOrigin : allowedOrigins)
+        {
+            allowedOrigin = allowedOrigin.trim();
+            if (allowedOrigin.length() > 0)
+            {
+                if (ANY_ORIGIN.equals(allowedOrigin))
+                {
+                    allowedOriginStore.clear();
+                    return true;
+                }
+                else
+                {
+                    allowedOriginStore.add(allowedOrigin);
+                }
+            }
+        }
+        return false;
+    }
+    
     public void doFilter(ServletRequest request, ServletResponse response, FilterChain chain) throws IOException, ServletException
     {
         handle((HttpServletRequest)request, (HttpServletResponse)response, chain);
@@ -245,7 +269,7 @@ public class CrossOriginFilter implements Filter
         // Is it a cross origin request ?
         if (origin != null && isEnabled(request))
         {
-            if (originMatches(origin))
+            if (anyOriginAllowed || originMatches(allowedOrigins, origin))
             {
                 if (isSimpleRequest(request))
                 {
@@ -265,6 +289,15 @@ public class CrossOriginFilter implements Filter
                 {
                     LOG.debug("Cross-origin request to {} is a non-simple cross-origin request", request.getRequestURI());
                     handleSimpleResponse(request, response, origin);
+                }
+
+                if (anyTimingOriginAllowed || originMatches(allowedTimingOrigins, origin))
+                {
+                    response.setHeader(TIMING_ALLOW_ORIGIN_HEADER, origin);
+                }
+                else
+                {
+                    LOG.debug("Cross-origin request to " + request.getRequestURI() + " with origin " + origin + " does not match allowed timing origins " + allowedTimingOrigins);
                 }
             }
             else
@@ -296,11 +329,8 @@ public class CrossOriginFilter implements Filter
         return true;
     }
 
-    private boolean originMatches(String originList)
+    private boolean originMatches(List<String> allowedOrigins, String originList)
     {
-        if (anyOriginAllowed)
-            return true;
-
         if (originList.trim().length() == 0)
             return false;
 
