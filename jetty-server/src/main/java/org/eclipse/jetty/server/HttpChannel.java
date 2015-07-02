@@ -23,6 +23,7 @@ import java.net.InetSocketAddress;
 import java.nio.ByteBuffer;
 import java.nio.channels.ClosedChannelException;
 import java.util.List;
+import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 
@@ -305,7 +306,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                             Throwable ex=_state.getAsyncContextEvent().getThrowable();
                             String reason="Async Timeout";
-                            if (ex!=null)
+                            if (ex!=null && !(ex instanceof TimeoutException))
                             {
                                 reason="Async Exception";
                                 _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,ex);

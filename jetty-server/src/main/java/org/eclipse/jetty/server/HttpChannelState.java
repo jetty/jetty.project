@@ -458,7 +458,6 @@ public class HttpChannelState
                 if (_state==State.ASYNC_WAIT)
                 {
                     _state=State.ASYNC_WOKEN;
-                    _event.setThrowable(new TimeoutException("async"));
                     dispatch=true;
                 }
             }
