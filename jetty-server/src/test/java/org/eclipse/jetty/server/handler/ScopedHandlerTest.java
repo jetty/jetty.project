@@ -27,6 +27,7 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.Response;
 import org.junit.Before;
 import org.junit.Test;
 
@@ -82,6 +83,9 @@ public class ScopedHandlerTest
     @Test
     public void testDouble() throws Exception
     {
+        Request request = new Request(null,null);
+        Response response = new Response(null,null);
+        
         TestHandler handler0 = new TestHandler("0");
         OtherHandler handlerA = new OtherHandler("A");
         TestHandler handler1 = new TestHandler("1");
@@ -90,7 +94,7 @@ public class ScopedHandlerTest
         handlerA.setHandler(handler1);
         handler1.setHandler(handlerB);
         handler0.start();
-        handler0.handle("target",null,null,null);
+        handler0.handle("target",request,request,response);
         handler0.stop();
         String history=_history.toString();
         assertEquals(">S0>S1>W0>HA>W1>HB<HB<W1<HA<W0<S1<S0",history);
@@ -99,6 +103,9 @@ public class ScopedHandlerTest
     @Test
     public void testTriple() throws Exception
     {
+        Request request = new Request(null,null);
+        Response response = new Response(null,null);
+        
         TestHandler handler0 = new TestHandler("0");
         OtherHandler handlerA = new OtherHandler("A");
         TestHandler handler1 = new TestHandler("1");
@@ -111,7 +118,7 @@ public class ScopedHandlerTest
         handlerB.setHandler(handler2);
         handler2.setHandler(handlerC);
         handler0.start();
-        handler0.handle("target",null,null,null);
+        handler0.handle("target",request,request,response);
         handler0.stop();
         String history=_history.toString();
         assertEquals(">S0>S1>S2>W0>HA>W1>HB>W2>HC<HC<W2<HB<W1<HA<W0<S2<S1<S0",history);

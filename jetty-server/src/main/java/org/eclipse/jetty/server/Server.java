@@ -412,6 +412,9 @@ public class Server extends HandlerWrapper implements Attributes
         if (isDumpBeforeStop())
             dumpStdErr();
 
+        if (LOG.isDebugEnabled())
+            LOG.debug("doStop {}",this);
+        
         MultiException mex=new MultiException();
 
         // list if graceful futures
@@ -422,7 +425,6 @@ public class Server extends HandlerWrapper implements Attributes
             futures.add(connector.shutdown());
 
         // Then tell the contexts that we are shutting down
-
         Handler[] gracefuls = getChildHandlersByClass(Graceful.class);
         for (Handler graceful : gracefuls)
             futures.add(((Graceful)graceful).shutdown());

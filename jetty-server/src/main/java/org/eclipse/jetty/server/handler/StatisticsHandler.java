@@ -30,8 +30,11 @@ import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
+import javax.sql.rowset.BaseRowSet;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AsyncContextEvent;
+import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.HttpChannelState;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Response;
@@ -135,17 +138,17 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     }
 
     @Override
-    public void handle(String path, Request request, HttpServletRequest httpRequest, HttpServletResponse httpResponse) throws IOException, ServletException
+    public void handle(String path, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
         _dispatchedStats.increment();
 
         final long start;
-        HttpChannelState state = request.getHttpChannelState();
+        HttpChannelState state = baseRequest.getHttpChannelState();
         if (state.isInitial())
         {
             // new request
             _requestStats.increment();
-            start = request.getTimeStamp();
+            start = baseRequest.getTimeStamp();
         }
         else
         {
@@ -156,7 +159,14 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
 
         try
         {
-            super.handle(path, request, httpRequest, httpResponse);
+            Handler handler = getHandler();
+            if (handler!=null && _shutdown.get()==null && isStarted())
+                handler.handle(path, baseRequest, request, response);
+            else
+            {
+                baseRequest.setHandled(true);
+                response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+            }
         }
         finally
         {
@@ -178,13 +188,13 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             {
                 long d=_requestStats.decrement();
                 _requestTimeStats.set(dispatched);
-                updateResponse(request);
+                updateResponse(baseRequest);
                 
                 // If we have no more dispatches, should we signal shutdown?
                 FutureCallback shutdown = _shutdown.get();
                 if (shutdown!=null)
                 {
-                    httpResponse.flushBuffer();
+                    response.flushBuffer();
                     if (d==0)
                         shutdown.succeeded();
                 }   

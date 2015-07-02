@@ -198,8 +198,10 @@ public class ShutdownHandler extends HandlerWrapper
         doShutdown(baseRequest, response);
     }
 
-    protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException {
-        for (Connector connector : getServer().getConnectors()) {
+    protected void doShutdown(Request baseRequest, HttpServletResponse response) throws IOException 
+    {
+        for (Connector connector : getServer().getConnectors()) 
+        {
             connector.shutdown();
         }
 

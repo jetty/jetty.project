@@ -25,6 +25,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
@@ -108,17 +109,15 @@ public class HandlerWrapper extends AbstractHandlerContainer
         wrapper.setHandler(getHandler());
         setHandler(wrapper);
     }
-    
+
     /* ------------------------------------------------------------ */
     @Override
     public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
     {
-        if (_handler!=null && isStarted())
-        {
-            _handler.handle(target,baseRequest, request, response);
-        }
+        Handler handler=_handler;
+        if (handler!=null)
+            handler.handle(target,baseRequest, request, response);
     }
-
 
     /* ------------------------------------------------------------ */
     @Override

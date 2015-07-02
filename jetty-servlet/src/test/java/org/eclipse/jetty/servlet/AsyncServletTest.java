@@ -143,7 +143,7 @@ public class AsyncServletTest
     {
         _expectedCode="500 ";
         String response=process("suspend=200",null);
-        assertEquals("HTTP/1.1 500 Async Timeout",response.substring(0,26));
+        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 500 Async Timeout"));
         assertContains(
             "history: REQUEST /ctx/path/info\r\n"+
             "history: initial\r\n"+
