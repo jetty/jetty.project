@@ -51,7 +51,7 @@ import static org.ops4j.pax.exam.CoreOptions.systemProperty;
 @RunWith(PaxExam.class)
 public class TestJettyOSGiBootWithJsp
 {
-    private static final String LOG_LEVEL = "INFO";
+    private static final String LOG_LEVEL = "WARN";
 
     @Inject
     BundleContext bundleContext = null;
@@ -71,7 +71,7 @@ public class TestJettyOSGiBootWithJsp
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
         options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
         options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value(LOG_LEVEL))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.annotations.LEVEL").value("DEBUG"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.osgi.LEVEL").value(LOG_LEVEL))));
         options.addAll(jspDependencies());
         return options.toArray(new Option[options.size()]);
     }
@@ -117,8 +117,8 @@ public class TestJettyOSGiBootWithJsp
     }
 
 
-    @Test
     @Ignore
+    @Test
     public void assertAllBundlesActiveOrResolved()
     {
         TestOSGiUtil.debugBundles(bundleContext);

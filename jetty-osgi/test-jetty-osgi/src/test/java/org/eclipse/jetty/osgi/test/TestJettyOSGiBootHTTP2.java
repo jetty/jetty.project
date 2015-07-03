@@ -60,12 +60,8 @@ public class TestJettyOSGiBootHTTP2
         options.add(CoreOptions.junitBundles());
         options.addAll(TestJettyOSGiBootCore.httpServiceJetty());
         options.addAll(Arrays.asList(options(systemProperty("pax.exam.logging").value("none"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value("DEBUG"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.LEVEL").value("INFO"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.osgi.LEVEL").value("DEBUG"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.util.component.LEVEL").value("DEBUG"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.server.LEVEL").value("DEBUG"))));
-        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.xml.LEVEL").value("INFO"))));
+        options.addAll(Arrays.asList(options(systemProperty("org.ops4j.pax.logging.DefaultServiceLog.level").value(LOG_LEVEL))));
+        options.addAll(Arrays.asList(options(systemProperty("org.eclipse.jetty.osgi.LEVEL").value(LOG_LEVEL))));
         return options.toArray(new Option[options.size()]);
     }
 
