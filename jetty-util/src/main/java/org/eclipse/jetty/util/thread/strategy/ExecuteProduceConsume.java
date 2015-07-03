@@ -54,14 +54,19 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
     private boolean _producing;
     private boolean _pending;
     private final ThreadPool _threadpool;
-    private final ProduceExecuteConsume _lowresources;
+    private final ExecutionStrategy _lowresources;
 
     public ExecuteProduceConsume(Producer producer, Executor executor)
+    {
+        this(producer,executor,(executor instanceof ThreadPool)?new ProduceExecuteConsume(producer,executor):null);
+    }
+    
+    public ExecuteProduceConsume(Producer producer, Executor executor, ExecutionStrategy lowResourceStrategy)
     {
         this._producer = producer;
         this._executor = executor;
         _threadpool = (executor instanceof ThreadPool)?((ThreadPool)executor):null;
-        _lowresources = _threadpool==null?null:new ProduceExecuteConsume(producer,executor);
+        _lowresources = _threadpool==null?null:lowResourceStrategy;
     }
 
     @Override
@@ -137,6 +142,8 @@ public class ExecuteProduceConsume implements ExecutionStrategy, Runnable
                 LOG.debug("EWYK low resources {}",this);
                 _lowresources.execute();
             }
+            
+            // no longer low resources so produceAndRun normally
             produceAndRun();
         }
     }
