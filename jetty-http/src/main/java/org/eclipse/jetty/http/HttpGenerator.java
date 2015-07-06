@@ -249,7 +249,7 @@ public class HttpGenerator
                 }
                 catch(Exception e)
                 {
-                    String message= (e instanceof BufferOverflowException)?"Response header too large":e.getMessage();
+                    String message= (e instanceof BufferOverflowException)?"Request header too large":e.getMessage();
                     throw new IOException(message,e);
                 }
                 finally
