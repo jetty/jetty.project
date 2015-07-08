@@ -176,6 +176,10 @@ public class Http2Server
             content+="uri="+request.getRequestURI()+"\n";
             content+="session="+session.getId()+(session.isNew()?"(New)\n":"\n");
             content+="date="+new Date()+"\n";
+            
+            for (Cookie c : request.getCookies())
+                content+="cookie "+c.getName()+"="+c.getValue()+"\n";
+            
             response.setContentLength(content.length());
             response.getOutputStream().print(content);
         }

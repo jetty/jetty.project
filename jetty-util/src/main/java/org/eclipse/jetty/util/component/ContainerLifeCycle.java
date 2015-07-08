@@ -158,8 +158,7 @@ public class ContainerLifeCycle extends AbstractLifeCycle implements Container, 
             if (b._managed==Managed.MANAGED && b._bean instanceof LifeCycle)
             {
                 LifeCycle l = (LifeCycle)b._bean;
-                if (l.isRunning())
-                    stop(l);
+                stop(l);
             }
         }
     }
