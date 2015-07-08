@@ -73,11 +73,6 @@ public interface ByteBufferPool
             return buffer;
         }
 
-        public void prepend(ByteBuffer buffer, boolean recycle)
-        {
-            insert(0, buffer, recycle);
-        }
-
         public void append(ByteBuffer buffer, boolean recycle)
         {
             buffers.add(buffer);
