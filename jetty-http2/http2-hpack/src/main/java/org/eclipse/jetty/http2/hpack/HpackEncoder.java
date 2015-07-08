@@ -31,30 +31,28 @@ import org.eclipse.jetty.http.MetaData;
 import org.eclipse.jetty.http.PreEncodedHttpField;
 import org.eclipse.jetty.http2.hpack.HpackContext.Entry;
 import org.eclipse.jetty.http2.hpack.HpackContext.StaticEntry;
-import org.eclipse.jetty.io.ByteBufferPool.Lease;
-import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
 public class HpackEncoder
-{   
+{
     public static final Logger LOG = Log.getLogger(HpackEncoder.class);
-    
+
     private final static HttpField[] __status= new HttpField[599];
-    
-    
-    final static EnumSet<HttpHeader> __DO_NOT_HUFFMAN = 
+
+
+    final static EnumSet<HttpHeader> __DO_NOT_HUFFMAN =
             EnumSet.of(
                     HttpHeader.AUTHORIZATION,
                     HttpHeader.CONTENT_MD5,
                     HttpHeader.PROXY_AUTHENTICATE,
                     HttpHeader.PROXY_AUTHORIZATION);
-    
-    final static EnumSet<HttpHeader> __DO_NOT_INDEX = 
+
+    final static EnumSet<HttpHeader> __DO_NOT_INDEX =
             EnumSet.of(
-                    // HttpHeader.C_PATH,  // TODO more data needed 
-                    // HttpHeader.DATE,    // TODO more data needed 
+                    // HttpHeader.C_PATH,  // TODO more data needed
+                    // HttpHeader.DATE,    // TODO more data needed
                     HttpHeader.AUTHORIZATION,
                     HttpHeader.CONTENT_MD5,
                     HttpHeader.CONTENT_RANGE,
@@ -71,35 +69,35 @@ public class HpackEncoder
                     HttpHeader.LAST_MODIFIED,
                     HttpHeader.SET_COOKIE,
                     HttpHeader.SET_COOKIE2);
-    
 
-    final static EnumSet<HttpHeader> __NEVER_INDEX = 
+
+    final static EnumSet<HttpHeader> __NEVER_INDEX =
             EnumSet.of(
                     HttpHeader.AUTHORIZATION,
                     HttpHeader.SET_COOKIE,
                     HttpHeader.SET_COOKIE2);
-        
+
     static
     {
         for (HttpStatus.Code code : HttpStatus.Code.values())
             __status[code.getCode()]=new PreEncodedHttpField(HttpHeader.C_STATUS,Integer.toString(code.getCode()));
     }
-    
+
     private final HpackContext _context;
     private final boolean _debug;
     private int _remoteMaxDynamicTableSize;
     private int _localMaxDynamicTableSize;
-    
+
     public HpackEncoder()
     {
         this(4096,4096);
     }
-    
+
     public HpackEncoder(int localMaxDynamicTableSize)
     {
         this(localMaxDynamicTableSize,4096);
     }
-    
+
     public HpackEncoder(int localMaxDynamicTableSize,int remoteMaxDynamicTableSize)
     {
         _context=new HpackContext(remoteMaxDynamicTableSize);
@@ -112,27 +110,17 @@ public class HpackEncoder
     {
         return _context;
     }
-    
+
     public void setRemoteMaxDynamicTableSize(int remoteMaxDynamicTableSize)
     {
         _remoteMaxDynamicTableSize=remoteMaxDynamicTableSize;
     }
-    
+
     public void setLocalMaxDynamicTableSize(int localMaxDynamicTableSize)
     {
         _localMaxDynamicTableSize=localMaxDynamicTableSize;
     }
-    
-    // TODO better handling of buffer size
-    public void encode(MetaData metadata,Lease lease,int buffersize)
-    {
-        ByteBuffer buffer = lease.acquire(buffersize,false); 
-        lease.append(buffer,true);
-        BufferUtil.clearToFill(buffer);
-        encode(buffer,metadata);
-        BufferUtil.flipToFlush(buffer,0);
-    }
-    
+
     public void encode(ByteBuffer buffer, MetaData metadata)
     {
         if (LOG.isDebugEnabled())
@@ -188,7 +176,7 @@ public class HpackEncoder
     public void encode(ByteBuffer buffer, HttpField field)
     {
         final int p=_debug?buffer.position():-1;
-        
+
         String encoding=null;
 
         // Is there an entry for the field?
@@ -215,18 +203,18 @@ public class HpackEncoder
         {
             // Unknown field entry, so we will have to send literally.
             final boolean indexed;
-           
+
             // But do we know it's name?
             HttpHeader header = field.getHeader();
-            
+
             // Select encoding strategy
             if (header==null)
             {
                 // Select encoding strategy for unknown header names
                 Entry name = _context.get(field.getName());
-                     
+
                 if (field instanceof PreEncodedHttpField)
-                {        
+                {
                     int i=buffer.position();
                     ((PreEncodedHttpField)field).putTo(buffer,HttpVersion.HTTP_2);
                     byte b=buffer.get(i);
@@ -237,7 +225,7 @@ public class HpackEncoder
                 // has the custom header name been seen before?
                 else if (name==null)
                 {
-                    // unknown name and value, so let's index this just in case it is 
+                    // unknown name and value, so let's index this just in case it is
                     // the first time we have seen a custom name or a custom field.
                     // unless the name is changing, this is worthwhile
                     indexed=true;
@@ -257,13 +245,13 @@ public class HpackEncoder
                         encoding="LitHuffNHuffV!Idx";
                 }
             }
-            else 
+            else
             {
                 // Select encoding strategy for known header names
                 Entry name = _context.get(header);
 
                 if (field instanceof PreEncodedHttpField)
-                {                   
+                {
                     // Preencoded field
                     int i=buffer.position();
                     ((PreEncodedHttpField)field).putTo(buffer,HttpVersion.HTTP_2);
@@ -320,9 +308,9 @@ public class HpackEncoder
             int e=buffer.position();
             if (LOG.isDebugEnabled())
                 LOG.debug("encode {}:'{}' to '{}'",encoding,field,TypeUtil.toHexString(buffer.array(),buffer.arrayOffset()+p,e-p));
-        }        
+        }
     }
-    
+
     private void encodeName(ByteBuffer buffer, byte mask, int bits, String name, Entry entry)
     {
         buffer.put(mask);
@@ -339,7 +327,7 @@ public class HpackEncoder
             NBitInteger.encode(buffer,bits,_context.index(entry));
         }
     }
-    
+
     static void encodeValue(ByteBuffer buffer, boolean huffman, String value)
     {
         if (huffman)

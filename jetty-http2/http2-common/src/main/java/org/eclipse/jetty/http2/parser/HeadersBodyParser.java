@@ -30,6 +30,7 @@ import org.eclipse.jetty.util.BufferUtil;
 public class HeadersBodyParser extends BodyParser
 {
     private final HeaderBlockParser headerBlockParser;
+    private final HeaderBlockFragments headerBlockFragments;
     private State state = State.PREPARE;
     private int cursor;
     private int length;
@@ -38,10 +39,11 @@ public class HeadersBodyParser extends BodyParser
     private int streamId;
     private int weight;
 
-    public HeadersBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser)
+    public HeadersBodyParser(HeaderParser headerParser, Parser.Listener listener, HeaderBlockParser headerBlockParser, HeaderBlockFragments headerBlockFragments)
     {
         super(headerParser, listener);
         this.headerBlockParser = headerBlockParser;
+        this.headerBlockFragments = headerBlockFragments;
     }
 
     private void reset()
@@ -58,8 +60,18 @@ public class HeadersBodyParser extends BodyParser
     @Override
     protected void emptyBody(ByteBuffer buffer)
     {
-        MetaData metaData = headerBlockParser.parse(BufferUtil.EMPTY_BUFFER, 0);
-        onHeaders(0, 0, false, metaData);
+        if (hasFlag(Flags.END_HEADERS))
+        {
+            MetaData metaData = headerBlockParser.parse(BufferUtil.EMPTY_BUFFER, 0);
+            onHeaders(0, 0, false, metaData);
+        }
+        else
+        {
+            headerBlockFragments.setStreamId(getStreamId());
+            headerBlockFragments.setEndStream(isEndStream());
+            if (hasFlag(Flags.PRIORITY))
+                headerBlockFragments.setPriorityFrame(new PriorityFrame(streamId, getStreamId(), weight, exclusive));
+        }
         reset();
     }
 
@@ -76,10 +88,6 @@ public class HeadersBodyParser extends BodyParser
                     // SPEC: wrong streamId is treated as connection error.
                     if (getStreamId() == 0)
                         return connectionFailure(buffer, ErrorCode.PROTOCOL_ERROR.code, "invalid_headers_frame");
-
-                    // For now we don't support HEADERS frames that don't have END_HEADERS.
-                    if (!hasFlag(Flags.END_HEADERS))
-                        return connectionFailure(buffer, ErrorCode.INTERNAL_ERROR.code, "unsupported_headers_frame");
 
                     length = getBodyLength();
 
@@ -162,12 +170,34 @@ public class HeadersBodyParser extends BodyParser
                 }
                 case HEADERS:
                 {
-                    MetaData metaData = headerBlockParser.parse(buffer, length);
-                    if (metaData != null)
+                    if (hasFlag(Flags.END_HEADERS))
                     {
-                        state = State.PADDING;
-                        loop = paddingLength == 0;
-                        onHeaders(streamId, weight, exclusive, metaData);
+                        MetaData metaData = headerBlockParser.parse(buffer, length);
+                        if (metaData != null)
+                        {
+                            state = State.PADDING;
+                            loop = paddingLength == 0;
+                            onHeaders(streamId, weight, exclusive, metaData);
+                        }
+                    }
+                    else
+                    {
+                        int remaining = buffer.remaining();
+                        if (remaining < length)
+                        {
+                            headerBlockFragments.storeFragment(buffer, remaining, false);
+                            length -= remaining;
+                        }
+                        else
+                        {
+                            headerBlockFragments.setStreamId(getStreamId());
+                            headerBlockFragments.setEndStream(isEndStream());
+                            if (hasFlag(Flags.PRIORITY))
+                                headerBlockFragments.setPriorityFrame(new PriorityFrame(streamId, getStreamId(), weight, exclusive));
+                            headerBlockFragments.storeFragment(buffer, length, false);
+                            state = State.PADDING;
+                            loop = paddingLength == 0;
+                        }
                     }
                     break;
                 }

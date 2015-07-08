@@ -21,6 +21,7 @@ package org.eclipse.jetty.http2.parser;
 import java.nio.ByteBuffer;
 
 import org.eclipse.jetty.http2.ErrorCode;
+import org.eclipse.jetty.http2.Flags;
 import org.eclipse.jetty.http2.frames.DataFrame;
 import org.eclipse.jetty.http2.frames.FrameType;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
@@ -49,6 +50,7 @@ public class Parser
     private final Listener listener;
     private final HeaderParser headerParser;
     private final BodyParser[] bodyParsers;
+    private boolean continuation;
     private State state = State.HEADER;
 
     public Parser(ByteBufferPool byteBufferPool, Listener listener, int maxDynamicTableSize, int maxHeaderSize)
@@ -58,9 +60,10 @@ public class Parser
         this.bodyParsers = new BodyParser[FrameType.values().length];
 
         HeaderBlockParser headerBlockParser = new HeaderBlockParser(byteBufferPool, new HpackDecoder(maxDynamicTableSize, maxHeaderSize));
+        HeaderBlockFragments headerBlockFragments = new HeaderBlockFragments();
 
         bodyParsers[FrameType.DATA.getType()] = new DataBodyParser(headerParser, listener);
-        bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser);
+        bodyParsers[FrameType.HEADERS.getType()] = new HeadersBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
         bodyParsers[FrameType.PRIORITY.getType()] = new PriorityBodyParser(headerParser, listener);
         bodyParsers[FrameType.RST_STREAM.getType()] = new ResetBodyParser(headerParser, listener);
         bodyParsers[FrameType.SETTINGS.getType()] = new SettingsBodyParser(headerParser, listener);
@@ -68,7 +71,7 @@ public class Parser
         bodyParsers[FrameType.PING.getType()] = new PingBodyParser(headerParser, listener);
         bodyParsers[FrameType.GO_AWAY.getType()] = new GoAwayBodyParser(headerParser, listener);
         bodyParsers[FrameType.WINDOW_UPDATE.getType()] = new WindowUpdateBodyParser(headerParser, listener);
-        bodyParsers[FrameType.CONTINUATION.getType()] = new ContinuationBodyParser(headerParser, listener, headerBlockParser);
+        bodyParsers[FrameType.CONTINUATION.getType()] = new ContinuationBodyParser(headerParser, listener, headerBlockParser, headerBlockFragments);
     }
 
     private void reset()
@@ -100,6 +103,29 @@ public class Parser
                     {
                         if (!headerParser.parse(buffer))
                             return;
+
+                        if (continuation)
+                        {
+                            if (headerParser.getFrameType() != FrameType.CONTINUATION.getType())
+                            {
+                                // SPEC: CONTINUATION frames must be consecutive.
+                                BufferUtil.clear(buffer);
+                                notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "continuation_frame_expected");
+                                return;
+                            }
+                            if (headerParser.hasFlag(Flags.END_HEADERS))
+                            {
+                                continuation = false;
+                            }
+                        }
+                        else
+                        {
+                            if (headerParser.getFrameType() == FrameType.HEADERS.getType() &&
+                                    !headerParser.hasFlag(Flags.END_HEADERS))
+                            {
+                                continuation = true;
+                            }
+                        }
                         state = State.BODY;
                         break;
                     }

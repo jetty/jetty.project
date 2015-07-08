@@ -38,6 +38,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     private int maxDynamicTableSize = 4096;
     private int initialStreamSendWindow = FlowControlStrategy.DEFAULT_WINDOW_SIZE;
     private int maxConcurrentStreams = -1;
+    private int maxHeaderBlockFragment = 0;
     private final HttpConfiguration httpConfiguration;
 
     public AbstractHTTP2ServerConnectionFactory(@Name("config") HttpConfiguration httpConfiguration)
@@ -81,6 +82,16 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
         this.maxConcurrentStreams = maxConcurrentStreams;
     }
 
+    public int getMaxHeaderBlockFragment()
+    {
+        return maxHeaderBlockFragment;
+    }
+
+    public void setMaxHeaderBlockFragment(int maxHeaderBlockFragment)
+    {
+        this.maxHeaderBlockFragment = maxHeaderBlockFragment;
+    }
+
     public HttpConfiguration getHttpConfiguration()
     {
         return httpConfiguration;
@@ -91,7 +102,7 @@ public abstract class AbstractHTTP2ServerConnectionFactory extends AbstractConne
     {
         ServerSessionListener listener = newSessionListener(connector, endPoint);
 
-        Generator generator = new Generator(connector.getByteBufferPool(), getMaxDynamicTableSize());
+        Generator generator = new Generator(connector.getByteBufferPool(), getMaxDynamicTableSize(), getMaxHeaderBlockFragment());
         FlowControlStrategy flowControl = newFlowControlStrategy();
         HTTP2ServerSession session = new HTTP2ServerSession(connector.getScheduler(), endPoint, generator, listener, flowControl);
         session.setMaxLocalStreams(getMaxConcurrentStreams());
