@@ -438,10 +438,8 @@ public class HttpFields implements Iterable<HttpField>
      *
      * @param name the name of the field
      * @param value the value of the field.
-     * @exception IllegalArgumentException If the name is a single valued field and already has a
-     *                value.
      */
-    public void add(String name, String value) throws IllegalArgumentException
+    public void add(String name, String value)
     {
         if (value == null)
             return;
@@ -450,7 +448,7 @@ public class HttpFields implements Iterable<HttpField>
         add(field);
     }
 
-    public void add(HttpHeader header, HttpHeaderValue value) throws IllegalArgumentException
+    public void add(HttpHeader header, HttpHeaderValue value)
     {
         add(header,value.toString());
     }
@@ -461,9 +459,8 @@ public class HttpFields implements Iterable<HttpField>
      *
      * @param header the header
      * @param value the value of the field.
-     * @exception IllegalArgumentException if value is null
      */
-    public void add(HttpHeader header, String value) throws IllegalArgumentException
+    public void add(HttpHeader header, String value)
     {
         if (value == null) throw new IllegalArgumentException("null value");
 
