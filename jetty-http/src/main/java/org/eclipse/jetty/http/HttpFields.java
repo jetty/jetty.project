@@ -682,9 +682,12 @@ public class HttpFields implements Iterable<HttpField>
     
     public void add(HttpField field)
     {
-        if (_size==_fields.length)
-            _fields=Arrays.copyOf(_fields,_size*2);
-        _fields[_size++]=field;
+        if (field!=null)
+        {
+            if (_size==_fields.length)
+                _fields=Arrays.copyOf(_fields,_size*2);
+            _fields[_size++]=field;
+        }
     }
 
     public void addAll(HttpFields fields)

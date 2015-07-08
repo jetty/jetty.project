@@ -55,13 +55,13 @@ class JarFileResource extends JarResource
     protected JarFileResource(URL url, boolean useCaches)
     {
         super(url, useCaches);
-    }
-   
+    }   
 
     /* ------------------------------------------------------------ */
     @Override
     public synchronized void close()
     {
+        _exists=false;
         _list=null;
         _entry=null;
         _file=null;
@@ -144,7 +144,6 @@ class JarFileResource extends JarResource
 
         if (_urlString.endsWith("!/"))
         {
-            
             String file_url=_urlString.substring(4,_urlString.length()-2);
             try{return newResource(file_url).exists();}
             catch(Exception e) {LOG.ignore(e); return false;}
