@@ -26,7 +26,6 @@ import java.io.FileWriter;
 import java.io.IOException;
 import java.io.PrintWriter;
 import java.net.MalformedURLException;
-import java.net.URI;
 import java.net.URL;
 import java.net.URLClassLoader;
 import java.util.ArrayList;
@@ -35,7 +34,6 @@ import java.util.HashSet;
 import java.util.Iterator;
 import java.util.List;
 import java.util.Set;
-import java.util.regex.Pattern;
 
 import org.apache.jasper.JspC;
 import org.apache.jasper.servlet.JspCServletContext;
@@ -50,18 +48,14 @@ import org.apache.tomcat.util.scan.StandardJarScanner;
 import org.codehaus.plexus.util.FileUtils;
 import org.codehaus.plexus.util.StringUtils;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.PatternMatcher;
 import org.eclipse.jetty.util.resource.Resource;
 
 /**
  * This goal will compile jsps for a webapp so that they can be included in a
  * war.
  * <p>
- * At runtime, the plugin will use the jsp2.0 jspc compiler if you are running
- * on a 1.4 or lower jvm. If you are using a 1.5 jvm, then the jsp2.1 compiler
- * will be selected. (this is the same behaviour as the <a
- * href="https://www.eclipse.org/jetty/documentation/current/maven-and-jetty.html">jetty plugin</a> for executing
- * webapps).
+ * At runtime, the plugin will use the jspc compiler to precompile jsps and tags.
+ * </p>
  * <p>
  * Note that the same java compiler will be used as for on-the-fly compiled
  * jsps, which will be the Eclipse java compiler.
@@ -69,7 +63,7 @@ import org.eclipse.jetty.util.resource.Resource;
  * See <a
  * href="https://www.eclipse.org/jetty/documentation/current/jetty-jspc-maven-plugin.html">Usage
  * Guide</a> for instructions on using this plugin.
- * 
+ * </p>
  * @goal jspc
  * @phase process-classes
  * @requiresDependencyResolution compile+runtime
@@ -353,16 +347,25 @@ public class JspcMojo extends AbstractMojo
         // JspC#setExtensions() does not exist, so 
         // always set concrete list of files that will be processed.
         String jspFiles = getJspFiles(webAppSourceDirectory);
-        getLog().info("Compiling "+jspFiles);
-        getLog().info("Includes="+includes);
-        getLog().info("Excludes="+excludes);
-        jspc.setJspFiles(jspFiles);
+       
+        try
+        {
+            if (jspFiles == null | jspFiles.equals(""))
+            {
+                getLog().info("No files selected to precompile");
+            }
+            else
+            {
+                getLog().info("Compiling "+jspFiles+" from includes="+includes+" excludes="+excludes);
+                jspc.setJspFiles(jspFiles);
+                jspc.execute();
+            }
+        }
+        finally
+        {
 
-        getLog().info("Files selected to precompile: " + jspFiles);
-
-        jspc.execute();
-
-        Thread.currentThread().setContextClassLoader(currentClassLoader);
+            Thread.currentThread().setContextClassLoader(currentClassLoader);
+        }
     }
 
     private String getJspFiles(String webAppSourceDirectory)
@@ -438,57 +441,62 @@ public class JspcMojo extends AbstractMojo
                 return;
             }
 
-            File fragmentWebXml = new File(webXmlFragment);
-            if (!fragmentWebXml.exists())
+            File fragmentWebXml = new File(webXmlFragment);         
+            File mergedWebXml = new File(fragmentWebXml.getParentFile(), "web.xml");
+
+            try (BufferedReader webXmlReader = new BufferedReader(new FileReader(webXml));
+                 PrintWriter mergedWebXmlWriter = new PrintWriter(new FileWriter(mergedWebXml))) 
             {
-                getLog().info("No fragment web.xml file generated");
-            }
-            File mergedWebXml = new File(fragmentWebXml.getParentFile(),
-            "web.xml");
-            try (BufferedReader webXmlReader = new BufferedReader(new FileReader(
-                    webXml));
-                 PrintWriter mergedWebXmlWriter = new PrintWriter(new FileWriter(
-                    mergedWebXml))) {
 
-                // read up to the insertion marker or the </webapp> if there is no
-                // marker
-                boolean atInsertPoint = false;
-                boolean atEOF = false;
-                String marker = (insertionMarker == null
-                        || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker);
-                while (!atInsertPoint && !atEOF)
+                if (!fragmentWebXml.exists())
                 {
-                    String line = webXmlReader.readLine();
-                    if (line == null)
-                        atEOF = true;
-                    else if (line.indexOf(marker) >= 0)
-                    {
-                        atInsertPoint = true;
-                    }
-                    else
-                    {
-                        mergedWebXmlWriter.println(line);
-                    }
-                }
-                
-                if (atEOF && !atInsertPoint)
-                    throw new IllegalStateException("web.xml does not contain insertionMarker "+insertionMarker);
-                
-                //put in a context init-param to flag that the contents have been precompiled
-                mergedWebXmlWriter.println("<context-param><param-name>"+PRECOMPILED_FLAG+"</param-name><param-value>true</param-value></context-param>");
-                
-
-                // put in the generated fragment
-                try (BufferedReader fragmentWebXmlReader = new BufferedReader(
-                        new FileReader(fragmentWebXml))) {
-                    IO.copy(fragmentWebXmlReader, mergedWebXmlWriter);
-
-                    // if we inserted just before the </web-app>, put it back in
-                    if (marker.equals(END_OF_WEBAPP))
-                        mergedWebXmlWriter.println(END_OF_WEBAPP);
-
-                    // copy in the rest of the original web.xml file
+                    getLog().info("No fragment web.xml file generated");
+                    //just copy existing web.xml to expected position
                     IO.copy(webXmlReader, mergedWebXmlWriter);
+                }
+                else
+                {
+                    // read up to the insertion marker or the </webapp> if there is no
+                    // marker
+                    boolean atInsertPoint = false;
+                    boolean atEOF = false;
+                    String marker = (insertionMarker == null
+                            || insertionMarker.equals("") ? END_OF_WEBAPP : insertionMarker);
+                    while (!atInsertPoint && !atEOF)
+                    {
+                        String line = webXmlReader.readLine();
+                        if (line == null)
+                            atEOF = true;
+                        else if (line.indexOf(marker) >= 0)
+                        {
+                            atInsertPoint = true;
+                        }
+                        else
+                        {
+                            mergedWebXmlWriter.println(line);
+                        }
+                    }
+
+                    if (atEOF && !atInsertPoint)
+                        throw new IllegalStateException("web.xml does not contain insertionMarker "+insertionMarker);
+
+                    //put in a context init-param to flag that the contents have been precompiled
+                    mergedWebXmlWriter.println("<context-param><param-name>"+PRECOMPILED_FLAG+"</param-name><param-value>true</param-value></context-param>");
+
+
+                    // put in the generated fragment
+                    try (BufferedReader fragmentWebXmlReader = 
+                            new BufferedReader(new FileReader(fragmentWebXml))) 
+                    {
+                        IO.copy(fragmentWebXmlReader, mergedWebXmlWriter);
+
+                        // if we inserted just before the </web-app>, put it back in
+                        if (marker.equals(END_OF_WEBAPP))
+                            mergedWebXmlWriter.println(END_OF_WEBAPP);
+
+                        // copy in the rest of the original web.xml file
+                        IO.copy(webXmlReader, mergedWebXmlWriter);
+                    }
                 }
             }
         }
