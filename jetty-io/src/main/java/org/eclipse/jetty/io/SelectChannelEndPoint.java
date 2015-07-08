@@ -100,22 +100,25 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         if (LOG.isDebugEnabled())
             LOG.debug("onSelected {}->{} for {}", oldInterestOps, newInterestOps, this);
 
-        
         boolean readable = (readyOps & SelectionKey.OP_READ) != 0;
         boolean writable = (readyOps & SelectionKey.OP_WRITE) != 0;
-        
-        // Call non blocking directly
+
+        // Run non-blocking code immediately.
+        // This producer knows that this non-blocking code is special
+        // and that it must be run in this thread and not fed to the
+        // ExecutionStrategy, which could not have any thread to run these
+        // tasks (or it may starve forever just after having run them).
         if (readable && getFillInterest().isCallbackNonBlocking())
         {
-            getFillInterest().fillable();
-            readable=false;
+            _runFillable.run();
+            readable = false;
         }
         if (writable && getWriteFlusher().isCallbackNonBlocking())
         {
-            getWriteFlusher().completeWrite();
-            writable=false;
+            _runCompleteWrite.run();
+            writable = false;
         }
-        
+
         // return task to complete the job
         return readable ? (writable ? _runFillableCompleteWrite : _runFillable)
                         : (writable ? _runCompleteWrite : null);
