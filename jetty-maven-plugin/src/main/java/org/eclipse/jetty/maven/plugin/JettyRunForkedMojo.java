@@ -233,10 +233,7 @@ public class JettyRunForkedMojo extends JettyRunMojo
     {
         //Only do enough setup to be able to produce a quickstart-web.xml file to
         //pass onto the forked process to run     
-        
-        if (forkWebXml == null)
-            forkWebXml = new File (target, "fork-web.xml");
-        
+
         try
         {
             printSystemProperties();
@@ -253,21 +250,27 @@ public class JettyRunForkedMojo extends JettyRunMojo
             
             //copy the base resource as configured by the plugin
             originalBaseResource = webApp.getBaseResource();
-            
+
             //get the original persistance setting
             originalPersistTemp = webApp.isPersistTempDirectory();
-            
+
             //set the webapp up to do very little other than generate the quickstart-web.xml
             webApp.setCopyWebDir(false);
             webApp.setCopyWebInf(false);
             webApp.setGenerateQuickStart(true);
-         
-            if (!forkWebXml.getParentFile().exists())
-                forkWebXml.getParentFile().mkdirs();
-            if (!forkWebXml.exists())
-                forkWebXml.createNewFile();
-            
-            webApp.setQuickStartWebDescriptor(Resource.newResource(forkWebXml));
+
+            if (webApp.getQuickStartWebDescriptor() == null)
+            {
+                if (forkWebXml == null)
+                    forkWebXml = new File (target, "fork-web.xml");
+
+                if (!forkWebXml.getParentFile().exists())
+                    forkWebXml.getParentFile().mkdirs();
+                if (!forkWebXml.exists())
+                    forkWebXml.createNewFile();
+
+                webApp.setQuickStartWebDescriptor(Resource.newResource(forkWebXml));
+            }
             
             //add webapp to our fake server instance
             ServerSupport.addWebApplication(server, webApp);

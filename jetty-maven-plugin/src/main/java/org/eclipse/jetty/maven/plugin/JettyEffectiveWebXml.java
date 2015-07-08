@@ -73,16 +73,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
     {
         //Only do enough setup to be able to produce a quickstart-web.xml file 
         
-        //if the user didn't nominate a file to generate into, pick the name and
-        //make sure that it is deleted on exit
-        if (effectiveWebXml == null)
-        {
-            deleteOnExit = true;
-            effectiveWebXml = new File(target, "effective-web.xml");
-            effectiveWebXml.deleteOnExit();
-        }
-        
-        Resource descriptor = Resource.newResource(effectiveWebXml);
+
         
         QueuedThreadPool tpool = null;
         
@@ -104,13 +95,27 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             webApp.setCopyWebDir(false);
             webApp.setCopyWebInf(false);
             webApp.setGenerateQuickStart(true);
-    
-            if (!effectiveWebXml.getParentFile().exists())
-                effectiveWebXml.getParentFile().mkdirs();
-            if (!effectiveWebXml.exists())
-                effectiveWebXml.createNewFile();
-            
-            webApp.setQuickStartWebDescriptor(descriptor);
+
+            //if the user didn't nominate a file to generate into, pick the name and
+            //make sure that it is deleted on exit
+            if (webApp.getQuickStartWebDescriptor() == null)
+            {
+                if (effectiveWebXml == null)
+                {
+                    deleteOnExit = true;
+                    effectiveWebXml = new File(target, "effective-web.xml");
+                    effectiveWebXml.deleteOnExit();
+                }
+
+                Resource descriptor = Resource.newResource(effectiveWebXml);
+
+                if (!effectiveWebXml.getParentFile().exists())
+                    effectiveWebXml.getParentFile().mkdirs();
+                if (!effectiveWebXml.exists())
+                    effectiveWebXml.createNewFile();
+
+                webApp.setQuickStartWebDescriptor(descriptor);
+            }
             
             ServerSupport.addWebApplication(server, webApp);
                        
@@ -142,7 +147,7 @@ public class JettyEffectiveWebXml extends JettyRunMojo
             try
             {
                 //just show the result in the log
-                getLog().info(IO.toString(descriptor.getInputStream()));
+                getLog().info(IO.toString(webApp.getQuickStartWebDescriptor().getInputStream()));
             }
             catch (IOException e)
             {

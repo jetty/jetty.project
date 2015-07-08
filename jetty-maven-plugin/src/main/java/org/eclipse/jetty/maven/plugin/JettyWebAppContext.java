@@ -243,7 +243,13 @@ public class JettyWebAppContext extends WebAppContext
     }
     
     /* ------------------------------------------------------------ */
-    public void setQuickStartWebDescriptor (Resource quickStartWebXml)
+    public void setQuickStartWebDescriptor (String quickStartWebXml) throws Exception
+    {
+        setQuickStartWebDescriptor(Resource.newResource(quickStartWebXml));
+    }
+    
+    /* ------------------------------------------------------------ */
+    protected void setQuickStartWebDescriptor (Resource quickStartWebXml)
     {
         _quickStartWebXml = quickStartWebXml;
     }
