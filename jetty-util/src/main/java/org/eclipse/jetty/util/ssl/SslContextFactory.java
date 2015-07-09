@@ -1189,8 +1189,12 @@ public class SslContextFactory extends AbstractLifeCycle
         {
             // Use only the supported included protocols
             for (String protocol : _includeProtocols)
+            {
                 if(Arrays.asList(supportedProtocols).contains(protocol))
                     selected_protocols.add(protocol);
+                else
+                    LOG.info("Protocol {} not supported in {}",protocol,Arrays.asList(supportedProtocols));
+            }
         }
         else
             selected_protocols.addAll(Arrays.asList(enabledProtocols));
@@ -1199,7 +1203,14 @@ public class SslContextFactory extends AbstractLifeCycle
         // Remove any excluded protocols
         selected_protocols.removeAll(_excludeProtocols);
 
+
+        if (selected_protocols.isEmpty())
+            LOG.warn("No selected protocols from {}",Arrays.asList(supportedProtocols));
+        
         _selectedProtocols = selected_protocols.toArray(new String[selected_protocols.size()]);
+        
+        
+        
     }
 
     /**
@@ -1221,6 +1232,9 @@ public class SslContextFactory extends AbstractLifeCycle
 
         removeExcludedCipherSuites(selected_ciphers);
         
+        if (selected_ciphers.isEmpty())
+            LOG.warn("No supported ciphers from {}",Arrays.asList(supportedCipherSuites));
+        
         if (_cipherComparator!=null)
         {
             if (LOG.isDebugEnabled())
@@ -1233,15 +1247,19 @@ public class SslContextFactory extends AbstractLifeCycle
 
     protected void processIncludeCipherSuites(String[] supportedCipherSuites, List<String> selected_ciphers)
     {
-        for (String cipherSuite : _includeCipherSuites)
+        ciphers: for (String cipherSuite : _includeCipherSuites)
         {
             Pattern p = Pattern.compile(cipherSuite);
             for (String supportedCipherSuite : supportedCipherSuites)
             {
                 Matcher m = p.matcher(supportedCipherSuite);
                 if (m.matches())
+                {
                     selected_ciphers.add(supportedCipherSuite);
+                    continue ciphers;
+                }
             }
+            LOG.info("Cipher {} not supported",cipherSuite);
         }
     }
 
@@ -1256,7 +1274,6 @@ public class SslContextFactory extends AbstractLifeCycle
                 Matcher m = excludeCipherPattern.matcher(selectedCipherSuite);
                 if (m.matches())
                     i.remove();
-                
             }
         }
     }
