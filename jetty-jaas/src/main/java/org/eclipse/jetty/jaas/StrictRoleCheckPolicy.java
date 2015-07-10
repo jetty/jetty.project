@@ -31,7 +31,6 @@ import java.util.Enumeration;
  * 
  *
  * 
- * @org.apache.xbean.XBean description ="Check only topmost role in stack of roles for user"
  */
 public class StrictRoleCheckPolicy implements RoleCheckPolicy
 {

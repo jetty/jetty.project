@@ -49,7 +49,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * For all other requests a normal 404 is served.
  *
  *
- * @org.apache.xbean.XBean
  */
 public class DefaultHandler extends AbstractHandler
 {

@@ -51,7 +51,6 @@ import org.eclipse.jetty.util.log.Logger;
 /** 
  * JAASLoginService
  *
- * @org.apache.xbean.XBean element="jaasUserRealm" description="Creates a UserRealm suitable for use with JAAS"
  */
 public class JAASLoginService extends AbstractLifeCycle implements LoginService
 {

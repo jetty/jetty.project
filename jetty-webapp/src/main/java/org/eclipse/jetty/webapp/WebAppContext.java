@@ -81,7 +81,6 @@ import org.eclipse.jetty.util.resource.ResourceCollection;
  * the default being  {@link org.eclipse.jetty.webapp.WebXmlConfiguration} and
  * {@link org.eclipse.jetty.webapp.JettyWebXmlConfiguration}.
  *
- * @org.apache.xbean.XBean description="Creates a servlet web application at a given context from a resource base"
  */
 @ManagedObject("Web Application ContextHandler")
 public class WebAppContext extends ServletContextHandler implements WebAppClassLoader.Context

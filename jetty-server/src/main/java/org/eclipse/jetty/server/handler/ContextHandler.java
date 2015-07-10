@@ -104,7 +104,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * <p>
  * By default, the context is created with alias checkers for {@link AllowSymLinkAliasChecker} (unix only) and {@link ApproveNonExistentDirectoryAliases}. 
  * If these alias checkers are not required, then {@link #clearAliasChecks()} or {@link #setAliasChecks(List)} should be called.
- * @org.apache.xbean.XBean description="Creates a basic HTTP context"
  */
 @ManagedObject("URI Context")
 public class ContextHandler extends ScopedHandler implements Attributes, Graceful

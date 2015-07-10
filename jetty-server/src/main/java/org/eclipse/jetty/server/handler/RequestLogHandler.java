@@ -37,7 +37,6 @@ import org.eclipse.jetty.server.Server;
  * {@link Server#setRequestLog(RequestLog)} instead of this handler.
  *
  * @see Server#setRequestLog(RequestLog)
- * @org.apache.xbean.XBean
  */
 public class RequestLogHandler extends HandlerWrapper
 {

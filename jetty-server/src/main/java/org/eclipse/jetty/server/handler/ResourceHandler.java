@@ -57,7 +57,6 @@ import org.eclipse.jetty.util.resource.Resource;
  * Requests for resources that do not exist are let pass (Eg no 404's).
  *
  *
- * @org.apache.xbean.XBean
  */
 public class ResourceHandler extends HandlerWrapper
 {
