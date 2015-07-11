@@ -19,6 +19,7 @@
 package org.eclipse.jetty.http;
 
 import java.util.ArrayList;
+import java.util.Objects;
 
 /** A HTTP Field
  */
@@ -30,24 +31,24 @@ public class HttpField
     private final String _value;
     // cached hashcode for case insensitive name
     private int hash = 0;
-        
+
     public HttpField(HttpHeader header, String name, String value)
     {
         _header = header;
         _name = name;
         _value = value;
-    }  
-    
+    }
+
     public HttpField(HttpHeader header, String value)
     {
         this(header,header.asString(),value);
     }
-    
+
     public HttpField(HttpHeader header, HttpHeaderValue value)
     {
         this(header,header.asString(),value.asString());
     }
-    
+
     public HttpField(String name, String value)
     {
         this(HttpHeader.CACHE.get(name),name,value);
@@ -67,20 +68,20 @@ public class HttpField
     {
         return _value;
     }
-    
+
     public int getIntValue()
     {
         return Integer.valueOf(_value);
     }
-    
+
     public long getLongValue()
     {
         return Long.valueOf(_value);
     }
-    
+
     public String[] getValues()
-    {  
-        ArrayList<String> list = new ArrayList<>(); 
+    {
+        ArrayList<String> list = new ArrayList<>();
         int state = 0;
         int start=0;
         int end=0;
@@ -124,7 +125,7 @@ public class HttpField
                         case '\t':
                             break;
 
-                        default: 
+                        default:
                             end=i;
                     }
                     break;
@@ -142,7 +143,7 @@ public class HttpField
                             state=4;
                             break;
 
-                        default: 
+                        default:
                             builder.append(c);
                     }
                     break;
@@ -163,7 +164,7 @@ public class HttpField
                             state=0;
                             break;
 
-                        default: 
+                        default:
                             throw new IllegalArgumentException("c="+(int)c);
 
                     }
@@ -187,7 +188,7 @@ public class HttpField
 
         return list.toArray(new String[list.size()]);
     }
-    
+
     /* ------------------------------------------------------------ */
     /** Look for a value in a possible multi valued field
      * @param search Values to search for
@@ -197,9 +198,11 @@ public class HttpField
      */
     public boolean contains(String search)
     {
-        if (_value==null || search==null)
-            return _value==search;
+        if (search==null)
+            return _value==null;
         if (search.length()==0)
+            return false;
+        if (_value==null)
             return false;
 
         int state=0;
@@ -221,7 +224,7 @@ public class HttpField
 
                         case ',': // ignore leading empty field
                             break;
-                            
+
                         case ';': // ignore leading empty field parameter
                             param=-1;
                             match=-1;
@@ -253,8 +256,8 @@ public class HttpField
                             param=match>=0?0:-1;
                             state=5; // parameter
                             break;
-                            
-                        default: 
+
+                        default:
                             if (match>0)
                             {
                                 if (match<search.length())
@@ -263,7 +266,7 @@ public class HttpField
                                     match=-1;
                             }
                             break;
-                            
+
                     }
                     break;
 
@@ -278,14 +281,14 @@ public class HttpField
                             state=4;
                             break;
 
-                        default: 
+                        default:
                             if (match>=0)
                             {
                                 if (match<search.length())
                                     match=c==search.charAt(match)?(match+1):-1;
                                 else
                                     match=-1;
-                            }  
+                            }
                     }
                     break;
 
@@ -296,7 +299,7 @@ public class HttpField
                             match=c==search.charAt(match)?(match+1):-1;
                         else
                             match=-1;
-                    }  
+                    }
                     state=2;
                     break;
 
@@ -318,12 +321,12 @@ public class HttpField
                             state=0;
                             break;
 
-                        default: 
+                        default:
                             // This is an illegal token, just ignore
                             match=-1;
                     }
                     break;
-                    
+
                 case 5:  // parameter
                     switch(c)
                     {
@@ -334,17 +337,17 @@ public class HttpField
                             param=0;
                             state=0;
                             break;
-                            
+
                         case ' ': // white space
                         case '\t': // white space
                             break;
 
-                        default: 
+                        default:
                             if (param>=0)
                             {
                                 if (param<__zeroquality.length())
                                     param=c==__zeroquality.charAt(param)?(param+1):-1;
-                                else if (c!='0'&&c!='.'&&c!=' ')
+                                else if (c!='0'&&c!='.')
                                     param=-1;
                             }
 
@@ -355,11 +358,11 @@ public class HttpField
                     throw new IllegalStateException();
             }
         }
-        
+
         return param!=__zeroquality.length() && match==search.length();
     }
-    
-    
+
+
     @Override
     public String toString()
     {
@@ -379,7 +382,7 @@ public class HttpField
             return true;
         return false;
     }
-    
+
     private int nameHashCode()
     {
         int h = this.hash;
@@ -422,92 +425,78 @@ public class HttpField
             return false;
         if (_value==null && field.getValue()!=null)
             return false;
-        if (!_value.equals(field.getValue()))
-            return false;
-        return true;
+        return Objects.equals(_value,field.getValue());
     }
-    
 
     public static class IntValueHttpField extends HttpField
     {
-        final int _int;
-        
+        private final int _int;
+
         public IntValueHttpField(HttpHeader header, String name, String value, int intValue)
         {
             super(header,name,value);
             _int=intValue;
         }
 
-        public IntValueHttpField(HttpHeader header, String value, int intValue)
-        {
-            this(header,header.asString(),value,Integer.valueOf(value));
-        }
-        
         public IntValueHttpField(HttpHeader header, String name, String value)
         {
             this(header,name,value,Integer.valueOf(value));
         }
 
-        public IntValueHttpField(HttpHeader header, String value)
+        public IntValueHttpField(HttpHeader header, String name, int intValue)
         {
-            this(header,header.asString(),value);
+            this(header,name,Integer.toString(intValue),intValue);
         }
 
         public IntValueHttpField(HttpHeader header, int value)
         {
             this(header,header.asString(),value);
         }
-        
+
         @Override
         public int getIntValue()
         {
             return _int;
         }
-        
+
         @Override
         public long getLongValue()
         {
             return _int;
         }
     }
-    
+
     public static class LongValueHttpField extends HttpField
     {
-        final long _long;
-        
+        private final long _long;
+
         public LongValueHttpField(HttpHeader header, String name, String value, long longValue)
         {
             super(header,name,value);
             _long=longValue;
         }
-        
+
         public LongValueHttpField(HttpHeader header, String name, String value)
         {
             this(header,name,value,Long.valueOf(value));
         }
-        
+
         public LongValueHttpField(HttpHeader header, String name, long value)
         {
             this(header,name,Long.toString(value),value);
         }
-        
-        public LongValueHttpField(HttpHeader header, String value)
-        {
-            this(header,header.asString(),value);
-        }
-        
+
         public LongValueHttpField(HttpHeader header,long value)
         {
             this(header,header.asString(),value);
         }
 
-        
         @Override
         public int getIntValue()
         {
             return (int)_long;
         }
-        
+
         @Override
         public long getLongValue()
         {
