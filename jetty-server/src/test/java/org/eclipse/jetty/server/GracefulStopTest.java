@@ -238,7 +238,7 @@ public class GracefulStopTest
             long start = System.nanoTime();
             server.stop();
             long stop = System.nanoTime();
-            assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),greaterThan(500L));
+            assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),greaterThan(490L));
             assertThat(TimeUnit.NANOSECONDS.toMillis(stop-start),lessThan(10000L));
 
             String response = IO.toString(client1.getInputStream());
