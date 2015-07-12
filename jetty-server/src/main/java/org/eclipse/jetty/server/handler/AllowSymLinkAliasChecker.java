@@ -52,8 +52,6 @@ public class AllowSymLinkAliasChecker implements AliasCheck
         {
             Path path = pathResource.getPath();
             Path alias = pathResource.getAliasPath();
-            System.err.printf("getPath=%s%n",path);
-            System.err.printf("getAliasPath=%s%n",alias);
             
             // is the file itself a symlink?
             if (Files.isSymbolicLink(path))
