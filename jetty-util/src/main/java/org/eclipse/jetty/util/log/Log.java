@@ -209,6 +209,12 @@ public class Log
         return LOG;
     }
 
+    /**
+     * Set the root logger. 
+     * <p>Not that if any classes have statically obtained their logger instance 
+     * prior to this call, their Logger will not be affected by this call.
+     * @param log
+     */
     public static void setLog(Logger log)
     {
         Log.LOG = log;
