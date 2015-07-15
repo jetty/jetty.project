@@ -126,7 +126,7 @@ public class PathResource extends Resource
         }
         catch (IOException e)
         {
-            // Ignore
+            LOG.ignore(e);
         }
         catch (Exception e)
         {

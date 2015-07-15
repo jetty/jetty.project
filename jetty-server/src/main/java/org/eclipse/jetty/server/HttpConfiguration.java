@@ -56,6 +56,7 @@ public class HttpConfiguration
     private int _responseHeaderSize=8*1024;
     private int _headerCacheSize=512;
     private int _securePort;
+    private long _blockingTimeout=-1;
     private String _secureScheme = HttpScheme.HTTPS.asString();
     private boolean _sendServerVersion = true;
     private boolean _sendXPoweredBy = false;
@@ -111,6 +112,7 @@ public class HttpConfiguration
         _sendDateHeader=config._sendDateHeader;
         _sendServerVersion=config._sendServerVersion;
         _headerCacheSize=config._headerCacheSize;
+        _blockingTimeout=config._blockingTimeout;
     }
     
     /* ------------------------------------------------------------ */
@@ -195,6 +197,33 @@ public class HttpConfiguration
     public boolean isPersistentConnectionsEnabled()
     {
         return _persistentConnectionsEnabled;
+    }
+
+    /* ------------------------------------------------------------ */
+    /** Get the timeout applied to blocking operations.
+     * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
+     * to the total operation (as opposed to the idle timeout that applies to the time no 
+     * data is being sent).
+     * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
+     * idle timeout; >0 for a timeout in ms applied to the total blocking operation.
+     */
+    @ManagedAttribute("Timeout in MS for blocking operations.")
+    public long getBlockingTimeout()
+    {
+        return _blockingTimeout;
+    }
+
+    /**
+     * Set the timeout applied to blocking operations.
+     * <p>This timeout is in addition to the {@link Connector#getIdleTimeout()}, and applies
+     * to the total operation (as opposed to the idle timeout that applies to the time no 
+     * data is being sent).
+     * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
+     * idle timeout; >0 for a timeout in ms applied to the total blocking operation.
+     */
+    public void setBlockingTimeout(long blockingTimeout)
+    {
+        _blockingTimeout = blockingTimeout;
     }
 
     /* ------------------------------------------------------------ */

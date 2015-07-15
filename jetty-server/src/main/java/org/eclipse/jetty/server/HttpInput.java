@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.InterruptedIOException;
 import java.nio.ByteBuffer;
 import java.util.Objects;
+import java.util.concurrent.TimeoutException;
 
 import javax.servlet.ReadListener;
 import javax.servlet.ServletInputStream;
@@ -54,10 +55,13 @@ public class HttpInput extends ServletInputStream implements Runnable
     private ReadListener _listener;
     private State _state = STREAM;
     private long _contentConsumed;
+    private long _blockingTimeoutAt = -1;
 
     public HttpInput(HttpChannelState state)
     {
         _channelState=state;
+        if (_channelState.getHttpChannel().getHttpConfiguration().getBlockingTimeout()>0)
+            _blockingTimeoutAt=0;
     }
     
     protected HttpChannelState getHttpChannelState()
@@ -131,6 +135,9 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         synchronized (_inputQ)
         {
+            if (_blockingTimeoutAt>=0 && !isAsync())
+                _blockingTimeoutAt=System.currentTimeMillis()+getHttpChannelState().getHttpChannel().getHttpConfiguration().getBlockingTimeout();
+            
             while(true)
             {
                 Content item = nextContent();
@@ -337,11 +344,25 @@ public class HttpInput extends ServletInputStream implements Runnable
     {
         try
         {
+            long timeout=0;
+            if (_blockingTimeoutAt>=0)
+            {
+                timeout=_blockingTimeoutAt-System.currentTimeMillis();
+                if (timeout<=0)
+                    throw new TimeoutException();
+            }
+
             if (LOG.isDebugEnabled())
-                LOG.debug("{} blocking for content...", this);
-            _inputQ.wait();
+                LOG.debug("{} blocking for content timeout={} ...", this,timeout);
+            if (timeout>0)
+                _inputQ.wait(timeout);
+            else
+                _inputQ.wait();
+            
+            if (_blockingTimeoutAt>0 && System.currentTimeMillis()>=_blockingTimeoutAt)
+                throw new TimeoutException();
         }
-        catch (InterruptedException e)
+        catch (Throwable e)
         {
             throw (IOException)new InterruptedIOException().initCause(e);
         }

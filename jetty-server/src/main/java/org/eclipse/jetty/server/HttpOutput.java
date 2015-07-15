@@ -98,6 +98,11 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             @Override
             protected long getIdleTimeout()
             {
+                long bto = getHttpChannel().getHttpConfiguration().getBlockingTimeout();
+                if (bto>0)
+                    return bto;
+                if (bto<0)
+                    return -1;
                 return _channel.getIdleTimeout();
             }
         };
@@ -585,6 +590,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ByteBuffer content) throws IOException
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendContent({})",BufferUtil.toDetailString(content));
+        
         write(content, true);
         closed();
     }
@@ -662,6 +670,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ByteBuffer content, final Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendContent(buffer={},{})",BufferUtil.toDetailString(content),callback);
+        
         write(content, true, new Callback()
         {
             @Override
@@ -689,6 +700,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(InputStream in, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendContent(stream={},{})",in,callback);
+        
         new InputStreamWritingCB(in, callback).iterate();
     }
 
@@ -701,6 +715,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(ReadableByteChannel in, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendContent(channel={},{})",in,callback);
+        
         new ReadableByteChannelWritingCB(in, callback).iterate();
     }
 
@@ -712,6 +729,9 @@ public class HttpOutput extends ServletOutputStream implements Runnable
      */
     public void sendContent(HttpContent httpContent, Callback callback)
     {
+        if (LOG.isDebugEnabled())
+            LOG.debug("sendContent(http={},{})",httpContent,callback);
+        
         if (BufferUtil.hasContent(_aggregate))
         {
             callback.failed(new IOException("cannot sendContent() after write()"));
@@ -752,9 +772,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
 
         if (buffer!=null)
         {
-            if (LOG.isDebugEnabled())
-                LOG.debug("sendContent({}=={},{},direct={})",httpContent,BufferUtil.toDetailString(buffer),callback,_channel.useDirectBuffers());
-            
             sendContent(buffer,callback);
             return;
         }
@@ -764,8 +781,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             ReadableByteChannel rbc=httpContent.getReadableByteChannel();
             if (rbc!=null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("sendContent({}=={},{},direct={})",httpContent,rbc,callback,_channel.useDirectBuffers());
                 // Close of the rbc is done by the async sendContent
                 sendContent(rbc,callback);
                 return;
@@ -774,8 +789,6 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             InputStream in = httpContent.getInputStream();
             if (in!=null)
             {
-                if (LOG.isDebugEnabled())
-                    LOG.debug("sendContent({}=={},{},direct={})",httpContent,in,callback,_channel.useDirectBuffers());
                 sendContent(in,callback);
                 return;
             }
@@ -1102,6 +1115,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
                 return Action.SCHEDULED;
             }
 
+            if (LOG.isDebugEnabled() && _completed)
+                LOG.debug("EOF of {}",this);
             return Action.SUCCEEDED;
         }
 
@@ -1142,6 +1157,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // a write done with EOF=true
             if (_eof)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("EOF of {}",this);
                 // Handle EOF
                 _in.close();
                 closed();
@@ -1206,6 +1223,8 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // a write done with EOF=true
             if (_eof)
             {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("EOF of {}",this);
                 _in.close();
                 closed();
                 _channel.getByteBufferPool().release(_buffer);
@@ -1220,7 +1239,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             // write what we have
             _buffer.flip();
             write(_buffer,_eof,this);
-
+            
             return Action.SCHEDULED;
         }
 

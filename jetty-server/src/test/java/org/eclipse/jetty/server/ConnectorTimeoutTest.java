@@ -18,11 +18,17 @@
 
 package org.eclipse.jetty.server;
 
+import java.io.BufferedInputStream;
+import java.io.BufferedReader;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.InputStreamReader;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.net.SocketException;
+import java.nio.ByteBuffer;
+import java.nio.charset.StandardCharsets;
+import java.util.Arrays;
 import java.util.concurrent.Exchanger;
 import java.util.concurrent.TimeUnit;
 
@@ -31,14 +37,18 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.TestTracker;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
+import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -59,6 +69,13 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
         System.setProperty("org.eclipse.jetty.io.nio.IDLE_TICK","100");
     }
 
+    @Before
+    public void before()
+    {
+        super.before();
+        if (_httpConfiguration!=null)
+            _httpConfiguration.setBlockingTimeout(-1L);
+    }
 
     @Test(timeout=60000)
     public void testMaxIdleWithRequest10() throws Exception
@@ -351,6 +368,227 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     }
 
     @Test(timeout=60000)
+    public void testNoBlockingTimeoutRead() throws Exception
+    {
+        _httpConfiguration.setBlockingTimeout(-1L);
+        
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+        InputStream is=client.getInputStream();
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        os.write(("GET / HTTP/1.1\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                "Transfer-Encoding: chunked\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Connection: close\r\n" +
+                "\r\n"+
+                "5\r\n"+
+                "LMNOP\r\n")
+                .getBytes("utf-8"));
+        os.flush();
+
+        long start = System.currentTimeMillis();
+        try
+        {
+            Thread.sleep(250);
+            os.write("1".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(250);
+            os.write("0".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(250);
+            os.write("\r".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(250);
+            os.write("\n".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(250);
+            os.write("0123456789ABCDEF\r\n".getBytes("utf-8"));
+            os.write("0\r\n".getBytes("utf-8"));
+            os.write("\r\n".getBytes("utf-8"));
+            os.flush();   
+        }
+        catch(Exception e)
+        {
+            e.printStackTrace();
+        }
+        long duration=System.currentTimeMillis() - start;
+        Assert.assertThat(duration,Matchers.greaterThan(500L));
+
+        // read the response
+        String response = IO.toString(is);
+        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
+        Assert.assertThat(response,Matchers.containsString("LMNOP0123456789ABCDEF"));
+
+    }
+    
+    @Test(timeout=60000)
+    public void testBlockingTimeoutRead() throws Exception
+    {
+        _httpConfiguration.setBlockingTimeout(750L);
+        
+        configureServer(new EchoHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+        InputStream is=client.getInputStream();
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        os.write(("GET / HTTP/1.1\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                "Transfer-Encoding: chunked\r\n" +
+                "Content-Type: text/plain\r\n" +
+                "Connection: close\r\n" +
+                "\r\n"+
+                "5\r\n"+
+                "LMNOP\r\n")
+                .getBytes("utf-8"));
+        os.flush();
+
+        long start = System.currentTimeMillis();
+        try
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+            Thread.sleep(300);
+            os.write("1".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(300);
+            os.write("0".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(300);
+            os.write("\r".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(300);
+            os.write("\n".getBytes("utf-8"));
+            os.flush();
+            Thread.sleep(300);
+            os.write("0123456789ABCDEF\r\n".getBytes("utf-8"));
+            os.write("0\r\n".getBytes("utf-8"));
+            os.write("\r\n".getBytes("utf-8"));
+            os.flush();   
+        }
+        catch(Exception e)
+        {
+        }
+        finally
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+        }
+        long duration=System.currentTimeMillis() - start;
+        Assert.assertThat(duration,Matchers.greaterThan(500L));
+        
+        try
+        {
+            // read the response
+            String response = IO.toString(is);
+            Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 500 "));
+            Assert.assertThat(response,Matchers.containsString("InterruptedIOException"));
+        }
+        catch(SSLException e)
+        {
+        }
+
+    }
+
+    @Test(timeout=60000)
+    public void testNoBlockingTimeoutWrite() throws Exception
+    {
+        configureServer(new HugeResponseHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        BufferedReader is=new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.ISO_8859_1),2048);
+
+        os.write((
+                "GET / HTTP/1.0\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                "connection: keep-alive\r\n"+
+                "Connection: close\r\n"+
+        "\r\n").getBytes("utf-8"));
+        os.flush();
+        
+        // read the header
+        String line=is.readLine();
+        Assert.assertThat(line,Matchers.startsWith("HTTP/1.1 200 OK"));
+        while(line.length()!=0)
+            line=is.readLine();
+        
+        for (int i=0;i<(128*1024);i++)
+        {
+            if (i%1028==0)
+            {
+                Thread.sleep(20);
+                // System.err.println("read "+System.currentTimeMillis());
+            }
+            line=is.readLine();
+            Assert.assertThat(line,Matchers.notNullValue());
+            Assert.assertEquals(1022,line.length());
+        }
+    }
+
+    @Test(timeout=60000)
+    public void testBlockingTimeoutWrite() throws Exception
+    {
+        _httpConfiguration.setBlockingTimeout(750L);
+        configureServer(new HugeResponseHandler());
+        Socket client=newSocket(_serverURI.getHost(),_serverURI.getPort());
+        client.setSoTimeout(10000);
+
+        Assert.assertFalse(client.isClosed());
+
+        OutputStream os=client.getOutputStream();
+        BufferedReader is=new BufferedReader(new InputStreamReader(client.getInputStream(),StandardCharsets.ISO_8859_1),2048);
+
+        os.write((
+                "GET / HTTP/1.0\r\n"+
+                "host: "+_serverURI.getHost()+":"+_serverURI.getPort()+"\r\n"+
+                "connection: keep-alive\r\n"+
+                "Connection: close\r\n"+
+        "\r\n").getBytes("utf-8"));
+        os.flush();
+        
+        // read the header
+        String line=is.readLine();
+        Assert.assertThat(line,Matchers.startsWith("HTTP/1.1 200 OK"));
+        while(line.length()!=0)
+            line=is.readLine();
+
+        long start=System.currentTimeMillis();
+        try
+        {
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(true);
+            ((StdErrLog)Log.getLogger(AbstractConnection.class)).setHideStacks(true);
+            for (int i=0;i<(128*1024);i++)
+            {
+                if (i%1028==0)
+                {
+                    Thread.sleep(20);
+                    // System.err.println("read "+System.currentTimeMillis());
+                }
+                line=is.readLine();
+                if (line==null)
+                    break;
+            }
+        }
+        catch(Throwable e)
+        {}
+        finally
+        {
+            ((StdErrLog)Log.getLogger(AbstractConnection.class)).setHideStacks(false);
+            ((StdErrLog)Log.getLogger(HttpChannel.class)).setHideStacks(false);
+        }
+        long end=System.currentTimeMillis();
+        long duration = end-start;
+        Assert.assertThat(duration,Matchers.lessThan(20L*128L));
+    }
+    
+    @Test(timeout=60000)
     public void testMaxIdleNoRequest() throws Exception
     {
         configureServer(new EchoHandler());
@@ -519,6 +757,27 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
                 out.flush();
                 try{Thread.sleep(50);}catch(Exception e){e.printStackTrace();}
             }
+            out.close();
+        }
+    }
+    
+    protected static class HugeResponseHandler extends AbstractHandler
+    {
+        @Override
+        public void handle(String target, Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
+        {
+            baseRequest.setHandled(true);
+            response.setStatus(200);
+            OutputStream out = response.getOutputStream();
+            byte[] buffer = new byte[128*1024*1024];
+            Arrays.fill(buffer,(byte)'x');
+            for (int i=0;i<128*1024;i++)
+            {
+                buffer[i*1024+1022]='\r';
+                buffer[i*1024+1023]='\n';
+            }
+            ByteBuffer bb = ByteBuffer.wrap(buffer);
+            ((HttpOutput)out).sendContent(bb);
             out.close();
         }
     }

@@ -37,6 +37,13 @@ public class HttpInputOverHTTP extends HttpInput
     protected void blockForContent() throws IOException
     {
         ((HttpConnection)getHttpChannelState().getHttpChannel().getEndPoint().getConnection()).blockingReadFillInterested();
-        super.blockForContent();
+        try
+        {
+            super.blockForContent();
+        }
+        catch(Throwable e)
+        {
+            ((HttpConnection)getHttpChannelState().getHttpChannel().getEndPoint().getConnection()).blockingReadException(e);
+        }
     }
 }

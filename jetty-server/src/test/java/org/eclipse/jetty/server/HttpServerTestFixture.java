@@ -49,6 +49,7 @@ public class HttpServerTestFixture
     protected QueuedThreadPool _threadPool;
     protected Server _server;
     protected URI _serverURI;
+    protected HttpConfiguration _httpConfiguration;
     protected ServerConnector _connector;
     protected String _scheme="http";
 
@@ -76,7 +77,9 @@ public class HttpServerTestFixture
     protected void startServer(ServerConnector connector, Handler handler) throws Exception
     {
         _connector = connector;
-        _connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration().setSendDateHeader(false);
+        _httpConfiguration=_connector.getConnectionFactory(HttpConnectionFactory.class).getHttpConfiguration();
+        _httpConfiguration.setBlockingTimeout(-1);
+        _httpConfiguration.setSendDateHeader(false);
         _server.addConnector(_connector);
         _server.setHandler(handler);
         _server.start();

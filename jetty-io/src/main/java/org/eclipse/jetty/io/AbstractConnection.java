@@ -92,7 +92,14 @@ public abstract class AbstractConnection implements Connection
                 @Override
                 public void run()
                 {
-                    callback.failed(x);
+                    try
+                    {
+                        callback.failed(x);
+                    }
+                    catch(Exception e)
+                    {
+                        LOG.warn(e);
+                    }
                 }
             });
         }
