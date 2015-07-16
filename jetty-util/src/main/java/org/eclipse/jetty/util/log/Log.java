@@ -211,7 +211,7 @@ public class Log
 
     /**
      * Set the root logger. 
-     * <p>Not that if any classes have statically obtained their logger instance 
+     * <p>Note that if any classes have statically obtained their logger instance
      * prior to this call, their Logger will not be affected by this call.
      * @param log
      */
