@@ -41,6 +41,7 @@ import org.eclipse.jetty.server.HttpOutput;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.ConcurrentHashSet;
+import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -73,12 +74,11 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     // non-static, as other GzipHandler instances may have different configurations
     private final ThreadLocal<Deflater> _deflater = new ThreadLocal<Deflater>();
 
-    private final Set<String> _includedMethods=new HashSet<>();
     private final Set<Pattern> _excludedAgentPatterns=new HashSet<>();
-    private final PathMap<Boolean> _excludedPaths=new PathMap<>();
-    private final PathMap<Boolean> _includedPaths=new PathMap<>();
-    private final Set<String> _excludedMimeTypes=new HashSet<>();
-    private final Set<String> _includedMimeTypes=new HashSet<>();
+    private final IncludeExclude<String> _methods = new IncludeExclude<>();
+    private final IncludeExclude<String> _paths = new IncludeExclude<>(PathMap.PathSet.class);
+    private final IncludeExclude<String> _mimeTypes = new IncludeExclude<>();
+    
     private HttpField _vary;
     
     private final Set<String> _uaCache = new ConcurrentHashSet<>();
@@ -94,20 +94,22 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public GzipHandler()
     {
-        _includedMethods.add(HttpMethod.GET.asString());
+        _methods.include(HttpMethod.GET.asString());
         for (String type:MimeTypes.getKnownMimeTypes())
         {
-            if (type.startsWith("image/")||
+            if ("image/svg+xml".equals(type))
+                _paths.exclude("*.svgz");
+            else if (type.startsWith("image/")||
                 type.startsWith("audio/")||
                 type.startsWith("video/"))
-                _excludedMimeTypes.add(type);
+                _mimeTypes.exclude(type);
         }
-        _excludedMimeTypes.add("application/compress");
-        _excludedMimeTypes.add("application/zip");
-        _excludedMimeTypes.add("application/gzip");
-        _excludedMimeTypes.add("application/bzip2");
-        _excludedMimeTypes.add("application/x-rar-compressed");
-        LOG.debug("{} excluding mimes {}",this,_excludedMimeTypes);
+        _mimeTypes.exclude("application/compress");
+        _mimeTypes.exclude("application/zip");
+        _mimeTypes.exclude("application/gzip");
+        _mimeTypes.exclude("application/bzip2");
+        _mimeTypes.exclude("application/x-rar-compressed");
+        LOG.debug("{} mime types {}",this,_mimeTypes);
         
         _excludedAgentPatterns.add(Pattern.compile(".*MSIE 6.0.*"));
     }
@@ -129,7 +131,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void addExcludedMimeTypes(String... types)
     {
-        _excludedMimeTypes.addAll(Arrays.asList(types));
+        _mimeTypes.exclude(types);
     }
 
     /* ------------------------------------------------------------ */
@@ -140,8 +142,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void addExcludedPaths(String... pathspecs)
     {
-        for (String ps : pathspecs)
-            _excludedPaths.put(ps,Boolean.TRUE);
+        _paths.exclude(pathspecs);
     }
 
     /* ------------------------------------------------------------ */
@@ -151,7 +152,17 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     public void addIncludedMethods(String... methods)
     {
         for (String m : methods)
-            _includedMethods.add(m);
+            _methods.include(m);
+    }
+    
+    /* ------------------------------------------------------------ */
+    /**
+     * @param methods The methods to exclude in compression
+     */
+    public void addExcludedMethods(String... methods)
+    {
+        for (String m : methods)
+            _methods.exclude(m);
     }
 
     /* ------------------------------------------------------------ */
@@ -162,7 +173,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void addIncludedMimeTypes(String... types)
     {
-        _includedMimeTypes.addAll(Arrays.asList(types));
+        _mimeTypes.include(types);
     }
 
     /* ------------------------------------------------------------ */
@@ -174,8 +185,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void addIncludedPaths(String... pathspecs)
     {
-        for (String ps : pathspecs)
-            _includedPaths.put(ps,Boolean.TRUE);
+        _paths.include(pathspecs);
     }
     
     /* ------------------------------------------------------------ */
@@ -250,33 +260,50 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     /* ------------------------------------------------------------ */
     public String[] getExcludedMimeTypes()
     {
-        return _excludedMimeTypes.toArray(new String[_excludedMimeTypes.size()]);
-    }
-
-    /* ------------------------------------------------------------ */
-    public String[] getExcludedPaths()
-    {
-        String[] ps =  _excludedPaths.keySet().toArray(new String[_excludedPaths.size()]);
-        return ps;
+        Set<String> excluded=_mimeTypes.getExcluded();
+        return excluded.toArray(new String[excluded.size()]);
     }
 
     /* ------------------------------------------------------------ */
     public String[] getIncludedMimeTypes()
     {
-        return _includedMimeTypes.toArray(new String[_includedMimeTypes.size()]);
+        Set<String> includes=_mimeTypes.getIncluded();
+        return includes.toArray(new String[includes.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getExcludedPaths()
+    {
+        Set<String> excluded=_paths.getExcluded();
+        return excluded.toArray(new String[excluded.size()]);
     }
 
     /* ------------------------------------------------------------ */
     public String[] getIncludedPaths()
     {
-        String[] ps =  _includedPaths.keySet().toArray(new String[_includedPaths.size()]);
-        return ps;
+        Set<String> includes=_paths.getIncluded();
+        return includes.toArray(new String[includes.size()]);
     }
 
     /* ------------------------------------------------------------ */
+    public String[] getExcludedMethods()
+    {
+        Set<String> excluded=_methods.getExcluded();
+        return excluded.toArray(new String[excluded.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    public String[] getIncludedMethods()
+    {
+        Set<String> includes=_methods.getIncluded();
+        return includes.toArray(new String[includes.size()]);
+    }
+
+    /* ------------------------------------------------------------ */
+    @Deprecated
     public String[] getMethods()
     {
-        return _includedMethods.toArray(new String[_includedMethods.size()]);
+        return getIncludedMethods();
     }
 
     /* ------------------------------------------------------------ */
@@ -324,7 +351,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         }
         
         // If not a supported method - no Vary because no matter what client, this URI is always excluded
-        if (!_includedMethods.contains(baseRequest.getMethod()))
+        if (!_methods.contains(baseRequest.getMethod()))
         {
             LOG.debug("{} excluded by method {}",this,request);
             _handler.handle(target,baseRequest, request, response);
@@ -422,9 +449,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     @Override
     public boolean isMimeTypeGzipable(String mimetype)
     {
-        if (_includedMimeTypes.size()>0 && _includedMimeTypes.contains(mimetype))
-            return true;
-        return !_excludedMimeTypes.contains(mimetype);
+        return _mimeTypes.contains(mimetype);
     }
 
     /* ------------------------------------------------------------ */
@@ -440,13 +465,7 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         if (requestURI == null)
             return true;
         
-        if (_includedPaths.size()>0 && _includedPaths.containsMatch(requestURI))
-            return true;
-
-        if (_excludedPaths.size()>0 && _excludedPaths.containsMatch(requestURI))
-            return false;
-        
-        return true;
+        return _paths.contains(requestURI);
     }
 
     /* ------------------------------------------------------------ */
@@ -495,8 +514,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void setExcludedMimeTypes(String... types)
     {
-        _excludedMimeTypes.clear();
-        addExcludedMimeTypes(types);
+        _mimeTypes.getExcluded().clear();
+        _mimeTypes.exclude(types);
     }
 
     /* ------------------------------------------------------------ */
@@ -507,8 +526,18 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void setExcludedPaths(String... pathspecs)
     {
-        _excludedPaths.clear();
-        addExcludedPaths(pathspecs);
+        _paths.getExcluded().clear();
+        _paths.exclude(pathspecs);
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param method to exclude
+     */
+    public void setExcludedMethods(String... method)
+    {
+        _methods.getExcluded().clear();
+        _methods.exclude(method);
     }
 
     /* ------------------------------------------------------------ */
@@ -517,8 +546,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void setIncludedMethods(String... methods)
     {
-        _includedMethods.clear();
-        addIncludedMethods(methods);
+        _methods.getIncluded().clear();
+        _methods.include(methods);
     }
     
     /* ------------------------------------------------------------ */
@@ -529,8 +558,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void setIncludedMimeTypes(String... types)
     {
-        _includedMimeTypes.clear();
-        addIncludedMimeTypes(types);
+        _mimeTypes.getIncluded().clear();
+        _mimeTypes.include(types);
     }
 
     /* ------------------------------------------------------------ */
@@ -542,8 +571,8 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      */
     public void setIncludedPaths(String... pathspecs)
     {
-        _includedPaths.clear();
-        addIncludedPaths(pathspecs);
+        _paths.getIncluded().clear();
+        _paths.include(pathspecs);
     }
 
     /* ------------------------------------------------------------ */
