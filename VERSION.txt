@@ -1,3 +1,5 @@
+jetty-9.3.2-SNAPSHOT
+
 jetty-9.3.1.v20150714 - 14 July 2015
  + 441020 Support HEADERS followed by CONTINUATION+.
  + 460671 Rationalize property names (fix for jetty.sh)
