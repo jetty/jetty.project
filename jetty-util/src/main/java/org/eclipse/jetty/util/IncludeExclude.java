@@ -20,78 +20,97 @@ package org.eclipse.jetty.util;
 
 import java.util.HashSet;
 import java.util.Set;
+import java.util.function.BiFunction;
 
 
 /** Utility class to maintain a set of inclusions and exclusions.
+ * <p>Maintains a set of included and excluded elements.  The method {@link #matches(Object)}
+ * will return true IFF the passed object is not in the excluded set AND ( either the 
+ * included set is empty OR the object is in the included set) 
  * <p>The type of the underlying {@link Set} used may be passed into the 
  * constructor, so special sets like Servlet PathMap may be used.
- * @param <E>
+ * <p>
+ * @param <ITEM> The type of element
  */
-public class IncludeExclude<E> 
+public class IncludeExclude<ITEM> 
 {
-    private final Set<E> _includes;
-    private final Set<E> _excludes;
+    private final Set<ITEM> _includes;
+    private final Set<ITEM> _excludes;
+    private final BiFunction<Set<ITEM>,ITEM, Boolean> _matcher;
 
+    /**
+     * Default constructor over {@link HashSet}
+     */
     public IncludeExclude()
     {
-        _includes = new HashSet<>();
-        _excludes = new HashSet<>();
+        this(HashSet.class,null);
     }
     
-    public IncludeExclude(Class<? extends Set<E>> setClass)
+    /**
+     * Construct an IncludeExclude
+     * @param setClass The type of {@link Set} to using internally
+     * @param matcher A function to test if a passed ITEM is matched by the passed SET, or null to use {@link Set#contains(Object)}
+     */
+    public <SET extends Set<ITEM>> IncludeExclude(Class<SET> setClass, BiFunction<SET,ITEM, Boolean> matcher)
     {
         try
         {
             _includes = setClass.newInstance();
             _excludes = setClass.newInstance();
+            _matcher = (BiFunction<Set<ITEM>,ITEM, Boolean>)matcher;
         }
         catch (InstantiationException | IllegalAccessException e)
         {
             throw new RuntimeException(e);
         }
     }
-    
-    public IncludeExclude(Set<E> includes, Set<E> excludes)
-    {
-        _includes = includes;
-        _excludes = excludes;
-    }
 
-    public void include(E element)
+    public void include(ITEM element)
     {
         _includes.add(element);
     }
     
-    public void include(E... element)
+    public void include(ITEM... element)
     {
-        for (E e: element)
+        for (ITEM e: element)
             _includes.add(e);
     }
 
-    public void exclude(E element)
+    public void exclude(ITEM element)
     {
         _excludes.add(element);
     }
     
-    public void exclude(E... element)
+    public void exclude(ITEM... element)
     {
-        for (E e: element)
+        for (ITEM e: element)
             _excludes.add(e);
     }
     
-    public boolean contains(E e)
+    public boolean matches(ITEM e)
     {
-        if (_includes.size()>0 && !_includes.contains(e))
+        if (_matcher==null)
+        {
+            if (_includes.size()>0 && !_includes.contains(e))
+                return false;
+            return !_excludes.contains(e);
+        }
+        if (_includes.size()>0 && !_matcher.apply(_includes,e))
             return false;
-        return !_excludes.contains(e);
+        return !_matcher.apply(_excludes,e);
     }
 
-    public Set<E> getIncluded()
+    public int size()
+    {
+        return _includes.size()+_excludes.size();
+    }
+    
+    public Set<ITEM> getIncluded()
     {
         return _includes;
     }
     
-    public Set<E> getExcluded()
+    public Set<ITEM> getExcluded()
     {
         return _excludes;
     }
@@ -102,4 +121,9 @@ public class IncludeExclude<E>
         _excludes.clear();
     }
 
+    @Override
+    public String toString()
+    {
+        return String.format("%s@%x{i=%s,e=%s,m=%s}",this.getClass().getSimpleName(),hashCode(),_includes,_excludes,_matcher);
+    }
 }
