@@ -1,4 +1,38 @@
-jetty-9.3.1-SNAPSHOT
+jetty-9.3.1.v20150714 - 14 July 2015
+ + 441020 Support HEADERS followed by CONTINUATION+.
+ + 460671 Rationalize property names (fix for jetty.sh)
+ + 462346 Change classesPattern to scanClassesPattern and testClassesPattern to
+   scanTestClassesPattern to clarify purpose
+ + 464294 AsyncNCSARequestLog blocks JVM exit after failure
+ + 464741 HttpFields declares IllegalArgumentException as checked exception
+ + 464745 Remove @org.apache.xbean.XBean references
+ + 469384 Improved javadoc for ClasspathPattern
+ + 470184 Send the proxy-to-server request more lazily.
+ + 470327 Problem with scope provided dependencies with jspc plugin
+ + 470505 jetty-maven-plugin JettyWebAppContext#setQuickStartWebDescriptor
+   should accept a Maven-friendly type
+ + 470664 Handle multiple RequestLogHandler in chain
+ + 470727 Thread Starvation of selector wakeups.
+ + 470803 If a webapp is not fully started do not fully stop it
+ + 470855 Only log warning for duplicate path mappings to same servlet in same
+   descriptor
+ + 470963 Update jetty-maven-plugin mojo annotations for maven 3
+ + 471071 jetty-infinispan.xml incorrect syntax for remote named cache
+ + 471076 Apache jspc ignores empty list of files to precompile and scans
+   anyway
+ + 471251 Improved debugging on async timeout
+ + 471272 ArrayIndexOutOfBoundsException in
+   org.eclipse.jetty.quickstart.PreconfigureQuickStartWar
+ + 471388 StringIndexOutOfBoundsException when using <c:url> with parameters
+ + 471464 Parsing issues with HttpURI
+ + 471604 Extend CrossOriginFilter to provide a Timing-Allow-Origin header
+ + 471623 Update to apache jsp 8.0.23 Use 8.0.23.M1 for jetty version of apache
+   jsp 8.0.23
+ + 471985 NPE in HttpFields.putField
+ + 472310 Improved logging when no supported included ciphers
+ + 472411 PathResource.checkAliasPath typo
+ + 472422 Custom status codes result in a NumberFormatException while using
+   http2.
 
 jetty-9.3.0.v20150612 - 12 June 2015
  + 414479 Add WebSocketPingPongListener for those that want PING/PONG payload
