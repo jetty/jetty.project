@@ -44,13 +44,13 @@ import org.eclipse.jetty.util.URIUtil;
  * relative to the context root.  So these script tags:</p>
  * <pre>
  * &lt;script type="text/javascript" src="../js/behaviour.js"&gt;&lt;/script&gt;
- * &lt;script type="text/javascript" src="../js/ajax.js&/chat/chat.js"&gt;&lt;/script&gt;
+ * &lt;script type="text/javascript" src="../js/ajax.js"&gt;&lt;/script&gt;
  * &lt;script type="text/javascript" src="../chat/chat.js"&gt;&lt;/script&gt;
  * </pre>
  * <p>can be replaced with the single tag (with the {@code ConcatServlet}
  * mapped to {@code /concat}):</p>
  * <pre>
- * &lt;script type="text/javascript" src="../concat?/js/behaviour.js&/js/ajax.js&/chat/chat.js"&gt;&lt;/script&gt;
+ * &lt;script type="text/javascript" src="../concat?/js/behaviour.js&amp;/js/ajax.js&amp;/chat/chat.js"&gt;&lt;/script&gt;
  * </pre>
  * <p>The {@link ServletContext#getMimeType(String)} method is used to determine the
  * mime type of each resource. If the types of all resources do not match, then a 415

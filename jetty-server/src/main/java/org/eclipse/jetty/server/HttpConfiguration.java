@@ -210,7 +210,7 @@ public class HttpConfiguration
      * to the total operation (as opposed to the idle timeout that applies to the time no 
      * data is being sent).
      * @return -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
-     * idle timeout; >0 for a timeout in ms applied to the total blocking operation.
+     * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
      */
     @ManagedAttribute("Timeout in MS for blocking operations.")
     public long getBlockingTimeout()
@@ -224,7 +224,7 @@ public class HttpConfiguration
      * to the total operation (as opposed to the idle timeout that applies to the time no 
      * data is being sent).
      * @param blockingTimeout -1, for no blocking timeout (default), 0 for a blocking timeout equal to the 
-     * idle timeout; >0 for a timeout in ms applied to the total blocking operation.
+     * idle timeout; &gt;0 for a timeout in ms applied to the total blocking operation.
      */
     public void setBlockingTimeout(long blockingTimeout)
     {
