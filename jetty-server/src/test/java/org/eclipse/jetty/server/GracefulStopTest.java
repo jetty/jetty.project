@@ -51,7 +51,7 @@ public class GracefulStopTest
     /**
      * Test of standard graceful timeout mechanism when a block request does
      * not complete
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void testGracefulNoWaiter() throws Exception
@@ -98,7 +98,7 @@ public class GracefulStopTest
     /**
      * Test of standard graceful timeout mechanism when a block request does
      * not complete
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void testGracefulTimeout() throws Exception
@@ -155,7 +155,7 @@ public class GracefulStopTest
      * Test of standard graceful timeout mechanism when a block request does
      * complete. Note that even though the request completes after 100ms, the
      * stop always takes 1000ms
-     * @throws Exception
+     * @throws Exception on test failure
      */
     @Test
     public void testGracefulComplete() throws Exception
