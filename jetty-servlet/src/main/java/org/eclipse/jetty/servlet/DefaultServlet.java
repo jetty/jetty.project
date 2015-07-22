@@ -453,6 +453,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         // Find the resource and content
         Resource resource=null;
         HttpContent content=null;
+        boolean close_content=true;
         try
         {
             // is gzip enabled?
@@ -530,7 +531,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                             if (mt!=null)
                                 response.setContentType(mt);
                         }
-                        sendData(request,response,included.booleanValue(),resource,content,reqRanges);
+                        close_content=sendData(request,response,included.booleanValue(),resource,content,reqRanges);
                     }
                 }
             }
@@ -605,10 +606,13 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
         }
         finally
         {
-            if (content!=null)
-                content.release();
-            else if (resource!=null)
-                resource.close();
+            if (close_content)
+            {
+                if (content!=null)
+                    content.release();
+                else if (resource!=null)
+                    resource.close();
+            }
         }
 
     }
@@ -856,11 +860,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
     }
 
     /* ------------------------------------------------------------ */
-    protected void sendData(HttpServletRequest request,
+    protected boolean sendData(HttpServletRequest request,
             HttpServletResponse response,
             boolean include,
             Resource resource,
-            HttpContent content,
+            final HttpContent content,
             Enumeration<String> reqRanges)
     throws IOException
     {
@@ -930,6 +934,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                         public void succeeded()
                         {   
                             context.complete();
+                            content.release();
                         }
 
                         @Override
@@ -940,6 +945,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                             else
                                 LOG.warn(x);
                             context.complete();
+                            content.release();
                         }
                         
                         @Override
@@ -948,12 +954,11 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                             return String.format("DefaultServlet@%x$CB", DefaultServlet.this.hashCode());
                         }
                     });
+                    return false;
                 }
                 // otherwise write content blocking
-                else
-                {
-                    ((HttpOutput)out).sendContent(content);
-                }
+                ((HttpOutput)out).sendContent(content);
+                
             }
         }
         else
@@ -969,7 +974,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         InclusiveByteRange.to416HeaderRangeString(content_length));
                 resource.writeTo(out,0,content_length);
-                return;
+                return true;
             }
 
             //  if there is only a single valid range (must be satisfiable
@@ -985,7 +990,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 response.setHeader(HttpHeader.CONTENT_RANGE.asString(),
                         singleSatisfiableRange.toHeaderRangeString(content_length));
                 resource.writeTo(out,singleSatisfiableRange.getFirst(content_length),singleLength);
-                return;
+                return true;
             }
 
             //  multiple non-overlapping valid ranges cause a multipart
@@ -1065,7 +1070,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 in.close();
             multi.close();
         }
-        return;
+        return true;
     }
 
     /* ------------------------------------------------------------ */
