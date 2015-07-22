@@ -38,8 +38,6 @@ import java.util.zip.ZipFile;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
-import org.hamcrest.Matchers;
-import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
 
@@ -345,21 +343,6 @@ public class ResourceTest
             assertEquals(last,r.lastModified());
         }
     }
-
-    /* ------------------------------------------------------------ */
-    @Test
-    public void testEncodeAddPath ()
-    throws Exception
-    {
-        Resource r;
-
-        r = Resource.newResource(__userURL+"TestData/").addPath("foo%/b r");
-        Assert.assertThat(r.getURI().toString(),Matchers.endsWith("/foo%25/b%20r"));
-        
-        r = Resource.newResource("jar:"+__userURL+"TestData/test.zip!/subdir/").addPath("foo%/b r");
-        Assert.assertThat(r.getURI().toString(),Matchers.endsWith("/foo%25/b%20r"));
-    }
-    
     
     /* ------------------------------------------------------------ */
     @Test
