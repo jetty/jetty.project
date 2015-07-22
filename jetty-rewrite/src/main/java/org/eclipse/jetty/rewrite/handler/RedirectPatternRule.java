@@ -28,7 +28,7 @@ import javax.servlet.http.HttpServletResponse;
  */
 public class RedirectPatternRule extends PatternRule
 {
-    private String _location;
+    protected String _location;
 
     /* ------------------------------------------------------------ */
     public RedirectPatternRule()

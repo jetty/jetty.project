@@ -19,47 +19,22 @@
 package org.eclipse.jetty.rewrite.handler;
 
 import java.io.IOException;
-import java.util.regex.Matcher;
 
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.rewrite.handler.RedirectPatternRule;
+
 /**
- * Redirects the response by matching with a regular expression.
- * The replacement string may use $n" to replace the nth capture group.
+ * Issues a 301 Moved Permanently Redirects to location if pattern matches
  */
-public class RedirectRegexRule extends RegexRule
+public class MovedPermanentlyPatternRule extends RedirectPatternRule
 {
-    protected String _replacement;
-    
-    public RedirectRegexRule()
-    {
-        _handling = true;
-        _terminating = true;
-    }
-
-    /**
-     * Whenever a match is found, it replaces with this value.
-     * 
-     * @param replacement the replacement string.
-     */
-    public void setReplacement(String replacement)
-    {
-        _replacement = replacement;
-    }
-    
     @Override
-    protected String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher)
-            throws IOException
+    public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        target=_replacement;
-        for (int g=1;g<=matcher.groupCount();g++)
-        {
-            String group = matcher.group(g);
-            target=target.replaceAll("\\$"+g,group);
-        }
-
-        response.sendRedirect(response.encodeRedirectURL(target));
+        response.setStatus(HttpServletResponse.SC_MOVED_PERMANENTLY);
+        response.setHeader("Location",response.encodeRedirectURL(_location));
         return target;
     }
 }
