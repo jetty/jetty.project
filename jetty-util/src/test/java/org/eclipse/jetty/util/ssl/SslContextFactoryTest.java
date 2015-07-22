@@ -28,6 +28,7 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
+import java.util.Arrays;
 
 import javax.net.ssl.SSLEngine;
 
@@ -204,13 +205,14 @@ public class SslContextFactoryTest
     @Test
     public void testSetIncludeCipherSuitesRegex() throws Exception
     {
-        cf.setIncludeCipherSuites(".*RC4.*");
+        Log.getLogger(SslContextFactory.class).setDebugEnabled(true);
+        cf.setIncludeCipherSuites(".*ECDHE.*",".*WIBBLE.*");
         cf.start();
         SSLEngine sslEngine = cf.newSSLEngine();
         String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
-        assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(0));
+        assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(1));
         for (String enabledCipherSuite : enabledCipherSuites)
-            assertThat("CipherSuite contains RC4", enabledCipherSuite.contains("RC4"), is(true));
+            assertThat("CipherSuite contains ECDHE", enabledCipherSuite.contains("ECDHE"), is(true));
     }
 
     @Test

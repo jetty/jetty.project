@@ -1247,19 +1247,22 @@ public class SslContextFactory extends AbstractLifeCycle
 
     protected void processIncludeCipherSuites(String[] supportedCipherSuites, List<String> selected_ciphers)
     {
-        ciphers: for (String cipherSuite : _includeCipherSuites)
+        for (String cipherSuite : _includeCipherSuites)
         {
             Pattern p = Pattern.compile(cipherSuite);
+            boolean added=false;
             for (String supportedCipherSuite : supportedCipherSuites)
             {
                 Matcher m = p.matcher(supportedCipherSuite);
                 if (m.matches())
                 {
+                    added=true;
                     selected_ciphers.add(supportedCipherSuite);
-                    continue ciphers;
                 }
+                
             }
-            LOG.info("Cipher {} not supported",cipherSuite);
+            if (!added)
+                LOG.info("No Cipher matching '{}' is supported",cipherSuite);
         }
     }
 
