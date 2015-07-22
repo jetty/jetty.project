@@ -247,7 +247,7 @@ public abstract class FlowControlStrategyTest
                 HttpFields fields = new HttpFields();
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, fields);
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, true);
-                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                stream.headers(responseFrame, Callback.NOOP);
 
                 return new Stream.Listener.Adapter()
                 {
@@ -263,7 +263,7 @@ public abstract class FlowControlStrategyTest
                             callbackRef.set(callback);
                             Map<Integer, Integer> settings = new HashMap<>();
                             settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, size);
-                            stream.getSession().settings(new SettingsFrame(settings, false), Callback.Adapter.INSTANCE);
+                            stream.getSession().settings(new SettingsFrame(settings, false), Callback.NOOP);
                             // Do not succeed the callback here.
                         }
                         else if (dataFrameCount > 1)
@@ -293,11 +293,11 @@ public abstract class FlowControlStrategyTest
         Stream stream = promise.get(5, TimeUnit.SECONDS);
 
         // Send first chunk that exceeds the window.
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), false), Callback.Adapter.INSTANCE);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), false), Callback.NOOP);
         settingsLatch.await(5, TimeUnit.SECONDS);
 
         // Send the second chunk of data, must not arrive since we're flow control stalled on the client.
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), true), Callback.Adapter.INSTANCE);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(size * 2), true), Callback.NOOP);
         Assert.assertFalse(dataLatch.await(1, TimeUnit.SECONDS));
 
         // Consume the data arrived to server, this will resume flow control on the client.
@@ -325,10 +325,10 @@ public abstract class FlowControlStrategyTest
             {
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
-                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                stream.headers(responseFrame, Callback.NOOP);
 
                 DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(length), true);
-                stream.data(dataFrame, Callback.Adapter.INSTANCE);
+                stream.data(dataFrame, Callback.NOOP);
                 return null;
             }
         });
@@ -337,7 +337,7 @@ public abstract class FlowControlStrategyTest
 
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, windowSize);
-        session.settings(new SettingsFrame(settings, false), Callback.Adapter.INSTANCE);
+        session.settings(new SettingsFrame(settings, false), Callback.NOOP);
 
         Assert.assertTrue(settingsLatch.await(5, TimeUnit.SECONDS));
 
@@ -417,7 +417,7 @@ public abstract class FlowControlStrategyTest
             {
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
-                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                stream.headers(responseFrame, Callback.NOOP);
                 return new Stream.Listener.Adapter()
                 {
                     private AtomicInteger dataFrames = new AtomicInteger();
@@ -474,7 +474,7 @@ public abstract class FlowControlStrategyTest
 
         final int length = 5 * windowSize;
         DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(length), true);
-        stream.data(dataFrame, Callback.Adapter.INSTANCE);
+        stream.data(dataFrame, Callback.NOOP);
 
         Callback callback = exchanger.exchange(null, 5, TimeUnit.SECONDS);
         checkThatWeAreFlowControlStalled(exchanger);
@@ -519,7 +519,7 @@ public abstract class FlowControlStrategyTest
                     // Send data to consume most of the session window.
                     ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE - windowSize);
                     DataFrame dataFrame = new DataFrame(stream.getId(), data, true);
-                    stream.data(dataFrame, Callback.Adapter.INSTANCE);
+                    stream.data(dataFrame, Callback.NOOP);
                     return null;
                 }
                 else
@@ -527,9 +527,9 @@ public abstract class FlowControlStrategyTest
                     // For every stream, send down half the window size of data.
                     MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                     HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
-                    stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                    stream.headers(responseFrame, Callback.NOOP);
                     DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.allocate(windowSize / 2), true);
-                    stream.data(dataFrame, Callback.Adapter.INSTANCE);
+                    stream.data(dataFrame, Callback.NOOP);
                     return null;
                 }
             }
@@ -615,9 +615,9 @@ public abstract class FlowControlStrategyTest
             {
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
-                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                stream.headers(responseFrame, Callback.NOOP);
                 DataFrame dataFrame = new DataFrame(stream.getId(), ByteBuffer.wrap(data), true);
-                stream.data(dataFrame, Callback.Adapter.INSTANCE);
+                stream.data(dataFrame, Callback.NOOP);
                 return null;
             }
         });
@@ -675,8 +675,8 @@ public abstract class FlowControlStrategyTest
             @Override
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
-                stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(chunk1), false), Callback.Adapter.INSTANCE);
-                stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(chunk2), true), Callback.Adapter.INSTANCE);
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(chunk1), false), Callback.NOOP);
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(chunk2), true), Callback.NOOP);
                 dataLatch.countDown();
                 return null;
             }
@@ -685,7 +685,7 @@ public abstract class FlowControlStrategyTest
         Session session = newClient(new Session.Listener.Adapter());
         Map<Integer, Integer> settings = new HashMap<>();
         settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, 0);
-        session.settings(new SettingsFrame(settings, false), Callback.Adapter.INSTANCE);
+        session.settings(new SettingsFrame(settings, false), Callback.NOOP);
         Assert.assertTrue(settingsLatch.get().await(5, TimeUnit.SECONDS));
 
         byte[] content = new byte[chunk1.length + chunk2.length];
@@ -712,7 +712,7 @@ public abstract class FlowControlStrategyTest
         settingsLatch.set(new CountDownLatch(1));
         settings.clear();
         settings.put(SettingsFrame.INITIAL_WINDOW_SIZE, chunk1.length / 2);
-        session.settings(new SettingsFrame(settings, false), Callback.Adapter.INSTANCE);
+        session.settings(new SettingsFrame(settings, false), Callback.NOOP);
         Assert.assertTrue(settingsLatch.get().await(5, TimeUnit.SECONDS));
 
         Assert.assertTrue(responseLatch.await(5, TimeUnit.SECONDS));
@@ -734,7 +734,7 @@ public abstract class FlowControlStrategyTest
             {
                 MetaData metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, false);
-                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                stream.headers(responseFrame, Callback.NOOP);
                 return new Stream.Listener.Adapter()
                 {
                     @Override
@@ -787,7 +787,7 @@ public abstract class FlowControlStrategyTest
 
         ByteBuffer requestContent = ByteBuffer.wrap(requestData);
         DataFrame dataFrame = new DataFrame(stream.getId(), requestContent, true);
-        stream.data(dataFrame, Callback.Adapter.INSTANCE);
+        stream.data(dataFrame, Callback.NOOP);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
 
@@ -820,7 +820,7 @@ public abstract class FlowControlStrategyTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, false), new Callback.Adapter()
+        stream.data(new DataFrame(stream.getId(), data, false), new Callback.NonBlocking()
         {
             @Override
             public void succeeded()
@@ -845,7 +845,7 @@ public abstract class FlowControlStrategyTest
         ByteBuffer extraData = ByteBuffer.allocate(1024);
         http2Session.getGenerator().data(lease, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
         List<ByteBuffer> buffers = lease.getByteBuffers();
-        http2Session.getEndPoint().write(Callback.Adapter.INSTANCE, buffers.toArray(new ByteBuffer[buffers.size()]));
+        http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[buffers.size()]));
 
         // Expect the connection to be closed.
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
@@ -885,7 +885,7 @@ public abstract class FlowControlStrategyTest
         Stream stream = streamPromise.get(5, TimeUnit.SECONDS);
         ByteBuffer data = ByteBuffer.allocate(FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, false), new Callback.Adapter()
+        stream.data(new DataFrame(stream.getId(), data, false), new Callback.NonBlocking()
         {
             @Override
             public void succeeded()
@@ -906,7 +906,7 @@ public abstract class FlowControlStrategyTest
         ByteBuffer extraData = ByteBuffer.allocate(1024);
         http2Session.getGenerator().data(lease, new DataFrame(stream.getId(), extraData, true), extraData.remaining());
         List<ByteBuffer> buffers = lease.getByteBuffers();
-        http2Session.getEndPoint().write(Callback.Adapter.INSTANCE, buffers.toArray(new ByteBuffer[buffers.size()]));
+        http2Session.getEndPoint().write(Callback.NOOP, buffers.toArray(new ByteBuffer[buffers.size()]));
 
         // Expect the connection to be closed.
         Assert.assertTrue(closeLatch.await(5, TimeUnit.SECONDS));
@@ -936,7 +936,7 @@ public abstract class FlowControlStrategyTest
                         // stream is reset, and automatically consumed to
                         // keep the session window large for other streams.
                         callback.failed(new Throwable());
-                        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+                        stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
                     }
                 };
             }
@@ -960,7 +960,7 @@ public abstract class FlowControlStrategyTest
         // Perform a big upload that will stall the flow control windows.
         ByteBuffer data = ByteBuffer.allocate(5 * FlowControlStrategy.DEFAULT_WINDOW_SIZE);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), data, true), new Callback.Adapter()
+        stream.data(new DataFrame(stream.getId(), data, true), new Callback.NonBlocking()
         {
             @Override
             public void failed(Throwable x)

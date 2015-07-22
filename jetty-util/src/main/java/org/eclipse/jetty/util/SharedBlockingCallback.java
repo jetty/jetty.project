@@ -124,6 +124,9 @@ public class SharedBlockingCallback
     /**
      * A Closeable Callback.
      * Uses the auto close mechanism to check block has been called OK.
+     * <p>Implements {@link Callback.NonBlocking} because calls to this
+     * callback do not blocak, rather they wakeup the thread that is blocked
+     * in {@link #block()}
      */
     public class Blocker implements Callback.NonBlocking, Closeable
     {
@@ -132,7 +135,7 @@ public class SharedBlockingCallback
         protected Blocker()
         {
         }
-
+        
         @Override
         public void succeeded()
         {

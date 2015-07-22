@@ -691,7 +691,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         try (DeferredContentProvider content = new DeferredContentProvider())
         {
             // Make the content immediately available.
-            content.offer(ByteBuffer.allocate(1024), new Callback.Adapter()
+            content.offer(ByteBuffer.allocate(1024), new Callback()
             {
                 @Override
                 public void succeeded()
@@ -976,7 +976,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
         start(new EmptyServerHandler());
 
         final CountDownLatch failLatch = new CountDownLatch(2);
-        final Callback.Adapter callback = new Callback.Adapter()
+        final Callback callback = new Callback()
         {
             @Override
             public void failed(Throwable x)
@@ -1014,7 +1014,7 @@ public class HttpClientStreamTest extends AbstractHttpClientServerTest
 
         // Make sure that adding more content results in the callback to be failed.
         final CountDownLatch latch = new CountDownLatch(1);
-        content.offer(ByteBuffer.wrap(new byte[128]), new Callback.Adapter()
+        content.offer(ByteBuffer.wrap(new byte[128]), new Callback()
         {
             @Override
             public void failed(Throwable x)

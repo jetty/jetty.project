@@ -55,7 +55,7 @@ public class HTTP2ClientSession extends HTTP2Session
         }
         else
         {
-            stream.process(frame, Callback.Adapter.INSTANCE);
+            stream.process(frame, Callback.NOOP);
             notifyHeaders(stream, frame);
         }
     }
@@ -92,7 +92,7 @@ public class HTTP2ClientSession extends HTTP2Session
         else
         {
             IStream pushStream = createRemoteStream(pushStreamId);
-            pushStream.process(frame, Callback.Adapter.INSTANCE);
+            pushStream.process(frame, Callback.NOOP);
             Stream.Listener listener = notifyPush(stream, pushStream, frame);
             pushStream.setListener(listener);
         }

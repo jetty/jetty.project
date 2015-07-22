@@ -84,7 +84,7 @@ public class SessionFailureTest extends AbstractTest
                 // Forcibly close the connection.
                 ((HTTP2Session)stream.getSession()).getEndPoint().close();
                 // Now try to write something: it should fail.
-                stream.headers(frame, new Callback.Adapter()
+                stream.headers(frame, new Callback()
                 {
                     @Override
                     public void failed(Throwable x)

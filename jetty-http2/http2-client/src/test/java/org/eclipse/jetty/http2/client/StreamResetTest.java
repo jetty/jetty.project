@@ -102,7 +102,7 @@ public class StreamResetTest extends AbstractTest
         client.newStream(requestFrame, promise, new Stream.Listener.Adapter());
         Stream stream = promise.get(5, TimeUnit.SECONDS);
         ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code);
-        stream.reset(resetFrame, Callback.Adapter.INSTANCE);
+        stream.reset(resetFrame, Callback.NOOP);
 
         Assert.assertTrue(resetLatch.await(5, TimeUnit.SECONDS));
 
@@ -126,14 +126,14 @@ public class StreamResetTest extends AbstractTest
             {
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), response, null, false);
-                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                stream.headers(responseFrame, Callback.NOOP);
                 return new Stream.Listener.Adapter()
                 {
                     @Override
                     public void onData(Stream stream, DataFrame frame, Callback callback)
                     {
                         callback.succeeded();
-                        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.Adapter.INSTANCE);
+                        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
                         serverDataLatch.countDown();
                     }
 
@@ -141,7 +141,7 @@ public class StreamResetTest extends AbstractTest
                     public void onReset(Stream stream, ResetFrame frame)
                     {
                         // Simulate that there is pending data to send.
-                        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback.Adapter()
+                        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), new Callback()
                         {
                             @Override
                             public void failed(Throwable x)
@@ -192,14 +192,14 @@ public class StreamResetTest extends AbstractTest
         Stream stream2 = promise2.get(5, TimeUnit.SECONDS);
 
         ResetFrame resetFrame = new ResetFrame(stream1.getId(), ErrorCode.CANCEL_STREAM_ERROR.code);
-        stream1.reset(resetFrame, Callback.Adapter.INSTANCE);
+        stream1.reset(resetFrame, Callback.NOOP);
 
         Assert.assertTrue(serverResetLatch.await(5, TimeUnit.SECONDS));
         // Stream MUST NOT receive data sent by server after reset.
         Assert.assertFalse(stream1DataLatch.await(1, TimeUnit.SECONDS));
 
         // The other stream should still be working.
-        stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(16), true), Callback.Adapter.INSTANCE);
+        stream2.data(new DataFrame(stream2.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
         Assert.assertTrue(serverDataLatch.await(5, TimeUnit.SECONDS));
         Assert.assertTrue(stream2DataLatch.await(5, TimeUnit.SECONDS));
     }
@@ -262,7 +262,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
                 resetLatch.countDown();
             }
         });
@@ -314,7 +314,7 @@ public class StreamResetTest extends AbstractTest
                             Thread.sleep(1000);
 
                             HttpOutput output = (HttpOutput)response.getOutputStream();
-                            output.sendContent(data, new Callback.Adapter()
+                            output.sendContent(data, new Callback()
                             {
                                 @Override
                                 public void failed(Throwable x)
@@ -341,7 +341,7 @@ public class StreamResetTest extends AbstractTest
             @Override
             public void onHeaders(Stream stream, HeadersFrame frame)
             {
-                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+                stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
                 resetLatch.countDown();
             }
         });

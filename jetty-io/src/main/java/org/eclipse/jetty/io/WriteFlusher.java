@@ -271,7 +271,7 @@ abstract public class WriteFlusher
         
         boolean isCallbackNonBlocking()
         {
-            return _callback instanceof Callback.NonBlocking;
+            return _callback.isNonBlocking();
         }
     }
 

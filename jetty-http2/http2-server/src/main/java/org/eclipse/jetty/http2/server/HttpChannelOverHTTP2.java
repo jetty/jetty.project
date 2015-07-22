@@ -165,6 +165,12 @@ public class HttpChannelOverHTTP2 extends HttpChannel
         boolean handle = onContent(new HttpInput.Content(copy)
         {
             @Override
+            public boolean isNonBlocking()
+            {
+                return callback.isNonBlocking();
+            }
+            
+            @Override
             public void succeeded()
             {
                 byteBufferPool.release(copy);

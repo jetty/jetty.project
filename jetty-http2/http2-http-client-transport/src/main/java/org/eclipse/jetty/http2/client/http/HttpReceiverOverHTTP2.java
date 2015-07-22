@@ -80,7 +80,7 @@ public class HttpReceiverOverHTTP2 extends HttpReceiver implements Stream.Listen
     public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
     {
         // Not supported.
-        stream.reset(new ResetFrame(stream.getId(), ErrorCode.REFUSED_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+        stream.reset(new ResetFrame(stream.getId(), ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
         return null;
     }
 

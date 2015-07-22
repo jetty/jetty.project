@@ -161,7 +161,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         {
             if (getRecvWindow() < 0)
             {
-                close(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", Callback.Adapter.INSTANCE);
+                close(ErrorCode.FLOW_CONTROL_ERROR.code, "session_window_exceeded", Callback.NOOP);
             }
             else
             {
@@ -209,7 +209,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
 
         IStream stream = getStream(frame.getStreamId());
         if (stream != null)
-            stream.process(frame, Callback.Adapter.INSTANCE);
+            stream.process(frame, Callback.NOOP);
         else
             notifyReset(this, frame);
     }
@@ -296,7 +296,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         if (reply)
         {
             SettingsFrame replyFrame = new SettingsFrame(Collections.<Integer, Integer>emptyMap(), true);
-            settings(replyFrame, Callback.Adapter.INSTANCE);
+            settings(replyFrame, Callback.NOOP);
         }
     }
 
@@ -312,7 +312,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         else
         {
             PingFrame reply = new PingFrame(frame.getPayload(), true);
-            control(null, Callback.Adapter.INSTANCE, reply);
+            control(null, Callback.NOOP, reply);
         }
     }
 
@@ -399,7 +399,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
     @Override
     public void onConnectionFailure(int error, String reason)
     {
-        close(error, reason, Callback.Adapter.INSTANCE);
+        close(error, reason, Callback.NOOP);
         notifyFailure(this, new IOException(String.format("%d/%s", error, reason)));
     }
 
@@ -619,7 +619,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             int maxCount = getMaxRemoteStreams();
             if (maxCount >= 0 && remoteCount >= maxCount)
             {
-                reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+                reset(new ResetFrame(streamId, ErrorCode.REFUSED_STREAM_ERROR.code), Callback.NOOP);
                 return null;
             }
             if (remoteStreamCount.compareAndSet(remoteCount, remoteCount + 1))
@@ -640,7 +640,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
         }
         else
         {
-            close(ErrorCode.PROTOCOL_ERROR.code, "duplicate_stream", Callback.Adapter.INSTANCE);
+            close(ErrorCode.PROTOCOL_ERROR.code, "duplicate_stream", Callback.NOOP);
             return null;
         }
     }
@@ -783,7 +783,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             {
                 // We have closed locally, and only shutdown
                 // the output; now queue a disconnect.
-                control(null, Callback.Adapter.INSTANCE, new DisconnectFrame());
+                control(null, Callback.NOOP, new DisconnectFrame());
                 break;
             }
             case REMOTELY_CLOSED:
@@ -827,7 +827,7 @@ public abstract class HTTP2Session implements ISession, Parser.Listener
             case NOT_CLOSED:
             {
                 // Real idle timeout, just close.
-                close(ErrorCode.NO_ERROR.code, "idle_timeout", Callback.Adapter.INSTANCE);
+                close(ErrorCode.NO_ERROR.code, "idle_timeout", Callback.NOOP);
                 break;
             }
             case LOCALLY_CLOSED:

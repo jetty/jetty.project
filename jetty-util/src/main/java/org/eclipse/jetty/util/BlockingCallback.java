@@ -30,7 +30,8 @@ import org.eclipse.jetty.util.log.Logger;
 /**
  * An implementation of Callback that blocks until success or failure.
  */
-public class BlockingCallback implements Callback
+@Deprecated
+public class BlockingCallback implements Callback.NonBlocking
 {
     private static final Logger LOG = Log.getLogger(BlockingCallback.class);
     private static Throwable SUCCEEDED = new Throwable()

@@ -194,7 +194,7 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         {
             // If the stream is not closed, it is still reading the request content.
             // Send a reset to the other end so that it stops sending data.
-            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
             // Now that this stream is reset, in-flight data frames will be consumed and discarded.
             // Consume the existing queued data frames to avoid stalling the flow control.
             HttpChannel channel = (HttpChannel)stream.getAttribute(IStream.CHANNEL_ATTRIBUTE);
@@ -209,11 +209,11 @@ public class HttpTransportOverHTTP2 implements HttpTransport
         if (LOG.isDebugEnabled())
             LOG.debug("HTTP2 Response #{} aborted", stream == null ? -1 : stream.getId());
         if (stream != null)
-            stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.Adapter.INSTANCE);
+            stream.reset(new ResetFrame(stream.getId(), ErrorCode.INTERNAL_ERROR.code), Callback.NOOP);
     }
 
-    private class CommitCallback implements Callback
-    {
+    private class CommitCallback implements Callback.NonBlocking
+    {   
         @Override
         public void succeeded()
         {

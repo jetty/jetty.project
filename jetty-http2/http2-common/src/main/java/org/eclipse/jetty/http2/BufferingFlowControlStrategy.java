@@ -138,7 +138,7 @@ public class BufferingFlowControlStrategy extends AbstractFlowControlStrategy
         }
 
         if (windowFrame != null)
-            session.frames(stream, Callback.Adapter.INSTANCE, windowFrame, windowFrames);
+            session.frames(stream, Callback.NOOP, windowFrame, windowFrames);
     }
 
     @Override

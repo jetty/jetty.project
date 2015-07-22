@@ -258,7 +258,7 @@ public class AsyncMiddleManServlet extends AbstractProxyServlet
         {
             if (!provider.isClosed())
             {
-                process(BufferUtil.EMPTY_BUFFER, new Adapter()
+                process(BufferUtil.EMPTY_BUFFER, new Callback()
                 {
                     @Override
                     public void failed(Throwable x)

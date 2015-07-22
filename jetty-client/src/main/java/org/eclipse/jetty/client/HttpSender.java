@@ -672,6 +672,13 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
     private class CommitCallback implements Callback
     {
+
+        @Override
+        public boolean isNonBlocking()
+        {
+            return content.isNonBlocking();
+        }
+        
         @Override
         public void succeeded()
         {
@@ -882,6 +889,12 @@ public abstract class HttpSender implements AsyncContentProvider.Listener
 
     private class LastContentCallback implements Callback
     {
+        @Override
+        public boolean isNonBlocking()
+        {
+            return content.isNonBlocking();
+        }
+        
         @Override
         public void succeeded()
         {

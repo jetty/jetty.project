@@ -43,44 +43,53 @@ package org.eclipse.jetty.util;
 public interface Callback
 {
     /**
+     * Instance of Adapter that can be used when the callback methods need an empty
+     * implementation without incurring in the cost of allocating a new Adapter object.
+     */
+    static Callback NOOP = new Callback(){};
+
+
+    /**
      * <p>Callback invoked when the operation completes.</p>
      *
      * @see #failed(Throwable)
      */
-    public abstract void succeeded();
+    default void succeeded()
+    {}
 
     /**
      * <p>Callback invoked when the operation fails.</p>
      * @param x the reason for the operation failure
      */
-    public void failed(Throwable x);
+    default void failed(Throwable x)
+    {}
 
     /**
-     * A marker interface for a callback that is guaranteed not to
-     * block and thus does not need a dispatch
+     * @return True if the callback is known to never block the caller
      */
-    public interface NonBlocking extends Callback
-    {}
+    default boolean isNonBlocking()
+    {
+        return false;
+    }
+    
+    
+    /**
+     * Callback interface that declares itself as non-blocking
+     */
+    interface NonBlocking extends Callback
+    {
+        @Override
+        public default boolean isNonBlocking()
+        {
+            return true;
+        }
+    }
+    
     
     /**
      * <p>Empty implementation of {@link Callback}</p>
      */
-    public static class Adapter implements Callback
-    {
-        /**
-         * Instance of Adapter that can be used when the callback methods need an empty
-         * implementation without incurring in the cost of allocating a new Adapter object.
-         */
-        public static final Adapter INSTANCE = new Adapter();
-
-        @Override
-        public void succeeded()
-        {
-        }
-
-        @Override
-        public void failed(Throwable x)
-        {
-        }
-    }
+    @Deprecated
+    static class Adapter implements Callback
+    {}
 }

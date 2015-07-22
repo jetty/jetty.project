@@ -539,7 +539,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         }
     }
 
-    private class BlockingReadCallback implements Callback.NonBlocking
+    private class BlockingReadCallback implements Callback
     {
         @Override
         public void succeeded()
@@ -551,6 +551,14 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         public void failed(Throwable x)
         {
             _input.failed(x);
+        }
+        
+        @Override
+        public boolean isNonBlocking()
+        {
+            // This callback does not block, rather it wakes up the
+            // thread that is blocked waiting on the read.
+            return true;
         }
     }
 
@@ -588,6 +596,12 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             super(true);
         }
 
+        @Override
+        public boolean isNonBlocking()
+        {
+            return _callback.isNonBlocking();
+        }
+        
         private boolean reset(MetaData.Response info, boolean head, ByteBuffer content, boolean last, Callback callback)
         {
             if (reset())
@@ -743,7 +757,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
         }
-
+        
         @Override
         public String toString()
         {

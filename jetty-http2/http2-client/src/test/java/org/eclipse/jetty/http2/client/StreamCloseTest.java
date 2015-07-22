@@ -80,7 +80,7 @@ public class StreamCloseTest extends AbstractTest
             {
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, true);
-                stream.headers(response, new Callback.Adapter()
+                stream.headers(response, new Callback()
                 {
                     @Override
                     public void succeeded()
@@ -122,14 +122,14 @@ public class StreamCloseTest extends AbstractTest
             {
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame response = new HeadersFrame(stream.getId(), metaData, null, false);
-                stream.headers(response, Callback.Adapter.INSTANCE);
+                stream.headers(response, Callback.NOOP);
                 return new Stream.Listener.Adapter()
                 {
                     @Override
                     public void onData(final Stream stream, DataFrame frame, final Callback callback)
                     {
                         Assert.assertTrue(((HTTP2Stream)stream).isRemotelyClosed());
-                        stream.data(frame, new Callback.Adapter()
+                        stream.data(frame, new Callback()
                         {
                             @Override
                             public void succeeded()
@@ -163,7 +163,7 @@ public class StreamCloseTest extends AbstractTest
         Assert.assertFalse(((HTTP2Stream)stream).isLocallyClosed());
 
         final CountDownLatch clientDataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(new byte[512]), true), new Callback.Adapter()
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.wrap(new byte[512]), true), new Callback()
         {
             @Override
             public void succeeded()
@@ -198,7 +198,7 @@ public class StreamCloseTest extends AbstractTest
                         // When created, pushed stream must be implicitly remotely closed.
                         Assert.assertTrue(((HTTP2Stream)pushedStream).isRemotelyClosed());
                         // Send some data with endStream = true.
-                        pushedStream.data(new DataFrame(pushedStream.getId(), ByteBuffer.allocate(16), true), new Callback.Adapter()
+                        pushedStream.data(new DataFrame(pushedStream.getId(), ByteBuffer.allocate(16), true), new Callback()
                         {
                             @Override
                             public void succeeded()
@@ -210,7 +210,7 @@ public class StreamCloseTest extends AbstractTest
                     }
                 }, new Stream.Listener.Adapter());
                 HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields()), null, true);
-                stream.headers(response, Callback.Adapter.INSTANCE);
+                stream.headers(response, Callback.NOOP);
                 return null;
             }
         });
@@ -259,7 +259,7 @@ public class StreamCloseTest extends AbstractTest
                         Assert.assertTrue(pushedStream.isReset());
                         Assert.assertTrue(pushedStream.isClosed());
                         HeadersFrame response = new HeadersFrame(stream.getId(), new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields()), null, true);
-                        stream.headers(response, Callback.Adapter.INSTANCE);
+                        stream.headers(response, Callback.NOOP);
                         serverLatch.countDown();
                     }
                 });
@@ -275,7 +275,7 @@ public class StreamCloseTest extends AbstractTest
             @Override
             public Stream.Listener onPush(final Stream pushedStream, PushPromiseFrame frame)
             {
-                pushedStream.reset(new ResetFrame(pushedStream.getId(), ErrorCode.REFUSED_STREAM_ERROR.code), new Callback.Adapter()
+                pushedStream.reset(new ResetFrame(pushedStream.getId(), ErrorCode.REFUSED_STREAM_ERROR.code), new Callback()
                 {
                     @Override
                     public void succeeded()
@@ -315,7 +315,7 @@ public class StreamCloseTest extends AbstractTest
                 {
                     ((HTTP2Session)stream.getSession()).getEndPoint().close();
                     // Try to write something to force an error.
-                    stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1024), true), Callback.Adapter.INSTANCE);
+                    stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1024), true), Callback.NOOP);
                 }
                 return null;
             }

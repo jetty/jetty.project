@@ -105,7 +105,7 @@ public class HttpTransportOverFCGI implements HttpTransport
         {
             if (lastContent)
             {
-                Generator.Result headersResult = generateResponseHeaders(info, Callback.Adapter.INSTANCE);
+                Generator.Result headersResult = generateResponseHeaders(info, Callback.NOOP);
                 Generator.Result contentResult = generateResponseContent(BufferUtil.EMPTY_BUFFER, true, callback);
                 flusher.flush(headersResult, contentResult);
             }
@@ -117,7 +117,7 @@ public class HttpTransportOverFCGI implements HttpTransport
         }
         else
         {
-            Generator.Result headersResult = generateResponseHeaders(info, Callback.Adapter.INSTANCE);
+            Generator.Result headersResult = generateResponseHeaders(info, Callback.NOOP);
             Generator.Result contentResult = generateResponseContent(content, lastContent, callback);
             flusher.flush(headersResult, contentResult);
         }

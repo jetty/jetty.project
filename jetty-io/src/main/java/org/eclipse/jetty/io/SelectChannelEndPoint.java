@@ -53,10 +53,63 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
      */
     private int _desiredInterestOps;
 
-    private final Runnable _runUpdateKey = new Runnable() { public void run() { updateKey(); } };
-    private final Runnable _runFillable = new Runnable() { public void run() { getFillInterest().fillable(); } };
-    private final Runnable _runCompleteWrite = new Runnable() { public void run() { getWriteFlusher().completeWrite(); } };
-    private final Runnable _runFillableCompleteWrite = new Runnable() { public void run() {  getFillInterest().fillable(); getWriteFlusher().completeWrite(); } };
+    private final Runnable _runUpdateKey = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            updateKey();
+        }
+
+        @Override
+        public String toString()
+        {
+            return SelectChannelEndPoint.this.toString()+":runUpdateKey";
+        }
+    };
+    private final Runnable _runFillable = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            getFillInterest().fillable();
+        }
+
+        @Override
+        public String toString()
+        {
+            return SelectChannelEndPoint.this.toString()+":runFillable";
+        }
+    };
+    private final Runnable _runCompleteWrite = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            getWriteFlusher().completeWrite();
+        }
+
+        @Override
+        public String toString()
+        {
+            return SelectChannelEndPoint.this.toString()+":runCompleteWrite";
+        }
+    };
+    private final Runnable _runFillableCompleteWrite = new Runnable()
+    {
+        @Override
+        public void run()
+        {
+            getFillInterest().fillable();
+            getWriteFlusher().completeWrite();
+        }
+
+        @Override
+        public String toString()
+        {
+            return SelectChannelEndPoint.this.toString()+":runFillableCompleteWrite";
+        }
+    };
 
     public SelectChannelEndPoint(SocketChannel channel, ManagedSelector selector, SelectionKey key, Scheduler scheduler, long idleTimeout)
     {
@@ -97,12 +150,14 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
             _desiredInterestOps = newInterestOps;
         }
 
-        if (LOG.isDebugEnabled())
-            LOG.debug("onSelected {}->{} for {}", oldInterestOps, newInterestOps, this);
 
         boolean readable = (readyOps & SelectionKey.OP_READ) != 0;
         boolean writable = (readyOps & SelectionKey.OP_WRITE) != 0;
 
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("onSelected {}->{} r={} w={} for {}", oldInterestOps, newInterestOps, readable, writable, this);
+        
         // Run non-blocking code immediately.
         // This producer knows that this non-blocking code is special
         // and that it must be run in this thread and not fed to the
@@ -110,18 +165,26 @@ public class SelectChannelEndPoint extends ChannelEndPoint implements ManagedSel
         // tasks (or it may starve forever just after having run them).
         if (readable && getFillInterest().isCallbackNonBlocking())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Direct readable run {}",this);
             _runFillable.run();
             readable = false;
         }
         if (writable && getWriteFlusher().isCallbackNonBlocking())
         {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Direct writable run {}",this);
             _runCompleteWrite.run();
             writable = false;
         }
 
         // return task to complete the job
-        return readable ? (writable ? _runFillableCompleteWrite : _runFillable)
-                        : (writable ? _runCompleteWrite : null);
+        Runnable task= readable ? (writable ? _runFillableCompleteWrite : _runFillable)
+                : (writable ? _runCompleteWrite : null);
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("task {}",task);
+        return task;
     }
 
     @Override

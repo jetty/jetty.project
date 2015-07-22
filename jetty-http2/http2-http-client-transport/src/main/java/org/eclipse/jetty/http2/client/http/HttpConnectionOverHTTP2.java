@@ -65,7 +65,7 @@ public class HttpConnectionOverHTTP2 extends HttpConnection
         // First close then abort, to be sure that the connection cannot be reused
         // from an onFailure() handler or by blocking code waiting for completion.
         getHttpDestination().close(this);
-        session.close(ErrorCode.NO_ERROR.code, null, Callback.Adapter.INSTANCE);
+        session.close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
         abort(new AsynchronousCloseException());
     }
 

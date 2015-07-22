@@ -62,7 +62,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             settings = Collections.emptyMap();
         SettingsFrame frame = new SettingsFrame(settings, false);
         // TODO: consider sending a WINDOW_UPDATE to enlarge the session send window of the client.
-        frames(null, Callback.Adapter.INSTANCE, frame, Frame.EMPTY_ARRAY);
+        frames(null, Callback.NOOP, frame, Frame.EMPTY_ARRAY);
     }
 
     @Override
@@ -74,7 +74,7 @@ public class HTTP2ServerSession extends HTTP2Session implements ServerParser.Lis
             IStream stream = createRemoteStream(frame.getStreamId());
             if (stream != null)
             {
-                stream.process(frame, Callback.Adapter.INSTANCE);
+                stream.process(frame, Callback.NOOP);
                 Stream.Listener listener = notifyNewStream(stream, frame);
                 stream.setListener(listener);
             }

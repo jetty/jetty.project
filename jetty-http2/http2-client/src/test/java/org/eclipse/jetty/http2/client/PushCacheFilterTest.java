@@ -205,7 +205,7 @@ public class PushCacheFilterTest extends AbstractTest
             {
                 // Reset the stream as soon as we see the push.
                 ResetFrame resetFrame = new ResetFrame(stream.getId(), ErrorCode.REFUSED_STREAM_ERROR.code);
-                stream.reset(resetFrame, Callback.Adapter.INSTANCE);
+                stream.reset(resetFrame, Callback.NOOP);
                 return new Adapter()
                 {
                     @Override

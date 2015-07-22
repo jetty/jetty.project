@@ -160,7 +160,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         close();
 
         // Tell the other peer that we timed out.
-        reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.Adapter.INSTANCE);
+        reset(new ResetFrame(getId(), ErrorCode.CANCEL_STREAM_ERROR.code), Callback.NOOP);
 
         // Notify the application.
         notifyTimeout(this, timeout);
@@ -238,7 +238,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         {
             // It's a bad client, it does not deserve to be
             // treated gently by just resetting the stream.
-            session.close(ErrorCode.FLOW_CONTROL_ERROR.code, "stream_window_exceeded", Callback.Adapter.INSTANCE);
+            session.close(ErrorCode.FLOW_CONTROL_ERROR.code, "stream_window_exceeded", Callback.NOOP);
             callback.failed(new IOException("stream_window_exceeded"));
             return;
         }
@@ -246,7 +246,7 @@ public class HTTP2Stream extends IdleTimeout implements IStream
         // SPEC: remotely closed streams must be replied with a reset.
         if (isRemotelyClosed())
         {
-            reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.Adapter.INSTANCE);
+            reset(new ResetFrame(streamId, ErrorCode.STREAM_CLOSED_ERROR.code), Callback.NOOP);
             callback.failed(new EOFException("stream_closed"));
             return;
         }

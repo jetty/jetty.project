@@ -231,6 +231,12 @@ public class HttpSenderOverHTTP extends HttpSender
         }
 
         @Override
+        public boolean isNonBlocking()
+        {
+            return callback.isNonBlocking();
+        }
+
+        @Override
         public void succeeded()
         {
             for (ByteBuffer buffer : buffers)

@@ -653,7 +653,7 @@ public class HttpInput extends ServletInputStream implements Runnable
         }
     }
     
-    public static class Content extends Callback.Adapter
+    public static class Content implements Callback
     {
         private final ByteBuffer _content;
         
@@ -661,6 +661,13 @@ public class HttpInput extends ServletInputStream implements Runnable
         {
             _content=content;
         }
+        
+        @Override
+        public boolean isNonBlocking()
+        {
+            return true;
+        }
+        
         
         public ByteBuffer getContent()
         {

@@ -65,7 +65,7 @@ public class IdleTimeoutTest extends AbstractTest
                 stream.setIdleTimeout(10 * idleTimeout);
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
-                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                stream.headers(responseFrame, Callback.NOOP);
                 return null;
             }
         });
@@ -154,7 +154,7 @@ public class IdleTimeoutTest extends AbstractTest
                 sleep(idleTimeout + idleTimeout / 2);
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
-                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                stream.headers(responseFrame, Callback.NOOP);
                 return null;
             }
         });
@@ -207,7 +207,7 @@ public class IdleTimeoutTest extends AbstractTest
                 stream.setIdleTimeout(10 * idleTimeout);
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
-                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                stream.headers(responseFrame, Callback.NOOP);
                 return null;
             }
 
@@ -285,7 +285,7 @@ public class IdleTimeoutTest extends AbstractTest
                 stream.setIdleTimeout(10 * idleTimeout);
                 MetaData.Response metaData = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
                 HeadersFrame responseFrame = new HeadersFrame(stream.getId(), metaData, null, true);
-                stream.headers(responseFrame, Callback.Adapter.INSTANCE);
+                stream.headers(responseFrame, Callback.NOOP);
                 return null;
             }
 
@@ -452,7 +452,7 @@ public class IdleTimeoutTest extends AbstractTest
 
         sleep(idleTimeout / 2);
         final CountDownLatch dataLatch = new CountDownLatch(1);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), new Callback.Adapter()
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), new Callback()
         {
             private int sends;
 
@@ -461,7 +461,7 @@ public class IdleTimeoutTest extends AbstractTest
             {
                 sleep(idleTimeout / 2);
                 final boolean last = ++sends == 2;
-                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), last), !last ? this : new Adapter()
+                stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), last), !last ? this : new Callback.NonBlocking()
                 {
                     @Override
                     public void succeeded()
@@ -486,7 +486,7 @@ public class IdleTimeoutTest extends AbstractTest
             public Stream.Listener onNewStream(Stream stream, HeadersFrame frame)
             {
                 MetaData.Response response = new MetaData.Response(HttpVersion.HTTP_2, 200, new HttpFields());
-                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.Adapter.INSTANCE);
+                stream.headers(new HeadersFrame(stream.getId(), response, null, true), Callback.NOOP);
                 return null;
             }
 
@@ -513,11 +513,11 @@ public class IdleTimeoutTest extends AbstractTest
         final Stream stream = promise.get(5, TimeUnit.SECONDS);
 
         sleep(idleTimeout / 2);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.Adapter.INSTANCE);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
         sleep(idleTimeout / 2);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.Adapter.INSTANCE);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
         sleep(idleTimeout / 2);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.Adapter.INSTANCE);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
 
         Assert.assertFalse(resetLatch.await(0, TimeUnit.SECONDS));
     }

@@ -157,7 +157,7 @@ public class HttpClientFailureTest
 
         Assert.assertTrue(commitLatch.await(5, TimeUnit.SECONDS));
         final CountDownLatch contentLatch = new CountDownLatch(1);
-        content.offer(ByteBuffer.allocate(1024), new Callback.Adapter()
+        content.offer(ByteBuffer.allocate(1024), new Callback()
         {
             @Override
             public void failed(Throwable x)

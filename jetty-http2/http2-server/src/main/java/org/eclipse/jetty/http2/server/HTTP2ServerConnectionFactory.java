@@ -143,7 +143,7 @@ public class HTTP2ServerConnectionFactory extends AbstractHTTP2ServerConnectionF
         private void close(Stream stream, String reason)
         {
             final Session session = stream.getSession();
-            session.close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.Adapter.INSTANCE);
+            session.close(ErrorCode.PROTOCOL_ERROR.code, reason, Callback.NOOP);
         }
     }
 

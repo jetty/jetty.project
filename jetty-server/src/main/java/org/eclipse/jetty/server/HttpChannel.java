@@ -712,7 +712,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _callback = callback;
         }
-
+        
+        @Override
+        public boolean isNonBlocking()
+        {
+            return _callback.isNonBlocking();
+        }
+        
         @Override
         public void succeeded()
         {

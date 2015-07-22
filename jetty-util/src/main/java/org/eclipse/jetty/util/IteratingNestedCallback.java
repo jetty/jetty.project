@@ -46,6 +46,12 @@ public abstract class IteratingNestedCallback extends IteratingCallback
     {
         _callback=callback;
     }
+
+    @Override
+    public boolean isNonBlocking()
+    { 
+        return _callback.isNonBlocking();
+    }
     
     @Override
     protected void onCompleteSuccess()

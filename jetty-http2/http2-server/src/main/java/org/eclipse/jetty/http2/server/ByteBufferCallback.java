@@ -36,6 +36,12 @@ public class ByteBufferCallback implements Callback
         this.callback = callback;
     }
 
+    @Override
+    public boolean isNonBlocking()
+    {
+        return callback.isNonBlocking();
+    }
+    
     public ByteBuffer getByteBuffer()
     {
         return buffer;

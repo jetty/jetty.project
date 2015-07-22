@@ -79,6 +79,12 @@ public class OutputStreamContentProvider implements AsyncContentProvider, Callba
     private final OutputStream output = new DeferredOutputStream();
 
     @Override
+    public boolean isNonBlocking()
+    {
+        return deferred.isNonBlocking();
+    }
+    
+    @Override
     public long getLength()
     {
         return deferred.getLength();

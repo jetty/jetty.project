@@ -99,7 +99,7 @@ public class HttpSenderOverFCGI extends HttpSender
         int id = getHttpChannel().getRequest();
         boolean hasContent = content.hasContent();
         Generator.Result headersResult = generator.generateRequestHeaders(id, fcgiHeaders,
-                hasContent ? callback : Callback.Adapter.INSTANCE);
+                hasContent ? callback : Callback.NOOP);
         if (hasContent)
         {
             getHttpChannel().flush(headersResult);

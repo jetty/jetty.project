@@ -120,7 +120,7 @@ public class SelectorManagerTest
             long timeout = connectTimeout * 2;
             timeoutConnection.set(timeout);
             final CountDownLatch latch1 = new CountDownLatch(1);
-            selectorManager.connect(client1, new Callback.Adapter()
+            selectorManager.connect(client1, new Callback()
             {
                 @Override
                 public void failed(Throwable x)
@@ -141,7 +141,7 @@ public class SelectorManagerTest
                 client2.connect(address);
                 timeoutConnection.set(0);
                 final CountDownLatch latch2 = new CountDownLatch(1);
-                selectorManager.connect(client2, new Callback.Adapter()
+                selectorManager.connect(client2, new Callback()
                 {
                     @Override
                     public void succeeded()

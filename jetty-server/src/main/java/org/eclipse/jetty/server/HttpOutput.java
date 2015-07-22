@@ -1215,7 +1215,7 @@ public class HttpOutput extends ServletOutputStream implements Runnable
             _in=in;
             _buffer = _channel.getByteBufferPool().acquire(getBufferSize(), _channel.useDirectBuffers());
         }
-
+        
         @Override
         protected Action process() throws Exception
         {

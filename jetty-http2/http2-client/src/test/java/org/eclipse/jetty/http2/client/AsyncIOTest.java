@@ -94,7 +94,7 @@ public class AsyncIOTest extends AbstractTest
             }
         });
         Stream stream = promise.get(5, TimeUnit.SECONDS);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.Adapter.INSTANCE);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -148,7 +148,7 @@ public class AsyncIOTest extends AbstractTest
 
         // Wait until service() returns.
         Thread.sleep(1000);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.Adapter.INSTANCE);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(16), true), Callback.NOOP);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
@@ -204,11 +204,11 @@ public class AsyncIOTest extends AbstractTest
 
         // Wait until service() returns.
         Thread.sleep(1000);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.Adapter.INSTANCE);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), false), Callback.NOOP);
 
         // Wait until onDataAvailable() returns.
         Thread.sleep(1000);
-        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.Adapter.INSTANCE);
+        stream.data(new DataFrame(stream.getId(), ByteBuffer.allocate(1), true), Callback.NOOP);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
         // Make sure onDataAvailable() has been called twice

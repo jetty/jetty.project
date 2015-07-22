@@ -38,7 +38,7 @@ public class BlockingWriteCallback extends SharedBlockingCallback
         return new WriteBlocker(acquire());
     }
     
-    public static class WriteBlocker implements WriteCallback, Callback, AutoCloseable
+    public static class WriteBlocker implements WriteCallback, Callback.NonBlocking, AutoCloseable
     {
         private final Blocker blocker;
         

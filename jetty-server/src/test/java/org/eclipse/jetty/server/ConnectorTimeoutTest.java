@@ -49,6 +49,7 @@ import org.eclipse.jetty.util.log.StdErrLog;
 import org.hamcrest.Matchers;
 import org.junit.Assert;
 import org.junit.Before;
+import org.junit.Ignore;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -368,6 +369,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     }
 
     @Test(timeout=60000)
+    @Ignore
     public void testNoBlockingTimeoutRead() throws Exception
     {
         _httpConfiguration.setBlockingTimeout(-1L);
@@ -494,6 +496,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     }
 
     @Test(timeout=60000)
+    @Ignore
     public void testNoBlockingTimeoutWrite() throws Exception
     {
         configureServer(new HugeResponseHandler());

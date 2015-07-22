@@ -67,6 +67,6 @@ public class SimpleFlowControlStrategy extends AbstractFlowControlStrategy
             }
         }
 
-        session.frames(stream, Callback.Adapter.INSTANCE, sessionFrame, streamFrame);
+        session.frames(stream, Callback.NOOP, sessionFrame, streamFrame);
     }
 }

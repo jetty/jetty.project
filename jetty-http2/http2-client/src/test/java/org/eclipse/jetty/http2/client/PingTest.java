@@ -51,7 +51,7 @@ public class PingTest extends AbstractTest
         });
 
         PingFrame frame = new PingFrame(payload, false);
-        session.ping(frame, Callback.Adapter.INSTANCE);
+        session.ping(frame, Callback.NOOP);
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }

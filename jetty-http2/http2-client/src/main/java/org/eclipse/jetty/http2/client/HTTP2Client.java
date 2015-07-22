@@ -299,7 +299,7 @@ public class HTTP2Client extends ContainerLifeCycle
     private void closeConnections()
     {
         for (ISession session : sessions)
-            session.close(ErrorCode.NO_ERROR.code, null, Callback.Adapter.INSTANCE);
+            session.close(ErrorCode.NO_ERROR.code, null, Callback.NOOP);
         sessions.clear();
     }
 
