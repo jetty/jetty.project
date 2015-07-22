@@ -301,7 +301,7 @@ public class URLResource extends Resource
 
         path = URIUtil.canonicalPath(path);
 
-        return newResource(URIUtil.addPaths(_url.toExternalForm(),path), _useCaches);
+        return newResource(URIUtil.addPaths(_url.toExternalForm(),URIUtil.encodePath(path)), _useCaches);
     }
 
     /* ------------------------------------------------------------ */
