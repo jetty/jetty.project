@@ -18,7 +18,7 @@
 
 package org.eclipse.jetty.util.resource;
 
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.notNullValue;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.Assert.assertThat;
@@ -35,6 +35,8 @@ import org.eclipse.jetty.toolchain.test.FS;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
+import org.hamcrest.Matchers;
+import org.junit.Assert;
 import org.junit.Test;
 import org.junit.runner.RunWith;
 import org.junit.runners.Parameterized;
@@ -185,6 +187,7 @@ public class ResourceTest
             return bdata;
         }
     }
+    
 
     @Parameters(name="{0}")
     public static Collection<Data[]> data() throws Exception
@@ -253,15 +256,26 @@ public class ResourceTest
     @Test
     public void testResourceExists()
     {
-        assertThat("Exists: " + data.resource.getName(), data.resource.exists(), is(data.exists));
+        assertThat("Exists: " + data.resource.getName(), data.resource.exists(), equalTo(data.exists));
     }
 
     @Test
     public void testResourceDir()
     {
-        assertThat("Is Directory: " + data.test, data.resource.isDirectory(),is(data.dir));
+        assertThat("Is Directory: " + data.test, data.resource.isDirectory(),equalTo(data.dir));
     }
 
+    @Test
+    public void testEncodeAddPath ()
+    throws Exception
+    {
+        if (data.dir)
+        {
+            Resource r = data.resource.addPath("foo%/b r");
+            Assert.assertThat(r.getURI().toString(),Matchers.endsWith("/foo%25/b%20r"));
+        }
+    }
+    
     @Test
     public void testResourceContent()
         throws Exception
