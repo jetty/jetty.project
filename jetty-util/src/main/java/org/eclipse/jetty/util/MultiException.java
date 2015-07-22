@@ -47,7 +47,10 @@ public class MultiException extends Exception
             throw new IllegalArgumentException();
         
         if(nested == null)
+        {
+            initCause(e);
             nested = new ArrayList<>();
+        }
         
         if (e instanceof MultiException)
         {
