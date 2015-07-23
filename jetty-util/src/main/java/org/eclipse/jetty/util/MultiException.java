@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.util;
 
-import java.io.PrintStream;
-import java.io.PrintWriter;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.List;
@@ -45,12 +43,14 @@ public class MultiException extends Exception
     {
         if (e==null)
             throw new IllegalArgumentException();
-        
+
         if(nested == null)
         {
             initCause(e);
             nested = new ArrayList<>();
         }
+        else
+            addSuppressed(e);
         
         if (e instanceof MultiException)
         {
@@ -70,9 +70,8 @@ public class MultiException extends Exception
     /* ------------------------------------------------------------ */
     public List<Throwable> getThrowables()
     {
-        if(nested == null) {
+        if(nested == null)
             return Collections.emptyList();
-        }
         return nested;
     }
     
@@ -170,49 +169,6 @@ public class MultiException extends Exception
             str.append(nested);
         }
         return str.toString();
-    }
-
-    /* ------------------------------------------------------------ */
-    @Override
-    public void printStackTrace()
-    {
-        super.printStackTrace();
-        if(nested != null) {
-            for(Throwable t: nested) {
-                t.printStackTrace();
-            }
-        }
-    }
-   
-
-    /* ------------------------------------------------------------------------------- */
-    /**
-     * @see java.lang.Throwable#printStackTrace(java.io.PrintStream)
-     */
-    @Override
-    public void printStackTrace(PrintStream out)
-    {
-        super.printStackTrace(out);
-        if(nested != null) {
-            for(Throwable t: nested) {
-                t.printStackTrace(out);
-            }
-        }
-    }
-
-    /* ------------------------------------------------------------------------------- */
-    /**
-     * @see java.lang.Throwable#printStackTrace(java.io.PrintWriter)
-     */
-    @Override
-    public void printStackTrace(PrintWriter out)
-    {
-        super.printStackTrace(out);
-        if(nested != null) {
-            for(Throwable t: nested) {
-                t.printStackTrace(out);
-            }
-        }
     }
 
 }
