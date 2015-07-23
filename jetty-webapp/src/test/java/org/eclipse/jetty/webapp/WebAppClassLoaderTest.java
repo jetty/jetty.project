@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.webapp;
 
+import static org.eclipse.jetty.toolchain.test.ExtraMatchers.*; 
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
@@ -55,7 +56,7 @@ public class WebAppClassLoaderTest
     @Before
     public void init() throws Exception
     {
-        this.testWebappDir = MavenTestingUtils.getProjectDir("src/test/webapp").toPath();
+        this.testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         Resource webapp = new PathResource(testWebappDir);
 
         _context = new WebAppContext();
@@ -257,7 +258,7 @@ public class WebAppClassLoaderTest
         expected.add(webappWebInfClasses);
         expected.add(targetTestClasses);
         
-        assertOrdered("Resources Found (Parent Loader Priority == false)",expected,resources);
+        assertThat("Resources Found (Parent Loader Priority == false)",resources,ordered(expected));
         
 //        dump(resources);
 //        assertEquals(3,resources.size());
