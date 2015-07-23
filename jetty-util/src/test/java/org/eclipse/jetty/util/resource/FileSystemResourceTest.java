@@ -51,10 +51,10 @@ import org.eclipse.jetty.toolchain.test.IO;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.util.BufferUtil;
-import org.eclipse.jetty.util.CollectionAssert;
 import org.hamcrest.BaseMatcher;
 import org.hamcrest.Description;
 import org.hamcrest.Matcher;
+import org.hamcrest.Matchers;
 import org.junit.Rule;
 import org.junit.Test;
 import org.junit.runner.RunWith;
@@ -551,8 +551,10 @@ public class FileSystemResourceTest
             String list[] = base.list();
             List<String> actual = Arrays.asList(list);
             
-            CollectionAssert.assertContainsUnordered("Resource Directory Listing",
-                    expected,actual);
+            assertEquals(expected.size(),actual.size());
+            for (String s : expected)
+                assertEquals(true,actual.contains(s));
+            
         }
     }
     
