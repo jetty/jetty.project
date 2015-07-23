@@ -428,7 +428,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 _certWilds.clear();
                 for (String name : _certAliases.keySet())
                     if (name.startsWith("*."))
-                        _certWilds.put(name.substring(1),_certAliases.get(name));
+                        _certWilds.put(name.substring(2),_certAliases.get(name));
 
                 LOG.info("x509={} wild={} alias={} for {}",_certAliases,_certWilds,_certAlias,this);
 
@@ -1728,6 +1728,7 @@ public class SslContextFactory extends AbstractLifeCycle
     class AliasSNIMatcher extends SNIMatcher
     {
         private String _alias;
+        private String _wild;
         private SNIHostName _name;
 
         protected AliasSNIMatcher()
@@ -1760,17 +1761,22 @@ public class SslContextFactory extends AbstractLifeCycle
 
                 // Try wild card matches
                 String domain = _name.getAsciiName();
-                int dot=domain.indexOf('.');
-                if (dot>=0)
+                _alias = _certWilds.get(domain);
+                if (_alias==null)
                 {
-                    domain=domain.substring(dot);
-                    _alias = _certWilds.get(domain);
-                    if (_alias!=null)
+                    int dot=domain.indexOf('.');
+                    if (dot>=0)
                     {
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("wild match {}->{}",_name.getAsciiName(),_alias);
-                        return true;
+                        domain=domain.substring(dot+1);
+                        _alias = _certWilds.get(domain);
                     }
+                }
+                if (_alias!=null)
+                {
+                    _wild=domain;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("wild match {}->{}",_name.getAsciiName(),_alias);
+                    return true;
                 }
             }
             if (LOG.isDebugEnabled())
@@ -1783,6 +1789,11 @@ public class SslContextFactory extends AbstractLifeCycle
         public String getAlias()
         {
             return _alias;
+        }
+
+        public String getWildDomain()
+        {
+            return _wild;
         }
 
         public String getServerName()

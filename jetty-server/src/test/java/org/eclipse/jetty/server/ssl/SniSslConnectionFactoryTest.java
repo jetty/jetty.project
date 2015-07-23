@@ -50,6 +50,8 @@ import org.eclipse.jetty.server.SslConnectionFactory;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.ConcurrentArrayQueue;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.hamcrest.Matchers;
 import org.junit.After;
@@ -145,6 +147,22 @@ public class SniSslConnectionFactoryTest
         response= getResponse("www.san.com","san example");
         Assert.assertThat(response,Matchers.containsString("host=www.san.com"));
       
+    }
+
+    @Test
+    public void testWildSNIConnect() throws Exception
+    {
+        String response;
+
+        response= getResponse("domain.com","www.domain.com","*.domain.com");
+        Assert.assertThat(response,Matchers.containsString("host=www.domain.com"));
+        
+        response= getResponse("domain.com","domain.com","*.domain.com");
+        Assert.assertThat(response,Matchers.containsString("host=domain.com"));
+        
+        response= getResponse("www.domain.com","www.domain.com","*.domain.com");
+        Assert.assertThat(response,Matchers.containsString("host=www.domain.com"));
+        
     }
     
     @Test

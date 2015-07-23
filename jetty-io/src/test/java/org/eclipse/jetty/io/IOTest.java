@@ -488,4 +488,14 @@ public class IOTest
         for (int i=0;i<buffers.length;i++)
             assertEquals(0,buffers[i].remaining());
     }
+    
+    @Test
+    public void testDomain()
+    {
+        assertTrue(IO.isInDomain("foo.com","foo.com"));
+        assertTrue(IO.isInDomain("www.foo.com","foo.com"));
+        assertFalse(IO.isInDomain("foo.com","bar.com"));
+        assertFalse(IO.isInDomain("www.foo.com","bar.com"));
+        
+    }
 }

@@ -44,6 +44,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 {
     static final Logger LOG = Log.getLogger(SniX509ExtendedKeyManager.class);
     public final static String SNI_NAME = "org.eclipse.jetty.util.ssl.sniname";
+    public final static String SNI_WILD = "org.eclipse.jetty.util.ssl.sniwild";
     public final static String NO_MATCHERS="No Matchers";
     private final X509ExtendedKeyManager _delegate;
 
@@ -81,6 +82,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         // Look for an SNI alias
         String alias=null;
         String host=null;
+        String wild=null;
         if (matchers!=null)
         {
             for (SNIMatcher m : matchers)
@@ -90,6 +92,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
                     SslContextFactory.AliasSNIMatcher matcher = (SslContextFactory.AliasSNIMatcher)m;
                     alias=matcher.getAlias();
                     host=matcher.getServerName();
+                    wild=matcher.getWildDomain();
                     break;
                 }
             }
@@ -106,6 +109,8 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
                 if (a.equals(alias))
                 {
                     session.putValue(SNI_NAME,host);
+                    if (wild!=null)
+                        session.putValue(SNI_WILD,wild);
                     return alias;
                 }
             }

@@ -463,7 +463,21 @@ public class IO
         
         return total;
     }
-    
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param name  A host name like www.foo.com
+     * @param domain A domain name like foo.com
+     * @return True if the host name is in the domain name
+     */
+    public static boolean isInDomain(String name, String domain)
+    {
+        if (!name.endsWith(domain))
+            return false;
+        if (name.length()==domain.length())
+            return true;
+        return name.charAt(name.length()-domain.length()-1)=='.';
+    }
     
     /* ------------------------------------------------------------ */
     /**

@@ -29,6 +29,7 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -107,8 +108,13 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             String sniName = (String)sslSession.getValue("org.eclipse.jetty.util.ssl.sniname");
             if (sniName!=null && !sniName.equalsIgnoreCase(request.getServerName()))
             {
-                LOG.warn("Host does not match SNI Name: {}!={}",sniName,request.getServerName());
-                throw new BadMessageException(400,"Host does not match SNI");
+                String wild=(String)sslSession.getValue("org.eclipse.jetty.util.ssl.sniwild");
+                String name=request.getServerName();
+                if (wild==null || !IO.isInDomain(name,wild)) 
+                {
+                    LOG.warn("Host does not match SNI Name: {}/{}!={}",sniName,wild,request.getServerName());
+                    throw new BadMessageException(400,"Host does not match SNI");
+                }
             }
         }
         
