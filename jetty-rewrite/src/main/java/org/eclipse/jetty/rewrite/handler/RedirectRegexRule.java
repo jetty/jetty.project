@@ -24,13 +24,21 @@ import java.util.regex.Matcher;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
+
 /**
- * Redirects the response by matching with a regular expression.
+ * Issues a (3xx) Redirect response whenever the rule finds a match via regular expression.
+ * <p>
  * The replacement string may use $n" to replace the nth capture group.
+ * <p>
+ * All redirects are part of the <a href="http://tools.ietf.org/html/rfc7231#section-6.4"><code>3xx Redirection</code> status code set</a>.
+ * <p>
+ * Defaults to <a href="http://tools.ietf.org/html/rfc7231#section-6.4.3"><code>302 Found</code></a>
  */
 public class RedirectRegexRule extends RegexRule
 {
     protected String _replacement;
+    private int _statusCode = HttpStatus.FOUND_302;
     
     public RedirectRegexRule()
     {
@@ -48,6 +56,23 @@ public class RedirectRegexRule extends RegexRule
         _replacement = replacement;
     }
     
+    /**
+     * Sets the redirect status code.
+     * 
+     * @param statusCode the 3xx redirect status code
+     */
+    public void setStatusCode(int statusCode)
+    {
+        if ((300 <= statusCode) || (statusCode >= 399))
+        {
+            _statusCode = statusCode;
+        }
+        else
+        {
+            throw new IllegalArgumentException("Invalid redirect status code " + statusCode + " (must be a value between 300 and 399)");
+        }
+    }
+    
     @Override
     protected String apply(String target, HttpServletRequest request, HttpServletResponse response, Matcher matcher)
             throws IOException
@@ -59,7 +84,23 @@ public class RedirectRegexRule extends RegexRule
             target=target.replaceAll("\\$"+g,group);
         }
 
-        response.sendRedirect(response.encodeRedirectURL(target));
+        response.setHeader("Location",response.encodeRedirectURL(target));
+        response.sendError(_statusCode);
         return target;
     }
+    
+    /**
+     * Returns the redirect status code and replacement.
+     */
+    @Override
+    public String toString()
+    {
+        StringBuilder str = new StringBuilder();
+        str.append(super.toString());
+        str.append('[').append(_statusCode);
+        str.append('>').append(_replacement);
+        str.append(']');
+        return str.toString();
+    }
+
 }

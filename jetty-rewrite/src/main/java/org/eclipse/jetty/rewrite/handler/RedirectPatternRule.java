@@ -23,21 +23,26 @@ import java.io.IOException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.http.HttpStatus;
+
 /**
- * Redirects the response whenever the rule finds a match.
+ * Issues a (3xx) Redirect response whenever the rule finds a match.
+ * <p>
+ * All redirects are part of the <a href="http://tools.ietf.org/html/rfc7231#section-6.4"><code>3xx Redirection</code> status code set</a>.
+ * <p>
+ * Defaults to <a href="http://tools.ietf.org/html/rfc7231#section-6.4.3"><code>302 Found</code></a>
  */
 public class RedirectPatternRule extends PatternRule
 {
-    protected String _location;
-
-    /* ------------------------------------------------------------ */
+    private String _location;
+    private int _statusCode = HttpStatus.FOUND_302;
+    
     public RedirectPatternRule()
     {
         _handling = true;
         _terminating = true;
     }
 
-    /* ------------------------------------------------------------ */
     /**
      * Sets the redirect location.
      * 
@@ -47,26 +52,43 @@ public class RedirectPatternRule extends PatternRule
     {
         _location = value;
     }
-
-    /* ------------------------------------------------------------ */
-    /*
-     * (non-Javadoc)
-     * @see org.eclipse.jetty.server.server.handler.rules.RuleBase#apply(javax.servlet.http.HttpServletRequest, javax.servlet.http.HttpServletResponse)
+    
+    /**
+     * Sets the redirect status code.
+     * 
+     * @param statusCode the 3xx redirect status code
      */
+    public void setStatusCode(int statusCode)
+    {
+        if ((300 <= statusCode) || (statusCode >= 399))
+        {
+            _statusCode = statusCode;
+        }
+        else
+        {
+            throw new IllegalArgumentException("Invalid redirect status code " + statusCode + " (must be a value between 300 and 399)");
+        }
+    }
+
     @Override
     public String apply(String target, HttpServletRequest request, HttpServletResponse response) throws IOException
     {
-        response.sendRedirect(response.encodeRedirectURL(_location));
+        response.setHeader("Location",response.encodeRedirectURL(_location));
+        response.sendError(_statusCode);
         return target;
     }
 
-    /* ------------------------------------------------------------ */
     /**
-     * Returns the redirect location.
+     * Returns the redirect status code and location.
      */
     @Override
     public String toString()
     {
-        return super.toString()+"["+_location+"]";
+        StringBuilder str = new StringBuilder();
+        str.append(super.toString());
+        str.append('[').append(_statusCode);
+        str.append('>').append(_location);
+        str.append(']');
+        return str.toString();
     }
 }
