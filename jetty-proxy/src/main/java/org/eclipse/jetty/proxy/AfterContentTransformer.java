@@ -33,6 +33,7 @@ import java.nio.file.attribute.FileAttribute;
 import java.util.ArrayList;
 import java.util.List;
 
+import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.Destroyable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -249,8 +250,9 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
             int size = sourceBuffers.size();
             if (size > 0)
             {
-                inputFile.write(sourceBuffers.toArray(new ByteBuffer[size]));
+                ByteBuffer[] buffers = sourceBuffers.toArray(new ByteBuffer[size]);
                 sourceBuffers.clear();
+                IO.write(inputFile,buffers,0,buffers.length);
             }
         }
         inputFile.write(input);
@@ -421,6 +423,7 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
             return stream;
         }
 
+        
         private void overflow(ByteBuffer output) throws IOException
         {
             if (outputFile == null)
@@ -434,8 +437,10 @@ public abstract class AfterContentTransformer implements AsyncMiddleManServlet.C
                 int size = sinkBuffers.size();
                 if (size > 0)
                 {
-                    outputFile.write(sinkBuffers.toArray(new ByteBuffer[size]));
+                    ByteBuffer[] buffers = sinkBuffers.toArray(new ByteBuffer[size]);
                     sinkBuffers.clear();
+                    
+                    IO.write(outputFile,buffers,0,buffers.length);
                 }
             }
             outputFile.write(output);
