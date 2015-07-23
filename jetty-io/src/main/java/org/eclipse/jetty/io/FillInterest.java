@@ -108,7 +108,7 @@ public abstract class FillInterest
     public boolean isCallbackNonBlocking()
     {
         Callback callback = _interested.get();
-        return callback.isNonBlocking();
+        return callback!=null && callback.isNonBlocking();
     }
 
     /**

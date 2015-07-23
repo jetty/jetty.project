@@ -271,7 +271,7 @@ abstract public class WriteFlusher
         
         boolean isCallbackNonBlocking()
         {
-            return _callback.isNonBlocking();
+            return _callback!=null && _callback.isNonBlocking();
         }
     }
 
