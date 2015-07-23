@@ -17,6 +17,7 @@
 //
 
 package org.eclipse.jetty.util;
+
 import java.io.ByteArrayOutputStream;
 import java.io.Closeable;
 import java.io.File;
@@ -31,7 +32,6 @@ import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
 import java.nio.ByteBuffer;
-import java.nio.channels.FileChannel;
 import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
 
@@ -420,17 +420,24 @@ public class IO
     }
 
     /* ------------------------------------------------------------ */
-    /** 
+    /**
      * A gathering write utility wrapper.
-     * <p>This method wraps a gather write with a loop that handles the limitations of some operating systems that
-     * have a limit on the number of buffers written.  The method loops on the write until either all the content
-     * is written or no progress is made.
-     * @param out The GatheringgByteChannel to write to
-     * @param buffers The buffers to write
-     * @param offset The offset into the buffers array
-     * @param length The length in buffers to write
+     * <p>
+     * This method wraps a gather write with a loop that handles the limitations of some operating systems that have a
+     * limit on the number of buffers written. The method loops on the write until either all the content is written or
+     * no progress is made.
+     * 
+     * @param out
+     *            The GatheringByteChannel to write to
+     * @param buffers
+     *            The buffers to write
+     * @param offset
+     *            The offset into the buffers array
+     * @param length
+     *            The length in buffers to write
      * @return The total bytes written
      * @throws IOException
+     *             if unable write to the GatheringByteChannel
      */
     public static long write(GatheringByteChannel out, ByteBuffer[] buffers, int offset, int length) throws IOException
     {
