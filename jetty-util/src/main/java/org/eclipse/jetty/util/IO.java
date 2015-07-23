@@ -30,6 +30,9 @@ import java.io.PrintWriter;
 import java.io.Reader;
 import java.io.StringWriter;
 import java.io.Writer;
+import java.nio.ByteBuffer;
+import java.nio.channels.FileChannel;
+import java.nio.channels.GatheringByteChannel;
 import java.nio.charset.Charset;
 
 import org.eclipse.jetty.util.log.Log;
@@ -415,9 +418,55 @@ public class IO
         copy(in,bout);
         return bout.toByteArray();
     }
-    
+
     /* ------------------------------------------------------------ */
     /** 
+     * A gathering write utility wrapper.
+     * <p>This method wraps a gather write with a loop that handles the limitations of some operating systems that
+     * have a limit on the number of buffers written.  The method loops on the write until either all the content
+     * is written or no progress is made.
+     * @param out The GatheringgByteChannel to write to
+     * @param buffers The buffers to write
+     * @param offset The offset into the buffers array
+     * @param length The length in buffers to write
+     * @return The total bytes written
+     * @throws IOException
+     */
+    public static long write(GatheringByteChannel out, ByteBuffer[] buffers, int offset, int length) throws IOException
+    {
+        long total=0;
+        write: while (length>0)
+        {
+            // Write as much as we can
+            long wrote=out.write(buffers,offset,length);
+            
+            // If we can't write any more, give up
+            if (wrote==0)
+                break;
+            
+            // count the total
+            total+=wrote;
+            
+            // Look for unwritten content
+            for (int i=offset;i<buffers.length;i++)
+            {
+                if (buffers[i].hasRemaining())
+                {
+                    // loop with new offset and length;
+                    length=length-(i-offset);
+                    offset=i;
+                    continue write;
+                }
+            }
+            length=0;
+        }
+        
+        return total;
+    }
+    
+    
+    /* ------------------------------------------------------------ */
+    /**
      * @return An outputstream to nowhere
      */
     public static OutputStream getNullStream()
@@ -503,6 +552,7 @@ public class IO
     }
     private static NullWrite __nullWriter = new NullWrite();
     private static PrintWriter __nullPrintWriter = new PrintWriter(__nullWriter);
+
 }
 
 
