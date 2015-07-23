@@ -27,7 +27,6 @@ import javax.management.ObjectName;
 
 import org.eclipse.jetty.jmx.MBeanContainer;
 import org.eclipse.jetty.server.handler.ContextHandlerCollection;
-import org.eclipse.jetty.toolchain.jmx.JmxServiceConnection;
 import org.junit.Test;
 
 public class DeploymentManagerLifeCyclePathTest
