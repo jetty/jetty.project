@@ -369,7 +369,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     }
 
     @Test(timeout=60000)
-    @Ignore
+    @Ignore // TODO make more stable
     public void testNoBlockingTimeoutRead() throws Exception
     {
         _httpConfiguration.setBlockingTimeout(-1L);
@@ -428,6 +428,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     }
     
     @Test(timeout=60000)
+    @Ignore // TODO make more stable
     public void testBlockingTimeoutRead() throws Exception
     {
         _httpConfiguration.setBlockingTimeout(750L);
@@ -496,7 +497,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     }
 
     @Test(timeout=60000)
-    @Ignore
+    @Ignore // TODO make more stable
     public void testNoBlockingTimeoutWrite() throws Exception
     {
         configureServer(new HugeResponseHandler());
@@ -536,6 +537,7 @@ public abstract class ConnectorTimeoutTest extends HttpServerTestFixture
     }
 
     @Test(timeout=60000)
+    @Ignore // TODO make more stable
     public void testBlockingTimeoutWrite() throws Exception
     {
         _httpConfiguration.setBlockingTimeout(750L);
