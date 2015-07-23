@@ -1783,7 +1783,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
      *
      *
      */
-    public class Context extends NoContext
+    public class Context extends StaticContext
     {
         protected boolean _enabled = true; //whether or not the dynamic API is enabled for callers
         protected boolean _extendedListenerTypes = false;
@@ -1970,7 +1970,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         {
             Resource resource = ContextHandler.this.getResource(path);
             if (resource != null && resource.exists())
-                return resource.getURL();
+                return resource.getURI().toURL();
             return null;
         }
 
@@ -2340,16 +2340,24 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             T o = clazz.newInstance();
             return o;
         }
+
+        @Override
+        public String getVirtualServerName()
+        {
+            String[] hosts = getVirtualHosts();
+            if (hosts!=null && hosts.length>0)
+                return hosts[0];
+            return null;
+        }
     }
 
-
-    public static class NoContext extends AttributesMap implements ServletContext
+    public static class StaticContext extends AttributesMap implements ServletContext
     {
         private int _effectiveMajorVersion = SERVLET_MAJOR_VERSION;
         private int _effectiveMinorVersion = SERVLET_MINOR_VERSION;
 
         /* ------------------------------------------------------------ */
-        public NoContext()
+        public StaticContext()
         {
         }
 
@@ -2685,13 +2693,9 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             LOG.warn(__unimplmented);
         }
 
-        /**
-         * @see javax.servlet.ServletContext#getVirtualServerName()
-         */
         @Override
         public String getVirtualServerName()
         {
-            // TODO 3.1 Auto-generated method stub
             return null;
         }
     }
@@ -2738,7 +2742,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 return false;
 
             String a=resource.getAlias().toString();
-            String r=resource.getURL().toString();
+            String r=resource.getURI().toString();
 
             if (a.length()>r.length())
                 return a.startsWith(r) && a.length()==r.length()+1 && a.endsWith("/");

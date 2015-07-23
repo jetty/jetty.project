@@ -142,7 +142,7 @@ public class ServletHandler extends ScopedHandler
         throws Exception
     {
         ContextHandler.Context context=ContextHandler.getCurrentContext();
-        _servletContext=context==null?new ContextHandler.NoContext():context;
+        _servletContext=context==null?new ContextHandler.StaticContext():context;
         _contextHandler=(ServletContextHandler)(context==null?null:context.getContextHandler());
 
         if (_contextHandler!=null)
