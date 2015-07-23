@@ -83,9 +83,12 @@ public class RedirectRegexRule extends RegexRule
             String group = matcher.group(g);
             target=target.replaceAll("\\$"+g,group);
         }
-
-        response.setHeader("Location",response.encodeRedirectURL(target));
-        response.sendError(_statusCode);
+        
+        target = response.encodeRedirectURL(target);
+        response.setHeader("Location",RedirectUtil.toRedirectURL(request,target));
+        response.setStatus(_statusCode);
+        response.getOutputStream().flush(); // no output / content
+        response.getOutputStream().close();
         return target;
     }
     

@@ -18,10 +18,8 @@
 
 package org.eclipse.jetty.test.rfcs;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-import static org.junit.Assert.assertTrue;
-import static org.junit.matchers.JUnitMatchers.containsString;
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
 
 import java.io.File;
 import java.io.IOException;
@@ -1159,12 +1157,12 @@ public abstract class RFC2616BaseTest
         req4.append("\n");
 
         HttpTester.Response response = http.request(req4);
-
+        
         String specId = "10.3 Redirection HTTP/1.1 w/content";
-        assertEquals(specId,HttpStatus.FOUND_302, response.getStatus());
-        assertEquals(specId,server.getScheme() + "://localhost/tests/R2.txt", response.get("Location"));
-        assertEquals(specId,"close", response.get("Connection"));
-        assertTrue(specId,response.get("Content-Length") == null);
+        assertThat(specId + " [status]",response.getStatus(),is(HttpStatus.FOUND_302));
+        assertThat(specId + " [location]",response.get("Location"),is(server.getScheme() + "://localhost/tests/R2.txt"));
+        assertThat(specId + " [connection]",response.get("Connection"),is("close"));
+        assertThat(specId + " [content-length]",response.get("Content-Length"), nullValue());
     }
 
     /**
