@@ -338,7 +338,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 if (keyStore==null)
                     keyStore=loadKeyStore(_keyStoreResource);
                 if (trustStore==null)
-                    trustStore=loadTrustStore(_trustStoreResource==null?_keyStoreResource:_trustStoreResource);
+                    trustStore=loadTrustStore(_trustStoreResource);
 
                 Collection<? extends CRL> crls = loadCRL(_crlPath);
 
@@ -1062,7 +1062,21 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     protected KeyStore loadTrustStore(Resource resource) throws Exception
     {
-        return CertificateUtils.getKeyStore(resource, _trustStoreType,  _trustStoreProvider,_trustStorePassword==null? null:_trustStorePassword.toString());
+        String type=_trustStoreType;
+        String provider= _trustStoreProvider;
+        String passwd=_trustStorePassword==null? null:_trustStorePassword.toString();
+        if (resource==null || resource.equals(_keyStoreResource))
+        {
+            resource=_keyStoreResource;
+            if (type==null)
+                type=_keyStoreType;
+            if (provider==null)
+                provider= _keyStoreProvider;
+            if (passwd==null)
+                passwd=_keyStorePassword==null? null:_keyStorePassword.toString();
+        }
+            
+        return CertificateUtils.getKeyStore(resource,type,provider,passwd);
     }
 
     /**

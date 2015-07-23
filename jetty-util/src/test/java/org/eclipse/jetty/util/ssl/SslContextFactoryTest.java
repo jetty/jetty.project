@@ -18,9 +18,8 @@
 
 package org.eclipse.jetty.util.ssl;
 
-import static org.hamcrest.Matchers.equalTo;
 import static org.hamcrest.Matchers.greaterThan;
-import static org.hamcrest.Matchers.is;
+import static org.hamcrest.Matchers.equalTo;
 import static org.junit.Assert.assertNotNull;
 import static org.junit.Assert.assertThat;
 import static org.junit.Assert.assertTrue;
@@ -28,7 +27,6 @@ import static org.junit.Assert.assertTrue;
 import java.io.IOException;
 import java.io.InputStream;
 import java.security.KeyStore;
-import java.util.Arrays;
 
 import javax.net.ssl.SSLEngine;
 
@@ -56,7 +54,6 @@ public class SslContextFactoryTest
     @Test
     public void testNoTsFileKs() throws Exception
     {
-        String keystorePath = System.getProperty("basedir",".") + "/src/test/resources/keystore";
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
 
@@ -199,20 +196,19 @@ public class SslContextFactoryTest
         String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
         assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(0));
         for (String enabledCipherSuite : enabledCipherSuites)
-            assertThat("CipherSuite does not contain RC4", enabledCipherSuite.contains("RC4"), is(false));
+            assertThat("CipherSuite does not contain RC4", enabledCipherSuite.contains("RC4"), equalTo(false));
     }
 
     @Test
     public void testSetIncludeCipherSuitesRegex() throws Exception
     {
-        Log.getLogger(SslContextFactory.class).setDebugEnabled(true);
         cf.setIncludeCipherSuites(".*ECDHE.*",".*WIBBLE.*");
         cf.start();
         SSLEngine sslEngine = cf.newSSLEngine();
         String[] enabledCipherSuites = sslEngine.getEnabledCipherSuites();
         assertThat("At least 1 cipherSuite is enabled", enabledCipherSuites.length, greaterThan(1));
         for (String enabledCipherSuite : enabledCipherSuites)
-            assertThat("CipherSuite contains ECDHE", enabledCipherSuite.contains("ECDHE"), is(true));
+            assertThat("CipherSuite contains ECDHE", enabledCipherSuite.contains("ECDHE"), equalTo(true));
     }
 
     @Test
@@ -222,13 +218,5 @@ public class SslContextFactoryTest
     	assertNotNull(cf.getIncludeProtocols());
     	assertNotNull(cf.getExcludeCipherSuites());
     	assertNotNull(cf.getIncludeCipherSuites());
-    }
-    
-    private void assertSelectedMatchesIncluded(String[] includeStrings, String[] selectedStrings)
-    {
-        assertThat(includeStrings.length + " strings are selected", selectedStrings.length, is(includeStrings.length));
-        assertThat("order from includeStrings is preserved", selectedStrings[0], equalTo(includeStrings[0]));
-        assertThat("order from includeStrings is preserved", selectedStrings[1], equalTo(includeStrings[1]));
-        assertThat("order from includeStrings is preserved", selectedStrings[2], equalTo(includeStrings[2]));
     }
 }
