@@ -22,8 +22,6 @@ import static org.eclipse.jetty.toolchain.test.ExtraMatchers.*;
 import static org.hamcrest.Matchers.*;
 import static org.junit.Assert.*;
 
-import java.io.PrintWriter;
-import java.io.StringWriter;
 import java.lang.instrument.ClassFileTransformer;
 import java.lang.instrument.IllegalClassFormatException;
 import java.net.URI;
@@ -38,7 +36,6 @@ import java.util.List;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.util.resource.PathResource;
 import org.eclipse.jetty.util.resource.Resource;
-import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Rule;
 import org.junit.Test;
@@ -58,6 +55,8 @@ public class WebAppClassLoaderTest
     {
         this.testWebappDir = MavenTestingUtils.getProjectDirPath("src/test/webapp");
         Resource webapp = new PathResource(testWebappDir);
+        
+        System.err.printf("testWebappDir = %s%n", testWebappDir);
 
         _context = new WebAppContext();
         _context.setBaseResource(webapp);
@@ -250,7 +249,7 @@ public class WebAppClassLoaderTest
         URL targetTestClasses = MavenTestingUtils.getTargetDir().toPath().resolve("test-classes/org/acme/resource.txt").toUri().toURL();
 
         _context.setParentLoaderPriority(false);
-        // dump(_context);
+        dump(_context);
         resources =Collections.list(_loader.getResources("org/acme/resource.txt"));
         
         expected.clear();
@@ -275,7 +274,7 @@ public class WebAppClassLoaderTest
         expected.add(webappWebInfLibAcme);
         expected.add(webappWebInfClasses);
         
-        assertOrdered("Resources Found (Parent Loader Priority == true)",expected,resources);
+        assertThat("Resources Found (Parent Loader Priority == true)",resources,ordered(expected));
         
 //        dump(resources);
 //        assertEquals(3,resources.size());
@@ -297,7 +296,7 @@ public class WebAppClassLoaderTest
         expected.add(webappWebInfLibAcme);
         expected.add(webappWebInfClasses);
         
-        assertOrdered("Resources Found (Parent Loader Priority == true) (with serverClasses filtering)",expected,resources);
+        assertThat("Resources Found (Parent Loader Priority == true) (with serverClasses filtering)",resources,ordered(expected));
         
 //        dump(resources);
 //        assertEquals(2,resources.size());
@@ -318,7 +317,7 @@ public class WebAppClassLoaderTest
         expected.clear();
         expected.add(targetTestClasses);
         
-        assertOrdered("Resources Found (Parent Loader Priority == true) (with systemClasses filtering)",expected,resources);
+        assertThat("Resources Found (Parent Loader Priority == true) (with systemClasses filtering)",resources,ordered(expected));
         
 //        dump(resources);
 //        assertEquals(1,resources.size());
@@ -327,11 +326,11 @@ public class WebAppClassLoaderTest
 
     private void dump(WebAppContext wac)
     {
-        System.err.println("--Dump WebAppContext - "+wac);
+        System.err.println("--Dump WebAppContext - " + wac);
         System.err.printf("  context.getClass().getClassLoader() = %s%n",wac.getClass().getClassLoader());
-        dumpClassLoaderHierarchy("  ", wac.getClass().getClassLoader());
+        dumpClassLoaderHierarchy("  ",wac.getClass().getClassLoader());
         System.err.printf("  context.getClassLoader() = %s%n",wac.getClassLoader());
-        dumpClassLoaderHierarchy("  ", wac.getClassLoader());
+        dumpClassLoaderHierarchy("  ",wac.getClassLoader());
     }
 
     private void dumpClassLoaderHierarchy(String indent, ClassLoader classLoader)
@@ -363,69 +362,6 @@ public class WebAppClassLoaderTest
         for(URL url: resources)
         {
             System.err.printf(" \"%s\"%n",url);
-        }
-    }
-    
-    /**
-     * Developer Friendly list order assertion, with clear error messages indicating the full state of the expected and actual lists, along with highlighting of the problem areas.
-     * @param msg the message in case of error
-     * @param expectedList the expected list
-     * @param actualList the actual list
-     */
-    public static void assertOrdered(String msg, List<?> expectedList, List<?> actualList)
-    {
-        // same size?
-        boolean mismatch = expectedList.size() != actualList.size();
-
-        // test content
-        List<Integer> badEntries = new ArrayList<>();
-        int min = Math.min(expectedList.size(),actualList.size());
-        int max = Math.max(expectedList.size(),actualList.size());
-        for (int i = 0; i < min; i++)
-        {
-            if (!expectedList.get(i).equals(actualList.get(i)))
-            {
-                badEntries.add(i);
-            }
-        }
-        for (int i = min; i < max; i++)
-        {
-            badEntries.add(i);
-        }
-
-        if (mismatch || badEntries.size() > 0)
-        {
-            // build up detailed error message
-            StringWriter message = new StringWriter();
-            PrintWriter err = new PrintWriter(message);
-
-            err.printf("%s: Assert Contains (Ordered)",msg);
-            if (mismatch)
-            {
-                err.print(" [size mismatch]");
-            }
-            if (badEntries.size() >= 0)
-            {
-                err.printf(" [%d entries not matched]",badEntries.size());
-            }
-            err.println();
-            err.printf("Actual Entries (size: %d)%n",actualList.size());
-            for (int i = 0; i < actualList.size(); i++)
-            {
-                Object actualObj = actualList.get(i);
-                char indicator = badEntries.contains(i)?'>':' ';
-                err.printf("%s[%d] %s%n",indicator,i,actualObj==null?"<null>":actualObj.toString());
-            }
-
-            err.printf("Expected Entries (size: %d)%n",expectedList.size());
-            for (int i = 0; i < expectedList.size(); i++)
-            {
-                Object expectedObj = expectedList.get(i).toString();
-                char indicator = badEntries.contains(i)?'>':' ';
-                err.printf("%s[%d] %s%n",indicator,i,expectedObj==null?"<null>":expectedObj.toString());
-            }
-            err.flush();
-            Assert.fail(message.toString());
         }
     }
 }

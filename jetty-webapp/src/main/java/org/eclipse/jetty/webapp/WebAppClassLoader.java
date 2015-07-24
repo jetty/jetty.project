@@ -257,11 +257,13 @@ public class WebAppClassLoader extends URLClassLoader
                 File file= resource.getFile();
                 if (file != null)
                 {
-                    URL url= resource.getURL();
+                    URL url= resource.getURI().toURL();
                     addURL(url);
                 }
                 else if (resource.isDirectory())
-                    addURL(resource.getURL());
+                {
+                    addURL(resource.getURI().toURL());
+                }
                 else
                 {
                     if (LOG.isDebugEnabled())
@@ -297,6 +299,8 @@ public class WebAppClassLoader extends URLClassLoader
                 try 
                 {
                     Resource fn=lib.addPath(files[f]);
+                    if(LOG.isDebugEnabled())
+                        LOG.debug("addJar - {}", fn);
                     String fnlc=fn.getName().toLowerCase(Locale.ENGLISH);
                     // don't check if this is a directory, see Bug 353165
                     if (isFileSupported(fnlc))
