@@ -10,11 +10,6 @@
   <uri>org.eclipse.jetty.jstl.jtest</uri>
 
   <tag-file>
-    <name>errortest</name>
-    <path>/META-INF/tags/errortest.tag</path>
-  </tag-file>
-  
-  <tag-file>
     <name>errorhandler</name>
     <path>/META-INF/tags/errorhandler.tag</path>
   </tag-file>

@@ -127,9 +127,8 @@ public class JstlTest
         SimpleRequest req = new SimpleRequest(baseUri);
         String resp = req.getString("/catch-taglib.jsp");
         System.out.println("resp = " + resp);
-        assertThat("Response should be JSP processed", resp, not(containsString("<c:catch")));
-        assertThat("Response should be JSP processed", resp, not(containsString("<jtest:errortest")));
-        assertThat("Response", resp, containsString("[jtest:errorhandler] exception : "));
-        assertThat("Response", resp, containsString("[jtest:errorhandler] exception.message : "));
+        assertThat("Response should be JSP processed", resp, not(containsString("<c:catch>")));
+        assertThat("Response should be JSP processed", resp, not(containsString("<jtest:errorhandler>")));
+        assertThat("Response", resp, not(containsString("[jtest:errorhandler] exception is null")));
     }
 }

@@ -4,8 +4,8 @@
 <%@ taglib uri="http://java.sun.com/jsp/jstl/fmt" prefix="fmt" %>
 Title: JSTL c:catch test
 
-<jtest:errortest>
+<jtest:errorhandler>
   <fmt:parseNumber var="parsedNum" value="aaa" />
-</jtest:errortest>
+</jtest:errorhandler>
 
 parsedNum = <c:out value="${parsedNum}"/>
