@@ -246,7 +246,8 @@ public class WebAppClassLoaderTest
         // Expected Locations
         URL webappWebInfLibAcme = new URI("jar:" + testWebappDir.resolve("WEB-INF/lib/acme.jar").toUri().toASCIIString() + "!/org/acme/resource.txt").toURL();
         URL webappWebInfClasses = testWebappDir.resolve("WEB-INF/classes/org/acme/resource.txt").toUri().toURL();
-        URL targetTestClasses = MavenTestingUtils.getTargetDir().toPath().resolve("test-classes/org/acme/resource.txt").toUri().toURL();
+        // (from parent classloader)
+        URL targetTestClasses = this.getClass().getClassLoader().getResource("org/acme/resource.txt");
 
         _context.setParentLoaderPriority(false);
         dump(_context);
