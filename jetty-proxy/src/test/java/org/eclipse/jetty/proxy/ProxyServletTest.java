@@ -141,7 +141,7 @@ public class ProxyServletTest
 
     private void startProxy() throws Exception
     {
-        startProxy(new HashMap<String, String>());
+        startProxy(new HashMap<>());
     }
 
     private void startProxy(Map<String, String> initParams) throws Exception
@@ -651,7 +651,29 @@ public class ProxyServletTest
     @Test
     public void testTransparentProxyWithQuery() throws Exception
     {
-        final String target = "/test";
+        testTransparentProxyWithQuery("/foo", "/proxy", "/test");
+    }
+
+    @Test
+    public void testTransparentProxyEmptyContextWithQuery() throws Exception
+    {
+        testTransparentProxyWithQuery("", "/proxy", "/test");
+    }
+
+    @Test
+    public void testTransparentProxyEmptyTargetWithQuery() throws Exception
+    {
+        testTransparentProxyWithQuery("/bar", "/proxy", "");
+    }
+
+    @Test
+    public void testTransparentProxyEmptyContextEmptyTargetWithQuery() throws Exception
+    {
+        testTransparentProxyWithQuery("", "/proxy", "");
+    }
+
+    private void testTransparentProxyWithQuery(String proxyToContext, String prefix, String target) throws Exception
+    {
         final String query = "a=1&b=2";
         startServer(new HttpServlet()
         {
@@ -661,7 +683,10 @@ public class ProxyServletTest
                 if (req.getHeader("Via") != null)
                     resp.addHeader(PROXIED_HEADER, "true");
 
-                if (target.equals(req.getRequestURI()))
+                String expectedURI = proxyToContext + target;
+                if (expectedURI.isEmpty())
+                    expectedURI = "/";
+                if (expectedURI.equals(req.getRequestURI()))
                 {
                     if (query.equals(req.getQueryString()))
                     {
@@ -672,8 +697,7 @@ public class ProxyServletTest
                 resp.setStatus(404);
             }
         });
-        String proxyTo = "http://localhost:" + serverConnector.getLocalPort();
-        String prefix = "/proxy";
+        String proxyTo = "http://localhost:" + serverConnector.getLocalPort() + proxyToContext;
         proxyServlet = new ProxyServlet.Transparent();
         Map<String, String> params = new HashMap<>();
         params.put("proxyTo", proxyTo);
@@ -689,7 +713,7 @@ public class ProxyServletTest
         Assert.assertEquals(200, response.getStatus());
         Assert.assertTrue(response.getHeaders().containsKey(PROXIED_HEADER));
     }
-    
+
     @Test
     public void testTransparentProxyWithQueryWithSpaces() throws Exception
     {
