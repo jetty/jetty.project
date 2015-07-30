@@ -80,7 +80,7 @@ public class PushCacheFilterTest extends AbstractTest
         final Session session = newClient(new Session.Listener.Adapter());
 
         // Request for the primary and secondary resource to build the cache.
-        final String primaryURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
+        final String referrerURI = "http://localhost:" + connector.getLocalPort() + servletPath + primaryResource;
         HttpFields primaryFields = new HttpFields();
         MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
         final CountDownLatch warmupLatch = new CountDownLatch(1);
@@ -94,7 +94,7 @@ public class PushCacheFilterTest extends AbstractTest
                 {
                     // Request for the secondary resource.
                     HttpFields secondaryFields = new HttpFields();
-                    secondaryFields.put(HttpHeader.REFERER, primaryURI);
+                    secondaryFields.put(HttpHeader.REFERER, referrerURI);
                     MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
                     session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
                     {
@@ -139,6 +139,93 @@ public class PushCacheFilterTest extends AbstractTest
             }
         });
         Assert.assertTrue(pushLatch.await(5, TimeUnit.SECONDS));
+        Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testPushReferrerNoPath() throws Exception
+    {
+        final String primaryResource = "/primary.html";
+        final String secondaryResource = "/secondary.png";
+        final byte[] secondaryData = "SECONDARY".getBytes("UTF-8");
+        start(new HttpServlet()
+        {
+            @Override
+            protected void doGet(HttpServletRequest req, HttpServletResponse resp) throws ServletException, IOException
+            {
+                String requestURI = req.getRequestURI();
+                ServletOutputStream output = resp.getOutputStream();
+                if (requestURI.endsWith(primaryResource))
+                    output.print("<html><head></head><body>PRIMARY</body></html>");
+                else if (requestURI.endsWith(secondaryResource))
+                    output.write(secondaryData);
+            }
+        });
+
+        final Session session = newClient(new Session.Listener.Adapter());
+
+        // Request for the primary and secondary resource to build the cache.
+        // The referrerURI does not point to the primary resource, so there will be no
+        // resource association with the primary resource and therefore won't be pushed.
+        final String referrerURI = "http://localhost:" + connector.getLocalPort();
+        HttpFields primaryFields = new HttpFields();
+        MetaData.Request primaryRequest = newRequest("GET", primaryResource, primaryFields);
+        final CountDownLatch warmupLatch = new CountDownLatch(1);
+        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                if (frame.isEndStream())
+                {
+                    // Request for the secondary resource.
+                    HttpFields secondaryFields = new HttpFields();
+                    secondaryFields.put(HttpHeader.REFERER, referrerURI);
+                    MetaData.Request secondaryRequest = newRequest("GET", secondaryResource, secondaryFields);
+                    session.newStream(new HeadersFrame(0, secondaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+                    {
+                        @Override
+                        public void onData(Stream stream, DataFrame frame, Callback callback)
+                        {
+                            warmupLatch.countDown();
+                        }
+                    });
+                }
+            }
+        });
+        Assert.assertTrue(warmupLatch.await(5, TimeUnit.SECONDS));
+
+        // Request again the primary resource, we should not get the secondary resource pushed.
+        primaryRequest = newRequest("GET", primaryResource, primaryFields);
+        final CountDownLatch primaryResponseLatch = new CountDownLatch(1);
+        final CountDownLatch pushLatch = new CountDownLatch(1);
+        session.newStream(new HeadersFrame(0, primaryRequest, null, true), new Promise.Adapter<>(), new Stream.Listener.Adapter()
+        {
+            @Override
+            public Stream.Listener onPush(Stream stream, PushPromiseFrame frame)
+            {
+                return new Adapter()
+                {
+                    @Override
+                    public void onData(Stream stream, DataFrame frame, Callback callback)
+                    {
+                        callback.succeeded();
+                        if (frame.isEndStream())
+                            pushLatch.countDown();
+                    }
+                };
+            }
+
+            @Override
+            public void onData(Stream stream, DataFrame frame, Callback callback)
+            {
+                callback.succeeded();
+                if (frame.isEndStream())
+                    primaryResponseLatch.countDown();
+            }
+        });
+        Assert.assertFalse(pushLatch.await(1, TimeUnit.SECONDS));
         Assert.assertTrue(primaryResponseLatch.await(5, TimeUnit.SECONDS));
     }
 
