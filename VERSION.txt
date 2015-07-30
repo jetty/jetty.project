@@ -1,3 +1,13 @@
+jetty-9.2.13.v20150730 - 30 July 2015
+ + 472859 ConcatServlet may expose protected resources.
+ + 473006 Encode addPath in URLResource
+ + 473243 Delay resource close for async default content
+ + 473266 Better handling of MultiException
+ + 473322 GatherWrite limit handling
+ + 473624 ProxyServlet.Transparent / TransparentDelegate add trailing slash
+   before query when using prefix.
+ + 473832 SslConnection flips back buffers on handshake exception
+
 jetty-9.2.12.v20150709 - 09 July 2015
  + 469414 Proxied redirects expose upstream server name.
  + 469936 Remove usages of SpinLock.
