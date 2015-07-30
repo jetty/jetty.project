@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.handler;
 import java.io.IOException;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeoutException;
+import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.atomic.AtomicLong;
 import java.util.concurrent.atomic.AtomicReference;
@@ -30,7 +31,6 @@ import javax.servlet.AsyncListener;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
-import javax.sql.rowset.BaseRowSet;
 
 import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.server.AsyncContextEvent;
@@ -43,12 +43,15 @@ import org.eclipse.jetty.util.annotation.ManagedAttribute;
 import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.Graceful;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 @ManagedObject("Request Statistics Gathering")
 public class StatisticsHandler extends HandlerWrapper implements Graceful
 {
+    private static final Logger LOG = Log.getLogger(StatisticsHandler.class);
     private final AtomicLong _statsStartedAt = new AtomicLong();
 
     private final CounterStatistic _requestStats = new CounterStatistic();
@@ -68,6 +71,8 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
     private final AtomicLong _responsesTotalBytes = new AtomicLong();
 
     private final AtomicReference<FutureCallback> _shutdown=new AtomicReference<>();
+    
+    private final AtomicBoolean _wrapWarning = new AtomicBoolean();
     
     private final AsyncListener _onCompletion = new AsyncListener()
     {
@@ -162,6 +167,11 @@ public class StatisticsHandler extends HandlerWrapper implements Graceful
             Handler handler = getHandler();
             if (handler!=null && _shutdown.get()==null && isStarted())
                 handler.handle(path, baseRequest, request, response);
+            else if (baseRequest.isHandled())
+            {
+                if (_wrapWarning.compareAndSet(false,true))
+                    LOG.warn("Bad statistics configuration. Latencies will be incorrect in {}",this);
+            }
             else
             {
                 baseRequest.setHandled(true);
