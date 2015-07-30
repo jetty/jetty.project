@@ -20,7 +20,7 @@
   <parent>
     <groupId>org.eclipse.jetty.cdi</groupId>
     <artifactId>jetty-cdi-parent</artifactId>
-    <version>9.3.3-SNAPSHOT</version>
+    <version>9.3.2.v20150730</version>
   </parent>
   <modelVersion>4.0.0</modelVersion>
   <artifactId>test-cdi-webapp</artifactId>
