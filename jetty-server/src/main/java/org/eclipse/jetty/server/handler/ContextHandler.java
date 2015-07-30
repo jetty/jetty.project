@@ -707,7 +707,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         if (_contextPath == null)
             throw new IllegalStateException("Null contextPath");
 
-        if (_logger!=null)
+        if (_logger==null)
             _logger = Log.getLogger(getDisplayName() == null?getContextPath():getDisplayName());
         ClassLoader old_classloader = null;
         Thread current_thread = null;
