@@ -44,6 +44,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpURI;
+import org.eclipse.jetty.http.HttpVersion;
 import org.eclipse.jetty.server.Dispatcher;
 import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.util.StringUtil;
@@ -113,6 +114,12 @@ public class PushCacheFilter implements Filter
     @Override
     public void doFilter(ServletRequest req, ServletResponse resp, FilterChain chain) throws IOException, ServletException
     {
+        if (HttpVersion.fromString(req.getProtocol()).getVersion() < 20)
+        {
+            chain.doFilter(req, resp);
+            return;
+        }
+
         long now = System.nanoTime();
         HttpServletRequest request = (HttpServletRequest)req;
 
