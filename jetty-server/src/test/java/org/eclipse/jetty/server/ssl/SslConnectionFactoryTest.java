@@ -21,6 +21,7 @@ package org.eclipse.jetty.server.ssl;
 import java.io.File;
 import java.io.FileNotFoundException;
 import java.io.IOException;
+import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.charset.StandardCharsets;
 import java.security.cert.X509Certificate;
@@ -141,6 +142,19 @@ public class SslConnectionFactoryTest
         Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
         Assert.assertThat(response,Matchers.containsString("url=/ctx/path"));
         return response;
+    }
+
+    @Test
+    public void testBadHandshake() throws Exception
+    {
+        try(Socket socket=new Socket("127.0.0.1", _port); OutputStream out = socket.getOutputStream())
+        {
+            out.write("Rubbish".getBytes());
+            out.flush();
+            
+            Assert.assertThat(socket.getInputStream().read(),Matchers.equalTo(-1));
+        }
+        
     }
     
     private String getResponse(String sniHost,String reqHost, String cn) throws Exception

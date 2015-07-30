@@ -503,8 +503,15 @@ public class SslConnection extends AbstractConnection
                         // Let's unwrap even if we have no net data because in that
                         // case we want to fall through to the handshake handling
                         int pos = BufferUtil.flipToFill(app_in);
-                        SSLEngineResult unwrapResult = _sslEngine.unwrap(_encryptedInput, app_in);
-                        BufferUtil.flipToFlush(app_in, pos);
+                        SSLEngineResult unwrapResult;
+                        try
+                        {
+                            unwrapResult = _sslEngine.unwrap(_encryptedInput, app_in);
+                        }
+                        finally
+                        {
+                            BufferUtil.flipToFlush(app_in, pos);
+                        }
                         if (DEBUG)
                         {
                             LOG.debug("{} net={} unwrap {}", SslConnection.this, net_filled, unwrapResult.toString().replace('\n',' '));
@@ -728,10 +735,18 @@ public class SslConnection extends AbstractConnection
                     // We call sslEngine.wrap to try to take bytes from appOut buffers and encrypt them into the _netOut buffer
                     BufferUtil.compact(_encryptedOutput);
                     int pos = BufferUtil.flipToFill(_encryptedOutput);
-                    SSLEngineResult wrapResult = _sslEngine.wrap(appOuts, _encryptedOutput);
+                    SSLEngineResult wrapResult;
+                    try
+                    {
+                        wrapResult = _sslEngine.wrap(appOuts, _encryptedOutput);
+                    }
+                    finally
+                    {
+                        BufferUtil.flipToFlush(_encryptedOutput, pos);
+                    }
                     if (DEBUG)
                         LOG.debug("{} wrap {}", SslConnection.this, wrapResult.toString().replace('\n',' '));
-                    BufferUtil.flipToFlush(_encryptedOutput, pos);
+                    
                     Status wrapResultStatus = wrapResult.getStatus();
 
                     boolean allConsumed=true;
