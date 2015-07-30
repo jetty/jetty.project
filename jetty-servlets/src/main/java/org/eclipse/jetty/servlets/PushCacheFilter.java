@@ -173,6 +173,8 @@ public class PushCacheFilter implements Filter
                 if ("GET".equalsIgnoreCase(request.getMethod()))
                 {
                     String referrerPath = referrerURI.getPath();
+                    if (referrerPath == null)
+                        referrerPath = "/";
                     if (referrerPath.startsWith(request.getContextPath()))
                     {
                         String referrerPathNoContext = referrerPath.substring(request.getContextPath().length());

@@ -122,12 +122,8 @@ public class AbstractTest
     public void dispose() throws Exception
     {
         if (client != null)
-        {
             client.stop();
-        }
         if (server != null)
-        {
             server.stop();
-        }
     }
 }
