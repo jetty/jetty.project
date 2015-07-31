@@ -149,7 +149,7 @@ public abstract class CompressExtension extends AbstractExtension
         {
             return;
         }
-        byte[] output = new byte[1024];
+        byte[] output = new byte[1024]; // TODO: make configurable size
 
         if (inflater.needsInput() && !supplyInput(inflater, buf))
         {
@@ -163,22 +163,7 @@ public abstract class CompressExtension extends AbstractExtension
             if (read == 0)
             {
                 LOG.debug("Decompress: read 0 {}",toDetail(inflater));
-                if (inflater.finished() || inflater.needsDictionary())
-                {
-                    if (LOG.isDebugEnabled())
-                    {
-                        LOG.debug("Decompress: finished? {}",toDetail(inflater));
-                    }
-                    // We are finished ?
-                    break;
-                }
-                else if (inflater.needsInput())
-                {
-                    if (!supplyInput(inflater, buf))
-                    {
-                        break;
-                    }
-                }
+                break;
             }
             else
             {
@@ -187,7 +172,8 @@ public abstract class CompressExtension extends AbstractExtension
                 {
                     LOG.debug("Decompressed {} bytes: {}",read,toDetail(inflater));
                 }
-                accumulator.addChunk(output,0,read);
+                
+                accumulator.copyChunk(output,0,read);
             }
         }
         
