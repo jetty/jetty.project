@@ -17,7 +17,7 @@
 //
 
 /**
- * Jetty WebSocket Common : Frame &amp; Message Compression Extension Implementations
+ * Jetty WebSocket Common : Message Compression Extension Implementations
  */
 package org.eclipse.jetty.websocket.common.extensions.compress;
 
