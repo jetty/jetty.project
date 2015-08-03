@@ -1,4 +1,26 @@
-jetty-9.3.2-SNAPSHOT
+jetty-9.3.2.v20150730 - 30 July 2015
+ + 470351 Fixed SNI matching of wildcard certificates
+ + 470727 Thread Starvation of selector wakeups.
+ + 472601 fix typo
+ + 472621 Unjustified timeout when serving static content
+ + 472781 GzipHandler isMimeTypeGzipable() bad logic
+ + 472859 ConcatServlet may expose protected resources.
+ + 472931 HttpConfiguration copy constructor incomplete
+ + 472974 Improved StatisticsHandler 503 generation
+ + 473006 Encode addPath in URLResource
+ + 473118 HTTP/2 server does not retrieve Host header from client.
+ + 473243 Delay resource close for async default content
+ + 473266 Better handling of MultiException
+ + 473294 Fixed include cipher suites support for wildcards
+ + 473307 Add 301 Moved Permanently Rules to jetty-rewrite
+ + 473309 Add special (non-replacement) Terminating rules to jetty-rewrite
+ + 473319 Parameterize status code on Redirect Rules for alternate use
+ + 473321 Overriding SSL context KeyStoreType requires explicit override of
+   TrustStoreType
+ + 473322 GatherWrite limit handling
+ + 473624 ProxyServlet.Transparent / TransparentDelegate add trailing slash
+   before query when using prefix.
+ + 473832 SslConnection flips back buffers on handshake exception
 
 jetty-9.3.1.v20150714 - 14 July 2015
  + 441020 Support HEADERS followed by CONTINUATION+.
