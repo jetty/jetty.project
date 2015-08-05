@@ -212,7 +212,9 @@ public class HttpClient extends ContainerLifeCycle
         transport.setHttpClient(this);
         addBean(transport);
 
-        resolver = new SocketAddressResolver(executor, scheduler, getAddressResolutionTimeout());
+        if (resolver == null)
+            resolver = new SocketAddressResolver.Async(executor, scheduler, getAddressResolutionTimeout());
+        addBean(resolver);
 
         handlers.add(new ContinueProtocolHandler(this));
         handlers.add(new RedirectProtocolHandler(this));
@@ -604,7 +606,8 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the timeout, in milliseconds, for the DNS resolution of host addresses
+     * @return the timeout, in milliseconds, for the default {@link SocketAddressResolver} created at startup
+     * @see #getSocketAddressResolver()
      */
     public long getAddressResolutionTimeout()
     {
@@ -612,7 +615,13 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param addressResolutionTimeout the timeout, in milliseconds, for the DNS resolution of host addresses
+     * <p>Sets the socket address resolution timeout used by the default {@link SocketAddressResolver}
+     * created by this {@link HttpClient} at startup.</p>
+     * <p>For more fine tuned configuration of socket address resolution, see
+     * {@link #setSocketAddressResolver(SocketAddressResolver)}.</p>
+     *
+     * @param addressResolutionTimeout the timeout, in milliseconds, for the default {@link SocketAddressResolver} created at startup
+     * @see #setSocketAddressResolver(SocketAddressResolver)
      */
     public void setAddressResolutionTimeout(long addressResolutionTimeout)
     {
@@ -720,6 +729,22 @@ public class HttpClient extends ContainerLifeCycle
     public void setScheduler(Scheduler scheduler)
     {
         this.scheduler = scheduler;
+    }
+
+    /**
+     * @return the {@link SocketAddressResolver} of this {@link HttpClient}
+     */
+    public SocketAddressResolver getSocketAddressResolver()
+    {
+        return resolver;
+    }
+
+    /**
+     * @param resolver the {@link SocketAddressResolver} of this {@link HttpClient}
+     */
+    public void setSocketAddressResolver(SocketAddressResolver resolver)
+    {
+        this.resolver = resolver;
     }
 
     /**
