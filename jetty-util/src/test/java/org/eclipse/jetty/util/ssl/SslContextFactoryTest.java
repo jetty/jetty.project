@@ -100,6 +100,8 @@ public class SslContextFactoryTest
         cf.setKeyStoreResource(keystoreResource);
         cf.setKeyStorePassword("storepwd");
         cf.setKeyManagerPassword("keypwd");
+        cf.setTrustStoreResource(keystoreResource);
+        cf.setTrustStorePassword(null);
 
         cf.start();
 

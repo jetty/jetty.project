@@ -803,49 +803,68 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /**
      * @param password
-     *            The password for the key store.  If null is passed then
+     *            The password for the key store.  If null is passed and
+     *            a keystore is set, then
      *            the {@link Password#getPassword(String, String, String)} is used to
-     *            obtain a password either from the "org.eclipse.jetty.ssl.password"
+     *            obtain a password either from the {@value #PASSWORD_PROPERTY} 
      *            System property or by prompting for manual entry.
      */
     public void setKeyStorePassword(String password)
     {
         checkNotStarted();
-
-        _keyStorePassword = password==null
-            ?Password.getPassword(PASSWORD_PROPERTY,null,null)
-            :new Password(password);
+        if (password==null)
+        {
+            if (_keyStoreResource!=null)
+                _keyStorePassword=Password.getPassword(PASSWORD_PROPERTY,null,null);
+            else
+                _keyStorePassword=null;
+        }
+        else
+            _keyStorePassword = new Password(password);
     }
 
     /**
      * @param password
      *            The password (if any) for the specific key within the key store.
-     *            If null is passed then
-     *            the {@link Password#getPassword(String, String, String)} is used to
-     *            obtain a password either from the "org.eclipse.jetty.ssl.keypassword"
-     *            System property or by prompting for manual entry.
+     *            If null is passed and the {@value #KEYPASSWORD_PROPERTY} system property is set, 
+     *            then the {@link Password#getPassword(String, String, String)} is used to
+     *            obtain a password from the {@value #KEYPASSWORD_PROPERTY}  system property.
      */
     public void setKeyManagerPassword(String password)
     {
         checkNotStarted();
-        _keyManagerPassword = password==null
-            ?Password.getPassword(KEYPASSWORD_PROPERTY,null,null)
-            :new Password(password);
+        if (password==null)
+        {
+            if (System.getProperty(KEYPASSWORD_PROPERTY)!=null)
+                _keyManagerPassword = Password.getPassword(KEYPASSWORD_PROPERTY,null,null);
+            else
+                _keyManagerPassword = null;
+        }
+        else
+            _keyManagerPassword = new Password(password);
     }
 
     /**
      * @param password
-     *            The password for the trust store. If null is passed then
+     *            The password for the trust store. If null is passed and a truststore is set
+     *            that is different from the keystore, then
      *            the {@link Password#getPassword(String, String, String)} is used to
-     *            obtain a password either from the "org.eclipse.jetty.ssl.password"
+     *            obtain a password either from the {@value #PASSWORD_PROPERTY}
      *            System property or by prompting for manual entry.
      */
     public void setTrustStorePassword(String password)
     {
         checkNotStarted();
-        _trustStorePassword = password==null
-            ?Password.getPassword(PASSWORD_PROPERTY,null,null)
-            :new Password(password);
+        if (password==null)
+        {
+            // Do we need a truststore password?
+            if (_trustStoreResource!=null && !_trustStoreResource.equals(_keyStoreResource))
+                _trustStorePassword = Password.getPassword(PASSWORD_PROPERTY,null,null);
+            else
+                _trustStorePassword = null;
+        }
+        else
+            _trustStorePassword=new Password(password);
     }
 
     /**
