@@ -173,6 +173,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
+        client.setConnectBlocking(true);
         ContentResponse response = client.GET(scheme + "://localhost:" + connector.getLocalPort());
 
         Assert.assertNotNull(response);
@@ -1135,16 +1136,16 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         };
 
-        
+
         client.newRequest("localhost", connector.getLocalPort())
                 .scheme(scheme)
                 .send(listener);
-        
+
         Response response = ex.exchange(null);
 
         Assert.assertEquals(200, response.getStatus());
         Assert.assertArrayEquals(content, listener.getContent());
-        
+
     }
 
     @Test
@@ -1381,7 +1382,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
 
         Assert.assertTrue(latch.await(5, TimeUnit.SECONDS));
     }
-    
+
     @Test
     public void testCompleteNotInvokedUntilContentConsumed() throws Exception
     {

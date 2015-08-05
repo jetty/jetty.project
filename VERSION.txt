@@ -24,6 +24,16 @@ jetty-9.3.2.v20150730 - 30 July 2015
    before query when using prefix.
  + 473832 SslConnection flips back buffers on handshake exception
 
+jetty-9.2.13.v20150730 - 30 July 2015
+ + 472859 ConcatServlet may expose protected resources.
+ + 473006 Encode addPath in URLResource
+ + 473243 Delay resource close for async default content
+ + 473266 Better handling of MultiException
+ + 473322 GatherWrite limit handling
+ + 473624 ProxyServlet.Transparent / TransparentDelegate add trailing slash
+   before query when using prefix.
+ + 473832 SslConnection flips back buffers on handshake exception
+
 jetty-9.3.1.v20150714 - 14 July 2015
  + 441020 Support HEADERS followed by CONTINUATION+.
  + 460671 Rationalize property names (fix for jetty.sh)

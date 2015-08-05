@@ -56,6 +56,7 @@ import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.LeakDetector;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
@@ -84,13 +85,13 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         server.removeConnector(connector);
         LeakTrackingByteBufferPool serverBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
         connector = new ServerConnector(server, connector.getExecutor(), connector.getScheduler(),
-                serverBufferPool , 1, Math.min(1, cores / 2), 
+                serverBufferPool , 1, Math.min(1, cores / 2),
                 AbstractConnectionFactory.getFactories(sslContextFactory, new HttpConnectionFactory()));
         server.addConnector(connector);
         server.start();
 
         client.stop();
-        
+
         HttpClient newClient = new HttpClient(new HttpClientTransportOverHTTP()
         {
             @Override
@@ -114,6 +115,7 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
             }
         }, sslContextFactory);
         newClient.setExecutor(client.getExecutor());
+        newClient.setSocketAddressResolver(new SocketAddressResolver.Sync());
         client = newClient;
         LeakTrackingByteBufferPool clientBufferPool = new LeakTrackingByteBufferPool(new MappedByteBufferPool.Tagged());
         client.setByteBufferPool(clientBufferPool);
@@ -144,11 +146,11 @@ public class HttpClientLoadTest extends AbstractHttpClientServerTest
         assertThat("Server BufferPool - leaked acquires", serverBufferPool.getLeakedAcquires(), is(0L));
         assertThat("Server BufferPool - leaked releases", serverBufferPool.getLeakedReleases(), is(0L));
         assertThat("Server BufferPool - unreleased", serverBufferPool.getLeakedResources(), is(0L));
-        
+
         assertThat("Client BufferPool - leaked acquires", clientBufferPool.getLeakedAcquires(), is(0L));
         assertThat("Client BufferPool - leaked releases", clientBufferPool.getLeakedReleases(), is(0L));
         assertThat("Client BufferPool - unreleased", clientBufferPool.getLeakedResources(), is(0L));
-        
+
         assertThat("Connection Leaks", connectionLeaks.get(), is(0L));
     }
 

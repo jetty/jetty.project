@@ -31,69 +31,10 @@ import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
- * Creates asynchronously {@link SocketAddress} instances, returning them through a {@link Promise},
- * in order to avoid blocking on DNS lookup.
- * <p>
- * {@link InetSocketAddress#InetSocketAddress(String, int)} attempts to perform a DNS resolution of
- * the host name, and this may block for several seconds.
- * This class creates the {@link InetSocketAddress} in a separate thread and provides the result
- * through a {@link Promise}, with the possibility to specify a timeout for the operation.
- * <p>
- * Example usage:
- * <pre>
- * SocketAddressResolver resolver = new SocketAddressResolver(executor, scheduler);
- * resolver.resolve("www.google.com", 80, new Promise&lt;SocketAddress&gt;()
- * {
- *     public void succeeded(SocketAddress result)
- *     {
- *         // The address was resolved
- *     }
- *
- *     public void failed(Throwable failure)
- *     {
- *         // The address resolution failed
- *     }
- * });
- * </pre>
+ * <p>Creates {@link SocketAddress} instances, returning them through a {@link Promise}.</p>
  */
-public class SocketAddressResolver
+public interface SocketAddressResolver
 {
-    private static final Logger LOG = Log.getLogger(SocketAddressResolver.class);
-
-    private final Executor executor;
-    private final Scheduler scheduler;
-    private final long timeout;
-
-    /**
-     * Creates a new instance with the given executor (to perform DNS resolution in a separate thread),
-     * the given scheduler (to cancel the operation if it takes too long) and the given timeout, in milliseconds.
-     *
-     * @param executor the thread pool to use to perform DNS resolution in pooled threads
-     * @param scheduler the scheduler to schedule tasks to cancel DNS resolution if it takes too long
-     * @param timeout the timeout, in milliseconds, for the DNS resolution to complete
-     */
-    public SocketAddressResolver(Executor executor, Scheduler scheduler, long timeout)
-    {
-        this.executor = executor;
-        this.scheduler = scheduler;
-        this.timeout = timeout;
-    }
-
-    public Executor getExecutor()
-    {
-        return executor;
-    }
-
-    public Scheduler getScheduler()
-    {
-        return scheduler;
-    }
-
-    public long getTimeout()
-    {
-        return timeout;
-    }
-
     /**
      * Resolves the given host and port, returning a {@link SocketAddress} through the given {@link Promise}
      * with the default timeout.
@@ -101,76 +42,149 @@ public class SocketAddressResolver
      * @param host the host to resolve
      * @param port the port of the resulting socket address
      * @param promise the callback invoked when the resolution succeeds or fails
-     * @see #resolve(String, int, long, Promise)
      */
-    public void resolve(String host, int port, Promise<SocketAddress> promise)
+    public void resolve(String host, int port, Promise<SocketAddress> promise);
+
+    /**
+     * <p>Creates {@link SocketAddress} instances synchronously in the caller thread.</p>
+     */
+    public static class Sync implements SocketAddressResolver
     {
-        resolve(host, port, timeout, promise);
+        @Override
+        public void resolve(String host, int port, Promise<SocketAddress> promise)
+        {
+            try
+            {
+                InetSocketAddress result = new InetSocketAddress(host, port);
+                if (result.isUnresolved())
+                    promise.failed(new UnresolvedAddressException());
+                else
+                    promise.succeeded(result);
+            }
+            catch (Throwable x)
+            {
+                promise.failed(x);
+            }
+        }
     }
 
     /**
-     * Resolves the given host and port, returning a {@link SocketAddress} through the given {@link Promise}
-     * with the given timeout.
+     * <p>Creates {@link SocketAddress} instances asynchronously in a different thread.</p>
+     * <p>{@link InetSocketAddress#InetSocketAddress(String, int)} attempts to perform a DNS
+     * resolution of the host name, and this may block for several seconds.
+     * This class creates the {@link InetSocketAddress} in a separate thread and provides the result
+     * through a {@link Promise}, with the possibility to specify a timeout for the operation.</p>
+     * <p>Example usage:</p>
+     * <pre>
+     * SocketAddressResolver resolver = new SocketAddressResolver.Async(executor, scheduler, timeout);
+     * resolver.resolve("www.google.com", 80, new Promise&lt;SocketAddress&gt;()
+     * {
+     *     public void succeeded(SocketAddress result)
+     *     {
+     *         // The address was resolved
+     *     }
      *
-     * @param host the host to resolve
-     * @param port the port of the resulting socket address
-     * @param timeout the timeout, in milliseconds, for the DNS resolution to complete
-     * @param promise the callback invoked when the resolution succeeds or fails
+     *     public void failed(Throwable failure)
+     *     {
+     *         // The address resolution failed
+     *     }
+     * });
+     * </pre>
      */
-    protected void resolve(final String host, final int port, final long timeout, final Promise<SocketAddress> promise)
+    public static class Async implements SocketAddressResolver
     {
-        executor.execute(new Runnable()
-        {
-            @Override
-            public void run()
-            {
-                Scheduler.Task task = null;
-                final AtomicBoolean complete = new AtomicBoolean();
-                if (timeout > 0)
-                {
-                    final Thread thread = Thread.currentThread();
-                    task = scheduler.schedule(new Runnable()
-                    {
-                        @Override
-                        public void run()
-                        {
-                            if (complete.compareAndSet(false, true))
-                            {
-                                promise.failed(new TimeoutException());
-                                thread.interrupt();
-                            }
-                        }
-                    }, timeout, TimeUnit.MILLISECONDS);
-                }
+        private static final Logger LOG = Log.getLogger(SocketAddressResolver.class);
 
-                try
+        private final Executor executor;
+        private final Scheduler scheduler;
+        private final long timeout;
+
+        /**
+         * Creates a new instance with the given executor (to perform DNS resolution in a separate thread),
+         * the given scheduler (to cancel the operation if it takes too long) and the given timeout, in milliseconds.
+         *
+         * @param executor  the thread pool to use to perform DNS resolution in pooled threads
+         * @param scheduler the scheduler to schedule tasks to cancel DNS resolution if it takes too long
+         * @param timeout   the timeout, in milliseconds, for the DNS resolution to complete
+         */
+        public Async(Executor executor, Scheduler scheduler, long timeout)
+        {
+            this.executor = executor;
+            this.scheduler = scheduler;
+            this.timeout = timeout;
+        }
+
+        public Executor getExecutor()
+        {
+            return executor;
+        }
+
+        public Scheduler getScheduler()
+        {
+            return scheduler;
+        }
+
+        public long getTimeout()
+        {
+            return timeout;
+        }
+
+        @Override
+        public void resolve(final String host, final int port, final Promise<SocketAddress> promise)
+        {
+            executor.execute(new Runnable()
+            {
+                @Override
+                public void run()
                 {
-                    long start = System.nanoTime();
-                    InetSocketAddress result = new InetSocketAddress(host, port);
-                    long elapsed = System.nanoTime() - start;
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("Resolved {} in {} ms", host, TimeUnit.NANOSECONDS.toMillis(elapsed));
-                    if (complete.compareAndSet(false, true))
+                    Scheduler.Task task = null;
+                    final AtomicBoolean complete = new AtomicBoolean();
+                    if (timeout > 0)
                     {
-                        if (result.isUnresolved())
-                            promise.failed(new UnresolvedAddressException());
-                        else
-                            promise.succeeded(result);
+                        final Thread thread = Thread.currentThread();
+                        task = scheduler.schedule(new Runnable()
+                        {
+                            @Override
+                            public void run()
+                            {
+                                if (complete.compareAndSet(false, true))
+                                {
+                                    promise.failed(new TimeoutException());
+                                    thread.interrupt();
+                                }
+                            }
+                        }, timeout, TimeUnit.MILLISECONDS);
+                    }
+
+                    try
+                    {
+                        long start = System.nanoTime();
+                        InetSocketAddress result = new InetSocketAddress(host, port);
+                        long elapsed = System.nanoTime() - start;
+                        if (LOG.isDebugEnabled())
+                            LOG.debug("Resolved {} in {} ms", host, TimeUnit.NANOSECONDS.toMillis(elapsed));
+                        if (complete.compareAndSet(false, true))
+                        {
+                            if (result.isUnresolved())
+                                promise.failed(new UnresolvedAddressException());
+                            else
+                                promise.succeeded(result);
+                        }
+                    }
+                    catch (Throwable x)
+                    {
+                        if (complete.compareAndSet(false, true))
+                            promise.failed(x);
+                    }
+                    finally
+                    {
+                        if (task != null)
+                            task.cancel();
+                        // Reset the interrupted status before releasing the thread to the pool
+                        Thread.interrupted();
                     }
                 }
-                catch (Throwable x)
-                {
-                    if (complete.compareAndSet(false, true))
-                        promise.failed(x);
-                }
-                finally
-                {
-                    if (task != null)
-                        task.cancel();
-                    // Reset the interrupted status before releasing the thread to the pool
-                    Thread.interrupted();
-                }
-            }
-        });
+            });
+        }
     }
 }

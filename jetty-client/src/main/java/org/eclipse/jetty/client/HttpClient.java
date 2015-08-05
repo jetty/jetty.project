@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
+import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -137,6 +139,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile boolean strictEventOrdering = false;
     private volatile HttpField encodingField;
     private volatile boolean removeIdleDestinations = false;
+    private volatile boolean connectBlocking = false;
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -208,7 +211,9 @@ public class HttpClient extends ContainerLifeCycle
         transport.setHttpClient(this);
         addBean(transport);
 
-        resolver = new SocketAddressResolver(executor, scheduler, getAddressResolutionTimeout());
+        if (resolver == null)
+            resolver = new SocketAddressResolver.Async(executor, scheduler, getAddressResolutionTimeout());
+        addBean(resolver);
 
         handlers.put(new ContinueProtocolHandler());
         handlers.put(new RedirectProtocolHandler(this));
@@ -604,7 +609,8 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @return the timeout, in milliseconds, for the DNS resolution of host addresses
+     * @return the timeout, in milliseconds, for the default {@link SocketAddressResolver} created at startup
+     * @see #getSocketAddressResolver()
      */
     public long getAddressResolutionTimeout()
     {
@@ -612,7 +618,13 @@ public class HttpClient extends ContainerLifeCycle
     }
 
     /**
-     * @param addressResolutionTimeout the timeout, in milliseconds, for the DNS resolution of host addresses
+     * <p>Sets the socket address resolution timeout used by the default {@link SocketAddressResolver}
+     * created by this {@link HttpClient} at startup.</p>
+     * <p>For more fine tuned configuration of socket address resolution, see
+     * {@link #setSocketAddressResolver(SocketAddressResolver)}.</p>
+     *
+     * @param addressResolutionTimeout the timeout, in milliseconds, for the default {@link SocketAddressResolver} created at startup
+     * @see #setSocketAddressResolver(SocketAddressResolver)
      */
     public void setAddressResolutionTimeout(long addressResolutionTimeout)
     {
@@ -720,6 +732,22 @@ public class HttpClient extends ContainerLifeCycle
     public void setScheduler(Scheduler scheduler)
     {
         this.scheduler = scheduler;
+    }
+
+    /**
+     * @return the {@link SocketAddressResolver} of this {@link HttpClient}
+     */
+    public SocketAddressResolver getSocketAddressResolver()
+    {
+        return resolver;
+    }
+
+    /**
+     * @param resolver the {@link SocketAddressResolver} of this {@link HttpClient}
+     */
+    public void setSocketAddressResolver(SocketAddressResolver resolver)
+    {
+        this.resolver = resolver;
     }
 
     /**
@@ -932,6 +960,29 @@ public class HttpClient extends ContainerLifeCycle
     public void setRemoveIdleDestinations(boolean removeIdleDestinations)
     {
         this.removeIdleDestinations = removeIdleDestinations;
+    }
+
+    /**
+     * @return whether {@code connect()} operations are performed in blocking mode
+     */
+    public boolean isConnectBlocking()
+    {
+        return connectBlocking;
+    }
+
+    /**
+     * <p>Whether {@code connect()} operations are performed in blocking mode.</p>
+     * <p>If {@code connect()} are performed in blocking mode, then {@link Socket#connect(SocketAddress, int)}
+     * will be used to connect to servers.</p>
+     * <p>Otherwise, {@link SocketChannel#connect(SocketAddress)} will be used in non-blocking mode,
+     * therefore registering for {@link SelectionKey#OP_CONNECT} and finishing the connect operation
+     * when the NIO system emits that event.</p>
+     *
+     * @param connectBlocking whether {@code connect()} operations are performed in blocking mode
+     */
+    public void setConnectBlocking(boolean connectBlocking)
+    {
+        this.connectBlocking = connectBlocking;
     }
 
     /**
