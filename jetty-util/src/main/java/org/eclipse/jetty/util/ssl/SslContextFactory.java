@@ -38,6 +38,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
+import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -344,16 +345,21 @@ public class SslContextFactory extends AbstractLifeCycle
 
                 if (_validateCerts && keyStore != null)
                 {
-                    if (_certAlias == null)
+                    if (_certAlias==null)
                     {
-                        List<String> aliases = Collections.list(keyStore.aliases());
-                        _certAlias = aliases.size() == 1 ? aliases.get(0) : null;
+                        for (Enumeration<String> e=keyStore.aliases(); _certAlias==null && e.hasMoreElements(); )
+                        {
+                            String alias=e.nextElement();
+                            Certificate c =keyStore.getCertificate(alias);
+                            if (c!=null && "X.509".equals(c.getType()))
+                                _certAlias=alias;
+                        }
                     }
 
                     Certificate cert = _certAlias == null?null:keyStore.getCertificate(_certAlias);
-                    if (cert == null)
+                    if (cert==null || !"X.509".equals(cert.getType()))
                     {
-                        throw new Exception("No certificate found in the keystore" + (_certAlias==null ? "":" for alias " + _certAlias));
+                        throw new Exception("No X.509 certificate in the keystore" + (_certAlias==null ? "":" for alias " + _certAlias));
                     }
 
                     CertificateValidator validator = new CertificateValidator(trustStore, crls);
@@ -371,7 +377,7 @@ public class SslContextFactory extends AbstractLifeCycle
                     for (String alias : Collections.list(keyStore.aliases()))
                     {
                         Certificate certificate = keyStore.getCertificate(alias);
-                        if ("X.509".equals(certificate.getType()))
+                        if (certificate!=null && "X.509".equals(certificate.getType()))
                         {
                             X509Certificate x509 = (X509Certificate)certificate;
 
