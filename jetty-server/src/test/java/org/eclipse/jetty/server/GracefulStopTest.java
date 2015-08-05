@@ -24,6 +24,7 @@ import static org.hamcrest.Matchers.instanceOf;
 import static org.hamcrest.Matchers.lessThan;
 import static org.junit.Assert.assertThat;
 
+import java.io.EOFException;
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.ConnectException;
@@ -39,6 +40,7 @@ import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.server.handler.StatisticsHandler;
 import org.eclipse.jetty.util.IO;
@@ -90,7 +92,12 @@ public class GracefulStopTest
         assertThat(client.getInputStream().read(),Matchers.is(-1));
 
         assertThat(handler.handling.get(),Matchers.is(false));
-        assertThat(handler.thrown.get(),instanceOf(ClosedChannelException.class));
+        assertThat(handler.thrown.get(),
+                Matchers.anyOf(
+                instanceOf(ClosedChannelException.class),
+                instanceOf(EofException.class),
+                instanceOf(EOFException.class))
+                );
 
         client.close();
     }
