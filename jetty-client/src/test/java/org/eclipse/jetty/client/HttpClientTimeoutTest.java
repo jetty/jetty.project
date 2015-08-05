@@ -29,6 +29,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 import java.util.concurrent.atomic.AtomicInteger;
+
 import javax.net.ssl.SSLEngine;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -301,7 +302,19 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
 
     @Slow
     @Test
-    public void testConnectTimeoutFailsRequest() throws Exception
+    public void testBlockingConnectTimeoutFailsRequest() throws Exception
+    {
+        testConnectTimeoutFailsRequest(true);
+    }
+
+    @Slow
+    @Test
+    public void testNonBlockingConnectTimeoutFailsRequest() throws Exception
+    {
+        testConnectTimeoutFailsRequest(false);
+    }
+
+    private void testConnectTimeoutFailsRequest(boolean blocking) throws Exception
     {
         String host = "10.255.255.1";
         int port = 80;
@@ -311,6 +324,7 @@ public class HttpClientTimeoutTest extends AbstractHttpClientServerTest
         start(new EmptyServerHandler());
         client.stop();
         client.setConnectTimeout(connectTimeout);
+        client.setConnectBlocking(blocking);
         client.start();
 
         final CountDownLatch latch = new CountDownLatch(1);

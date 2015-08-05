@@ -87,15 +87,24 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
             if (bindAddress != null)
                 channel.bind(bindAddress);
             configure(client, channel);
-            channel.configureBlocking(false);
 
             context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, destination.getHost());
             context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, destination.getPort());
 
-            if (channel.connect(address))
+            if (client.isConnectBlocking())
+            {
+                channel.socket().connect(address, (int)client.getConnectTimeout());
+                channel.configureBlocking(false);
                 selectorManager.accept(channel, context);
+            }
             else
-                selectorManager.connect(channel, context);
+            {
+                channel.configureBlocking(false);
+                if (channel.connect(address))
+                    selectorManager.accept(channel, context);
+                else
+                    selectorManager.connect(channel, context);
+            }
         }
         // Must catch all exceptions, since some like
         // UnresolvedAddressException are not IOExceptions.

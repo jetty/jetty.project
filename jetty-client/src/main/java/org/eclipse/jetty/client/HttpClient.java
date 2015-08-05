@@ -22,8 +22,10 @@ import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
+import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
+import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
 import java.util.ArrayList;
 import java.util.Collection;
@@ -138,6 +140,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile boolean strictEventOrdering = false;
     private volatile HttpField encodingField;
     private volatile boolean removeIdleDestinations = false;
+    private volatile boolean connectBlocking = false;
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -927,6 +930,29 @@ public class HttpClient extends ContainerLifeCycle
     public void setRemoveIdleDestinations(boolean removeIdleDestinations)
     {
         this.removeIdleDestinations = removeIdleDestinations;
+    }
+
+    /**
+     * @return whether {@code connect()} operations are performed in blocking mode
+     */
+    public boolean isConnectBlocking()
+    {
+        return connectBlocking;
+    }
+
+    /**
+     * <p>Whether {@code connect()} operations are performed in blocking mode.</p>
+     * <p>If {@code connect()} are performed in blocking mode, then {@link Socket#connect(SocketAddress, int)}
+     * will be used to connect to servers.</p>
+     * <p>Otherwise, {@link SocketChannel#connect(SocketAddress)} will be used in non-blocking mode,
+     * therefore registering for {@link SelectionKey#OP_CONNECT} and finishing the connect operation
+     * when the NIO system emits that event.</p>
+     *
+     * @param connectBlocking whether {@code connect()} operations are performed in blocking mode
+     */
+    public void setConnectBlocking(boolean connectBlocking)
+    {
+        this.connectBlocking = connectBlocking;
     }
 
     /**
