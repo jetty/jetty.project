@@ -26,6 +26,41 @@ import org.junit.Test;
 public class VersionTest
 {
     @Test
+    public void testParse() 
+    {
+        assertParse("1.8.0_45",1,8,0,45);
+        assertParse("1.8.0_45-internal",1,8,0,45);
+        assertParse("1.8.0-debug",1,8,0,-1);
+    }
+    
+    private void assertParse(String verStr, int legacyMajor, int major, int revision, int update)
+    {
+        Version ver = new Version(verStr);
+        assertThat("Version [" + verStr + "].legacyMajor", ver.getLegacyMajor(), is(legacyMajor));
+        assertThat("Version [" + verStr + "].major", ver.getMajor(), is(major));
+        assertThat("Version [" + verStr + "].revision", ver.getRevision(), is(revision));
+        assertThat("Version [" + verStr + "].update", ver.getUpdate(), is(update));
+        
+        assertThat("Version [" + verStr + "].toString", ver.toString(), is(verStr));
+    }
+
+    @Test
+    public void testToShortString() 
+    {
+        assertToShortString("1.8","1.8");
+        assertToShortString("1.8.0","1.8.0");
+        assertToShortString("1.8.0_45","1.8.0_45");
+        assertToShortString("1.8.0_45-internal","1.8.0_45");
+        assertToShortString("1.8.0-debug","1.8.0");
+    }
+    
+    private void assertToShortString(String verStr, String expectedShortString)
+    {
+        Version ver = new Version(verStr);
+        assertThat("Version [" + verStr + "].toShortString", ver.toShortString(), is(expectedShortString));
+    }
+
+    @Test
     public void testNewerVersion() {
         assertIsNewer("0.0.0", "0.0.1");
         assertIsNewer("0.1.0", "0.1.1");

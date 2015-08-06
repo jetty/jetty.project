@@ -103,7 +103,8 @@ public class ConfigurationAssert
         {
             String name = prop.key;
             if ("jetty.home".equals(name) || "jetty.base".equals(name) ||
-                "user.dir".equals(name) || prop.origin.equals(Props.ORIGIN_SYSPROP))
+                "user.dir".equals(name) || prop.origin.equals(Props.ORIGIN_SYSPROP) ||
+                name.startsWith("java."))
             {
                 // strip these out from assertion, to make assertions easier.
                 continue;

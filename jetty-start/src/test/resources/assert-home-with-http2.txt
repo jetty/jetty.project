@@ -53,7 +53,7 @@ LIB|${jetty.base}/lib/jetty-jndi-9.3.jar
 
 # The Properties we expect (order is irrelevant)
 # (these are the properties we actually set in the configuration)
-PROP|java.version=1.8.0_31
+# PROP|java.version=1.8.0_31
 PROP|jetty.http.port=8080
 PROP|jetty.httpConfig.delayDispatchUntilContent=false
 PROP|jetty.server.dumpAfterStart=false

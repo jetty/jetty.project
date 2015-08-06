@@ -19,20 +19,51 @@
 package org.eclipse.jetty.start;
 
 /**
- * Utility class for parsing and comparing version strings. JDK 1.1 compatible.
+ * Utility class for parsing and comparing version strings.
+ * <p>
+ * http://www.oracle.com/technetwork/java/javase/namechange-140185.html
  */
 public class Version implements Comparable<Version>
 {
-    private int _version = 0;
-    private int _revision = -1;
-    private int _subrevision = -1;
-    private String _suffix = "";
+    /**
+     * The major version for java is always "1" (per
+     * <a href="http://www.oracle.com/technetwork/java/javase/namechange-140185.html">legacy versioning history</a>)
+     */
+    private int legacyMajor = 0;
+    /**
+     * The true major version is the second value ("1.5" == "Java 5", "1.8" = "Java 8", etc..)
+     */
+    private int major = -1;
+    /**
+     * The revision of the version.
+     * <p>
+     * This value is always "0" (also per <a
+     * href="http://www.oracle.com/technetwork/java/javase/namechange-140185.html">legacy versioning history</a>)
+     */
+    private int revision = -1;
+    /**
+     * The update (where bug fixes are placed)
+     */
+    private int update = -1;
+    /**
+     * Extra versioning information present on the version string, but not relevant for version comparison reason.
+     * (eg: with "1.8.0_45-internal", the suffix would be "-internal")
+     */
+    private String suffix = "";
 
-    public Version(String version_string)
+    private static enum ParseState
     {
-        parse(version_string);
+        LEGACY,
+        MAJOR,
+        REVISION,
+        UPDATE;
     }
-    
+
+    public Version(String versionString)
+    {
+        parse(versionString);
+    }
+
     @Override
     /**
      * Compares with other version. Does not take extension into account, as there is no reliable way to order them.
@@ -46,49 +77,82 @@ public class Version implements Comparable<Version>
         {
             throw new NullPointerException("other version is null");
         }
-        if (this._version < other._version)
+        if (this.legacyMajor < other.legacyMajor)
         {
             return -1;
         }
-        if (this._version > other._version)
+        if (this.legacyMajor > other.legacyMajor)
         {
             return 1;
         }
-        if (this._revision < other._revision)
+        if (this.major < other.major)
         {
             return -1;
         }
-        if (this._revision > other._revision)
+        if (this.major > other.major)
         {
             return 1;
         }
-        if (this._subrevision < other._subrevision)
+        if (this.revision < other.revision)
         {
             return -1;
         }
-        if (this._subrevision > other._subrevision)
+        if (this.revision > other.revision)
+        {
+            return 1;
+        }
+        if (this.update < other.update)
+        {
+            return -1;
+        }
+        if (this.update > other.update)
         {
             return 1;
         }
         return 0;
     }
-    
+
+    public int getLegacyMajor()
+    {
+        return legacyMajor;
+    }
+
+    public int getMajor()
+    {
+        return major;
+    }
+
+    public int getRevision()
+    {
+        return revision;
+    }
+
+    public int getUpdate()
+    {
+        return update;
+    }
+
+    public String getSuffix()
+    {
+        return suffix;
+    }
+
     public boolean isNewerThan(Version other)
     {
         return compareTo(other) == 1;
     }
-    
+
     public boolean isNewerThanOrEqualTo(Version other)
     {
         int comp = compareTo(other);
         return (comp == 0) || (comp == 1);
     }
-    
+
     public boolean isOlderThan(Version other)
     {
         return compareTo(other) == -1;
     }
-    
+
     public boolean isOlderThanOrEqualTo(Version other)
     {
         int comp = compareTo(other);
@@ -98,8 +162,10 @@ public class Version implements Comparable<Version>
     /**
      * Check whether this version is in range of versions specified
      * 
-     * @param low the low part of the range
-     * @param high the high part of the range
+     * @param low
+     *            the low part of the range
+     * @param high
+     *            the high part of the range
      * @return true if this version is within the provided range
      */
     public boolean isInRange(Version low, Version high)
@@ -108,47 +174,71 @@ public class Version implements Comparable<Version>
     }
 
     /**
-     * parses version string in the form version[.revision[.subrevision[extension]]] into this instance.
-     * @param version_string the version string
+     * parses version string in the form legacy[.major[.revision[_update[-suffix]]]] into this instance.
+     * 
+     * @param versionStr
+     *            the version string
      */
-    public void parse(String version_string)
+    private void parse(String versionStr)
     {
-        _version = 0;
-        _revision = -1;
-        _subrevision = -1;
-        _suffix = "";
-        int pos = 0;
-        int startpos = 0;
-        int endpos = version_string.length();
-        while ((pos < endpos) && Character.isDigit(version_string.charAt(pos)))
+        legacyMajor = 0;
+        major = -1;
+        revision = -1;
+        update = -1;
+        suffix = "";
+
+        ParseState state = ParseState.LEGACY;
+        int offset = 0;
+        int len = versionStr.length();
+        int val = 0;
+        while (offset < len)
         {
-            pos++;
-        }
-        _version = Integer.parseInt(version_string.substring(startpos,pos));
-        if ((pos < endpos) && (version_string.charAt(pos) == '.'))
-        {
-            startpos = ++pos;
-            while ((pos < endpos) && Character.isDigit(version_string.charAt(pos)))
+            char c = versionStr.charAt(offset);
+            boolean isSeparator = !Character.isLetterOrDigit(c);
+            if (isSeparator)
             {
-                pos++;
+                val = 0;
             }
-            _revision = Integer.parseInt(version_string.substring(startpos,pos));
-        }
-        if ((pos < endpos) && (version_string.charAt(pos) == '.'))
-        {
-            startpos = ++pos;
-            while ((pos < endpos) && Character.isDigit(version_string.charAt(pos)))
+            else if (Character.isDigit(c))
             {
-                pos++;
+                val = (val * 10) + (c - '0');
             }
-            _subrevision = Integer.parseInt(version_string.substring(startpos,pos));
-        }
-        if (pos < endpos)
-        {
-            _suffix = version_string.substring(pos);
+            else if (Character.isLetter(c))
+            {
+                suffix = versionStr.substring(offset);
+                return;
+            }
+
+            switch (state)
+            {
+                case LEGACY:
+                    if (isSeparator)
+                        state = ParseState.MAJOR;
+                    else
+                        legacyMajor = val;
+                    break;
+                case MAJOR:
+                    if (isSeparator)
+                        state = ParseState.REVISION;
+                    else
+                        major = val;
+                    break;
+                case REVISION:
+                    if (isSeparator)
+                        state = ParseState.UPDATE;
+                    else
+                        revision = val;
+                    break;
+                case UPDATE:
+                    if (!isSeparator)
+                        update = val;
+                    break;
+            }
+
+            offset++;
         }
     }
-    
+
     /**
      * @return string representation of this version
      */
@@ -156,16 +246,44 @@ public class Version implements Comparable<Version>
     public String toString()
     {
         StringBuffer sb = new StringBuffer(10);
-        sb.append(_version);
-        if (_revision >= 0)
+        sb.append(legacyMajor);
+        if (major >= 0)
         {
-            sb.append('.');
-            sb.append(_revision);
-            if (_subrevision >= 0)
+            sb.append('.').append(major);
+            if (revision >= 0)
             {
-                sb.append('.');
-                sb.append(_subrevision);
-                sb.append(_suffix);
+                sb.append('.').append(revision);
+                if (update >= 0)
+                {
+                    sb.append('_').append(update);
+                }
+            }
+        }
+        if (Utils.isNotBlank(suffix))
+        {
+            sb.append('-').append(suffix);
+        }
+        return sb.toString();
+    }
+    
+    /**
+     * Return short string form (without suffix)
+     * @return string the short version string form
+     */
+    public String toShortString()
+    {
+        StringBuffer sb = new StringBuffer(10);
+        sb.append(legacyMajor);
+        if (major >= 0)
+        {
+            sb.append('.').append(major);
+            if (revision >= 0)
+            {
+                sb.append('.').append(revision);
+                if (update >= 0)
+                {
+                    sb.append('_').append(update);
+                }
             }
         }
         return sb.toString();

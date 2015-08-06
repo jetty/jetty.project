@@ -53,7 +53,7 @@ public class ModulesTest
     {
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        File baseDir = testdir.getEmptyDir();
+        File baseDir = testdir.getEmptyPathDir().toFile();
         String cmdLine[] = new String[] { "jetty.version=TEST" };
 
         // Configuration
@@ -74,9 +74,8 @@ public class ModulesTest
         modules.registerAll();
 
         // Check versions
-        assertThat(System.getProperty("java.version.major"),equalTo("1"));
-        assertThat(System.getProperty("java.version.minor"),anyOf(equalTo("7"),Matchers.equalTo("8"),Matchers.equalTo("9")));
-
+        assertThat("java.version.major", args.getProperties().getString("java.version.major"),equalTo("1"));
+        assertThat("java.version.minor", args.getProperties().getString("java.version.minor"),anyOf(equalTo("7"),Matchers.equalTo("8"),Matchers.equalTo("9")));
 
         List<String> moduleNames = new ArrayList<>();
         for (Module mod : modules)
@@ -197,7 +196,7 @@ public class ModulesTest
     {
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        File baseDir = testdir.getEmptyDir();
+        File baseDir = testdir.getEmptyPathDir().toFile();
         String cmdLine[] = new String[] { "jetty.version=TEST", "java.version=1.8.0_31" };
 
         // Configuration
@@ -263,7 +262,7 @@ public class ModulesTest
     {
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        File baseDir = testdir.getEmptyDir();
+        File baseDir = testdir.getEmptyPathDir().toFile();
         String cmdLine[] = new String[] { "jetty.version=TEST" };
 
         // Configuration
@@ -332,7 +331,7 @@ public class ModulesTest
     {
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        File baseDir = testdir.getEmptyDir();
+        File baseDir = testdir.getEmptyPathDir().toFile();
         String cmdLine[] = new String[] { "jetty.version=TEST" };
 
         // Configuration
@@ -420,7 +419,7 @@ public class ModulesTest
     {
         // Test Env
         File homeDir = MavenTestingUtils.getTestResourceDir("dist-home");
-        File baseDir = testdir.getEmptyDir();
+        File baseDir = testdir.getEmptyPathDir().toFile();
         String cmdLine[] = new String[] { "jetty.version=TEST" };
 
         // Configuration

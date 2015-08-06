@@ -47,11 +47,7 @@ public class Modules extends Graph<Module>
         String java_version = System.getProperty("java.version");
         if (java_version!=null)
         {
-            String[] parts = java_version.split("\\.");
-            if (parts!=null && parts.length>0)
-                System.setProperty("java.version.major",parts[0]);
-            if (parts!=null && parts.length>1)
-                System.setProperty("java.version.minor",parts[1]);
+            args.setProperty("java.version",java_version,"<internal>",false);
         }        
     }
 

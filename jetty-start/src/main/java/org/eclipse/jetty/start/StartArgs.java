@@ -665,7 +665,7 @@ public class StartArgs
     {
         return properties;
     }
-
+    
     public Set<String> getSkipFileValidationModules()
     {
         return skipFileValidationModules;
@@ -1125,8 +1125,8 @@ public class StartArgs
     {
         this.allModules = allModules;
     }
-
-    private void setProperty(String key, String value, String source, boolean replaceProp)
+    
+    public void setProperty(String key, String value, String source, boolean replaceProp)
     {
         // Special / Prevent override from start.ini's
         if (key.equals("jetty.home"))
@@ -1141,19 +1141,19 @@ public class StartArgs
             properties.setProperty("jetty.base",System.getProperty("jetty.base"),source);
             return;
         }
-
-        // Normal
-        if (replaceProp)
+        
+        if (replaceProp || (!properties.containsKey(key)))
         {
-            // always override
             properties.setProperty(key,value,source);
-        }
-        else
-        {
-            // only set if unset
-            if (!properties.containsKey(key))
+            if(key.equals("java.version"))
             {
-                properties.setProperty(key,value,source);
+                Version ver = new Version(value);
+                
+                properties.setProperty("java.version",ver.toShortString(),source);
+                properties.setProperty("java.version.major",Integer.toString(ver.getLegacyMajor()),source);
+                properties.setProperty("java.version.minor",Integer.toString(ver.getMajor()),source);
+                properties.setProperty("java.version.revision",Integer.toString(ver.getRevision()),source);
+                properties.setProperty("java.version.update",Integer.toString(ver.getUpdate()),source);
             }
         }
     }

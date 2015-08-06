@@ -25,7 +25,7 @@ LIB|${jetty.home}/lib/http2/http2-server-9.3.jar
 # The Properties we expect (order is irrelevant)
 # (this is the property we actually set in jetty.base)
 PROP|jetty.http.port=9090
-PROP|java.version=1.8.0_31
+#PROP|java.version=1.8.0_31
 PROP|jetty.sslContext.keyStorePath=etc/keystore
 PROP|jetty.sslContext.keyStorePassword=friendly
 PROP|jetty.sslContext.keyManagerPassword=icecream
