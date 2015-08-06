@@ -143,7 +143,6 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     @Override
     public void onError(Throwable cause)
     {
-        LOG.warn(cause);
         try
         {
             endpoint.onError(jsrsession,cause);
@@ -226,7 +225,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
     {
         /* Ignored, handled by TextWholeMessage */
     }
-    
+
     @Override
     public void onPing(ByteBuffer buffer)
     {
@@ -250,9 +249,9 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
             }
             return;
         }
-        
+
         ByteBuffer pongBuf = null;
-        
+
         if (BufferUtil.isEmpty(buffer))
         {
             pongBuf = BufferUtil.EMPTY_BUFFER;
@@ -268,7 +267,7 @@ public class JsrEndpointEventDriver extends AbstractJsrEventDriver
         Whole<PongMessage> pongHandler = (Whole<PongMessage>)wrapper.getHandler();
         pongHandler.onMessage(new JsrPongMessage(pongBuf));
     }
-    
+
     @Override
     public void setPathParameters(Map<String, String> pathParameters)
     {
