@@ -133,11 +133,6 @@ public class BrowserDebugTool implements WebSocketCreator
             {
                 LOG.debug("Configuring WebSocketServerFactory ...");
 
-                // factory.getExtensionFactory().unregister("deflate-frame");
-                // factory.getExtensionFactory().unregister("permessage-deflate");
-                factory.getExtensionFactory().register("permessage-deflate",PerMessageDeflateExtension.class);
-                // factory.getExtensionFactory().unregister("x-webkit-deflate-frame");
-
                 // Registering Frame Debug
                 factory.getExtensionFactory().register("@frame-debug",FrameDebugExtension.class);
 
