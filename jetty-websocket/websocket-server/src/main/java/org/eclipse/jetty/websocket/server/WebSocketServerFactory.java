@@ -130,11 +130,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
         this.bufferPool = bufferPool;
         this.extensionFactory = new WebSocketExtensionFactory(this);
         
-        // Bug #431459 - unregistering compression extensions till they are more stable
-        this.extensionFactory.unregister("deflate-frame");
-        this.extensionFactory.unregister("permessage-deflate");
-        this.extensionFactory.unregister("x-webkit-deflate-frame");
-        
         this.sessionFactories = new ArrayList<>();
         this.sessionFactories.add(new WebSocketSessionFactory(this));
         this.creator = this;

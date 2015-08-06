@@ -133,11 +133,6 @@ public class WebSocketClient extends ContainerLifeCycle implements SessionListen
         this.objectFactory = objectFactory;
         this.extensionRegistry = new WebSocketExtensionFactory(this);
         
-        // Bug #431459 - unregistering compression extensions till they are more stable
-        this.extensionRegistry.unregister("deflate-frame");
-        this.extensionRegistry.unregister("permessage-deflate");
-        this.extensionRegistry.unregister("x-webkit-deflate-frame");
-        
         this.masker = new RandomMasker();
         this.eventDriverFactory = new EventDriverFactory(policy);
         

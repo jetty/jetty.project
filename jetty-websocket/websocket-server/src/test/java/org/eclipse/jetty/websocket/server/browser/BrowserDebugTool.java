@@ -28,7 +28,6 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.extensions.ExtensionConfig;
 import org.eclipse.jetty.websocket.common.extensions.FrameCaptureExtension;
-import org.eclipse.jetty.websocket.common.extensions.compress.PerMessageDeflateExtension;
 import org.eclipse.jetty.websocket.server.WebSocketHandler;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeRequest;
 import org.eclipse.jetty.websocket.servlet.ServletUpgradeResponse;
@@ -132,9 +131,6 @@ public class BrowserDebugTool implements WebSocketCreator
             public void configure(WebSocketServletFactory factory)
             {
                 LOG.debug("Configuring WebSocketServerFactory ...");
-
-                // Register permessage-deflate
-                factory.getExtensionFactory().register("permessage-deflate",PerMessageDeflateExtension.class);
 
                 // Registering Frame Debug
                 factory.getExtensionFactory().register("@frame-capture",FrameCaptureExtension.class);
