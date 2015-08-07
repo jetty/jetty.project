@@ -49,7 +49,7 @@ public class ByteAccumulator
         chunks.add(copy);
         this.length += length;
     }
-
+    
     public int getLength()
     {
         return length;

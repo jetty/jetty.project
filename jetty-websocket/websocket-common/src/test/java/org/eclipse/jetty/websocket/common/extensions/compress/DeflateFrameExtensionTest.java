@@ -36,6 +36,8 @@ import org.eclipse.jetty.io.RuntimeIOException;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.TypeUtil;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.WriteCallback;
@@ -62,6 +64,8 @@ import org.junit.Test;
 
 public class DeflateFrameExtensionTest extends AbstractExtensionTest
 {
+    private static final Logger LOG = Log.getLogger(DeflateFrameExtensionTest.class);
+    
     @Rule
     public LeakTrackingBufferPoolRule bufferPool = new LeakTrackingBufferPoolRule("Test");
 
@@ -385,15 +389,21 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
         byte[] input = new byte[1024 * 1024];
         // Make them not compressible.
         new Random().nextBytes(input);
-
+        
+        int maxMessageSize = (1024 * 1024) + 8192;
+        
         DeflateFrameExtension clientExtension = new DeflateFrameExtension();
         clientExtension.setBufferPool(bufferPool);
         clientExtension.setPolicy(WebSocketPolicy.newClientPolicy());
+        clientExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
+        clientExtension.getPolicy().setMaxBinaryMessageBufferSize(maxMessageSize);
         clientExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
 
         final DeflateFrameExtension serverExtension = new DeflateFrameExtension();
         serverExtension.setBufferPool(bufferPool);
         serverExtension.setPolicy(WebSocketPolicy.newServerPolicy());
+        serverExtension.getPolicy().setMaxBinaryMessageSize(maxMessageSize);
+        serverExtension.getPolicy().setMaxBinaryMessageBufferSize(maxMessageSize);
         serverExtension.setConfig(ExtensionConfig.parse("deflate-frame"));
 
         // Chain the next element to decompress.
@@ -402,6 +412,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
             @Override
             public void outgoingFrame(Frame frame, WriteCallback callback, BatchMode batchMode)
             {
+                LOG.debug("outgoingFrame({})", frame);
                 serverExtension.incomingFrame(frame);
                 callback.writeSuccess();
             }
@@ -413,6 +424,7 @@ public class DeflateFrameExtensionTest extends AbstractExtensionTest
             @Override
             public void incomingFrame(Frame frame)
             {
+                LOG.debug("incomingFrame({})", frame);
                 try
                 {
                     result.write(BufferUtil.toArray(frame.getPayload()));
