@@ -67,6 +67,9 @@ public abstract class CompressExtension extends AbstractExtension
     /** Deflater / Inflater: Maximum Input Buffer Size */
     protected static final int INPUT_MAX_BUFFER_SIZE = 8 * 1024;
 
+    /** Inflater : Output Buffer Size */
+    private static final int DECOMPRESS_BUF_SIZE = 8 * 1024;
+    
     private final static boolean NOWRAP = true;
 
     private final Queue<FrameEntry> entries = new ConcurrentArrayQueue<>();
@@ -150,7 +153,7 @@ public abstract class CompressExtension extends AbstractExtension
         {
             return;
         }
-        byte[] output = new byte[1024]; // TODO: make configurable size
+        byte[] output = new byte[DECOMPRESS_BUF_SIZE];
 
         if (inflater.needsInput() && !supplyInput(inflater,buf))
         {
@@ -369,9 +372,15 @@ public abstract class CompressExtension extends AbstractExtension
 
     private class Flusher extends IteratingCallback implements WriteCallback
     {
-        private static final int INPUT_BUFSIZE = 32 * 1024;
         private FrameEntry current;
         private boolean finished = true;
+        
+        @Override
+        public void failed(Throwable x)
+        {
+            LOG.warn(x);
+            super.failed(x);
+        }
 
         @Override
         protected Action process() throws Exception
