@@ -68,7 +68,7 @@ public class AsyncContextState implements AsyncContext
             @Override
             public void onError(AsyncEvent event) throws IOException
             {
-                listener.onComplete(new AsyncEvent(event.getAsyncContext(),request,response,event.getThrowable()));
+                listener.onError(new AsyncEvent(event.getAsyncContext(),request,response,event.getThrowable()));
             }
             
             @Override
