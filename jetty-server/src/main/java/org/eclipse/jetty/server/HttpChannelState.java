@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.server;
 
-import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.TimeUnit;
@@ -546,16 +545,10 @@ public class HttpChannelState
                     {
                         if (event.getThrowable()!=null)
                             listener.onError(event);
+                        else
+                            listener.onComplete(event);
                     }
                     catch(Exception e)
-                    {
-                        LOG.warn(e);
-                    }
-                    try
-                    {
-                        listener.onComplete(event);
-                    }
-                    catch (IOException e)
                     {
                         LOG.warn(e);
                     }
