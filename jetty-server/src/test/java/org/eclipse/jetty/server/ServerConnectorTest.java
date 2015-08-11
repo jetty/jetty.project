@@ -18,23 +18,16 @@
 
 package org.eclipse.jetty.server;
 
-import static org.hamcrest.Matchers.anyOf;
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.instanceOf;
-import static org.hamcrest.Matchers.is;
-import static org.hamcrest.Matchers.notNullValue;
-import static org.junit.Assert.assertThat;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.PrintWriter;
 import java.lang.reflect.Field;
 import java.net.HttpURLConnection;
-import java.net.MalformedURLException;
 import java.net.Socket;
 import java.net.URI;
 import java.net.URISyntaxException;
 import java.nio.charset.StandardCharsets;
+import java.util.Collection;
 
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
@@ -48,6 +41,14 @@ import org.eclipse.jetty.server.handler.HandlerList;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.IO;
 import org.junit.Test;
+
+import static org.hamcrest.Matchers.anyOf;
+import static org.hamcrest.Matchers.containsString;
+import static org.hamcrest.Matchers.instanceOf;
+import static org.hamcrest.Matchers.notNullValue;
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertSame;
+import static org.junit.Assert.assertThat;
 
 public class ServerConnectorTest
 {
@@ -79,9 +80,9 @@ public class ServerConnectorTest
             {
                 t.printStackTrace(out);
             }
-            
+
             out.printf("socket.getReuseAddress() = %b%n",socket.getReuseAddress());
-            
+
             baseRequest.setHandled(true);
         }
     }
@@ -97,7 +98,7 @@ public class ServerConnectorTest
         return new URI(String.format("http://%s:%d/",host,port));
     }
 
-    private String getResponse(URI uri) throws MalformedURLException, IOException
+    private String getResponse(URI uri) throws IOException
     {
         HttpURLConnection http = (HttpURLConnection)uri.toURL().openConnection();
         assertThat("Valid Response Code",http.getResponseCode(),anyOf(is(200),is(404)));
@@ -130,7 +131,7 @@ public class ServerConnectorTest
             String response = getResponse(uri);
             assertThat("Response",response,containsString("connector.getReuseAddress() = true"));
             assertThat("Response",response,containsString("connector._reuseAddress() = true"));
-            
+
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
             if (!OS.IS_WINDOWS)
             {
@@ -166,7 +167,7 @@ public class ServerConnectorTest
             String response = getResponse(uri);
             assertThat("Response",response,containsString("connector.getReuseAddress() = true"));
             assertThat("Response",response,containsString("connector._reuseAddress() = true"));
-            
+
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
             if (!OS.IS_WINDOWS)
             {
@@ -202,7 +203,7 @@ public class ServerConnectorTest
             String response = getResponse(uri);
             assertThat("Response",response,containsString("connector.getReuseAddress() = false"));
             assertThat("Response",response,containsString("connector._reuseAddress() = false"));
-            
+
             // Java on Windows is incapable of propagating reuse-address this to the opened socket.
             if (!OS.IS_WINDOWS)
             {
@@ -213,5 +214,24 @@ public class ServerConnectorTest
         {
             server.stop();
         }
+    }
+
+    @Test
+    public void testAddFirstConnectionFactory() throws Exception
+    {
+        Server server = new Server();
+        ServerConnector connector = new ServerConnector(server);
+        server.addConnector(connector);
+
+        HttpConnectionFactory http = new HttpConnectionFactory();
+        connector.addConnectionFactory(http);
+        ProxyConnectionFactory proxy = new ProxyConnectionFactory();
+        connector.addFirstConnectionFactory(proxy);
+
+        Collection<ConnectionFactory> factories = connector.getConnectionFactories();
+        assertEquals(2, factories.size());
+        assertSame(proxy, factories.iterator().next());
+        assertEquals(2, connector.getBeans(ConnectionFactory.class).size());
+        assertEquals(proxy.getProtocol(), connector.getDefaultProtocol());
     }
 }

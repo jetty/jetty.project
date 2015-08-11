@@ -32,9 +32,9 @@ import org.eclipse.jetty.util.IteratingCallback;
 /**
  *
  * A transport EndPoint
- * 
+ *
  * <h3>Asynchronous Methods</h3>
- * <p>The asynchronous scheduling methods of {@link EndPoint} 
+ * <p>The asynchronous scheduling methods of {@link EndPoint}
  * has been influenced by NIO.2 Futures and Completion
  * handlers, but does not use those actual interfaces because they have
  * some inefficiencies.</p>
@@ -170,7 +170,7 @@ public interface EndPoint extends Closeable
      * are taken from the header/buffer position up until the buffer limit.  The header/buffers position
      * is updated to indicate how many bytes have been consumed.
      * @param buffer the buffers to flush
-     * @return True IFF all the buffers have been consumed and the endpoint has flushed the data to its 
+     * @return True IFF all the buffers have been consumed and the endpoint has flushed the data to its
      * destination (ie is not buffering any data).
      * @throws IOException If the endpoint is closed or output is shutdown.
      */
@@ -204,6 +204,12 @@ public interface EndPoint extends Closeable
      * @throws ReadPendingException if another read operation is concurrent.
      */
     void fillInterested(Callback callback) throws ReadPendingException;
+
+    /**
+     * @return whether {@link #fillInterested(Callback)} has been called, but {@link #fill(ByteBuffer)} has not yet
+     * been called
+     */
+    boolean isFillInterested();
 
     /**
      * <p>Writes the given buffers via {@link #flush(ByteBuffer...)} and invokes callback methods when either

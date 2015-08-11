@@ -144,7 +144,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     private final Scheduler _scheduler;
     private final ByteBufferPool _byteBufferPool;
     private final Thread[] _acceptors;
-    private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<EndPoint, Boolean>());
+    private final Set<EndPoint> _endpoints = Collections.newSetFromMap(new ConcurrentHashMap<>());
     private final Set<EndPoint> _immutableEndPoints = Collections.unmodifiableSet(_endpoints);
     private volatile CountDownLatch _stopping;
     private long _idleTimeout = 30000;
@@ -191,7 +191,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
 
         int cores = Runtime.getRuntime().availableProcessors();
         if (acceptors < 0)
-            acceptors=Math.max(1, Math.min(4,cores/8));        
+            acceptors=Math.max(1, Math.min(4,cores/8));
         if (acceptors > cores)
             LOG.warn("Acceptors should be <= availableProcessors: " + this);
         _acceptors = new Thread[acceptors];
@@ -303,7 +303,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
         _stopping=null;
 
         super.doStop();
-        
+
         for (Acceptor a : getBeans(Acceptor.class))
             removeBean(a);
 
@@ -362,7 +362,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         synchronized (_factories)
         {
-            Set<ConnectionFactory> to_remove = new HashSet<ConnectionFactory>();
+            Set<ConnectionFactory> to_remove = new HashSet<>();
             for (String key:factory.getProtocols())
             {
                 key=StringUtil.asciiToLowerCase(key);
@@ -375,11 +375,11 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 }
                 _factories.put(key, factory);
             }
-            
+
             // keep factories still referenced
             for (ConnectionFactory f : _factories.values())
                 to_remove.remove(f);
-            
+
             // remove old factories
             for (ConnectionFactory old: to_remove)
             {
@@ -396,7 +396,20 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 LOG.debug("{} added {}", this, factory);
         }
     }
-    
+
+    public void addFirstConnectionFactory(ConnectionFactory factory)
+    {
+        synchronized (_factories)
+        {
+            List<ConnectionFactory> existings = new ArrayList<>(_factories.values());
+            _factories.clear();
+            addConnectionFactory(factory);
+            for (ConnectionFactory existing : existings)
+                addConnectionFactory(existing);
+            _defaultProtocol = factory.getProtocol();
+        }
+    }
+
     public void addIfAbsentConnectionFactory(ConnectionFactory factory)
     {
         synchronized (_factories)
@@ -460,8 +473,8 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     /* ------------------------------------------------------------ */
     /** Set the acceptor thread priority delta.
      * <p>This allows the acceptor thread to run at a different priority.
-     * Typically this would be used to lower the priority to give preference 
-     * to handling previously accepted connections rather than accepting 
+     * Typically this would be used to lower the priority to give preference
+     * to handling previously accepted connections rather than accepting
      * new connections</p>
      * @param acceptorPriorityDelta the acceptor priority delta
      */
@@ -532,7 +545,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
             String name=thread.getName();
             _name=String.format("%s-acceptor-%d@%x-%s",name,_id,hashCode(),AbstractConnector.this.toString());
             thread.setName(_name);
-            
+
             int priority=thread.getPriority();
             if (_acceptorPriorityDelta!=0)
                 thread.setPriority(Math.max(Thread.MIN_PRIORITY,Math.min(Thread.MAX_PRIORITY,priority+_acceptorPriorityDelta)));
@@ -574,7 +587,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                     stopping.countDown();
             }
         }
-        
+
         @Override
         public String toString()
         {
@@ -583,7 +596,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
                 return String.format("acceptor-%d@%x", _id, hashCode());
             return name;
         }
-        
+
     }
 
 
@@ -636,7 +649,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         return _name;
     }
-    
+
     /* ------------------------------------------------------------ */
     /**
      * Set a connector name.   A context may be configured with
@@ -648,7 +661,7 @@ public abstract class AbstractConnector extends ContainerLifeCycle implements Co
     {
         _name=name;
     }
-    
+
     @Override
     public String toString()
     {

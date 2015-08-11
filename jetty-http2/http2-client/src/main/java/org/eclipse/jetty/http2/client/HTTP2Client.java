@@ -261,7 +261,7 @@ public class HTTP2Client extends ContainerLifeCycle
 
     public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise)
     {
-        connect(sslContextFactory, address, listener, promise, new HashMap<String, Object>());
+        connect(sslContextFactory, address, listener, promise, null);
     }
 
     public void connect(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
@@ -271,15 +271,7 @@ public class HTTP2Client extends ContainerLifeCycle
             SocketChannel channel = SocketChannel.open();
             configure(channel);
             channel.configureBlocking(false);
-
-            context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
-            context.put(HTTP2ClientConnectionFactory.SESSION_LISTENER_CONTEXT_KEY, listener);
-            context.put(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY, promise);
-            if (sslContextFactory != null)
-                context.put(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY, sslContextFactory);
-            context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, address.getHostString());
-            context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, address.getPort());
-
+            context = contextFrom(sslContextFactory, address, listener, promise, context);
             if (channel.connect(address))
                 selector.accept(channel, context);
             else
@@ -289,6 +281,36 @@ public class HTTP2Client extends ContainerLifeCycle
         {
             promise.failed(x);
         }
+    }
+
+    public void accept(SslContextFactory sslContextFactory, SocketChannel channel, Session.Listener listener, Promise<Session> promise)
+    {
+        try
+        {
+            if (!channel.isConnected())
+                throw new IllegalStateException("SocketChannel must be connected");
+            channel.configureBlocking(false);
+            Map<String, Object> context = contextFrom(sslContextFactory, (InetSocketAddress)channel.getRemoteAddress(), listener, promise, null);
+            selector.accept(channel, context);
+        }
+        catch (Throwable x)
+        {
+            promise.failed(x);
+        }
+    }
+
+    private Map<String, Object> contextFrom(SslContextFactory sslContextFactory, InetSocketAddress address, Session.Listener listener, Promise<Session> promise, Map<String, Object> context)
+    {
+        if (context == null)
+            context = new HashMap<>();
+        context.put(HTTP2ClientConnectionFactory.CLIENT_CONTEXT_KEY, this);
+        context.put(HTTP2ClientConnectionFactory.SESSION_LISTENER_CONTEXT_KEY, listener);
+        context.put(HTTP2ClientConnectionFactory.SESSION_PROMISE_CONTEXT_KEY, promise);
+        if (sslContextFactory != null)
+            context.put(SslClientConnectionFactory.SSL_CONTEXT_FACTORY_CONTEXT_KEY, sslContextFactory);
+        context.put(SslClientConnectionFactory.SSL_PEER_HOST_CONTEXT_KEY, address.getHostString());
+        context.put(SslClientConnectionFactory.SSL_PEER_PORT_CONTEXT_KEY, address.getPort());
+        return context;
     }
 
     protected void configure(SocketChannel channel) throws IOException

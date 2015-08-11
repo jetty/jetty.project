@@ -38,7 +38,7 @@ import org.eclipse.jetty.util.log.Logger;
 public abstract class AbstractConnection implements Connection
 {
     private static final Logger LOG = Log.getLogger(AbstractConnection.class);
-    
+
     private final List<Listener> listeners = new CopyOnWriteArrayList<>();
     private final long _created=System.currentTimeMillis();
     private final EndPoint _endPoint;
@@ -109,7 +109,7 @@ public abstract class AbstractConnection implements Connection
             callback.failed(x);
         }
     }
-    
+
     /**
      * <p>Utility method to be called to register read interest.</p>
      * <p>After a call to this method, {@link #onFillable()} or {@link #onFillInterestedFailed(Throwable)}
@@ -122,12 +122,12 @@ public abstract class AbstractConnection implements Connection
             LOG.debug("fillInterested {}",this);
         getEndPoint().fillInterested(_readCallback);
     }
-    
+
     public boolean isFillInterested()
     {
-        return ((AbstractEndPoint)getEndPoint()).getFillInterest().isInterested();
+        return getEndPoint().isFillInterested();
     }
-    
+
     /**
      * <p>Callback method invoked when the endpoint is ready to be read.</p>
      * @see #fillInterested()
@@ -154,10 +154,10 @@ public abstract class AbstractConnection implements Connection
                 else
                 {
                     _endPoint.shutdownOutput();
-                    fillInterested();    
-                }           
+                    fillInterested();
+                }
             }
-        }      
+        }
     }
 
     /**
@@ -236,9 +236,9 @@ public abstract class AbstractConnection implements Connection
     {
         return String.format("%s@%x", getClass().getSimpleName(), hashCode());
     }
-    
+
     private class ReadCallback implements Callback
-    {   
+    {
         @Override
         public void succeeded()
         {
@@ -250,7 +250,7 @@ public abstract class AbstractConnection implements Connection
         {
             onFillInterestedFailed(x);
         }
-        
+
         @Override
         public String toString()
         {

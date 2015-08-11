@@ -35,11 +35,11 @@ import org.eclipse.jetty.util.log.Logger;
 
 
 /* ------------------------------------------------------------ */
-/** 
+/**
  * ConnectionFactory for the PROXY Protocol.
  * <p>This factory can be placed in front of any other connection factory
  * to process the proxy line before the normal protocol handling</p>
- * 
+ *
  * @see <a href="http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt">http://www.haproxy.org/download/1.5/doc/proxy-protocol.txt</a>
  */
 public class ProxyConnectionFactory extends AbstractConnectionFactory
@@ -48,7 +48,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
     private final String _next;
 
     /* ------------------------------------------------------------ */
-    /** Proxy Connection Factory that uses the next ConnectionFactory 
+    /** Proxy Connection Factory that uses the next ConnectionFactory
      * on the connector as the next protocol
      */
     public ProxyConnectionFactory()
@@ -56,13 +56,13 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         super("proxy");
         _next=null;
     }
-    
+
     public ProxyConnectionFactory(String nextProtocol)
     {
         super("proxy");
         _next=nextProtocol;
     }
-    
+
     @Override
     public Connection newConnection(Connector connector, EndPoint endp)
     {
@@ -71,7 +71,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         {
             for (Iterator<String> i = connector.getProtocols().iterator();i.hasNext();)
             {
-                String p=i.next();                
+                String p=i.next();
                 if (getProtocol().equalsIgnoreCase(p))
                 {
                     next=i.next();
@@ -79,16 +79,16 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                 }
             }
         }
-        
+
         return new ProxyConnection(endp,connector,next);
     }
-    
+
     public static class ProxyConnection extends AbstractConnection
     {
         // 0     1 2       3       4 5 6
         // 98765432109876543210987654321
         // PROXY P R.R.R.R L.L.L.L R Lrn
-        
+
         private final int[] __size = {29,23,21,13,5,3,1};
         private final Connector _connector;
         private final String _next;
@@ -96,7 +96,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         private final String[] _field=new String[6];
         private int _fields;
         private int _length;
-        
+
         protected ProxyConnection(EndPoint endp, Connector connector, String next)
         {
             super(endp,connector.getExecutor());
@@ -110,9 +110,9 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
             super.onOpen();
             fillInterested();
         }
-        
+
         @Override
-        public void onFillable() 
+        public void onFillable()
         {
             try
             {
@@ -125,7 +125,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                         buffer=BufferUtil.allocate(size);
                     else
                         BufferUtil.clear(buffer);
-                    
+
                     // Read data
                     int fill=getEndPoint().fill(buffer);
                     if (fill<0)
@@ -138,15 +138,15 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                         fillInterested();
                         return;
                     }
-                    
+
                     _length+=fill;
                     if (_length>=108)
                     {
-                        LOG.warn("PROXY line too long {}",getEndPoint());
+                        LOG.warn("PROXY line too long {} for {}",_length,getEndPoint());
                         close();
                         return;
                     }
-                    
+
                     // parse fields
                     while (buffer.hasRemaining())
                     {
@@ -160,61 +160,60 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
                             }
                             else if (b<' ')
                             {
-                                LOG.warn("Bad char {}",getEndPoint());
+                                LOG.warn("Bad character {} for {}",b&0xFF,getEndPoint());
                                 close();
                                 return;
                             }
                             else
+                            {
                                 _builder.append((char)b);
+                            }
                         }
                         else
                         {
                             if (b=='\n')
                                 break loop;
 
-                            LOG.warn("Bad CRLF {}",getEndPoint());
+                            LOG.warn("Bad CRLF for {}",getEndPoint());
                             close();
                             return;
-                            
                         }
                     }
                 }
-                
+
                 // Check proxy
                 if (!"PROXY".equals(_field[0]))
                 {
-                    LOG.warn("Bad PROXY {}",getEndPoint());
+                    LOG.warn("Not PROXY protocol for {}",getEndPoint());
                     close();
                     return;
                 }
-                
-                // Extract Addresses 
+
+                // Extract Addresses
                 InetSocketAddress remote=new InetSocketAddress(_field[2],Integer.parseInt(_field[4]));
                 InetSocketAddress local =new InetSocketAddress(_field[3],Integer.parseInt(_field[5]));
-                
+
                 // Create the next protocol
                 ConnectionFactory connectionFactory = _connector.getConnectionFactory(_next);
                 if (connectionFactory == null)
                 {
-                    LOG.info("{} next protocol '{}'",getEndPoint(), _next);
+                    LOG.info("Next protocol '{}' for {}",_next,getEndPoint());
                     close();
                     return;
                 }
 
                 EndPoint endPoint = new ProxyEndPoint(getEndPoint(),remote,local);
-                Connection newConnection = connectionFactory.newConnection(_connector, endPoint);                
+                Connection newConnection = connectionFactory.newConnection(_connector, endPoint);
                 endPoint.upgrade(newConnection);
             }
-            catch (Throwable e)
+            catch (Throwable x)
             {
-                LOG.warn("Bad PROXY {} {}",e.toString(),getEndPoint());
-                LOG.debug(e);
+                LOG.warn("PROXY error for "+getEndPoint(),x);
                 close();
             }
         }
     }
-    
-    
+
     public static class ProxyEndPoint implements EndPoint
     {
         private final EndPoint _endp;
@@ -233,7 +232,7 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         {
             return _endp.isOptimizedForDirectBuffers();
         }
-        
+
         public InetSocketAddress getLocalAddress()
         {
             return _local;
@@ -302,6 +301,12 @@ public class ProxyConnectionFactory extends AbstractConnectionFactory
         public void fillInterested(Callback callback) throws ReadPendingException
         {
             _endp.fillInterested(callback);
+        }
+
+        @Override
+        public boolean isFillInterested()
+        {
+            return _endp.isFillInterested();
         }
 
         public void write(Callback callback, ByteBuffer... buffers) throws WritePendingException
