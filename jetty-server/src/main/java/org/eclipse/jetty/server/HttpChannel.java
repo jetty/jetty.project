@@ -161,7 +161,7 @@ public class HttpChannel<T> implements HttpParser.RequestHandler<T>, Runnable, H
 
     /**
      * Set the idle timeout.
-     * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long), but may be
+     * <p>This is implemented as a call to {@link EndPoint#setIdleTimeout(long)}, but may be
      * overridden by channels that have timeouts different from their connections.
      */
     public void setIdleTimeout(long timeoutMs)

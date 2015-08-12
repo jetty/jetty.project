@@ -929,7 +929,6 @@ public class BufferUtil
     /* ------------------------------------------------------------ */
     /** Convert Buffer to string ID independent of content
      * @param buffer
-     * @return A string showing the buffer ID
      */
     private static void idString(ByteBuffer buffer, StringBuilder out) 
     {
