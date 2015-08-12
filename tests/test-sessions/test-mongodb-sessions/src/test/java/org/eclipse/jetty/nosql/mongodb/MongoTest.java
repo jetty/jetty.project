@@ -48,9 +48,6 @@ public class MongoTest
         
         WriteResult result =coll.update(key,upsert,true,false);
         
-        System.err.println(result.getLastError());
-        
-        
         while (coll.count()>0)
         {
             DBObject docZ = coll.findOne();

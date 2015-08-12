@@ -86,8 +86,8 @@
     </dependency>
     <dependency>
       <groupId>org.mongodb</groupId>
-      <artifactId>mongo-java-driver</artifactId>
-      <version>2.6.1</version>
+      <artifactId>mongodb-driver</artifactId>
+      <version>3.0.2</version>
       <type>jar</type>
       <scope>compile</scope>
     </dependency>
