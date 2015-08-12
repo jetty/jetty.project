@@ -77,7 +77,7 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     {
         return _context;
     }
-    
+
     public Context getContext()
     {
         return _context;
@@ -100,12 +100,12 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     {
         return _dispatchPath;
     }
-    
+
     public void setTimeoutTask(Scheduler.Task task)
     {
         _timeoutTask = task;
     }
-    
+
     public void cancelTimeoutTask()
     {
         Scheduler.Task task=_timeoutTask;
@@ -119,28 +119,28 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
     {
         return _asyncContext;
     }
-    
+
     @Override
     public Throwable getThrowable()
     {
         return _throwable;
     }
-    
-    public void setThrowable(Throwable throwable)
-    {
-        _throwable=throwable;
-    }
+
+//    public void setThrowable(Throwable throwable)
+//    {
+//        _throwable=throwable;
+//    }
 
     public void setDispatchContext(ServletContext context)
     {
         _dispatchContext=context;
     }
-    
+
     public void setDispatchPath(String path)
     {
         _dispatchPath=path;
     }
-    
+
     public void completed()
     {
         _timeoutTask=null;
@@ -158,7 +158,15 @@ public class AsyncContextEvent extends AsyncEvent implements Runnable
         Scheduler.Task task=_timeoutTask;
         _timeoutTask=null;
         if (task!=null)
-            _state.expired();
+            _state.onTimeout();
+    }
+
+    public void addThrowable(Throwable e)
+    {
+        if (_throwable==null)
+            _throwable=e;
+        else
+            _throwable.addSuppressed(e);
     }
 
 }

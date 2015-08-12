@@ -116,7 +116,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         return _written;
     }
-    
+
     /**
      * @return the number of requests handled by this connection
      */
@@ -232,8 +232,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      * If the associated response has the Expect header set to 100 Continue,
      * then accessing the input stream indicates that the handler/servlet
      * is ready for the request body and thus a 100 Continue response is sent.
-     * 
-     * @param available estimate of the number of bytes that are available 
+     *
+     * @param available estimate of the number of bytes that are available
      * @throws IOException if the InputStream cannot be created
      */
     public void continue100(int available) throws IOException
@@ -270,178 +270,200 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             LOG.debug("{} handle {} ", this,_request.getHttpURI());
 
         HttpChannelState.Action action = _state.handling();
-        try
+
+        // Loop here to handle async request redispatches.
+        // The loop is controlled by the call to async.unhandle in the
+        // finally block below.  Unhandle will return false only if an async dispatch has
+        // already happened when unhandle is called.
+        while (!getServer().isStopped())
         {
-            // Loop here to handle async request redispatches.
-            // The loop is controlled by the call to async.unhandle in the
-            // finally block below.  Unhandle will return false only if an async dispatch has
-            // already happened when unhandle is called.
-            loop: while (action.ordinal()<HttpChannelState.Action.WAIT.ordinal() && !getServer().isStopped())
+            // Early exit out of the loop if the action
+            // is a terminal one to skip unhandle().
+            if (action == Action.TERMINATED || action == Action.WAIT)
+                break;
+
+            boolean error=false;
+            try
             {
-                boolean error=false;
-                try
+                if (LOG.isDebugEnabled())
+                    LOG.debug("{} action {}",this,action);
+
+                switch(action)
                 {
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("{} action {}",this,action);
-
-                    switch(action)
+                    case DISPATCH:
                     {
-                        case REQUEST_DISPATCH:
-                            if (!_request.hasMetaData())
-                                throw new IllegalStateException("state="+_state);
-                            _request.setHandled(false);
-                            _response.getHttpOutput().reopen();
-                            _request.setDispatcherType(DispatcherType.REQUEST);
+                        if (!_request.hasMetaData())
+                            throw new IllegalStateException("state=" + _state);
+                        _request.setHandled(false);
+                        _response.getHttpOutput().reopen();
+                        _request.setDispatcherType(DispatcherType.REQUEST);
 
-                            List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
-                            if (!customizers.isEmpty())
-                            {
-                                for (HttpConfiguration.Customizer customizer : customizers)
-                                    customizer.customize(getConnector(), _configuration, _request);
-                            }
-                            getServer().handle(this);
-                            break;
-
-                        case ASYNC_DISPATCH:
-                            _request.setHandled(false);
-                            _response.getHttpOutput().reopen();
-                            _request.setDispatcherType(DispatcherType.ASYNC);
-                            getServer().handleAsync(this);
-                            break;
-
-                        case ASYNC_EXPIRED:
-                            _request.setHandled(false);
-                            _response.getHttpOutput().reopen();
-                            _request.setDispatcherType(DispatcherType.ERROR);
-
-                            Throwable ex=_state.getAsyncContextEvent().getThrowable();
-                            String reason="Async Timeout";
-                            if (ex!=null && !(ex instanceof TimeoutException))
-                            {
-                                reason="Async Exception";
-                                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,ex);
-                            }
-                            _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE,new Integer(500));
-                            _request.setAttribute(RequestDispatcher.ERROR_MESSAGE,reason);
-                            _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI,_request.getRequestURI());
-
-                            _response.setStatusWithReason(500,reason);
-
-                            
-                            ErrorHandler eh = ErrorHandler.getErrorHandler(getServer(),_state.getContextHandler());                                
-                            if (eh instanceof ErrorHandler.ErrorPageMapper)
-                            {
-                                String error_page=((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
-                                if (error_page!=null)
-                                    _state.getAsyncContextEvent().setDispatchPath(error_page);
-                            }
-
-                            getServer().handleAsync(this);
-                            break;
-
-                        case READ_CALLBACK:
+                        List<HttpConfiguration.Customizer> customizers = _configuration.getCustomizers();
+                        if (!customizers.isEmpty())
                         {
-                            ContextHandler handler=_state.getContextHandler();
-                            if (handler!=null)
-                                handler.handle(_request.getHttpInput());
-                            else
-                                _request.getHttpInput().run();
-                            break;
+                            for (HttpConfiguration.Customizer customizer : customizers)
+                                customizer.customize(getConnector(), _configuration, _request);
+                        }
+                        getServer().handle(this);
+                        break;
+                    }
+
+                    case ASYNC_DISPATCH:
+                    {
+                        _request.setHandled(false);
+                        _response.getHttpOutput().reopen();
+                        _request.setDispatcherType(DispatcherType.ASYNC);
+                        getServer().handleAsync(this);
+                        break;
+                    }
+
+                    case ERROR_DISPATCH:
+                    {
+                        _request.setHandled(false);
+                        _response.getHttpOutput().reopen();
+                        _request.setDispatcherType(DispatcherType.ERROR);
+
+                        Throwable ex = _state.getAsyncContextEvent().getThrowable();
+                        String reason;
+                        if (ex == null || ex instanceof TimeoutException)
+                        {
+                            reason = "Async Timeout";
+                        }
+                        else
+                        {
+                            reason = "Async Exception";
+                            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, ex);
                         }
 
-                        case WRITE_CALLBACK:
+                        _request.setAttribute(RequestDispatcher.ERROR_STATUS_CODE, 500);
+                        _request.setAttribute(RequestDispatcher.ERROR_MESSAGE, reason);
+                        _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, _request.getRequestURI());
+
+                        _response.setStatusWithReason(500, reason);
+
+                        ErrorHandler eh = ErrorHandler.getErrorHandler(getServer(), _state.getContextHandler());
+                        if (eh instanceof ErrorHandler.ErrorPageMapper)
                         {
-                            ContextHandler handler=_state.getContextHandler();
+                            String error_page = ((ErrorHandler.ErrorPageMapper)eh).getErrorPage((HttpServletRequest)_state.getAsyncContextEvent().getSuppliedRequest());
+                            if (error_page != null)
+                                _state.getAsyncContextEvent().setDispatchPath(error_page);
+                        }
 
-                            if (handler!=null)
-                                handler.handle(_response.getHttpOutput());
+                        getServer().handleAsync(this);
+                        break;
+                    }
+
+                    case READ_CALLBACK:
+                    {
+                        ContextHandler handler=_state.getContextHandler();
+                        if (handler!=null)
+                            handler.handle(_request.getHttpInput());
+                        else
+                            _request.getHttpInput().run();
+                        break;
+                    }
+
+                    case WRITE_CALLBACK:
+                    {
+                        ContextHandler handler=_state.getContextHandler();
+                        if (handler!=null)
+                            handler.handle(_response.getHttpOutput());
+                        else
+                            _response.getHttpOutput().run();
+                        break;
+                    }
+
+                    case ASYNC_ERROR:
+                    {
+                        _state.onError();
+                        break;
+                    }
+
+                    case COMPLETING:
+                    {
+                        try
+                        {
+                            if (!_response.isCommitted() && !_request.isHandled())
+                                _response.sendError(404);
                             else
-                                _response.getHttpOutput().run();
-                            break;
-                        }   
+                                _response.closeOutput();
+//                        _state=COMPLETE;
+                        }
+                        catch (Throwable x)
+                        {
+//                            state = ERROR;
+                        }
+                        break;
+                        // async.complete();
+                        //    state -> COMPLETING
+                        // flush output
+                        //    try { flush(); state -> COMPLETED; }
+                        //    catch (x) { state -> ERROR }
+                        // unhandle();
+                        //    COMPLETED  -> call asyncListeners.onComplete() -> TERMINATED
+                        //    ERROR -> call asyncListeners.onError(); -> TERMINATED
+                        // unhandle();
+                        // TERMINATED -> break out of loop.
+                    }
+                    case COMPLETED:
+                    {
+                        _state.onComplete();
+                        // TODO: verify this code is needed and whether
+                        // TODO: it's needed for onError() case too.
+                        _request.setHandled(true);
+                        onCompleted();
+                        // TODO: set action to TERMINATED.
+                        break;
+                    }
 
-                        default:
-                            break loop;
-
+                    default:
+                    {
+                        throw new IllegalStateException("state="+_state);
                     }
                 }
-                catch (EofException|QuietServletException|BadMessageException e)
-                {
-                    error=true;
-                    LOG.debug(e);
-                    _state.error(e);
-                    _request.setHandled(true);
-                    handleException(e);
-                }
-                catch (Exception e)
+            }
+            catch (EofException|QuietServletException|BadMessageException e)
+            {
+                error=true;
+                LOG.debug(e);
+                _state.error(e);
+                _request.setHandled(true);
+                handleException(e);
+            }
+            catch (Exception e)
+            {
+                error=true;
+                if (_connector.isStarted())
+                    LOG.warn(String.valueOf(_request.getHttpURI()), e);
+                else
+                    LOG.debug(String.valueOf(_request.getHttpURI()), e);
+                _state.error(e);
+                _request.setHandled(true);
+                handleException(e);
+            }
+            catch (Throwable e)
+            {
+                if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
+                    LOG.ignore(e);
+                else
                 {
                     error=true;
                     if (_connector.isStarted())
                         LOG.warn(String.valueOf(_request.getHttpURI()), e);
                     else
                         LOG.debug(String.valueOf(_request.getHttpURI()), e);
+                    LOG.warn(String.valueOf(_request.getHttpURI()), e);
                     _state.error(e);
                     _request.setHandled(true);
                     handleException(e);
                 }
-                catch (Throwable e)
-                {
-                    if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
-                        LOG.ignore(e);
-                    else
-                    {
-                        error=true;
-                        if (_connector.isStarted())
-                            LOG.warn(String.valueOf(_request.getHttpURI()), e);
-                        else
-                            LOG.debug(String.valueOf(_request.getHttpURI()), e);
-                        LOG.warn(String.valueOf(_request.getHttpURI()), e);
-                        _state.error(e);
-                        _request.setHandled(true);
-                        handleException(e);
-                    }
-                }
-                finally
-                {
-                    if (error && _state.isAsyncStarted())
-                        _state.errorComplete();
-                    action = _state.unhandle();
-                }
             }
-
-            if (action==Action.COMPLETE)
+            finally
             {
-                try
-                {
-                    _state.completed();
-
-                    if (!_response.isCommitted() && !_request.isHandled())
-                    {
-                        _response.sendError(404);
-                    }
-                    else
-                    {
-                        // Complete generating the response
-                        _response.closeOutput();
-                    }
-                }
-                catch(EofException|ClosedChannelException e)
-                {
-                    LOG.debug(e);
-                }
-                catch(Exception e)
-                {
-                    LOG.warn("complete failed",e);
-                }
-                finally
-                {
-                    _request.setHandled(true);
-                    onCompleted();
-                }
+                if (error && _state.isAsyncStarted())
+                    _state.errorComplete();
+                action = _state.unhandle();
             }
-        }
-        finally
-        {
         }
 
         if (LOG.isDebugEnabled())
@@ -531,7 +553,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         HttpFields fields = _response.getHttpFields();
         if (_configuration.getSendDateHeader() && !fields.contains(HttpHeader.DATE))
             fields.put(_connector.getServer().getDateField());
-        
+
         _request.setMetaData(request);
     }
 
@@ -539,7 +561,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (LOG.isDebugEnabled())
             LOG.debug("{} content {}", this, content);
-        
+
         return _request.getHttpInput().addContent(content);
     }
 
@@ -554,10 +576,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         if (_requestLog!=null )
             _requestLog.log(_request, _response);
-        
+
         _transport.onCompleted();
     }
-    
+
     public boolean onEarlyEOF()
     {
         return _request.getHttpInput().earlyEOF();
@@ -570,7 +592,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
         try
         {
-            if (_state.handling()==Action.REQUEST_DISPATCH)
+            if (_state.handling()==Action.DISPATCH)
             {
                 ByteBuffer content=null;
                 HttpFields fields=new HttpFields();
@@ -588,10 +610,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         }
         finally
         {
-            if (_state.unhandle()==Action.COMPLETE)
-                _state.completed();
-            else 
-                throw new IllegalStateException();
+            // TODO: review whether it's the right state to check.
+            if (_state.unhandle()==Action.COMPLETING)
+                _state.onComplete();
+            else
+                throw new IllegalStateException(); // TODO: don't throw from finally blocks !
             onCompleted();
         }
     }
@@ -605,7 +628,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             if (info==null)
                 info = _response.newResponseMetaData();
             commit(info);
-            
+
             // wrap callback to process 100 responses
             final int status=info.getStatus();
             final Callback committed = (status<200&&status>=100)?new Commit100Callback(callback):new CommitCallback(callback);
@@ -641,7 +664,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             throw failure;
         }
     }
-    
+
     protected void commit (MetaData.Response info)
     {
         _committedMetaData=info;
@@ -667,7 +690,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         _written+=BufferUtil.length(content);
         sendResponse(null,content,complete,callback);
     }
-    
+
     public HttpOutput.Interceptor getNextInterceptor()
     {
         return null;
@@ -712,13 +735,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         {
             _callback = callback;
         }
-        
+
         @Override
         public boolean isNonBlocking()
         {
             return _callback.isNonBlocking();
         }
-        
+
         @Override
         public void succeeded()
         {
