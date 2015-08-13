@@ -18,9 +18,6 @@
 
 package org.eclipse.jetty.client;
 
-import static java.nio.file.StandardOpenOption.CREATE;
-import static org.junit.Assert.assertTrue;
-
 import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
@@ -33,6 +30,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardOpenOption;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collections;
@@ -124,8 +122,8 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         client.stop();
 
         Assert.assertEquals(0, client.getDestinations().size());
-        Assert.assertEquals(0, connectionPool.getIdleConnections().size());
-        Assert.assertEquals(0, connectionPool.getActiveConnections().size());
+        Assert.assertEquals(0, connectionPool.getIdleConnectionCount());
+        Assert.assertEquals(0, connectionPool.getActiveConnectionCount());
         Assert.assertFalse(connection.getEndPoint().isOpen());
     }
 
@@ -543,10 +541,10 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         start(new RespondThenConsumeHandler());
 
         // Prepare a big file to upload
-        Path targetTestsDir = testdir.getEmptyDir().toPath();
+        Path targetTestsDir = testdir.getEmptyPathDir();
         Files.createDirectories(targetTestsDir);
         Path file = Paths.get(targetTestsDir.toString(), "http_client_conversation.big");
-        try (OutputStream output = Files.newOutputStream(file, CREATE))
+        try (OutputStream output = Files.newOutputStream(file, StandardOpenOption.CREATE))
         {
             byte[] kb = new byte[1024];
             for (int i = 0; i < 10 * 1024; ++i)
@@ -813,7 +811,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     });
         }
 
-        assertTrue(latch.await(10, TimeUnit.SECONDS));
+        Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
     }
 
     @Test
@@ -1119,7 +1117,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             }
         });
 
-        final Exchanger<Response> ex = new Exchanger<Response>();
+        final Exchanger<Response> ex = new Exchanger<>();
         BufferingResponseListener listener = new BufferingResponseListener()
         {
             @Override

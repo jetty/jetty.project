@@ -36,12 +36,15 @@ import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-public abstract class HttpDestination implements Destination, Closeable, Dumpable
+@ManagedObject
+public abstract class HttpDestination extends ContainerLifeCycle implements Destination, Closeable, Dumpable
 {
     protected static final Logger LOG = Log.getLogger(HttpDestination.class);
 
@@ -130,12 +133,14 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
     }
 
     @Override
+    @ManagedAttribute(value = "The destination scheme", readonly = true)
     public String getScheme()
     {
         return origin.getScheme();
     }
 
     @Override
+    @ManagedAttribute(value = "The destination host", readonly = true)
     public String getHost()
     {
         // InetSocketAddress.getHostString() transforms the host string
@@ -144,9 +149,16 @@ public abstract class HttpDestination implements Destination, Closeable, Dumpabl
     }
 
     @Override
+    @ManagedAttribute(value = "The destination port", readonly = true)
     public int getPort()
     {
         return origin.getAddress().getPort();
+    }
+
+    @ManagedAttribute(value = "The number of queued requests", readonly = true)
+    public int getQueuedRequestCount()
+    {
+        return exchanges.size();
     }
 
     public Origin.Address getConnectAddress()

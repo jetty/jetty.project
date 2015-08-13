@@ -33,12 +33,15 @@ import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.BlockingArrayQueue;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.component.Dumpable;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
+@ManagedObject("The connection pool")
 public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
 {
     protected static final Logger LOG = Log.getLogger(ConnectionPool.class);
@@ -60,9 +63,22 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         this.activeConnections = new BlockingArrayQueue<>(maxConnections);
     }
 
+    @ManagedAttribute(value = "The number of connections", readonly = true)
     public int getConnectionCount()
     {
         return connectionCount.get();
+    }
+
+    @ManagedAttribute(value = "The number of idle connections", readonly = true)
+    public int getIdleConnectionCount()
+    {
+        return idleConnections.size();
+    }
+
+    @ManagedAttribute(value = "The number of active connections", readonly = true)
+    public int getActiveConnectionCount()
+    {
+        return activeConnections.size();
     }
 
     public BlockingQueue<Connection> getIdleConnections()

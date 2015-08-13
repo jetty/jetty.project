@@ -30,7 +30,10 @@ import org.eclipse.jetty.fcgi.FCGI;
 import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 
+@ManagedObject("The FastCGI/1.0 client transport")
 public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
 {
     private final boolean multiplexed;
@@ -53,6 +56,7 @@ public class HttpClientTransportOverFCGI extends AbstractHttpClientTransport
         return multiplexed;
     }
 
+    @ManagedAttribute(value = "The scripts root directory", readonly = true)
     public String getScriptRoot()
     {
         return scriptRoot;
