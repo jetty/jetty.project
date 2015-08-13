@@ -381,18 +381,12 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case COMPLETE:
                     {
-                        try
-                        {
-                            if (!_response.isCommitted() && !_request.isHandled())
-                                _response.sendError(404);
-                            else
-                                _response.closeOutput();
-                        }
-                        finally
-                        {
-                            _state.onComplete();
-                        }
-                        
+                        if (!_response.isCommitted() && !_request.isHandled())
+                            _response.sendError(404);
+                        else
+                            _response.closeOutput();
+                       
+                        _state.onComplete();
                         // TODO: verify this code is needed and whether
                         // TODO: it's needed for onError() case too.
                         _request.setHandled(true);
@@ -468,6 +462,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     return;
                 }
                 
+                // TODO Can this happen?  Should this just be ISE???
                 // We've already processed an error before!
                 root.addSuppressed(x);  
                 LOG.warn("Error while handling async error: ",root);
@@ -504,7 +499,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
                 }
                 else
-                    _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, x.getClass().toString());
+                    _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
             }
         }
         catch (IOException e)
