@@ -245,6 +245,12 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
+                if (request.getDispatcherType()==DispatcherType.ERROR)
+                {
+                    response.flushBuffer();
+                    return;
+                }
+                
                 final AsyncContext asyncContext = request.startAsync(request, response);
                 request.getInputStream().setReadListener(new ReadListener()
                 {
