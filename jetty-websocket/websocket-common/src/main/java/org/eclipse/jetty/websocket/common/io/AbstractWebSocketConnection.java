@@ -734,7 +734,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
     @Override
     public String toString()
     {
-        return String.format("%s{f=%s,g=%s,p=%s}",super.toString(),flusher,generator,parser);
+        return String.format("%s@%X{endp=%s,ios=%s,f=%s,g=%s,p=%s}",getClass().getSimpleName(),hashCode(),getEndPoint(),ioState,flusher,generator,parser);
     }
 
     /**
