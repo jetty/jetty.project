@@ -26,6 +26,7 @@ import java.util.ArrayList;
 import java.util.List;
 import java.util.Timer;
 import java.util.TimerTask;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -80,7 +81,17 @@ public class AsyncServletTest
     protected List<String> _log;
     protected int _expectedLogs;
     protected String _expectedCode;
-    protected static List<String> __history=new ArrayList<>();
+    protected static List<String> __history=new CopyOnWriteArrayList()
+            {
+
+                @Override
+                public boolean add(Object e)
+                {
+                    System.err.println("H: "+e);
+                    return super.add(e);
+                }
+                
+            };
     protected static CountDownLatch __latch;
 
     @Before
@@ -149,6 +160,18 @@ public class AsyncServletTest
         assertFalse(__history.contains("onComplete"));
     }
 
+    @Test
+    public void testNonAsync() throws Exception
+    {
+        String response=process("",null);
+        Assert.assertThat(response,Matchers.startsWith("HTTP/1.1 200 OK"));
+        assertThat(__history,contains(
+            "REQUEST /ctx/path/info",
+            "initial"));
+
+        assertContains("NORMAL",response);
+    }
+    
     @Test
     public void testStart() throws Exception
     {
@@ -573,28 +596,23 @@ public class AsyncServletTest
     @Test
     public void testAsyncRead() throws Exception
     {
-        _expectedLogs=2;
         String header="GET /ctx/path/info?start=2000&dispatch=1500 HTTP/1.1\r\n"+
             "Host: localhost\r\n"+
             "Content-Length: 10\r\n"+
-            "\r\n";
-        String body="12345678\r\n";
-        String close="GET /ctx/path/info HTTP/1.1\r\n"+
-            "Host: localhost\r\n"+
             "Connection: close\r\n"+
             "\r\n";
+        String body="12345678\r\n";
 
         try (Socket socket = new Socket("localhost",_port))
         {
             socket.setSoTimeout(10000);
             socket.getOutputStream().write(header.getBytes(StandardCharsets.ISO_8859_1));
-            Thread.sleep(500);
             socket.getOutputStream().write(body.getBytes(StandardCharsets.ISO_8859_1),0,2);
             Thread.sleep(500);
             socket.getOutputStream().write(body.getBytes(StandardCharsets.ISO_8859_1),2,8);
-            socket.getOutputStream().write(close.getBytes(StandardCharsets.ISO_8859_1));
 
             String response = IO.toString(socket.getInputStream());
+            __latch.await(1,TimeUnit.SECONDS);
             assertThat(response,startsWith("HTTP/1.1 200 OK"));
             assertThat(__history,contains(
                 "REQUEST /ctx/path/info",
