@@ -260,7 +260,18 @@ public abstract class ContinuationBase
 
     protected abstract String toString(InputStream in) throws IOException;
 
-
+    public static void addHistory(HttpServletResponse response, String event)
+    {
+        try
+        {
+            response.getOutputStream().print("history: " + event + "\n");
+        }
+        catch (IOException e)
+        {
+            throw new RuntimeException("Unable to write history: " + event, e);
+        }
+    }
+    
     private static class SuspendServlet extends HttpServlet
     {
         private Timer _timer=new Timer();
@@ -268,13 +279,13 @@ public abstract class ContinuationBase
         public SuspendServlet()
         {}
 
-        /* ------------------------------------------------------------ */
+
         @Override
         protected void doGet(final HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
         {
             final Continuation continuation = ContinuationSupport.getContinuation(request);
 
-            response.addHeader("history",continuation.getClass().toString());
+            addHistory(response, continuation.getClass().toString());
 
             int read_before=0;
             long sleep_for=-1;
@@ -307,7 +318,7 @@ public abstract class ContinuationBase
 
             if (continuation.isInitial())
             {
-                response.addHeader("history","initial");
+                addHistory(response, "initial");
                 if (read_before>0)
                 {
                     byte[] buf=new byte[read_before];
@@ -326,7 +337,7 @@ public abstract class ContinuationBase
                     if (suspend_for>0)
                         continuation.setTimeout(suspend_for);
                     continuation.addContinuationListener(__listener);
-                    response.addHeader("history","suspend");
+                    addHistory(response, "suspend");
                     continuation.suspend(response);
 
                     if (complete_after>0)
@@ -366,7 +377,7 @@ public abstract class ContinuationBase
                             @Override
                             public void run()
                             {
-                                ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
+                                addHistory(((HttpServletResponse)continuation.getServletResponse()), "resume");
                                 continuation.resume();
                             }
                         };
@@ -377,7 +388,7 @@ public abstract class ContinuationBase
                     }
                     else if (resume_after==0)
                     {
-                        ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","resume");
+                        addHistory(((HttpServletResponse)continuation.getServletResponse()), "resume");
                         continuation.resume();
                     }
 
@@ -413,7 +424,7 @@ public abstract class ContinuationBase
                     if (suspend2_for>0)
                         continuation.setTimeout(suspend2_for);
                     // continuation.addContinuationListener(__listener);
-                    response.addHeader("history","suspend");
+                    addHistory(response, "suspend");
                     continuation.suspend(response);
 
                     if (complete2_after>0)
@@ -453,7 +464,7 @@ public abstract class ContinuationBase
                             @Override
                             public void run()
                             {
-                                response.addHeader("history","resume");
+                                addHistory(response, "resume");
                                 continuation.resume();
                             }
                         };
@@ -464,7 +475,7 @@ public abstract class ContinuationBase
                     }
                     else if (resume2_after==0)
                     {
-                        response.addHeader("history","resume");
+                        addHistory(response, "resume");
                         continuation.resume();
                     }
                     if (undispatch)
@@ -496,14 +507,15 @@ public abstract class ContinuationBase
         @Override
         public void onComplete(Continuation continuation)
         {
-            ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","onComplete");
+            // FIXME: Servlet3Continuation's calls this from AsyncListener.onComplete() which is
+            //         not allowed to modify the servlet's response at that point.
+            addHistory(((HttpServletResponse)continuation.getServletResponse()),"onComplete");
         }
 
         @Override
         public void onTimeout(Continuation continuation)
         {
-            ((HttpServletResponse)continuation.getServletResponse()).addHeader("history","onTimeout");
+            addHistory(((HttpServletResponse)continuation.getServletResponse()),"onTimeout");
         }
-
     };
 }
