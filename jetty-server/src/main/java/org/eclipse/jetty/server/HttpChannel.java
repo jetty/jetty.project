@@ -319,6 +319,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     case ERROR_DISPATCH:
                     {
                         _request.setHandled(false);
+                        _response.resetBuffer();
                         _response.getHttpOutput().reopen();
                         _request.setDispatcherType(DispatcherType.ERROR);
 
