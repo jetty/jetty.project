@@ -275,13 +275,8 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         // The loop is controlled by the call to async.unhandle in the
         // finally block below.  Unhandle will return false only if an async dispatch has
         // already happened when unhandle is called.
-        while (!getServer().isStopped())
+        loop: while (!getServer().isStopped())
         {
-            // Early exit out of the loop if the action
-            // is a terminal one to skip unhandle().
-            if (action == Action.TERMINATED || action == Action.WAIT)
-                break;
-
             boolean error=false;
             try
             {
@@ -290,6 +285,10 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                 switch(action)
                 {
+                    case TERMINATED:
+                    case WAIT:
+                        break loop;
+                        
                     case DISPATCH:
                     {
                         if (!_request.hasMetaData())
@@ -379,7 +378,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         break;
                     }
 
-                    case COMPLETING:
+                    case COMPLETE:
                     {
                         try
                         {
@@ -387,33 +386,18 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                                 _response.sendError(404);
                             else
                                 _response.closeOutput();
-//                        _state=COMPLETE;
                         }
-                        catch (Throwable x)
+                        finally
                         {
-//                            state = ERROR;
+                            _state.onComplete();
                         }
-                        break;
-                        // async.complete();
-                        //    state -> COMPLETING
-                        // flush output
-                        //    try { flush(); state -> COMPLETED; }
-                        //    catch (x) { state -> ERROR }
-                        // unhandle();
-                        //    COMPLETED  -> call asyncListeners.onComplete() -> TERMINATED
-                        //    ERROR -> call asyncListeners.onError(); -> TERMINATED
-                        // unhandle();
-                        // TERMINATED -> break out of loop.
-                    }
-                    case COMPLETED:
-                    {
-                        _state.onComplete();
+                        
                         // TODO: verify this code is needed and whether
                         // TODO: it's needed for onError() case too.
                         _request.setHandled(true);
                         onCompleted();
-                        // TODO: set action to TERMINATED.
-                        break;
+                        
+                        break loop;
                     }
 
                     default:
@@ -458,18 +442,17 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     handleException(e);
                 }
             }
-            finally
-            {
-                if (error && _state.isAsyncStarted())
-                    _state.errorComplete();
-                action = _state.unhandle();
-            }
+            
+            if (error && _state.isAsyncStarted())
+                _state.errorComplete();
+            action = _state.unhandle();
         }
 
         if (LOG.isDebugEnabled())
             LOG.debug("{} handle exit, result {}", this, action);
 
-        return action!=Action.WAIT;
+        boolean suspended=action==Action.WAIT;
+        return !suspended;
     }
 
     /**
@@ -611,7 +594,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         finally
         {
             // TODO: review whether it's the right state to check.
-            if (_state.unhandle()==Action.COMPLETING)
+            if (_state.unhandle()==Action.COMPLETE)
                 _state.onComplete();
             else
                 throw new IllegalStateException(); // TODO: don't throw from finally blocks !

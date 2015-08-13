@@ -70,8 +70,7 @@ public class HttpChannelState
         ASYNC_ERROR,      // handle an async error
         WRITE_CALLBACK,   // handle an IO write callback
         READ_CALLBACK,    // handle an IO read callback
-        COMPLETING,       // Completing the response
-        COMPLETED,        // Response completed
+        COMPLETE,         // Complete the response
         TERMINATED,       // No further actions
         WAIT,             // Wait for further events
     }
@@ -197,10 +196,10 @@ public class HttpChannelState
                     return Action.DISPATCH;
 
                 case COMPLETING:
-                    return Action.COMPLETING;
+                    return Action.COMPLETE;
 
                 case COMPLETED:
-                    return Action.WAIT;
+                    return Action.TERMINATED;
 
                 case ASYNC_WOKEN:
                     if (_asyncReadPossible)
@@ -210,7 +209,6 @@ public class HttpChannelState
                         return Action.READ_CALLBACK;
                     }
 
-                    // TODO refactor the same as read
                     if (_asyncWrite)
                     {
                         _state=State.ASYNC_IO;
@@ -225,7 +223,7 @@ public class HttpChannelState
                         {
                             case COMPLETE:
                                 _state=State.COMPLETING;
-                                return Action.COMPLETING;
+                                return Action.COMPLETE;
                             case DISPATCH:
                                 _state=State.DISPATCHED;
                                 _async=null;
@@ -241,15 +239,21 @@ public class HttpChannelState
                             case ERRORING:
                                 _state=State.DISPATCHED;
                                 return Action.ASYNC_ERROR;
+                            
                             default:
-                                throw new IllegalStateException(String.valueOf(async));
+                                throw new IllegalStateException(getStatusStringLocked());
                         }
                     }
 
                     return Action.WAIT;
-
+                    
+                case ASYNC_IO:
+                case ASYNC_WAIT:
+                case DISPATCHED:
+                case UPGRADED:
                 default:
-                    return Action.WAIT;
+                    throw new IllegalStateException(getStatusStringLocked());
+
             }
         }
     }
@@ -316,7 +320,7 @@ public class HttpChannelState
             switch(_state)
             {
                 case COMPLETED:
-                    return Action.COMPLETED;
+                    return Action.TERMINATED;
 
                 case DISPATCHED:
                 case ASYNC_IO:
@@ -334,7 +338,7 @@ public class HttpChannelState
                     case COMPLETE:
                         _state=State.COMPLETING;
                         _async=null;
-                        action=Action.COMPLETING;
+                        action=Action.COMPLETE;
                         break;
 
                     case DISPATCH:
@@ -379,25 +383,25 @@ public class HttpChannelState
 
                     case ERRORING:
                         _state=State.DISPATCHED;
-                        action=Action.ERROR_DISPATCH;
+                        action=Action.ASYNC_ERROR;
                         break;
 
                     case ERRORED:
                         _state=State.DISPATCHED;
-                        action=Action.ASYNC_ERROR;
+                        action=Action.ERROR_DISPATCH;
                         _async=null;
                         break;
 
                     default:
                         _state=State.COMPLETING;
-                        action=Action.COMPLETING;
+                        action=Action.COMPLETE;
                         break;
                 }
             }
             else
             {
                 _state=State.COMPLETING;
-                action=Action.COMPLETING;
+                action=Action.COMPLETE;
             }
         }
 
