@@ -598,7 +598,9 @@ public class ServletHandler extends ScopedHandler
         }
         catch(Exception e)
         {
-            if (!(DispatcherType.REQUEST.equals(type) || DispatcherType.ASYNC.equals(type)))
+            //TODO, can we let all error handling fall through to HttpChannel?
+            
+            if (baseRequest.isAsyncStarted() || !(DispatcherType.REQUEST.equals(type) || DispatcherType.ASYNC.equals(type)))
             {
                 if (e instanceof IOException)
                     throw (IOException)e;

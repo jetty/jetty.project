@@ -81,17 +81,7 @@ public class AsyncServletTest
     protected List<String> _log;
     protected int _expectedLogs;
     protected String _expectedCode;
-    protected static List<String> __history=new CopyOnWriteArrayList()
-            {
-
-                @Override
-                public boolean add(Object e)
-                {
-                    System.err.println("H: "+e);
-                    return super.add(e);
-                }
-                
-            };
+    protected static List<String> __history=new CopyOnWriteArrayList<>();
     protected static CountDownLatch __latch;
 
     @Before
@@ -213,7 +203,7 @@ public class AsyncServletTest
     {
         _expectedCode="500 ";
         String response=process("start=200&timeout=error",null);
-        assertThat(response,startsWith("HTTP/1.1 500 Async Exception"));
+        assertThat(response,startsWith("HTTP/1.1 500 Server Error"));
         assertThat(__history,contains(
             "REQUEST /ctx/path/info",
             "initial",
@@ -323,12 +313,11 @@ public class AsyncServletTest
             "REQUEST /ctx/path/info",
             "initial",
             "start",
-            /* TODO should there be an onError call?
             "onError",
-            "history: onComplete\r\n"
-            */""
-            ));
-        assertContains("HTTP ERROR: 500",response);
+            "ERROR /ctx/path/info",
+            "!initial",
+            "onComplete"));
+        assertContains("ERROR DISPATCH: /ctx/path/info",response);
     }
 
     @Test

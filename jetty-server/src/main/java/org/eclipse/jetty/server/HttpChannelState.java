@@ -296,6 +296,7 @@ public class HttpChannelState
         {
             if (_event!=null)
                 _event.addThrowable(th);
+            _async=Async.ERRORING;
         }
     }
 

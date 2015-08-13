@@ -173,6 +173,7 @@ public class AsyncContextTest
            "Connection: close\r\n" + 
            "\r\n";
         String responseString = _connector.getResponses(request);
+        System.err.println(responseString);
 
         BufferedReader br = new BufferedReader(new StringReader(responseString));
 

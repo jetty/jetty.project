@@ -29,6 +29,7 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 import javax.servlet.DispatcherType;
 import javax.servlet.RequestDispatcher;
+import javax.servlet.UnavailableException;
 import javax.servlet.http.HttpServletRequest;
 
 import org.eclipse.jetty.http.BadMessageException;
@@ -277,7 +278,6 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
         // already happened when unhandle is called.
         loop: while (!getServer().isStopped())
         {
-            boolean error=false;
             try
             {
                 if (LOG.isDebugEnabled())
@@ -323,14 +323,14 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _request.setDispatcherType(DispatcherType.ERROR);
 
                         Throwable ex = _state.getAsyncContextEvent().getThrowable();
-                        String reason;
+                        String reason=null;
                         if (ex == null || ex instanceof TimeoutException)
                         {
                             reason = "Async Timeout";
                         }
                         else
                         {
-                            reason = "Async Exception";
+                            reason = HttpStatus.Code.INTERNAL_SERVER_ERROR.getMessage();
                             _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, ex);
                         }
 
@@ -338,7 +338,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                         _request.setAttribute(RequestDispatcher.ERROR_MESSAGE, reason);
                         _request.setAttribute(RequestDispatcher.ERROR_REQUEST_URI, _request.getRequestURI());
 
-                        _response.setStatusWithReason(500, reason);
+                        _response.setStatusWithReason(HttpStatus.INTERNAL_SERVER_ERROR_500, reason);
 
                         ErrorHandler eh = ErrorHandler.getErrorHandler(getServer(), _state.getContextHandler());
                         if (eh instanceof ErrorHandler.ErrorPageMapper)
@@ -408,21 +408,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (EofException|QuietServletException|BadMessageException e)
             {
-                error=true;
                 LOG.debug(e);
-                _state.error(e);
-                _request.setHandled(true);
                 handleException(e);
             }
             catch (Exception e)
             {
-                error=true;
                 if (_connector.isStarted())
                     LOG.warn(String.valueOf(_request.getHttpURI()), e);
                 else
                     LOG.debug(String.valueOf(_request.getHttpURI()), e);
-                _state.error(e);
-                _request.setHandled(true);
                 handleException(e);
             }
             catch (Throwable e)
@@ -431,20 +425,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     LOG.ignore(e);
                 else
                 {
-                    error=true;
                     if (_connector.isStarted())
                         LOG.warn(String.valueOf(_request.getHttpURI()), e);
                     else
                         LOG.debug(String.valueOf(_request.getHttpURI()), e);
                     LOG.warn(String.valueOf(_request.getHttpURI()), e);
-                    _state.error(e);
-                    _request.setHandled(true);
                     handleException(e);
                 }
             }
             
-            if (error && _state.isAsyncStarted())
-                _state.errorComplete();
             action = _state.unhandle();
         }
 
@@ -468,19 +457,30 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
     {
         try
         {
+            if (_state.isAsyncStarted())
+            {
+                // Handle exception via AsyncListener onError
+                Throwable root = _state.getAsyncContextEvent().getThrowable();
+                if (root==null)
+                {
+                    _state.error(x);
+                    return;
+                }
+                
+                // We've already processed an error before!
+                root.addSuppressed(x);  
+                LOG.warn("Error while handling async error: ",root);
+                abort(x);
+                _state.errorComplete(); 
+                return;
+            }
+            
+            // Handle error normally
+            _request.setHandled(true);
             _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
             _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
-            if (_state.isSuspended())
-            {
-                HttpFields fields = new HttpFields();
-                fields.add(HttpHeader.CONNECTION,HttpHeaderValue.CLOSE);
-                MetaData.Response info = new MetaData.Response(_request.getHttpVersion(), HttpStatus.INTERNAL_SERVER_ERROR_500, null, fields, 0);
-                boolean committed = sendResponse(info,null, true);
-                if (!committed)
-                    LOG.warn("Could not send response error 500: "+x);
-                _request.getAsyncContext().complete();
-            }
-            else if (isCommitted())
+
+            if (isCommitted())
             {
                 abort(x);
                 if (!(x instanceof EofException))
@@ -495,8 +495,15 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     BadMessageException bme = (BadMessageException)x;
                     _response.sendError(bme.getCode(), bme.getReason());
                 }
+                else if (x instanceof UnavailableException)
+                {
+                    if (((UnavailableException)x).isPermanent())
+                        _response.sendError(HttpStatus.NOT_FOUND_404);
+                    else
+                        _response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+                }
                 else
-                    _response.sendError(500, x.getClass().toString());
+                    _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500, x.getClass().toString());
             }
         }
         catch (IOException e)
