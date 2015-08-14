@@ -44,7 +44,15 @@ import static org.junit.Assert.assertThat;
 
 public abstract class AbstractContinuationTest
 {
-    protected List<String> _history = new ArrayList<>();
+    @SuppressWarnings("serial")
+    protected List<String> _history = new ArrayList<String>() {
+        @Override
+        public boolean add(String e)
+        {
+            System.err.printf("add(%s)%n",e);
+            return super.add(e);
+        }
+    };
     protected ContinuationListener _listener = new Listener(_history);
     protected SuspendServlet _servlet = new SuspendServlet(_history, _listener);
     protected int _port;
