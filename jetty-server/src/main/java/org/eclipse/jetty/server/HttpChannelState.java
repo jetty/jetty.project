@@ -239,14 +239,14 @@ public class HttpChannelState
                             case ERRORING:
                                 _state=State.DISPATCHED;
                                 return Action.ASYNC_ERROR;
-                            
+
                             default:
                                 throw new IllegalStateException(getStatusStringLocked());
                         }
                     }
 
                     return Action.WAIT;
-                    
+
                 case ASYNC_IO:
                 case ASYNC_WAIT:
                 case DISPATCHED:
@@ -320,6 +320,7 @@ public class HttpChannelState
         {
             switch(_state)
             {
+                case COMPLETING:
                 case COMPLETED:
                     return Action.TERMINATED;
 

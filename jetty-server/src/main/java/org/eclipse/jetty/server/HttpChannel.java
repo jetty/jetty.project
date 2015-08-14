@@ -410,13 +410,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             _response.sendError(404);
                         else
                             _response.closeOutput();
+                        _request.setHandled(true);
 
                         // TODO do onComplete here to detect errors in final flush
                          _state.onComplete();
 
-                        // TODO: verify this code is needed and whether
-                        // TODO: it's needed for onError() case too.
-                        _request.setHandled(true);
                         onCompleted();
 
                         break loop;
@@ -430,28 +428,22 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
             }
             catch (EofException|QuietServletException|BadMessageException e)
             {
-                LOG.debug(e);
-                handleException(e);
-            }
-            catch (Exception e)
-            {
-                if (_connector.isStarted())
-                    LOG.warn(String.valueOf(_request.getHttpURI()), e);
-                else
-                    LOG.debug(String.valueOf(_request.getHttpURI()), e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug(e);
                 handleException(e);
             }
             catch (Throwable e)
             {
                 if ("ContinuationThrowable".equals(e.getClass().getSimpleName()))
+                {
                     LOG.ignore(e);
+                }
                 else
                 {
                     if (_connector.isStarted())
                         LOG.warn(String.valueOf(_request.getHttpURI()), e);
                     else
                         LOG.debug(String.valueOf(_request.getHttpURI()), e);
-                    LOG.warn(String.valueOf(_request.getHttpURI()), e);
                     handleException(e);
                 }
             }
@@ -477,62 +469,65 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
      */
     protected void handleException(Throwable x)
     {
-        try
+        if (_state.isAsyncStarted())
         {
-            if (_state.isAsyncStarted())
+            // Handle exception via AsyncListener onError
+            Throwable root = _state.getAsyncContextEvent().getThrowable();
+            if (root==null)
             {
-                // Handle exception via AsyncListener onError
-                Throwable root = _state.getAsyncContextEvent().getThrowable();
-                if (root==null)
-                {
-                    _state.error(x);
-                    return;
-                }
-
-                // TODO Can this happen?  Should this just be ISE???
-                // We've already processed an error before!
-                root.addSuppressed(x);
-                LOG.warn("Error while handling async error: ",root);
-                abort(x);
-                _state.errorComplete();
-                return;
-            }
-
-            // Handle error normally
-            _request.setHandled(true);
-            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
-            _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE,x.getClass());
-
-            if (isCommitted())
-            {
-                abort(x);
-                if (!(x instanceof EofException))
-                    LOG.warn("Could not send response error 500: "+x);
+                _state.error(x);
             }
             else
             {
-                _response.setHeader(HttpHeader.CONNECTION.asString(),HttpHeaderValue.CLOSE.asString());
-
-                if (x instanceof BadMessageException)
-                {
-                    BadMessageException bme = (BadMessageException)x;
-                    _response.sendError(bme.getCode(), bme.getReason());
-                }
-                else if (x instanceof UnavailableException)
-                {
-                    if (((UnavailableException)x).isPermanent())
-                        _response.sendError(HttpStatus.NOT_FOUND_404);
-                    else
-                        _response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
-                }
-                else
-                    _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                // TODO Can this happen?  Should this just be ISE???
+                // We've already processed an error before!
+                root.addSuppressed(x);
+                LOG.warn("Error while handling async error: ", root);
+                abort(x);
+                _state.errorComplete();
             }
         }
-        catch (IOException e)
+        else
         {
-            // We tried our best, just log
-            LOG.debug("Could not commit response error 500", e);
+            try
+            {
+                // Handle error normally
+                _request.setHandled(true);
+                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION, x);
+                _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION_TYPE, x.getClass());
+
+                if (isCommitted())
+                {
+                    abort(x);
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Could not send response error 500, already committed", x);
+                }
+                else
+                {
+                    _response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
+
+                    if (x instanceof BadMessageException)
+                    {
+                        BadMessageException bme = (BadMessageException)x;
+                        _response.sendError(bme.getCode(), bme.getReason());
+                    }
+                    else if (x instanceof UnavailableException)
+                    {
+                        if (((UnavailableException)x).isPermanent())
+                            _response.sendError(HttpStatus.NOT_FOUND_404);
+                        else
+                            _response.sendError(HttpStatus.SERVICE_UNAVAILABLE_503);
+                    }
+                    else
+                        _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                }
+            }
+            catch (Throwable e)
+            {
+                abort(e);
+                if (LOG.isDebugEnabled())
+                    LOG.debug("Could not commit response error 500", e);
+            }
         }
     }
 
