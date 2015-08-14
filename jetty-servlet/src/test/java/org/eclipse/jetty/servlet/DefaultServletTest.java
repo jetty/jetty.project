@@ -705,6 +705,7 @@ public class DefaultServletTest
 
         String response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\n\r\n");
         assertResponseContains("Content-Length: 12", response);
+        assertResponseContains("Content-Type: text/plain",response);
         assertResponseContains("Hello Text 0",response);
         assertResponseContains("Vary: Accept-Encoding",response);
         assertResponseNotContains("Content-Encoding: gzip",response);
@@ -712,6 +713,7 @@ public class DefaultServletTest
         response = connector.getResponses("GET /context/data0.txt HTTP/1.0\r\nHost:localhost:8080\r\nAccept-Encoding:gzip\r\n\r\n");
         assertResponseContains("Content-Length: 9", response);
         assertResponseContains("fake gzip",response);
+        assertResponseContains("Content-Type: text/plain",response);
         assertResponseContains("Vary: Accept-Encoding",response);
         assertResponseContains("Content-Encoding: gzip",response);
         

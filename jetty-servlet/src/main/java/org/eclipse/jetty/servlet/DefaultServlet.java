@@ -519,7 +519,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 {
                     // ensure we have content
                     if (content==null)
-                        content=new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),response.getBufferSize(),_etags);
+                        content=new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(pathInContext),response.getBufferSize(),_etags);
 
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                     {
@@ -591,7 +591,7 @@ public class DefaultServlet extends HttpServlet implements ResourceFactory
                 }
                 else
                 {
-                    content=new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(resource.toString()),_etags);
+                    content=new ResourceHttpContent(resource,_mimeTypes.getMimeByExtension(pathInContext),_etags);
                     if (included.booleanValue() || passConditionalHeaders(request,response, resource,content))
                         sendDirectory(request,response,resource,pathInContext);
                 }
