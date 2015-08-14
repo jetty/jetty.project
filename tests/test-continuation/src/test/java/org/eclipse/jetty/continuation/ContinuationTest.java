@@ -18,8 +18,6 @@
 
 package org.eclipse.jetty.continuation;
 
-import java.io.IOException;
-import java.io.InputStream;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -30,26 +28,21 @@ import org.eclipse.jetty.server.Response;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
 import org.eclipse.jetty.server.handler.RequestLogHandler;
-import org.eclipse.jetty.servlet.FilterHolder;
 import org.eclipse.jetty.servlet.ServletContextHandler;
 import org.eclipse.jetty.servlet.ServletHandler;
 import org.eclipse.jetty.servlet.ServletHolder;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.After;
 import org.junit.Assert;
 import org.junit.Before;
 import org.junit.Test;
 
-
-
-public class ContinuationTest extends ContinuationBase
+public class ContinuationTest extends AbstractContinuationTest
 {
     protected Server _server = new Server();
     protected ServletHandler _servletHandler;
     protected ServerConnector _connector;
-    FilterHolder _filter;
-    protected List<String> _log = new ArrayList<String>();
+    protected List<String> _log = new ArrayList<>();
 
     @Before
     public void setUp() throws Exception
@@ -61,15 +54,15 @@ public class ContinuationTest extends ContinuationBase
         RequestLogHandler requestLogHandler = new RequestLogHandler();
         requestLogHandler.setRequestLog(new Log());
         _server.setHandler(requestLogHandler);
-        
-        ServletContextHandler servletContext = new ServletContextHandler(ServletContextHandler.NO_SECURITY|ServletContextHandler.NO_SESSIONS);
+
+        ServletContextHandler servletContext = new ServletContextHandler();
         requestLogHandler.setHandler(servletContext);
-        
+
         _servletHandler=servletContext.getServletHandler();
         ServletHolder holder=new ServletHolder(_servlet);
         holder.setAsyncSupported(true);
-        _servletHandler.addServletWithMapping(holder,"/");
-        
+        _servletHandler.addServletWithMapping(holder, "/");
+
         _server.start();
         _port=_connector.getLocalPort();
     }
@@ -82,115 +75,13 @@ public class ContinuationTest extends ContinuationBase
         Assert.assertTrue(_log.get(0).startsWith("200 "));
         Assert.assertTrue(_log.get(0).endsWith(" /"));
     }
-    
+
     @Test
     public void testContinuation() throws Exception
     {
-        doNormal("Servlet3Continuation");
+        testNormal(Servlet3Continuation.class.getName());
     }
 
-    @Test
-    public void testSleep() throws Exception
-    {
-        doSleep();
-    }
-
-    @Test
-    public void testSuspend() throws Exception
-    {
-        doSuspend();
-    }
-
-    @Test
-    public void testSuspendWaitResume() throws Exception
-    {
-        doSuspendWaitResume();
-    }
-
-    @Test
-    public void testSuspendResume() throws Exception
-    {
-        doSuspendResume();
-    }
-
-    @Test
-    public void testSuspendWaitComplete() throws Exception
-    {
-        doSuspendWaitComplete();
-    }
-
-    @Test
-    public void testSuspendComplete() throws Exception
-    {
-        doSuspendComplete();
-    }
-
-    @Test
-    public void testSuspendWaitResumeSuspendWaitResume() throws Exception
-    {
-        doSuspendWaitResumeSuspendWaitResume();
-    }
-
-    @Test
-    public void testSuspendWaitResumeSuspendComplete() throws Exception
-    {
-        doSuspendWaitResumeSuspendComplete();
-    }
-
-    @Test
-    public void testSuspendWaitResumeSuspend() throws Exception
-    {
-        doSuspendWaitResumeSuspend();
-    }
-
-    @Test
-    public void testSuspendTimeoutSuspendResume() throws Exception
-    {
-        doSuspendTimeoutSuspendResume();
-    }
-
-    @Test
-    public void testSuspendTimeoutSuspendComplete() throws Exception
-    {
-        doSuspendTimeoutSuspendComplete();
-    }
-
-    @Test
-    public void testSuspendTimeoutSuspend() throws Exception
-    {
-        doSuspendTimeoutSuspend();
-    }
-
-    @Test
-    public void testSuspendThrowResume() throws Exception
-    {
-        doSuspendThrowResume();
-    }
-
-    @Test
-    public void testSuspendResumeThrow() throws Exception
-    {
-        doSuspendResumeThrow();
-    }
-
-    @Test
-    public void testSuspendThrowComplete() throws Exception
-    {
-        doSuspendThrowComplete();
-    }
-
-    @Test
-    public void testSuspendCompleteThrow() throws Exception
-    {
-        doSuspendCompleteThrow();
-    }
-    
-    @Override
-    protected String toString(InputStream in) throws IOException
-    {
-        return IO.toString(in);
-    }
-    
     class Log extends AbstractLifeCycle implements RequestLog
     {
         @Override
@@ -200,6 +91,5 @@ public class ContinuationTest extends ContinuationBase
             long written = response.getHttpChannel().getBytesWritten();
             _log.add(status+" "+written+" "+request.getRequestURI());
         }
-        
     }
 }

@@ -288,7 +288,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     case TERMINATED:
                     case WAIT:
                         break loop;
-                        
+
                     case DISPATCH:
                     {
                         if (!_request.hasMetaData())
@@ -319,11 +319,11 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     case ERROR_DISPATCH:
                     {
                         Throwable ex = _state.getAsyncContextEvent().getThrowable();
-                        
+
                         // Check for error dispatch loops
                         Integer loop_detect = (Integer)_request.getAttribute("org.eclipse.jetty.server.ERROR_DISPATCH");
                         if (loop_detect==null)
-                            loop_detect=new Integer(1);
+                            loop_detect=1;
                         else
                             loop_detect=loop_detect+1;
                         _request.setAttribute("org.eclipse.jetty.server.ERROR_DISPATCH",loop_detect);
@@ -340,13 +340,13 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                             }
                             break loop;
                         }
-                        
+
                         _request.setHandled(false);
                         _response.resetBuffer();
                         _response.getHttpOutput().reopen();
                         _request.setDispatcherType(DispatcherType.ERROR);
 
-                        String reason=null;
+                        String reason;
                         if (ex == null || ex instanceof TimeoutException)
                         {
                             reason = "Async Timeout";
@@ -404,21 +404,21 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     case COMPLETE:
                     {
                         // TODO do onComplete here for continuations to work
-                        _state.onComplete();
-                        
+//                        _state.onComplete();
+
                         if (!_response.isCommitted() && !_request.isHandled())
                             _response.sendError(404);
                         else
                             _response.closeOutput();
-                       
+
                         // TODO do onComplete here to detect errors in final flush
-                        // _state.onComplete();
-                        
+                         _state.onComplete();
+
                         // TODO: verify this code is needed and whether
                         // TODO: it's needed for onError() case too.
                         _request.setHandled(true);
                         onCompleted();
-                        
+
                         break loop;
                     }
 
@@ -455,7 +455,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     handleException(e);
                 }
             }
-            
+
             action = _state.unhandle();
         }
 
@@ -488,16 +488,16 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     _state.error(x);
                     return;
                 }
-                
+
                 // TODO Can this happen?  Should this just be ISE???
                 // We've already processed an error before!
-                root.addSuppressed(x);  
+                root.addSuppressed(x);
                 LOG.warn("Error while handling async error: ",root);
                 abort(x);
-                _state.errorComplete(); 
+                _state.errorComplete();
                 return;
             }
-            
+
             // Handle error normally
             _request.setHandled(true);
             _request.setAttribute(RequestDispatcher.ERROR_EXCEPTION,x);
