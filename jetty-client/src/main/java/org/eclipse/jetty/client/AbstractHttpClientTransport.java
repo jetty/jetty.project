@@ -31,10 +31,13 @@ import org.eclipse.jetty.io.SelectChannelEndPoint;
 import org.eclipse.jetty.io.SelectorManager;
 import org.eclipse.jetty.io.ssl.SslClientConnectionFactory;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
+@ManagedObject
 public abstract class AbstractHttpClientTransport extends ContainerLifeCycle implements HttpClientTransport
 {
     protected static final Logger LOG = Log.getLogger(HttpClientTransport.class);
@@ -57,6 +60,12 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
     public void setHttpClient(HttpClient client)
     {
         this.client = client;
+    }
+
+    @ManagedAttribute(value = "The number of selectors", readonly = true)
+    public int getSelectors()
+    {
+        return selectors;
     }
 
     @Override

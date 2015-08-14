@@ -33,8 +33,11 @@ import org.eclipse.jetty.http2.client.HTTP2Client;
 import org.eclipse.jetty.io.ClientConnectionFactory;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
 
+@ManagedObject("The HTTP/2 client transport")
 public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements HttpClientTransport
 {
     private final HTTP2Client client;
@@ -44,6 +47,12 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     public HttpClientTransportOverHTTP2(HTTP2Client client)
     {
         this.client = client;
+    }
+
+    @ManagedAttribute(value = "The number of selectors", readonly = true)
+    public int getSelectors()
+    {
+        return client.getSelectors();
     }
 
     @Override

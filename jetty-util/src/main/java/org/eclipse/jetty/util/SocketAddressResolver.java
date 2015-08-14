@@ -26,6 +26,8 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
 
+import org.eclipse.jetty.util.annotation.ManagedAttribute;
+import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
@@ -48,6 +50,7 @@ public interface SocketAddressResolver
     /**
      * <p>Creates {@link SocketAddress} instances synchronously in the caller thread.</p>
      */
+    @ManagedObject("The synchronous address resolver")
     public static class Sync implements SocketAddressResolver
     {
         @Override
@@ -91,6 +94,7 @@ public interface SocketAddressResolver
      * });
      * </pre>
      */
+    @ManagedObject("The asynchronous address resolver")
     public static class Async implements SocketAddressResolver
     {
         private static final Logger LOG = Log.getLogger(SocketAddressResolver.class);
@@ -124,6 +128,7 @@ public interface SocketAddressResolver
             return scheduler;
         }
 
+        @ManagedAttribute(value = "The timeout, in milliseconds, to resolve an address", readonly = true)
         public long getTimeout()
         {
             return timeout;
