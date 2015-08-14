@@ -63,6 +63,7 @@ public class HttpConfiguration
     private boolean _sendDateHeader = true;
     private boolean _delayDispatchUntilContent = true;
     private boolean _persistentConnectionsEnabled = true;
+    private int _maxErrorDispatches = 10;
 
     /* ------------------------------------------------------------ */
     /** 
@@ -118,6 +119,7 @@ public class HttpConfiguration
         _sendXPoweredBy=config._sendXPoweredBy;
         _delayDispatchUntilContent=config._delayDispatchUntilContent;
         _persistentConnectionsEnabled=config._persistentConnectionsEnabled;
+        _maxErrorDispatches=config._maxErrorDispatches;
     }
     
     /* ------------------------------------------------------------ */
@@ -457,5 +459,24 @@ public class HttpConfiguration
     public boolean isFormEncodedMethod(String method)
     {
         return Boolean.TRUE.equals(_formEncodedMethods.get(method));
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @return The maximum error dispatches for a request to prevent looping on an error
+     */
+    @ManagedAttribute("The maximum ERROR dispatches for a request for loop prevention (default 10)")
+    public int getMaxErrorDispatches()
+    {
+        return _maxErrorDispatches;
+    }
+
+    /* ------------------------------------------------------------ */
+    /**
+     * @param max The maximum error dispatches for a request to prevent looping on an error
+     */
+    public void setMaxErrorDispatches(int max)
+    {
+        _maxErrorDispatches=max;
     }
 }

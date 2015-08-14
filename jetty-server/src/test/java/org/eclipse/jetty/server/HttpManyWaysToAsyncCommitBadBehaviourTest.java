@@ -30,6 +30,7 @@ import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
 
 import javax.servlet.AsyncContext;
+import javax.servlet.DispatcherType;
 import javax.servlet.ServletException;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
@@ -86,6 +87,13 @@ public class HttpManyWaysToAsyncCommitBadBehaviourTest extends AbstractHttpTest
         public void handle(String target, Request baseRequest, final HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
         {
             final CyclicBarrier resumeBarrier = new CyclicBarrier(1);
+            
+            if (baseRequest.getDispatcherType()==DispatcherType.ERROR)
+            {
+                response.sendError(500);
+                return;
+            }
+            
             if (request.getAttribute(CONTEXT_ATTRIBUTE) == null)
             {
                 final AsyncContext asyncContext = baseRequest.startAsync();

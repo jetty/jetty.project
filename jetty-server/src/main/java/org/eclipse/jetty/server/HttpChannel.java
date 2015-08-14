@@ -318,12 +318,34 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
 
                     case ERROR_DISPATCH:
                     {
+                        Throwable ex = _state.getAsyncContextEvent().getThrowable();
+                        
+                        // Check for error dispatch loops
+                        Integer loop_detect = (Integer)_request.getAttribute("org.eclipse.jetty.server.ERROR_DISPATCH");
+                        if (loop_detect==null)
+                            loop_detect=new Integer(1);
+                        else
+                            loop_detect=loop_detect+1;
+                        _request.setAttribute("org.eclipse.jetty.server.ERROR_DISPATCH",loop_detect);
+                        if (loop_detect > getHttpConfiguration().getMaxErrorDispatches())
+                        {
+                            LOG.warn("ERROR_DISPATCH loop detected on {} {}",_request,ex);
+                            try
+                            {
+                                _response.sendError(HttpStatus.INTERNAL_SERVER_ERROR_500);
+                            }
+                            finally
+                            {
+                                _state.errorComplete();
+                            }
+                            break loop;
+                        }
+                        
                         _request.setHandled(false);
                         _response.resetBuffer();
                         _response.getHttpOutput().reopen();
                         _request.setDispatcherType(DispatcherType.ERROR);
 
-                        Throwable ex = _state.getAsyncContextEvent().getThrowable();
                         String reason=null;
                         if (ex == null || ex instanceof TimeoutException)
                         {

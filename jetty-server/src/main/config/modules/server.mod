@@ -61,6 +61,9 @@ etc/jetty.xml
 ## Whether, for requests with content, delay dispatch until some content has arrived
 # jetty.httpConfig.delayDispatchUntilContent=true
 
+## Maximum number of error dispatches to prevent looping
+# jetty.httpConfig.maxErrorDispatches=10
+
 ### Server configuration
 ## Whether ctrl+c on the console gracefully stops the Jetty server
 # jetty.server.stopAtShutdown=true
