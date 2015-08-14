@@ -18,6 +18,9 @@
 
 package org.eclipse.jetty.continuation;
 
+import static org.hamcrest.Matchers.*;
+import static org.junit.Assert.*;
+
 import java.io.IOException;
 import java.io.InputStream;
 import java.net.Socket;
@@ -32,20 +35,30 @@ import javax.servlet.http.HttpServlet;
 import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
+import org.eclipse.jetty.server.Handler;
+import org.eclipse.jetty.server.Request;
+import org.eclipse.jetty.server.RequestLog;
+import org.eclipse.jetty.server.Response;
+import org.eclipse.jetty.server.Server;
+import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.RequestLogHandler;
+import org.eclipse.jetty.servlet.FilterHolder;
+import org.eclipse.jetty.servlet.ServletContextHandler;
+import org.eclipse.jetty.servlet.ServletHandler;
+import org.eclipse.jetty.servlet.ServletHolder;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.junit.Test;
+import org.junit.runner.RunWith;
+import org.junit.runners.Parameterized;
+import org.junit.runners.Parameterized.Parameter;
+import org.junit.runners.Parameterized.Parameters;
 
-import static org.hamcrest.Matchers.containsString;
-import static org.hamcrest.Matchers.hasItem;
-import static org.hamcrest.Matchers.not;
-import static org.hamcrest.Matchers.startsWith;
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertThat;
-
-public abstract class AbstractContinuationTest
+@RunWith(Parameterized.class)
+public class ContinuationsTest
 {
     @SuppressWarnings("serial")
-    protected List<String> _history = new ArrayList<String>() {
+    public static class SneakyList extends ArrayList<String> {
         @Override
         public boolean add(String e)
         {
@@ -53,18 +66,83 @@ public abstract class AbstractContinuationTest
             return super.add(e);
         }
     };
-    protected ContinuationListener _listener = new Listener(_history);
-    protected SuspendServlet _servlet = new SuspendServlet(_history, _listener);
-    protected int _port;
+    
+    @Parameters(name="{0}")
+    public static List<Object[]> data()
+    {
+        List<Object[]> setup = new ArrayList<>();
+        
+        // Servlet3 / AsyncContext Setup
+        {
+            String description = "Servlet 3 Setup";
+            Class<? extends Continuation> expectedImplClass = Servlet3Continuation.class;
+            List<String> log = new ArrayList<>();
+            RequestLogHandler servlet3Setup = new RequestLogHandler();
+            servlet3Setup.setRequestLog(new Log(log));
+        
+            ServletContextHandler servletContext = new ServletContextHandler();
+            servlet3Setup.setHandler(servletContext);
+        
+            ServletHandler servletHandler=servletContext.getServletHandler();
+            List<String> history = new SneakyList();
+            Listener listener = new Listener(history);
+            ServletHolder holder=new ServletHolder(new SuspendServlet(history, listener));
+            holder.setAsyncSupported(true);
+            servletHandler.addServletWithMapping(holder, "/");
+            setup.add(new Object[]{description,servlet3Setup,history,listener,expectedImplClass,log});
+        }
+        
+        // Faux Continuations Setup
+        {
+            String description = "Faux Setup";
+            Class<? extends Continuation> expectedImplClass = FauxContinuation.class;
+            
+            // no log for this setup
+            List<String> log = null;
+            
+            ServletContextHandler fauxSetup = new ServletContextHandler();
+            ServletHandler servletHandler=fauxSetup.getServletHandler();
+            List<String> history = new SneakyList();
+            Listener listener = new Listener(history);
+            ServletHolder holder=new ServletHolder(new SuspendServlet(history, listener));
+            servletHandler.addServletWithMapping(holder,"/");
+    
+            FilterHolder filter= servletHandler.addFilterWithMapping(ContinuationFilter.class,"/*",null);
+            filter.setInitParameter("debug","true");
+            filter.setInitParameter("faux","true");
+            setup.add(new Object[]{description,fauxSetup,history,listener,expectedImplClass,log});
+        }
+        
+        return setup;
+    }
+    
+    @Parameter(0)
+    public String setupDescription;
+    
+    @Parameter(1)
+    public Handler setupHandler;
+    
+    @Parameter(2)
+    public List<String> history;
+    
+    @Parameter(3)
+    public Listener listener;
+    
+    @Parameter(4)
+    public Class<? extends Continuation> expectedImplClass;
+    
+    @Parameter(5)
+    public List<String> log;
 
-    protected void testNormal(String type) throws Exception
+    @Test
+    public void testNormal() throws Exception
     {
         String response = process(null, null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("NORMAL"));
-        assertThat(_history, hasItem(type));
-        assertThat(_history, not(hasItem("onTimeout")));
-        assertThat(_history, not(hasItem("onComplete")));
+        assertThat(history, hasItem(expectedImplClass.getName()));
+        assertThat(history, not(hasItem("onTimeout")));
+        assertThat(history, not(hasItem("onComplete")));
     }
 
     @Test
@@ -73,8 +151,8 @@ public abstract class AbstractContinuationTest
         String response = process("sleep=200", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("SLEPT"));
-        assertThat(_history, not(hasItem("onTimeout")));
-        assertThat(_history, not(hasItem("onComplete")));
+        assertThat(history, not(hasItem("onTimeout")));
+        assertThat(history, not(hasItem("onComplete")));
     }
 
     @Test
@@ -83,8 +161,8 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=200", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("TIMEOUT"));
-        assertThat(_history, hasItem("onTimeout"));
-        assertThat(_history, hasItem("onComplete"));
+        assertThat(history, hasItem("onTimeout"));
+        assertThat(history, hasItem("onComplete"));
     }
 
     @Test
@@ -93,8 +171,8 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=200&resume=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertThat(_history, not(hasItem("onTimeout")));
-        assertThat(_history, hasItem("onComplete"));
+        assertThat(history, not(hasItem("onTimeout")));
+        assertThat(history, hasItem("onComplete"));
     }
 
     @Test
@@ -103,8 +181,8 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=200&resume=0", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertThat(_history, not(hasItem("onTimeout")));
-        assertThat(_history, hasItem("onComplete"));
+        assertThat(history, not(hasItem("onTimeout")));
+        assertThat(history, hasItem("onComplete"));
     }
 
     @Test
@@ -113,10 +191,10 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=200&complete=50", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertThat(_history, hasItem("initial"));
-        assertThat(_history, not(hasItem("!initial")));
-        assertThat(_history, not(hasItem("onTimeout")));
-        assertThat(_history, hasItem("onComplete"));
+        assertThat(history, hasItem("initial"));
+        assertThat(history, not(hasItem("!initial")));
+        assertThat(history, not(hasItem("onTimeout")));
+        assertThat(history, hasItem("onComplete"));
     }
 
     @Test
@@ -125,10 +203,10 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=200&complete=0", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertThat(_history, hasItem("initial"));
-        assertThat(_history, not(hasItem("!initial")));
-        assertThat(_history, not(hasItem("onTimeout")));
-        assertThat(_history, hasItem("onComplete"));
+        assertThat(history, hasItem("initial"));
+        assertThat(history, not(hasItem("!initial")));
+        assertThat(history, not(hasItem("onTimeout")));
+        assertThat(history, hasItem("onComplete"));
     }
 
     @Test
@@ -137,10 +215,10 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=1000&resume=10&suspend2=1000&resume2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertEquals(2, count(_history, "suspend"));
-        assertEquals(2, count(_history, "resume"));
-        assertEquals(0, count(_history, "onTimeout"));
-        assertEquals(1, count(_history, "onComplete"));
+        assertEquals(2, count(history, "suspend"));
+        assertEquals(2, count(history, "resume"));
+        assertEquals(0, count(history, "onTimeout"));
+        assertEquals(1, count(history, "onComplete"));
     }
 
     @Test
@@ -149,10 +227,10 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=1000&resume=10&suspend2=1000&complete2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertEquals(2, count(_history, "suspend"));
-        assertEquals(1, count(_history, "resume"));
-        assertEquals(0, count(_history, "onTimeout"));
-        assertEquals(1, count(_history, "onComplete"));
+        assertEquals(2, count(history, "suspend"));
+        assertEquals(1, count(history, "resume"));
+        assertEquals(0, count(history, "onTimeout"));
+        assertEquals(1, count(history, "onComplete"));
     }
 
     @Test
@@ -161,10 +239,10 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=1000&resume=10&suspend2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("TIMEOUT"));
-        assertEquals(2, count(_history, "suspend"));
-        assertEquals(1, count(_history, "resume"));
-        assertEquals(1, count(_history, "onTimeout"));
-        assertEquals(1, count(_history, "onComplete"));
+        assertEquals(2, count(history, "suspend"));
+        assertEquals(1, count(history, "resume"));
+        assertEquals(1, count(history, "onTimeout"));
+        assertEquals(1, count(history, "onComplete"));
     }
 
     @Test
@@ -173,10 +251,10 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=10&suspend2=1000&resume2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertEquals(2, count(_history, "suspend"));
-        assertEquals(1, count(_history, "resume"));
-        assertEquals(1, count(_history, "onTimeout"));
-        assertEquals(1, count(_history, "onComplete"));
+        assertEquals(2, count(history, "suspend"));
+        assertEquals(1, count(history, "resume"));
+        assertEquals(1, count(history, "onTimeout"));
+        assertEquals(1, count(history, "onComplete"));
     }
 
     @Test
@@ -185,10 +263,10 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=10&suspend2=1000&complete2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertEquals(2, count(_history, "suspend"));
-        assertEquals(0, count(_history, "resume"));
-        assertEquals(1, count(_history, "onTimeout"));
-        assertEquals(1, count(_history, "onComplete"));
+        assertEquals(2, count(history, "suspend"));
+        assertEquals(0, count(history, "resume"));
+        assertEquals(1, count(history, "onTimeout"));
+        assertEquals(1, count(history, "onComplete"));
     }
 
     @Test
@@ -197,10 +275,10 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=10&suspend2=10", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("TIMEOUT"));
-        assertEquals(2, count(_history, "suspend"));
-        assertEquals(0, count(_history, "resume"));
-        assertEquals(2, count(_history, "onTimeout"));
-        assertEquals(1, count(_history, "onComplete"));
+        assertEquals(2, count(history, "suspend"));
+        assertEquals(0, count(history, "resume"));
+        assertEquals(2, count(history, "onTimeout"));
+        assertEquals(1, count(history, "onComplete"));
     }
 
     @Test
@@ -209,8 +287,8 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=200&resume=10&undispatch=true", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertThat(_history, not(hasItem("onTimeout")));
-        assertThat(_history, hasItem("onComplete"));
+        assertThat(history, not(hasItem("onTimeout")));
+        assertThat(history, hasItem("onComplete"));
     }
 
     @Test
@@ -219,8 +297,8 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=200&resume=0&undispatch=true", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("RESUMED"));
-        assertThat(_history, not(hasItem("onTimeout")));
-        assertThat(_history, hasItem("onComplete"));
+        assertThat(history, not(hasItem("onTimeout")));
+        assertThat(history, hasItem("onComplete"));
     }
 
     @Test
@@ -229,8 +307,8 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=200&complete=10&undispatch=true", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertThat(_history, not(hasItem("onTimeout")));
-        assertThat(_history, hasItem("onComplete"));
+        assertThat(history, not(hasItem("onTimeout")));
+        assertThat(history, hasItem("onComplete"));
     }
 
     @Test
@@ -239,8 +317,8 @@ public abstract class AbstractContinuationTest
         String response = process("suspend=200&complete=0&undispatch=true", null);
         assertThat(response, startsWith("HTTP/1.1 200 OK"));
         assertThat(response, containsString("COMPLETED"));
-        assertThat(_history, not(hasItem("onTimeout")));
-        assertThat(_history, hasItem("onComplete"));
+        assertThat(history, not(hasItem("onTimeout")));
+        assertThat(history, hasItem("onComplete"));
     }
 
     private long count(List<String> history, String value)
@@ -252,31 +330,56 @@ public abstract class AbstractContinuationTest
 
     private String process(String query, String content) throws Exception
     {
-        StringBuilder request = new StringBuilder("GET /");
-
-        if (query != null)
-            request.append("?").append(query);
-
-        request.append(" HTTP/1.1\r\n")
-                .append("Host: localhost\r\n")
-                .append("Connection: close\r\n");
-
-        if (content == null)
-        {
-            request.append("\r\n");
-        }
-        else
-        {
-            request.append("Content-Length: ").append(content.length()).append("\r\n");
-            request.append("\r\n").append(content);
-        }
-
-        try (Socket socket = new Socket("localhost", _port))
-        {
-            socket.setSoTimeout(10000);
-            socket.getOutputStream().write(request.toString().getBytes(StandardCharsets.UTF_8));
-            socket.getOutputStream().flush();
-            return toString(socket.getInputStream());
+        Server server = new Server();
+        
+        try {
+            ServerConnector connector = new ServerConnector(server);
+            server.addConnector(connector);
+            if(log != null) {
+                log.clear();
+            }
+            history.clear();
+            server.setHandler(this.setupHandler);
+        
+            server.start();
+            int port=connector.getLocalPort();
+            
+            StringBuilder request = new StringBuilder("GET /");
+    
+            if (query != null)
+                request.append("?").append(query);
+    
+            request.append(" HTTP/1.1\r\n")
+                    .append("Host: localhost\r\n")
+                    .append("Connection: close\r\n");
+    
+            if (content == null)
+            {
+                request.append("\r\n");
+            }
+            else
+            {
+                request.append("Content-Length: ").append(content.length()).append("\r\n");
+                request.append("\r\n").append(content);
+            }
+    
+            try (Socket socket = new Socket("localhost", port))
+            {
+                socket.setSoTimeout(10000);
+                socket.getOutputStream().write(request.toString().getBytes(StandardCharsets.UTF_8));
+                socket.getOutputStream().flush();
+                return toString(socket.getInputStream());
+            }
+        } finally {
+            server.stop();
+            
+            if (log != null)
+            {
+                assertThat("Log.size", log.size(),is(1));
+                String entry = log.get(0);
+                assertThat("Log entry", entry, startsWith("200 "));
+                assertThat("Log entry", entry, endsWith(" /"));
+            }
         }
     }
 
@@ -285,16 +388,17 @@ public abstract class AbstractContinuationTest
         return IO.toString(in);
     }
 
+    @SuppressWarnings("serial")
     private static class SuspendServlet extends HttpServlet
     {
         private final Timer _timer = new Timer();
-        private final List<String> _history;
-        private final ContinuationListener _listener;
+        private final List<String> history;
+        private final ContinuationListener listener;
 
         public SuspendServlet(List<String> history, ContinuationListener listener)
         {
-            _history = history;
-            _listener = listener;
+            this.history = history;
+            this.listener = listener;
         }
 
         @Override
@@ -302,7 +406,7 @@ public abstract class AbstractContinuationTest
         {
             final Continuation continuation = ContinuationSupport.getContinuation(request);
 
-            _history.add(continuation.getClass().getName());
+            history.add(continuation.getClass().getName());
 
             int read_before = 0;
             long sleep_for = -1;
@@ -335,7 +439,7 @@ public abstract class AbstractContinuationTest
 
             if (continuation.isInitial())
             {
-                _history.add("initial");
+                history.add("initial");
                 if (read_before > 0)
                 {
                     byte[] buf = new byte[read_before];
@@ -353,8 +457,8 @@ public abstract class AbstractContinuationTest
                 {
                     if (suspend_for > 0)
                         continuation.setTimeout(suspend_for);
-                    continuation.addContinuationListener(_listener);
-                    _history.add("suspend");
+                    continuation.addContinuationListener(listener);
+                    history.add("suspend");
                     continuation.suspend(response);
 
                     if (complete_after > 0)
@@ -391,7 +495,7 @@ public abstract class AbstractContinuationTest
                             @Override
                             public void run()
                             {
-                                _history.add("resume");
+                                history.add("resume");
                                 continuation.resume();
                             }
                         };
@@ -399,7 +503,7 @@ public abstract class AbstractContinuationTest
                     }
                     else if (resume_after == 0)
                     {
-                        _history.add("resume");
+                        history.add("resume");
                         continuation.resume();
                     }
 
@@ -429,7 +533,7 @@ public abstract class AbstractContinuationTest
             }
             else
             {
-                _history.add("!initial");
+                history.add("!initial");
                 if (suspend2_for >= 0 && request.getAttribute("2nd") == null)
                 {
                     request.setAttribute("2nd", "cycle");
@@ -437,7 +541,7 @@ public abstract class AbstractContinuationTest
                     if (suspend2_for > 0)
                         continuation.setTimeout(suspend2_for);
 
-                    _history.add("suspend");
+                    history.add("suspend");
                     continuation.suspend(response);
 
                     if (complete2_after > 0)
@@ -474,7 +578,7 @@ public abstract class AbstractContinuationTest
                             @Override
                             public void run()
                             {
-                                _history.add("resume");
+                                history.add("resume");
                                 continuation.resume();
                             }
                         };
@@ -482,7 +586,7 @@ public abstract class AbstractContinuationTest
                     }
                     else if (resume2_after == 0)
                     {
-                        _history.add("resume");
+                        history.add("resume");
                         continuation.resume();
                     }
 
@@ -512,23 +616,40 @@ public abstract class AbstractContinuationTest
 
     private static class Listener implements ContinuationListener
     {
-        private final List<String> _history;
+        private final List<String> history;
 
         public Listener(List<String> history)
         {
-            _history = history;
+            this.history = history;
         }
 
         @Override
         public void onComplete(Continuation continuation)
         {
-            _history.add("onComplete");
+            history.add("onComplete");
         }
 
         @Override
         public void onTimeout(Continuation continuation)
         {
-            _history.add("onTimeout");
+            history.add("onTimeout");
+        }
+    }
+    
+    public static class Log extends AbstractLifeCycle implements RequestLog
+    {
+        private final List<String> log;
+        
+        public Log(List<String> log) {
+            this.log = log;
+        }
+        
+        @Override
+        public void log(Request request, Response response)
+        {
+            int status = response.getCommittedMetaData().getStatus();
+            long written = response.getHttpChannel().getBytesWritten();
+            log.add(status+" "+written+" "+request.getRequestURI());
         }
     }
 }
