@@ -939,7 +939,11 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
             return false;
 
         if (!checkContextPath(target))
+        {
+            baseRequest.setHandled(true);
+            response.sendError(HttpServletResponse.SC_NOT_FOUND);
             return false;
+        }
         
         // Are we not the root context?
         // redirect null path infos
