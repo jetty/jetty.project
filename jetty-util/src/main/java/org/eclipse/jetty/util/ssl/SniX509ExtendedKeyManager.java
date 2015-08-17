@@ -34,28 +34,21 @@ import javax.net.ssl.X509ExtendedKeyManager;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
-/* ------------------------------------------------------------ */
 /**
- * KeyManager to select a key with desired alias
- * while delegating processing to specified KeyManager
- * Can be used both with server and client sockets
+ * <p>A {@link X509ExtendedKeyManager} that selects a key with an alias
+ * retrieved from SNI information, delegating other processing to a nested X509ExtendedKeyManager.</p>
+ * <p>Can only be used on server side.</p>
  */
 public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 {
-    static final Logger LOG = Log.getLogger(SniX509ExtendedKeyManager.class);
-    public final static String SNI_NAME = "org.eclipse.jetty.util.ssl.sniname";
-    public final static String SNI_WILD = "org.eclipse.jetty.util.ssl.sniwild";
-    public final static String NO_MATCHERS="No Matchers";
+    public static final String SNI_NAME = "org.eclipse.jetty.util.ssl.sniname";
+    public static final String SNI_WILD = "org.eclipse.jetty.util.ssl.sniwild";
+    public static final String NO_MATCHERS="No Matchers";
+    private static final Logger LOG = Log.getLogger(SniX509ExtendedKeyManager.class);
+
     private final X509ExtendedKeyManager _delegate;
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Construct KeyManager instance
-     * @param keyManager Instance of KeyManager to be wrapped
-     * @param alias Alias of the key to be selected if no SNI selection
-     * @throws Exception if unable to create X509ExtendedKeyManager
-     */
-    public SniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager,String alias) throws Exception
+    public SniX509ExtendedKeyManager(X509ExtendedKeyManager keyManager)
     {
         _delegate = keyManager;
     }
@@ -78,7 +71,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         String[] aliases = _delegate.getServerAliases(keyType,issuers);
         if (aliases==null || aliases.length==0)
             return null;
-             
+
         // Look for an SNI alias
         String alias=null;
         String host=null;
@@ -100,7 +93,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 
         if (LOG.isDebugEnabled())
             LOG.debug("matched {}/{} from {}",alias,host,Arrays.asList(aliases));
-        
+
         // Check if the SNI selected alias is allowable
         if (alias!=null)
         {
@@ -118,12 +111,12 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         }
         return NO_MATCHERS;
     }
-    
+
     @Override
     public String chooseServerAlias(String keyType, Principal[] issuers, Socket socket)
     {
         SSLSocket sslSocket = (SSLSocket)socket;
-        
+
         String alias = chooseServerAlias(keyType,issuers,sslSocket.getSSLParameters().getSNIMatchers(),sslSocket.getHandshakeSession());
         if (alias==NO_MATCHERS)
             alias=_delegate.chooseServerAlias(keyType,issuers,socket);
@@ -131,7 +124,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
             LOG.debug("chose {}/{} on {}",alias,keyType,socket);
         return alias;
     }
-        
+
     @Override
     public String chooseEngineServerAlias(String keyType, Principal[] issuers, SSLEngine engine)
     {
@@ -141,8 +134,8 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         if (LOG.isDebugEnabled())
             LOG.debug("chose {}/{} on {}",alias,keyType,engine);
         return alias;
-    }   
-    
+    }
+
     @Override
     public X509Certificate[] getCertificateChain(String alias)
     {

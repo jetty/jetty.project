@@ -144,17 +144,17 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /** Selected protocols. */
     private String[] _selectedProtocols;
-    
+
     /** Excluded cipher suites. */
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
 
     /** Included cipher suites. */
     private final List<String> _includeCipherSuites = new ArrayList<String>();
     private boolean _useCipherSuitesOrder=true;
-    
+
     /** Cipher comparator for ordering ciphers */
     Comparator<String> _cipherComparator;
-    
+
     /** Selected cipher suites. Combination of includes, excludes, available and ordering */
     private String[] _selectedCipherSuites;
 
@@ -448,7 +448,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 context.init(keyManagers,trustManagers,secureRandom);
             }
         }
-        
+
         // select the protocols and ciphers
         SSLEngine sslEngine=context.createSSLEngine();
         selectCipherSuites(
@@ -806,7 +806,7 @@ public class SslContextFactory extends AbstractLifeCycle
      *            The password for the key store.  If null is passed and
      *            a keystore is set, then
      *            the {@link Password#getPassword(String, String, String)} is used to
-     *            obtain a password either from the {@value #PASSWORD_PROPERTY} 
+     *            obtain a password either from the {@value #PASSWORD_PROPERTY}
      *            System property or by prompting for manual entry.
      */
     public void setKeyStorePassword(String password)
@@ -826,7 +826,7 @@ public class SslContextFactory extends AbstractLifeCycle
     /**
      * @param password
      *            The password (if any) for the specific key within the key store.
-     *            If null is passed and the {@value #KEYPASSWORD_PROPERTY} system property is set, 
+     *            If null is passed and the {@value #KEYPASSWORD_PROPERTY} system property is set,
      *            then the {@link Password#getPassword(String, String, String)} is used to
      *            obtain a password from the {@value #KEYPASSWORD_PROPERTY}  system property.
      */
@@ -1100,7 +1100,7 @@ public class SslContextFactory extends AbstractLifeCycle
             if (passwd==null)
                 passwd=_keyStorePassword==null? null:_keyStorePassword.toString();
         }
-            
+
         return CertificateUtils.getKeyStore(resource,type,provider,passwd);
     }
 
@@ -1140,12 +1140,12 @@ public class SslContextFactory extends AbstractLifeCycle
                     }
                 }
 
-                if (_certAliases.isEmpty() || !_certWilds.isEmpty())
+                if (!_certAliases.isEmpty() || !_certWilds.isEmpty())
                 {
                     for (int idx = 0; idx < managers.length; idx++)
                     {
                         if (managers[idx] instanceof X509ExtendedKeyManager)
-                            managers[idx]=new SniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx],getCertAlias());
+                            managers[idx]=new SniX509ExtendedKeyManager((X509ExtendedKeyManager)managers[idx]);
                     }
                 }
             }
@@ -1245,11 +1245,11 @@ public class SslContextFactory extends AbstractLifeCycle
 
         if (selected_protocols.isEmpty())
             LOG.warn("No selected protocols from {}",Arrays.asList(supportedProtocols));
-        
+
         _selectedProtocols = selected_protocols.toArray(new String[selected_protocols.size()]);
-        
-        
-        
+
+
+
     }
 
     /**
@@ -1261,7 +1261,7 @@ public class SslContextFactory extends AbstractLifeCycle
      */
     protected void selectCipherSuites(String[] enabledCipherSuites, String[] supportedCipherSuites)
     {
-        List<String> selected_ciphers = new ArrayList<>(); 
+        List<String> selected_ciphers = new ArrayList<>();
 
         // Set the starting ciphers - either from the included or enabled list
         if (_includeCipherSuites.isEmpty())
@@ -1270,17 +1270,17 @@ public class SslContextFactory extends AbstractLifeCycle
             processIncludeCipherSuites(supportedCipherSuites, selected_ciphers);
 
         removeExcludedCipherSuites(selected_ciphers);
-        
+
         if (selected_ciphers.isEmpty())
             LOG.warn("No supported ciphers from {}",Arrays.asList(supportedCipherSuites));
-        
+
         if (_cipherComparator!=null)
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Sorting selected ciphers with {}",_cipherComparator);
             Collections.sort(selected_ciphers,_cipherComparator);
         }
-        
+
         _selectedCipherSuites=selected_ciphers.toArray(new String[selected_ciphers.size()]);
     }
 
@@ -1298,7 +1298,7 @@ public class SslContextFactory extends AbstractLifeCycle
                     added=true;
                     selected_ciphers.add(supportedCipherSuite);
                 }
-                
+
             }
             if (!added)
                 LOG.info("No Cipher matching '{}' is supported",cipherSuite);
@@ -1528,7 +1528,7 @@ public class SslContextFactory extends AbstractLifeCycle
     public SSLSocket newSslSocket() throws IOException
     {
         checkIsStarted();
-        
+
         SSLSocketFactory factory = _factory._context.getSocketFactory();
 
         SSLSocket socket = (SSLSocket)factory.createSocket();
@@ -1611,7 +1611,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         if (LOG.isDebugEnabled())
             LOG.debug("Customize {}",sslEngine);
-        
+
         SSLParameters sslParams = sslEngine.getSSLParameters();
         sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
         sslParams.setUseCipherSuitesOrder(_useCipherSuitesOrder);
@@ -1623,13 +1623,13 @@ public class SslContextFactory extends AbstractLifeCycle
         }
         sslParams.setCipherSuites(_selectedCipherSuites);
         sslParams.setProtocols(_selectedProtocols);
-        
+
         if (getWantClientAuth())
             sslParams.setWantClientAuth(true);
         if (getNeedClientAuth())
             sslParams.setNeedClientAuth(true);
 
-        sslEngine.setSSLParameters(sslParams);          
+        sslEngine.setSSLParameters(sslParams);
     }
 
     public static X509Certificate[] getCertChain(SSLSession sslSession)
