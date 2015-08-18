@@ -39,6 +39,7 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.handler.HandlerWrapper;
 import org.eclipse.jetty.util.IncludeExclude;
 import org.eclipse.jetty.util.RegexSet;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.URIUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -130,22 +131,28 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     /* ------------------------------------------------------------ */
     /**
      * Set the mime types.
-     * @param types The mime types to exclude (without charset or other parameters)
+     * @param types The mime types to exclude (without charset or other parameters).
+     * For backward compatibility the mimetypes may be comma separated strings, but this
+     * will not be supported in future versions.
      */
     public void addExcludedMimeTypes(String... types)
     {
-        _mimeTypes.exclude(types);
+        for (String t : types)
+            _mimeTypes.exclude(StringUtil.csvSplit(t));
     }
 
     /* ------------------------------------------------------------ */
     /**
      * @param pathspecs Path specs (as per servlet spec) to exclude. If a 
      * ServletContext is available, the paths are relative to the context path,
-     * otherwise they are absolute
+     * otherwise they are absolute.
+     * For backward compatibility the pathspecs may be comma separated strings, but this
+     * will not be supported in future versions.
      */
     public void addExcludedPaths(String... pathspecs)
     {
-        _paths.exclude(pathspecs);
+        for (String p : pathspecs)
+            _paths.exclude(StringUtil.csvSplit(p));
     }
 
     /* ------------------------------------------------------------ */
@@ -172,10 +179,13 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      * Add included mime types. Inclusion takes precedence over
      * exclusion.
      * @param types The mime types to include (without charset or other parameters)
+     * For backward compatibility the mimetypes may be comma separated strings, but this
+     * will not be supported in future versions.
      */
     public void addIncludedMimeTypes(String... types)
     {
-        _mimeTypes.include(types);
+        for (String t : types)
+            _mimeTypes.include(StringUtil.csvSplit(t));
     }
 
     /* ------------------------------------------------------------ */
@@ -184,10 +194,13 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
      * @param pathspecs Path specs (as per servlet spec) to include. If a 
      * ServletContext is available, the paths are relative to the context path,
      * otherwise they are absolute
+     * For backward compatibility the pathspecs may be comma separated strings, but this
+     * will not be supported in future versions.
      */
     public void addIncludedPaths(String... pathspecs)
     {
-        _paths.include(pathspecs);
+        for (String p : pathspecs)
+            _paths.include(StringUtil.csvSplit(p));
     }
     
     /* ------------------------------------------------------------ */
@@ -282,7 +295,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         Set<String> excluded=_paths.getExcluded();
         return excluded.toArray(new String[excluded.size()]);
     }
-
 
     /* ------------------------------------------------------------ */
     public String[] getIncludedAgentPatterns()
@@ -414,7 +426,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         out.setInterceptor(new GzipHttpOutputInterceptor(this,_vary,baseRequest.getHttpChannel(),out.getInterceptor()));
         if (_handler!=null)
             _handler.handle(target,baseRequest, request, response);
-        
     }
 
     /* ------------------------------------------------------------ */
@@ -462,7 +473,6 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
         deflater.reset();
         if (_deflater.get()==null)
             _deflater.set(deflater);
-        
     }
 
     /* ------------------------------------------------------------ */
@@ -582,6 +592,4 @@ public class GzipHandler extends HandlerWrapper implements GzipFactory
     {
         _minGzipSize = minGzipSize;
     }
-    
-
 }
