@@ -130,7 +130,7 @@ public class PathResource extends Resource
         }
         catch (Exception e)
         {
-            LOG.warn("bad alias ({}) for {}", e.getClass().getName(), e.getMessage());
+            LOG.warn("bad alias ({} {}) for {}", e.getClass().getName(), e.getMessage(),path);
         }
         return null;
     }
