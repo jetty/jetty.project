@@ -48,8 +48,11 @@ import javax.servlet.http.HttpServletRequest;
 import javax.servlet.http.HttpServletResponse;
 
 import org.eclipse.jetty.server.HttpConnectionFactory;
+import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.ServerConnector;
+import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.handler.ContextHandler.Context;
 import org.eclipse.jetty.toolchain.test.AdvancedRunner;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpParser;
 import org.eclipse.jetty.toolchain.test.http.SimpleHttpResponse;
@@ -66,6 +69,7 @@ public class AsyncIOServletTest
     private ServerConnector connector;
     private ServletContextHandler context;
     private String path = "/path";
+    private static final ThreadLocal<String> scope = new ThreadLocal<>();
 
     public void startServer(HttpServlet servlet) throws Exception
     {
@@ -80,9 +84,34 @@ public class AsyncIOServletTest
         holder.setAsyncSupported(true);
         context.addServlet(holder, path);
 
+        context.addEventListener(new ContextHandler.ContextScopeListener()
+        {
+            @Override
+            public void enterScope(Context context, Request request)
+            {
+                if (scope.get()!=null)
+                    throw new IllegalStateException();
+                scope.set("SCOPPED");
+                
+            }
+            @Override
+            public void exitScope(Context context, Request request)
+            {
+                if (scope.get()==null)
+                    throw new IllegalStateException();
+                scope.set(null);
+            } 
+        });
+        
         server.start();
     }
 
+    private static void assertScope()
+    {
+        if (scope.get()==null)
+            Assert.fail("Not in scope");
+    }
+    
     @After
     public void stopServer() throws Exception
     {
@@ -109,12 +138,14 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
             {
+                assertScope();
                 final AsyncContext asyncContext = request.startAsync(request, response);
                 request.getInputStream().setReadListener(new ReadListener()
                 {
                     @Override
                     public void onDataAvailable() throws IOException
                     {
+                        assertScope();
                         if (throwable instanceof RuntimeException)
                             throw (RuntimeException)throwable;
                         if (throwable instanceof Error)
@@ -125,11 +156,13 @@ public class AsyncIOServletTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
+                        assertScope();
                     }
 
                     @Override
                     public void onError(Throwable t)
                     {
+                        assertScope();
                         Assert.assertThat("onError type",t,instanceOf(throwable.getClass()));
                         Assert.assertThat("onError message",t.getMessage(),is(throwable.getMessage()));
                         latch.countDown();
@@ -177,6 +210,7 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
             {
+                assertScope();
                 final AsyncContext asyncContext = request.startAsync(request, response);
                 asyncContext.setTimeout(0);
                 final ServletInputStream inputStream = request.getInputStream();
@@ -185,6 +219,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onDataAvailable() throws IOException
                     {
+                        assertScope();
                         while (inputStream.isReady() && !inputStream.isFinished())
                             inputStream.read();
                     }
@@ -192,11 +227,13 @@ public class AsyncIOServletTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
+                        assertScope();
                     }
 
                     @Override
                     public void onError(Throwable t)
                     {
+                        assertScope();
                         response.setStatus(status);
                         // Do not put Connection: close header here, the test
                         // verifies that the server closes no matter what.
@@ -245,6 +282,7 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
+                assertScope();
                 if (request.getDispatcherType()==DispatcherType.ERROR)
                 {
                     response.flushBuffer();
@@ -257,17 +295,20 @@ public class AsyncIOServletTest
                     @Override
                     public void onDataAvailable() throws IOException
                     {
+                        assertScope();
                         throw new NullPointerException("explicitly_thrown_by_test_1");
                     }
 
                     @Override
                     public void onAllDataRead() throws IOException
                     {
+                        assertScope();
                     }
 
                     @Override
                     public void onError(final Throwable t)
                     {
+                        assertScope();
                         errors.incrementAndGet();
                         throw new NullPointerException("explicitly_thrown_by_test_2"){{this.initCause(t);}};
                     }
@@ -316,12 +357,14 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
             {
+                assertScope();
                 final AsyncContext asyncContext = request.startAsync(request, response);
                 response.getOutputStream().setWriteListener(new WriteListener()
                 {
                     @Override
                     public void onWritePossible() throws IOException
                     {
+                        assertScope();
                         if (throwable instanceof RuntimeException)
                             throw (RuntimeException)throwable;
                         if (throwable instanceof Error)
@@ -332,6 +375,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onError(Throwable t)
                     {
+                        assertScope();
                         latch.countDown();
                         response.setStatus(500);
                         asyncContext.complete();
@@ -374,6 +418,7 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
             {
+                assertScope();
                 response.flushBuffer();
                 
                 final AsyncContext async = request.startAsync();
@@ -383,6 +428,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onWritePossible() throws IOException
                     {
+                        assertScope();
                         while (out.isReady())
                         {
                             try
@@ -404,6 +450,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onError(Throwable t)
                     {
+                        assertScope();
                         async.complete();
                         latch.countDown();
                     }
@@ -448,6 +495,7 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
             {
+                assertScope();
                 response.flushBuffer();
                 
                 final AsyncContext async = request.startAsync();
@@ -463,6 +511,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onError(Throwable t)
                     {
+                        assertScope();
                         t.printStackTrace();
                         async.complete();
                     }
@@ -470,6 +519,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onDataAvailable() throws IOException
                     {
+                        assertScope();
                         while(in.isReady() && !in.isFinished())
                         {
                             int b = in.read();
@@ -486,6 +536,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
+                        assertScope();
                         out.write(String.format("i=%d eof=%b finished=%b",_i,_minusOne,_finished).getBytes(StandardCharsets.ISO_8859_1));
                         async.complete();                        
                     }
@@ -530,6 +581,7 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
             {
+                assertScope();
                 response.flushBuffer();
                 
                 final AsyncContext async = request.startAsync();
@@ -542,6 +594,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onError(Throwable t)
                     {
+                        assertScope();
                         t.printStackTrace();
                         async.complete();
                     }
@@ -549,6 +602,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onDataAvailable() throws IOException
                     {
+                        assertScope();
                         try
                         {
                             Thread.sleep(1000);
@@ -570,6 +624,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
+                        assertScope();
                         out.write("OK\n".getBytes(StandardCharsets.ISO_8859_1));
                         async.complete();                        
                     }
@@ -615,6 +670,7 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
             {
+                assertScope();
                 response.flushBuffer();
                 
                 final AsyncContext async = request.startAsync();
@@ -630,6 +686,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onError(Throwable t)
                     {
+                        assertScope();
                         t.printStackTrace();
                         async.complete();
                     }
@@ -637,10 +694,13 @@ public class AsyncIOServletTest
                     @Override
                     public void onDataAvailable() throws IOException
                     {
-                        new Thread()
+                        assertScope();
+                        async.start(
+                        new Runnable()
                         {
                             public void run()
                             {
+                                assertScope();
                                 try
                                 {
                                     Thread.sleep(1000);
@@ -658,7 +718,7 @@ public class AsyncIOServletTest
                                     e.printStackTrace();
                                 }
                             }
-                        }.start();
+                        });
                     }
                     
                     @Override
@@ -711,6 +771,7 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, final HttpServletResponse response) throws ServletException, IOException
             {
+                assertScope();
                 response.flushBuffer();
                 
                 final AsyncContext async = request.startAsync();
@@ -722,12 +783,14 @@ public class AsyncIOServletTest
                     @Override
                     public void onError(Throwable t)
                     {
+                        assertScope();
                         t.printStackTrace();
                     }
                     
                     @Override
                     public void onDataAvailable() throws IOException
                     {
+                        assertScope();
                         while (in.isReady())
                         {
                             int b = in.read();
@@ -743,6 +806,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onAllDataRead() throws IOException
                     {
+                        assertScope();
                         out.write("BAD!!!\n".getBytes(StandardCharsets.ISO_8859_1));
                         allDataRead.set(true);
                         throw new IllegalStateException();     
@@ -792,6 +856,7 @@ public class AsyncIOServletTest
             @Override
             protected void service(HttpServletRequest request, HttpServletResponse response) throws ServletException, IOException
             {
+                assertScope();
                 final AsyncContext asyncContext = request.startAsync(request, response);
                 response.setStatus(200);
                 response.getOutputStream().close();
@@ -800,12 +865,14 @@ public class AsyncIOServletTest
                     @Override
                     public void onDataAvailable() throws IOException 
                     {
+                        assertScope();
                         oda.set(true);
                     }
 
                     @Override
                     public void onAllDataRead() throws IOException 
                     {
+                        assertScope();
                         asyncContext.complete();
                         latch.countDown();
                     }
@@ -813,6 +880,7 @@ public class AsyncIOServletTest
                     @Override
                     public void onError(Throwable t) 
                     {
+                        assertScope();
                         t.printStackTrace();
                         asyncContext.complete();
                     }        

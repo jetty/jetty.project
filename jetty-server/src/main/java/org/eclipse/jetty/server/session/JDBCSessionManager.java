@@ -937,7 +937,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         if (_context==null)
             load.run();
         else
-            _context.getContextHandler().handle(load);
+            _context.getContextHandler().handle(null,load);
 
         if (_exception.get()!=null)
         {

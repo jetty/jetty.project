@@ -554,7 +554,7 @@ public class HttpChannelState
         {
             ContextHandler handler=getContextHandler();
             if (handler!=null)
-                handler.handle(_channel);
+                handler.handle(_channel.getRequest(),_channel);
             else
                 _channel.handle();
         }

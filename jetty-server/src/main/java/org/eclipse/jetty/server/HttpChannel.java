@@ -379,7 +379,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         ContextHandler handler=_state.getContextHandler();
                         if (handler!=null)
-                            handler.handle(_request.getHttpInput());
+                            handler.handle(_request,_request.getHttpInput());
                         else
                             _request.getHttpInput().run();
                         break;
@@ -389,7 +389,7 @@ public class HttpChannel implements Runnable, HttpOutput.Interceptor
                     {
                         ContextHandler handler=_state.getContextHandler();
                         if (handler!=null)
-                            handler.handle(_response.getHttpOutput());
+                            handler.handle(_request,_response.getHttpOutput());
                         else
                             _response.getHttpOutput().run();
                         break;
