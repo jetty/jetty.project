@@ -701,7 +701,10 @@ public class AnnotationParser
                         {
                             Resource r = Resource.newResource(res.getURL());
                             if (LOG.isDebugEnabled()) {LOG.debug("Scanning class {}", r);};
-                            scanClass(handlers, dir, r.getInputStream());
+                            try (InputStream is=r.getInputStream())
+                            {
+                                scanClass(handlers, dir, is);
+                            }
                         }
                     }                  
                     catch (Exception ex)
