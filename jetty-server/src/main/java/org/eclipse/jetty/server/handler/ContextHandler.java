@@ -125,6 +125,8 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
 
     private static final ThreadLocal<Context> __context = new ThreadLocal<Context>();
 
+    private static String __serverInfo = "jetty/" + Server.getVersion();
+    
     /**
      * If a context attribute with this name is set, it is interpreted as a comma separated list of attribute name. Any other context attributes that are set
      * with a name from this list will result in a call to {@link #setManagedAttribute(String, Object)}, which typically initiates the creation of a JMX MBean
@@ -154,6 +156,20 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         return null;
     }
 
+    /* ------------------------------------------------------------ */
+    public static String getServerInfo()
+    {
+        return __serverInfo;
+    }
+
+    /* ------------------------------------------------------------ */
+    public static void setServerInfo(String serverInfo)
+    {
+        __serverInfo = serverInfo;
+    }
+
+
+
     protected Context _scontext;
     private final AttributesMap _attributes;
     private final Map<String, String> _initParams;
@@ -174,6 +190,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
     private int _maxFormKeys = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormKeys",-1).intValue();
     private int _maxFormContentSize = Integer.getInteger("org.eclipse.jetty.server.Request.maxFormContentSize",-1).intValue();
     private boolean _compactPath = false;
+    private boolean _usingSecurityManager = System.getSecurityManager()!=null;
 
     private final List<EventListener> _eventListeners=new CopyOnWriteArrayList<>();
     private final List<EventListener> _programmaticListeners=new CopyOnWriteArrayList<>();
@@ -271,6 +288,18 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         super.setServer(server);
         if (_errorHandler != null)
             _errorHandler.setServer(server);
+    }
+
+    /* ------------------------------------------------------------ */
+    public boolean isUsingSecurityManager()
+    {
+        return _usingSecurityManager;
+    }
+
+    /* ------------------------------------------------------------ */
+    public void setUsingSecurityManager(boolean usingSecurityManager)
+    {
+        _usingSecurityManager = usingSecurityManager;
     }
 
     /* ------------------------------------------------------------ */
@@ -2343,7 +2372,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
                 throw new UnsupportedOperationException();
 
             //no security manager just return the classloader
-            if (System.getSecurityManager() == null)
+            if (!_usingSecurityManager)
                 return _classLoader;
             else
             {
@@ -2498,12 +2527,7 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public String getServerInfo()
         {
-            // NOTE: DO NOT CHANGE
-            //   this is used by weld to detect Jetty
-            //   implementation version
-            // See: https://github.com/weld/core/blob/master/environments/servlet/core/src/main/java/org/jboss/weld/environment/jetty/JettyContainer.java
-            //   and its touch(ContainerContext) method
-            return "jetty/" + Server.getVersion();
+            return __serverInfo;
         }
 
         @Override
@@ -2728,7 +2752,6 @@ public class ContextHandler extends ScopedHandler implements Attributes, Gracefu
         @Override
         public ClassLoader getClassLoader()
         {
-            AccessController.checkPermission(new RuntimePermission("getClassLoader"));
             return ContextHandler.class.getClassLoader();
         }
 
