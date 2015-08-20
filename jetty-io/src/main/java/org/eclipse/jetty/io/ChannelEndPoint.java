@@ -23,7 +23,6 @@ import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.channels.ByteChannel;
-import java.nio.channels.GatheringByteChannel;
 import java.nio.channels.SocketChannel;
 
 import org.eclipse.jetty.util.BufferUtil;
@@ -39,9 +38,8 @@ public class ChannelEndPoint extends AbstractEndPoint
 {
     private static final Logger LOG = Log.getLogger(ChannelEndPoint.class);
 
-    private final ByteChannel _channel;
+    private final SocketChannel _channel;
     private final Socket _socket;
-    private final GatheringByteChannel _gathering;
     private volatile boolean _ishut;
     private volatile boolean _oshut;
 
@@ -50,9 +48,8 @@ public class ChannelEndPoint extends AbstractEndPoint
         super(scheduler,
             (InetSocketAddress)channel.socket().getLocalSocketAddress(),
             (InetSocketAddress)channel.socket().getRemoteSocketAddress());
-        _channel = channel;
+        _channel=channel;
         _socket=channel.socket();
-        _gathering=_channel instanceof GatheringByteChannel?((GatheringByteChannel)_channel):null;
     }
 
     @Override
@@ -60,7 +57,7 @@ public class ChannelEndPoint extends AbstractEndPoint
     {
         return true;
     }
-    
+
     @Override
     public boolean isOpen()
     {
@@ -171,13 +168,13 @@ public class ChannelEndPoint extends AbstractEndPoint
     @Override
     public boolean flush(ByteBuffer... buffers) throws IOException
     {
-        int flushed=0;
+        long flushed=0;
         try
         {
             if (buffers.length==1)
                 flushed=_channel.write(buffers[0]);
-            else if (_gathering!=null && buffers.length>1)
-                flushed= (int)_gathering.write(buffers,0,buffers.length);
+            else if (buffers.length>1)
+                flushed=_channel.write(buffers,0,buffers.length);
             else
             {
                 for (ByteBuffer b : buffers)
