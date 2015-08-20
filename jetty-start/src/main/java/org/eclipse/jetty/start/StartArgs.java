@@ -18,15 +18,14 @@
 
 package org.eclipse.jetty.start;
 
-import static org.eclipse.jetty.start.UsageException.*;
-
 import java.io.File;
-import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.InputStream;
+import java.io.OutputStream;
 import java.net.URL;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.ArrayList;
 import java.util.Collections;
 import java.util.HashMap;
@@ -42,6 +41,8 @@ import org.eclipse.jetty.start.Props.Prop;
 import org.eclipse.jetty.start.config.ConfigSource;
 import org.eclipse.jetty.start.config.ConfigSources;
 import org.eclipse.jetty.start.config.DirConfigSource;
+
+import static org.eclipse.jetty.start.UsageException.ERR_BAD_ARG;
 
 /**
  * The Arguments required to start Jetty.
@@ -88,7 +89,7 @@ public class StartArgs
                 }
             }
         }
-        
+
         // Default values
         if (ver == null)
         {
@@ -408,7 +409,7 @@ public class StartArgs
     /**
      * Ensure that the System Properties are set (if defined as a System property, or start.config property, or
      * start.ini property)
-     * 
+     *
      * @param key
      *            the key to be sure of
      */
@@ -434,7 +435,7 @@ public class StartArgs
 
     /**
      * Expand any command line added <code>--lib</code> lib references.
-     * 
+     *
      * @param baseHome
      *            the base home in use
      * @throws IOException
@@ -461,7 +462,7 @@ public class StartArgs
 
     /**
      * Build up the Classpath and XML file references based on enabled Module list.
-     * 
+     *
      * @param baseHome
      *            the base home in use
      * @param activeModules
@@ -581,20 +582,20 @@ public class StartArgs
         ensureSystemPropertySet("STOP.WAIT");
 
         // pass properties as args or as a file
-        if (dryRun || isExec())
+        if (dryRun)
         {
             for (Prop p : properties)
                 cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(p.value));
         }
         else if (properties.size() > 0)
         {
-            File prop_file = File.createTempFile("start",".properties");
-            prop_file.deleteOnExit();
-            try (FileOutputStream out = new FileOutputStream(prop_file))
+            Path prop_path = Files.createTempFile(Paths.get(baseHome.getBase()), "start_", ".properties");
+            prop_path.toFile().deleteOnExit();
+            try (OutputStream out = Files.newOutputStream(prop_path))
             {
                 properties.store(out,"start.jar properties");
             }
-            cmd.addRawArg(prop_file.getAbsolutePath());
+            cmd.addRawArg(prop_path.toAbsolutePath().toString());
         }
 
         for (Path xml : xmls)
@@ -665,7 +666,7 @@ public class StartArgs
     {
         return properties;
     }
-    
+
     public Set<String> getSkipFileValidationModules()
     {
         return skipFileValidationModules;
@@ -791,7 +792,7 @@ public class StartArgs
 
     /**
      * Parse a single line of argument.
-     * 
+     *
      * @param rawarg
      *            the raw argument to parse
      * @param source
@@ -1125,7 +1126,7 @@ public class StartArgs
     {
         this.allModules = allModules;
     }
-    
+
     public void setProperty(String key, String value, String source, boolean replaceProp)
     {
         // Special / Prevent override from start.ini's
@@ -1141,14 +1142,14 @@ public class StartArgs
             properties.setProperty("jetty.base",System.getProperty("jetty.base"),source);
             return;
         }
-        
+
         if (replaceProp || (!properties.containsKey(key)))
         {
             properties.setProperty(key,value,source);
             if(key.equals("java.version"))
             {
                 Version ver = new Version(value);
-                
+
                 properties.setProperty("java.version",ver.toShortString(),source);
                 properties.setProperty("java.version.major",Integer.toString(ver.getLegacyMajor()),source);
                 properties.setProperty("java.version.minor",Integer.toString(ver.getMajor()),source);
