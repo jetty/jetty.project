@@ -230,7 +230,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
                     break;
 
                 // Handle close parser
-                if (_parser.isClose())
+                if (_parser.isClose() || _parser.isClosed())
                 {
                     close();
                     break;
@@ -552,7 +552,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             _input.failed(x);
         }
-        
+
         @Override
         public boolean isNonBlocking()
         {
@@ -601,7 +601,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
         {
             return _callback.isNonBlocking();
         }
-        
+
         private boolean reset(MetaData.Response info, boolean head, ByteBuffer content, boolean last, Callback callback)
         {
             if (reset())
@@ -757,7 +757,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
             if (_shutdownOut)
                 getEndPoint().shutdownOutput();
         }
-        
+
         @Override
         public String toString()
         {
@@ -797,7 +797,7 @@ public class HttpConnection extends AbstractConnection implements Runnable, Http
     {
         getEndPoint().fillInterested(_blockingReadCallback);
     }
-    
+
     public void blockingReadException(Throwable e)
     {
         _blockingReadCallback.failed(e);
