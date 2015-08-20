@@ -34,7 +34,12 @@ Command Line Options:
                    a sub process. This can be used when start.ini
                    contains -X or -D arguments, but creates an extra
                    JVM instance.
-
+                   
+  --exec-properties=<filename>
+                   Assign a fixed name to the file used to transfer 
+                   properties to the sub process. This allows the 
+                   generated properties file to be saved and reused.
+                   Without this option, a temporary file is used.
 
 Debug and Start Logging:
 ------------------------

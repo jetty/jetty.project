@@ -179,6 +179,7 @@ public class StartArgs
     private boolean dryRun = false;
 
     private boolean exec = false;
+    private String exec_properties;
     private boolean approveAllLicenses = false;
 
     public StartArgs()
@@ -582,15 +583,22 @@ public class StartArgs
         ensureSystemPropertySet("STOP.WAIT");
 
         // pass properties as args or as a file
-        if (dryRun)
+        if (dryRun && exec_properties==null)
         {
             for (Prop p : properties)
                 cmd.addRawArg(CommandLineBuilder.quote(p.key) + "=" + CommandLineBuilder.quote(p.value));
         }
         else if (properties.size() > 0)
         {
-            Path prop_path = Files.createTempFile(Paths.get(baseHome.getBase()), "start_", ".properties");
-            prop_path.toFile().deleteOnExit();
+            Path prop_path;
+            if (exec_properties==null)
+            {
+                prop_path=Files.createTempFile(Paths.get(baseHome.getBase()), "start_", ".properties");
+                prop_path.toFile().deleteOnExit();
+            }
+            else
+                prop_path=new File(exec_properties).toPath();
+                
             try (OutputStream out = Files.newOutputStream(prop_path))
             {
                 properties.store(out,"start.jar properties");
@@ -895,6 +903,15 @@ public class StartArgs
         if ("--exec".equals(arg))
         {
             exec = true;
+            return;
+        }
+        
+        // Assign a fixed name to the property file for exec
+        if (arg.startsWith("--exec-properties="))
+        {
+            exec_properties=Props.getValue(arg);
+            if (!exec_properties.endsWith(".properties"))
+                throw new UsageException(ERR_BAD_ARG,"--exec-properties filename must have .properties suffix: %s",exec_properties);
             return;
         }
 
