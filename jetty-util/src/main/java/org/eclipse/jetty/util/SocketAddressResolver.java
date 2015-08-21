@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.util;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
+import java.net.UnknownHostException;
 import java.nio.channels.UnresolvedAddressException;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -31,6 +34,8 @@ import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Scheduler;
+
+import static org.eclipse.jetty.util.SocketAddressUtils.createSocketAddressList;
 
 /**
  * <p>Creates {@link SocketAddress} instances, returning them through a {@link Promise}.</p>
@@ -45,24 +50,25 @@ public interface SocketAddressResolver
      * @param port the port of the resulting socket address
      * @param promise the callback invoked when the resolution succeeds or fails
      */
-    public void resolve(String host, int port, Promise<SocketAddress> promise);
+    void resolve(String host, int port, Promise<List<SocketAddress>> promise);
 
     /**
      * <p>Creates {@link SocketAddress} instances synchronously in the caller thread.</p>
      */
     @ManagedObject("The synchronous address resolver")
-    public static class Sync implements SocketAddressResolver
+    class Sync implements SocketAddressResolver
     {
         @Override
-        public void resolve(String host, int port, Promise<SocketAddress> promise)
+        public void resolve(String host, int port, Promise<List<SocketAddress>> promise)
         {
             try
             {
-                InetSocketAddress result = new InetSocketAddress(host, port);
-                if (result.isUnresolved())
-                    promise.failed(new UnresolvedAddressException());
-                else
-                    promise.succeeded(result);
+                InetAddress[] addresses = InetAddress.getAllByName(host);
+                promise.succeeded(createSocketAddressList(addresses, port));
+            }
+            catch (UnknownHostException x)
+            {
+                promise.failed(new UnresolvedAddressException());
             }
             catch (Throwable x)
             {
@@ -95,7 +101,7 @@ public interface SocketAddressResolver
      * </pre>
      */
     @ManagedObject("The asynchronous address resolver")
-    public static class Async implements SocketAddressResolver
+    class Async implements SocketAddressResolver
     {
         private static final Logger LOG = Log.getLogger(SocketAddressResolver.class);
 
@@ -135,7 +141,7 @@ public interface SocketAddressResolver
         }
 
         @Override
-        public void resolve(final String host, final int port, final Promise<SocketAddress> promise)
+        public void resolve(final String host, final int port, final Promise<List<SocketAddress>> promise)
         {
             executor.execute(new Runnable()
             {
@@ -164,17 +170,17 @@ public interface SocketAddressResolver
                     try
                     {
                         long start = System.nanoTime();
-                        InetSocketAddress result = new InetSocketAddress(host, port);
+                        InetAddress[] addresses = InetAddress.getAllByName(host);
                         long elapsed = System.nanoTime() - start;
                         if (LOG.isDebugEnabled())
                             LOG.debug("Resolved {} in {} ms", host, TimeUnit.NANOSECONDS.toMillis(elapsed));
                         if (complete.compareAndSet(false, true))
-                        {
-                            if (result.isUnresolved())
-                                promise.failed(new UnresolvedAddressException());
-                            else
-                                promise.succeeded(result);
-                        }
+                            promise.succeeded(createSocketAddressList(addresses, port));
+                    }
+                    catch (UnknownHostException x)
+                    {
+                        if (complete.compareAndSet(false, true))
+                            promise.failed(new UnresolvedAddressException());
                     }
                     catch (Throwable x)
                     {

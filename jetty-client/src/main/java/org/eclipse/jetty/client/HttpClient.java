@@ -547,15 +547,15 @@ public class HttpClient extends ContainerLifeCycle
     protected void newConnection(final HttpDestination destination, final Promise<Connection> promise)
     {
         Origin.Address address = destination.getConnectAddress();
-        resolver.resolve(address.getHost(), address.getPort(), new Promise<SocketAddress>()
+        resolver.resolve(address.getHost(), address.getPort(), new Promise<List<SocketAddress>>()
         {
             @Override
-            public void succeeded(SocketAddress socketAddress)
+            public void succeeded(List<SocketAddress> socketAddresses)
             {
                 Map<String, Object> context = new HashMap<>();
                 context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
                 context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
-                transport.connect(socketAddress, context);
+                transport.connect(socketAddresses.get(0), context);
             }
 
             @Override
