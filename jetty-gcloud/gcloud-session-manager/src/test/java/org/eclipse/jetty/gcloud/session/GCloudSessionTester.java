@@ -31,6 +31,9 @@ public class GCloudSessionTester
 {
     public static void main( String[] args ) throws Exception
     {
+        if (args.length < 4)
+            System.err.println("Usage: GCloudSessionTester projectid p12file password serviceaccount");
+        
         System.setProperty("org.eclipse.jetty.server.session.LEVEL", "DEBUG");
         
         Server server = new Server(8080);
@@ -40,10 +43,10 @@ public class GCloudSessionTester
         server.addBean( loginService );
 
         GCloudConfiguration config = new GCloudConfiguration();
-        config.setProjectId("jetty9-work");
-        config.setP12File("/tmp/jetty9-work-51c6d017a35b.p12");
-        config.setPassword("OBF:1xtl1v2h1ym91rwd1vv11vu91rwh1ym51v1x1xtx");
-        config.setServiceAccount("170642172088-gmvs56i7pkqoi7g9cha8o75n0jo3us2j@developer.gserviceaccount.com");
+        config.setProjectId(args[0]);
+        config.setP12File(args[1]);
+        config.setPassword(args[2]);
+        config.setServiceAccount(args[3]);
 
         GCloudSessionIdManager idmgr = new GCloudSessionIdManager(server);
         idmgr.setConfig(config);
