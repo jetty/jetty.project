@@ -20,7 +20,6 @@ package org.eclipse.jetty.http2.client.http;
 
 import java.io.IOException;
 import java.net.InetSocketAddress;
-import java.net.SocketAddress;
 import java.util.Map;
 
 import org.eclipse.jetty.client.HttpClient;
@@ -61,14 +60,10 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
         addBean(client);
         super.doStart();
         this.connectionFactory = client.getClientConnectionFactory();
-        client.setClientConnectionFactory(new ClientConnectionFactory()
+        client.setClientConnectionFactory((endPoint, context) ->
         {
-            @Override
-            public org.eclipse.jetty.io.Connection newConnection(EndPoint endPoint, Map<String, Object> context) throws IOException
-            {
-                HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
-                return destination.getClientConnectionFactory().newConnection(endPoint, context);
-            }
+            HttpDestination destination = (HttpDestination)context.get(HTTP_DESTINATION_CONTEXT_KEY);
+            return destination.getClientConnectionFactory().newConnection(endPoint, context);
         });
     }
 
@@ -92,7 +87,7 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
     }
 
     @Override
-    public void connect(SocketAddress address, Map<String, Object> context)
+    public void connect(InetSocketAddress address, Map<String, Object> context)
     {
         client.setConnectTimeout(httpClient.getConnectTimeout());
 
@@ -124,7 +119,7 @@ public class HttpClientTransportOverHTTP2 extends ContainerLifeCycle implements 
             }
         };
 
-        client.connect(httpClient.getSslContextFactory(), (InetSocketAddress)address, listener, promise, context);
+        client.connect(httpClient.getSslContextFactory(), address, listener, promise, context);
     }
 
     @Override

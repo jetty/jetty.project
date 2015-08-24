@@ -19,6 +19,7 @@
 package org.eclipse.jetty.client;
 
 import java.io.IOException;
+import java.net.InetSocketAddress;
 import java.net.SocketAddress;
 import java.nio.channels.SelectionKey;
 import java.nio.channels.SocketChannel;
@@ -85,7 +86,7 @@ public abstract class AbstractHttpClientTransport extends ContainerLifeCycle imp
     }
 
     @Override
-    public void connect(SocketAddress address, Map<String, Object> context)
+    public void connect(InetSocketAddress address, Map<String, Object> context)
     {
         SocketChannel channel = null;
         try

@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.net.CookieManager;
 import java.net.CookiePolicy;
 import java.net.CookieStore;
+import java.net.InetSocketAddress;
 import java.net.Socket;
 import java.net.SocketAddress;
 import java.net.URI;
@@ -547,21 +548,43 @@ public class HttpClient extends ContainerLifeCycle
     protected void newConnection(final HttpDestination destination, final Promise<Connection> promise)
     {
         Origin.Address address = destination.getConnectAddress();
-        resolver.resolve(address.getHost(), address.getPort(), new Promise<SocketAddress>()
+        resolver.resolve(address.getHost(), address.getPort(), new Promise<List<InetSocketAddress>>()
         {
             @Override
-            public void succeeded(SocketAddress socketAddress)
+            public void succeeded(List<InetSocketAddress> socketAddresses)
             {
                 Map<String, Object> context = new HashMap<>();
                 context.put(HttpClientTransport.HTTP_DESTINATION_CONTEXT_KEY, destination);
-                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, promise);
-                transport.connect(socketAddress, context);
+                connect(socketAddresses, 0, context);
             }
 
             @Override
             public void failed(Throwable x)
             {
                 promise.failed(x);
+            }
+
+            private void connect(List<InetSocketAddress> socketAddresses, int index, Map<String, Object> context)
+            {
+                context.put(HttpClientTransport.HTTP_CONNECTION_PROMISE_CONTEXT_KEY, new Promise<Connection>()
+                {
+                    @Override
+                    public void succeeded(Connection result)
+                    {
+                        promise.succeeded(result);
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        int nextIndex = index + 1;
+                        if (nextIndex == socketAddresses.size())
+                            promise.failed(x);
+                        else
+                            connect(socketAddresses, nextIndex, context);
+                    }
+                });
+                transport.connect(socketAddresses.get(index), context);
             }
         });
     }

@@ -22,10 +22,12 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
+import java.net.InetAddress;
+import java.net.InetSocketAddress;
 import java.net.URI;
 import java.net.URLEncoder;
+import java.net.UnknownHostException;
 import java.nio.ByteBuffer;
-import java.nio.channels.UnresolvedAddressException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -77,6 +79,8 @@ import org.eclipse.jetty.toolchain.test.annotation.Slow;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.FuturePromise;
 import org.eclipse.jetty.util.IO;
+import org.eclipse.jetty.util.Promise;
+import org.eclipse.jetty.util.SocketAddressResolver;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
 import org.junit.Assert;
 import org.junit.Assume;
@@ -852,7 +856,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     }
 
     @Test
-    public void testConnectThrowsUnresolvedAddressException() throws Exception
+    public void testConnectThrowsUnknownHostException() throws Exception
     {
         start(new EmptyServerHandler());
 
@@ -864,11 +868,53 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                     public void onComplete(Result result)
                     {
                         Assert.assertTrue(result.isFailed());
-                        Assert.assertTrue(result.getFailure() instanceof UnresolvedAddressException);
+                        Throwable failure = result.getFailure();
+                        Assert.assertTrue(failure instanceof UnknownHostException);
                         latch.countDown();
                     }
                 });
         Assert.assertTrue(latch.await(10, TimeUnit.SECONDS));
+    }
+
+    @Test
+    public void testConnectHostWithMultipleAddresses() throws Exception
+    {
+        // Likely that the DNS for google.com returns multiple addresses.
+        String host = "google.com";
+        Assume.assumeTrue(InetAddress.getAllByName(host).length > 1);
+
+        startClient();
+        client.setFollowRedirects(false); // Avoid redirects from 80 to 443.
+        client.setSocketAddressResolver(new SocketAddressResolver.Async(client.getExecutor(), client.getScheduler(), client.getConnectTimeout())
+        {
+            @Override
+            public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
+            {
+                super.resolve(host, port, new Promise<List<InetSocketAddress>>()
+                {
+                    @Override
+                    public void succeeded(List<InetSocketAddress> result)
+                    {
+                        // Replace the first address with an invalid address so that we
+                        // test that the connect operation iterates over the addresses.
+                        result.set(0, new InetSocketAddress("idontexist", 80));
+                        promise.succeeded(result);
+                    }
+
+                    @Override
+                    public void failed(Throwable x)
+                    {
+                        promise.failed(x);
+                    }
+                });
+            }
+        });
+
+        // Response code may be 200 or 302;
+        // if no exceptions the test passes.
+        client.newRequest(host, 80)
+                .header(HttpHeader.CONNECTION, "close")
+                .send();
     }
 
     @Test

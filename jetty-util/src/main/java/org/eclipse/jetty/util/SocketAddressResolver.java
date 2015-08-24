@@ -18,9 +18,12 @@
 
 package org.eclipse.jetty.util;
 
+import java.net.InetAddress;
 import java.net.InetSocketAddress;
 import java.net.SocketAddress;
-import java.nio.channels.UnresolvedAddressException;
+import java.net.UnknownHostException;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.Executor;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.TimeoutException;
@@ -40,12 +43,11 @@ public interface SocketAddressResolver
     /**
      * Resolves the given host and port, returning a {@link SocketAddress} through the given {@link Promise}
      * with the default timeout.
-     *
-     * @param host the host to resolve
+     *  @param host the host to resolve
      * @param port the port of the resulting socket address
      * @param promise the callback invoked when the resolution succeeds or fails
      */
-    public void resolve(String host, int port, Promise<SocketAddress> promise);
+    public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise);
 
     /**
      * <p>Creates {@link SocketAddress} instances synchronously in the caller thread.</p>
@@ -54,13 +56,18 @@ public interface SocketAddressResolver
     public static class Sync implements SocketAddressResolver
     {
         @Override
-        public void resolve(String host, int port, Promise<SocketAddress> promise)
+        public void resolve(String host, int port, Promise<List<InetSocketAddress>> promise)
         {
             try
             {
-                InetSocketAddress result = new InetSocketAddress(host, port);
-                if (result.isUnresolved())
-                    promise.failed(new UnresolvedAddressException());
+                InetAddress[] addresses = InetAddress.getAllByName(host);
+
+                List<InetSocketAddress> result = new ArrayList<>(addresses.length);
+                for (InetAddress address : addresses)
+                    result.add(new InetSocketAddress(address, port));
+
+                if (result.isEmpty())
+                    promise.failed(new UnknownHostException());
                 else
                     promise.succeeded(result);
             }
@@ -135,59 +142,54 @@ public interface SocketAddressResolver
         }
 
         @Override
-        public void resolve(final String host, final int port, final Promise<SocketAddress> promise)
+        public void resolve(final String host, final int port, final Promise<List<InetSocketAddress>> promise)
         {
-            executor.execute(new Runnable()
+            executor.execute(() ->
             {
-                @Override
-                public void run()
+                Scheduler.Task task = null;
+                final AtomicBoolean complete = new AtomicBoolean();
+                if (timeout > 0)
                 {
-                    Scheduler.Task task = null;
-                    final AtomicBoolean complete = new AtomicBoolean();
-                    if (timeout > 0)
+                    final Thread thread = Thread.currentThread();
+                    task = scheduler.schedule(() ->
                     {
-                        final Thread thread = Thread.currentThread();
-                        task = scheduler.schedule(new Runnable()
-                        {
-                            @Override
-                            public void run()
-                            {
-                                if (complete.compareAndSet(false, true))
-                                {
-                                    promise.failed(new TimeoutException());
-                                    thread.interrupt();
-                                }
-                            }
-                        }, timeout, TimeUnit.MILLISECONDS);
-                    }
-
-                    try
-                    {
-                        long start = System.nanoTime();
-                        InetSocketAddress result = new InetSocketAddress(host, port);
-                        long elapsed = System.nanoTime() - start;
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Resolved {} in {} ms", host, TimeUnit.NANOSECONDS.toMillis(elapsed));
                         if (complete.compareAndSet(false, true))
                         {
-                            if (result.isUnresolved())
-                                promise.failed(new UnresolvedAddressException());
-                            else
-                                promise.succeeded(result);
+                            promise.failed(new TimeoutException());
+                            thread.interrupt();
                         }
-                    }
-                    catch (Throwable x)
+                    }, timeout, TimeUnit.MILLISECONDS);
+                }
+
+                try
+                {
+                    long start = System.nanoTime();
+                    InetAddress[] addresses = InetAddress.getAllByName(host);
+                    long elapsed = System.nanoTime() - start;
+                    if (LOG.isDebugEnabled())
+                        LOG.debug("Resolved {} in {} ms", host, TimeUnit.NANOSECONDS.toMillis(elapsed));
+
+                    List<InetSocketAddress> result = new ArrayList<>(addresses.length);
+                    for (InetAddress address : addresses)
+                        result.add(new InetSocketAddress(address, port));
+
+                    if (complete.compareAndSet(false, true))
                     {
-                        if (complete.compareAndSet(false, true))
-                            promise.failed(x);
+                        if (result.isEmpty())
+                            promise.failed(new UnknownHostException());
+                        else
+                            promise.succeeded(result);
                     }
-                    finally
-                    {
-                        if (task != null)
-                            task.cancel();
-                        // Reset the interrupted status before releasing the thread to the pool
-                        Thread.interrupted();
-                    }
+                }
+                catch (Throwable x)
+                {
+                    if (complete.compareAndSet(false, true))
+                        promise.failed(x);
+                }
+                finally
+                {
+                    if (task != null)
+                        task.cancel();
                 }
             });
         }
