@@ -22,6 +22,8 @@ import java.io.IOException;
 import java.io.InputStream;
 import java.io.OutputStream;
 import java.net.HttpCookie;
+import java.net.ServerSocket;
+import java.net.Socket;
 import java.net.URI;
 import java.net.URLEncoder;
 import java.nio.ByteBuffer;
@@ -72,6 +74,7 @@ import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
 import org.eclipse.jetty.http.HttpVersion;
+import org.eclipse.jetty.io.AbstractConnection;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestingDir;
@@ -330,7 +333,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                consume(request.getInputStream());
+                consume(request.getInputStream(), true);
                 String value = request.getParameter(paramName);
                 if (paramValue.equals(value))
                 {
@@ -361,7 +364,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                consume(request.getInputStream());
+                consume(request.getInputStream(), true);
             }
         });
 
@@ -395,7 +398,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
             public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
             {
                 baseRequest.setHandled(true);
-                consume(request.getInputStream());
+                consume(request.getInputStream(), true);
             }
         });
 
@@ -1370,7 +1373,7 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 int count = requests.incrementAndGet();
                 if (count == maxRetries)
                     baseRequest.setHandled(true);
-                consume(request.getInputStream());
+                consume(request.getInputStream(), true);
             }
         });
 
@@ -1517,13 +1520,79 @@ public class HttpClientTest extends AbstractHttpClientServerTest
         Assert.assertEquals(200, response.getStatus());
         Assert.assertThat(new String(response.getContent(), StandardCharsets.ISO_8859_1),Matchers.startsWith("[::1]:"));
     }
-    
-    
-    private void consume(InputStream input) throws IOException
+
+    @Test
+    public void testCONNECTWithHTTP10() throws Exception
     {
+        try (ServerSocket server = new ServerSocket(0))
+        {
+            startClient();
+
+            String host = "localhost";
+            int port = server.getLocalPort();
+
+            Request request = client.newRequest(host, port)
+                    .method(HttpMethod.CONNECT)
+                    .version(HttpVersion.HTTP_1_0);
+            FuturePromise<Connection> promise = new FuturePromise<>();
+            client.getDestination("http", host, port).newConnection(promise);
+            Connection connection = promise.get(5, TimeUnit.SECONDS);
+            FutureResponseListener listener = new FutureResponseListener(request);
+            connection.send(request, listener);
+
+            try (Socket socket = server.accept())
+            {
+                InputStream input = socket.getInputStream();
+                consume(input, false);
+
+                // HTTP/1.0 response, the client must not close the connection.
+                String httpResponse = "" +
+                        "HTTP/1.0 200 OK\r\n" +
+                        "\r\n";
+                OutputStream output = socket.getOutputStream();
+                output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                Assert.assertEquals(200, response.getStatus());
+
+                // Because the tunnel was successful, this connection will be
+                // upgraded to an SslConnection, so it will not be fill interested.
+                // This test doesn't upgrade, so it needs to restore the fill interest.
+                ((AbstractConnection)connection).fillInterested();
+
+                // Test that I can send another request on the same connection.
+                request = client.newRequest(host, port);
+                listener = new FutureResponseListener(request);
+                connection.send(request, listener);
+
+                consume(input, false);
+
+                httpResponse = "" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
+                output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                listener.get(5, TimeUnit.SECONDS);
+            }
+        }
+    }
+
+    private void consume(InputStream input, boolean eof) throws IOException
+    {
+        int crlfs = 0;
         while (true)
         {
-            if (input.read() < 0)
+            int read = input.read();
+            if (read == '\r' || read == '\n')
+                ++crlfs;
+            else
+                crlfs = 0;
+            if (!eof && crlfs == 4)
+                break;
+            if (read < 0)
                 break;
         }
     }
