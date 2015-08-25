@@ -26,6 +26,7 @@ import org.eclipse.jetty.io.ByteArrayBuffer;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.io.EofException;
 import org.eclipse.jetty.io.View;
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -330,7 +331,8 @@ public abstract class AbstractGenerator implements Generator
         _status = status;
         if (reason!=null)
         {
-            int len=reason.length();
+            byte[] iso8859 = StringUtil.getBytes(reason);
+            int len=iso8859.length;
 
             // TODO don't hard code
             if (len>1024)
@@ -338,9 +340,9 @@ public abstract class AbstractGenerator implements Generator
             _reason=new ByteArrayBuffer(len);
             for (int i=0;i<len;i++)
             {
-                char ch = reason.charAt(i);
-                if (ch!='\r'&&ch!='\n')
-                    _reason.put((byte)ch);
+                byte b = iso8859[i];
+                if (b!='\r'&&b!='\n')
+                    _reason.put(b);
                 else
                     _reason.put((byte)' ');
             }
