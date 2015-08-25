@@ -31,7 +31,6 @@ import org.eclipse.jetty.http.HttpFields;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
 
 public class HttpChannelOverHTTP extends HttpChannel
@@ -143,8 +142,6 @@ public class HttpChannelOverHTTP extends HttpChannel
             closeReason = "failure";
         else if (receiver.isShutdown())
             closeReason = "server close";
-        else if (sender.isShutdown())
-            closeReason = "client close";
 
         if (closeReason == null)
         {
@@ -159,7 +156,7 @@ public class HttpChannelOverHTTP extends HttpChannel
             }
             else
             {
-                // HTTP 1.1 closes only if it has an explicit close.
+                // HTTP 1.1 or greater closes only if it has an explicit close.
                 if (responseHeaders.contains(HttpHeader.CONNECTION, HttpHeaderValue.CLOSE.asString()))
                     closeReason = "http/1.1";
             }
@@ -173,10 +170,7 @@ public class HttpChannelOverHTTP extends HttpChannel
         }
         else
         {
-            if (response.getStatus() == HttpStatus.SWITCHING_PROTOCOLS_101)
-                connection.remove();
-            else
-                release();
+            release();
         }
     }
 
