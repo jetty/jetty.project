@@ -1481,53 +1481,54 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testCONNECTWithHTTP10() throws Exception
     {
-        ServerSocket server = new ServerSocket(0);
-
-        startClient();
-
-        String host = "localhost";
-        int port = server.getLocalPort();
-
-        Request request = client.newRequest(host, port)
-                .method(HttpMethod.CONNECT)
-                .version(HttpVersion.HTTP_1_0);
-        FuturePromise<Connection> promise = new FuturePromise<>();
-        client.getDestination("http", host, port).newConnection(promise);
-        Connection connection = promise.get(5, TimeUnit.SECONDS);
-        FutureResponseListener listener = new FutureResponseListener(request);
-        connection.send(request, listener);
-
-        try (Socket socket = server.accept())
+        try (ServerSocket server = new ServerSocket(0))
         {
-            InputStream input = socket.getInputStream();
-            consume(input, false);
+            startClient();
 
-            // HTTP/1.0 response, the client must not close the connection.
-            String httpResponse = "" +
-                    "HTTP/1.0 200 OK\r\n" +
-                    "\r\n";
-            OutputStream output = socket.getOutputStream();
-            output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
-            output.flush();
+            String host = "localhost";
+            int port = server.getLocalPort();
 
-            ContentResponse response = listener.get(5, TimeUnit.SECONDS);
-            Assert.assertEquals(200, response.getStatus());
-
-            // Test that I can send another request on the same connection.
-            request = client.newRequest(host, port);
-            listener = new FutureResponseListener(request);
+            Request request = client.newRequest(host, port)
+                    .method(HttpMethod.CONNECT)
+                    .version(HttpVersion.HTTP_1_0);
+            FuturePromise<Connection> promise = new FuturePromise<>();
+            client.getDestination("http", host, port).newConnection(promise);
+            Connection connection = promise.get(5, TimeUnit.SECONDS);
+            FutureResponseListener listener = new FutureResponseListener(request);
             connection.send(request, listener);
 
-            consume(input, false);
+            try (Socket socket = server.accept())
+            {
+                InputStream input = socket.getInputStream();
+                consume(input, false);
 
-            httpResponse = "" +
-                    "HTTP/1.1 200 OK\r\n" +
-                    "Content-Length: 0\r\n" +
-                    "\r\n";
-            output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
-            output.flush();
+                // HTTP/1.0 response, the client must not close the connection.
+                String httpResponse = "" +
+                        "HTTP/1.0 200 OK\r\n" +
+                        "\r\n";
+                OutputStream output = socket.getOutputStream();
+                output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
+                output.flush();
 
-            listener.get(5, TimeUnit.SECONDS);
+                ContentResponse response = listener.get(5, TimeUnit.SECONDS);
+                Assert.assertEquals(200, response.getStatus());
+
+                // Test that I can send another request on the same connection.
+                request = client.newRequest(host, port);
+                listener = new FutureResponseListener(request);
+                connection.send(request, listener);
+
+                consume(input, false);
+
+                httpResponse = "" +
+                        "HTTP/1.1 200 OK\r\n" +
+                        "Content-Length: 0\r\n" +
+                        "\r\n";
+                output.write(httpResponse.getBytes(StandardCharsets.UTF_8));
+                output.flush();
+
+                listener.get(5, TimeUnit.SECONDS);
+            }
         }
     }
 
