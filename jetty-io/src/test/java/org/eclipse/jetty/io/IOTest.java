@@ -18,11 +18,6 @@
 
 package org.eclipse.jetty.io;
 
-import static org.junit.Assert.assertEquals;
-import static org.junit.Assert.assertFalse;
-import static org.junit.Assert.assertTrue;
-import static org.junit.Assert.fail;
-
 import java.io.ByteArrayInputStream;
 import java.io.ByteArrayOutputStream;
 import java.io.File;
@@ -43,13 +38,17 @@ import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.Future;
 import java.util.concurrent.TimeUnit;
 
-import org.eclipse.jetty.io.ClientConnectionFactory.Helper;
 import org.eclipse.jetty.toolchain.test.MavenTestingUtils;
 import org.eclipse.jetty.toolchain.test.OS;
 import org.eclipse.jetty.util.BufferUtil;
 import org.eclipse.jetty.util.IO;
 import org.junit.Assert;
 import org.junit.Test;
+
+import static org.junit.Assert.assertEquals;
+import static org.junit.Assert.assertFalse;
+import static org.junit.Assert.assertTrue;
+import static org.junit.Assert.fail;
 
 public class IOTest
 {
@@ -437,9 +436,9 @@ public class IOTest
         connector.bind(null);
         InetSocketAddress addr=(InetSocketAddress)connector.getLocalAddress();
         Future<AsynchronousSocketChannel> acceptor = connector.accept();
-        
+
         AsynchronousSocketChannel client = AsynchronousSocketChannel.open();
-        
+
         client.connect(new InetSocketAddress("127.0.0.1",addr.getPort())).get(5, TimeUnit.SECONDS);
 
         AsynchronousSocketChannel server = acceptor.get(5, TimeUnit.SECONDS);
@@ -457,14 +456,14 @@ public class IOTest
 
         Assert.assertEquals(ByteBuffer.wrap(data), read);
     }
-    
+
     @Test
     public void testGatherWrite() throws Exception
     {
         File dir = MavenTestingUtils.getTargetTestingDir();
         if (!dir.exists())
             dir.mkdir();
-        
+
         File file = File.createTempFile("test",".txt",dir);
         file.deleteOnExit();
         FileChannel out = FileChannel.open(file.toPath(),
@@ -472,7 +471,7 @@ public class IOTest
                 StandardOpenOption.READ,
                 StandardOpenOption.WRITE,
                 StandardOpenOption.DELETE_ON_CLOSE);
-        
+
         ByteBuffer[] buffers = new ByteBuffer[4096];
         long expected=0;
         for (int i=0;i<buffers.length;i++)
@@ -480,22 +479,12 @@ public class IOTest
             buffers[i]=BufferUtil.toBuffer(i);
             expected+=buffers[i].remaining();
         }
-        
+
         long wrote = IO.write(out,buffers,0,buffers.length);
-        
+
         assertEquals(expected,wrote);
 
         for (int i=0;i<buffers.length;i++)
             assertEquals(0,buffers[i].remaining());
-    }
-    
-    @Test
-    public void testDomain()
-    {
-        assertTrue(IO.isInDomain("foo.com","foo.com"));
-        assertTrue(IO.isInDomain("www.foo.com","foo.com"));
-        assertFalse(IO.isInDomain("foo.com","bar.com"));
-        assertFalse(IO.isInDomain("www.foo.com","bar.com"));
-        
     }
 }

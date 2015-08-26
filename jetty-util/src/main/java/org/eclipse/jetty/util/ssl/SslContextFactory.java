@@ -47,6 +47,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
+import java.util.stream.Collectors;
 
 import javax.naming.ldap.LdapName;
 import javax.naming.ldap.Rdn;
@@ -149,7 +150,7 @@ public class SslContextFactory extends AbstractLifeCycle
     private final Set<String> _excludeCipherSuites = new LinkedHashSet<>();
 
     /** Included cipher suites. */
-    private final List<String> _includeCipherSuites = new ArrayList<String>();
+    private final List<String> _includeCipherSuites = new ArrayList<>();
     private boolean _useCipherSuitesOrder=true;
 
     /** Cipher comparator for ordering ciphers */
@@ -167,7 +168,7 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /** SSL certificate alias */
     private String _certAlias;
-    private final Map<String,String> _certAliases = new HashMap<>();
+    private final Map<String,String> _certHosts = new HashMap<>();
     private final Map<String,String> _certWilds = new HashMap<>();
 
     /** Truststore path */
@@ -371,7 +372,7 @@ public class SslContextFactory extends AbstractLifeCycle
                 }
 
                 // Look for X.509 certificates to create alias map
-                _certAliases.clear();
+                _certHosts.clear();
                 if (keyStore!=null)
                 {
                     for (String alias : Collections.list(keyStore.aliases()))
@@ -404,7 +405,7 @@ public class SslContextFactory extends AbstractLifeCycle
                                         if (cn!=null)
                                         {
                                             named=true;
-                                            _certAliases.put(cn,alias);
+                                            _certHosts.put(cn,alias);
                                         }
                                     }
                                 }
@@ -422,7 +423,7 @@ public class SslContextFactory extends AbstractLifeCycle
                                         if (LOG.isDebugEnabled())
                                             LOG.debug("Certificate cn alias={} cn={} in {}",alias,cn,this);
                                         if (cn!=null && cn.contains(".") && !cn.contains(" "))
-                                            _certAliases.put(cn,alias);
+                                            _certHosts.put(cn,alias);
                                     }
                                 }
                             }
@@ -432,11 +433,18 @@ public class SslContextFactory extends AbstractLifeCycle
 
                 // find wild aliases
                 _certWilds.clear();
-                for (String name : _certAliases.keySet())
-                    if (name.startsWith("*."))
-                        _certWilds.put(name.substring(2),_certAliases.get(name));
+                for (Iterator<Map.Entry<String, String>> iterator = _certHosts.entrySet().iterator(); iterator.hasNext();)
+                {
+                    Map.Entry<String, String> entry = iterator.next();
+                    String host = entry.getKey();
+                    if (host.startsWith("*."))
+                    {
+                        _certWilds.put(host.substring(2), entry.getValue());
+                        iterator.remove();
+                    }
+                }
 
-                LOG.info("x509={} wild={} alias={} for {}",_certAliases,_certWilds,_certAlias,this);
+                LOG.info("x509={} wild={} alias={} for {}",_certHosts,_certWilds,_certAlias,this);
 
                 // Instantiate key and trust managers
                 KeyManager[] keyManagers = getKeyManagers(keyStore);
@@ -470,7 +478,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         _factory = null;
         super.doStop();
-        _certAliases.clear();
+        _certHosts.clear();
         _certWilds.clear();
     }
 
@@ -1140,7 +1148,7 @@ public class SslContextFactory extends AbstractLifeCycle
                     }
                 }
 
-                if (!_certAliases.isEmpty() || !_certWilds.isEmpty())
+                if (!_certHosts.isEmpty() || !_certWilds.isEmpty())
                 {
                     for (int idx = 0; idx < managers.length; idx++)
                     {
@@ -1615,7 +1623,7 @@ public class SslContextFactory extends AbstractLifeCycle
         SSLParameters sslParams = sslEngine.getSSLParameters();
         sslParams.setEndpointIdentificationAlgorithm(_endpointIdentificationAlgorithm);
         sslParams.setUseCipherSuitesOrder(_useCipherSuitesOrder);
-        if (!_certAliases.isEmpty() || !_certWilds.isEmpty())
+        if (!_certHosts.isEmpty() || !_certWilds.isEmpty())
         {
             if (LOG.isDebugEnabled())
                 LOG.debug("Enable SNI matching {}",sslEngine);
@@ -1752,63 +1760,81 @@ public class SslContextFactory extends AbstractLifeCycle
 
     class AliasSNIMatcher extends SNIMatcher
     {
+        private String _host;
         private String _alias;
-        private String _wild;
-        private SNIHostName _name;
+        private List<String> _hosts;
+        private List<String> _wilds;
 
-        protected AliasSNIMatcher()
+        AliasSNIMatcher()
         {
             super(StandardConstants.SNI_HOST_NAME);
+            _hosts = Collections.emptyList();
+            _wilds = Collections.emptyList();
         }
 
         @Override
         public boolean matches(SNIServerName serverName)
         {
-            LOG.debug("matches={} for {}",serverName,this);
+            if (LOG.isDebugEnabled())
+                LOG.debug("SNI matching for {}",serverName);
 
             if (serverName instanceof SNIHostName)
             {
-                _name=(SNIHostName)serverName;
+                String host = _host = ((SNIHostName)serverName).getAsciiName();
 
-                // If we don't have a SNI name, or didn't see any certificate aliases,
-                // just say true as it will either somehow work or fail elsewhere
-                if (_certAliases.size()==0)
+                // If we don't have a SNI host, or didn't see any certificate aliases,
+                // just say true as it will either somehow work or fail elsewhere.
+                if (_certHosts.isEmpty())
                     return true;
 
                 // Try an exact match
-                _alias = _certAliases.get(_name.getAsciiName());
+                _alias = _certHosts.get(host);
                 if (_alias!=null)
                 {
+                    _hosts = _certHosts.entrySet().stream()
+                            .filter(entry -> _alias.equals(entry.getValue()))
+                            .map(Map.Entry::getKey)
+                            .collect(Collectors.toList());
                     if (LOG.isDebugEnabled())
-                        LOG.debug("matched {}->{}",_name.getAsciiName(),_alias);
-                    return true;
+                        LOG.debug("SNI matched {}->{}->{}",host,_alias,_hosts);
                 }
 
-                // Try wild card matches
-                String domain = _name.getAsciiName();
-                _alias = _certWilds.get(domain);
+                // Try wildcard matches.
                 if (_alias==null)
                 {
-                    int dot=domain.indexOf('.');
-                    if (dot>=0)
+                    _alias = _certWilds.get(host);
+                    if (_alias==null)
                     {
-                        domain=domain.substring(dot+1);
-                        _alias = _certWilds.get(domain);
+                        int dot=host.indexOf('.');
+                        if (dot>=0)
+                        {
+                            host=host.substring(dot+1);
+                            _alias = _certWilds.get(host);
+                        }
                     }
                 }
                 if (_alias!=null)
                 {
-                    _wild=domain;
+                    _wilds = _certWilds.entrySet().stream()
+                            .filter(entry -> _alias.equals(entry.getValue()))
+                            .map(Map.Entry::getKey)
+                            .collect(Collectors.toList());
                     if (LOG.isDebugEnabled())
-                        LOG.debug("wild match {}->{}",_name.getAsciiName(),_alias);
+                        LOG.debug("SNI wild match {}->{}->{}",host,_alias,_wilds);
                     return true;
                 }
             }
+
             if (LOG.isDebugEnabled())
-                LOG.debug("No match for {}",_name.getAsciiName());
+                LOG.debug("SNI no match for {}", serverName);
 
             // Return true and allow the KeyManager to accept or reject when choosing a certificate.
             return true;
+        }
+
+        public String getHost()
+        {
+            return _host;
         }
 
         public String getAlias()
@@ -1816,14 +1842,14 @@ public class SslContextFactory extends AbstractLifeCycle
             return _alias;
         }
 
-        public String getWildDomain()
+        public List<String> getHosts()
         {
-            return _wild;
+            return _hosts;
         }
 
-        public String getServerName()
+        public List<String> getWilds()
         {
-            return _name==null?null:_name.getAsciiName();
+            return _wilds;
         }
     }
 }
