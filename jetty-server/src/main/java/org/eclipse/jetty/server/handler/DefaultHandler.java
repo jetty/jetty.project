@@ -34,7 +34,6 @@ import org.eclipse.jetty.server.Request;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.util.ByteArrayISO8859Writer;
 import org.eclipse.jetty.util.IO;
-import org.eclipse.jetty.util.Jetty;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.resource.Resource;
@@ -134,7 +133,7 @@ public class DefaultHandler extends AbstractHandler
                 {
                     writer.write("<li><a href=\"");
                     if (context.getVirtualHosts()!=null && context.getVirtualHosts().length>0)
-                        writer.write("http://"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
+                        writer.write(request.getScheme()+"://"+context.getVirtualHosts()[0]+":"+request.getLocalPort());
                     writer.write(context.getContextPath());
                     if (context.getContextPath().length()>1 && context.getContextPath().endsWith("/"))
                         writer.write("/");
@@ -163,7 +162,7 @@ public class DefaultHandler extends AbstractHandler
             }
 
             writer.write("</ul><hr>");
-            
+
             baseRequest.getHttpChannel().getHttpConfiguration()
                 .writePoweredBy(writer,"<a href=\"http://eclipse.org/jetty\"><img border=0 src=\"/favicon.ico\"/></a>&nbsp;","<hr/>\n");
 
@@ -174,7 +173,7 @@ public class DefaultHandler extends AbstractHandler
             {
                 writer.writeTo(out);
             }
-        } 
+        }
     }
 
     /* ------------------------------------------------------------ */
