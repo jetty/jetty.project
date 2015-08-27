@@ -40,6 +40,7 @@ import org.junit.AfterClass;
 import org.junit.Assert;
 import org.junit.BeforeClass;
 import org.junit.Test;
+import org.junit.Ignore;
 
 /**
  * Test simulating a client that talks too quickly.
@@ -65,6 +66,7 @@ public class TooFastClientTest
     }
 
     @Test
+    @Ingore("RELEASE")
     public void testUpgradeWithSmallFrames() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
@@ -127,6 +129,7 @@ public class TooFastClientTest
      * @throws Exception on test failure
      */
     @Test
+    @Ignore("RELEASE")
     public void testUpgradeWithLargeFrame() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
