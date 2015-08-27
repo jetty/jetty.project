@@ -172,7 +172,6 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
             ServletUpgradeResponse sockresp = new ServletUpgradeResponse(response);
 
             Object websocketPojo = creator.createWebSocket(sockreq, sockresp);
-            websocketPojo = getObjectFactory().decorate(websocketPojo);
 
             // Handle response forbidden (and similar paths)
             if (sockresp.isCommitted())
@@ -187,6 +186,9 @@ public class WebSocketServerFactory extends ContainerLifeCycle implements WebSoc
                 return false;
             }
 
+            // Allow Decorators to do their thing
+            websocketPojo = getObjectFactory().decorate(websocketPojo);
+            
             // Get the original HTTPConnection
             HttpConnection connection = (HttpConnection)request.getAttribute("org.eclipse.jetty.server.HttpConnection");
             
