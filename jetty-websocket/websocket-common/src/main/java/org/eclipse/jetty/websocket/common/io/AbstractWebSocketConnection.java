@@ -412,7 +412,7 @@ public abstract class AbstractWebSocketConnection extends AbstractConnection imp
         if (LOG.isDebugEnabled())
             LOG.debug("{} onClose()",policy.getBehavior());
         super.onClose();
-        // ioState.onDisconnected();
+        ioState.onDisconnected();
         flusher.close();
     }
 
