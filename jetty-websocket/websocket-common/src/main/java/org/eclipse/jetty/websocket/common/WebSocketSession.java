@@ -242,14 +242,12 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public RemoteEndpoint getRemote()
     {
-        ConnectionState state = connection.getIOState().getConnectionState();
-
-        if ((state == ConnectionState.OPEN) || (state == ConnectionState.CONNECTED))
+        if (connection.getIOState().isOutputAvailable())
         {
             return remote;
         }
 
-        throw new WebSocketException("RemoteEndpoint unavailable, current state [" + state + "], expecting [OPEN or CONNECTED]");
+        throw new WebSocketException("RemoteEndpoint unavailable, outgoing connection not open");
     }
 
     @Override
