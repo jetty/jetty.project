@@ -805,36 +805,26 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         return _scavengeIntervalMs/1000;
     }
 
+    
+    
 
     @Override
-    public void addSession(HttpSession session)
+    public String newSessionId(long seedTerm)
     {
-        if (session == null)
-            return;
-
-        synchronized (_sessionIds)
-        {
-            String id = ((JDBCSessionManager.Session)session).getClusterId();
-            try
-            {
-                insert(id);
-                _sessionIds.add(id);
-            }
-            catch (Exception e)
-            {
-                LOG.warn("Problem storing session id="+id, e);
-            }
-        }
+        String id = super.newSessionId(seedTerm);
+        useId(id);
+        return id;
     }
-    
-  
-    public void addSession(String id)
+
+
+    //TODO useId might not be the right paradigm
+    public void useId (String id)
     {
         if (id == null)
             return;
 
         synchronized (_sessionIds)
-        {           
+        {
             try
             {
                 insert(id);
@@ -849,18 +839,12 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
 
 
+
+    /** 
+     * @see org.eclipse.jetty.server.SessionIdManager#removeId(java.lang.String)
+     */
     @Override
-    public void removeSession(HttpSession session)
-    {
-        if (session == null)
-            return;
-
-        removeSession(((JDBCSessionManager.Session)session).getClusterId());
-    }
-
-
-
-    public void removeSession (String id)
+    public void removeId (String id)
     {
 
         if (id == null)
@@ -885,16 +869,16 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
 
     @Override
-    public boolean idInUse(String id)
+    public boolean isIdInUse(String id)
     {
         if (id == null)
             return false;
 
-        String clusterId = getClusterId(id);
+        String sessionId = getId(id);
         boolean inUse = false;
         synchronized (_sessionIds)
         {
-            inUse = _sessionIds.contains(clusterId);
+            inUse = _sessionIds.contains(sessionId);
         }
 
         
@@ -904,11 +888,11 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         //otherwise, we need to go to the database to check
         try
         {
-            return exists(clusterId);
+            return exists(sessionId);
         }
         catch (Exception e)
         {
-            LOG.warn("Problem checking inUse for id="+clusterId, e);
+            LOG.warn("Problem checking inUse for id="+sessionId, e);
             return false;
         }
     }
@@ -922,7 +906,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
     public void invalidateAll(String id)
     {
         //take the id out of the list of known sessionids for this node
-        removeSession(id);
+        removeId(id);
 
         synchronized (_sessionIds)
         {
@@ -954,8 +938,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
         synchronized (_sessionIds)
         {
-            removeSession(oldClusterId);//remove the old one from the list (and database)
-            addSession(newClusterId); //add in the new session id to the list (and database)
+            removeId(oldClusterId);//remove the old one from the list (and database)
 
             //tell all contexts to update the id 
             Handler[] contexts = _server.getChildHandlersByClass(ContextHandler.class);
@@ -968,7 +951,7 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
 
                     if (manager != null && manager instanceof JDBCSessionManager)
                     {
-                        ((JDBCSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getNodeId(newClusterId, request));
+                        ((JDBCSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
                     }
                 }
             }
@@ -1497,6 +1480,8 @@ public class JDBCSessionIdManager extends AbstractSessionIdManager
         else
             throw new IllegalStateException("No database configured for sessions");
     }
+
+   
     
    
 }

@@ -576,7 +576,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
      * Searches database to find if the session id known to mongo, and is it valid
      */
     @Override
-    public boolean idInUse(String sessionId)
+    public boolean isIdInUse(String sessionId)
     {        
         /*
          * optimize this query to only return the valid variable
@@ -708,7 +708,7 @@ public class MongoSessionIdManager extends AbstractSessionIdManager
 
                 if (manager != null && manager instanceof MongoSessionManager)
                 {
-                    ((MongoSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getNodeId(newClusterId, request));
+                    ((MongoSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
                 }
             }
         }

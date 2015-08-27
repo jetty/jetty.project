@@ -194,13 +194,7 @@ public interface SessionManager extends LifeCycle
      */
     public SessionIdManager getSessionIdManager();
 
-    /* ------------------------------------------------------------ */
-    /**
-     * @return the cross context session id manager.
-     * @deprecated use {@link #getSessionIdManager()}
-     */
-    @Deprecated
-    public SessionIdManager getMetaManager();
+
 
     /* ------------------------------------------------------------ */
     /**
@@ -308,10 +302,10 @@ public interface SessionManager extends LifeCycle
     /* ------------------------------------------------------------ */
     /** Change the existing session id.
     * 
-    * @param oldClusterId the old cluster id
-    * @param oldNodeId the old node id
-    * @param newClusterId the new cluster id
-    * @param newNodeId the new node id
+    * @param oldId the old session id
+    * @param oldExtendedId the session id including worker suffix
+    * @param newId the new session id
+    * @param newExtendedId the new session id including worker suffix
     */
-    public void renewSessionId(String oldClusterId, String oldNodeId, String newClusterId, String newNodeId);  
+    public void renewSessionId(String oldId, String oldExtendedId, String newId, String newExtendedId);  
 }

@@ -29,25 +29,27 @@ import org.eclipse.jetty.util.component.LifeCycle;
 public interface SessionIdManager extends LifeCycle
 {
     /**
-     * @param id The session ID without any cluster node extension
+     * @param id The plain session ID (ie no workername extension)
      * @return True if the session ID is in use by at least one context.
      */
-    public boolean idInUse(String id);
+    public boolean isIdInUse(String id);
+    
     
     /**
-     * Add a session to the list of known sessions for a given ID.
-     * @param session The session
+     * Notify the sessionid manager that a particular session id is in use
+     * @param id
      */
-    public void addSession(HttpSession session);
+    public void useId (String id);
     
     /**
-     * Remove session from the list of known sessions for a given ID.
-     * @param session the session to remove
+     * Remove id
+     * @param id the plain session id (no workername extension) of the session to remove
      */
-    public void removeSession(HttpSession session);
+    public void removeId (String id);
     
     /**
-     * Call {@link HttpSession#invalidate()} on all known sessions for the given id.
+     * Invalidate all sessions on all contexts that share the same id.
+     * 
      * @param id The session ID without any cluster node extension
      */
     public void invalidateAll(String id);
@@ -67,30 +69,36 @@ public interface SessionIdManager extends LifeCycle
     
     
     /* ------------------------------------------------------------ */
-    /** Get a cluster ID from a node ID.
+    /** Get just the session id from an id that includes the worker name
+     * as a suffix.
+     * 
      * Strip node identifier from a located session ID.
-     * @param nodeId the node id
+     * @param qualifiedId the session id including the worker name
      * @return the cluster id
      */
-    public String getClusterId(String nodeId);
+    public String getId(String qualifiedId);
+    
+    
     
     /* ------------------------------------------------------------ */
-    /** Get a node ID from a cluster ID and a request
-     * @param clusterId The ID of the session
+    /** Get an extended id for a session. An extended id contains
+     * the workername as a suffix.
+     * 
+     * @param id The id of the session
      * @param request The request that for the session (or null)
-     * @return The session ID qualified with the node ID.
+     * @return The session id qualified with the worker name
      */
-    public String getNodeId(String clusterId,HttpServletRequest request);
+    public String getExtendedId(String id,HttpServletRequest request);
     
     
     /* ------------------------------------------------------------ */
     /** Change the existing session id.
     * 
-    * @param oldClusterId the old cluster id
-    * @param oldNodeId the old node id
+    * @param oldId the old plain session id
+    * @param oldExtendedId the old fully qualified id
     * @param request the request containing the session
     */
-    public void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request);    
+    public void renewSessionId(String oldId, String oldExtendedId, HttpServletRequest request);    
 
     
 }

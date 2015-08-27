@@ -143,8 +143,8 @@ public abstract class AbstractSessionRenewTest
                 AbstractSessionManager sessionManager = (AbstractSessionManager)((AbstractSession)afterSession).getSessionManager();
                 AbstractSessionIdManager sessionIdManager = (AbstractSessionIdManager)sessionManager.getSessionIdManager();
 
-                assertTrue(sessionIdManager.idInUse(afterSessionId));
-                assertFalse(sessionIdManager.idInUse(beforeSessionId));
+                assertTrue(sessionIdManager.isIdInUse(afterSessionId));
+                assertFalse(sessionIdManager.isIdInUse(beforeSessionId));
 
                 HttpSession session = sessionManager.getSession(afterSessionId);
                 assertNotNull(session);

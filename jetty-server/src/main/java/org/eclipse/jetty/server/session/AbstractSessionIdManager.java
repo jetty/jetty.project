@@ -51,6 +51,12 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
         _random=random;
     }
 
+    
+
+    /* ------------------------------------------------------------ */
+    @Override
+    public abstract void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request);
+    
 
     /* ------------------------------------------------------------ */
     /**
@@ -133,14 +139,14 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
             String requested_id=request.getRequestedSessionId();
             if (requested_id!=null)
             {
-                String cluster_id=getClusterId(requested_id);
-                if (idInUse(cluster_id))
+                String cluster_id=getId(requested_id);
+                if (isIdInUse(cluster_id))
                     return cluster_id;
             }
 
             // Else reuse any new session ID already defined for this request.
             String new_id=(String)request.getAttribute(__NEW_SESSION_ID);
-            if (new_id!=null&&idInUse(new_id))
+            if (new_id!=null&&isIdInUse(new_id))
                 return new_id;
 
             // pick a new unique ID!
@@ -156,7 +162,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     {
         // pick a new unique ID!
         String id=null;
-        while (id==null||id.length()==0||idInUse(id))
+        while (id==null||id.length()==0||isIdInUse(id))
         {
             long r0=_weakRandom
                     ?(hashCode()^Runtime.getRuntime().freeMemory()^_random.nextInt()^((seedTerm)<<32))
@@ -198,9 +204,6 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
     }
 
 
-    /* ------------------------------------------------------------ */
-    @Override
-    public abstract void renewSessionId(String oldClusterId, String oldNodeId, HttpServletRequest request);
 
     
     /* ------------------------------------------------------------ */
@@ -249,7 +252,7 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
      * @return sessionId plus any worker ID.
      */
     @Override
-    public String getNodeId(String clusterId, HttpServletRequest request)
+    public String getExtendedId(String clusterId, HttpServletRequest request)
     {
         if (_workerName!=null)
         {
@@ -266,14 +269,14 @@ public abstract class AbstractSessionIdManager extends AbstractLifeCycle impleme
 
     /** Get the session ID without any worker ID.
      *
-     * @param nodeId the node id
+     * @param extendedId the session id with the worker extension
      * @return sessionId without any worker ID.
      */
     @Override
-    public String getClusterId(String nodeId)
+    public String getId(String extendedId)
     {
-        int dot=nodeId.lastIndexOf('.');
-        return (dot>0)?nodeId.substring(0,dot):nodeId;
+        int dot=extendedId.lastIndexOf('.');
+        return (dot>0)?extendedId.substring(0,dot):extendedId;
     }
 
 

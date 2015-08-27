@@ -100,10 +100,10 @@ public class HashSessionIdManager extends AbstractSessionIdManager
 
     /* ------------------------------------------------------------ */
     /**
-     * @see SessionIdManager#idInUse(String)
+     * @see SessionIdManager#isIdInUse(String)
      */
     @Override
-    public boolean idInUse(String id)
+    public boolean isIdInUse(String id)
     {
         synchronized (this)
         {
@@ -220,7 +220,7 @@ public class HashSessionIdManager extends AbstractSessionIdManager
                         if (s instanceof AbstractSession)
                         {
                             AbstractSession abstractSession = (AbstractSession)s;
-                            abstractSession.getSessionManager().renewSessionId(oldClusterId, oldNodeId, newClusterId, getNodeId(newClusterId, request));
+                            abstractSession.getSessionManager().renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
                         }
                     }
                 }

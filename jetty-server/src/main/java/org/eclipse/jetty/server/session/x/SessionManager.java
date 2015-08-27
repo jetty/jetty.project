@@ -16,7 +16,8 @@
 //  ========================================================================
 //
 
-package org.eclipse.jetty.server.session;
+
+package org.eclipse.jetty.server.session.x;
 
 import static java.lang.Math.round;
 
@@ -43,29 +44,27 @@ import javax.servlet.http.HttpSessionListener;
 import org.eclipse.jetty.http.HttpCookie;
 import org.eclipse.jetty.server.Server;
 import org.eclipse.jetty.server.SessionIdManager;
-import org.eclipse.jetty.server.SessionManager;
 import org.eclipse.jetty.server.handler.ContextHandler;
+import org.eclipse.jetty.server.session.HashSessionIdManager;
+import org.eclipse.jetty.server.session.SessionHandler;
 import org.eclipse.jetty.util.annotation.ManagedAttribute;
-import org.eclipse.jetty.util.annotation.ManagedObject;
 import org.eclipse.jetty.util.annotation.ManagedOperation;
 import org.eclipse.jetty.util.component.ContainerLifeCycle;
+import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
 
 /**
- * An Abstract implementation of SessionManager.
- * <p>
- * The partial implementation of SessionManager interface provides the majority of the handling required to implement a
- * SessionManager. Concrete implementations of SessionManager based on AbstractSessionManager need only implement the
- * newSession method to return a specialized version of the Session inner class that provides an attribute Map.
+ * AbstractSessionManager
+ *
+ *
  */
-@SuppressWarnings("deprecation")
-@ManagedObject("Abstract Session Manager")
-public abstract class AbstractSessionManager extends ContainerLifeCycle implements SessionManager
+public class SessionManager extends ContainerLifeCycle implements org.eclipse.jetty.server.SessionManager
 {
-    final static Logger __log = SessionHandler.LOG;
-
+    final static Logger __log =  Log.getLogger(SessionManager.class);// TODO SessionHandler.LOG
+            
+            
     public Set<SessionTrackingMode> __defaultSessionTrackingModes =
         Collections.unmodifiableSet(
             new HashSet<SessionTrackingMode>(
@@ -124,13 +123,16 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     public Set<SessionTrackingMode> _sessionTrackingModes;
 
     private boolean _usingURLs;
+    
+    
+    protected SessionStore _sessionStore;
+
 
     protected final CounterStatistic _sessionsStats = new CounterStatistic();
     protected final SampleStatistic _sessionTimeStats = new SampleStatistic();
-
-
+    
     /* ------------------------------------------------------------ */
-    public AbstractSessionManager()
+    public SessionManager()
     {
         setSessionTrackingModes(__defaultSessionTrackingModes);
     }
@@ -165,7 +167,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         long now=System.currentTimeMillis();
 
-        AbstractSession s = ((SessionIf)session).getSession();
+        Session s = ((SessionIf)session).getSession();
 
        if (s.access(now))
        {
@@ -213,8 +215,17 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public void complete(HttpSession session)
     {
-        AbstractSession s = ((SessionIf)session).getSession();
+        Session s = ((SessionIf)session).getSession();
         s.complete();
+        try
+        {
+            if (s.isValid())
+                _sessionStore.put(s.getId(), s);
+        }
+        catch (Exception e)
+        {
+            __log.warn(e);
+        }
     }
 
     /* ------------------------------------------------------------ */
@@ -260,34 +271,37 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         // Look for a session cookie name
         if (_context!=null)
         {
-            String tmp=_context.getInitParameter(SessionManager.__SessionCookieProperty);
+            String tmp=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__SessionCookieProperty);
             if (tmp!=null)
                 _sessionCookie=tmp;
 
-            tmp=_context.getInitParameter(SessionManager.__SessionIdPathParameterNameProperty);
+            tmp=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__SessionIdPathParameterNameProperty);
             if (tmp!=null)
                 setSessionIdPathParameterName(tmp);
 
             // set up the max session cookie age if it isn't already
             if (_maxCookieAge==-1)
             {
-                tmp=_context.getInitParameter(SessionManager.__MaxAgeProperty);
+                tmp=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__MaxAgeProperty);
                 if (tmp!=null)
                     _maxCookieAge=Integer.parseInt(tmp.trim());
             }
 
             // set up the session domain if it isn't already
             if (_sessionDomain==null)
-                _sessionDomain=_context.getInitParameter(SessionManager.__SessionDomainProperty);
+                _sessionDomain=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__SessionDomainProperty);
 
             // set up the sessionPath if it isn't already
             if (_sessionPath==null)
-                _sessionPath=_context.getInitParameter(SessionManager.__SessionPathProperty);
+                _sessionPath=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__SessionPathProperty);
 
-            tmp=_context.getInitParameter(SessionManager.__CheckRemoteSessionEncoding);
+            tmp=_context.getInitParameter(org.eclipse.jetty.server.SessionManager.__CheckRemoteSessionEncoding);
             if (tmp!=null)
                 _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
         }
+        
+        if (_sessionStore == null)
+            throw new IllegalStateException("No session store configured");
 
         super.doStart();
     }
@@ -316,12 +330,12 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
 
     /* ------------------------------------------------------------ */
     @Override
-    public HttpSession getHttpSession(String nodeId)
+    public HttpSession getHttpSession(String extendedId)
     {
-        String cluster_id = getSessionIdManager().getId(nodeId);
+        String id = getSessionIdManager().getId(extendedId);
 
-        AbstractSession session = getSession(cluster_id);
-        if (session!=null && !session.getNodeId().equals(nodeId))
+        Session session = getSession(id);
+        if (session!=null && !session.getExtendedId().equals(extendedId))
             session.setIdChanged(true);
         return session;
     }
@@ -534,7 +548,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public boolean isValid(HttpSession session)
     {
-        AbstractSession s = ((SessionIf)session).getSession();
+        Session s = ((SessionIf)session).getSession();
         return s.isValid();
     }
 
@@ -542,16 +556,16 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public String getClusterId(HttpSession session)
     {
-        AbstractSession s = ((SessionIf)session).getSession();
-        return s.getClusterId();
+        Session s = ((SessionIf)session).getSession();
+        return s.getId();
     }
 
     /* ------------------------------------------------------------ */
     @Override
     public String getNodeId(HttpSession session)
     {
-        AbstractSession s = ((SessionIf)session).getSession();
-        return s.getNodeId();
+        Session s = ((SessionIf)session).getSession();
+        return s.getExtendedId();
     }
 
     /* ------------------------------------------------------------ */
@@ -561,11 +575,32 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     @Override
     public HttpSession newHttpSession(HttpServletRequest request)
     {
-        AbstractSession session=newSession(request);
-        session.setMaxInactiveInterval(_dftMaxIdleSecs);
+        long created=System.currentTimeMillis();
+        String id =_sessionIdManager.newSessionId(request,created);
+        Session session = _sessionStore.newSession(id, created, created, created,  (_dftMaxIdleSecs>0?_dftMaxIdleSecs*1000L:-1));
+        session.setExtendedId(_sessionIdManager.getExtendedId(id,request));
+        session.setSessionManager(this);
+
         if (request.isSecure())
-            session.setAttribute(AbstractSession.SESSION_CREATED_SECURE, Boolean.TRUE);
-        addSession(session,true);
+            session.setAttribute(Session.SESSION_CREATED_SECURE, Boolean.TRUE);
+
+        try
+        {
+            _sessionStore.put(session.getId(), session);
+        }
+        catch (Exception e)
+        {
+            __log.warn(e);
+        }
+
+        _sessionsStats.increment();
+        if (_sessionListeners!=null)
+        {
+            HttpSessionEvent event=new HttpSessionEvent(session);
+            for (HttpSessionListener listener : _sessionListeners)
+                listener.sessionCreated(event);
+        }
+
         return session;
     }
 
@@ -663,60 +698,46 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     }
 
 
-    protected abstract void addSession(AbstractSession session);
-
-    /* ------------------------------------------------------------ */
-    /**
-     * Add the session Registers the session with this manager and registers the
-     * session ID with the sessionIDManager;
-     * @param session the session
-     * @param created true if session was created
-     */
-    protected void addSession(AbstractSession session, boolean created)
-    {
-        synchronized (_sessionIdManager)
-        {
- //           _sessionIdManager.addSession(session); TODO cope with id coming in from database
-            addSession(session);
-        }
-
-        if (created)
-        {
-            _sessionsStats.increment();
-            if (_sessionListeners!=null)
-            {
-                HttpSessionEvent event=new HttpSessionEvent(session);
-                for (HttpSessionListener listener : _sessionListeners)
-                    listener.sessionCreated(event);
-            }
-        }
-    }
 
     /* ------------------------------------------------------------ */
     /**
      * Get a known existing session
-     * @param idInCluster The session ID in the cluster, stripped of any worker name.
+     * @param id The session ID stripped of any worker name.
      * @return A Session or null if none exists.
      */
-    public abstract AbstractSession getSession(String idInCluster);
+    public Session getSession(String id)
+    {
+        try
+        {
+            Session session =  _sessionStore.get(id);
+            session.setSessionManager(this);
+            session.setExtendedId(_sessionIdManager.getExtendedId(id, null)); //TODO not sure if this is OK?
+            return session;
+        }
+        catch (Exception e)
+        {
+            __log.warn(e);
+            return null;
+        }
+    }
 
     /**
      * Prepare sessions for session manager shutdown
      * 
      * @throws Exception if unable to shutdown sesssions
      */
-    protected abstract void shutdownSessions() throws Exception;
+    protected void shutdownSessions() throws Exception
+    {
+        _sessionStore.shutdown();
+    }
 
 
-    /* ------------------------------------------------------------ */
-    /**
-     * Create a new session instance
-     * @param request the request to build the session from
-     * @return the new session
-     */
-    protected abstract AbstractSession newSession(HttpServletRequest request);
-
-
+    
+    protected SessionStore getSessionStore ()
+    {
+        return _sessionStore;
+    }
+    
     /* ------------------------------------------------------------ */
     /**
      * @return true if the cluster node id (worker id) is returned as part of the session id by {@link HttpSession#getId()}. Default is false.
@@ -735,17 +756,6 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
         _nodeIdInSessionId=nodeIdInSessionId;
     }
 
-    /* ------------------------------------------------------------ */
-    /** Remove session from manager
-     * @param session The session to remove
-     * @param invalidate True if {@link HttpSessionListener#sessionDestroyed(HttpSessionEvent)} and
-     * {@link SessionIdManager#invalidateAll(String)} should be called.
-     */
-    public void removeSession(HttpSession session, boolean invalidate)
-    {
-        AbstractSession s = ((SessionIf)session).getSession();
-        removeSession(s,invalidate);
-    }
 
     /* ------------------------------------------------------------ */
     /** 
@@ -755,36 +765,41 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      * {@link SessionIdManager#invalidateAll(String)} should be called.
      * @return if the session was removed 
      */
-    public boolean removeSession(AbstractSession session, boolean invalidate)
+    public boolean removeSession(Session session, boolean invalidate)
     {
-        // Remove session from context and global maps
-        boolean removed = removeSession(session.getClusterId());
-
-        if (removed)
+        try
         {
-            _sessionsStats.decrement();
-            _sessionTimeStats.set(round((System.currentTimeMillis() - session.getCreationTime())/1000.0));
+            //Remove the Session object from the session store and any backing data store
+            boolean removed = _sessionStore.delete(session.getId());
 
-            // Remove session from all context and global id maps
-            _sessionIdManager.removeId(session.getId());
-            if (invalidate)
-                _sessionIdManager.invalidateAll(session.getClusterId());
-
-            if (invalidate && _sessionListeners!=null)
+            if (removed)
             {
-                HttpSessionEvent event=new HttpSessionEvent(session);      
-                for (int i = _sessionListeners.size()-1; i>=0; i--)
+                _sessionsStats.decrement();
+                _sessionTimeStats.set(round((System.currentTimeMillis() - session.getCreationTime())/1000.0));
+
+                // Remove session from all context and global id maps
+                _sessionIdManager.removeId(session.getId());
+                if (invalidate)
+                    _sessionIdManager.invalidateAll(session.getId());
+
+                if (invalidate && _sessionListeners!=null)
                 {
-                    _sessionListeners.get(i).sessionDestroyed(event);
+                    HttpSessionEvent event=new HttpSessionEvent(session);      
+                    for (int i = _sessionListeners.size()-1; i>=0; i--)
+                    {
+                        _sessionListeners.get(i).sessionDestroyed(event);
+                    }
                 }
             }
-        }
-        
-        return removed;
-    }
 
-    /* ------------------------------------------------------------ */
-    protected abstract boolean removeSession(String idInCluster);
+            return removed;
+        }
+        catch (Exception e)
+        {
+            __log.warn(e);
+            return false;
+        }
+    }
 
     /* ------------------------------------------------------------ */
     /**
@@ -902,7 +917,7 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
     {
         if (!_sessionIdListeners.isEmpty())
         {
-            AbstractSession session = getSession(newClusterId);
+            Session session = getSession(newClusterId);
             HttpSessionEvent event = new HttpSessionEvent(session);
             for (HttpSessionIdListener l:_sessionIdListeners)
             {
@@ -1028,10 +1043,10 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
      */
     public interface SessionIf extends HttpSession
     {
-        public AbstractSession getSession();
+        public Session getSession();
     }
 
-    public void doSessionAttributeListeners(AbstractSession session, String name, Object old, Object value)
+    public void doSessionAttributeListeners(Session session, String name, Object old, Object value)
     {
         if (!_sessionAttributeListeners.isEmpty())
         {
@@ -1047,12 +1062,5 @@ public abstract class AbstractSessionManager extends ContainerLifeCycle implemen
                     l.attributeReplaced(event);
             }
         }
-    }
-
-    @Override
-    @Deprecated
-    public SessionIdManager getMetaManager()
-    {
-        throw new UnsupportedOperationException();
     }
 }

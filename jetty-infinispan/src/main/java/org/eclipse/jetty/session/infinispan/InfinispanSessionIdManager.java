@@ -130,10 +130,10 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
      * 
      * This method will consult the cluster.
      * 
-     * @see org.eclipse.jetty.server.SessionIdManager#idInUse(java.lang.String)
+     * @see org.eclipse.jetty.server.SessionIdManager#isIdInUse(java.lang.String)
      */
     @Override
-    public boolean idInUse(String id)
+    public boolean isIdInUse(String id)
     {
         if (id == null)
             return false;
@@ -270,7 +270,7 @@ public class InfinispanSessionIdManager extends AbstractSessionIdManager
 
                 if (manager != null && manager instanceof InfinispanSessionManager)
                 {
-                    ((InfinispanSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getNodeId(newClusterId, request));
+                    ((InfinispanSessionManager)manager).renewSessionId(oldClusterId, oldNodeId, newClusterId, getExtendedId(newClusterId, request));
                 }
             }
         }

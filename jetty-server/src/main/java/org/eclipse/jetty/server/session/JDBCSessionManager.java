@@ -554,7 +554,7 @@ public class JDBCSessionManager extends AbstractSessionManager
                             LOG.debug("getSession ({}): Session has expired", idInCluster);
                         //ensure that the session id for the expired session is deleted so that a new session with the 
                         //same id cannot be created (because the idInUse() test would succeed)
-                        _jdbcSessionIdMgr.removeSession(idInCluster);
+                        _jdbcSessionIdMgr.removeId(idInCluster);
                         session=null;
                     }
 
@@ -943,7 +943,7 @@ public class JDBCSessionManager extends AbstractSessionManager
         {
             //if the session could not be restored, take its id out of the pool of currently-in-use
             //session ids
-            _jdbcSessionIdMgr.removeSession(id);
+            _jdbcSessionIdMgr.removeId(id);
             throw _exception.get();
         }
 

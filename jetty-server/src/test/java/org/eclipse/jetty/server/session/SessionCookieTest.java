@@ -137,10 +137,10 @@ public class SessionCookieTest
     {
 
         /**
-         * @see org.eclipse.jetty.server.SessionIdManager#idInUse(java.lang.String)
+         * @see org.eclipse.jetty.server.SessionIdManager#isIdInUse(java.lang.String)
          */
         @Override
-        public boolean idInUse(String id)
+        public boolean isIdInUse(String id)
         {
             return false;
         }

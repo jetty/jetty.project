@@ -71,7 +71,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         _newSession=true;
         _created=System.currentTimeMillis();
         _clusterId=_manager._sessionIdManager.newSessionId(request,_created);
-        _nodeId=_manager._sessionIdManager.getNodeId(_clusterId,request);
+        _nodeId=_manager._sessionIdManager.getExtendedId(_clusterId,request);
         _accessed=_created;
         _lastAccessed=_created;
         _requests=1;
@@ -86,7 +86,7 @@ public abstract class AbstractSession implements AbstractSessionManager.SessionI
         _manager = abstractSessionManager;
         _created=created;
         _clusterId=clusterId;
-        _nodeId=_manager._sessionIdManager.getNodeId(_clusterId,null);
+        _nodeId=_manager._sessionIdManager.getExtendedId(_clusterId,null);
         _accessed=accessed;
         _lastAccessed=accessed;
         _requests=1;
