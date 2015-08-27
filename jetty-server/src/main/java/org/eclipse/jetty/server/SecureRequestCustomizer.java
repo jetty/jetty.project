@@ -29,40 +29,40 @@ import org.eclipse.jetty.http.BadMessageException;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.io.ssl.SslConnection;
 import org.eclipse.jetty.io.ssl.SslConnection.DecryptedEndPoint;
-import org.eclipse.jetty.util.IO;
 import org.eclipse.jetty.util.TypeUtil;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
+import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.ssl.X509;
 
-
-/* ------------------------------------------------------------ */
-/** Customizer that extracts the attribute from an {@link SSLContext}
+/**
+ * <p>Customizer that extracts the attribute from an {@link SSLContext}
  * and sets them on the request with {@link ServletRequest#setAttribute(String, Object)}
- * according to Servlet Specification Requirements.
+ * according to Servlet Specification Requirements.</p>
  */
 public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 {
     private static final Logger LOG = Log.getLogger(SecureRequestCustomizer.class);
-    
+
     /**
      * The name of the SSLSession attribute that will contain any cached information.
      */
     public static final String CACHED_INFO_ATTR = CachedInfo.class.getName();
 
     private boolean _sniHostCheck;
-    
-    
+
+
     public SecureRequestCustomizer()
     {
         this(true);
     }
-    
+
     public SecureRequestCustomizer(boolean sniHostCheck)
     {
         _sniHostCheck=sniHostCheck;
     }
-    
+
     @Override
     public void customize(Connector connector, HttpConfiguration channelConfig, Request request)
     {
@@ -77,10 +77,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         }
     }
 
-    /* ------------------------------------------------------------ */
-    /*
-     * Customise the request attributes to be set for SSL requests. <br>
-     * The requirements of the Servlet specs are:
+    /**
+     * <p>Customizes the request attributes to be set for SSL requests.</p>
+     * <p>The requirements of the Servlet specs are:</p>
      * <ul>
      * <li> an attribute named "javax.servlet.request.ssl_session_id" of type
      * String (since Servlet Spec 3.0).</li>
@@ -95,8 +94,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
      * </li>
      * </ul>
      *
-     * @param request
-     *                HttpRequest to be customised.
+     * @param request HttpRequest to be customized.
      */
     public void customize(SSLEngine sslEngine, Request request)
     {
@@ -105,19 +103,20 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
 
         if (_sniHostCheck)
         {
-            String sniName = (String)sslSession.getValue("org.eclipse.jetty.util.ssl.sniname");
-            if (sniName!=null && !sniName.equalsIgnoreCase(request.getServerName()))
+            String name = request.getServerName();
+            @SuppressWarnings("unchecked")
+            X509 x509 = (X509)sslSession.getValue(SniX509ExtendedKeyManager.SNI_X509);
+
+            if (x509!=null && !x509.matches(name))
             {
-                String wild=(String)sslSession.getValue("org.eclipse.jetty.util.ssl.sniwild");
-                String name=request.getServerName();
-                if (wild==null || !IO.isInDomain(name,wild)) 
-                {
-                    LOG.warn("Host does not match SNI Name: {}/{}!={}",sniName,wild,request.getServerName());
-                    throw new BadMessageException(400,"Host does not match SNI");
-                }
+                LOG.warn("Host {} does not match SNI {}",name,x509);
+                throw new BadMessageException(400,"Host does not match SNI");
             }
+
+            if (LOG.isDebugEnabled())
+                LOG.debug("Host {} matched SNI {}",name,x509);
         }
-        
+
         try
         {
             String cipherSuite=sslSession.getCipherSuite();
@@ -132,9 +131,9 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
                 certs=cachedInfo.getCerts();
                 idStr=cachedInfo.getIdStr();
             }
-            else 
+            else
             {
-                keySize=new Integer(SslContextFactory.deduceKeyLength(cipherSuite));
+                keySize=SslContextFactory.deduceKeyLength(cipherSuite);
                 certs=SslContextFactory.getCertChain(sslSession);
                 byte[] bytes = sslSession.getId();
                 idStr = TypeUtil.toHexString(bytes);
@@ -160,10 +159,7 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     {
         return String.format("%s@%x",this.getClass().getSimpleName(),hashCode());
     }
-    
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
-    /* ------------------------------------------------------------ */
+
     /**
      * Simple bundle of information that is cached in the SSLSession. Stores the
      * effective keySize and the client certificate chain.
@@ -196,7 +192,4 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             return _idStr;
         }
     }
-
-
-
 }

@@ -41,9 +41,8 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 {
-    public static final String SNI_NAME = "org.eclipse.jetty.util.ssl.sniname";
-    public static final String SNI_WILD = "org.eclipse.jetty.util.ssl.sniwild";
-    public static final String NO_MATCHERS="No Matchers";
+    public static final String SNI_X509 = "org.eclipse.jetty.util.ssl.snix509";
+    private static final String NO_MATCHERS = "no_matchers";
     private static final Logger LOG = Log.getLogger(SniX509ExtendedKeyManager.class);
 
     private final X509ExtendedKeyManager _delegate;
@@ -72,10 +71,9 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         if (aliases==null || aliases.length==0)
             return null;
 
-        // Look for an SNI alias
-        String alias=null;
+        // Look for the SNI information.
         String host=null;
-        String wild=null;
+        X509 x509=null;
         if (matchers!=null)
         {
             for (SNIMatcher m : matchers)
@@ -83,28 +81,25 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
                 if (m instanceof SslContextFactory.AliasSNIMatcher)
                 {
                     SslContextFactory.AliasSNIMatcher matcher = (SslContextFactory.AliasSNIMatcher)m;
-                    alias=matcher.getAlias();
-                    host=matcher.getServerName();
-                    wild=matcher.getWildDomain();
+                    host=matcher.getHost();
+                    x509=matcher.getX509();
                     break;
                 }
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("matched {}/{} from {}",alias,host,Arrays.asList(aliases));
+            LOG.debug("Matched {} with {} from {}",host,x509,Arrays.asList(aliases));
 
         // Check if the SNI selected alias is allowable
-        if (alias!=null)
+        if (x509!=null)
         {
             for (String a:aliases)
             {
-                if (a.equals(alias))
+                if (a.equals(x509.getAlias()))
                 {
-                    session.putValue(SNI_NAME,host);
-                    if (wild!=null)
-                        session.putValue(SNI_WILD,wild);
-                    return alias;
+                    session.putValue(SNI_X509,x509);
+                    return a;
                 }
             }
             return null;
@@ -121,7 +116,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         if (alias==NO_MATCHERS)
             alias=_delegate.chooseServerAlias(keyType,issuers,socket);
         if (LOG.isDebugEnabled())
-            LOG.debug("chose {}/{} on {}",alias,keyType,socket);
+            LOG.debug("Chose alias {}/{} on {}",alias,keyType,socket);
         return alias;
     }
 
@@ -132,7 +127,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
         if (alias==NO_MATCHERS)
             alias=_delegate.chooseEngineServerAlias(keyType,issuers,engine);
         if (LOG.isDebugEnabled())
-            LOG.debug("chose {}/{} on {}",alias,keyType,engine);
+            LOG.debug("Chose alias {}/{} on {}",alias,keyType,engine);
         return alias;
     }
 
