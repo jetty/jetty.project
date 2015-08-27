@@ -105,7 +105,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     @Override
     public void close(int statusCode, String reason)
     {
-        connection.close(statusCode,CloseStatus.trimMaxReasonLength(reason));
+        connection.close(statusCode,reason);
     }
 
     /**
