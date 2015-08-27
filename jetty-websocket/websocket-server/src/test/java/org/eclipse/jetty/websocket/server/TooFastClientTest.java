@@ -66,7 +66,7 @@ public class TooFastClientTest
     }
 
     @Test
-    @Ingore("RELEASE")
+    @Ignore("RELEASE")
     public void testUpgradeWithSmallFrames() throws Exception
     {
         BlockheadClient client = new BlockheadClient(server.getServerUri());
