@@ -23,6 +23,7 @@ import java.io.InputStream;
 import java.io.Reader;
 import java.nio.ByteBuffer;
 
+import org.eclipse.jetty.websocket.api.BatchMode;
 import org.eclipse.jetty.websocket.api.WebSocketPolicy;
 import org.eclipse.jetty.websocket.api.annotations.WebSocket;
 import org.eclipse.jetty.websocket.api.extensions.Frame;
@@ -40,6 +41,7 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
 {
     private final JettyAnnotatedMetadata events;
     private boolean hasCloseBeenCalled = false;
+    private BatchMode batchMode;
 
     public JettyAnnotatedEventDriver(WebSocketPolicy policy, Object websocket, JettyAnnotatedMetadata events)
     {
@@ -64,6 +66,13 @@ public class JettyAnnotatedEventDriver extends AbstractEventDriver
         {
             this.policy.setIdleTimeout(anno.maxIdleTime());
         }
+        this.batchMode = anno.batchMode();
+    }
+    
+    @Override
+    public BatchMode getBatchMode()
+    {
+        return this.batchMode;
     }
 
     @Override

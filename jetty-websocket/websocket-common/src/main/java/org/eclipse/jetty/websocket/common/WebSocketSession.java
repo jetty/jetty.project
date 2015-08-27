@@ -71,6 +71,7 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     private WebSocketPolicy policy;
     private UpgradeRequest upgradeRequest;
     private UpgradeResponse upgradeResponse;
+    private BatchMode batchMode = BatchMode.AUTO;
 
     public WebSocketSession(URI requestURI, EventDriver websocket, LogicalConnection connection, SessionListener... sessionListeners)
     {
@@ -400,14 +401,20 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
         }
         
         ClassLoader old = Thread.currentThread().getContextClassLoader();
-        try {
+        try 
+        {
             Thread.currentThread().setContextClassLoader(classLoader);
 
             // Upgrade success
             connection.getIOState().onConnected();
-    
+            
             // Connect remote
-            remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,getBatchMode());
+            BatchMode endpointBatchMode = websocket.getBatchMode();
+            if (endpointBatchMode == null)
+            {
+                endpointBatchMode = this.getBatchMode();
+            }
+            remote = new WebSocketRemoteEndpoint(connection,outgoingHandler,endpointBatchMode);
 
             // Open WebSocket
             websocket.openSession(this);
@@ -496,11 +503,20 @@ public class WebSocketSession extends ContainerLifeCycle implements Session, Inc
     }
 
     /**
-     * @return the default (initial) value for the batching mode.
+     * @return the batching mode default for RemoteEndpoint behavior
      */
     public BatchMode getBatchMode()
     {
-        return BatchMode.AUTO;
+        return batchMode;
+    }
+    
+    /**
+     * Set the batch mode default for the RemoteEndpoint behavior.
+     * @param mode the batching mode.
+     */
+    public void setBatchMode(BatchMode mode)
+    {
+        this.batchMode = mode;
     }
 
     @Override
