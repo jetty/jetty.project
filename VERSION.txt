@@ -1,4 +1,4 @@
-jetty-9.3.3.v20150825 - 25 August 2015
+jetty-9.3.3.v20150827 - 27 August 2015
  + 470311 Introduce a proxy-protocol module.
  + 471055 Restore legacy/experimental WebSocket extensions (deflate-frame)
  + 472411 PathResource.checkAliasPath() typo
@@ -20,12 +20,14 @@ jetty-9.3.3.v20150825 - 25 August 2015
  + 474634 AsyncListener.onError() handling.
  + 474685 GzipHandler configuration supports csv paths and mimetypes.
  + 474888 HttpClient JMX support.
+ + 474936 WebSocketSessions are not always cleaned out from openSessions
  + 474961 Close input stream for classes in AnnotationParser after scanning
  + 475195 SNI matching fails when keystore does not contain wild certificates.
  + 475483 Starting Jetty with [exec] should use properties file.
  + 475546 ClosedChannelException when connecting to HTTPS over HTTP proxy with
    CONNECT.
  + 475605 Add support for multi-homed destinations.
+ + 475927 SecureRequestCustomizer fails to match host.
 
 jetty-9.3.2.v20150730 - 30 July 2015
  + 470351 Fixed SNI matching of wildcard certificates
