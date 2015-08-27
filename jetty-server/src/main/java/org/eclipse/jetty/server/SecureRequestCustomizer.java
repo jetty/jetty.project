@@ -35,6 +35,7 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.ssl.SniX509ExtendedKeyManager;
 import org.eclipse.jetty.util.ssl.SslContextFactory;
+import org.eclipse.jetty.util.ssl.X509;
 
 /**
  * <p>Customizer that extracts the attribute from an {@link SSLContext}
@@ -105,23 +106,17 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         {
             String name = request.getServerName();
             @SuppressWarnings("unchecked")
-            List<String> hosts = (List<String>)sslSession.getValue(SniX509ExtendedKeyManager.SNI_HOSTS);
-            @SuppressWarnings("unchecked")
-            List<String> wilds = (List<String>)sslSession.getValue(SniX509ExtendedKeyManager.SNI_WILDS);
-
-            if (hosts != null && !hosts.stream().anyMatch(host -> host.equalsIgnoreCase(name)))
+            X509 x509 = (X509)sslSession.getValue(SniX509ExtendedKeyManager.SNI_X509);
+            
+            if (x509!=null && !x509.matches(name))
             {
-                // Browsers may reuse the same connection if they can prove that two domains
-                // have the same certificate and IP, for example domain.com and www.domain.com.
-                if (wilds == null || !wilds.stream().anyMatch(wild -> isDomainOrSubDomain(name, wild)))
-                {
-                    LOG.warn("Host {} does not match SNI hosts: {}/{}",name,hosts,wilds);
-                    throw new BadMessageException(400,"Host does not match SNI");
-                }
+                LOG.warn("Host {} does not match SNI {}",name,x509);
+                throw new BadMessageException(400,"Host does not match SNI");
             }
 
+
             if (LOG.isDebugEnabled())
-                LOG.debug("Host {} matched SNI hosts: {}/{}",name,hosts,wilds);
+                LOG.debug("Host {} matched SNI {}",name,x509);
         }
 
         try
@@ -159,15 +154,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         {
             LOG.warn(Log.EXCEPTION,e);
         }
-    }
-
-    public static boolean isDomainOrSubDomain(String name, String domain)
-    {
-        if (!name.endsWith(domain))
-            return false;
-        if (name.length() == domain.length())
-            return true;
-        return name.charAt(name.length() - domain.length() - 1) == '.';
     }
 
     @Override

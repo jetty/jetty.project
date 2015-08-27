@@ -24,7 +24,6 @@ import java.security.PrivateKey;
 import java.security.cert.X509Certificate;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.List;
 
 import javax.net.ssl.SNIMatcher;
 import javax.net.ssl.SSLEngine;
@@ -42,8 +41,7 @@ import org.eclipse.jetty.util.log.Logger;
  */
 public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 {
-    public static final String SNI_HOSTS = "org.eclipse.jetty.util.ssl.snihosts";
-    public static final String SNI_WILDS = "org.eclipse.jetty.util.ssl.sniwilds";
+    public static final String SNI_X509 = "org.eclipse.jetty.util.ssl.snix509";
     private static final String NO_MATCHERS = "no_matchers";
     private static final Logger LOG = Log.getLogger(SniX509ExtendedKeyManager.class);
 
@@ -75,9 +73,7 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
 
         // Look for the SNI information.
         String host=null;
-        String alias=null;
-        List<String> hosts=null;
-        List<String> wilds=null;
+        X509 x509=null;
         if (matchers!=null)
         {
             for (SNIMatcher m : matchers)
@@ -86,27 +82,24 @@ public class SniX509ExtendedKeyManager extends X509ExtendedKeyManager
                 {
                     SslContextFactory.AliasSNIMatcher matcher = (SslContextFactory.AliasSNIMatcher)m;
                     host=matcher.getHost();
-                    alias=matcher.getAlias();
-                    hosts=matcher.getHosts();
-                    wilds=matcher.getWilds();
+                    x509=matcher.getX509();
                     break;
                 }
             }
         }
 
         if (LOG.isDebugEnabled())
-            LOG.debug("Matched {} with alias {}/{}/{} from {}",host,alias,hosts,wilds,Arrays.asList(aliases));
+            LOG.debug("Matched {} with {} from {}",host,x509,Arrays.asList(aliases));
 
         // Check if the SNI selected alias is allowable
-        if (alias!=null)
+        if (x509!=null)
         {
             for (String a:aliases)
             {
-                if (a.equals(alias))
+                if (a.equals(x509.getAlias()))
                 {
-                    session.putValue(SNI_HOSTS,hosts);
-                    session.putValue(SNI_WILDS,wilds);
-                    return alias;
+                    session.putValue(SNI_X509,x509);
+                    return a;
                 }
             }
             return null;

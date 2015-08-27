@@ -38,7 +38,6 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.Collections;
 import java.util.Comparator;
-import java.util.Enumeration;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashSet;
@@ -47,10 +46,7 @@ import java.util.Map;
 import java.util.Set;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
-import java.util.stream.Collectors;
 
-import javax.naming.ldap.LdapName;
-import javax.naming.ldap.Rdn;
 import javax.net.ssl.CertPathTrustManagerParameters;
 import javax.net.ssl.KeyManager;
 import javax.net.ssl.KeyManagerFactory;
@@ -71,8 +67,8 @@ import javax.net.ssl.TrustManager;
 import javax.net.ssl.TrustManagerFactory;
 import javax.net.ssl.X509ExtendedKeyManager;
 import javax.net.ssl.X509TrustManager;
-import javax.security.auth.x500.X500Principal;
 
+import org.eclipse.jetty.util.StringUtil;
 import org.eclipse.jetty.util.component.AbstractLifeCycle;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
@@ -110,18 +106,6 @@ public class SslContextFactory extends AbstractLifeCycle
     }};
 
     static final Logger LOG = Log.getLogger(SslContextFactory.class);
-
-    /*
-     * @see {@link X509Certificate#getKeyUsage()}
-     */
-    private static final int KEY_USAGE__KEY_CERT_SIGN=5;
-
-    /*
-     *
-     * @see {@link X509Certificate#getSubjectAlternativeNames()}
-     */
-    private static final int SUBJECT_ALTERNATIVE_NAMES__DNS_NAME=2;
-
 
     public static final String DEFAULT_KEYMANAGERFACTORY_ALGORITHM =
         (Security.getProperty("ssl.KeyManagerFactory.algorithm") == null ?
@@ -168,8 +152,9 @@ public class SslContextFactory extends AbstractLifeCycle
 
     /** SSL certificate alias */
     private String _certAlias;
-    private final Map<String,String> _certHosts = new HashMap<>();
-    private final Map<String,String> _certWilds = new HashMap<>();
+    private final Map<String,X509> _aliasX509 = new HashMap<>();
+    private final Map<String,X509> _certHosts = new HashMap<>();
+    private final Map<String,X509> _certWilds = new HashMap<>();
 
     /** Truststore path */
     private Resource _trustStoreResource;
@@ -305,6 +290,16 @@ public class SslContextFactory extends AbstractLifeCycle
         _cipherComparator = cipherComparator;
     }
 
+    public Set<String> getAliases()
+    {
+        return Collections.unmodifiableSet(_aliasX509.keySet());
+    }
+
+    public X509 getX509(String alias)
+    {
+        return _aliasX509.get(alias);
+    }
+    
     /**
      * Create the SSLContext object and start the lifecycle
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
@@ -344,33 +339,6 @@ public class SslContextFactory extends AbstractLifeCycle
 
                 Collection<? extends CRL> crls = loadCRL(_crlPath);
 
-                if (_validateCerts && keyStore != null)
-                {
-                    if (_certAlias==null)
-                    {
-                        for (Enumeration<String> e=keyStore.aliases(); _certAlias==null && e.hasMoreElements(); )
-                        {
-                            String alias=e.nextElement();
-                            Certificate c =keyStore.getCertificate(alias);
-                            if (c!=null && "X.509".equals(c.getType()))
-                                _certAlias=alias;
-                        }
-                    }
-
-                    Certificate cert = _certAlias == null?null:keyStore.getCertificate(_certAlias);
-                    if (cert==null || !"X.509".equals(cert.getType()))
-                    {
-                        throw new Exception("No X.509 certificate in the keystore" + (_certAlias==null ? "":" for alias " + _certAlias));
-                    }
-
-                    CertificateValidator validator = new CertificateValidator(trustStore, crls);
-                    validator.setMaxCertPathLength(_maxCertPathLength);
-                    validator.setEnableCRLDP(_enableCRLDP);
-                    validator.setEnableOCSP(_enableOCSP);
-                    validator.setOcspResponderURL(_ocspResponderURL);
-                    validator.validate(keyStore, cert);
-                }
-
                 // Look for X.509 certificates to create alias map
                 _certHosts.clear();
                 if (keyStore!=null)
@@ -380,71 +348,37 @@ public class SslContextFactory extends AbstractLifeCycle
                         Certificate certificate = keyStore.getCertificate(alias);
                         if (certificate!=null && "X.509".equals(certificate.getType()))
                         {
-                            X509Certificate x509 = (X509Certificate)certificate;
+                            X509Certificate x509C = (X509Certificate)certificate;
 
                             // Exclude certificates with special uses
-                            if (x509.getKeyUsage()!=null)
+                            if (X509.isCertSign(x509C))
                             {
-                                boolean[] b=x509.getKeyUsage();
-                                if (b[KEY_USAGE__KEY_CERT_SIGN])
-                                    continue;
+                                if (LOG.isDebugEnabled())
+                                    LOG.debug("Skipping "+x509C);
+                                continue;
+                            }
+                            X509 x509 = new X509(alias,x509C);
+                            _aliasX509.put(alias,x509);
+                            
+                            if (_validateCerts)
+                            {
+                                CertificateValidator validator = new CertificateValidator(trustStore, crls);
+                                validator.setMaxCertPathLength(_maxCertPathLength);
+                                validator.setEnableCRLDP(_enableCRLDP);
+                                validator.setEnableOCSP(_enableOCSP);
+                                validator.setOcspResponderURL(_ocspResponderURL);
+                                validator.validate(keyStore, x509C); // TODO what about truststore?
                             }
 
-                            // Look for alternative name extensions
-                            boolean named=false;
-                            Collection<List<?>> altNames = x509.getSubjectAlternativeNames();
-                            if (altNames!=null)
-                            {
-                                for (List<?> list : altNames)
-                                {
-                                    if (((Number)list.get(0)).intValue() == SUBJECT_ALTERNATIVE_NAMES__DNS_NAME)
-                                    {
-                                        String cn = list.get(1).toString();
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("Certificate SAN alias={} cn={} in {}",alias,cn,this);
-                                        if (cn!=null)
-                                        {
-                                            named=true;
-                                            _certHosts.put(cn,alias);
-                                        }
-                                    }
-                                }
-                            }
-
-                            // If no names found, look up the cn from the subject
-                            if (!named)
-                            {
-                                LdapName name=new LdapName(x509.getSubjectX500Principal().getName(X500Principal.RFC2253));
-                                for (Rdn rdn : name.getRdns())
-                                {
-                                    if (rdn.getType().equalsIgnoreCase("cn"))
-                                    {
-                                        String cn = rdn.getValue().toString();
-                                        if (LOG.isDebugEnabled())
-                                            LOG.debug("Certificate cn alias={} cn={} in {}",alias,cn,this);
-                                        if (cn!=null && cn.contains(".") && !cn.contains(" "))
-                                            _certHosts.put(cn,alias);
-                                    }
-                                }
-                            }
+                            LOG.info("x509={} for {}",x509,this);
+                            
+                            for (String h:x509.getHosts())
+                                _certHosts.put(h,x509);
+                            for (String w:x509.getWilds())
+                                _certWilds.put(w,x509);
                         }
                     }
                 }
-
-                // find wild aliases
-                _certWilds.clear();
-                for (Iterator<Map.Entry<String, String>> iterator = _certHosts.entrySet().iterator(); iterator.hasNext();)
-                {
-                    Map.Entry<String, String> entry = iterator.next();
-                    String host = entry.getKey();
-                    if (host.startsWith("*."))
-                    {
-                        _certWilds.put(host.substring(2), entry.getValue());
-                        iterator.remove();
-                    }
-                }
-
-                LOG.info("x509={} wild={} alias={} for {}",_certHosts,_certWilds,_certAlias,this);
 
                 // Instantiate key and trust managers
                 KeyManager[] keyManagers = getKeyManagers(keyStore);
@@ -470,9 +404,8 @@ public class SslContextFactory extends AbstractLifeCycle
             LOG.debug("Selected Protocols {} of {}",Arrays.asList(_selectedProtocols),Arrays.asList(sslEngine.getSupportedProtocols()));
             LOG.debug("Selected Ciphers   {} of {}",Arrays.asList(_selectedCipherSuites),Arrays.asList(sslEngine.getSupportedCipherSuites()));
         }
-
     }
-
+    
     @Override
     protected void doStop() throws Exception
     {
@@ -480,6 +413,7 @@ public class SslContextFactory extends AbstractLifeCycle
         super.doStop();
         _certHosts.clear();
         _certWilds.clear();
+        _aliasX509.clear();
     }
 
     /**
@@ -1735,8 +1669,6 @@ public class SslContextFactory extends AbstractLifeCycle
                 _trustStoreResource);
     }
 
-
-
     protected class Factory
     {
         final KeyStore _keyStore;
@@ -1761,15 +1693,11 @@ public class SslContextFactory extends AbstractLifeCycle
     class AliasSNIMatcher extends SNIMatcher
     {
         private String _host;
-        private String _alias;
-        private List<String> _hosts;
-        private List<String> _wilds;
+        private X509 _x509;
 
         AliasSNIMatcher()
         {
             super(StandardConstants.SNI_HOST_NAME);
-            _hosts = Collections.emptyList();
-            _wilds = Collections.emptyList();
         }
 
         @Override
@@ -1781,54 +1709,38 @@ public class SslContextFactory extends AbstractLifeCycle
             if (serverName instanceof SNIHostName)
             {
                 String host = _host = ((SNIHostName)serverName).getAsciiName();
-
-                // If we don't have a SNI host, or didn't see any certificate aliases,
-                // just say true as it will either somehow work or fail elsewhere.
-                if (_certHosts.isEmpty())
-                    return true;
-
+                host=StringUtil.asciiToLowerCase(host);
+                
                 // Try an exact match
-                _alias = _certHosts.get(host);
-                if (_alias!=null)
+                _x509 = _certHosts.get(host);
+                
+                // Else try an exact wild match
+                if (_x509==null)
                 {
-                    _hosts = _certHosts.entrySet().stream()
-                            .filter(entry -> _alias.equals(entry.getValue()))
-                            .map(Map.Entry::getKey)
-                            .collect(Collectors.toList());
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("SNI matched {}->{}->{}",host,_alias,_hosts);
-                }
-
-                // Try wildcard matches.
-                if (_alias==null)
-                {
-                    _alias = _certWilds.get(host);
-                    if (_alias==null)
+                    _x509 = _certWilds.get(host);
+                    
+                    // Else try an 1 deep wild match
+                    if (_x509==null)
                     {
                         int dot=host.indexOf('.');
                         if (dot>=0)
                         {
-                            host=host.substring(dot+1);
-                            _alias = _certWilds.get(host);
+                            String domain=host.substring(dot+1);
+                            _x509 = _certWilds.get(domain);
                         }
                     }
                 }
-                if (_alias!=null)
-                {
-                    _wilds = _certWilds.entrySet().stream()
-                            .filter(entry -> _alias.equals(entry.getValue()))
-                            .map(Map.Entry::getKey)
-                            .collect(Collectors.toList());
-                    if (LOG.isDebugEnabled())
-                        LOG.debug("SNI wild match {}->{}->{}",host,_alias,_wilds);
-                    return true;
-                }
-            }
 
-            if (LOG.isDebugEnabled())
+                if (LOG.isDebugEnabled())
+                    LOG.debug("SNI matched {}->{}",host,_x509);
+                
+            }
+            else if (LOG.isDebugEnabled())
                 LOG.debug("SNI no match for {}", serverName);
 
             // Return true and allow the KeyManager to accept or reject when choosing a certificate.
+            // If we don't have a SNI host, or didn't see any certificate aliases,
+            // just say true as it will either somehow work or fail elsewhere.
             return true;
         }
 
@@ -1837,19 +1749,9 @@ public class SslContextFactory extends AbstractLifeCycle
             return _host;
         }
 
-        public String getAlias()
+        public X509 getX509()
         {
-            return _alias;
-        }
-
-        public List<String> getHosts()
-        {
-            return _hosts;
-        }
-
-        public List<String> getWilds()
-        {
-            return _wilds;
+            return _x509;
         }
     }
 }
