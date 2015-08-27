@@ -19,7 +19,6 @@
 package org.eclipse.jetty.server;
 
 import java.security.cert.X509Certificate;
-import java.util.List;
 
 import javax.net.ssl.SSLContext;
 import javax.net.ssl.SSLEngine;
@@ -107,13 +106,12 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
             String name = request.getServerName();
             @SuppressWarnings("unchecked")
             X509 x509 = (X509)sslSession.getValue(SniX509ExtendedKeyManager.SNI_X509);
-            
+
             if (x509!=null && !x509.matches(name))
             {
                 LOG.warn("Host {} does not match SNI {}",name,x509);
                 throw new BadMessageException(400,"Host does not match SNI");
             }
-
 
             if (LOG.isDebugEnabled())
                 LOG.debug("Host {} matched SNI {}",name,x509);

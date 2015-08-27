@@ -299,7 +299,7 @@ public class SslContextFactory extends AbstractLifeCycle
     {
         return _aliasX509.get(alias);
     }
-    
+
     /**
      * Create the SSLContext object and start the lifecycle
      * @see org.eclipse.jetty.util.component.AbstractLifeCycle#doStart()
@@ -359,7 +359,7 @@ public class SslContextFactory extends AbstractLifeCycle
                             }
                             X509 x509 = new X509(alias,x509C);
                             _aliasX509.put(alias,x509);
-                            
+
                             if (_validateCerts)
                             {
                                 CertificateValidator validator = new CertificateValidator(trustStore, crls);
@@ -371,7 +371,7 @@ public class SslContextFactory extends AbstractLifeCycle
                             }
 
                             LOG.info("x509={} for {}",x509,this);
-                            
+
                             for (String h:x509.getHosts())
                                 _certHosts.put(h,x509);
                             for (String w:x509.getWilds())
@@ -405,7 +405,7 @@ public class SslContextFactory extends AbstractLifeCycle
             LOG.debug("Selected Ciphers   {} of {}",Arrays.asList(_selectedCipherSuites),Arrays.asList(sslEngine.getSupportedCipherSuites()));
         }
     }
-    
+
     @Override
     protected void doStop() throws Exception
     {
@@ -1710,15 +1710,15 @@ public class SslContextFactory extends AbstractLifeCycle
             {
                 String host = _host = ((SNIHostName)serverName).getAsciiName();
                 host=StringUtil.asciiToLowerCase(host);
-                
+
                 // Try an exact match
                 _x509 = _certHosts.get(host);
-                
+
                 // Else try an exact wild match
                 if (_x509==null)
                 {
                     _x509 = _certWilds.get(host);
-                    
+
                     // Else try an 1 deep wild match
                     if (_x509==null)
                     {
@@ -1733,10 +1733,12 @@ public class SslContextFactory extends AbstractLifeCycle
 
                 if (LOG.isDebugEnabled())
                     LOG.debug("SNI matched {}->{}",host,_x509);
-                
             }
-            else if (LOG.isDebugEnabled())
-                LOG.debug("SNI no match for {}", serverName);
+            else
+            {
+                if (LOG.isDebugEnabled())
+                    LOG.debug("SNI no match for {}", serverName);
+            }
 
             // Return true and allow the KeyManager to accept or reject when choosing a certificate.
             // If we don't have a SNI host, or didn't see any certificate aliases,
