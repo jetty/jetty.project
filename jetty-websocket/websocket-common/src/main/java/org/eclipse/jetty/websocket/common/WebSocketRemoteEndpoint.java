@@ -436,9 +436,7 @@ public class WebSocketRemoteEndpoint implements RemoteEndpoint
         return batchMode;
     }
 
-    // Only the JSR needs to have this method exposed.
-    // In the Jetty implementation the batching is set
-    // at the moment of opening the session.
+    @Override
     public void setBatchMode(BatchMode batchMode)
     {
         this.batchMode = batchMode;
