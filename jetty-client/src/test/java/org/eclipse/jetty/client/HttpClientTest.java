@@ -881,9 +881,16 @@ public class HttpClientTest extends AbstractHttpClientServerTest
     @Test
     public void testConnectHostWithMultipleAddresses() throws Exception
     {
-        // Likely that the DNS for google.com returns multiple addresses.
         String host = "google.com";
-        Assume.assumeTrue(InetAddress.getAllByName(host).length > 1);
+        try
+        {
+            // Likely that the DNS for google.com returns multiple addresses.
+            Assume.assumeTrue(InetAddress.getAllByName(host).length > 1);
+        }
+        catch (Throwable x)
+        {
+            Assume.assumeNoException(x);
+        }
 
         startClient();
         client.setFollowRedirects(false); // Avoid redirects from 80 to 443.
