@@ -76,10 +76,27 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
             process(connection);
     }
 
-    @SuppressWarnings("unchecked")
     public C acquire()
     {
-        return (C)connectionPool.acquire();
+        while (true)
+        {
+            @SuppressWarnings("unchecked")
+            C c = (C)connectionPool.acquire();
+            if (isValid(c))
+                return c;
+            else
+                c.close();
+        }
+    }
+
+    private boolean isValid(Connection c)
+    {
+        if (getHttpClient().isValidateConnections())
+        {
+            if (c instanceof Validateable)
+                return ((Validateable)c).validate();
+        }
+        return true;
     }
 
     /**
@@ -143,7 +160,10 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         {
             if (connectionPool.isActive(connection))
             {
-                process(connection);
+                if (isValid(connection))
+                    process(connection);
+                else
+                    connection.close();
             }
             else
             {

@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -26,17 +27,19 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
+import org.eclipse.jetty.client.Validateable;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.AbstractConnection;
+import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
-public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, Sweeper.Sweepable
+public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, Sweeper.Sweepable, Validateable
 {
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
@@ -98,7 +101,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     protected boolean onReadTimeout()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout", this);
+            LOG.debug("Idle timeout {}", this);
         close(new TimeoutException());
         return false;
     }
@@ -166,11 +169,35 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         if (!closed.get())
             return false;
-
         if (sweeps.incrementAndGet() < 4)
             return false;
-
         return true;
+    }
+
+    @Override
+    public boolean validate()
+    {
+        ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
+        ByteBuffer buffer = byteBufferPool.acquire(1, true);
+        try
+        {
+            EndPoint endPoint = getEndPoint();
+            int filled = endPoint.fill(buffer);
+            if (LOG.isDebugEnabled())
+                LOG.debug("Validated {} {}", filled, this);
+            // Invalid if we read -1 or garbage bytes.
+            return filled == 0;
+        }
+        catch (Throwable x)
+        {
+            if (LOG.isDebugEnabled())
+                LOG.debug("Could not validate connection " + this, x);
+            return false;
+        }
+        finally
+        {
+            byteBufferPool.release(buffer);
+        }
     }
 
     @Override

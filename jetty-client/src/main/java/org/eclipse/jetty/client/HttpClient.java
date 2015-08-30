@@ -144,6 +144,7 @@ public class HttpClient extends ContainerLifeCycle
     private volatile HttpField encodingField;
     private volatile boolean removeIdleDestinations = false;
     private volatile boolean connectBlocking = false;
+    private volatile boolean validateConnections = false;
 
     /**
      * Creates a {@link HttpClient} instance that can perform requests to non-TLS destinations only
@@ -1023,6 +1024,32 @@ public class HttpClient extends ContainerLifeCycle
     public void setConnectBlocking(boolean connectBlocking)
     {
         this.connectBlocking = connectBlocking;
+    }
+
+    /**
+     * @return whether connections are validated before sending a request
+     * @see #setValidateConnections(boolean)
+     */
+    public boolean isValidateConnections()
+    {
+        return validateConnections;
+    }
+
+    /**
+     * <p>Whether connections are validated before sending a request.</p>
+     * <p>This is a best-effort attempt to validate that the connection
+     * onto which requests are sent is valid before sending the request.</p>
+     * <p>The validation is performed only if the underlying transport
+     * implementation supports validating connections before their use
+     * (some transport implementation may not be able to perform such
+     * check).</p>
+     *
+     * @param validateConnections whether connections are validated before sending a request.
+     * @see #isValidateConnections()
+     */
+    public void setValidateConnections(boolean validateConnections)
+    {
+        this.validateConnections = validateConnections;
     }
 
     /**
