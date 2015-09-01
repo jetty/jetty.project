@@ -44,7 +44,7 @@ import org.eclipse.jetty.util.thread.Sweeper;
 @ManagedObject("The connection pool")
 public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
 {
-    protected static final Logger LOG = Log.getLogger(ConnectionPool.class);
+    private static final Logger LOG = Log.getLogger(ConnectionPool.class);
 
     private final AtomicInteger connectionCount = new AtomicInteger();
     private final ReentrantLock lock = new ReentrantLock();
@@ -129,7 +129,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
 
                         idleCreated(connection);
 
-                        requester.succeeded();
+                        proceed();
                     }
 
                     @Override
@@ -150,11 +150,15 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         }
     }
 
+    protected void proceed()
+    {
+        requester.succeeded();
+    }
+
     protected void idleCreated(Connection connection)
     {
         boolean idle;
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock();
         try
         {
             // Use "cold" new connections as last.
@@ -162,7 +166,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         }
         finally
         {
-            lock.unlock();
+            unlock();
         }
 
         idle(connection, idle);
@@ -172,8 +176,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
     {
         boolean acquired;
         Connection connection;
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock();
         try
         {
             connection = idleConnections.pollFirst();
@@ -183,7 +186,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         }
         finally
         {
-            lock.unlock();
+            unlock();
         }
 
         if (acquired)
@@ -209,22 +212,26 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
     public boolean release(Connection connection)
     {
         boolean idle;
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock();
         try
         {
             if (!activeConnections.remove(connection))
                 return false;
             // Make sure we use "hot" connections first.
-            idle = idleConnections.offerFirst(connection);
+            idle = offerIdle(connection);
         }
         finally
         {
-            lock.unlock();
+            unlock();
         }
 
         released(connection);
         return idle(connection, idle);
+    }
+
+    protected boolean offerIdle(Connection connection)
+    {
+        return idleConnections.offerFirst(connection);
     }
 
     protected boolean idle(Connection connection, boolean idle)
@@ -250,10 +257,14 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
 
     public boolean remove(Connection connection)
     {
+        return remove(connection, false);
+    }
+
+    protected boolean remove(Connection connection, boolean force)
+    {
         boolean activeRemoved;
         boolean idleRemoved;
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock();
         try
         {
             activeRemoved = activeConnections.remove(connection);
@@ -261,12 +272,12 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         }
         finally
         {
-            lock.unlock();
+            unlock();
         }
 
         if (activeRemoved)
             released(connection);
-        boolean removed = activeRemoved || idleRemoved;
+        boolean removed = activeRemoved || idleRemoved || force;
         if (removed)
         {
             int pooled = connectionCount.decrementAndGet();
@@ -278,29 +289,27 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
 
     public boolean isActive(Connection connection)
     {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock();
         try
         {
             return activeConnections.contains(connection);
         }
         finally
         {
-            lock.unlock();
+            unlock();
         }
     }
 
     public boolean isIdle(Connection connection)
     {
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock();
         try
         {
             return idleConnections.contains(connection);
         }
         finally
         {
-            lock.unlock();
+            unlock();
         }
     }
 
@@ -313,8 +322,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
     {
         List<Connection> idles = new ArrayList<>();
         List<Connection> actives = new ArrayList<>();
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock();
         try
         {
             idles.addAll(idleConnections);
@@ -324,7 +332,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         }
         finally
         {
-            lock.unlock();
+            unlock();
         }
 
         connectionCount.set(0);
@@ -348,8 +356,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
     {
         List<Connection> actives = new ArrayList<>();
         List<Connection> idles = new ArrayList<>();
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock();
         try
         {
             actives.addAll(activeConnections);
@@ -357,7 +364,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         }
         finally
         {
-            lock.unlock();
+            unlock();
         }
 
         ContainerLifeCycle.dumpObject(out, this);
@@ -368,8 +375,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
     public boolean sweep()
     {
         List<Sweeper.Sweepable> toSweep = new ArrayList<>();
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock();
         try
         {
             for (Connection connection : getActiveConnections())
@@ -380,7 +386,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         }
         finally
         {
-            lock.unlock();
+            unlock();
         }
 
         for (Sweeper.Sweepable candidate : toSweep)
@@ -400,13 +406,22 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         return false;
     }
 
+    protected void lock()
+    {
+        lock.lock();
+    }
+
+    protected void unlock()
+    {
+        lock.unlock();
+    }
+
     @Override
     public String toString()
     {
         int activeSize;
         int idleSize;
-        final ReentrantLock lock = this.lock;
-        lock.lock();
+        lock();
         try
         {
             activeSize = activeConnections.size();
@@ -414,7 +429,7 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         }
         finally
         {
-            lock.unlock();
+            unlock();
         }
 
         return String.format("%s[c=%d/%d,a=%d,i=%d]",

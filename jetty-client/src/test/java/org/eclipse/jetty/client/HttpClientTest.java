@@ -74,9 +74,7 @@ import org.eclipse.jetty.http.HttpField;
 import org.eclipse.jetty.http.HttpHeader;
 import org.eclipse.jetty.http.HttpHeaderValue;
 import org.eclipse.jetty.http.HttpMethod;
-import org.eclipse.jetty.http.HttpStatus;
 import org.eclipse.jetty.http.HttpVersion;
-import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.handler.AbstractHandler;
 import org.eclipse.jetty.toolchain.test.TestingDir;
 import org.eclipse.jetty.toolchain.test.annotation.Slow;
@@ -1539,116 +1537,6 @@ public class HttpClientTest extends AbstractHttpClientServerTest
                 listener.get(5, TimeUnit.SECONDS);
             }
         }
-    }
-
-    @Test
-    public void testServerClosesConnectionAfterRedirect() throws Exception
-    {
-        start(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-                if (target.endsWith("/redirect"))
-                {
-                    response.setStatus(HttpStatus.TEMPORARY_REDIRECT_307);
-                    response.setContentLength(0);
-                    response.setHeader(HttpHeader.LOCATION.asString(), scheme + "://localhost:" + connector.getLocalPort() + "/");
-                    response.flushBuffer();
-                    baseRequest.getHttpChannel().getEndPoint().shutdownOutput();
-                }
-                else
-                {
-                    response.setStatus(HttpStatus.OK_200);
-                    response.setContentLength(0);
-                    response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
-                }
-            }
-        });
-
-        client.setValidateConnections(true);
-
-        ContentResponse response = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .path("/redirect")
-                .send();
-        Assert.assertEquals(200, response.getStatus());
-    }
-
-    @Test
-    public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithConnectionCloseHeader() throws Exception
-    {
-        testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-                response.setStatus(HttpStatus.OK_200);
-                response.setContentLength(0);
-                response.setHeader(HttpHeader.CONNECTION.asString(), HttpHeaderValue.CLOSE.asString());
-            }
-        });
-    }
-
-    @Test
-    public void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnectionsWithoutConnectionCloseHeader() throws Exception
-    {
-        testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(new AbstractHandler()
-        {
-            @Override
-            public void handle(String target, org.eclipse.jetty.server.Request baseRequest, HttpServletRequest request, HttpServletResponse response) throws IOException, ServletException
-            {
-                baseRequest.setHandled(true);
-                response.setStatus(HttpStatus.OK_200);
-                response.setContentLength(0);
-                response.flushBuffer();
-                baseRequest.getHttpChannel().getEndPoint().shutdownOutput();
-            }
-        });
-    }
-
-    private void testServerClosesConnectionAfterResponseWithQueuedRequestWithMaxConnections(Handler handler) throws Exception
-    {
-        start(handler);
-
-        client.setValidateConnections(true);
-        client.setMaxConnectionsPerDestination(1);
-
-        final CountDownLatch latch = new CountDownLatch(1);
-        Request request1 = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .path("/one")
-                .onRequestBegin(r ->
-                {
-                    try
-                    {
-                        latch.await();
-                    }
-                    catch (InterruptedException x)
-                    {
-                        r.abort(x);
-                    }
-                });
-        FutureResponseListener listener1 = new FutureResponseListener(request1);
-        request1.send(listener1);
-
-        Request request2 = client.newRequest("localhost", connector.getLocalPort())
-                .scheme(scheme)
-                .path("/two");
-        FutureResponseListener listener2 = new FutureResponseListener(request2);
-        request2.send(listener2);
-
-        // Now we have one request about to be sent, and one queued.
-
-        latch.countDown();
-
-        ContentResponse response1 = listener1.get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response1.getStatus());
-
-        ContentResponse response2 = listener2.get(5, TimeUnit.SECONDS);
-        Assert.assertEquals(200, response2.getStatus());
     }
 
     private void consume(InputStream input, boolean eof) throws IOException

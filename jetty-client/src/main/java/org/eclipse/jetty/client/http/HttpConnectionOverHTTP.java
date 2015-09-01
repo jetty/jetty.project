@@ -18,7 +18,6 @@
 
 package org.eclipse.jetty.client.http;
 
-import java.nio.ByteBuffer;
 import java.nio.channels.AsynchronousCloseException;
 import java.util.concurrent.TimeoutException;
 import java.util.concurrent.atomic.AtomicBoolean;
@@ -27,19 +26,17 @@ import java.util.concurrent.atomic.AtomicInteger;
 import org.eclipse.jetty.client.HttpConnection;
 import org.eclipse.jetty.client.HttpDestination;
 import org.eclipse.jetty.client.HttpExchange;
-import org.eclipse.jetty.client.Validateable;
 import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Request;
 import org.eclipse.jetty.client.api.Response;
 import org.eclipse.jetty.io.AbstractConnection;
-import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.EndPoint;
 import org.eclipse.jetty.util.Promise;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.thread.Sweeper;
 
-public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, Sweeper.Sweepable, Validateable
+public class HttpConnectionOverHTTP extends AbstractConnection implements Connection, Sweeper.Sweepable
 {
     private static final Logger LOG = Log.getLogger(HttpConnectionOverHTTP.class);
 
@@ -144,10 +141,10 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
             getHttpDestination().close(this);
             getEndPoint().shutdownOutput();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} oshut", this);
+                LOG.debug("Shutdown {}", this);
             getEndPoint().close();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} closed", this);
+                LOG.debug("Closed {}", this);
 
             abort(failure);
         }
@@ -172,32 +169,6 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
         if (sweeps.incrementAndGet() < 4)
             return false;
         return true;
-    }
-
-    @Override
-    public boolean validate()
-    {
-        ByteBufferPool byteBufferPool = getHttpDestination().getHttpClient().getByteBufferPool();
-        ByteBuffer buffer = byteBufferPool.acquire(1, true);
-        try
-        {
-            EndPoint endPoint = getEndPoint();
-            int filled = endPoint.fill(buffer);
-            if (LOG.isDebugEnabled())
-                LOG.debug("Validated {} {}", filled, this);
-            // Invalid if we read -1 or garbage bytes.
-            return filled == 0;
-        }
-        catch (Throwable x)
-        {
-            if (LOG.isDebugEnabled())
-                LOG.debug("Could not validate connection " + this, x);
-            return false;
-        }
-        finally
-        {
-            byteBufferPool.release(buffer);
-        }
     }
 
     @Override

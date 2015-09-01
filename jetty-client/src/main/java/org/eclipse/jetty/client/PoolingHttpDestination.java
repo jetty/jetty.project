@@ -71,32 +71,20 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
     {
         if (getHttpExchanges().isEmpty())
             return;
+        process();
+    }
+
+    @SuppressWarnings("unchecked")
+    public C acquire()
+    {
+        return (C)connectionPool.acquire();
+    }
+
+    private void process()
+    {
         C connection = acquire();
         if (connection != null)
             process(connection);
-    }
-
-    public C acquire()
-    {
-        while (true)
-        {
-            @SuppressWarnings("unchecked")
-            C c = (C)connectionPool.acquire();
-            if (isValid(c))
-                return c;
-            else
-                c.close();
-        }
-    }
-
-    private boolean isValid(Connection c)
-    {
-        if (getHttpClient().isValidateConnections())
-        {
-            if (c instanceof Validateable)
-                return ((Validateable)c).validate();
-        }
-        return true;
     }
 
     /**
@@ -154,21 +142,21 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
         @SuppressWarnings("unchecked")
         C connection = (C)c;
         if (LOG.isDebugEnabled())
-            LOG.debug("{} released", connection);
+            LOG.debug("Released {}", connection);
         HttpClient client = getHttpClient();
         if (client.isRunning())
         {
             if (connectionPool.isActive(connection))
             {
-                if (isValid(connection))
-                    process(connection);
+                if (connectionPool.release(connection))
+                    send();
                 else
                     connection.close();
             }
             else
             {
                 if (LOG.isDebugEnabled())
-                    LOG.debug("{} explicit", connection);
+                    LOG.debug("Released explicit {}", connection);
             }
         }
         else
@@ -204,9 +192,7 @@ public abstract class PoolingHttpDestination<C extends Connection> extends HttpD
             // We need to execute queued requests even if this connection failed.
             // We may create a connection that is not needed, but it will eventually
             // idle timeout, so no worries.
-            C newConnection = acquire();
-            if (newConnection != null)
-                process(newConnection);
+            process();
         }
     }
 

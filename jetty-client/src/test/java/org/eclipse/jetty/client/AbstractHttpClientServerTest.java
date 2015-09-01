@@ -21,6 +21,7 @@ package org.eclipse.jetty.client;
 import java.util.Arrays;
 import java.util.Collection;
 
+import org.eclipse.jetty.client.http.HttpClientTransportOverHTTP;
 import org.eclipse.jetty.http.HttpScheme;
 import org.eclipse.jetty.server.Handler;
 import org.eclipse.jetty.server.NetworkConnector;
@@ -85,9 +86,14 @@ public abstract class AbstractHttpClientServerTest
 
     protected void startClient() throws Exception
     {
+        startClient(new HttpClientTransportOverHTTP(1));
+    }
+
+    protected void startClient(HttpClientTransport transport) throws Exception
+    {
         QueuedThreadPool clientThreads = new QueuedThreadPool();
         clientThreads.setName("client");
-        client = new HttpClient(sslContextFactory);
+        client = new HttpClient(transport, sslContextFactory);
         client.setExecutor(clientThreads);
         client.start();
     }
