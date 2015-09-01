@@ -21,9 +21,9 @@ package org.eclipse.jetty.client;
 import java.io.Closeable;
 import java.io.IOException;
 import java.util.ArrayList;
+import java.util.Deque;
 import java.util.List;
-import java.util.concurrent.BlockingDeque;
-import java.util.concurrent.BlockingQueue;
+import java.util.Queue;
 import java.util.concurrent.LinkedBlockingDeque;
 import java.util.concurrent.atomic.AtomicInteger;
 import java.util.concurrent.locks.ReentrantLock;
@@ -51,8 +51,8 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
     private final Destination destination;
     private final int maxConnections;
     private final Callback requester;
-    private final BlockingDeque<Connection> idleConnections;
-    private final BlockingQueue<Connection> activeConnections;
+    private final Deque<Connection> idleConnections;
+    private final Queue<Connection> activeConnections;
 
     public ConnectionPool(Destination destination, int maxConnections, Callback requester)
     {
@@ -81,12 +81,12 @@ public class ConnectionPool implements Closeable, Dumpable, Sweeper.Sweepable
         return activeConnections.size();
     }
 
-    public BlockingQueue<Connection> getIdleConnections()
+    public Queue<Connection> getIdleConnections()
     {
         return idleConnections;
     }
 
-    public BlockingQueue<Connection> getActiveConnections()
+    public Queue<Connection> getActiveConnections()
     {
         return activeConnections;
     }
