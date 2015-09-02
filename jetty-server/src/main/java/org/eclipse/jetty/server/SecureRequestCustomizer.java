@@ -78,23 +78,26 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
     }
 
     /**
-     * <p>Customizes the request attributes to be set for SSL requests.</p>
-     * <p>The requirements of the Servlet specs are:</p>
+     * <p>
+     * Customizes the request attributes to be set for SSL requests.
+     * </p>
+     * <p>
+     * The requirements of the Servlet specs are:
+     * </p>
      * <ul>
-     * <li> an attribute named "javax.servlet.request.ssl_session_id" of type
-     * String (since Servlet Spec 3.0).</li>
-     * <li> an attribute named "javax.servlet.request.cipher_suite" of type
-     * String.</li>
-     * <li> an attribute named "javax.servlet.request.key_size" of type Integer.</li>
-     * <li> an attribute named "javax.servlet.request.X509Certificate" of type
-     * java.security.cert.X509Certificate[]. This is an array of objects of type
-     * X509Certificate, the order of this array is defined as being in ascending
-     * order of trust. The first certificate in the chain is the one set by the
-     * client, the next is the one used to authenticate the first, and so on.
-     * </li>
+     * <li>an attribute named "javax.servlet.request.ssl_session_id" of type String (since Servlet Spec 3.0).</li>
+     * <li>an attribute named "javax.servlet.request.cipher_suite" of type String.</li>
+     * <li>an attribute named "javax.servlet.request.key_size" of type Integer.</li>
+     * <li>an attribute named "javax.servlet.request.X509Certificate" of type java.security.cert.X509Certificate[]. This
+     * is an array of objects of type X509Certificate, the order of this array is defined as being in ascending order of
+     * trust. The first certificate in the chain is the one set by the client, the next is the one used to authenticate
+     * the first, and so on.</li>
      * </ul>
-     *
-     * @param request HttpRequest to be customized.
+     * 
+     * @param sslEngine
+     *            the sslEngine to be customized.
+     * @param request
+     *            HttpRequest to be customized.
      */
     public void customize(SSLEngine sslEngine, Request request)
     {
@@ -104,7 +107,6 @@ public class SecureRequestCustomizer implements HttpConfiguration.Customizer
         if (_sniHostCheck)
         {
             String name = request.getServerName();
-            @SuppressWarnings("unchecked")
             X509 x509 = (X509)sslSession.getValue(SniX509ExtendedKeyManager.SNI_X509);
 
             if (x509!=null && !x509.matches(name))
