@@ -1,3 +1,5 @@
+jetty-9.4.0-SNAPSHOT
+
 jetty-9.3.3.v20150827 - 27 August 2015
  + 470311 Introduce a proxy-protocol module.
  + 471055 Restore legacy/experimental WebSocket extensions (deflate-frame)
