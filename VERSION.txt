@@ -1,4 +1,14 @@
-jetty-9.4.0-SNAPSHOT
+jetty-9.3.4.RC0 - 03 September 2015
+ + 428474 Expose batch mode in the Jetty WebSocket API
+ + 472082 isOpen returns true on CLOSING Connection
+ + 474936 WebSocketSessions are not always cleaned out from openSessions
+ + 475209 WebSocketServerFactory should not hand null object to
+   DecoratedObjectFactory
+ + 476023 Incorrect trimming of WebSocket close reason
+ + 476049 When using WebSocket Session.close() there should be no status code
+   or reason sent
+ + 476170 Support servers that close connections without sending Connection:
+   close header.
 
 jetty-9.3.3.v20150827 - 27 August 2015
  + 470311 Introduce a proxy-protocol module.
