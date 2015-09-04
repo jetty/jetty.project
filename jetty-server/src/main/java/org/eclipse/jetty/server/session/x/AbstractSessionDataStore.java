@@ -27,17 +27,17 @@ package org.eclipse.jetty.server.session.x;
 public abstract class AbstractSessionDataStore implements SessionDataStore
 {
     
-    public abstract void doStore() throws Exception;
+    public abstract void doStore(SessionKey key, SessionData data) throws Exception;
 
     /** 
      * @see org.eclipse.jetty.server.session.x.SessionDataStore#store(java.lang.String, org.eclipse.jetty.server.session.x.SessionData)
      */
     @Override
-    public void store(String id, SessionData data) throws Exception
+    public void store(SessionKey key, SessionData data) throws Exception
     {
         try
         {
-            doStore();
+            doStore(key, data);
         }
         finally
         {

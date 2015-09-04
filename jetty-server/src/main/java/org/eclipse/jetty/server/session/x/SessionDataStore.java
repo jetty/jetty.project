@@ -33,7 +33,7 @@ public interface SessionDataStore
      * @return
      * @throws Exception
      */
-    public SessionData load (String id) throws Exception;
+    public SessionData load (SessionKey key) throws Exception;
     
     
     /**
@@ -51,7 +51,7 @@ public interface SessionDataStore
      * @param data
      * @throws Exception
      */
-    public void store (String id, SessionData data) throws Exception;
+    public void store (SessionKey key, SessionData data) throws Exception;
     
     
     
@@ -61,8 +61,17 @@ public interface SessionDataStore
      * @return
      * @throws Exception
      */
-    public boolean delete (String id) throws Exception;
+    public boolean delete (SessionKey key) throws Exception;
     
+    
+    
+    
+    /**
+     * Called periodically, this method should search the data store
+     * for sessions that have been expired for a 'reasonable' amount 
+     * of time.
+     */
+    public void scavenge ();
     
     
 }

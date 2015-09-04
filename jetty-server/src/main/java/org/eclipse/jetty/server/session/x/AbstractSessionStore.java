@@ -32,15 +32,13 @@ public abstract class AbstractSessionStore implements SessionStore
 
     public abstract Session newSession (SessionData data);
 
-    public abstract Session doGet(String id);
+    public abstract Session doGet(SessionKey key);
     
-    public abstract Session doPutIfAbsent (String id, Session session);
+    public abstract void doPut (SessionKey key, Session session);
     
-    public abstract void doPut (String id, Session session);
+    public abstract boolean doExists (SessionKey key);
     
-    public abstract boolean doExists (String id);
-    
-    public abstract void doDelete (String id);
+    public abstract void doDelete (SessionKey key);
     
    
     public AbstractSessionStore ()
@@ -69,17 +67,17 @@ public abstract class AbstractSessionStore implements SessionStore
      * @see org.eclipse.jetty.server.session.x.SessionStore#get(java.lang.String)
      */
     @Override
-    public Session get(String id) throws Exception
+    public Session get(SessionKey key) throws Exception
     {
         //look locally
-        Session session = doGet(id);
+        Session session = doGet(key);
         
         //not in session store, load the data for the session if possible
         if (session == null && _sessionDataStore != null)
         {
-            SessionData data = _sessionDataStore.load(id);
+            SessionData data = _sessionDataStore.load(key);
             session = newSession(data);
-            doPut(id, session);
+            doPut(key, session);
         }
         return session;
     }
@@ -92,16 +90,16 @@ public abstract class AbstractSessionStore implements SessionStore
      * @see org.eclipse.jetty.server.session.x.SessionStore#put(java.lang.String, org.eclipse.jetty.server.session.x.Session)
      */
     @Override
-    public void put(String id, Session session) throws Exception
+    public void put(SessionKey key, Session session) throws Exception
     {
         //if the session is already in our cache, then we want to write through any changes
-        if (doExists(id))
+        if (doExists(key))
         {
             //if the session data has changed, or the cache is considered stale, write it to any backing store
             if ((session.getSessionData().isDirty() || isStale(session)) && _sessionDataStore != null)
             {
                 session.willPassivate();
-                _sessionDataStore.store(id, session.getSessionData());
+                _sessionDataStore.store(key, session.getSessionData());
                 session.didActivate();
             }
         }
@@ -111,10 +109,10 @@ public abstract class AbstractSessionStore implements SessionStore
             if (_sessionDataStore != null)
             {
                 session.willPassivate();
-                _sessionDataStore.store(id, session.getSessionData());
+                _sessionDataStore.store(SessionKey.getKey(session.getSessionData()), session.getSessionData());
                 session.didActivate();
             }
-            doPut(id,session);
+            doPut(key,session);
         }
 
     }
@@ -127,21 +125,11 @@ public abstract class AbstractSessionStore implements SessionStore
      * @see org.eclipse.jetty.server.session.x.SessionStore#exists(java.lang.String)
      */
     @Override
-    public boolean exists(String id)
+    public boolean exists(SessionKey key)
     {
-        return doExists(id);
+        return doExists(key);
     }
 
-    /** 
-     *TODO does this mean absent in the Session cache or the backing store???
-     *
-     * @see org.eclipse.jetty.server.session.x.SessionStore#putIfAbsent(java.lang.String, org.eclipse.jetty.server.session.x.Session)
-     */
-    @Override
-    public Session putIfAbsent(String id, Session session) throws Exception
-    {
-        return doPutIfAbsent(id, session);
-    }
 
     /** 
      * Remove a session object from this store and from any backing store.
@@ -149,13 +137,13 @@ public abstract class AbstractSessionStore implements SessionStore
      * @see org.eclipse.jetty.server.session.x.SessionStore#delete(java.lang.String)
      */
     @Override
-    public boolean delete(String id) throws Exception
+    public boolean delete(SessionKey key) throws Exception
     {
         boolean deleted =  true;
         //TODO synchronization???
         if (_sessionDataStore != null)
-            deleted = _sessionDataStore.delete(id);
-        doDelete(id);
+            deleted = _sessionDataStore.delete(key);
+        doDelete(key);
         return deleted;
     }
 

@@ -31,7 +31,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.x.SessionDataStore#load(java.lang.String)
      */
     @Override
-    public SessionData load(String id) throws Exception
+    public SessionData load(SessionKey key) throws Exception
     {
         return null;
     }
@@ -49,7 +49,7 @@ public class NullSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.x.SessionDataStore#delete(java.lang.String)
      */
     @Override
-    public boolean delete(String id) throws Exception
+    public boolean delete(SessionKey key) throws Exception
     {
        return true;
     }
@@ -58,9 +58,18 @@ public class NullSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.x.AbstractSessionDataStore#doStore()
      */
     @Override
-    public void doStore() throws Exception
+    public void doStore(SessionKey key, SessionData data) throws Exception
     {
         //noop
+    }
+
+    /** 
+     * @see org.eclipse.jetty.server.session.x.SessionDataStore#scavenge()
+     */
+    @Override
+    public void scavenge()
+    {
+       //noop
     }
 
 }

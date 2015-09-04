@@ -29,6 +29,7 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.TimeUnit;
 
 import javax.servlet.SessionCookieConfig;
 import javax.servlet.SessionTrackingMode;
@@ -54,6 +55,8 @@ import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 import org.eclipse.jetty.util.statistic.CounterStatistic;
 import org.eclipse.jetty.util.statistic.SampleStatistic;
+import org.eclipse.jetty.util.thread.ScheduledExecutorScheduler;
+import org.eclipse.jetty.util.thread.Scheduler;
 
 /**
  * AbstractSessionManager
@@ -62,8 +65,7 @@ import org.eclipse.jetty.util.statistic.SampleStatistic;
  */
 public class SessionManager extends ContainerLifeCycle implements org.eclipse.jetty.server.SessionManager
 {
-    final static Logger __log =  Log.getLogger(SessionManager.class);// TODO SessionHandler.LOG
-            
+    private  final static Logger LOG = Log.getLogger("org.eclipse.jetty.server.session");
             
     public Set<SessionTrackingMode> __defaultSessionTrackingModes =
         Collections.unmodifiableSet(
@@ -130,6 +132,37 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
     protected final CounterStatistic _sessionsStats = new CounterStatistic();
     protected final SampleStatistic _sessionTimeStats = new SampleStatistic();
+
+
+    protected Scheduler _scheduler; //scheduler for scavenging
+    protected boolean _ownScheduler;  //did we create our own scheduler or reuse common one
+    protected Scheduler.Task _task; //scavenge task
+    
+    
+    
+    /**
+     * Scavenger
+     *
+     */
+    protected class Scavenger implements Runnable
+    {
+
+        @Override
+        public void run()
+        {
+           try
+           {
+               scavenge();
+           }
+           finally
+           {
+               if (_scheduler != null && _scheduler.isRunning())
+                   _task = _scheduler.schedule(this, _scavengeIntervalMs, TimeUnit.MILLISECONDS);
+           }
+        }
+    }
+
+    
     
     /* ------------------------------------------------------------ */
     public SessionManager()
@@ -224,7 +257,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
         catch (Exception e)
         {
-            __log.warn(e);
+            LOG.warn(e);
         }
     }
 
@@ -232,6 +265,11 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     @Override
     public void doStart() throws Exception
     {
+        if (_sessionStore == null)
+            throw new IllegalStateException("No session store configured");
+        
+        
+        
         _context=ContextHandler.getCurrentContext();
         _loader=Thread.currentThread().getContextClassLoader();
 
@@ -300,8 +338,21 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
                 _checkingRemoteSessionIdEncoding=Boolean.parseBoolean(tmp);
         }
         
-        if (_sessionStore == null)
-            throw new IllegalStateException("No session store configured");
+      
+        
+        //try and use a common scheduler, fallback to own
+        _scheduler = server.getBean(Scheduler.class);
+        if (_scheduler == null)
+        {
+            _scheduler = new ScheduledExecutorScheduler();
+            _ownScheduler = true;
+            _scheduler.start();
+        }
+        else if (!_scheduler.isStarted())
+            throw new IllegalStateException("Shared scheduler not started");
+ 
+       setScavengeInterval(getScavengeInterval());
+        
 
         super.doStart();
     }
@@ -590,7 +641,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
         catch (Exception e)
         {
-            __log.warn(e);
+            LOG.warn(e);
         }
 
         _sessionsStats.increment();
@@ -716,7 +767,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
         catch (Exception e)
         {
-            __log.warn(e);
+            LOG.warn(e);
             return null;
         }
     }
@@ -796,7 +847,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
         catch (Exception e)
         {
-            __log.warn(e);
+            LOG.warn(e);
             return false;
         }
     }
@@ -851,6 +902,10 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     /* ------------------------------------------------------------ */
     private SessionCookieConfig _cookieConfig =
         new CookieConfig();
+
+
+    private long _scavengeIntervalMs;
+    private Scavenger _scavenger;
 
 
     /* ------------------------------------------------------------ */
@@ -926,6 +981,52 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         }
 
     }
+    
+    
+    public void scavenge ()
+    {
+        //TODO call scavenge on the cache, which calls through to scavenge on the backing store
+    }
+    
+    
+    public void setScavengeInterval (long sec)
+    {
+        if (sec<=0)
+            sec=60;
+
+        long old_period=_scavengeIntervalMs;
+        long period=sec*1000L;
+
+        _scavengeIntervalMs=period;
+
+        //add a bit of variability into the scavenge time so that not all
+        //nodes with the same scavenge interval sync up
+        long tenPercent = _scavengeIntervalMs/10;
+        if ((System.currentTimeMillis()%2) == 0)
+            _scavengeIntervalMs += tenPercent;
+
+        if (LOG.isDebugEnabled())
+            LOG.debug("Scavenging every "+_scavengeIntervalMs+" ms");
+        
+        synchronized (this)
+        {
+            //if (_timer!=null && (period!=old_period || _task==null))
+            if (_scheduler != null && (period!=old_period || _task==null))
+            {
+                if (_task!=null)
+                    _task.cancel();
+                if (_scavenger == null)
+                    _scavenger = new Scavenger();
+                _task = _scheduler.schedule(_scavenger,_scavengeIntervalMs,TimeUnit.MILLISECONDS);
+            }
+        }
+    }
+
+    public long getScavengeInterval ()
+    {
+        return _scavengeIntervalMs/1000;
+    }
+
 
     /**
      * CookieConfig

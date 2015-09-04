@@ -28,11 +28,11 @@ package org.eclipse.jetty.server.session.x;
 public interface SessionStore
 {
     Session newSession (String id,  long created, long accessed, long lastAccessed, long maxInactiveMs);
-    Session get(String id) throws Exception;
-    void put(String id, Session session) throws Exception;
-    boolean exists (String id) throws Exception;
-    Session putIfAbsent(String id, Session session) throws Exception;
-    boolean delete (String id) throws Exception;
+    Session get(SessionKey key) throws Exception;
+    void put(SessionKey key, Session session) throws Exception;
+    boolean exists (SessionKey key) throws Exception;
+    boolean delete (SessionKey key) throws Exception;
     void shutdown ();
+    void scavenge ();
     
 }

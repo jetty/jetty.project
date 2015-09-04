@@ -81,55 +81,49 @@ public class MemorySessionStore extends AbstractSessionStore
      * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#doGet(java.lang.String)
      */
     @Override
-    public Session doGet(String id)
+    public Session doGet(SessionKey key)
     {
-        Session session = _sessions.get(id);
+        Session session = _sessions.get(key.getId());
         
         if (isStale(session))
         {
             //delete from memory
-            doDelete(id);
+            doDelete(key);
             return null;
         }
         
         return session;
     }
 
-    /** 
-     * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#doPutIfAbsent(java.lang.String, org.eclipse.jetty.server.session.x.Session)
-     */
-    @Override
-    public Session doPutIfAbsent(String id, Session session)
-    {
-        return _sessions.putIfAbsent(id, session);
-    }
 
     /** 
      * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#doPut(java.lang.String, org.eclipse.jetty.server.session.x.Session)
      */
     @Override
-    public void doPut(String id, Session session)
+    public void doPut(SessionKey key, Session session)
     {
-        _sessions.put(id,  session);
+        _sessions.put(key.getId(),  session);
     }
 
     /** 
      * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#doExists(java.lang.String)
      */
     @Override
-    public boolean doExists(String id)
+    public boolean doExists(SessionKey key)
     {
-       return _sessions.containsKey(id);
+       return _sessions.containsKey(key.getId());
     }
 
     /** 
      * @see org.eclipse.jetty.server.session.x.AbstractSessionStore#doDelete(java.lang.String)
      */
     @Override
-    public void doDelete(String id)
+    public void doDelete(SessionKey key)
     {
-        _sessions.remove(id);
+        _sessions.remove(key.getId());
     }
+    
+    
 
     @Override
     public void shutdown ()
@@ -153,14 +147,14 @@ public class MemorySessionStore extends AbstractSessionStore
                         session.willPassivate();
                         try
                         {
-                            _sessionDataStore.store(session.getId(), session.getSessionData());
+                            _sessionDataStore.store(SessionKey.getKey(session.getSessionData()), session.getSessionData());
                         }
                         catch (Exception e)
                         {
                             LOG.warn(e);
                         }
                     }
-                    doDelete (session.getId()); //remove from memory
+                    doDelete (SessionKey.getKey(session.getSessionData())); //remove from memory
                 }
                 else
                 {
@@ -192,6 +186,19 @@ public class MemorySessionStore extends AbstractSessionStore
     public Session newSession(SessionData data)
     {
         return new MemorySession (data);
+    }
+
+
+
+
+    /** 
+     * @see org.eclipse.jetty.server.session.x.SessionStore#scavenge()
+     */
+    @Override
+    public void scavenge()
+    {
+        // TODO Auto-generated method stub
+        
     }
 
 }
