@@ -20,7 +20,7 @@
   <parent>
     <groupId>org.eclipse.jetty.tests</groupId>
     <artifactId>test-webapps-parent</artifactId>
-    <version>9.3.3-SNAPSHOT</version>
+    <version>9.3.4-SNAPSHOT</version>
     <relativePath>../pom.xml</relativePath>
   </parent>
   <modelVersion>4.0.0</modelVersion>
@@ -241,10 +241,12 @@
               <goals>
                 <goal>jspc</goal>
               </goals>
+             <!-- example configuration
               <configuration>
                  <includes>**/*.foo</includes>
                  <excludes>**/*.fff</excludes>
               </configuration>
+              -->
             </execution>
           </executions>
         </plugin>

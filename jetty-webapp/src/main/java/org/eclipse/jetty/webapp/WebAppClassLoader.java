@@ -470,7 +470,10 @@ public class WebAppClassLoader extends URLClassLoader
                 c= _parent.loadClass(name);
 
             if (c == null && ex!=null)
+            {
+                LOG.debug("not found {} from {}",name,this,ex);
                 throw ex;
+            }
 
             if (resolve)
                 resolveClass(c);

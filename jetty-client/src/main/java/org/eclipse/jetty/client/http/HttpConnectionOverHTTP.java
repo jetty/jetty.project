@@ -98,7 +98,7 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     protected boolean onReadTimeout()
     {
         if (LOG.isDebugEnabled())
-            LOG.debug("{} idle timeout", this);
+            LOG.debug("Idle timeout {}", this);
         close(new TimeoutException());
         return false;
     }
@@ -141,10 +141,10 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
             getHttpDestination().close(this);
             getEndPoint().shutdownOutput();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} oshut", this);
+                LOG.debug("Shutdown {}", this);
             getEndPoint().close();
             if (LOG.isDebugEnabled())
-                LOG.debug("{} closed", this);
+                LOG.debug("Closed {}", this);
 
             abort(failure);
         }
@@ -166,10 +166,8 @@ public class HttpConnectionOverHTTP extends AbstractConnection implements Connec
     {
         if (!closed.get())
             return false;
-
         if (sweeps.incrementAndGet() < 4)
             return false;
-
         return true;
     }
 

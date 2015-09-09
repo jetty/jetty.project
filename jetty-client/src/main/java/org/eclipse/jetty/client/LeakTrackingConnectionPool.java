@@ -22,9 +22,13 @@ import org.eclipse.jetty.client.api.Connection;
 import org.eclipse.jetty.client.api.Destination;
 import org.eclipse.jetty.util.Callback;
 import org.eclipse.jetty.util.LeakDetector;
+import org.eclipse.jetty.util.log.Log;
+import org.eclipse.jetty.util.log.Logger;
 
 public class LeakTrackingConnectionPool extends ConnectionPool
 {
+    private static final Logger LOG = Log.getLogger(LeakTrackingConnectionPool.class);
+
     private final LeakDetector<Connection> leakDetector = new LeakDetector<Connection>()
     {
         @Override

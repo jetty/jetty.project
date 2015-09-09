@@ -21,7 +21,7 @@ package org.eclipse.jetty.client;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.util.Arrays;
-import java.util.concurrent.BlockingQueue;
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 
@@ -71,10 +71,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
         ConnectionPool connectionPool = destination.getConnectionPool();
 
-        final BlockingQueue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch headersLatch = new CountDownLatch(1);
@@ -132,10 +132,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
         ConnectionPool connectionPool = destination.getConnectionPool();
 
-        final BlockingQueue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch beginLatch = new CountDownLatch(1);
@@ -183,10 +183,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
         ConnectionPool connectionPool = destination.getConnectionPool();
 
-        final BlockingQueue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch successLatch = new CountDownLatch(3);
@@ -243,10 +243,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
         ConnectionPool connectionPool = destination.getConnectionPool();
 
-        final BlockingQueue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final long delay = 1000;
@@ -316,10 +316,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
         ConnectionPool connectionPool = destination.getConnectionPool();
 
-        final BlockingQueue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         server.stop();
@@ -369,10 +369,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
         ConnectionPool connectionPool = destination.getConnectionPool();
 
-        final BlockingQueue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         final CountDownLatch latch = new CountDownLatch(1);
@@ -419,10 +419,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
             HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
             ConnectionPool connectionPool = destination.getConnectionPool();
 
-            final BlockingQueue<Connection> idleConnections = connectionPool.getIdleConnections();
+            final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
             Assert.assertEquals(0, idleConnections.size());
 
-            final BlockingQueue<Connection> activeConnections = connectionPool.getActiveConnections();
+            final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
             Assert.assertEquals(0, activeConnections.size());
 
             Log.getLogger(HttpConnection.class).info("Expecting java.lang.IllegalStateException: HttpParser{s=CLOSED,...");
@@ -449,7 +449,7 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
 
             Assert.assertEquals(0, idleConnections.size());
             Assert.assertEquals(0, activeConnections.size());
-            
+
             server.stop();
         }
         finally
@@ -469,10 +469,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
         ConnectionPool connectionPool = destination.getConnectionPool();
 
-        final BlockingQueue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         ContentResponse response = client.newRequest(host, port)
@@ -501,10 +501,10 @@ public class HttpConnectionLifecycleTest extends AbstractHttpClientServerTest
         HttpDestinationOverHTTP destination = (HttpDestinationOverHTTP)client.getDestination(scheme, host, port);
         ConnectionPool connectionPool = destination.getConnectionPool();
 
-        final BlockingQueue<Connection> idleConnections = connectionPool.getIdleConnections();
+        final Queue<Connection> idleConnections = connectionPool.getIdleConnections();
         Assert.assertEquals(0, idleConnections.size());
 
-        final BlockingQueue<Connection> activeConnections = connectionPool.getActiveConnections();
+        final Queue<Connection> activeConnections = connectionPool.getActiveConnections();
         Assert.assertEquals(0, activeConnections.size());
 
         client.setStrictEventOrdering(false);

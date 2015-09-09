@@ -153,6 +153,15 @@ public interface RemoteEndpoint
     BatchMode getBatchMode();
 
     /**
+     * Set the batch mode with which messages are sent.
+     * 
+     * @param mode
+     *            the batch mode to use
+     * @see #flush()
+     */
+    void setBatchMode(BatchMode mode);
+    
+    /**
      * Flushes messages that may have been batched by the implementation.
      * 
      * @throws IOException

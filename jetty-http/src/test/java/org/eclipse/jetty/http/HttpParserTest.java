@@ -86,6 +86,19 @@ public class HttpParserTest
         assertEquals(HttpMethod.GET,HttpMethod.lookAheadGet(b));
     }
     
+    @Test
+    public void testLineParse_Mock_IP() throws Exception
+    {
+        ByteBuffer buffer= BufferUtil.toBuffer("POST /mock/127.0.0.1 HTTP/1.1\015\012" + "\015\012");
+
+        HttpParser.RequestHandler handler  = new Handler();
+        HttpParser parser= new HttpParser(handler);
+        parseAll(parser,buffer);
+        assertEquals("POST", _methodOrVersion);
+        assertEquals("/mock/127.0.0.1", _uriOrStatus);
+        assertEquals("HTTP/1.1", _versionOrReason);
+        assertEquals(-1, _headers);
+    }
     
     @Test
     public void testLineParse0() throws Exception

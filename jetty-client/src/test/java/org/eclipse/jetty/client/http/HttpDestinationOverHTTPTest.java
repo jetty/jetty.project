@@ -18,6 +18,7 @@
 
 package org.eclipse.jetty.client.http;
 
+import java.util.Queue;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.RejectedExecutionException;
 import java.util.concurrent.TimeUnit;
@@ -62,7 +63,7 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         if (connection == null)
         {
             // There are no queued requests, so the newly created connection will be idle
-            connection = destination.getConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
+            connection = timedPoll(destination.getConnectionPool().getIdleConnections(), 5, TimeUnit.SECONDS);
         }
         Assert.assertNotNull(connection);
     }
@@ -133,9 +134,10 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
         latch.countDown();
 
         // There must be 2 idle connections.
-        Connection connection = destination.getConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
+        Queue<Connection> idleConnections = destination.getConnectionPool().getIdleConnections();
+        Connection connection = timedPoll(idleConnections, 5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection);
-        connection = destination.getConnectionPool().getIdleConnections().poll(5, TimeUnit.SECONDS);
+        connection = timedPoll(idleConnections, 5, TimeUnit.SECONDS);
         Assert.assertNotNull(connection);
     }
 
@@ -271,5 +273,18 @@ public class HttpDestinationOverHTTPTest extends AbstractHttpClientServerTest
 
         destinationAfter = client.getDestination(scheme, host, port);
         Assert.assertNotSame(destinationBefore, destinationAfter);
+    }
+
+    private Connection timedPoll(Queue<Connection> connections, long time, TimeUnit unit) throws InterruptedException
+    {
+        long start = System.nanoTime();
+        while (unit.toNanos(time) > System.nanoTime() - start)
+        {
+            Connection connection = connections.poll();
+            if (connection != null)
+                return connection;
+            TimeUnit.MILLISECONDS.sleep(5);
+        }
+        return connections.poll();
     }
 }
