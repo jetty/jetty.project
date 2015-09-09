@@ -241,10 +241,12 @@
               <goals>
                 <goal>jspc</goal>
               </goals>
+             <!-- example configuration
               <configuration>
                  <includes>**/*.foo</includes>
                  <excludes>**/*.fff</excludes>
               </configuration>
+              -->
             </execution>
           </executions>
         </plugin>
