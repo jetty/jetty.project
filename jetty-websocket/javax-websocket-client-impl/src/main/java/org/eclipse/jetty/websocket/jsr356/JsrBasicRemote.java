@@ -100,7 +100,6 @@ public class JsrBasicRemote extends AbstractJsrRemote implements RemoteEndpoint.
     @Override
     public void sendText(String text) throws IOException
     {
-        LOG.info("sendText({})", TextUtil.hint(text));
         assertMessageNotNull(text);
         if (LOG.isDebugEnabled())
         {

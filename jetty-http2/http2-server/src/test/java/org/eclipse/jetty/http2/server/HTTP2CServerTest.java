@@ -23,6 +23,7 @@ import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
 import java.nio.charset.StandardCharsets;
+import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -184,6 +185,7 @@ public class HTTP2CServerTest extends AbstractServerTest
             latchRef.set(new CountDownLatch(2));
             ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
             generator.control(lease, new PrefaceFrame());
+            generator.control(lease, new SettingsFrame(new HashMap<>(), false));
             MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:" + _port), "/two", HttpVersion.HTTP_2, new HttpFields());
             generator.control(lease, new HeadersFrame(3, metaData, null, true));
             for (ByteBuffer buffer : lease.getByteBuffers())
@@ -219,8 +221,8 @@ public class HTTP2CServerTest extends AbstractServerTest
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = new MetaData.Request("GET", HttpScheme.HTTP, new HostPortHttpField("localhost:" + _port), "/test", HttpVersion.HTTP_2, new HttpFields());
-
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
         try (Socket client = new Socket("localhost", _port))
