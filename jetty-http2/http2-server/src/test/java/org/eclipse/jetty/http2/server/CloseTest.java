@@ -22,6 +22,7 @@ import java.io.IOException;
 import java.io.OutputStream;
 import java.net.Socket;
 import java.nio.ByteBuffer;
+import java.util.HashMap;
 import java.util.concurrent.CountDownLatch;
 import java.util.concurrent.TimeUnit;
 import java.util.concurrent.atomic.AtomicReference;
@@ -37,6 +38,7 @@ import org.eclipse.jetty.http2.api.server.ServerSessionListener;
 import org.eclipse.jetty.http2.frames.GoAwayFrame;
 import org.eclipse.jetty.http2.frames.HeadersFrame;
 import org.eclipse.jetty.http2.frames.PrefaceFrame;
+import org.eclipse.jetty.http2.frames.SettingsFrame;
 import org.eclipse.jetty.http2.parser.Parser;
 import org.eclipse.jetty.io.ByteBufferPool;
 import org.eclipse.jetty.io.RuntimeIOException;
@@ -75,6 +77,7 @@ public class CloseTest extends AbstractServerTest
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 
@@ -134,6 +137,7 @@ public class CloseTest extends AbstractServerTest
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
         generator.control(lease, new GoAwayFrame(1, ErrorCode.NO_ERROR.code, "OK".getBytes("UTF-8")));
@@ -199,6 +203,7 @@ public class CloseTest extends AbstractServerTest
 
         ByteBufferPool.Lease lease = new ByteBufferPool.Lease(byteBufferPool);
         generator.control(lease, new PrefaceFrame());
+        generator.control(lease, new SettingsFrame(new HashMap<>(), false));
         MetaData.Request metaData = newRequest("GET", new HttpFields());
         generator.control(lease, new HeadersFrame(1, metaData, null, true));
 

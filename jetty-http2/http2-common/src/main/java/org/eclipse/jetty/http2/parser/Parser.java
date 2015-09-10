@@ -101,61 +101,14 @@ public class Parser
                 {
                     case HEADER:
                     {
-                        if (!headerParser.parse(buffer))
+                        if (!parseHeader(buffer))
                             return;
-
-                        if (continuation)
-                        {
-                            if (headerParser.getFrameType() != FrameType.CONTINUATION.getType())
-                            {
-                                // SPEC: CONTINUATION frames must be consecutive.
-                                BufferUtil.clear(buffer);
-                                notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "continuation_frame_expected");
-                                return;
-                            }
-                            if (headerParser.hasFlag(Flags.END_HEADERS))
-                            {
-                                continuation = false;
-                            }
-                        }
-                        else
-                        {
-                            if (headerParser.getFrameType() == FrameType.HEADERS.getType() &&
-                                    !headerParser.hasFlag(Flags.END_HEADERS))
-                            {
-                                continuation = true;
-                            }
-                        }
-                        state = State.BODY;
                         break;
                     }
                     case BODY:
                     {
-                        int type = headerParser.getFrameType();
-                        if (LOG.isDebugEnabled())
-                            LOG.debug("Parsing {} frame", FrameType.from(type));
-                        if (type < 0 || type >= bodyParsers.length)
-                        {
-                            BufferUtil.clear(buffer);
-                            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unknown_frame_type_" + type);
+                        if (!parseBody(buffer))
                             return;
-                        }
-                        BodyParser bodyParser = bodyParsers[type];
-                        if (headerParser.getLength() == 0)
-                        {
-                            bodyParser.emptyBody(buffer);
-                            reset();
-                            if (!buffer.hasRemaining())
-                                return;
-                        }
-                        else
-                        {
-                            if (!bodyParser.parse(buffer))
-                                return;
-                            if (LOG.isDebugEnabled())
-                                LOG.debug("Parsed {} frame", FrameType.from(type));
-                            reset();
-                        }
                         break;
                     }
                     default:
@@ -172,6 +125,76 @@ public class Parser
             BufferUtil.clear(buffer);
             notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "parser_error");
         }
+    }
+
+    protected boolean parseHeader(ByteBuffer buffer)
+    {
+        if (!headerParser.parse(buffer))
+            return false;
+
+        int frameType = getFrameType();
+        if (LOG.isDebugEnabled())
+            LOG.debug("Parsed {} frame header", FrameType.from(frameType));
+
+        if (continuation)
+        {
+            if (frameType != FrameType.CONTINUATION.getType())
+            {
+                // SPEC: CONTINUATION frames must be consecutive.
+                BufferUtil.clear(buffer);
+                notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "continuation_frame_expected");
+                return false;
+            }
+            if (headerParser.hasFlag(Flags.END_HEADERS))
+            {
+                continuation = false;
+            }
+        }
+        else
+        {
+            if (frameType == FrameType.HEADERS.getType() &&
+                    !headerParser.hasFlag(Flags.END_HEADERS))
+            {
+                continuation = true;
+            }
+        }
+        state = State.BODY;
+        return true;
+    }
+
+    protected boolean parseBody(ByteBuffer buffer)
+    {
+        int type = getFrameType();
+        if (type < 0 || type >= bodyParsers.length)
+        {
+            BufferUtil.clear(buffer);
+            notifyConnectionFailure(ErrorCode.PROTOCOL_ERROR.code, "unknown_frame_type_" + type);
+            return false;
+        }
+
+        FrameType frameType = FrameType.from(type);
+        if (LOG.isDebugEnabled())
+            LOG.debug("Parsing {} frame", frameType);
+
+        BodyParser bodyParser = bodyParsers[type];
+        if (headerParser.getLength() == 0)
+        {
+            bodyParser.emptyBody(buffer);
+        }
+        else
+        {
+            if (!bodyParser.parse(buffer))
+                return false;
+        }
+        if (LOG.isDebugEnabled())
+            LOG.debug("Parsed {} frame", frameType);
+        reset();
+        return true;
+    }
+
+    protected int getFrameType()
+    {
+        return headerParser.getFrameType();
     }
 
     protected void notifyConnectionFailure(int error, String reason)
