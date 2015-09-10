@@ -31,12 +31,14 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.Locale;
+import java.util.Map;
 
 import javax.naming.InitialContext;
 import javax.naming.NameNotFoundException;
 import javax.naming.NamingException;
 import javax.sql.DataSource;
 
+import org.eclipse.jetty.util.ClassLoadingObjectInputStream;
 import org.eclipse.jetty.util.log.Log;
 import org.eclipse.jetty.util.log.Logger;
 
@@ -732,6 +734,12 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         {
             _rowId = rowId;
         }
+        
+        
+        public void setAttributes (Map<String, Object> attributes)
+        {
+            _attributes.putAll(attributes);
+        }
     }
     
     
@@ -790,8 +798,9 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
     }
 
 
+ 
     /** 
-     * @see org.eclipse.jetty.server.session.x.SessionDataStore#load(java.lang.String)
+     * @see org.eclipse.jetty.server.session.x.SessionDataStore#load(org.eclipse.jetty.server.session.x.SessionKey)
      */
     @Override
     public SessionData load(SessionKey key) throws Exception
@@ -801,8 +810,8 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
         long accessed = 0;
         long lastAccessed = 0;
         long maxInactiveMs = 0;
-        
-        
+
+
         try (Connection connection = _dbAdaptor.getConnection();
                 PreparedStatement statement = _sessionTableSchema.getLoadStatement(connection, key.getId(), key.getCanonicalContextPath(), key.getVhost());
                 ResultSet result = statement.executeQuery())
@@ -811,31 +820,25 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             if (result.next())
             {                    
                 long maxInterval = result.getLong(_sessionTableSchema.getMaxIntervalColumn());
-                if (maxInterval == SessionTableSchema.MAX_INTERVAL_NOT_SET)
-                {
-                    maxInterval = getMaxInactiveInterval(); //if value not saved for maxInactiveInterval, use current value from sessionmanager
-                }
-                data = (Session)newSession(id, , 
-                                          , 
-                                          , 
-                                          maxInterval);
-                data = (JDBCSessionData)newSessionData(id, 
+
+
+                data = (JDBCSessionData)newSessionData(key.getId(), 
                                                        result.getLong(_sessionTableSchema.getCreateTimeColumn()), 
                                                        result.getLong(_sessionTableSchema.getAccessTimeColumn()), 
                                                        result.getLong(_sessionTableSchema.getLastAccessTimeColumn()), maxInactiveMs);
                 data.setRowId(result.getString(_sessionTableSchema.getRowIdColumn()));
-                data.setCookieSetTime(result.getLong(_sessionTableSchema.getCookieTimeColumn()));
+                data.setCookieSet(result.getLong(_sessionTableSchema.getCookieTimeColumn()));
                 data.setLastNode(result.getString(_sessionTableSchema.getLastNodeColumn()));
-                data.setLastSaved(result.getLong(_sessionTableSchema.getLastSavedTimeColumn()));
-                data.setExpiryTime(result.getLong(_sessionTableSchema.getExpiryTimeColumn()));
-                data.setCanonicalContext(result.getString(_sessionTableSchema.getContextPathColumn()));
-                data.setVirtualHost(result.getString(_sessionTableSchema.getVirtualHostColumn()));
-                                   
+                //TODO needed?data.setLastSaved(result.getLong(_sessionTableSchema.getLastSavedTimeColumn()));
+                data.setExpiry(result.getLong(_sessionTableSchema.getExpiryTimeColumn()));
+                // TODO needed???? data.setCanonicalContext(result.getString(_sessionTableSchema.getContextPathColumn()));
+                data.setVhost(result.getString(_sessionTableSchema.getVirtualHostColumn()));
+
                 try (InputStream is = _dbAdaptor.getBlobInputStream(result, _sessionTableSchema.getMapColumn());
                         ClassLoadingObjectInputStream ois = new ClassLoadingObjectInputStream(is))
                 {
                     Object o = ois.readObject();
-                    data.addAttributes((Map<String,Object>)o);
+                    data.setAttributes((Map<String,Object>)o);
                 }
 
                 if (LOG.isDebugEnabled())
@@ -843,34 +846,25 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
             }
             else
                 if (LOG.isDebugEnabled())
-                    LOG.debug("Failed to load session "+id);
-            _reference.set(data);
+                    LOG.debug("Failed to load session "+key.getId());
+            return data;
         }
         catch (Exception e)
         {
-            _exception.set(e);
+            //if the session could not be restored, take its id out of the pool of currently-in-use
+            //session ids
+            //TODO handle situation where session cannot be restored:  _jdbcSessionIdMgr.removeId(id);
+            throw e;
         }
-        
-        
-        
-        
-        
-        
-        
-       
-        // set vhost etc
-        // set row id
-        // set expiry time
-        return data;
     }
 
-   
+
 
     /** 
      * @see org.eclipse.jetty.server.session.x.SessionDataStore#delete(java.lang.String)
      */
     @Override
-    public boolean delete(String id) throws Exception
+    public boolean delete(SessionKey key) throws Exception
     {
         // TODO delete from jdbc
         return false;
@@ -883,7 +877,7 @@ public class JDBCSessionDataStore extends AbstractSessionDataStore
      * @see org.eclipse.jetty.server.session.x.AbstractSessionDataStore#doStore()
      */
     @Override
-    public void doStore() throws Exception
+    public void doStore(SessionKey key, SessionData data) throws Exception
     {
         // TODO write session data to jdbc
         

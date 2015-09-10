@@ -253,7 +253,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         try
         {
             if (s.isValid())
-                _sessionStore.put(s.getId(), s);
+                _sessionStore.put(SessionKey.getKey(s.getId(), _context), s);
         }
         catch (Exception e)
         {
@@ -637,7 +637,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
 
         try
         {
-            _sessionStore.put(session.getId(), session);
+            _sessionStore.put(SessionKey.getKey(session.getId(), _context), session);
         }
         catch (Exception e)
         {
@@ -760,7 +760,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
     {
         try
         {
-            Session session =  _sessionStore.get(id);
+            Session session =  _sessionStore.get(SessionKey.getKey(id, _context));
             session.setSessionManager(this);
             session.setExtendedId(_sessionIdManager.getExtendedId(id, null)); //TODO not sure if this is OK?
             return session;
@@ -821,7 +821,7 @@ public class SessionManager extends ContainerLifeCycle implements org.eclipse.je
         try
         {
             //Remove the Session object from the session store and any backing data store
-            boolean removed = _sessionStore.delete(session.getId());
+            boolean removed = _sessionStore.delete(SessionKey.getKey(session.getId(), _context));
 
             if (removed)
             {
